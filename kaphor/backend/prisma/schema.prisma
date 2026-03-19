@@ -1,0 +1,552 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════
+
+enum UserRole {
+  BUYER
+  SELLER
+  BOTH
+  ADMIN
+}
+
+enum UserTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  ELITE
+}
+
+enum GarmentState {
+  LISTED
+  INTEREST
+  PURCHASE_INTENT
+  SELL_INTENT
+  OWNERSHIP
+  DECLINE
+  CIRCULATION
+  REUSE_UPCYCLE_RECYCLE
+}
+
+enum GarmentCondition {
+  PRISTINE
+  MINOR_WEAR
+  UPCYCLE
+  RECYCLE_ONLY
+}
+
+enum ListingType {
+  SALE
+  RENTAL
+  ACCESSORY_SWAP
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum SwapStatus {
+  REQUESTED
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum RentalStatus {
+  RESERVED
+  ACTIVE
+  RETURNED
+  OVERDUE
+}
+
+enum EventType {
+  VIEW
+  SAVE
+  WISHLIST
+  ADD_TO_CART
+  PURCHASE_INTENT
+  PURCHASE
+  SELL_INTENT
+  RELIST
+  REPOST
+}
+
+enum StyleAesthetic {
+  MINIMALIST
+  VINTAGE
+  BOLD
+  ETHNIC
+  STREETWEAR
+  LUXURY
+}
+
+enum PostType {
+  OUTFIT
+  TUTORIAL
+  TRANSFORMATION
+  CIRCULAR_STORY
+}
+
+// ═══════════════════════════════════════════════
+// USER
+// ═══════════════════════════════════════════════
+
+model User {
+  id                String          @id @default(uuid())
+  email             String          @unique
+  username          String          @unique
+  passwordHash      String?
+  googleId          String?         @unique
+  displayName       String
+  avatar            String?
+  bio               String?
+  location          String?
+  role              UserRole        @default(BOTH)
+  tier              UserTier        @default(BRONZE)
+  isVerified        Boolean         @default(false)
+  isActive          Boolean         @default(true)
+  styleVector       Float[]
+  styleAesthetic    StyleAesthetic?
+  onboardingDone    Boolean         @default(false)
+  failedLoginAttempts Int           @default(0)
+  lockUntil         DateTime?
+  verificationToken String?
+  verificationExpires DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  garments          Garment[]
+  ordersAsBuyer     Order[]         @relation("BuyerOrders")
+  ordersAsSeller    Order[]         @relation("SellerOrders")
+  swapsInitiated    Swap[]          @relation("SwapInitiator")
+  swapsReceived     Swap[]          @relation("SwapReceiver")
+  rentals           Rental[]
+  behaviourEvents   BehaviourEvent[]
+  behaviourSignals  BehaviourSignal[]
+  posts             Post[]
+  likes             Like[]
+  comments          Comment[]
+  followers         Follow[]        @relation("Following")
+  following         Follow[]        @relation("Followers")
+  notifications     Notification[]
+  impactRecord      ImpactRecord?
+  circSchedules     CirculationSchedule[]
+  circularRequests  CircularRequest[]
+  bespokeRequests   BespokeRequest[]
+  refreshTokens     RefreshToken[]
+  styleQuizAnswers  StyleQuizAnswer[]
+  reviews           Review[]
+  addresses         Address[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  label     String
+  line1     String
+  line2     String?
+  city      String
+  country   String
+  postcode  String
+  isDefault Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("addresses")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token      String   @unique
+  userId     String
+  expiresAt  DateTime
+  replacedBy String?
+  isRevoked  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("refresh_tokens")
+}
+
+// ═══════════════════════════════════════════════
+// GARMENT
+// ═══════════════════════════════════════════════
+
+model Garment {
+  id               String          @id @default(uuid())
+  sellerId         String
+  title            String
+  description      String
+  brand            String
+  category         String
+  subCategory      String?
+  size             String
+  color            String[]
+  material         String[]
+  condition        GarmentCondition
+  images           String[]
+  tags             String[]
+  styleTags        String[]
+  garmentVector    Float[]
+  lifecycleState   GarmentState    @default(LISTED)
+  listingType      ListingType     @default(SALE)
+  price            Int?
+  rentalPriceDay   Int?
+  rentalPriceWeek  Int?
+  recyclableFiber  Float?
+  popularityScore  Float           @default(0)
+  diversityScore   Float           @default(0)
+  viewCount        Int             @default(0)
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  seller           User            @relation(fields: [sellerId], references: [id])
+  orderItems       OrderItem[]
+  behaviourEvents  BehaviourEvent[]
+  behaviourSignals BehaviourSignal[]
+  swapsOffered     Swap[]          @relation("SwapOffered")
+  swapsWanted      Swap[]          @relation("SwapWanted")
+  rentals          Rental[]
+  circSchedules    CirculationSchedule[]
+  circularRequests CircularRequest[]
+  reviews          Review[]
+
+  @@map("garments")
+}
+
+// ═══════════════════════════════════════════════
+// BEHAVIOUR ENGINE
+// ═══════════════════════════════════════════════
+
+model BehaviourEvent {
+  id         String     @id @default(uuid())
+  userId     String
+  garmentId  String
+  eventType  EventType
+  sessionId  String?
+  metadata   Json?
+  createdAt  DateTime   @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  garment    Garment    @relation(fields: [garmentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, garmentId])
+  @@map("behaviour_events")
+}
+
+model BehaviourSignal {
+  id               String   @id @default(uuid())
+  userId           String
+  garmentId        String
+  interestScore    Float    @default(0)
+  recentEventCount Int      @default(0)
+  engagementRate   Float    @default(0)
+  interactionDecay Float    @default(0)
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  garment          Garment  @relation(fields: [garmentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, garmentId])
+  @@map("behaviour_signals")
+}
+
+model CirculationSchedule {
+  id              String   @id @default(uuid())
+  garmentId       String
+  userId          String
+  cooldownStart   DateTime
+  cooldownEnd     DateTime
+  saturationScore Float
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+
+  garment         Garment  @relation(fields: [garmentId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@map("circulation_schedules")
+}
+
+// ═══════════════════════════════════════════════
+// ORDERS
+// ═══════════════════════════════════════════════
+
+model Order {
+  id              String      @id @default(uuid())
+  buyerId         String
+  sellerId        String
+  status          OrderStatus @default(PENDING)
+  totalAmount     Int
+  currency        String      @default("USD")
+  stripePaymentId String?
+  shippingAddress Json?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  buyer           User        @relation("BuyerOrders",  fields: [buyerId],  references: [id])
+  seller          User        @relation("SellerOrders", fields: [sellerId], references: [id])
+  items           OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  garmentId String
+  price     Int
+  quantity  Int     @default(1)
+
+  order     Order   @relation(fields: [orderId],   references: [id], onDelete: Cascade)
+  garment   Garment @relation(fields: [garmentId], references: [id])
+
+  @@map("order_items")
+}
+
+// ═══════════════════════════════════════════════
+// ACCESSORY SWAP
+// ═══════════════════════════════════════════════
+
+model Swap {
+  id              String     @id @default(uuid())
+  initiatorId     String
+  receiverId      String
+  garmentOffered  String
+  garmentWanted   String
+  status          SwapStatus @default(REQUESTED)
+  message         String?
+  completedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  initiator       User       @relation("SwapInitiator", fields: [initiatorId], references: [id])
+  receiver        User       @relation("SwapReceiver",  fields: [receiverId],  references: [id])
+  offeredGarment  Garment    @relation("SwapOffered", fields: [garmentOffered], references: [id])
+  wantedGarment   Garment    @relation("SwapWanted", fields: [garmentWanted], references: [id])
+
+  @@map("swaps")
+}
+
+// ═══════════════════════════════════════════════
+// RENTAL
+// ═══════════════════════════════════════════════
+
+model Rental {
+  id            String       @id @default(uuid())
+  garmentId     String
+  renterId      String
+  startDate     DateTime
+  endDate       DateTime
+  totalPrice    Int
+  status        RentalStatus @default(RESERVED)
+  stripeId      String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  garment       Garment      @relation(fields: [garmentId], references: [id])
+  renter        User         @relation(fields: [renterId],  references: [id])
+
+  @@map("rentals")
+}
+
+// ═══════════════════════════════════════════════
+// SOCIAL
+// ═══════════════════════════════════════════════
+
+model Post {
+  id          String   @id @default(uuid())
+  userId      String
+  type        PostType
+  caption     String?
+  images      String[]
+  garmentIds  String[]
+  tags        String[]
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes       Like[]
+  comments    Comment[]
+
+  @@map("posts")
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("Followers",  fields: [followerId],  references: [id], onDelete: Cascade)
+  following   User     @relation("Following",  fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+// ═══════════════════════════════════════════════
+// IMPACT TRACKING
+// ═══════════════════════════════════════════════
+
+model ImpactRecord {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  carbonSavedKg   Float    @default(0)
+  waterSavedL     Float    @default(0)
+  itemsCirculated Int      @default(0)
+  itemsUpcycled   Int      @default(0)
+  itemsRecycled   Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("impact_records")
+}
+
+// ═══════════════════════════════════════════════
+// CIRCULAR SERVICE
+// ═══════════════════════════════════════════════
+
+model CircularRequest {
+  id              String   @id @default(uuid())
+  userId          String
+  garmentId       String
+  address         String
+  preferredSlot   String
+  partnerId       String
+  status          String   @default("SCHEDULED")
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id])
+  garment         Garment  @relation(fields: [garmentId], references: [id])
+
+  @@map("circular_requests")
+}
+
+model BespokeRequest {
+  id           String   @id @default(uuid())
+  userId       String
+  garmentId    String?
+  description  String
+  contactEmail String
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@map("bespoke_requests")
+}
+
+// ═══════════════════════════════════════════════
+// STYLE QUIZ
+// ═══════════════════════════════════════════════
+
+model StyleQuizAnswer {
+  id         String   @id @default(uuid())
+  userId     String
+  questionId String
+  answer     String
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("style_quiz_answers")
+}
+
+// ═══════════════════════════════════════════════
+// REVIEWS
+// ═══════════════════════════════════════════════
+
+model Review {
+  id         String   @id @default(uuid())
+  userId     String
+  garmentId  String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+  garment    Garment  @relation(fields: [garmentId], references: [id])
+
+  @@unique([userId, garmentId])
+  @@map("reviews")
+}
+
+// ═══════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  resource  String?
+  metadata  Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}

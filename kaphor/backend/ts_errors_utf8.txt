@@ -1,0 +1,24 @@
+﻿src/lib/prisma.ts(8,5): error TS2322: Type '({ level: "query"; } | { level: "error"; })[]' is not assignable to type '(LogLevel | LogDefinition)[]'.
+  Type '{ level: "query"; } | { level: "error"; }' is not assignable to type 'LogLevel | LogDefinition'.
+    Type '{ level: "query"; }' is not assignable to type 'LogLevel | LogDefinition'.
+      Property 'emit' is missing in type '{ level: "query"; }' but required in type 'LogDefinition'.
+src/middleware/errorHandler.ts(78,58): error TS2352: Conversion of type 'object & Record<"code", unknown>' to type 'Error' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'object & Record<"code", unknown>' is missing the following properties from type 'Error': name, message
+src/services/lifecycle.service.ts(8,10): error TS2305: Module '"../index"' has no exported member 'io'.
+src/services/lifecycle.service.ts(103,9): error TS2353: Object literal may only specify known properties, and 'targetUserIds' does not exist in type 'Without<CirculationScheduleCreateInput, CirculationScheduleUncheckedCreateInput> & CirculationScheduleUncheckedCreateInput'.
+src/services/lifecycle.service.ts(119,27): error TS2339: Property 'ownerId' does not exist on type '{ description: string; id: string; isActive: boolean; createdAt: Date; updatedAt: Date; sellerId: string; title: string; brand: string; category: string; subCategory: string | null; ... 16 more ...; viewCount: number; }'.
+src/services/lifecycle.service.ts(166,41): error TS2339: Property 'targetUserIds' does not exist on type '{ userId: string; id: string; createdAt: Date; garmentId: string; cooldownEnd: Date; cooldownStart: Date; saturationScore: number; status: string; }'.
+src/utils/jwt.ts(16,14): error TS2769: No overload matches this call.
+  Overload 1 of 5, '(payload: string | object | Buffer<ArrayBufferLike>, secretOrPrivateKey: null, options?: (SignOptions & { algorithm: "none"; }) | undefined): string', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'null'.
+  Overload 2 of 5, '(payload: string | object | Buffer<ArrayBufferLike>, secretOrPrivateKey: Buffer<ArrayBufferLike> | Secret | JsonWebKeyInput | PrivateKeyInput, options?: SignOptions | undefined): string', gave the following error.
+    Type 'string' is not assignable to type 'number | StringValue | undefined'.
+  Overload 3 of 5, '(payload: string | object | Buffer<ArrayBufferLike>, secretOrPrivateKey: Buffer<ArrayBufferLike> | Secret | JsonWebKeyInput | PrivateKeyInput, callback: SignCallback): void', gave the following error.
+    Object literal may only specify known properties, and 'algorithm' does not exist in type 'SignCallback'.
+src/utils/jwt.ts(24,14): error TS2769: No overload matches this call.
+  Overload 1 of 5, '(payload: string | object | Buffer<ArrayBufferLike>, secretOrPrivateKey: null, options?: (SignOptions & { algorithm: "none"; }) | undefined): string', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'null'.
+  Overload 2 of 5, '(payload: string | object | Buffer<ArrayBufferLike>, secretOrPrivateKey: Buffer<ArrayBufferLike> | Secret | JsonWebKeyInput | PrivateKeyInput, options?: SignOptions | undefined): string', gave the following error.
+    Type 'string' is not assignable to type 'number | StringValue | undefined'.
+  Overload 3 of 5, '(payload: string | object | Buffer<ArrayBufferLike>, secretOrPrivateKey: Buffer<ArrayBufferLike> | Secret | JsonWebKeyInput | PrivateKeyInput, callback: SignCallback): void', gave the following error.
+    Object literal may only specify known properties, and 'algorithm' does not exist in type 'SignCallback'.
