@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import http from 'http';
-import express from 'express';
+import { initSocket } from './lib/socket';
+import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
@@ -8,6 +9,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 
 import db from './lib/prisma';
+import { logger } from './lib/logger';
 import path from 'path';
 
 // Routes
@@ -25,6 +27,9 @@ import { orderRoutes } from './routes/orders';
 import { rentalRoutes } from './routes/rentals';
 import { swapRoutes } from './routes/swaps';
 import { stripeRouter } from './routes/stripe';
+import { razorpayRouter } from './routes/razorpay.routes';
+import { cartRouter } from './routes/cart.routes';
+import { adminRouter } from './routes/admin.routes';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -42,11 +47,11 @@ console.log("ENV PATH:", path.resolve('.env'));
 /** Middleware */
 app.use(helmet());
 app.use(compression());
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
+  logger.info(`${req.method} ${req.url}`);
   next();
 });
 
@@ -80,6 +85,9 @@ app.use(`${baseApiUrl}/orders`, orderRoutes);
 app.use(`${baseApiUrl}/rentals`, rentalRoutes);
 app.use(`${baseApiUrl}/swaps`, swapRoutes);
 app.use(`${baseApiUrl}/payments`, stripeRouter);
+app.use(`${baseApiUrl}/payments/razorpay`, razorpayRouter);
+app.use(`${baseApiUrl}/cart`, cartRouter);
+app.use(`${baseApiUrl}/admin`, adminRouter);
 
 /** HEALTH CHECK */
 app.get('/health', (_req, res) => {
@@ -98,6 +106,21 @@ app.get('/test-db', async (_req, res) => {
   }
 });
 
+/** GLOBAL ERROR HANDLER */
+app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+  logger.error('Unhandled Error', {
+    error: err.message,
+    stack: err.stack,
+    path: req.url,
+    method: req.method,
+  });
+
+  res.status(err.status || 500).json({
+    error: err.code || 'INTERNAL_SERVER_ERROR',
+    message: err.message || 'An unexpected error occurred',
+  });
+});
+
 /** 404 */
 app.use((_req, res) => {
   res.status(404).json({
@@ -107,11 +130,22 @@ app.use((_req, res) => {
 
 /** START SERVER */
 async function main() {
+  const fs = require('fs');
+  const uploadsDir = path.join(__dirname, '../uploads');
+  const garmentDirs = path.join(uploadsDir, 'garments');
+  const profileDirs = path.join(uploadsDir, 'profiles');
+  
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+  if (!fs.existsSync(garmentDirs)) fs.mkdirSync(garmentDirs, { recursive: true });
+  if (!fs.existsSync(profileDirs)) fs.mkdirSync(profileDirs, { recursive: true });
+
   await db.$connect();
   console.log('Database connected');
 
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
+    initSocket(httpServer);
+    console.log('Socket.io initialized');
   });
 }
 

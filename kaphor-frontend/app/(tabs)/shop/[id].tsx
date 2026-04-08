@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../../src/components/common/Button';
 import { Badge } from '../../../src/components/Badge';
@@ -8,6 +8,9 @@ import { garmentService } from '../../../src/services/garmentService';
 import { Garment } from '../../../src/store/garmentStore';
 import { useAuth } from '../../../src/context/AuthContext';
 import api from '../../../src/services/api';
+import { colors, typography } from '../../../src/theme';
+import { orderService } from '../../../src/services/orderService';
+import { cartService } from '../../../src/services/cartService';
 
 const { width } = Dimensions.get('window');
 
@@ -15,8 +18,12 @@ export default function GarmentDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  const [garment, setGarment] = useState<Garment | null>(null);
+  const [garment, setGarment] = useState<Garment | any>(null);
   const [loading, setLoading] = useState(true);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [startingInquiry, setStartingInquiry] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [togglingLike, setTogglingLike] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -29,6 +36,7 @@ export default function GarmentDetailScreen() {
     try {
       const data = await garmentService.getGarmentById(id as string);
       setGarment(data);
+      setIsLiked(data.isLiked || false);
     } catch (error) {
       console.error('Failed to load garment', error);
     } finally {
@@ -36,10 +44,59 @@ export default function GarmentDetailScreen() {
     }
   };
 
+  const handleAddToCart = async () => {
+    if (!id) return;
+    setAddingToCart(true);
+    try {
+      await cartService.addToCart(id as string);
+      Alert.alert('Success', 'Item added to your cart.');
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Failed to add to cart');
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const handleMessageSeller = async () => {
+    if (!id) return;
+    setStartingInquiry(true);
+    try {
+      const { orderId } = await orderService.createInquiry(id as string);
+      router.push(`/(tabs)/shop/orders/${orderId}`);
+    } catch (e: any) {
+      Alert.alert('Inquiry', e?.response?.data?.message || 'Failed to start conversation');
+    } finally {
+      setStartingInquiry(false);
+    }
+  };
+
+  const handleToggleLike = async () => {
+    if (!id || togglingLike) return;
+    setTogglingLike(true);
+    
+    // Optimistic UI
+    const nextState = !isLiked;
+    setIsLiked(nextState);
+
+    try {
+      await api.post('/interactions', {
+        garmentId: id,
+        eventType: 'WISHLIST', // We use WISHLIST as "Like"
+      });
+      // Backend handles behaviour signal
+    } catch (error) {
+      // Revert if failed
+      setIsLiked(!nextState);
+      console.error('Failed to toggle like', error);
+    } finally {
+      setTogglingLike(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#C9A84C" />
+        <ActivityIndicator size="large" color={colors.crimson} />
       </View>
     );
   }
@@ -47,9 +104,9 @@ export default function GarmentDetailScreen() {
   if (!garment) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Text style={{ color: 'white' }}>Garment not found</Text>
+        <Text style={{ color: colors.textPrimary }}>Garment not found</Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: '#C9A84C', marginTop: 20 }}>Go Back</Text>
+          <Text style={{ color: colors.crimson, marginTop: 20 }}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -57,17 +114,27 @@ export default function GarmentDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ title: garment?.title || 'Details' }} />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
           <Image 
             source={{ uri: garment.images[0] || 'https://images.unsplash.com/photo-1580000000000?q=80&w=800&auto=format&fit=crop' }} 
             style={styles.image}
+            resizeMode="contain"
           />
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="white" />
+            <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.wishlistButton}>
-            <Ionicons name="heart-outline" size={24} color="white" />
+          <TouchableOpacity 
+            style={[styles.wishlistButton, isLiked && { backgroundColor: 'rgba(155, 27, 48, 0.1)' }]} 
+            onPress={handleToggleLike}
+            disabled={togglingLike}
+          >
+            <Ionicons 
+              name={isLiked ? "heart" : "heart-outline"} 
+              size={24} 
+              color={isLiked ? colors.crimson : colors.charcoal} 
+            />
           </TouchableOpacity>
         </View>
 
@@ -94,25 +161,79 @@ export default function GarmentDetailScreen() {
             <Text style={styles.description}>
               {garment.description || 'No description available for this heritage piece.'}
             </Text>
+
+            <TouchableOpacity 
+              style={styles.aiDoubtButton} 
+              onPress={() => router.push({
+                pathname: '/(tabs)/shop/ai-chat',
+                params: { garmentId: id, initialMessage: `I have a doubt about this ${garment.title}. Can you help?` }
+              })}
+            >
+              <Ionicons name="sparkles" size={18} color="#C9A84C" />
+              <Text style={styles.aiDoubtText}>DOUBTS? ASK KAPHOR AI</Text>
+            </TouchableOpacity>
           </View>
 
+          <TouchableOpacity
+            style={styles.sellerTrust}
+            onPress={() => router.push(`/(tabs)/shop/seller/${garment.seller?.id ?? garment.sellerId}`)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="shield-checkmark-outline" size={22} color={colors.crimson} />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.sellerTrustTitle}>SELLER PROFILE & REVIEWS</Text>
+              <Text style={styles.sellerTrustSub}>
+                {garment.seller?.displayName ?? 'Seller'} · peer ratings from completed sales
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          {/* MESSAGE SELLER CTA */}
+          <TouchableOpacity 
+            style={styles.messageSellerBtn} 
+            onPress={handleMessageSeller}
+            disabled={startingInquiry}
+          >
+            {startingInquiry ? (
+              <ActivityIndicator size="small" color={colors.crimson} />
+            ) : (
+              <>
+                <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.crimson} />
+                <Text style={styles.messageSellerText}>MESSAGE SELLER ABOUT DEAL</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
           <View style={styles.actionGrid}>
-            <TouchableOpacity 
-              style={styles.actionCard}
-              onPress={() => router.push('/(tabs)/swap/index')}
-            >
-              <Ionicons name="repeat" size={24} color="#C9A84C" />
-              <Text style={styles.actionTitle}>SWAP</Text>
-              <Text style={styles.actionDesc}>Exchange for items</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              onPress={() => router.push(`/(tabs)/rental/${id}`)}
-            >
-              <Ionicons name="calendar-outline" size={24} color="#C9A84C" />
-              <Text style={styles.actionTitle}>RENT</Text>
-              <Text style={styles.actionDesc}>₹4,500 / 3 days</Text>
-            </TouchableOpacity>
+            {(garment.listingType === 'RENTAL' || garment.listingType === 'ACCESSORY_SWAP') && (
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={() => router.push('/(tabs)/swap')}
+              >
+                <Ionicons name="repeat" size={24} color={colors.crimson} />
+                <Text style={styles.actionTitle}>SWAP</Text>
+                <Text style={styles.actionDesc}>Exchange for items</Text>
+              </TouchableOpacity>
+            )}
+            
+            {garment.listingType === 'RENTAL' && (
+              <TouchableOpacity 
+                style={styles.actionCard} 
+                onPress={() => router.push(`/(tabs)/rental/${id}`)}
+              >
+                <Ionicons name="calendar-outline" size={24} color={colors.crimson} />
+                <Text style={styles.actionTitle}>RENT</Text>
+                <Text style={styles.actionDesc}>₹{garment.rentalPriceDay ? (garment.rentalPriceDay / 100).toLocaleString() : '---'} / day</Text>
+              </TouchableOpacity>
+            )}
+
+            {garment.listingType === 'SALE' && (
+               <View style={styles.saleInfoCard}>
+                  <Ionicons name="shield-checkmark" size={20} color={colors.success} />
+                  <Text style={styles.saleInfoText}>AUTHENTICATED SALE · FULL OWNERSHIP</Text>
+               </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -133,11 +254,38 @@ export default function GarmentDetailScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <Button 
-            title="PURCHASE NOW" 
-            onPress={() => router.push(`/(tabs)/shop/checkout/${id}`)} 
-            style={styles.buyButton} 
-          />
+          <View style={styles.buyRow}>
+            {garment.listingType === 'SALE' ? (
+              <>
+                <TouchableOpacity
+                  style={styles.cartButton}
+                  onPress={handleAddToCart}
+                  disabled={addingToCart}
+                >
+                  {addingToCart ? <ActivityIndicator size="small" color={colors.crimson} /> : (
+                    <Ionicons name="cart-outline" size={24} color={colors.crimson} />
+                  )}
+                </TouchableOpacity>
+                <Button
+                  title="PURCHASE"
+                  onPress={() => router.push(`/(tabs)/shop/checkout/${id}`)}
+                  style={{ flex: 1 }}
+                />
+              </>
+            ) : garment.listingType === 'RENTAL' ? (
+              <Button
+                title="BOOK RENTAL"
+                onPress={() => router.push(`/(tabs)/rental/${id}`)}
+                style={{ flex: 1 }}
+              />
+            ) : (
+              <Button
+                title="INITIATE SWAP"
+                onPress={() => router.push('/(tabs)/swap')}
+                style={{ flex: 1 }}
+              />
+            )}
+          </View>
         )}
       </View>
     </View>
@@ -147,12 +295,13 @@ export default function GarmentDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A0C10',
+    backgroundColor: colors.bg,
   },
   imageContainer: {
     width: width,
     height: width * 1.2,
     position: 'relative',
+    backgroundColor: colors.bgCard, // Neutral background for contain mode
   },
   image: {
     width: '100%',
@@ -165,7 +314,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -176,7 +325,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -190,28 +339,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   brand: {
-    color: '#D4AF37',
+    color: colors.crimson,
     fontSize: 12,
     letterSpacing: 2,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 4,
   },
   title: {
-    fontSize: 26,
-    fontFamily: 'CormorantGaramond_700Bold',
-    color: 'white',
+    fontSize: 32,
+    fontFamily: typography.headings,
+    color: colors.textPrimary,
+    textTransform: 'uppercase',
   },
   priceContainer: {
     alignItems: 'flex-end',
   },
   price: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: 'white',
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.textPrimary,
   },
   originalPrice: {
     fontSize: 14,
-    color: '#6B5C52',
+    color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 2,
   },
@@ -224,16 +374,37 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   sectionTitle: {
-    color: '#6B5C52',
+    color: colors.textMuted,
     fontSize: 12,
     letterSpacing: 2,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 12,
   },
   description: {
-    color: '#FFF5E1',
-    fontSize: 14,
-    lineHeight: 22,
+    color: colors.textSecond,
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  sellerTrust: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sellerTrustTitle: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.textPrimary,
+    letterSpacing: 0.8,
+  },
+  sellerTrustSub: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 4,
   },
   actionGrid: {
     flexDirection: 'row',
@@ -243,41 +414,114 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     height: 120,
-    backgroundColor: '#2A1C20',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.bgCard,
+    borderRadius: 20,
+    padding: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#3A2C30',
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 4,
   },
   actionTitle: {
-    color: '#C9A84C',
+    color: colors.textPrimary,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     marginTop: 8,
   },
   actionDesc: {
-    color: '#6B5C52',
-    fontSize: 10,
+    color: colors.textMuted,
+    fontSize: 11,
     marginTop: 4,
     textAlign: 'center',
   },
   footer: {
     padding: 24,
     borderTopWidth: 1,
-    borderTopColor: '#3A2C30',
+    borderTopColor: colors.border,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#1A0C10',
+    backgroundColor: colors.bg,
+  },
+  buyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  messageSellerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 18,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: colors.crimson,
+    backgroundColor: 'rgba(155, 27, 48, 0.03)',
+    marginBottom: 24,
+  },
+  messageSellerText: {
+    color: colors.crimson,
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 1,
   },
   buyButton: {
     width: '100%',
+    backgroundColor: colors.crimson,
   },
   center: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  aiDoubtButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: 'rgba(201,168,76,0.08)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(201,168,76,0.2)',
+  },
+  aiDoubtText: {
+    color: '#C9A84C',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  cartButton: {
+    width: 60,
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.crimson,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  saleInfoCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(52, 199, 89, 0.05)',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 199, 89, 0.2)',
+  },
+  saleInfoText: {
+    color: colors.success,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
 });

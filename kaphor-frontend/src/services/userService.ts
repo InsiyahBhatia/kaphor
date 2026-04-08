@@ -20,4 +20,24 @@ export const userService = {
     const { data } = await api.get('/users/me/purchases');
     return data.data;
   },
+
+  getPublicProfile: async (userId: string) => {
+    const { data } = await api.get(`/users/profile/${userId}/public`);
+    return data.data as {
+      id: string;
+      displayName: string;
+      username: string;
+      avatar: string | null;
+      bio: string | null;
+      tier: string;
+      peerReviewCount: number;
+      peerReviewAvg: number | null;
+      trustedSeller: boolean;
+    };
+  },
+
+  getUserReviews: async (userId: string) => {
+    const { data } = await api.get(`/users/profile/${userId}/reviews`);
+    return data.data;
+  },
 };

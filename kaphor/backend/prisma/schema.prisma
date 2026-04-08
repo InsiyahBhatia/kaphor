@@ -154,6 +154,11 @@ model User {
   reviews           Review[]
   addresses         Address[]
   auditLogs         AuditLog[]
+  orderMessages     OrderMessage[]
+  peerReviewsWritten  PeerReview[] @relation("PeerReviewsWritten")
+  peerReviewsReceived PeerReview[] @relation("PeerReviewsReceived")
+  cartItems           CartItem[]
+  conversations       ChatConversation[]
 
   @@map("users")
 }
@@ -227,6 +232,8 @@ model Garment {
   circSchedules    CirculationSchedule[]
   circularRequests CircularRequest[]
   reviews          Review[]
+  cartItems        CartItem[]
+  conversations    ChatConversation[]
 
   @@map("garments")
 }
@@ -268,6 +275,20 @@ model BehaviourSignal {
   @@map("behaviour_signals")
 }
 
+model CartItem {
+  id        String   @id @default(uuid())
+  userId    String
+  garmentId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  garment   Garment  @relation(fields: [garmentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, garmentId])
+  @@map("cart_items")
+}
+
 model CirculationSchedule {
   id              String   @id @default(uuid())
   garmentId       String
@@ -296,6 +317,8 @@ model Order {
   totalAmount     Int
   currency        String      @default("USD")
   stripePaymentId String?
+  razorpayOrderId String?
+  razorpayPaymentId String?
   shippingAddress Json?
   notes           String?
   createdAt       DateTime    @default(now())
@@ -304,6 +327,8 @@ model Order {
   buyer           User        @relation("BuyerOrders",  fields: [buyerId],  references: [id])
   seller          User        @relation("SellerOrders", fields: [sellerId], references: [id])
   items           OrderItem[]
+  messages        OrderMessage[]
+  peerReview      PeerReview?
 
   @@map("orders")
 }
@@ -358,6 +383,7 @@ model Rental {
   totalPrice    Int
   status        RentalStatus @default(RESERVED)
   stripeId      String?
+  message       String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -517,6 +543,40 @@ model Review {
   @@map("reviews")
 }
 
+/// Buyer rates seller after order is delivered (peer verification).
+model PeerReview {
+  id         String   @id @default(uuid())
+  orderId    String   @unique
+  reviewerId String
+  sellerId   String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  order    Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reviewer User  @relation("PeerReviewsWritten", fields: [reviewerId], references: [id], onDelete: Cascade)
+  seller   User  @relation("PeerReviewsReceived", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@map("peer_reviews")
+}
+
+/// In-app messages between buyer and seller for an order (post-payment coordination).
+model OrderMessage {
+  id        String    @id @default(uuid())
+  orderId   String
+  senderId  String
+  body      String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender User  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@map("order_messages")
+}
+
 // ═══════════════════════════════════════════════
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════
@@ -549,4 +609,31 @@ model AuditLog {
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
+}
+
+model ChatConversation {
+  id        String   @id @default(uuid())
+  userId    String
+  garmentId String?
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  garment   Garment? @relation(fields: [garmentId], references: [id], onDelete: SetNull)
+  messages  ChatMessage[]
+
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String   @id @default(uuid())
+  conversationId String
+  role           String // "user" or "assistant"
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
 }

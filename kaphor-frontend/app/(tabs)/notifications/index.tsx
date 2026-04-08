@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { notificationService } from '../../../src/services/notificationService';
+import { colors } from '../../../src/theme';
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -41,13 +42,19 @@ export default function NotificationsScreen() {
   const getIcon = (type: string) => {
     switch (type) {
       case 'SWAP_REQUEST': return 'swap-horizontal';
-      case 'ORDER_CONFIRMED': return 'checkmark-circle';
+      case 'ORDER_PAID': return 'wallet';
+      case 'ORDER_SHIPPED': return 'airplane';
+      case 'ORDER_DELIVERED': return 'briefcase';
+      case 'PEER_REVIEW': return 'star';
       case 'LIKE': return 'heart';
       case 'COMMENT': return 'chatbubble';
       case 'FOLLOW': return 'person-add';
       default: return 'notifications';
     }
   };
+
+  const activeColor = colors.crimson;
+  const inactiveColor = colors.textMuted;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -64,10 +71,10 @@ export default function NotificationsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#C9A84C" style={{ marginTop: 60 }} />
+        <ActivityIndicator size="large" color={colors.crimson} style={{ marginTop: 60 }} />
       ) : notifications.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="notifications-off-outline" size={48} color="#3A2C30" />
+          <Ionicons name="notifications-off-outline" size={48} color={colors.border} />
           <Text style={styles.emptyText}>NO NOTIFICATIONS YET</Text>
         </View>
       ) : (
@@ -79,11 +86,14 @@ export default function NotificationsScreen() {
               onPress={() => handleMarkRead(n.id)}
             >
               <View style={[styles.iconCircle, !n.isRead && styles.iconCircleUnread]}>
-                <Ionicons name={getIcon(n.type) as any} size={20} color={n.isRead ? '#6B5C52' : '#C9A84C'} />
+                <Ionicons name={getIcon(n.type) as any} size={20} color={n.isRead ? inactiveColor : activeColor} />
               </View>
               <View style={styles.cardContent}>
-                <Text style={[styles.cardTitle, !n.isRead && styles.cardTitleUnread]} numberOfLines={2}>
-                  {n.message || n.type}
+                <Text style={[styles.cardTitle, !n.isRead && styles.cardTitleUnread]} numberOfLines={1}>
+                  {n.title || n.type}
+                </Text>
+                <Text style={styles.cardBody} numberOfLines={2}>
+                  {n.body}
                 </Text>
                 <Text style={styles.cardTime}>
                   {new Date(n.createdAt).toLocaleDateString()}
@@ -99,23 +109,42 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A0C10' },
+  container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: 24, paddingBottom: 100 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 40, marginBottom: 24 },
-  title: { fontSize: 28, fontFamily: 'CormorantGaramond_700Bold', color: '#C9A84C' },
-  subtitle: { fontSize: 14, color: '#6B5C52', marginTop: 4 },
-  markAllBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(201,168,76,0.3)', marginTop: 4 },
-  markAllText: { color: '#C9A84C', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  emptyState: { alignItems: 'center', marginTop: 80, gap: 12 },
-  emptyText: { color: '#3A2C30', fontSize: 14, fontWeight: '700', letterSpacing: 2 },
+  title: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary },
+  subtitle: { fontSize: 16, color: colors.textSecond, marginTop: 4, fontWeight: '500' },
+  markAllBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginTop: 4, backgroundColor: colors.bgCard },
+  markAllText: { color: colors.textPrimary, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  emptyState: { alignItems: 'center', marginTop: 100, gap: 16 },
+  emptyText: { color: colors.textMuted, fontSize: 14, fontWeight: '800', letterSpacing: 2 },
   list: { gap: 12 },
-  card: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#2A1C20', borderRadius: 12, gap: 14, borderWidth: 1, borderColor: 'rgba(201,168,76,0.05)' },
-  cardUnread: { borderColor: 'rgba(201,168,76,0.2)', backgroundColor: '#2E1E22' },
-  iconCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(107,92,82,0.15)', justifyContent: 'center', alignItems: 'center' },
-  iconCircleUnread: { backgroundColor: 'rgba(201,168,76,0.12)' },
+  card: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 20, 
+    backgroundColor: colors.bg, 
+    borderRadius: 20, 
+    gap: 16, 
+    borderWidth: 1, 
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardUnread: { 
+    borderColor: colors.crimson, 
+    backgroundColor: 'rgba(155, 27, 48, 0.02)',
+    borderWidth: 1.5,
+  },
+  iconCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  iconCircleUnread: { backgroundColor: colors.white, borderColor: 'rgba(155, 27, 48, 0.2)' },
   cardContent: { flex: 1 },
-  cardTitle: { color: '#6B5C52', fontSize: 14 },
-  cardTitleUnread: { color: 'white', fontWeight: '600' },
-  cardTime: { color: '#3A2C30', fontSize: 11, marginTop: 4 },
-  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#C9A84C' },
+  cardTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
+  cardTitleUnread: { color: colors.crimson },
+  cardBody: { color: colors.textSecond, fontSize: 13, lineHeight: 18, marginTop: 4 },
+  cardTime: { color: colors.textMuted, fontSize: 11, marginTop: 8, fontWeight: '500' },
+  unreadDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.crimson },
 });

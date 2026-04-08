@@ -1,0 +1,132 @@
+﻿prisma:query SELECT "public"."garments"."id", "public"."garments"."title", "public"."garments"."isActive", "public"."garments"."images" FROM "public"."garments" WHERE 1=1 OFFSET $1
+[
+  {
+    "id": "d4401bfe-fa29-48e4-abf1-d0c1add72938",
+    "title": "Lemaire Leather Belt Bag",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_bag_1.jpg"
+    ]
+  },
+  {
+    "id": "71e19d24-90d6-4214-9d1a-212c167598df",
+    "title": "Margiela Tabi Ankle Boots",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_tabi_1.jpg"
+    ]
+  },
+  {
+    "id": "710f986e-bf2b-48aa-9aef-988e5117ae69",
+    "title": "Gold Hoop Earrings ΓÇô Statement",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_hoops_1.jpg"
+    ]
+  },
+  {
+    "id": "588164ed-1ab0-4393-8991-dc6f4fd61ea1",
+    "title": "Vintage-Inspired Silk Saree (Replica Aesthetic)",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_saree_2.jpg"
+    ]
+  },
+  {
+    "id": "4f29b8d5-3b63-4107-8b6b-f8c7038a0018",
+    "title": "Lemaire Oversized Wool-Blend Jacket",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_jacket_1.jpg"
+    ]
+  },
+  {
+    "id": "376590c1-f1b5-46ff-a286-b28cfac03b9e",
+    "title": "The Row Silk Midi Dress",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_dress_1.jpg"
+    ]
+  },
+  {
+    "id": "3245ce1e-a076-47fb-9b2c-6dee7650e02c",
+    "title": "Tot├¬me Cashmere Blend Coat",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_coat_1.jpg"
+    ]
+  },
+  {
+    "id": "8179e2ce-f1cc-4f8c-a518-a45d3ee76b59",
+    "title": "Maison Margiela Replica Silk Saree-Style Wrap",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_saree_1.jpg"
+    ]
+  },
+  {
+    "id": "b16d91ad-6798-4260-a95c-44b2b238a190",
+    "title": "Structured Blazer ΓÇô Minimalist Cut",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_blazer_1.jpg"
+    ]
+  },
+  {
+    "id": "5957cad4-c268-49b4-ac37-2037df7c8ee3",
+    "title": "Clothes",
+    "isActive": true,
+    "images": [
+      "https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com/garments/a658a3b9-5f86-4a41-b5b8-84bd4a9b9d4c-1774509394266.jpeg"
+    ]
+  },
+  {
+    "id": "d8593fe5-3a08-4a59-95f1-e8cd593742da",
+    "title": "Brownish bag",
+    "isActive": false,
+    "images": [
+      "http://localhost:4000/uploads/garments/ca2921f7-653e-4e41-8b60-09088f67f9ad-1774507094659.jpeg"
+    ]
+  },
+  {
+    "id": "22572198-3731-4385-bf13-8509488fee20",
+    "title": "Brownish bag",
+    "isActive": true,
+    "images": [
+      "http://localhost:4000/uploads/garments/9b536574-751e-4b85-9850-39cbc8e47392-1774507065170.jpeg"
+    ]
+  },
+  {
+    "id": "06f1d054-53d4-49fe-89a9-aea78f2de3dd",
+    "title": "Tot├¬me Linen Blend Shirt Dress",
+    "isActive": true,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/sample_shirtdress_1.jpg"
+    ]
+  },
+  {
+    "id": "62020607-c370-4857-b17b-2819ef6a08ad",
+    "title": "Pink corset ",
+    "isActive": true,
+    "images": [
+      "https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com/garments/949cff76-6320-4c39-965c-ba1ee70a15dd-1774508461206.jpeg"
+    ]
+  },
+  {
+    "id": "9de0744e-9b9f-4fad-b72d-80989a4589a6",
+    "title": "Grey colour suit ",
+    "isActive": true,
+    "images": [
+      "https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com/garments/9d383e67-31b5-4068-a235-153e6020caaa-1774508685115.jpeg"
+    ]
+  },
+  {
+    "id": "0dbc9407-a4f7-46b9-9ded-cc6bbd4f8ba9",
+    "title": "Pink colour ",
+    "isActive": true,
+    "images": [
+      "https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com/garments/f50ed35c-9fcd-4d44-a0a5-1bd4d6768914-1774507546553.jpeg"
+    ]
+  }
+]
+

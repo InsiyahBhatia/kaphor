@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
+import { colors } from '../../../src/theme';
 
 export default function SwapDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -11,6 +12,7 @@ export default function SwapDetailScreen() {
   const [garment, setGarment] = useState<any>(null);
   const [myGarments, setMyGarments] = useState<any[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -38,7 +40,7 @@ export default function SwapDetailScreen() {
       await api.post('/swaps', {
         garmentOfferedId: selectedOffer,
         garmentWantedId: id,
-        message: 'I would love to swap!',
+        message: message.trim() || undefined,
       });
       Alert.alert('Swap Requested!', 'The owner has been notified.', [
         { text: 'OK', onPress: () => router.back() },
@@ -51,14 +53,14 @@ export default function SwapDetailScreen() {
   };
 
   if (loading) {
-    return <View style={[styles.container, styles.center]}><ActivityIndicator size="large" color="#C9A84C" /></View>;
+    return <View style={[styles.container, styles.center]}><ActivityIndicator size="large" color={colors.crimson} /></View>;
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="white" />
+          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SWAP REQUEST</Text>
         <View style={{ width: 28 }} />
@@ -77,7 +79,7 @@ export default function SwapDetailScreen() {
         )}
 
         <View style={styles.arrowContainer}>
-          <Ionicons name="swap-vertical" size={32} color="#C9A84C" />
+          <Ionicons name="swap-vertical" size={32} color={colors.crimson} />
         </View>
 
         <Text style={styles.sectionTitle}>SELECT YOUR OFFER</Text>
@@ -99,12 +101,22 @@ export default function SwapDetailScreen() {
                 <Image source={{ uri: g.images?.[0] || 'https://picsum.photos/200/250' }} style={styles.offerImage} />
                 <Text style={styles.offerTitle} numberOfLines={1}>{g.title}</Text>
                 {selectedOffer === g.id && (
-                  <View style={styles.checkmark}><Ionicons name="checkmark-circle" size={24} color="#C9A84C" /></View>
+                  <View style={styles.checkmark}><Ionicons name="checkmark-circle" size={24} color={colors.crimson} /></View>
                 )}
               </TouchableOpacity>
             ))}
           </View>
         )}
+
+        <Text style={styles.sectionTitle}>MESSAGE THE OWNER (OPTIONAL)</Text>
+        <TextInput
+          style={styles.messageInput}
+          placeholder="Add a note about condition, timing, or delivery…"
+          placeholderTextColor={colors.textMuted}
+          value={message}
+          onChangeText={setMessage}
+          multiline
+        />
       </ScrollView>
 
       <View style={styles.footer}>
@@ -113,7 +125,7 @@ export default function SwapDetailScreen() {
           onPress={handleSwap}
           disabled={!selectedOffer || submitting}
         >
-          {submitting ? <ActivityIndicator color="#1A0C10" /> : <Text style={styles.swapBtnText}>SEND SWAP REQUEST</Text>}
+          {submitting ? <ActivityIndicator color={colors.white} /> : <Text style={styles.swapBtnText}>SEND SWAP REQUEST</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -121,29 +133,55 @@ export default function SwapDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A0C10' },
+  container: { flex: 1, backgroundColor: colors.bg },
   center: { justifyContent: 'center', alignItems: 'center' },
-  header: { paddingTop: 60, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  headerTitle: { color: '#C9A84C', fontSize: 16, fontFamily: 'CormorantGaramond_700Bold', letterSpacing: 2 },
-  content: { padding: 24, paddingBottom: 120 },
-  wantedCard: { flexDirection: 'row', backgroundColor: '#2A1C20', borderRadius: 12, overflow: 'hidden', marginBottom: 8 },
+  header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  headerTitle: { color: colors.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  content: { padding: 24, paddingBottom: 100 },
+  wantedCard: { flexDirection: 'row', backgroundColor: colors.bgCard, borderRadius: 16, overflow: 'hidden', marginBottom: 8, borderWidth: 1, borderColor: colors.border },
   wantedImage: { width: 100, height: 120 },
   wantedInfo: { flex: 1, padding: 16, justifyContent: 'center' },
-  label: { color: '#6B5C52', fontSize: 10, letterSpacing: 2, marginBottom: 4 },
-  wantedTitle: { color: 'white', fontSize: 16, fontFamily: 'CormorantGaramond_700Bold' },
-  wantedBrand: { color: '#C9A84C', fontSize: 12, marginTop: 4 },
+  label: { color: colors.textMuted, fontSize: 10, letterSpacing: 2, marginBottom: 4, fontWeight: '800' },
+  wantedTitle: { color: colors.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular' },
+  wantedBrand: { color: colors.crimson, fontSize: 13, marginTop: 4, fontWeight: '700' },
   arrowContainer: { alignItems: 'center', marginVertical: 16 },
-  sectionTitle: { color: '#C9A84C', fontSize: 14, fontWeight: '700', letterSpacing: 2, marginBottom: 16 },
+  sectionTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '800', letterSpacing: 2, marginBottom: 16 },
+  messageInput: {
+    marginTop: 8,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 90,
+    color: colors.textPrimary,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { color: '#6B5C52', fontSize: 14 },
-  linkText: { color: '#C9A84C', fontSize: 14, fontWeight: '700', letterSpacing: 1, marginTop: 12 },
+  emptyText: { color: colors.textMuted, fontSize: 14 },
+  linkText: { color: colors.crimson, fontSize: 14, fontWeight: '800', letterSpacing: 1, marginTop: 12 },
   offerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  offerCard: { width: '47%', backgroundColor: '#2A1C20', borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: 'transparent', position: 'relative' },
-  offerCardSelected: { borderColor: '#C9A84C' },
-  offerImage: { width: '100%', height: 140 },
-  offerTitle: { color: 'white', fontSize: 12, padding: 10 },
+  offerCard: { width: '47%', backgroundColor: colors.bgCard, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, position: 'relative' },
+  offerCardSelected: { borderColor: colors.crimson, borderWidth: 2 },
+  offerImage: { width: '100%', height: 150 },
+  offerTitle: { color: colors.textPrimary, fontSize: 13, padding: 12, fontWeight: '700' },
   checkmark: { position: 'absolute', top: 8, right: 8 },
-  footer: { padding: 24, borderTopWidth: 1, borderTopColor: '#3A2C30', backgroundColor: '#1A0C10' },
-  swapBtn: { backgroundColor: '#C9A84C', height: 56, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  swapBtnText: { color: '#1A0C10', fontSize: 16, fontWeight: '700', letterSpacing: 2 },
+  footer: { padding: 24, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
+  swapBtn: { 
+    backgroundColor: colors.crimson, 
+    height: 60, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    shadowColor: colors.crimson,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  swapBtnText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
 });

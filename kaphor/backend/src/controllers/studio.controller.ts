@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
-import { getIO } from '../lib/socket';
+import { sendNotification } from '../services/notificationService';
+import { sendEmail } from '../services/email.service';
 
 // ── MOCK DATA (real impl would be a DB seed / CMS) ───────────────────────────
 const MOCK_TUTORIALS = [
@@ -117,14 +118,51 @@ export async function createBespokeRequest(req: Request, res: Response): Promise
             }
         });
 
-        // Notify admin via Socket.IO
-        try {
-            const io = getIO();
-            if (io) io.emit('bespoke:new', { requestId: request.id, userId: req.user.id });
-        } catch (_) { /* not critical */ }
+        // Notify admins (in-app + email)
+        const adminEmail = 'kaphor.team@gmail.com';
+        const [adminUsers, requester] = await Promise.all([
+            db.user.findMany({ where: { email: adminEmail }, select: { id: true } }),
+            db.user.findUnique({
+                where: { id: req.user.id },
+                select: { displayName: true, email: true },
+            }),
+        ]);
 
-        // Simulate email confirmation log
-        logger.info(`Bespoke consultation email sent to ${contactEmail}`);
+        const html = `
+          <h3>New Bespoke Consultation Request</h3>
+          <p><b>Request ID:</b> ${request.id}</p>
+          <p><b>Requester:</b> ${requester?.displayName ?? req.user.id} (${requester?.email ?? ''})</p>
+          <p><b>Garment:</b> ${request.garmentId ?? 'N/A'}</p>
+          <p><b>Contact email:</b> ${contactEmail}</p>
+          <p><b>Description:</b></p>
+          <pre style="white-space: pre-wrap;">${String(description).slice(0, 4000)}</pre>
+        `;
+
+        if (adminUsers.length) {
+            await Promise.all(
+                adminUsers.map((u: { id: string }) =>
+                    sendNotification(u.id, {
+                        type: 'ADMIN_BESPOKE_REQUEST',
+                        title: 'New Bespoke Consultation',
+                        body: `New request from ${requester?.displayName ?? 'a user'}`,
+                        data: { requestId: request.id, userId: req.user!.id, garmentId: request.garmentId ?? null },
+                    })
+                )
+            );
+        }
+
+        // Email is mocked/logged in this repo, but keeps the required integration point.
+        await sendEmail({
+            to: adminEmail,
+            subject: 'Kaphor: New Bespoke Consultation Request',
+            html,
+        });
+
+        logger.info('Bespoke consultation dispatched to admin', {
+            requestId: request.id,
+            to: adminEmail,
+            adminsFound: adminUsers.length,
+        });
 
         res.status(201).json({ data: request });
     } catch (error) {

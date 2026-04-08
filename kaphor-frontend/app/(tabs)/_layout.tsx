@@ -3,14 +3,26 @@ import { TabBar } from '../../src/components/TabBar';
 import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet } from 'react-native';
 
+import { Header } from '../../src/components/common/Header';
+
 export default function TabLayout() {
   return (
     <Tabs 
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
-        headerShown: false,
+        header: ({ options, route }) => {
+          const cleanTitle = options.title || route.name.split('/').pop()?.replace(/\[|\]/g, '').toUpperCase();
+          return (
+            <Header 
+              title={cleanTitle} 
+              showLogo={route.name === 'index'} 
+            />
+          );
+        },
+        headerShown: true,
       }}
     >
+
       <Tabs.Screen
         name="index"
         options={{
@@ -28,14 +40,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="circular/index"
         options={{
-          href: null,
+          title: 'Circular Hub',
+          tabBarIcon: ({ color }) => <Ionicons name="infinite-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="social/index"
+        name="swap/index"
         options={{
-          title: 'Social',
-          tabBarIcon: ({ color }) => <Ionicons name="people-outline" size={24} color={color} />,
+          title: 'Swap',
+          tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -45,11 +58,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Ionicons name="person-outline" size={24} color={color} />,
         }}
       />
+
+
+
       <Tabs.Screen name="rental/index" options={{ href: null }} />
       <Tabs.Screen name="rental/[id]" options={{ href: null }} />
       <Tabs.Screen name="rental/reserve" options={{ href: null }} />
-      <Tabs.Screen name="swap/index" options={{ href: null }} />
       <Tabs.Screen name="swap/[id]" options={{ href: null }} />
+
       <Tabs.Screen name="swap/[wantedId]" options={{ href: null }} />
       <Tabs.Screen name="impact/index" options={{ href: null }} />
       <Tabs.Screen name="impact/report" options={{ href: null }} />
@@ -57,13 +73,17 @@ export default function TabLayout() {
       <Tabs.Screen name="studio/bespoke" options={{ href: null }} />
       <Tabs.Screen name="studio/chat" options={{ href: null }} />
       <Tabs.Screen name="studio/upcycle" options={{ href: null }} />
-      <Tabs.Screen name="social/create" options={{ href: null }} />
       <Tabs.Screen name="shop/[id]" options={{ href: null }} />
       <Tabs.Screen name="shop/sell" options={{ href: null }} />
       <Tabs.Screen name="shop/order-confirmed" options={{ href: null }} />
       <Tabs.Screen name="shop/checkout/[orderId]" options={{ href: null }} />
-      <Tabs.Screen name="circular/condition-check" options={{ href: null }} />
+      <Tabs.Screen name="shop/orders/index" options={{ href: null }} />
+      <Tabs.Screen name="shop/orders/[orderId]" options={{ href: null }} />
+      <Tabs.Screen name="shop/seller/[userId]" options={{ href: null }} />
       <Tabs.Screen name="notifications/index" options={{ href: null }} />
+
+
+
     </Tabs>
   );
 }

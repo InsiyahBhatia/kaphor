@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#D4AF37',
     fontSize: 20,
-    fontFamily: 'CormorantGaramond_700Bold',
+    fontFamily: 'BebasNeue_400Regular',
     marginTop: 16,
     textAlign: 'center',
   },

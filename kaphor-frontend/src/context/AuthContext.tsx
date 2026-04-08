@@ -1,10 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { persistTokens, clearStoredTokens } from '../services/api';
+import { useAuthStore, type AuthUser } from '../store/authStore';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   displayName: string;
+  username?: string;
+  role?: string;
   avatarUrl?: string;
   styleAesthetic?: string;
 }
@@ -17,14 +21,48 @@ interface AuthContextType {
   signInWithGoogle: (idToken: string) => Promise<void>;
   signUp: (userData: any) => Promise<void>;
   signOut: () => Promise<void>;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function normalizeUser(raw: Record<string, unknown>): User {
+  return {
+    id: String(raw.id),
+    email: String(raw.email),
+    displayName: String(raw.displayName ?? 'User'),
+    username: raw.username != null ? String(raw.username) : undefined,
+    role: raw.role != null ? String(raw.role) : undefined,
+    avatarUrl:
+      (raw.avatarUrl as string | undefined) ?? (raw.avatar as string | undefined),
+    styleAesthetic: raw.styleAesthetic != null ? String(raw.styleAesthetic) : undefined,
+  };
+}
+
+function toAuthStoreUser(u: User): AuthUser {
+  return {
+    id: u.id,
+    email: u.email,
+    username: u.username,
+    displayName: u.displayName,
+    role: u.role ?? 'USER',
+  };
+}
+
+const AUTH_DATA_KEY = 'auth_data';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const clearLocalSession = async () => {
+    setToken(null);
+    setUser(null);
+    useAuthStore.getState().logout();
+    await SecureStore.deleteItemAsync(AUTH_DATA_KEY);
+    await clearStoredTokens();
+  };
 
   useEffect(() => {
     loadStorageData();
@@ -32,17 +70,60 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   async function loadStorageData() {
     try {
-      const authDataSerialized = await SecureStore.getItemAsync('auth_data');
-      if (authDataSerialized) {
-        const _authData = JSON.parse(authDataSerialized);
-        setUser(_authData.user);
-        setToken(_authData.token);
+      const authDataSerialized = await SecureStore.getItemAsync(AUTH_DATA_KEY);
+      if (!authDataSerialized) {
+        return;
+      }
+      const parsed = JSON.parse(authDataSerialized) as {
+        user?: Record<string, unknown>;
+        token?: string;
+        accessToken?: string;
+        refreshToken?: string;
+      };
+      const accessToken = parsed.accessToken ?? parsed.token;
+      const refreshToken = parsed.refreshToken ?? '';
+      const rawUser = parsed.user;
+      if (!accessToken || !rawUser?.id) {
+        await clearLocalSession();
+        return;
+      }
+      const normalized = normalizeUser(rawUser);
+      await persistTokens(accessToken, refreshToken);
+      useAuthStore.getState().setAuth(toAuthStoreUser(normalized), accessToken);
+      setToken(accessToken);
+      setUser(normalized);
+
+      const { authService } = await import('../services/authService');
+      try {
+        await authService.getMe();
+      } catch {
+        await clearLocalSession();
       }
     } catch (e) {
       console.log('Error loading auth data', e);
+      await clearLocalSession();
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function persistSession(
+    newUser: User,
+    accessToken: string,
+    refreshToken: string
+  ) {
+    await persistTokens(accessToken, refreshToken);
+    useAuthStore.getState().setAuth(toAuthStoreUser(newUser), accessToken);
+    setToken(accessToken);
+    setUser(newUser);
+    await SecureStore.setItemAsync(
+      AUTH_DATA_KEY,
+      JSON.stringify({
+        accessToken,
+        refreshToken,
+        user: newUser,
+      })
+    );
   }
 
   const signIn = async (email: string, password?: string) => {
@@ -50,12 +131,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { authService } = await import('../services/authService');
       const data = await authService.login({ email, password });
-      
-      const { user: newUser, accessToken } = data;
-      setToken(accessToken);
-      setUser(newUser);
-      
-      await SecureStore.setItemAsync('auth_data', JSON.stringify({ token: accessToken, user: newUser }));
+      const { user: newUser, accessToken, refreshToken } = data;
+      await persistSession(normalizeUser(newUser as Record<string, unknown>), accessToken, refreshToken ?? '');
     } catch (error) {
       console.error('Sign in failed', error);
       throw error;
@@ -69,12 +146,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { authService } = await import('../services/authService');
       const data = await authService.register(userData);
-      
-      const { user: newUser, accessToken } = data;
-      setToken(accessToken);
-      setUser(newUser);
-      
-      await SecureStore.setItemAsync('auth_data', JSON.stringify({ token: accessToken, user: newUser }));
+      const { user: newUser, accessToken, refreshToken } = data;
+      await persistSession(normalizeUser(newUser as Record<string, unknown>), accessToken, refreshToken ?? '');
     } catch (error) {
       console.error('Sign up failed', error);
       throw error;
@@ -88,12 +161,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { authService } = await import('../services/authService');
       const data = await authService.googleLogin(idToken);
-      
-      const { user: newUser, accessToken } = data;
-      setToken(accessToken);
-      setUser(newUser);
-      
-      await SecureStore.setItemAsync('auth_data', JSON.stringify({ token: accessToken, user: newUser }));
+      const { user: newUser, accessToken, refreshToken } = data;
+      await persistSession(normalizeUser(newUser as Record<string, unknown>), accessToken, refreshToken ?? '');
     } catch (error) {
       console.error('Google sign in failed', error);
       throw error;
@@ -109,14 +178,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       console.error('Logout error', e);
     } finally {
-      setToken(null);
-      setUser(null);
-      await SecureStore.deleteItemAsync('auth_data');
+      try {
+        const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+        await GoogleSignin.signOut();
+      } catch {
+        /* module or native sign-out unavailable */
+      }
+      await clearLocalSession();
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, signIn, signInWithGoogle, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, token, isLoading, signIn, signInWithGoogle, signUp, signOut, setUser }}>
       {children}
     </AuthContext.Provider>
   );

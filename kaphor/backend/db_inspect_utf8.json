@@ -1,0 +1,100 @@
+﻿prisma:query SELECT "public"."garments"."id", "public"."garments"."title", "public"."garments"."isActive", "public"."garments"."sellerId" FROM "public"."garments" WHERE 1=1 OFFSET $1
+[
+  {
+    "id": "d4401bfe-fa29-48e4-abf1-d0c1add72938",
+    "title": "Lemaire Leather Belt Bag",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "71e19d24-90d6-4214-9d1a-212c167598df",
+    "title": "Margiela Tabi Ankle Boots",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "710f986e-bf2b-48aa-9aef-988e5117ae69",
+    "title": "Gold Hoop Earrings ΓÇô Statement",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "588164ed-1ab0-4393-8991-dc6f4fd61ea1",
+    "title": "Vintage-Inspired Silk Saree (Replica Aesthetic)",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "4f29b8d5-3b63-4107-8b6b-f8c7038a0018",
+    "title": "Lemaire Oversized Wool-Blend Jacket",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "376590c1-f1b5-46ff-a286-b28cfac03b9e",
+    "title": "The Row Silk Midi Dress",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "3245ce1e-a076-47fb-9b2c-6dee7650e02c",
+    "title": "Tot├¬me Cashmere Blend Coat",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "8179e2ce-f1cc-4f8c-a518-a45d3ee76b59",
+    "title": "Maison Margiela Replica Silk Saree-Style Wrap",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "b16d91ad-6798-4260-a95c-44b2b238a190",
+    "title": "Structured Blazer ΓÇô Minimalist Cut",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "5957cad4-c268-49b4-ac37-2037df7c8ee3",
+    "title": "Clothes",
+    "isActive": true,
+    "sellerId": "f042cae5-8ee8-48a9-84d3-c260d3889b3b"
+  },
+  {
+    "id": "d8593fe5-3a08-4a59-95f1-e8cd593742da",
+    "title": "Brownish bag",
+    "isActive": false,
+    "sellerId": "f042cae5-8ee8-48a9-84d3-c260d3889b3b"
+  },
+  {
+    "id": "22572198-3731-4385-bf13-8509488fee20",
+    "title": "Brownish bag",
+    "isActive": true,
+    "sellerId": "f042cae5-8ee8-48a9-84d3-c260d3889b3b"
+  },
+  {
+    "id": "06f1d054-53d4-49fe-89a9-aea78f2de3dd",
+    "title": "Tot├¬me Linen Blend Shirt Dress",
+    "isActive": true,
+    "sellerId": "fd7dc6df-f178-418b-a4e6-1e1440462a5f"
+  },
+  {
+    "id": "62020607-c370-4857-b17b-2819ef6a08ad",
+    "title": "Pink corset ",
+    "isActive": true,
+    "sellerId": "f042cae5-8ee8-48a9-84d3-c260d3889b3b"
+  },
+  {
+    "id": "9de0744e-9b9f-4fad-b72d-80989a4589a6",
+    "title": "Grey colour suit ",
+    "isActive": true,
+    "sellerId": "f042cae5-8ee8-48a9-84d3-c260d3889b3b"
+  },
+  {
+    "id": "0dbc9407-a4f7-46b9-9ded-cc6bbd4f8ba9",
+    "title": "Pink colour ",
+    "isActive": true,
+    "sellerId": "f042cae5-8ee8-48a9-84d3-c260d3889b3b"
+  }
+]
+

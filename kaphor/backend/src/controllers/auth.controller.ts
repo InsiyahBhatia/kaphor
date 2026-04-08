@@ -209,9 +209,37 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const admin = (await import('../lib/firebase')).default;
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const { uid: googleId, email, name, picture } = decodedToken;
+    // Verify the raw Google OAuth ID token using Google's public tokeninfo endpoint.
+    const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`;
+    let tokenInfo;
+    try {
+      const axios = require('axios');
+      const response = await axios.get(tokenInfoUrl);
+      tokenInfo = response.data;
+    } catch (apiErr: any) {
+      const fs = require('fs');
+      fs.writeFileSync('google_debug.log', JSON.stringify({ 
+        token: idToken, 
+        status: apiErr.response?.status, 
+        errorData: apiErr.response?.data, 
+        message: apiErr.message 
+      }, null, 2));
+
+      logger.warn('Google tokeninfo verification failed', { 
+        status: apiErr.response?.status, 
+        data: apiErr.response?.data,
+        message: apiErr.message 
+      });
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Invalid Google token', details: apiErr.response?.data || apiErr.message });
+      return;
+    }
+
+    const { sub: googleId, email, name, picture } = tokenInfo as {
+      sub: string;
+      email: string;
+      name?: string;
+      picture?: string;
+    };
 
     if (!email) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Google account has no email' });
@@ -223,6 +251,9 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
         OR: [{ googleId }, { email: email.toLowerCase() }]
       }
     });
+
+    const isAdminEmail = email.toLowerCase() === 'kaphor.team@gmail.com';
+
 
     if (!user) {
       // Register new user
@@ -237,6 +268,7 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
           styleVector,
           isActive: true,
           isVerified: true, // Google emails are verified
+          role: isAdminEmail ? 'ADMIN' : 'BOTH',
         }
       });
       await (db as any).impactRecord.create({
@@ -250,13 +282,18 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
         },
       });
       await auditLog({ userId: user.id, action: 'USER_REGISTER_OAUTH', resource: 'User', req });
-    } else if (!user.googleId) {
-      // Link existing account
+    } else if (!user.googleId || (isAdminEmail && user.role !== 'ADMIN')) {
+      // Link existing account or upgrade to admin if team account
       user = await db.user.update({
         where: { id: user.id },
-        data: { googleId, isVerified: true }
+        data: { 
+          googleId, 
+          isVerified: true,
+          ...(isAdminEmail ? { role: 'ADMIN' } : {})
+        }
       });
     }
+
 
     if (!user.isActive) {
       res.status(401).json({ error: 'UNAUTHORIZED', message: 'Account deactivated' });
@@ -284,16 +321,29 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
         refreshToken,
       },
     });
-  } catch (err) {
-    logger.error('Google login failed', { error: err instanceof Error ? err.message : String(err) });
-    res.status(401).json({ error: 'UNAUTHORIZED', message: 'Invalid Google token' });
+  } catch (err: any) {
+    const fs = require('fs');
+    fs.writeFileSync('db_crash.log', JSON.stringify({
+      message: err.message,
+      stack: err.stack,
+      name: err.name,
+      code: err.code
+    }, null, 2));
+
+    logger.error('Database or unexpected error in Google login', { 
+      error: err.message,
+    });
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process Google login locally', detail: err.message });
   }
 }
 
+
+
 export async function logout(req: Request, res: Response): Promise<void> {
-  const token = getRefreshTokenFromRequest(req);
-  if (token) {
-    await db.refreshToken.deleteMany({ where: { token } }).catch(() => {});
+  const refreshToken =
+    typeof req.body?.refreshToken === 'string' ? req.body.refreshToken.trim() : null;
+  if (refreshToken) {
+    await db.refreshToken.deleteMany({ where: { token: refreshToken } }).catch(() => {});
   }
   res.status(200).json({ data: { message: 'Logged out' } });
 }

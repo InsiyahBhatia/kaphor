@@ -1,11 +1,27 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest as Request } from '../middleware/auth';
 import db from '../lib/prisma';
-import { uploadImage } from '../lib/cloudinary';
+import { uploadToS3, getDownloadUrl } from '../lib/s3';
 import { GarmentCondition, ListingType, EventType } from '@prisma/client';
 import { logger } from '../lib/logger';
 import { evaluateLifecycle } from '../services/lifecycle.service';
 
 const DEFAULT_VECTOR = Array(16).fill(0);
+
+/**
+ * Helper to resolve all image URLs for a garment (handles S3 presigning and local fallback)
+ */
+async function resolveGarmentImages(garment: any) {
+  if (!garment || !garment.images) return garment;
+  const resolvedImages = await Promise.all(
+    garment.images.map((img: string) => getDownloadUrl(img))
+  );
+  return { ...garment, images: resolvedImages };
+}
+
+async function resolveGarmentsImages(garments: any[]) {
+  return Promise.all(garments.map(g => resolveGarmentImages(g)));
+}
 
 export async function searchGarments(req: Request, res: Response): Promise<void> {
   try {
@@ -18,7 +34,8 @@ export async function searchGarments(req: Request, res: Response): Promise<void>
       take: 20,
       include: { seller: { select: { id: true, displayName: true } } },
     });
-    res.status(200).json({ data: garments });
+    const resolvedGarments = await resolveGarmentsImages(garments);
+    res.status(200).json({ data: resolvedGarments });
   } catch (err) {
     logger.error('searchGarments failed', { error: err instanceof Error ? err.message : String(err) });
     throw err;
@@ -35,11 +52,26 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
     const limit = 20;
 
     const whereClause: any = { isActive: true };
-    if (category) whereClause.category = String(category);
-    if (size) whereClause.size = String(size);
+    
+    // Multi-select handling (comma separated strings)
+    if (category) {
+      const cats = String(category).split(',').filter(Boolean);
+      if (cats.length > 0) whereClause.category = { in: cats };
+    }
+    if (size) {
+      const sizes = String(size).split(',').filter(Boolean);
+      if (sizes.length > 0) whereClause.size = { in: sizes };
+    }
     if (color) whereClause.color = { has: String(color) };
-    if (condition) whereClause.condition = String(condition) as GarmentCondition;
-    if (listingType) whereClause.listingType = String(listingType) as ListingType;
+    if (condition) {
+      const conds = String(condition).split(',').filter(Boolean) as GarmentCondition[];
+      if (conds.length > 0) whereClause.condition = { in: conds };
+    }
+    if (listingType) {
+      const types = String(listingType).split(',').filter(Boolean) as ListingType[];
+      if (types.length > 0) whereClause.listingType = { in: types };
+    }
+
     if (priceMin || priceMax) {
       whereClause.price = {};
       if (priceMin) whereClause.price.gte = Math.round(Number(priceMin) * 100);
@@ -80,8 +112,10 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
     // sorting by fitScore descending
     scoredGarments.sort((a: any, b: any) => b.fitScore - a.fitScore);
 
+    const resolvedGarments = await resolveGarmentsImages(scoredGarments);
+
     const nextCursor = hasNextPage ? garments[garments.length - 1].id : null;
-    res.status(200).json({ data: scoredGarments, pagination: { nextCursor } });
+    res.status(200).json({ data: resolvedGarments, pagination: { nextCursor } });
   } catch (err) {
     logger.error('getGarmentFeed failed', { error: err instanceof Error ? err.message : String(err) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Internal server error' });
@@ -95,7 +129,8 @@ export async function getGarments(req: Request, res: Response): Promise<void> {
       take: 50,
       include: { seller: { select: { id: true, displayName: true } } },
     });
-    res.status(200).json({ data: garments });
+    const resolvedGarments = await resolveGarmentsImages(garments);
+    res.status(200).json({ data: resolvedGarments });
   } catch (err) {
     logger.error('getGarments failed', { error: err instanceof Error ? err.message : String(err) });
     throw err;
@@ -113,23 +148,68 @@ export async function getSellerGarments(req: Request, res: Response): Promise<vo
       orderBy: { createdAt: 'desc' },
       include: { seller: { select: { id: true, displayName: true } } }
     });
-    res.status(200).json({ data: garments });
+    const resolvedGarments = await resolveGarmentsImages(garments);
+    res.status(200).json({ data: resolvedGarments });
   } catch (err) {
     logger.error('getSellerGarments failed', { error: err instanceof Error ? err.message : String(err) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Internal server error' });
   }
 }
 
+export async function getWishlistGarments(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+
+    // Get all WISHLIST events for this user
+    const events = await db.behaviourEvent.findMany({
+      where: {
+        userId: req.user.id,
+        eventType: EventType.WISHLIST
+      },
+      select: { garmentId: true }
+    });
+
+    const garmentIds = events.map((e: { garmentId: string }) => e.garmentId);
+
+    if (garmentIds.length === 0) {
+      res.status(200).json({ data: [] });
+      return;
+    }
+
+    const garments = await db.garment.findMany({
+      where: {
+        id: { in: garmentIds },
+        isActive: true
+      },
+      include: {
+        seller: { select: { id: true, displayName: true, username: true } }
+      }
+    });
+
+    const resolvedGarments = await resolveGarmentsImages(garments);
+    res.status(200).json({ data: resolvedGarments });
+  } catch (err) {
+    logger.error('getWishlistGarments failed', { error: err instanceof Error ? err.message : String(err) });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Internal server error' });
+  }
+}
+
+
 export async function getGarmentById(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    const garment = await db.garment.findUnique({
+    logger.info(`[DEBUG] Fetching garment by ID: ${id}`);
+    const garment = await db.garment.findFirst({
       where: { id, isActive: true },
       include: {
         seller: { select: { id: true, displayName: true, username: true, avatar: true } },
         reviews: true
       },
     });
+    logger.info(`[DEBUG] Garment found: ${garment ? garment.id : 'null'}`);
     if (!garment) {
       res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found', statusCode: 404 });
       return;
@@ -149,7 +229,16 @@ export async function getGarmentById(req: Request, res: Response): Promise<void>
       evaluateLifecycle(id, req.user.id, EventType.VIEW).catch((e: Error) => logger.error('LOE failed on view', { error: e.message }));
     }
 
-    res.status(200).json({ data: garment });
+    let isLiked = false;
+    if (req.user) {
+      const wishlisted = await db.behaviourEvent.findFirst({
+        where: { userId: req.user.id, garmentId: id as string, eventType: EventType.WISHLIST }
+      });
+      isLiked = !!wishlisted;
+    }
+
+    const resolvedGarment = await resolveGarmentImages(garment);
+    res.status(200).json({ data: { ...resolvedGarment, isLiked } });
   } catch (err) {
     logger.error('getGarmentById failed', { error: err instanceof Error ? err.message : String(err) });
     throw err;
@@ -166,7 +255,7 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
     const imageUrls: string[] = [];
     if (files?.length) {
       for (const file of files) {
-        const result = await uploadImage(file.buffer, 'garments');
+        const result = await uploadToS3(file.buffer, 'garments', file.mimetype);
         imageUrls.push(result.url);
       }
     }
@@ -210,7 +299,8 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
       return g;
     });
 
-    res.status(201).json({ data: garment });
+    const resolvedGarment = await resolveGarmentImages(garment);
+    res.status(201).json({ data: resolvedGarment });
   } catch (err) {
     logger.error('createGarment failed', { error: err instanceof Error ? err.message : String(err) });
     throw err;
@@ -229,18 +319,44 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
       res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found', statusCode: 404 });
       return;
     }
+
+    const files = req.files as Express.Multer.File[] | undefined;
+    const newImageUrls: string[] = [];
+    if (files?.length) {
+      for (const file of files) {
+        const result = await uploadToS3(file.buffer, 'garments', file.mimetype);
+        newImageUrls.push(result.url);
+      }
+    }
+
     const body = req.body as Record<string, unknown>;
+    
+    // If new images are uploaded, we typically replace or append.
+    // Here we'll take existing images from body (if provided) and append new ones.
+    let updatedImages = existing.images;
+    if (body.images && Array.isArray(body.images)) {
+      updatedImages = body.images.map(String);
+    }
+    if (newImageUrls.length > 0) {
+      updatedImages = [...updatedImages, ...newImageUrls];
+    }
+
     const garment = await db.garment.update({
       where: { id },
       data: {
         ...(body.title != null && { title: String(body.title) }),
         ...(body.description != null && { description: String(body.description) }),
+        ...(body.brand != null && { brand: String(body.brand) }),
         ...(body.category != null && { category: String(body.category) }),
+        ...(body.subCategory != null && { subCategory: String(body.subCategory) }),
         ...(body.size != null && { size: String(body.size) }),
         ...(body.price != null && { price: Math.round(Number(body.price) * 100) }),
-      },
+        ...(body.rentalPriceDay != null && { rentalPriceDay: Math.round(Number(body.rentalPriceDay) * 100) }),
+        ...(body.rentalPriceWeek != null && { rentalPriceWeek: Math.round(Number(body.rentalPriceWeek) * 100) }),
+        },
     });
-    res.status(200).json({ data: garment });
+    const resolvedGarment = await resolveGarmentImages(garment);
+    res.status(200).json({ data: resolvedGarment });
   } catch (err) {
     logger.error('updateGarment failed', { error: err instanceof Error ? err.message : String(err) });
     throw err;

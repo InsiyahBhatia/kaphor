@@ -1,8 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { rentalService } from '../../../src/services/rentalService';
+import { PlayingCard } from '../../../src/components/PlayingCard';
+import { colors, typography } from '../../../src/theme';
 
 export default function RentalScreen() {
   const router = useRouter();
@@ -23,62 +25,90 @@ export default function RentalScreen() {
   }, []);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Heritage Rental</Text>
-        <Text style={styles.subtitle}>Occasion-wear for the conscious curator</Text>
+        <View style={styles.topRow}>
+          <Text style={styles.title}>RENTAL HUB</Text>
+        </View>
+        <Text style={styles.subtitle}>SHORT-TERM ASSET LEASING</Text>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#C9A84C" style={{ marginTop: 60 }} />
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color={colors.red} />
+          <Text style={styles.loadingText}>SCANNING ARCHIVE...</Text>
+        </View>
       ) : rentals.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={64} color="#3A2C30" />
-          <Text style={styles.emptyText}>NO RENTALS AVAILABLE YET</Text>
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)/shop/index')}>
-            <Text style={styles.buttonText}>BROWSE ARCHIVE</Text>
+          <Ionicons name="calendar-sharp" size={48} color={colors.charcoal} />
+          <Text style={styles.emptyText}>NO LEASABLE ASSETS FOUND</Text>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)/shop')}>
+            <Text style={styles.buttonText}>RETURN TO DECK →</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.grid}>
-          {rentals.map((item: any) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.card}
-              onPress={() => router.push(`/(tabs)/rental/${item.id}`)}
-            >
-              {item.images?.[0] && (
-                <Image source={{ uri: item.images[0] }} style={styles.cardImage} />
-              )}
-              <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-              <Text style={styles.cardPrice}>₹{item.pricePerDay}/day</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+          <View style={styles.grid}>
+            {rentals.map((item: any, index: number) => {
+              const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
+              const ranks = ['K', 'Q', 'J', '10', '9'];
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.cardWrapper}
+                  onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)}
+                >
+                  <PlayingCard
+                    rank={ranks[index % ranks.length]}
+                    suit={suits[index % 4]}
+                    productName={item.title}
+                    size="OS"
+                    price={item.pricePerDay || 0}
+                    imageUrl={item.images?.[0]}
+                    flavorText="daily lease"
+                    style={{ width: '100%' }}
+                  />
+                  <View style={styles.cardActions}>
+                    <View style={styles.leaseBtn}>
+                      <Text style={styles.leaseBtnText}>REQUEST LEASE</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </ScrollView>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A0C10' },
-  content: { padding: 24, paddingBottom: 100 },
-  header: { marginTop: 40, marginBottom: 32 },
-  title: { fontSize: 28, fontFamily: 'CormorantGaramond_700Bold', color: '#C9A84C' },
-  subtitle: { fontSize: 14, color: '#6B5C52', marginTop: 8 },
-  emptyState: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-  emptyText: { color: '#3A2C30', fontSize: 14, fontWeight: '700', marginVertical: 20, letterSpacing: 2 },
-  button: { backgroundColor: '#C9A84C', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 4 },
-  buttonText: { color: '#1A0C10', fontWeight: '700', fontSize: 12 },
-  grid: { gap: 16 },
-  card: {
-    backgroundColor: '#2A1C20',
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(201, 168, 76, 0.1)',
+  container: { flex: 1, backgroundColor: colors.cream },
+  header: {
+    paddingTop: 24, paddingHorizontal: 20, marginBottom: 20,
+    borderBottomWidth: 2, borderBottomColor: colors.charcoal,
+    paddingBottom: 20, backgroundColor: colors.cream,
   },
-  cardImage: { width: '100%', height: 200 },
-  cardTitle: { fontSize: 16, color: 'white', fontWeight: '600', paddingHorizontal: 16, paddingTop: 12 },
-  cardPrice: { fontSize: 14, color: '#C9A84C', paddingHorizontal: 16, paddingBottom: 12, marginTop: 4 },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  title: { fontSize: 48, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
+  subtitle: { fontFamily: typography.mono, fontSize: 10, color: colors.red, fontWeight: '800', letterSpacing: 1 },
+  
+  loader: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  loadingText: { fontFamily: typography.mono, fontSize: 12, color: colors.charcoal, letterSpacing: 1 },
+  
+  emptyState: { alignItems: 'center', justifyContent: 'center', flex: 1, padding: 20 },
+  emptyText: { color: colors.charcoal, fontSize: 12, fontFamily: typography.mono, fontWeight: '800', marginVertical: 24, letterSpacing: 2 },
+  button: { 
+    backgroundColor: colors.charcoal, paddingHorizontal: 28, paddingVertical: 14, 
+    borderWidth: 2, borderColor: colors.charcoal,
+    shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0
+  },
+  buttonText: { color: colors.cream, fontFamily: typography.mono, fontWeight: '800', fontSize: 12, letterSpacing: 1 },
+  
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between' },
+  cardWrapper: { width: '48%', marginBottom: 24 },
+  cardActions: { marginTop: -2, borderWidth: 2, borderColor: colors.charcoal, backgroundColor: colors.cream },
+  leaseBtn: { paddingVertical: 10, alignItems: 'center' },
+  leaseBtnText: { fontFamily: typography.mono, fontSize: 11, color: colors.charcoal, fontWeight: '800', letterSpacing: 1 },
 });

@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../../src/services/api';
+import { colors } from '../../../src/theme';
+import { 
+  MARKET_CATEGORIES, 
+  MARKET_CONDITIONS, 
+  LISTING_TYPES, 
+  MARKET_SIZES 
+} from '../../../src/constants/market';
+import { DropdownPicker } from '../../../src/components/DropdownPicker';
 
-const CATEGORIES = ['Sarees', 'Lehengas', 'Kurta', 'Accessories', 'Bags', 'Jewelry', 'Scarves', 'Outerwear', 'Dresses'];
-const CONDITIONS = ['PRISTINE', 'EXCELLENT', 'MINOR_WEAR', 'VISIBLE_WEAR'];
-const LISTING_TYPES = ['SALE', 'RENTAL', 'ACCESSORY_SWAP'];
+
 
 export default function SellScreen() {
   const router = useRouter();
@@ -21,6 +27,8 @@ export default function SellScreen() {
   const [condition, setCondition] = useState('PRISTINE');
   const [listingType, setListingType] = useState('SALE');
   const [price, setPrice] = useState('');
+  const [rentalDay, setRentalDay] = useState('');
+  const [rentalWeek, setRentalWeek] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const pickImages = async () => {
@@ -31,12 +39,12 @@ export default function SellScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsMultipleSelection: true,
+      allowsEditing: false,
+      allowsMultipleSelection: false,
       quality: 0.8,
-      selectionLimit: 5,
     });
     if (!result.canceled) {
-      setImages((prev) => [...prev, ...result.assets.map((a) => a.uri)].slice(0, 5));
+      setImages((prev) => [...prev, result.assets[0].uri].slice(0, 5));
     }
   };
 
@@ -45,9 +53,21 @@ export default function SellScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!title || !category || !price) {
-      Alert.alert('Missing Fields', 'Please fill in title, category, and price.');
+    if (!title || !category || !description || !condition || !size) {
+      Alert.alert('Missing Fields', 'Please fill in title, description, category, condition, and size.');
       return;
+    }
+
+    if (listingType === 'RENTAL') {
+      if (!rentalDay) {
+        Alert.alert('Missing Fields', 'Please fill in rental price per day for rentals.');
+        return;
+      }
+    } else {
+      if (!price) {
+        Alert.alert('Missing Fields', 'Please fill in price.');
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -59,7 +79,12 @@ export default function SellScreen() {
       formData.append('size', size || 'OS');
       formData.append('condition', condition);
       formData.append('listingType', listingType);
-      formData.append('price', price);
+      if (listingType === 'RENTAL') {
+        formData.append('rentalPriceDay', rentalDay);
+        if (rentalWeek) formData.append('rentalPriceWeek', rentalWeek);
+      } else {
+        formData.append('price', price);
+      }
 
       images.forEach((uri, i) => {
         formData.append('images', {
@@ -74,11 +99,17 @@ export default function SellScreen() {
       });
 
       Alert.alert('Listed!', 'Your garment is now live on Kaphor.', [
-        { text: 'VIEW SHOP', onPress: () => router.replace('/(tabs)/shop/index') },
+        { text: 'VIEW SHOP', onPress: () => router.replace('/(tabs)/shop') },
       ]);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Failed to list garment.';
-      Alert.alert('Error', msg);
+      const apiErrors = err?.response?.data?.errors;
+      if (Array.isArray(apiErrors)) {
+        const msg = apiErrors.map((e: any) => `${e.field}: ${e.message}`).join('\n');
+        Alert.alert('Validation Error', msg);
+      } else {
+        const msg = err?.response?.data?.message || 'Failed to list garment.';
+        Alert.alert('Error', msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -105,7 +136,7 @@ export default function SellScreen() {
               ))}
               {images.length < 5 && (
                 <TouchableOpacity style={styles.uploadBox} onPress={pickImages}>
-                  <Ionicons name="camera-outline" size={32} color="#C9A84C" />
+                  <Ionicons name="camera-outline" size={32} color={colors.crimson} />
                   <Text style={styles.uploadText}>ADD</Text>
                 </TouchableOpacity>
               )}
@@ -123,38 +154,87 @@ export default function SellScreen() {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>GARMENT DETAILS</Text>
-            <TextInput style={styles.input} placeholder="TITLE" placeholderTextColor="#6B5C52" value={title} onChangeText={setTitle} />
-            <TextInput style={[styles.input, { height: 80 }]} placeholder="DESCRIPTION" placeholderTextColor="#6B5C52" value={description} onChangeText={setDescription} multiline />
-            <TextInput style={styles.input} placeholder="BRAND" placeholderTextColor="#6B5C52" value={brand} onChangeText={setBrand} />
-            <TextInput style={styles.input} placeholder="SIZE (e.g. S, M, L, OS)" placeholderTextColor="#6B5C52" value={size} onChangeText={setSize} />
-            <TextInput style={styles.input} placeholder="PRICE (₹)" placeholderTextColor="#6B5C52" value={price} onChangeText={setPrice} keyboardType="numeric" />
+            <TextInput style={styles.input} placeholder="TITLE" placeholderTextColor={colors.textMuted} value={title} onChangeText={setTitle} />
+            <TextInput style={[styles.input, { height: 80 }]} placeholder="DESCRIPTION" placeholderTextColor={colors.textMuted} value={description} onChangeText={setDescription} multiline />
+            <TextInput style={styles.input} placeholder="BRAND" placeholderTextColor={colors.textMuted} value={brand} onChangeText={setBrand} />
+            <DropdownPicker
+              label="SIZE"
+              options={MARKET_SIZES.map(s => ({ id: s, label: s }))}
+              selectedValue={size}
+              onSelect={setSize}
+              placeholder="SELECT SIZE"
+            />
+            {/* Fallback for custom sizes if needed, but the user wants clean dropdowns */}
+            {size === 'CUSTOM' && (
+              <TextInput 
+                style={styles.input} 
+                placeholder="ENTER CUSTOM SIZE" 
+                placeholderTextColor={colors.textMuted} 
+                value={description} // Reuse a temporary state or just keep it simple
+                onChangeText={setSize} 
+              />
+            )}
+            {listingType === 'RENTAL' ? (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="RENTAL PRICE PER DAY (₹)"
+                  placeholderTextColor={colors.textMuted}
+                  value={rentalDay}
+                  onChangeText={setRentalDay}
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="RENTAL PRICE PER WEEK (₹) (optional)"
+                  placeholderTextColor={colors.textMuted}
+                  value={rentalWeek}
+                  onChangeText={setRentalWeek}
+                  keyboardType="numeric"
+                />
+              </>
+            ) : (
+              <TextInput
+                style={styles.input}
+                placeholder="PRICE (₹)"
+                placeholderTextColor={colors.textMuted}
+                value={price}
+                onChangeText={setPrice}
+                keyboardType="numeric"
+              />
+            )}
 
-            <Text style={styles.pickerLabel}>CATEGORY</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-              {CATEGORIES.map((c) => (
-                <TouchableOpacity key={c} style={[styles.chip, category === c && styles.chipActive]} onPress={() => setCategory(c)}>
-                  <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <DropdownPicker
+              label="CATEGORY"
+              options={MARKET_CATEGORIES.flatMap(g => g.items.map(i => ({ id: i, label: i, group: g.group })))}
+              selectedValue={category}
+              onSelect={setCategory}
+              isGrouped={true}
+              placeholder="SELECT CATEGORY"
+            />
 
-            <Text style={styles.pickerLabel}>CONDITION</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-              {CONDITIONS.map((c) => (
-                <TouchableOpacity key={c} style={[styles.chip, condition === c && styles.chipActive]} onPress={() => setCondition(c)}>
-                  <Text style={[styles.chipText, condition === c && styles.chipTextActive]}>{c.replace('_', ' ')}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <DropdownPicker
+              label="CONDITION"
+              options={MARKET_CONDITIONS}
+              selectedValue={condition}
+              onSelect={setCondition}
+              placeholder="SELECT CONDITION"
+            />
+            
+            <View style={styles.conditionDescBox}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.textSecond} />
+              <Text style={styles.conditionDescText}>
+                {MARKET_CONDITIONS.find(c => c.id === condition)?.desc}
+              </Text>
+            </View>
 
-            <Text style={styles.pickerLabel}>LISTING TYPE</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-              {LISTING_TYPES.map((t) => (
-                <TouchableOpacity key={t} style={[styles.chip, listingType === t && styles.chipActive]} onPress={() => setListingType(t)}>
-                  <Text style={[styles.chipText, listingType === t && styles.chipTextActive]}>{t.replace('_', ' ')}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <DropdownPicker
+              label="LISTING TYPE"
+              options={LISTING_TYPES}
+              selectedValue={listingType}
+              onSelect={setListingType}
+              placeholder="SELECT LISTING TYPE"
+            />
 
             <View style={styles.row}>
               <TouchableOpacity style={styles.secondaryButton} onPress={prevStep}>
@@ -175,15 +255,20 @@ export default function SellScreen() {
               <Text style={styles.summaryLabel}>BRAND: <Text style={styles.summaryValue}>{brand || 'Unknown'}</Text></Text>
               <Text style={styles.summaryLabel}>CATEGORY: <Text style={styles.summaryValue}>{category}</Text></Text>
               <Text style={styles.summaryLabel}>CONDITION: <Text style={styles.summaryValue}>{condition.replace('_', ' ')}</Text></Text>
-              <Text style={styles.summaryLabel}>PRICE: <Text style={styles.summaryValue}>₹{price}</Text></Text>
+              <Text style={styles.summaryLabel}>
+                {listingType === 'RENTAL' ? 'RENT PER DAY: ' : 'PRICE: '}
+                <Text style={styles.summaryValue}>
+                  {listingType === 'RENTAL' ? `₹${rentalDay}` : `₹${price}`}
+                </Text>
+              </Text>
               <Text style={styles.summaryLabel}>PHOTOS: <Text style={styles.summaryValue}>{images.length}</Text></Text>
             </View>
             <Text style={styles.policyText}>By listing, you agree to our Circular Economy standards and Luxury Authentication process.</Text>
             <TouchableOpacity style={styles.mainButton} onPress={handleSubmit} disabled={submitting}>
-              {submitting ? <ActivityIndicator color="#1A0C10" /> : <Text style={styles.mainButtonText}>LIST GARMENT</Text>}
+              {submitting ? <ActivityIndicator color={colors.white} /> : <Text style={styles.mainButtonText}>LIST GARMENT</Text>}
             </TouchableOpacity>
             <TouchableOpacity onPress={prevStep} style={{ alignItems: 'center', paddingVertical: 12 }}>
-              <Text style={{ color: '#6B5C52', letterSpacing: 1 }}>BACK</Text>
+              <Text style={{ color: colors.textMuted, fontWeight: '700', letterSpacing: 1 }}>BACK</Text>
             </TouchableOpacity>
           </View>
         );
@@ -194,7 +279,7 @@ export default function SellScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={28} color="white" />
+          <Ionicons name="close" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SECURE LISTING</Text>
         <View style={{ width: 28 }} />
@@ -204,44 +289,79 @@ export default function SellScreen() {
           <View key={s} style={[styles.progressDot, step >= s && styles.activeDot]} />
         ))}
       </View>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {renderStep()}
-      </ScrollView>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {renderStep()}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A0C10' },
-  header: { paddingTop: 60, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  headerTitle: { color: '#C9A84C', fontSize: 16, fontFamily: 'CormorantGaramond_700Bold', letterSpacing: 2 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  headerTitle: { color: colors.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   progressContainer: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 32 },
-  progressDot: { width: 20, height: 4, backgroundColor: '#3A2C30', borderRadius: 2 },
-  activeDot: { backgroundColor: '#C9A84C' },
+  progressDot: { width: 30, height: 4, backgroundColor: colors.bgCard, borderRadius: 2 },
+  activeDot: { backgroundColor: colors.crimson },
   scrollContent: { padding: 24, paddingBottom: 100 },
   stepContainer: { gap: 16 },
-  stepTitle: { fontSize: 24, fontFamily: 'CormorantGaramond_700Bold', color: '#C9A84C', marginBottom: 4 },
-  stepSubtitle: { fontSize: 14, color: '#6B5C52', lineHeight: 20 },
+  stepTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, marginBottom: 4 },
+  stepSubtitle: { fontSize: 16, color: colors.textSecond, lineHeight: 22 },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  imageThumb: { width: 100, height: 100, borderRadius: 8, position: 'relative' },
-  thumbImg: { width: '100%', height: '100%', borderRadius: 8 },
+  imageThumb: { width: 100, height: 100, borderRadius: 12, position: 'relative' },
+  thumbImg: { width: '100%', height: '100%', borderRadius: 12 },
   removeBtn: { position: 'absolute', top: -6, right: -6 },
-  uploadBox: { width: 100, height: 100, borderWidth: 1, borderColor: '#3A2C30', borderStyle: 'dashed', borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: '#2A1C20' },
-  uploadText: { color: '#6B5C52', fontSize: 10, marginTop: 4, letterSpacing: 2 },
-  input: { height: 52, borderBottomWidth: 1, borderBottomColor: '#3A2C30', color: 'white', fontSize: 14, paddingHorizontal: 4 },
-  pickerLabel: { color: '#6B5C52', fontSize: 11, letterSpacing: 2, marginTop: 8 },
+  uploadBox: { width: 100, height: 100, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
+  uploadText: { color: colors.textMuted, fontSize: 10, marginTop: 4, letterSpacing: 2, fontWeight: '700' },
+  input: { height: 56, borderBottomWidth: 1, borderBottomColor: colors.border, color: colors.textPrimary, fontSize: 16, paddingHorizontal: 4 },
+  pickerLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 2, marginTop: 16, fontWeight: '700' },
   chipRow: { flexDirection: 'row', marginBottom: 4 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#3A2C30', marginRight: 8 },
-  chipActive: { borderColor: '#C9A84C', backgroundColor: 'rgba(201,168,76,0.12)' },
-  chipText: { color: '#6B5C52', fontSize: 12 },
-  chipTextActive: { color: '#C9A84C', fontWeight: '700' },
-  mainButton: { backgroundColor: '#C9A84C', height: 56, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  mainButtonText: { color: '#1A0C10', fontSize: 16, fontWeight: '700', letterSpacing: 2 },
-  secondaryButton: { flex: 1, height: 56, borderRadius: 8, borderWidth: 1, borderColor: '#3A2C30', justifyContent: 'center', alignItems: 'center' },
-  secondaryButtonText: { color: '#6B5C52', fontSize: 14, letterSpacing: 2 },
-  row: { flexDirection: 'row', marginTop: 12 },
-  summaryCard: { padding: 20, backgroundColor: '#2A1C20', borderRadius: 12, gap: 12, borderWidth: 1, borderColor: 'rgba(201,168,76,0.1)' },
-  summaryLabel: { color: '#6B5C52', fontSize: 12 },
-  summaryValue: { color: 'white', fontSize: 14, fontWeight: '700' },
-  policyText: { color: '#6B5C52', fontSize: 11, textAlign: 'center', lineHeight: 16 },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginRight: 8, backgroundColor: colors.bgCard },
+  chipActive: { borderColor: colors.crimson, backgroundColor: 'rgba(155, 27, 48, 0.05)' },
+  chipText: { color: colors.textSecond, fontSize: 13, fontWeight: '600' },
+  chipTextActive: { color: colors.crimson, fontWeight: '800' },
+  mainButton: { 
+    backgroundColor: colors.crimson, 
+    height: 60, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    shadowColor: colors.crimson,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  mainButtonText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
+  secondaryButton: { flex: 1, height: 60, borderRadius: 16, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
+  secondaryButtonText: { color: colors.textSecond, fontSize: 14, letterSpacing: 2, fontWeight: '700' },
+  row: { flexDirection: 'row', marginTop: 12, gap: 12 },
+  summaryCard: { padding: 24, backgroundColor: colors.bgCard, borderRadius: 20, gap: 14, borderWidth: 1, borderColor: colors.border },
+  summaryLabel: { color: colors.textSecond, fontSize: 12, fontWeight: '600' },
+  summaryValue: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
+  policyText: { color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18, marginVertical: 16 },
+  conditionDescBox: {
+    backgroundColor: 'rgba(26,26,26,0.03)',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(26,26,26,0.05)',
+  },
+  conditionDescText: {
+    color: colors.textSecond,
+    fontSize: 11,
+    flex: 1,
+    lineHeight: 16,
+    fontStyle: 'italic',
+  },
 });

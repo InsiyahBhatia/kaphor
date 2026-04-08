@@ -1,7 +1,72 @@
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
-import { uploadImage } from '../lib/cloudinary';
+import { uploadToS3, getDownloadUrl } from '../lib/s3';
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+async function resolveAvatar(avatar: string | null): Promise<string | null> {
+  if (!avatar) return null;
+  return getDownloadUrl(avatar);
+}
+
+async function resolveUserMedia(user: any) {
+  if (!user) return user;
+  const avatar = await resolveAvatar(user.avatar);
+  return { ...user, avatar };
+}
+
+async function resolveGarmentMedia(garment: any) {
+  if (!garment || !garment.images) return garment;
+  const images = await Promise.all(garment.images.map((img: string) => getDownloadUrl(img)));
+  return { ...garment, images };
+}
+
+async function resolveGarmentsMedia(garments: any[]) {
+  return Promise.all(garments.map(g => resolveGarmentMedia(g)));
+}
+
+// ── GET /users/profile/:userId/public (no auth) ───────────────────────────────
+export async function getPublicUserSummary(req: Request, res: Response): Promise<void> {
+  try {
+    const { userId } = req.params;
+    const user = await db.user.findFirst({
+      where: { id: userId, isActive: true },
+      select: {
+        id: true,
+        displayName: true,
+        username: true,
+        avatar: true,
+        bio: true,
+        tier: true,
+        createdAt: true,
+      },
+    });
+    if (!user) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'User not found' });
+      return;
+    }
+    const agg = await db.peerReview.aggregate({
+      where: { sellerId: userId },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+    const peerReviewCount = agg._count._all;
+    const peerReviewAvg = agg._avg.rating;
+    const trustedSeller = peerReviewCount >= 3 && (peerReviewAvg ?? 0) >= 4;
+    const resolvedUser = await resolveUserMedia(user);
+    res.json({
+      data: {
+        ...resolvedUser,
+        peerReviewCount,
+        peerReviewAvg,
+        trustedSeller,
+      },
+    });
+  } catch (error) {
+    logger.error('getPublicUserSummary failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
 
 // ── GET /users/me ─────────────────────────────────────────────────────────────
 export async function getMe(req: Request, res: Response): Promise<void> {
@@ -42,9 +107,10 @@ export async function getMe(req: Request, res: Response): Promise<void> {
             where: { sellerId: req.user.id, status: 'CONFIRMED' }
         });
 
+        const resolvedUser = await resolveUserMedia(user);
         res.json({
             data: {
-                ...user,
+                ...resolvedUser,
                 stats: {
                     listings: user._count.garments,
                     sold: soldCount,
@@ -84,7 +150,8 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
             }
         });
 
-        res.json({ data: updated });
+        const resolvedUser = await resolveUserMedia(updated);
+        res.json({ data: resolvedUser });
     } catch (error) {
         logger.error('updateMe failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -100,7 +167,7 @@ export async function updateAvatar(req: Request, res: Response): Promise<void> {
 
         // Handle multipart upload from frontend
         if (req.file) {
-            const uploaded = await uploadImage(req.file.buffer, 'avatars');
+            const uploaded = await uploadToS3(req.file.buffer, 'avatars', req.file.mimetype);
             avatarUrl = uploaded.url;
         }
 
@@ -115,7 +182,8 @@ export async function updateAvatar(req: Request, res: Response): Promise<void> {
             select: { id: true, avatar: true }
         });
 
-        res.json({ data: updated });
+        const resolvedUser = await resolveUserMedia(updated);
+        res.json({ data: resolvedUser });
     } catch (error) {
         logger.error('updateAvatar failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -137,7 +205,8 @@ export async function getMyListings(req: Request, res: Response): Promise<void> 
             }
         });
 
-        res.json({ data: garments });
+        const resolvedGarments = await resolveGarmentsMedia(garments);
+        res.json({ data: resolvedGarments });
     } catch (error) {
         logger.error('getMyListings failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -163,9 +232,41 @@ export async function getMyPurchases(req: Request, res: Response): Promise<void>
             }
         });
 
-        res.json({ data: orders });
+        const resolvedOrders = await Promise.all(orders.map(async (o: any) => ({
+            ...o,
+            items: await Promise.all(o.items.map(async (i: any) => ({
+                ...i,
+                garment: await resolveGarmentMedia(i.garment)
+            })))
+        })));
+        res.json({ data: resolvedOrders });
     } catch (error) {
         logger.error('getMyPurchases failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+// ── GET /users/profile/:userId/reviews (public) ──────────────────────────────
+export async function getUserReviews(req: Request, res: Response): Promise<void> {
+    try {
+        const { userId } = req.params;
+        const reviews = await db.peerReview.findMany({
+            where: { sellerId: userId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                reviewer: {
+                    select: { id: true, displayName: true, avatar: true, username: true }
+                }
+            }
+        });
+
+        const resolvedReviews = await Promise.all(reviews.map(async (r: any) => ({
+            ...r,
+            reviewer: await resolveUserMedia(r.reviewer)
+        })));
+        res.json({ data: resolvedReviews });
+    } catch (error) {
+        logger.error('getUserReviews failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
     }
 }

@@ -1,19 +1,21 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Text, Platform } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, typography } from '../theme';
 
 export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation }) => {
   const insets = useSafeAreaInsets();
 
+  // Enforce 5 tabs with Circular in the center
+  const mainTabs = ['index', 'shop/index', 'circular/index', 'swap/index', 'profile'];
+
+
+
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 8 }]}>
-      {state.routes.filter(route => {
-        const mainTabs = ['index', 'shop/index', 'social/index', 'profile'];
-        return mainTabs.includes(route.name);
-      }).map((route, index) => {
-        const { options } = descriptors[route.key];
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      {state.routes.filter(route => mainTabs.includes(route.name)).map((route) => {
         const isFocused = state.index === state.routes.findIndex(r => r.key === route.key);
 
         const onPress = () => {
@@ -28,18 +30,21 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
           }
         };
 
-
-        const getLabel = (name: string) => {
+        const getTabConfig = (name: string) => {
           switch (name) {
-            case 'index': return 'HOME';
-            case 'shop/index': return 'SHOP';
-            case 'social/index': return 'SOCIAL';
-            case 'profile': return 'PROFILE';
-            default: return name.toUpperCase();
+            case 'index': return { label: 'HOME', icon: 'home-sharp' as any };
+            case 'shop/index': return { label: 'SHOP', icon: 'bag-handle-sharp' as any };
+            case 'circular/index': return { label: 'CIRCULAR', icon: 'infinite-sharp' as any };
+            case 'swap/index': return { label: 'SWAP', icon: 'swap-horizontal-sharp' as any };
+            case 'profile': return { label: 'PROFILE', icon: 'person-sharp' as any };
+            default: return { label: name.toUpperCase(), icon: 'ellipse-sharp' as any };
           }
         };
 
-        const iconName = options.tabBarIcon ? (options.tabBarIcon as any)({ focused: isFocused, color: isFocused ? '#C9A84C' : '#6B5C52' }).props.name : 'help-circle-outline';
+
+
+        const config = getTabConfig(route.name);
+        const color = isFocused ? colors.red : colors.textMuted;
 
         return (
           <TouchableOpacity
@@ -47,10 +52,8 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
             onPress={onPress}
             style={styles.tabItem}
           >
-            <Ionicons name={iconName} size={24} color={isFocused ? '#C9A84C' : '#6B5C52'} />
-            <Text style={[styles.tabLabel, { color: isFocused ? '#C9A84C' : '#6B5C52' }]}>
-              {getLabel(route.name)}
-            </Text>
+            <Ionicons name={config.icon} size={20} color={color} style={styles.tabIcon} />
+            <Text style={[styles.tabLabel, { color }]}>{config.label}</Text>
           </TouchableOpacity>
         );
       })}
@@ -61,21 +64,27 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#1A0C10',
+    backgroundColor: colors.cream,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(201, 168, 76, 0.1)',
-    height: Platform.OS === 'ios' ? 88 : 70,
+    borderTopColor: colors.charcoal,
+    paddingTop: 12,
     alignItems: 'center',
     justifyContent: 'space-around',
+    elevation: 0,
+    shadowOpacity: 0,
   },
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
+  },
+  tabIcon: {
+    marginBottom: 1,
   },
   tabLabel: {
-    fontSize: 9,
-    marginTop: 4,
+    fontFamily: typography.mono,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
 });

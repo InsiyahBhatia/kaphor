@@ -3,10 +3,13 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Activi
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
+import { colors } from '../../src/theme';
+import { useGoogleAuth } from '../../src/hooks/useGoogleAuth';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const { signUp, isLoading } = useAuth();
+  const { loginWithGoogle, isGoogleLoading } = useGoogleAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -51,12 +54,12 @@ export default function RegisterScreen() {
   };
 
   const handleGoogleLogin = async () => {
-    // Placeholder logic since actual OAuth requires valid client IDs and certificates
-    Alert.alert('Google Sign-In', 'Google Auth requires valid Firebase configuration. This is a placeholder that normally would retrieve an ID token and call signInWithGoogle(idToken).');
+    const ok = await loginWithGoogle();
+    if (ok) router.replace('/(auth)/style-quiz');
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Join Kaphor</Text>
         <Text style={styles.subtitle}>Begin your circular luxury journey</Text>
@@ -65,14 +68,14 @@ export default function RegisterScreen() {
       <View style={styles.form}>
         <TextInput 
           placeholder="DISLAY NAME (E.G. INSIYAH)" 
-          placeholderTextColor="#6B5C52"
+          placeholderTextColor={colors.textMuted}
           style={styles.input}
           value={displayName}
           onChangeText={setDisplayName}
         />
         <TextInput 
           placeholder="USERNAME" 
-          placeholderTextColor="#6B5C52"
+          placeholderTextColor={colors.textMuted}
           style={styles.input}
           value={username}
           onChangeText={setUsername}
@@ -80,7 +83,7 @@ export default function RegisterScreen() {
         />
         <TextInput 
           placeholder="EMAIL" 
-          placeholderTextColor="#6B5C52"
+          placeholderTextColor={colors.textMuted}
           style={styles.input}
           keyboardType="email-address"
           value={email}
@@ -90,7 +93,7 @@ export default function RegisterScreen() {
         <View>
           <TextInput 
             placeholder="PASSWORD" 
-            placeholderTextColor="#6B5C52"
+            placeholderTextColor={colors.textMuted}
             style={styles.input}
             secureTextEntry
             value={password}
@@ -109,7 +112,7 @@ export default function RegisterScreen() {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="white" />
+            <ActivityIndicator color={colors.white} />
           ) : (
             <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
           )}
@@ -124,15 +127,21 @@ export default function RegisterScreen() {
         <TouchableOpacity 
           style={styles.googleButton}
           onPress={handleGoogleLogin}
-          disabled={isLoading}
+          disabled={isLoading || isGoogleLoading}
         >
-          <Ionicons name="logo-google" size={20} color="white" />
-          <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+          {isGoogleLoading ? (
+            <ActivityIndicator color={colors.textPrimary} />
+          ) : (
+            <>
+              <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
+              <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+            </>
+          )}
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.footerLink}
-          onPress={() => router.push('/login')}
+          onPress={() => router.push('/(auth)/login')}
         >
           <Text style={styles.footerText}>ALREADY HAVE AN ACCOUNT? LOGIN</Text>
         </TouchableOpacity>
@@ -144,7 +153,9 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A0C10',
+    backgroundColor: colors.bg,
+  },
+  inner: {
     padding: 24,
   },
   header: {
@@ -152,54 +163,66 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   title: {
-    fontSize: 32,
-    fontFamily: 'CormorantGaramond_700Bold',
-    color: '#C9A84C',
+    fontSize: 40,
+    fontFamily: 'BebasNeue_400Regular',
+    color: colors.textPrimary,
+    letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6B5C52',
+    fontSize: 16,
+    color: colors.textSecond,
     marginTop: 8,
+    lineHeight: 22,
   },
   form: {
-    gap: 16,
+    gap: 20,
+    paddingBottom: 40,
   },
   input: {
-    height: 56,
-    borderBottomWidth: 1,
-    borderBottomColor: '#6B5C52',
-    color: 'white',
+    height: 60,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    color: colors.textPrimary,
     fontSize: 16,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
+    backgroundColor: colors.bgCard,
   },
   button: {
-    backgroundColor: '#9B1B30',
+    backgroundColor: colors.crimson,
     height: 56,
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 12,
+    shadowColor: colors.crimson,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: 'white',
+    color: colors.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 2,
   },
   footerLink: {
-    marginTop: 24,
+    marginTop: 16,
     alignItems: 'center',
+    padding: 8,
   },
   footerText: {
-    color: '#D4AF37',
+    color: colors.textSecond,
     fontSize: 12,
     letterSpacing: 1,
+    fontWeight: '700',
   },
   strengthText: {
     fontSize: 10,
     letterSpacing: 1,
     marginTop: 4,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -207,33 +230,35 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 32,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#3A2C30',
+    backgroundColor: colors.border,
   },
   dividerText: {
-    color: '#6B5C52',
+    color: colors.textMuted,
     paddingHorizontal: 16,
     fontSize: 12,
     fontWeight: '700',
+    letterSpacing: 1,
   },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4285F4',
+    backgroundColor: colors.white,
     height: 56,
-    borderRadius: 8,
+    borderRadius: 12,
     gap: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   googleButtonText: {
-    color: 'white',
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 1,
-    paddingTop: 2, // optical alignment
   },
 });

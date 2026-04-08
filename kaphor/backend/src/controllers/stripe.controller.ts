@@ -3,6 +3,7 @@ import stripe from '../lib/stripe';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { auditLog } from '../services/audit.service';
+import { createNotification } from '../services/notification.service';
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
@@ -42,26 +43,54 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
 }
 
 async function handlePaymentSuccess(paymentIntent: any) {
-  const orderId = paymentIntent.metadata.orderId;
-  if (!orderId) return;
+  const metaOrderId = paymentIntent.metadata?.orderId as string | undefined;
 
   try {
-    await db.order.update({
-      where: { id: orderId },
-      data: { 
-        status: 'CONFIRMED',
-        stripePaymentId: paymentIntent.id
-      },
+    if (metaOrderId) {
+      const updatedOrder = await db.order.update({
+        where: { id: metaOrderId },
+        data: {
+          status: 'CONFIRMED',
+          stripePaymentId: paymentIntent.id,
+        },
+        include: {
+          items: { include: { garment: { select: { title: true } } } },
+          sellerId: true,
+        },
+      });
+
+      // Notify Seller
+      await createNotification({
+        userId: updatedOrder.sellerId,
+        type: 'ORDER_PAID',
+        title: '💰 Item Sold!',
+        body: `Your item "${updatedOrder.items[0]?.garment?.title}" has been purchased! Please prepare for shipping.`,
+        data: { orderId: metaOrderId },
+      });
+
+      await auditLog({
+        action: 'PAYMENT_SUCCESS',
+        resource: 'Order',
+        metadata: { orderId: metaOrderId, stripeId: paymentIntent.id },
+      });
+      logger.info('Order confirmed via webhook', { orderId: metaOrderId });
+      return;
+    }
+
+    const byPi = await db.order.updateMany({
+      where: { stripePaymentId: paymentIntent.id },
+      data: { status: 'CONFIRMED' },
     });
-    
-    await auditLog({ 
-      action: 'PAYMENT_SUCCESS', 
-      resource: 'Order', 
-      metadata: { orderId, stripeId: paymentIntent.id } 
-    });
-    
-    logger.info('Order confirmed via webhook', { orderId });
+    if (byPi.count > 0) {
+      logger.info('Order confirmed via webhook (matched payment intent id)', {
+        stripeId: paymentIntent.id,
+      });
+    }
   } catch (error) {
-    logger.error('Failed to update order after payment success', { error, orderId });
+    logger.error('Failed to update order after payment success', {
+      error,
+      metaOrderId,
+      stripeId: paymentIntent.id,
+    });
   }
 }

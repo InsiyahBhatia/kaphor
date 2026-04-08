@@ -23,17 +23,20 @@ interface GarmentState {
   garments: Garment[];
   featured: Garment[];
   isLoading: boolean;
+  pagination: { nextCursor: string | null };
   setGarments: (garments: Garment[]) => void;
   setFeatured: (featured: Garment[]) => void;
   setLoading: (loading: boolean) => void;
   appendGarments: (garments: Garment[]) => void;
   fetchGarments: () => Promise<void>;
+  fetchFeed: (filters?: any) => Promise<void>;
 }
 
-export const useGarmentStore = create<GarmentState>((set) => ({
+export const useGarmentStore = create<GarmentState>((set, get) => ({
   garments: [],
   featured: [],
   isLoading: false,
+  pagination: { nextCursor: null },
   setGarments: (garments) => set({ garments }),
   setFeatured: (featured) => set({ featured }),
   setLoading: (isLoading) => set({ isLoading }),
@@ -42,16 +45,21 @@ export const useGarmentStore = create<GarmentState>((set) => ({
       garments: [...state.garments, ...garments],
     })),
   fetchGarments: async () => {
+    return get().fetchFeed();
+  },
+  fetchFeed: async (filters = {}) => {
     set({ isLoading: true });
     try {
-      // We will call the service from the component for now or add it here
-      // But adding it here makes the store more self-contained.
       const { garmentService } = await import('../services/garmentService');
-      const data = await garmentService.getGarments();
-      set({ garments: data, isLoading: false });
+      const response = await garmentService.getFeed(filters);
+      set({ 
+        garments: response.data, 
+        pagination: response.pagination || { nextCursor: null }, 
+        isLoading: false 
+      });
     } catch (error) {
       set({ isLoading: false });
-      console.error('Failed to fetch garments', error);
+      console.error('Failed to fetch garment feed', error);
     }
   },
 }));

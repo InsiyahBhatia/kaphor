@@ -27,6 +27,7 @@ export function SellScreen() {
     const [condition, setCondition] = useState('PRISTINE');
     const [selectedColors, setSelectedColors] = useState<string[]>([]);
     const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+    const [description, setDescription] = useState('');
 
     // Pricing State
     const [listingType, setListingType] = useState('SALE');
@@ -76,7 +77,7 @@ export function SellScreen() {
 
     // Validation
     const validateStep1 = () => images.length > 0;
-    const validateStep2 = () => title.length > 3 && brand.length > 1 && category.length > 1 && selectedColors.length > 0;
+    const validateStep2 = () => title.length >= 3 && description.length >= 10 && brand.length > 1 && category.length > 1 && selectedColors.length > 0;
     const validateStep3 = () => {
         if (listingType === 'SALE' && (!price || isNaN(Number(price)))) return false;
         if (listingType === 'RENTAL' && (!rentalDay || isNaN(Number(rentalDay)))) return false;
@@ -97,14 +98,20 @@ export function SellScreen() {
         setIsSubmitting(true);
 
         try {
+import { garmentService } from '../../services/garmentService';
+
             // Construct FormData for multipart/form-data POST
             const formData = new FormData();
             formData.append('title', title);
+            formData.append('description', description);
             formData.append('brand', brand);
             formData.append('category', category);
             formData.append('size', size);
             formData.append('condition', condition);
-            formData.append('listingType', listingType);
+            
+            // Map UI 'SWAP' to backend 'ACCESSORY_SWAP'
+            const backendListingType = listingType === 'SWAP' ? 'ACCESSORY_SWAP' : listingType;
+            formData.append('listingType', backendListingType);
 
             if (price) formData.append('price', price);
             if (rentalDay) formData.append('rentalPriceDay', rentalDay);
@@ -115,22 +122,24 @@ export function SellScreen() {
 
             // Note: In React Native FormData, files look like this object
             images.forEach((uri, i) => {
+                const uriParts = uri.split('.');
+                const fileType = uriParts[uriParts.length - 1];
                 formData.append('images', {
                     uri,
-                    name: `image_${i}.jpg`,
-                    type: 'image/jpeg',
+                    name: `image_${i}.${fileType}`,
+                    type: `image/${fileType === 'png' ? 'png' : 'jpeg'}`,
                 } as any);
             });
 
-            // Mock API Call
-            console.log("Mock POST to /api/v1/garments", formData);
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await garmentService.createGarment(formData);
 
             Alert.alert('Success!', 'Garment successfully listed.', [
                 { text: 'View Listing', onPress: () => router.push('/(tabs)') }
             ]);
-        } catch (error) {
-            Alert.alert('Error', 'Failed to publish listing.');
+        } catch (error: any) {
+            console.error('Publish error:', error?.response?.data || error.message);
+            const errMsg = error?.response?.data?.message || 'Failed to publish listing.';
+            Alert.alert('Error', errMsg);
         } finally {
             setIsSubmitting(false);
         }
@@ -174,6 +183,16 @@ export function SellScreen() {
 
             <Text style={styles.label}>Category *</Text>
             <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder="Category" placeholderTextColor={colors.textMuted} />
+
+            <Text style={styles.label}>Description * (min 10 chars)</Text>
+            <TextInput 
+                style={[styles.input, { height: 100, textAlignVertical: 'top' }]} 
+                value={description} 
+                onChangeText={setDescription} 
+                placeholder="Describe your garment..." 
+                placeholderTextColor={colors.textMuted} 
+                multiline 
+            />
 
             <Text style={styles.label}>Size *</Text>
             <View style={styles.chipGrid}>

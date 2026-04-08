@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '../../context/AuthContext';
 import { colors, typography, spacing, radius } from '../../theme';
 import { KaphorImage } from '../../components/KaphorImage';
 
@@ -62,67 +63,16 @@ const ListingCard = ({ item }: { item: typeof MOCK_LISTINGS[0] }) => (
     </View>
 );
 
-// ─── Settings Bottom Sheet ────────────────────────────────────────────────────
-const SettingsSheet = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
-    if (!visible) return null;
-
-    const SettingRow = ({ icon, label, onPress, hasSwitch, value, onValueChange }: any) => (
-        <Pressable style={styles.settingsRow} onPress={onPress}>
-            <View style={styles.settingsRowLeft}>
-                <Ionicons name={icon} size={20} color={colors.textPrimary} />
-                <Text style={styles.settingsLabel}>{label}</Text>
-            </View>
-            {hasSwitch ? (
-                <Switch
-                    value={value}
-                    onValueChange={onValueChange}
-                    trackColor={{ false: colors.bgMuted, true: colors.gold }}
-                    thumbColor={colors.textPrimary}
-                />
-            ) : (
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            )}
-        </Pressable>
-    );
-
-    return (
-        <View style={styles.modalBackdrop}>
-            <Pressable style={styles.modalDismiss} onPress={onClose} />
-            <View style={styles.modalContent}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>Settings</Text>
-
-                <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={styles.settingsSection}>PREFERENCES</Text>
-                    <SettingRow icon="notifications-outline" label="Notifications" hasSwitch value={true} />
-                    <SettingRow icon="lock-closed-outline" label="Privacy Settings" />
-
-                    <Text style={styles.settingsSection}>ACCOUNT</Text>
-                    <SettingRow icon="card-outline" label="Linked Payment Methods" />
-                    <SettingRow icon="location-outline" label="Shipping Addresses" />
-                    <SettingRow icon="shield-checkmark-outline" label="Account Security" />
-
-                    <Text style={styles.settingsSection}>SUPPORT</Text>
-                    <SettingRow icon="help-circle-outline" label="Help & Support" />
-                    <SettingRow icon="chatbox-outline" label="Feedback" />
-
-                    <Pressable style={styles.logoutBtn} onPress={() => Alert.alert('Log Out', 'Are you sure?', [{ text: 'Cancel' }, { text: 'Log Out', style: 'destructive' }])}>
-                        <Ionicons name="log-out-outline" size={20} color={colors.error} />
-                        <Text style={styles.logoutText}>Log Out</Text>
-                    </Pressable>
-                </ScrollView>
-            </View>
-        </View>
-    );
-};
+// Removed archaic SettingsSheet modal in favor of direct dashboard actions
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export function ProfileScreen() {
     const router = useRouter();
+    const { user, signOut } = useAuth();
     const [activeTab, setActiveTab] = useState<ProfileTab>('Listings');
     const [showSettings, setShowSettings] = useState(false);
-    const [coverUri, setCoverUri] = useState(MOCK_USER.cover);
-    const [avatarUri, setAvatarUri] = useState(MOCK_USER.avatar);
+    const [coverUri, setCoverUri] = useState('https://picsum.photos/seed/kaphorcover/1200/400');
+    const [avatarUri, setAvatarUri] = useState(user?.avatarUrl || 'https://picsum.photos/seed/kaphor/300/300');
 
     const pickImage = async (type: 'cover' | 'avatar') => {
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -145,10 +95,18 @@ export function ProfileScreen() {
                 <View style={styles.headerArea}>
                     <Pressable onPress={() => pickImage('cover')}>
                         <KaphorImage uri={coverUri} style={styles.coverImage} />
-                        <View style={styles.coverOverlay}>
-                            <Ionicons name="camera" size={20} color="white" />
-                        </View>
                     </Pressable>
+                    <View style={styles.topRightActions}>
+                        <Pressable style={styles.iconBtn} onPress={() => pickImage('cover')}>
+                            <Ionicons name="camera" size={20} color="white" />
+                        </Pressable>
+                        <Pressable style={styles.iconBtn} onPress={() => router.push('/(tabs)/shop/orders')}>
+                            <Ionicons name="chatbubble-ellipses-outline" size={20} color="white" />
+                        </Pressable>
+                        <Pressable style={styles.iconBtn} onPress={() => Alert.alert('Log Out', 'Are you sure you want to exit?', [{ text: 'Cancel' }, { text: 'Log Out', style: 'destructive', onPress: signOut }])}>
+                            <Ionicons name="log-out-outline" size={20} color={colors.error} />
+                        </Pressable>
+                    </View>
 
                     <View style={styles.profileInfoArea}>
                         <View style={styles.avatarWrapper}>
@@ -160,13 +118,13 @@ export function ProfileScreen() {
                             </Pressable>
                             <View style={styles.tierBadge}>
                                 <MaterialCommunityIcons name="crown" size={12} color="white" />
-                                <Text style={styles.tierText}>{MOCK_USER.tier}</Text>
+                                <Text style={styles.tierText}>{user?.role === 'ADMIN' ? 'ADMIN' : 'ELITE'}</Text>
                             </View>
                         </View>
 
-                        <Text style={styles.displayName}>{MOCK_USER.displayName}</Text>
-                        <Text style={styles.usernameText}>{MOCK_USER.username}</Text>
-                        <Text style={styles.subtitle}>{MOCK_USER.styleAesthetic} • {MOCK_USER.joinDate}</Text>
+                        <Text style={styles.displayName}>{user?.displayName || 'User'}</Text>
+                        <Text style={styles.usernameText}>{user?.username ? `@${user.username}` : ''}</Text>
+                        <Text style={styles.subtitle}>{user?.styleAesthetic || 'EXPLORER'} • MEMBER</Text>
                     </View>
                 </View>
 
@@ -186,9 +144,34 @@ export function ProfileScreen() {
                     <Pressable style={styles.editBtn}>
                         <Text style={styles.editBtnText}>EDIT PROFILE</Text>
                     </Pressable>
-                    <Pressable style={styles.settingsBtn} onPress={() => setShowSettings(true)}>
-                        <Ionicons name="settings-outline" size={20} color={colors.textPrimary} />
-                    </Pressable>
+                </View>
+
+                {/* 3. System Ops Dashboard */}
+                <View style={styles.opsSection}>
+                    <View style={styles.opsGrid}>
+                        <Pressable style={styles.opsCard}>
+                            <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
+                            <Text style={styles.opsCardText}>ALERTS</Text>
+                        </Pressable>
+                        <Pressable style={styles.opsCard}>
+                            <Ionicons name="shirt-outline" size={20} color={colors.textPrimary} />
+                            <Text style={styles.opsCardText}>MY LISTINGS</Text>
+                        </Pressable>
+                        <Pressable style={styles.opsCard}>
+                            <Ionicons name="star-outline" size={20} color={colors.textPrimary} />
+                            <Text style={styles.opsCardText}>REVIEWS</Text>
+                        </Pressable>
+                        <Pressable style={styles.opsCard}>
+                            <Ionicons name="settings-outline" size={20} color={colors.textPrimary} />
+                            <Text style={styles.opsCardText}>SETTINGS</Text>
+                        </Pressable>
+                        {user?.role === 'ADMIN' && (
+                            <Pressable style={[styles.opsCard, { backgroundColor: colors.crimson, borderColor: colors.charcoal }]} onPress={() => router.push('/(admin)')}>
+                                <Ionicons name="shield-checkmark-outline" size={20} color="white" />
+                                <Text style={[styles.opsCardText, { color: 'white' }]}>ADMIN PANEL</Text>
+                            </Pressable>
+                        )}
+                    </View>
                 </View>
 
                 {/* 4. Tab Row (Sticky) */}
@@ -217,7 +200,6 @@ export function ProfileScreen() {
                 </View>
             </ScrollView>
 
-            <SettingsSheet visible={showSettings} onClose={() => setShowSettings(false)} />
         </SafeAreaView>
     );
 }
@@ -249,7 +231,9 @@ const styles = StyleSheet.create({
     actionRow: { flexDirection: 'row', padding: spacing.md, gap: spacing.sm },
     editBtn: { flex: 1, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingVertical: 12, alignItems: 'center' },
     editBtnText: { color: colors.textPrimary, fontFamily: typography.mono, fontSize: 12, fontWeight: 'bold', letterSpacing: 2 },
-    settingsBtn: { width: 48, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+    
+    topRightActions: { position: 'absolute', top: 10, right: 10, flexDirection: 'row', gap: 8 },
+    iconBtn: { backgroundColor: 'rgba(0,0,0,0.5)', padding: 8, borderRadius: radius.full },
 
     tabRow: { flexDirection: 'row', backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.border },
     tabItem: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
@@ -270,18 +254,12 @@ const styles = StyleSheet.create({
     emptyState: { padding: 60, alignItems: 'center' },
     emptyText: { color: colors.textMuted, fontFamily: typography.body, fontSize: 14, marginTop: 12 },
 
-    // Modal
-    modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', zIndex: 1000 },
-    modalDismiss: { flex: 1 },
-    modalContent: { backgroundColor: colors.bgCard, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, minHeight: '80%', padding: spacing.lg },
-    modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: spacing.lg },
-    modalTitle: { color: colors.textPrimary, fontFamily: typography.headings, fontSize: 24, marginBottom: spacing.lg },
+    // Removed Modal and replaced with System Ops Dashboard
+    opsSection: { paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
+    opsGrid: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between' },
+    opsCard: { flex: 1, backgroundColor: colors.bgCard, padding: spacing.sm, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, height: 75 },
+    opsCardText: { color: colors.textPrimary, fontFamily: typography.mono, fontSize: 8, fontWeight: 'bold', marginTop: 8 },
 
-    settingsSection: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 10, letterSpacing: 2, marginBottom: spacing.sm, marginTop: spacing.md },
-    settingsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
-    settingsRowLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-    settingsLabel: { color: colors.textPrimary, fontFamily: typography.body, fontSize: 14 },
-
-    logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl, marginTop: spacing.md },
-    logoutText: { color: colors.error, fontFamily: typography.mono, fontSize: 14, fontWeight: 'bold' }
 });
+
+

@@ -1,9 +1,46 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
-console.log('API_URL:', API_URL);
+/**
+ * Android devices cannot reach the dev machine via "localhost" (that is the phone itself).
+ * When the URL points at localhost/127.0.0.1, swap in the Metro host IP (physical device) or 10.0.2.2 (emulator).
+ */
+function resolveApiBaseUrl(): string {
+  const fallback = 'http://localhost:4000/api/v1';
+  const raw = process.env.EXPO_PUBLIC_API_URL ?? fallback;
+
+  if (!__DEV__ || Platform.OS !== 'android') {
+    return raw;
+  }
+
+  try {
+    const u = new URL(raw);
+    if (u.hostname !== 'localhost' && u.hostname !== '127.0.0.1') {
+      return raw;
+    }
+    const hostUri =
+      Constants.expoConfig?.hostUri ?? (Constants as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost;
+    let hostname = '10.0.2.2';
+    if (hostUri) {
+      const metroHost = hostUri.split(':')[0];
+      if (metroHost && metroHost !== '127.0.0.1' && metroHost !== 'localhost') {
+        hostname = metroHost;
+      }
+    }
+    u.hostname = hostname;
+    return u.toString().replace(/\/$/, '');
+  } catch {
+    return raw;
+  }
+}
+
+const API_URL = resolveApiBaseUrl();
+if (__DEV__) {
+  console.log('API_URL:', API_URL);
+}
 const TOKEN_KEY = 'kaphor_access_token';
 const REFRESH_KEY = 'kaphor_refresh_token';
 
@@ -60,14 +97,16 @@ api.interceptors.response.use(
       return Promise.reject(err);
     }
     try {
-      const { data } = await axios.post<{ data: { accessToken: string } }>(
-        `${API_URL}/auth/refresh`,
-        { refreshToken },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      const { data } = await axios.post<{
+        data: { accessToken: string; refreshToken?: string };
+      }>(`${API_URL}/auth/refresh`, { refreshToken }, { headers: { 'Content-Type': 'application/json' } });
       const accessToken = data.data?.accessToken;
+      const newRefresh = data.data?.refreshToken;
       if (accessToken) {
         await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
+        if (newRefresh) {
+          await SecureStore.setItemAsync(REFRESH_KEY, newRefresh);
+        }
         useAuthStore.getState().setTokens(accessToken);
         processQueue(null, accessToken);
         original.headers.Authorization = `Bearer ${accessToken}`;
@@ -87,7 +126,11 @@ api.interceptors.response.use(
 
 export async function persistTokens(accessToken: string, refreshToken: string): Promise<void> {
   await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
-  await SecureStore.setItemAsync(REFRESH_KEY, refreshToken);
+  if (refreshToken) {
+    await SecureStore.setItemAsync(REFRESH_KEY, refreshToken);
+  } else {
+    await SecureStore.deleteItemAsync(REFRESH_KEY);
+  }
 }
 
 export async function clearStoredTokens(): Promise<void> {

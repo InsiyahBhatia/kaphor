@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../theme';
 
 interface HeaderProps {
@@ -13,9 +14,12 @@ interface HeaderProps {
 
 export function Header({ title, showBack, unreadCount = 0, showLogo = false }: HeaderProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
+
+
       <View style={styles.left}>
         {showBack ? (
           <Pressable onPress={() => router.back()} style={styles.iconBtn}>
@@ -33,6 +37,9 @@ export function Header({ title, showBack, unreadCount = 0, showLogo = false }: H
       )}
 
       <View style={styles.right}>
+        <Pressable onPress={() => router.push('/studio/chat')} style={styles.iconBtn}>
+          <Ionicons name="chatbubbles-outline" size={24} color={colors.textPrimary} />
+        </Pressable>
         <Pressable onPress={() => router.push('/notifications')} style={styles.iconBtn}>
           <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
           {unreadCount > 0 && (
@@ -42,6 +49,7 @@ export function Header({ title, showBack, unreadCount = 0, showLogo = false }: H
           )}
         </Pressable>
       </View>
+
     </View>
   );
 }
@@ -52,13 +60,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    height: 56,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.bg,
   },
   left: { width: 44 },
-  right: { width: 44, alignItems: 'flex-end' },
+  right: { width: 90, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.xs },
+
   iconBtn: { padding: 4, position: 'relative' },
   title: {
     color: colors.textPrimary,

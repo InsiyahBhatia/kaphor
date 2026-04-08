@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { garmentService } from '../../../src/services/garmentService';
+import { colors } from '../../../src/theme';
 
 export default function RentalDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -21,14 +22,14 @@ export default function RentalDetailScreen() {
   }, [id]);
 
   if (loading) {
-    return <View style={[styles.container, styles.center]}><ActivityIndicator size="large" color="#C9A84C" /></View>;
+    return <View style={[styles.container, styles.center]}><ActivityIndicator size="large" color={colors.crimson} /></View>;
   }
 
   if (!garment) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Text style={{ color: 'white' }}>Item not found</Text>
-        <TouchableOpacity onPress={() => router.back()}><Text style={{ color: '#C9A84C', marginTop: 16 }}>Go Back</Text></TouchableOpacity>
+        <Text style={{ color: colors.textPrimary }}>Item not found</Text>
+        <TouchableOpacity onPress={() => router.back()}><Text style={{ color: colors.crimson, marginTop: 16 }}>Go Back</Text></TouchableOpacity>
       </View>
     );
   }
@@ -41,7 +42,7 @@ export default function RentalDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <Image source={{ uri: garment.images?.[0] || 'https://picsum.photos/600/700' }} style={styles.image} />
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="white" />
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
 
         <View style={styles.content}>
@@ -87,26 +88,37 @@ export default function RentalDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A0C10' },
+  container: { flex: 1, backgroundColor: colors.bg },
   center: { justifyContent: 'center', alignItems: 'center' },
-  image: { width: '100%', height: 400 },
-  backButton: { position: 'absolute', top: 60, left: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  image: { width: '100%', height: 420 },
+  backButton: { position: 'absolute', top: 60, left: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.9)', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   content: { padding: 24 },
-  brand: { color: '#C9A84C', fontSize: 11, letterSpacing: 2, fontWeight: '700' },
-  title: { color: 'white', fontSize: 26, fontFamily: 'CormorantGaramond_700Bold', marginTop: 4, marginBottom: 12 },
-  desc: { color: '#6B5C52', fontSize: 14, lineHeight: 22, marginBottom: 24 },
-  rateCard: { backgroundColor: '#2A1C20', borderRadius: 12, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(201,168,76,0.15)' },
-  rateTitle: { color: '#C9A84C', fontSize: 12, fontWeight: '700', letterSpacing: 2, marginBottom: 16 },
-  rateRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  rateLabel: { color: '#6B5C52', fontSize: 12, letterSpacing: 1 },
-  rateValue: { color: 'white', fontSize: 16, fontWeight: '700' },
+  brand: { color: colors.crimson, fontSize: 12, letterSpacing: 2, fontWeight: '800' },
+  title: { color: colors.textPrimary, fontSize: 32, fontFamily: 'BebasNeue_400Regular', marginTop: 4, marginBottom: 12 },
+  desc: { color: colors.textSecond, fontSize: 15, lineHeight: 24, marginBottom: 24 },
+  rateCard: { backgroundColor: colors.bgCard, borderRadius: 20, padding: 24, marginBottom: 24, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  rateTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: '800', letterSpacing: 2, marginBottom: 20 },
+  rateRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
+  rateLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, fontWeight: '700' },
+  rateValue: { color: colors.textPrimary, fontSize: 18, fontWeight: '800' },
   details: { marginBottom: 24 },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#3A2C30' },
-  detailLabel: { color: '#6B5C52', fontSize: 12, letterSpacing: 1 },
-  detailValue: { color: 'white', fontSize: 14, fontWeight: '600' },
-  impactCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: 'rgba(76,175,80,0.08)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(76,175,80,0.15)', marginBottom: 80 },
-  impactText: { color: '#A5D6A7', fontSize: 12, flex: 1 },
-  footer: { padding: 24, borderTopWidth: 1, borderTopColor: '#3A2C30', backgroundColor: '#1A0C10' },
-  reserveButton: { backgroundColor: '#C9A84C', height: 56, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  reserveButtonText: { color: '#1A0C10', fontSize: 16, fontWeight: '700', letterSpacing: 2 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+  detailLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, fontWeight: '700' },
+  detailValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  impactCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, backgroundColor: 'rgba(76,175,80,0.05)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(76,175,80,0.2)', marginBottom: 100 },
+  impactText: { color: '#2E7D32', fontSize: 13, flex: 1, lineHeight: 18, fontWeight: '600' },
+  footer: { padding: 24, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg, position: 'absolute', bottom: 0, left: 0, right: 0 },
+  reserveButton: { 
+    backgroundColor: colors.crimson, 
+    height: 60, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    shadowColor: colors.crimson,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  reserveButtonText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
 });

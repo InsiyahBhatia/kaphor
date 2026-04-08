@@ -17,15 +17,20 @@ export const garmentService = {
     return data.data;
   },
 
-  getFeed: async () => {
-    const { data } = await api.get('/garments/feed');
-    return data.data;
+  getFeed: async (params?: any) => {
+    const { data } = await api.get('/garments/feed', { params });
+    return data;
   },
 
   createGarment: async (formData: FormData) => {
     const { data } = await api.post('/garments', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return data.data;
+  },
+
+  getWishlist: async () => {
+    const { data } = await api.get('/garments/wishlist');
     return data.data;
   },
 };

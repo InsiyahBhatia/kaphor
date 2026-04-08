@@ -2,7 +2,43 @@ import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { getIO } from '../lib/socket';
-import { uploadImage } from '../lib/cloudinary';
+import { uploadToS3, getDownloadUrl } from '../lib/s3';
+
+/** Helpers to resolve media URLs */
+async function resolveUserMedia(user: any) {
+  if (!user || !user.avatar) return user;
+  const avatar = await getDownloadUrl(user.avatar);
+  return { ...user, avatar };
+}
+
+async function resolvePostMedia(post: any) {
+  if (!post) return post;
+  
+  // Resolve post images
+  let resolvedImages = post.images;
+  if (post.images && Array.isArray(post.images)) {
+    resolvedImages = await Promise.all(post.images.map((img: string) => getDownloadUrl(img)));
+  }
+
+  // Resolve author avatar
+  const resolvedUser = await resolveUserMedia(post.user);
+  
+  return { ...post, images: resolvedImages, user: resolvedUser };
+}
+
+async function resolvePostsMedia(posts: any[]) {
+  return Promise.all(posts.map(p => resolvePostMedia(p)));
+}
+
+async function resolveCommentMedia(comment: any) {
+  if (!comment) return comment;
+  const resolvedUser = await resolveUserMedia(comment.user);
+  return { ...comment, user: resolvedUser };
+}
+
+async function resolveCommentsMedia(comments: any[]) {
+  return Promise.all(comments.map(c => resolveCommentMedia(c)));
+}
 
 // ──────────────────────────────
 // FEED
@@ -57,7 +93,8 @@ export async function getFeed(req: Request, res: Response): Promise<void> {
             comments: undefined
         }));
 
-        res.json({ data: enriched, nextCursor });
+        const resolved = await resolvePostsMedia(enriched);
+        res.json({ data: resolved, nextCursor });
     } catch (error) {
         logger.error('Failed to fetch feed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -76,7 +113,7 @@ export async function createPost(req: Request, res: Response): Promise<void> {
 
         // Handle multipart upload from frontend
         if (req.file) {
-            const uploaded = await uploadImage(req.file.buffer, 'social_posts');
+            const uploaded = await uploadToS3(req.file.buffer, 'social_posts', req.file.mimetype);
             images.push(uploaded.url);
         }
 
@@ -92,7 +129,8 @@ export async function createPost(req: Request, res: Response): Promise<void> {
             }
         });
 
-        res.status(201).json({ data: post });
+        const resolved = await resolvePostMedia(post);
+        res.status(201).json({ data: resolved });
     } catch (error) {
         logger.error('Failed creating post', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -154,7 +192,8 @@ export async function addComment(req: Request, res: Response): Promise<void> {
             if (io) io.to(`user:${post.userId}`).emit('comment:new', { postId, comment });
         } catch (_) { /* socket not critical */ }
 
-        res.status(201).json({ data: comment });
+        const resolved = await resolveCommentMedia(comment);
+        res.status(201).json({ data: resolved });
     } catch (error) {
         logger.error('Failed adding comment', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -182,7 +221,8 @@ export async function getComments(req: Request, res: Response): Promise<void> {
         const items = hasNextPage ? comments.slice(0, -1) : comments;
         const nextCursor = hasNextPage ? items[items.length - 1].id : null;
 
-        res.json({ data: items, nextCursor });
+        const resolved = await resolveCommentsMedia(items);
+        res.json({ data: resolved, nextCursor });
     } catch (error) {
         logger.error('Failed getting comments', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });

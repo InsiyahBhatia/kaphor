@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityInd
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/services/api';
+import { colors } from '../../src/theme';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function ForgotPasswordScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.center}>
-          <Ionicons name="mail-outline" size={64} color="#C9A84C" />
+          <Ionicons name="mail-outline" size={64} color={colors.crimson} />
           <Text style={styles.title}>CHECK YOUR EMAIL</Text>
           <Text style={styles.subtitle}>We've sent a password reset link to {email}</Text>
           <TouchableOpacity style={styles.mainBtn} onPress={() => router.replace('/(auth)/login')}>
@@ -41,10 +42,10 @@ export default function ForgotPasswordScreen() {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Ionicons name="chevron-back" size={28} color="white" />
+        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
       </TouchableOpacity>
       <View style={styles.center}>
-        <Ionicons name="lock-open-outline" size={48} color="#C9A84C" />
+        <Ionicons name="lock-open-outline" size={48} color={colors.crimson} />
         <Text style={styles.title}>FORGOT PASSWORD</Text>
         <Text style={styles.subtitle}>Enter your email and we'll send you a reset link</Text>
         <TextInput
@@ -57,7 +58,7 @@ export default function ForgotPasswordScreen() {
           autoCapitalize="none"
         />
         <TouchableOpacity style={styles.mainBtn} onPress={handleSend} disabled={sending}>
-          {sending ? <ActivityIndicator color="#1A0C10" /> : <Text style={styles.mainBtnText}>SEND RESET LINK</Text>}
+          {sending ? <ActivityIndicator color={colors.white} /> : <Text style={styles.mainBtnText}>SEND RESET LINK</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -65,12 +66,24 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A0C10', padding: 24 },
+  container: { flex: 1, backgroundColor: colors.bg, padding: 24 },
   backBtn: { marginTop: 50 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20 },
-  title: { fontSize: 28, fontFamily: 'CormorantGaramond_700Bold', color: '#C9A84C', textAlign: 'center' },
-  subtitle: { color: '#6B5C52', fontSize: 14, textAlign: 'center', lineHeight: 22, paddingHorizontal: 20 },
-  input: { width: '100%', height: 56, borderWidth: 1, borderColor: '#3A2C30', borderRadius: 8, paddingHorizontal: 16, color: 'white', fontSize: 14, letterSpacing: 1 },
-  mainBtn: { width: '100%', height: 56, backgroundColor: '#C9A84C', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  mainBtnText: { color: '#1A0C10', fontSize: 16, fontWeight: '700', letterSpacing: 2 },
+  title: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, textAlign: 'center' },
+  subtitle: { color: colors.textMuted, fontSize: 16, textAlign: 'center', lineHeight: 24, paddingHorizontal: 20, fontWeight: '500' },
+  input: { width: '100%', height: 60, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 20, color: colors.textPrimary, fontSize: 15, letterSpacing: 1, backgroundColor: colors.bgCard },
+  mainBtn: { 
+    width: '100%', 
+    height: 60, 
+    backgroundColor: colors.crimson, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    shadowColor: colors.crimson,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  mainBtnText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
 });

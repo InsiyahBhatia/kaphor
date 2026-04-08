@@ -1,13 +1,14 @@
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { colors } from '../../src/theme';
 
 export default function WelcomeScreen() {
   const router = useRouter();
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <ImageBackground 
         source={{ uri: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=2080&auto=format&fit=crop' }} 
         style={styles.background}
@@ -48,52 +49,62 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(26, 12, 16, 0.6)',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     padding: 24,
     justifyContent: 'space-between',
   },
   header: {
-    marginTop: 80,
+    marginTop: 100,
     alignItems: 'center',
   },
   logo: {
-    fontSize: 48,
-    fontFamily: 'CormorantGaramond_700Bold',
-    color: '#C9A84C',
-    letterSpacing: 8,
+    fontSize: 54,
+    fontFamily: 'BebasNeue_400Regular',
+    color: colors.textPrimary,
+    letterSpacing: 10,
   },
   subtitle: {
     fontSize: 12,
-    color: '#6B5C52',
+    color: colors.crimson,
     letterSpacing: 4,
-    marginTop: 8,
+    marginTop: 12,
+    fontWeight: '800',
   },
   footer: {
-    marginBottom: 40,
+    marginBottom: 60,
   },
   button: {
-    backgroundColor: '#9B1B30',
-    height: 56,
-    borderRadius: 8,
+    backgroundColor: colors.crimson,
+    height: 60,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    shadowColor: colors.crimson,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: 'white',
+    color: colors.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '800',
     letterSpacing: 2,
   },
   secondaryButton: {
-    height: 56,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(155, 27, 48, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   secondaryButtonText: {
-    color: 'white',
+    color: colors.crimson,
     fontSize: 14,
     letterSpacing: 1,
-    opacity: 0.8,
+    fontWeight: '700',
   },
 });

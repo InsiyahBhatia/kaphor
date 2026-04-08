@@ -77,7 +77,7 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const { garmentId, startDate, endDate, shippingAddress } = req.body;
+        const { garmentId, startDate, endDate, shippingAddress, message } = req.body;
 
         if (!garmentId || !startDate || !endDate) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing required rental parameters' });
@@ -145,7 +145,8 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                 endDate: reqEnd,
                 totalPrice: amount,
                 status: 'RESERVED',
-                stripeId: paymentIntent.id
+                stripeId: paymentIntent.id,
+                message: typeof message === 'string' && message.trim().length > 0 ? message.trim().slice(0, 2000) : null,
             }
         });
 

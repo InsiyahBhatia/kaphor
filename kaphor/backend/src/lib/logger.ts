@@ -24,7 +24,6 @@ const transports: winston.transport[] = [
   new winston.transports.Console({ format: consoleFormat }),
 ];
 
-if (process.env.NODE_ENV === 'production') {
   const logDir = path.join(process.cwd(), 'logs');
   transports.push(
     new DailyRotateFile({
@@ -43,7 +42,6 @@ if (process.env.NODE_ENV === 'production') {
       maxFiles: '14d',
     })
   );
-}
 
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),

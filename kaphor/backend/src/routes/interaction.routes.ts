@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { validateRequeset } from '../middleware/validation.middleware';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate } from '../middleware/auth';
 import { createInteraction } from '../controllers/interaction.controller';
 
 export const interactionRouter = Router();

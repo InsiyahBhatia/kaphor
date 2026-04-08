@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { colors } from '../../../src/theme';
 
 export default function ImpactReportScreen() {
   return (
@@ -11,13 +12,13 @@ export default function ImpactReportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A0C10',
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   text: {
-    color: '#C9A84C',
-    fontFamily: 'CormorantGaramond_700Bold',
+    color: colors.textPrimary,
+    fontFamily: 'BebasNeue_400Regular',
     fontSize: 24,
   },
 });

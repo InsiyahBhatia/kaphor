@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-nat
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { impactService } from '../../../src/services/impactService';
+import { colors, typography } from '../../../src/theme';
 
 export default function ImpactScreen() {
   const [impact, setImpact] = useState<any>(null);
@@ -21,29 +22,34 @@ export default function ImpactScreen() {
   }, []);
 
   const stats = [
-    { icon: 'leaf', label: 'CO₂ SAVED', value: `${(impact?.carbonSavedKg || 0).toFixed(1)} kg`, color: '#4CAF50' },
-    { icon: 'water', label: 'WATER SAVED', value: `${(impact?.waterSavedL || 0).toFixed(0)} L`, color: '#2196F3' },
-    { icon: 'swap-horizontal', label: 'ITEMS CIRCULATED', value: `${impact?.itemsCirculated || 0}`, color: '#C9A84C' },
-    { icon: 'color-palette', label: 'ITEMS UPCYCLED', value: `${impact?.itemsUpcycled || 0}`, color: '#FF9800' },
-    { icon: 'refresh', label: 'ITEMS RECYCLED', value: `${impact?.itemsRecycled || 0}`, color: '#9C27B0' },
+    { icon: 'leaf-sharp', label: 'CO₂ SAVED', value: `${(impact?.carbonSavedKg || 0).toFixed(1)} KG`, color: colors.forest },
+    { icon: 'water-sharp', label: 'WATER SAVED', value: `${(impact?.waterSavedL || 0).toFixed(0)} L`, color: colors.navy },
+    { icon: 'swap-horizontal-sharp', label: 'CIRCULATED', value: `${impact?.itemsCirculated || 0}`, color: colors.red },
+    { icon: 'hammer-sharp', label: 'UPCYCLED', value: `${impact?.itemsUpcycled || 0}`, color: colors.copper },
+    { icon: 'refresh-sharp', label: 'RECYCLED', value: `${impact?.itemsRecycled || 0}`, color: colors.charcoal },
   ];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Your Impact</Text>
-        <Text style={styles.subtitle}>Track your contribution to sustainable fashion</Text>
+        <Text style={styles.title}>IMPACT DOSSIER</Text>
+        <Text style={styles.subtitle}>VERIFIED SUSTAINABILITY RECORDS</Text>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#C9A84C" style={{ marginTop: 60 }} />
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color={colors.red} />
+          <Text style={styles.loadingText}>GATHERING METRICS...</Text>
+        </View>
       ) : (
         <View style={styles.grid}>
           {stats.map((stat) => (
-            <View key={stat.label} style={styles.card}>
-              <Ionicons name={stat.icon as any} size={28} color={stat.color} />
+            <View key={stat.label} style={[styles.card, { borderTopColor: stat.color }]}>
+              <View style={styles.cardTopRow}>
+                <Ionicons name={stat.icon as any} size={24} color={stat.color} />
+                <Text style={styles.cardLabel}>{stat.label}</Text>
+              </View>
               <Text style={[styles.cardValue, { color: stat.color }]}>{stat.value}</Text>
-              <Text style={styles.cardLabel}>{stat.label}</Text>
             </View>
           ))}
         </View>
@@ -53,21 +59,29 @@ export default function ImpactScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A0C10' },
-  content: { padding: 24, paddingBottom: 100 },
-  header: { marginTop: 40, marginBottom: 32 },
-  title: { fontSize: 28, fontFamily: 'CormorantGaramond_700Bold', color: '#C9A84C' },
-  subtitle: { fontSize: 14, color: '#6B5C52', marginTop: 8 },
+  container: { flex: 1, backgroundColor: colors.cream },
+  content: { padding: 20, paddingTop: 24, paddingBottom: 100 },
+  header: { marginBottom: 32 },
+  title: { fontSize: 48, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
+  subtitle: { fontSize: 10, fontFamily: typography.mono, color: colors.red, marginTop: 8, letterSpacing: 1, fontWeight: '800' },
+  
+  loader: { alignItems: 'center', marginTop: 100, gap: 16 },
+  loadingText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 12, fontWeight: '700' },
+  
   grid: { gap: 16 },
   card: {
-    backgroundColor: '#2A1C20',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(201, 168, 76, 0.1)',
+    backgroundColor: colors.white,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    borderTopWidth: 8,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
   },
-  cardValue: { fontSize: 28, fontWeight: '700' },
-  cardLabel: { fontSize: 11, color: '#6B5C52', letterSpacing: 1.5 },
+  cardTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  cardValue: { fontSize: 64, fontFamily: typography.headings, lineHeight: 64 },
+  cardLabel: { fontSize: 12, fontFamily: typography.mono, letterSpacing: 1, fontWeight: '800', color: colors.charcoal },
 });

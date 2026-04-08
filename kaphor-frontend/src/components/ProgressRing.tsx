@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   percentageText: {
     color: '#D4AF37',
     fontSize: 24,
-    fontFamily: 'CormorantGaramond_700Bold',
+    fontFamily: 'BebasNeue_400Regular',
   },
 });

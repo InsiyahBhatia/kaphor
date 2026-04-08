@@ -78,7 +78,7 @@ export function SwapScreen() {
     if (loading || !wantedGarment) {
         return (
             <SafeAreaView style={styles.loaderContainer}>
-                <ActivityIndicator size="large" color={colors.gold} />
+                <ActivityIndicator size="large" color={colors.crimson} />
             </SafeAreaView>
         );
     }
@@ -109,7 +109,7 @@ export function SwapScreen() {
                     </View>
 
                     <View style={styles.exchangeIconContainer}>
-                        <Ionicons name="swap-horizontal" size={24} color={colors.gold} />
+                        <Ionicons name="swap-horizontal" size={24} color={colors.crimson} />
                     </View>
 
                     {/* My Offer */}
@@ -153,7 +153,7 @@ export function SwapScreen() {
                                 <KaphorImage uri={garment.images[0]} style={styles.pickerItemImage} contentFit="cover" />
                                 {selectedGarmentId === garment.id && (
                                     <View style={styles.checkmarkBadge}>
-                                        <Ionicons name="checkmark" size={12} color={colors.bg} />
+                                        <Ionicons name="checkmark" size={12} color={colors.white} />
                                     </View>
                                 )}
                             </Pressable>
@@ -212,24 +212,35 @@ const styles = StyleSheet.create({
     panelImage: { width: '100%', height: 120, borderRadius: radius.sm, marginBottom: spacing.sm },
     emptyText: { color: colors.textMuted, fontFamily: typography.body, fontSize: 12 },
 
-    brandText: { color: colors.gold, fontFamily: typography.mono, fontSize: 10, textTransform: 'uppercase', marginBottom: 2, textAlign: 'center' },
-    titleText: { color: colors.textPrimary, fontFamily: typography.headings, fontSize: 12, textAlign: 'center' },
+    brandText: { color: colors.crimson, fontFamily: typography.mono, fontSize: 10, textTransform: 'uppercase', marginBottom: 4, textAlign: 'center', fontWeight: '800' },
+    titleText: { color: colors.textPrimary, fontFamily: typography.headings, fontSize: 13, textAlign: 'center', fontWeight: '600' },
 
-    exchangeIconContainer: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.bgMuted, justifyContent: 'center', alignItems: 'center' },
+    exchangeIconContainer: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
 
-    sectionTitle: { color: colors.textSecond, fontFamily: typography.mono, fontSize: 12, letterSpacing: 1, marginBottom: spacing.sm, marginTop: spacing.md },
-    noItemsText: { color: colors.crimson, fontFamily: typography.body, fontSize: 14, fontStyle: 'italic' },
+    sectionTitle: { color: colors.textSecond, fontFamily: typography.mono, fontSize: 12, letterSpacing: 1.5, marginBottom: spacing.sm, marginTop: spacing.lg, fontWeight: '800' },
+    noItemsText: { color: colors.textMuted, fontFamily: typography.body, fontSize: 14, fontStyle: 'italic', textAlign: 'center', marginTop: 20 },
 
     pickerScroll: { flexDirection: 'row', marginBottom: spacing.lg },
-    pickerItem: { width: 80, height: 100, borderRadius: radius.sm, marginRight: spacing.md, borderWidth: 2, borderColor: 'transparent', overflow: 'hidden', position: 'relative' },
-    pickerItemActive: { borderColor: colors.gold },
+    pickerItem: { width: 90, height: 110, borderRadius: 12, marginRight: spacing.md, borderWidth: 2, borderColor: colors.border, overflow: 'hidden', position: 'relative' },
+    pickerItemActive: { borderColor: colors.crimson },
     pickerItemImage: { width: '100%', height: '100%' },
-    checkmarkBadge: { position: 'absolute', top: 4, right: 4, backgroundColor: colors.gold, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+    checkmarkBadge: { position: 'absolute', top: 6, right: 6, backgroundColor: colors.crimson, width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
 
-    messageInput: { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, color: colors.textPrimary, fontFamily: typography.body, fontSize: 14, minHeight: 100 },
+    messageInput: { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, color: colors.textPrimary, fontFamily: typography.body, fontSize: 14, minHeight: 120 },
 
-    footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.md, paddingBottom: 40, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.border },
-    sendBtn: { backgroundColor: colors.textPrimary, paddingVertical: 18, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
-    sendBtnDisabled: { backgroundColor: colors.bgMuted },
-    sendBtnText: { color: colors.bg, fontFamily: typography.mono, fontSize: 16, fontWeight: 'bold', letterSpacing: 1 }
+    footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.lg, paddingBottom: 40, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.border },
+    sendBtn: { 
+        backgroundColor: colors.crimson, 
+        paddingVertical: 18, 
+        borderRadius: radius.lg, 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        shadowColor: colors.crimson,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    sendBtnDisabled: { backgroundColor: colors.bgMuted, shadowOpacity: 0, elevation: 0 },
+    sendBtnText: { color: colors.white, fontFamily: typography.mono, fontSize: 16, fontWeight: '900', letterSpacing: 2 }
 });

@@ -5,7 +5,9 @@ import {
     getRecommendations,
     getFitScore,
     chat,
-    getUpcycleSuggestions
+    getChatHistory,
+    getUpcycleSuggestions,
+    assessCondition
 } from '../controllers/ai.controller';
 
 const router = Router();
@@ -18,6 +20,9 @@ router.use(authenticate);
 router.post('/style-quiz', processStyleQuiz);
 router.get('/recommendations', getRecommendations);
 router.post('/chat', chat);
+router.get('/history', getChatHistory);
+router.get('/history/:conversationId', getChatHistory);
 router.post('/upcycle-suggestions', getUpcycleSuggestions);
+router.post('/assess-condition', assessCondition);
 
 export { router as aiRoutes };

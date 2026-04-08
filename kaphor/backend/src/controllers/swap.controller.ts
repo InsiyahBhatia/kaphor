@@ -2,8 +2,37 @@ import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { emitToUser } from '../lib/socket';
+import { getDownloadUrl } from '../lib/s3';
 
 const ALLOWED_SWAP_CATEGORIES = ['Accessories', 'Bags', 'Jewelry', 'Belts', 'Scarves'];
+
+/** Helpers to resolve media URLs */
+async function resolveUserMedia(user: any) {
+  if (!user || !user.avatar) return user;
+  const avatar = await getDownloadUrl(user.avatar);
+  return { ...user, avatar };
+}
+
+async function resolveGarmentMedia(garment: any) {
+  if (!garment || !garment.images) return garment;
+  const images = await Promise.all(garment.images.map((img: string) => getDownloadUrl(img)));
+  return { ...garment, images };
+}
+
+async function resolveSwapMedia(swap: any) {
+  if (!swap) return swap;
+  const [initiator, receiver, offered, wanted] = await Promise.all([
+    resolveUserMedia(swap.initiator),
+    resolveUserMedia(swap.receiver),
+    resolveGarmentMedia(swap.offeredGarment),
+    resolveGarmentMedia(swap.wantedGarment)
+  ]);
+  return { ...swap, initiator, receiver, offeredGarment: offered, wantedGarment: wanted };
+}
+
+async function resolveSwapsMedia(swaps: any[]) {
+  return Promise.all(swaps.map(s => resolveSwapMedia(s)));
+}
 
 export async function createSwapRequest(req: Request, res: Response): Promise<void> {
     try {
@@ -108,7 +137,8 @@ export async function getSwaps(req: Request, res: Response): Promise<void> {
             orderBy: { createdAt: 'desc' }
         });
 
-        res.json({ data: swaps });
+        const resolved = await resolveSwapsMedia(swaps);
+        res.json({ data: resolved });
     } catch (error) {
         logger.error('Failed to fetch swaps', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });

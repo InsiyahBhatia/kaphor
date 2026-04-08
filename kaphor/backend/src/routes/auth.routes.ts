@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate } from '../middleware/auth';
 import { 
   validateRequeset, 
   commonValidations 
@@ -41,7 +41,7 @@ authRouter.post(
 
 authRouter.post('/google', googleLogin);
 
-authRouter.post('/logout', authenticate, logout);
+authRouter.post('/logout', logout);
 authRouter.post('/refresh', refreshToken);
 
 authRouter.post(
