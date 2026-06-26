@@ -8,6 +8,7 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 import { KaphorImage } from '../../components/KaphorImage';
 import { colors, typography, spacing, radius } from '../../theme';
 import { Garment } from '../../types';
+import api from '../../services/api';
 
 export function CheckoutScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,38 +25,19 @@ export function CheckoutScreen() {
     const [isComplete, setIsComplete] = useState(false);
 
     useEffect(() => {
-        // Initialize Checkout: Fetch garment details and create PaymentIntent
         const initCheckout = async () => {
             try {
-                // Mock Fetch Garment
-                const mockGarment: Garment = {
-                    id: id as string,
-                    title: 'Vintage Double Flap Bag',
-                    brand: 'CHANEL',
-                    price: 5400,
-                    images: ['https://picsum.photos/seed/img1/200/300'],
-                    condition: 'PRISTINE',
-                    sellerId: 'user123',
-                    category: 'Bags',
-                    size: 'OS',
-                    color: ['Black'],
-                    listingType: 'SALE'
-                } as any;
-                setGarment(mockGarment);
-
-                // Mock POST /api/v1/orders to get PaymentIntent clientSecret
-                // const res = await axios.post('/api/v1/orders', { garmentId: id });
-                // setClientSecret(res.data.data.clientSecret);
-                // setOrderId(res.data.data.orderId);
-
-                // Simulate network latency
-                setTimeout(() => {
-                    setClientSecret('pi_mock_secret');
-                    setOrderId('order_mock_123');
-                    setLoading(false);
-                }, 800);
-            } catch (error) {
-                Alert.alert('Error', 'Unable to initialize checkout.');
+                const [garmentRes, orderRes] = await Promise.all([
+                    api.get(`/garments/${id}`),
+                    api.post('/orders', { garmentId: id }),
+                ]);
+                setGarment(garmentRes.data.data ?? garmentRes.data);
+                setClientSecret(orderRes.data.data.clientSecret);
+                setOrderId(orderRes.data.data.orderId);
+                setLoading(false);
+            } catch (error: any) {
+                const message = error?.response?.data?.message || 'Unable to initialize checkout.';
+                Alert.alert('Error', message);
                 router.back();
             }
         };
@@ -68,15 +50,8 @@ export function CheckoutScreen() {
         setProcessing(true);
 
         try {
-            // Confirm the payment with Stripe
-            /* 
             const { error, paymentIntent } = await confirmPayment(clientSecret, {
                 paymentMethodType: 'Card',
-                billingDetails: {
-                    address: {
-                        line1: address,
-                    }
-                }
             });
 
             if (error) {
@@ -84,16 +59,16 @@ export function CheckoutScreen() {
                 setProcessing(false);
                 return;
             }
-            */
 
-            // Simulate successful payment processing
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            if (!paymentIntent) {
+                Alert.alert('Payment Error', 'No payment intent returned.');
+                setProcessing(false);
+                return;
+            }
 
-            // Trigger Confetti and completion state
             setIsComplete(true);
             setProcessing(false);
 
-            // Navigate away after animation
             setTimeout(() => {
                 router.replace('/(tabs)');
             }, 3000);
@@ -132,7 +107,7 @@ export function CheckoutScreen() {
                         <Text style={styles.brandText}>{garment.brand}</Text>
                         <Text style={styles.titleText}>{garment.title}</Text>
                         <Text style={styles.conditionText}>{garment.condition}</Text>
-                        <Text style={styles.priceText}>${garment.price?.toLocaleString()}</Text>
+                        <Text style={styles.priceText}>₹{garment.price?.toLocaleString()}</Text>
                     </View>
                 </View>
 
@@ -177,16 +152,16 @@ export function CheckoutScreen() {
                 <View style={styles.totalsContainer}>
                     <View style={styles.totalRow}>
                         <Text style={styles.totalLabel}>Subtotal</Text>
-                        <Text style={styles.totalValue}>${garment.price?.toLocaleString()}</Text>
+                        <Text style={styles.totalValue}>₹{garment.price?.toLocaleString()}</Text>
                     </View>
                     <View style={styles.totalRow}>
                         <Text style={styles.totalLabel}>Shipping</Text>
-                        <Text style={styles.totalValue}>$25</Text>
+                        <Text style={styles.totalValue}>₹25</Text>
                     </View>
                     <View style={styles.divider} />
                     <View style={styles.totalRow}>
                         <Text style={styles.grandTotalLabel}>Total</Text>
-                        <Text style={styles.grandTotalValue}>${(Number(garment.price) + 25).toLocaleString()}</Text>
+                        <Text style={styles.grandTotalValue}>₹{(Number(garment.price) + 25).toLocaleString()}</Text>
                     </View>
                 </View>
 

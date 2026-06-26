@@ -181,8 +181,8 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
         }
 
         const paymentIntent = await stripe.paymentIntents.create({
-            amount,
-            currency: 'usd',
+            amount: Math.round(amount * 100),
+            currency: 'inr',
             metadata: {
                 orderId: order.id,
                 garmentId: garment.id,

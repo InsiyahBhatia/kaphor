@@ -129,7 +129,7 @@ export async function createRental(req: Request, res: Response): Promise<void> {
 
         const paymentIntent = await stripe.paymentIntents.create({
             amount: stripeAmount,
-            currency: 'usd',
+            currency: 'inr',
             metadata: {
                 garmentId: garment.id,
                 renterId: req.user.id,

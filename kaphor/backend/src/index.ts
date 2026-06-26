@@ -41,12 +41,18 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:8081')
   .split(',')
   .map((o) => o.trim());
 
-/** ✅ TEST ENV LOADING */
-console.log("DATABASE_URL:", process.env.DATABASE_URL);
-console.log("ENV PATH:", path.resolve('.env'));
 /** Middleware */
 app.use(helmet());
 app.use(compression());
+
+// Stripe webhook needs raw body before JSON parsing
+app.use('/api/v1/payments/webhook',
+  express.raw({ type: 'application/json' }),
+  (req, _res, next) => {
+    (req as any).rawBody = req.body;
+    next();
+  }
+);
 app.use(express.json({ limit: '15mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Request logging middleware
@@ -57,7 +63,7 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: true, // Allow all origins in development
+    origin: process.env.NODE_ENV === 'production' ? ALLOWED_ORIGINS : true,
     credentials: true,
   })
 );

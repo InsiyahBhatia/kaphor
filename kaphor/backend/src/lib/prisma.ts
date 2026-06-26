@@ -81,9 +81,9 @@ export const db = prisma.$extends({
         args.where = { isActive: true, ...args.where };
         return query(args);
       },
-      async findUnique({ args, query }) {
+      async findUnique({ args }) {
         args.where = { isActive: true, ...args.where };
-        return query(args);
+        return prisma.user.findFirst(args);
       },
     },
   },

@@ -161,7 +161,7 @@ export function GarmentDetailScreen() {
                 <View style={styles.content}>
                     <Text style={styles.brand}>{garment.brand}</Text>
                     <Text style={styles.title}>{garment.title}</Text>
-                    <Text style={styles.price}>${garment.price?.toLocaleString() ?? 0}</Text>
+                    <Text style={styles.price}>₹{garment.price?.toLocaleString() ?? 0}</Text>
 
                     {/* Fit Score Badge with Breakdown */}
                     {garment.fitScore !== undefined && (
@@ -235,7 +235,7 @@ export function GarmentDetailScreen() {
                     <Text style={styles.saveText}>{isSaved ? 'Saved' : 'Save'}</Text>
                 </Pressable>
                 <Pressable style={styles.buyButton} onPress={handleBuyNow}>
-                    <Text style={styles.buyButtonText}>BUY NOW - ${garment.price?.toLocaleString() ?? 0}</Text>
+                    <Text style={styles.buyButtonText}>BUY NOW - ₹{garment.price?.toLocaleString() ?? 0}</Text>
                 </Pressable>
             </View>
         </View>
