@@ -10,9 +10,10 @@ interface HeaderProps {
   showBack?: boolean;
   unreadCount?: number;
   showLogo?: boolean;
+  rightElement?: React.ReactNode;
 }
 
-export function Header({ title, showBack, unreadCount = 0, showLogo = false }: HeaderProps) {
+export function Header({ title, showBack, unreadCount = 0, showLogo = false, rightElement }: HeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -26,7 +27,9 @@ export function Header({ title, showBack, unreadCount = 0, showLogo = false }: H
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </Pressable>
         ) : (
-          <View style={{ width: 24 }} />
+          <Pressable onPress={() => router.push('/shop/sell')} style={styles.iconBtn}>
+            <Ionicons name="add-outline" size={28} color={colors.textPrimary} />
+          </Pressable>
         )}
       </View>
 
@@ -37,17 +40,11 @@ export function Header({ title, showBack, unreadCount = 0, showLogo = false }: H
       )}
 
       <View style={styles.right}>
-        <Pressable onPress={() => router.push('/studio/chat')} style={styles.iconBtn}>
-          <Ionicons name="chatbubbles-outline" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Pressable onPress={() => router.push('/notifications')} style={styles.iconBtn}>
-          <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
-          {unreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-            </View>
-          )}
-        </Pressable>
+        {rightElement ? rightElement : (
+          <Pressable onPress={() => router.push('/shop/orders')} style={styles.iconBtn}>
+            <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.textPrimary} />
+          </Pressable>
+        )}
       </View>
 
     </View>
@@ -65,11 +62,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     backgroundColor: colors.bg,
   },
-  left: { width: 44 },
-  right: { width: 90, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.xs },
+  left: { width: 80 },
+  right: { width: 80, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
 
   iconBtn: { padding: 4, position: 'relative' },
   title: {
+    flex: 1,
     color: colors.textPrimary,
     fontFamily: typography.headings,
     fontSize: 18,
@@ -77,6 +75,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   logo: {
+    flex: 1,
     color: colors.textPrimary,
     fontFamily: typography.headings,
     fontSize: 22,

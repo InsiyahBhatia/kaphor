@@ -30,12 +30,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (!user && (inTabsGroup || inAdminGroup)) {
       // Redirect to landing if trying to access protected area while logged out
       router.replace('/');
-    } else if (user && inAuthGroup) {
-      // If admin, go to admin dashboard, else go to normal tabs
-      if (user.role === 'ADMIN') {
-        router.replace('/(admin)');
-      } else {
-        router.replace('/(tabs)');
+    } else if (user) {
+      const isQuizPage = segments[segments.length - 1] === 'style-quiz';
+      
+      if (!user.onboardingDone && !isQuizPage) {
+        router.replace('/(auth)/style-quiz');
+      } else if (user.onboardingDone && inAuthGroup && !isQuizPage) {
+        if (user.role === 'ADMIN') {
+          router.replace('/(admin)');
+        } else {
+          router.replace('/(tabs)');
+        }
       }
     }
   }, [user, segments, isLoading]);

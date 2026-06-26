@@ -1,40 +1,44 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Pressable, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { adminService } from '../../src/services/adminService';
 import { colors, spacing, radius, typography } from '../../src/theme';
 
-type AdminTab = 'INSIGHTS' | 'USERS' | 'ACTIVITY';
+type AdminTab = 'INSIGHTS' | 'USERS' | 'LISTINGS' | 'ACTIVITY';
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('INSIGHTS');
+  const [searchQuery, setSearchQuery] = useState('');
   const [monitor, setMonitor] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [bespoke, setBespoke] = useState<any[]>([]);
   const [swaps, setSwaps] = useState<any[]>([]);
   const [rentals, setRentals] = useState<any[]>([]);
+  const [garments, setGarments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [m, u, b, s, r] = await Promise.all([
+      const [m, u, b, s, r, g] = await Promise.all([
         adminService.getMonitor(),
         adminService.listUsers({ limit: 50 }),
         adminService.listBespokeRequests({ limit: 10 }),
         adminService.listSwaps({ limit: 10 }),
         adminService.listRentals({ limit: 10 }),
+        adminService.listGarments({ limit: 100 }),
       ]);
       setMonitor(m);
       setUsers(u);
       setBespoke(b);
       setSwaps(s);
       setRentals(r);
+      setGarments(g);
     } catch (e: any) {
       Alert.alert('Admin Error', e?.response?.data?.message || 'Failed to sync platform data.');
     } finally {
@@ -64,6 +68,50 @@ export default function AdminDashboardScreen() {
     } catch (e: any) {
       Alert.alert('Update Failed', e?.response?.data?.message || 'Could not update user tier.');
     }
+  };
+
+  const deleteUser = (targetUser: any) => {
+    Alert.alert(
+      'Delete Account',
+      `Are you sure you want to permanently delete ${targetUser.displayName}? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              await adminService.deleteUser(targetUser.id);
+              setUsers(prev => prev.filter(u => u.id !== targetUser.id));
+            } catch (e: any) {
+              Alert.alert('Delete Failed', e?.response?.data?.message || 'Could not delete user.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const deleteGarment = (targetGarment: any) => {
+    Alert.alert(
+      'Delete Listing',
+      `Are you sure you want to permanently remove ${targetGarment.title} from the marketplace?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              await adminService.deleteGarment(targetGarment.id);
+              setGarments(prev => prev.filter(g => g.id !== targetGarment.id));
+            } catch (e: any) {
+              Alert.alert('Delete Failed', e?.response?.data?.message || 'Could not delete garment.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   if (authLoading || loading) {
@@ -103,7 +151,7 @@ export default function AdminDashboardScreen() {
 
       {/* Segmented Control */}
       <View style={styles.tabBar}>
-        {(['INSIGHTS', 'USERS', 'ACTIVITY'] as AdminTab[]).map(tab => (
+        {(['INSIGHTS', 'USERS', 'LISTINGS', 'ACTIVITY'] as AdminTab[]).map(tab => (
           <TouchableOpacity 
             key={tab} 
             style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -184,6 +232,73 @@ export default function AdminDashboardScreen() {
                     onPress={() => promoteUser(u)}
                   >
                     <MaterialCommunityIcons name="crown" size={14} color={u.tier === 'ELITE' ? colors.gold : 'white'} />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.actionBtn, { backgroundColor: colors.crimson }]}
+                    onPress={() => deleteUser(u)}
+                  >
+                    <Ionicons name="trash-outline" size={14} color="white" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {activeTab === 'LISTINGS' && (
+          <View>
+            <View style={styles.searchBar}>
+              <Ionicons name="search" size={18} color={colors.textMuted} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="SEARCH ARCHIVE LISTINGS..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery !== '' && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {garments
+              .filter(g => 
+                g.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                g.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                g.listingType?.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((g, i) => (
+              <View key={g.id} style={styles.userCard}>
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>{g.title}</Text>
+                  <Text style={styles.userEmail}>{g.brand || 'No Brand'} · {g.category?.toUpperCase() || 'NO CAT'}</Text>
+                  <View style={styles.badgeRow}>
+                    <View style={[styles.miniBadge, { backgroundColor: colors.crimson + '10' }]}>
+                      <Text style={[styles.miniBadgeText, { color: colors.crimson }]}>
+                        {g.listingType}
+                      </Text>
+                    </View>
+                    <View style={[styles.miniBadge, { backgroundColor: colors.success + '10' }]}>
+                      <Text style={[styles.miniBadgeText, { color: colors.success }]}>
+                        ₹{(g.price / 100).toLocaleString()}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.userActions}>
+                  <TouchableOpacity 
+                    style={[styles.actionBtn, { backgroundColor: colors.charcoal }]}
+                    onPress={() => router.push(`/(tabs)/shop/${g.id}` as any)}
+                  >
+                    <Ionicons name="eye-outline" size={14} color="white" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.actionBtn, { backgroundColor: colors.crimson }]}
+                    onPress={() => deleteGarment(g)}
+                  >
+                    <Ionicons name="trash-outline" size={14} color="white" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -285,6 +400,25 @@ const styles = StyleSheet.create({
   lockSub: { textAlign: 'center', color: colors.textMuted, marginTop: 8, lineHeight: 20, fontSize: 13 },
   lockBtn: { marginTop: 32, backgroundColor: colors.crimson, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 12 },
   lockBtnText: { color: 'white', fontWeight: '900', letterSpacing: 1 },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+    marginBottom: 16,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '800',
+  },
 });
 
 

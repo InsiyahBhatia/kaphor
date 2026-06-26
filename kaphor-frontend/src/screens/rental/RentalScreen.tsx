@@ -7,10 +7,12 @@ import { KaphorImage } from '../../components/KaphorImage';
 import { colors, typography, spacing, radius } from '../../theme';
 import { Garment } from '../../types';
 
+import { api } from '../../services/api';
+
 const { width } = Dimensions.get('window');
 
-const CATEGORIES = ['Sarees', 'Lehengas', 'Sherwanis', 'Jewels'];
-const FILTER_CHIPS = ['Banarasi Silk', 'Velvet', 'Zardosi', 'Kanjeevaram'];
+const CATEGORIES = ['Sarees', 'Lehengas', 'Sherwanis', 'Suits'];
+const FILTER_CHIPS = ['Banarasi Silk', 'Chikankari', 'Zardosi', 'Silk', 'Cotton'];
 
 export function RentalScreen() {
     const router = useRouter();
@@ -27,47 +29,28 @@ export function RentalScreen() {
         const fetchRentals = async () => {
             setLoading(true);
             try {
-                // Mock Fetch from /api/v1/rentals/available
-                const mockData: any[] = [
-                    {
-                        id: 'rent1',
-                        title: 'Crimson Velvet Zardosi Lehenga',
-                        brand: 'SABYASACHI',
-                        images: ['https://picsum.photos/seed/lehenga1/400/600'],
-                        category: 'Lehengas',
-                        rentalPriceDay: 150,
-                        isLastPiece: true,
-                        isAvailableNow: true
-                    },
-                    {
-                        id: 'rent2',
-                        title: 'Golden Tissue Saree',
-                        brand: 'MANISH MALHOTRA',
-                        images: ['https://picsum.photos/seed/saree1/400/600'],
-                        category: 'Sarees',
-                        rentalPriceDay: 80,
-                        isLastPiece: false,
-                        isAvailableNow: false
-                    },
-                    {
-                        id: 'rent3',
-                        title: 'Emerald Polki Choker set',
-                        brand: 'AMRAPALI',
-                        images: ['https://picsum.photos/seed/jewels1/400/600'],
-                        category: 'Jewels',
-                        rentalPriceDay: 200,
-                        isLastPiece: true,
-                        isAvailableNow: true
+                const response = await api.get('/rentals/available', {
+                    params: {
+                        category: activeCategory,
+                        // Add filters here if backend supports them
                     }
-                ];
+                });
+                
+                let data = response.data.data;
 
-                setTimeout(() => {
-                    // Filter locally for the mock
-                    setGarments(mockData.filter(g => g.category === activeCategory) as any);
-                    setLoading(false);
-                }, 600);
+                // Simple local filtering for chips if needed
+                if (activeFilter) {
+                    data = data.filter((g: any) => 
+                        g.fabric?.toLowerCase().includes(activeFilter.toLowerCase()) ||
+                        g.pattern?.toLowerCase().includes(activeFilter.toLowerCase()) ||
+                        g.style?.toLowerCase().includes(activeFilter.toLowerCase())
+                    );
+                }
+
+                setGarments(data);
+                setLoading(false);
             } catch (error) {
-                console.error(error);
+                console.error('Failed to fetch rentals:', error);
                 setLoading(false);
             }
         };
@@ -158,8 +141,8 @@ export function RentalScreen() {
                                     <Text style={styles.titleText} numberOfLines={1}>{garment.title}</Text>
 
                                     <View style={styles.priceRow}>
-                                        <Text style={styles.priceText}>${(garment.rentalPriceDay! * 3).toLocaleString()}</Text>
-                                        <Text style={styles.priceSuffix}>/ 3 days</Text>
+                                        <Text style={styles.priceText}>₹{(garment.rentalPriceDay! / 100).toLocaleString()}</Text>
+                                        <Text style={styles.priceSuffix}>/ day</Text>
                                         <View style={{ flex: 1 }} />
                                         <View style={styles.rentLabel}>
                                             <Text style={styles.rentLabelText}>RENT</Text>

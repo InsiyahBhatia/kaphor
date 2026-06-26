@@ -24,4 +24,17 @@ export const aiService = {
     const { data } = await api.post('/ai/style-quiz', { answers });
     return data.data;
   },
+
+  skipStyleQuiz: async () => {
+    const { data } = await api.post('/ai/style-quiz/skip');
+    return data.data;
+  },
+  getStyleProfile: async () => {
+    const { data } = await api.get('/ai/style-profile');
+    return data.data;
+  },
+  getRecommendations: async () => {
+    const { data } = await api.get('/ai/recommendations');
+    return data.data;
+  },
 };

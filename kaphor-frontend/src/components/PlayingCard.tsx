@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Image, ViewStyle, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../theme';
+import { KaphorImage } from './KaphorImage';
 
 export interface PlayingCardProps {
   rank: string;
@@ -12,77 +14,97 @@ export interface PlayingCardProps {
   matchPercent?: number;
   imageUrl?: string;
   flavorText?: string;
+  condition?: string;
+  category?: string;
+  subCategory?: string;
+  onSwapRequest?: () => void;
+  onAddToCart?: () => void;
+  buttonText?: string;
   style?: ViewStyle;
 }
 
 export function PlayingCard({
   rank,
   suit,
-  bgColor = colors.bgCard,
+  bgColor = colors.white,
   productName,
   price,
   size,
   matchPercent,
   imageUrl,
-  flavorText = "that's love story energy right there",
+  flavorText,
+  condition = "Excellent",
+  category,
+  subCategory,
+  onSwapRequest,
+  onAddToCart,
+  buttonText = "Swap Request",
   style,
 }: PlayingCardProps) {
   
   const isRedSuit = suit === '♥' || suit === '♦';
+  const suitColor = isRedSuit ? colors.crimson : colors.charcoal;
 
   return (
     <View style={[styles.cardContainer, { backgroundColor: bgColor }, style]}>
       
-      {/* Inner Border to simulate a playing card / dossier frame */}
-      <View style={styles.innerBorder} pointerEvents="none" />
-
-      {/* Top Left: Rank and Suit */}
-      <View style={styles.topLeft}>
-        <Text style={[styles.rankText, isRedSuit ? { color: colors.crimson } : { color: colors.charcoal }]}>{rank}</Text>
-        <Text style={[styles.suitText, isRedSuit ? { color: colors.crimson } : { color: colors.charcoal }]}>{suit}</Text>
+      {/* Subtle Corner Decoration */}
+      <View style={styles.cornerDecorationTop}>
+        <Text style={[styles.rankText, { color: suitColor }]}>{rank}</Text>
+        <Text style={[styles.suitText, { color: suitColor }]}>{suit}</Text>
       </View>
 
-      {/* Bottom Right: Inverted Rank and Suit */}
-      <View style={styles.bottomRight}>
-        <Text style={[styles.rankText, isRedSuit ? { color: colors.crimson } : { color: colors.charcoal }, { transform: [{ rotate: '180deg' }] }]}>{rank}</Text>
-        <Text style={[styles.suitText, isRedSuit ? { color: colors.crimson } : { color: colors.charcoal }, { transform: [{ rotate: '180deg' }] }]}>{suit}</Text>
-      </View>
-
-      {/* Top Right: Match Badge */}
+      {/* Match Badge */}
       {matchPercent !== undefined && (
-        <View style={styles.badgeContainer}>
-          <Text style={styles.badgeText}>{matchPercent}%</Text>
+        <View style={styles.matchBadge}>
+          <Text style={styles.matchBadgeText}>{matchPercent}% MATCH</Text>
         </View>
       )}
 
-      {/* Center: Image */}
-      <View style={styles.imageContainer}>
+      {/* Product Image */}
+      <View style={styles.imageWrapper}>
         {imageUrl ? (
-          <Image
-            source={{ uri: imageUrl }}
+          <KaphorImage
+            uri={imageUrl}
             style={styles.image}
-            resizeMode="contain"
+            contentFit="cover"
           />
         ) : (
           <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderText}>NO VISUAL DATA</Text>
+            <Text style={styles.placeholderText}>NO IMAGE</Text>
           </View>
         )}
       </View>
 
-      {/* Right Edge: Flavor Text */}
-      <View style={styles.flavorTextContainer}>
-        <Text style={styles.flavorText}>{flavorText} ↕</Text>
-      </View>
-
-      {/* Bottom Setup */}
-      <View style={styles.bottomSection}>
-        <Text style={styles.productName} numberOfLines={1}>{productName}</Text>
-        <View style={styles.detailsRow}>
-          <View style={styles.sizeBox}>
-            <Text style={styles.sizeText}>{size}</Text>
+      {/* Product Info */}
+      <View style={styles.contentContainer}>
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.productName} numberOfLines={1}>{productName}</Text>
+            {(subCategory || category) && <Text style={styles.categoryText}>{(subCategory || category || '').toUpperCase()}</Text>}
           </View>
-          <Text style={styles.priceText}>₹{price.toLocaleString()}</Text>
+          <Text style={styles.sizeBadge}>{size}</Text>
+        </View>
+        
+        <View style={styles.detailsRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.priceText}>₹{price.toLocaleString()}</Text>
+            <View style={styles.conditionTag}>
+              <Text style={styles.conditionTagText}>{(condition || 'Excellent').toUpperCase()}</Text>
+            </View>
+          </View>
+
+          {onAddToCart && (
+            <Pressable 
+              style={({ pressed }) => [styles.cartBtn, pressed && { transform: [{ scale: 0.95 }] }]} 
+              onPress={(e) => {
+                e.stopPropagation();
+                onAddToCart();
+              }}
+            >
+              <Ionicons name="cart" size={20} color={colors.white} />
+            </Pressable>
+          )}
         </View>
       </View>
     </View>
@@ -91,147 +113,148 @@ export function PlayingCard({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    width: 200,
-    height: 300,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    padding: 10,
+    borderRadius: 16,
     position: 'relative',
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    backgroundColor: colors.white,
+    // Modern SaaS Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 4,
-  },
-  innerBorder: {
-    position: 'absolute',
-    top: 6, bottom: 6, left: 6, right: 6,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
-    zIndex: 2,
+    borderColor: 'rgba(0,0,0,0.03)',
   },
-  topLeft: {
+  cornerDecorationTop: {
     position: 'absolute',
     top: 12,
     left: 12,
     alignItems: 'center',
     zIndex: 10,
-  },
-  bottomRight: {
-    position: 'absolute',
-    bottom: 80, // Above the black bottom section
-    right: 12,
-    alignItems: 'center',
-    zIndex: 10,
+    opacity: 0.6, // Muted for UX friendliness
   },
   rankText: {
     fontFamily: typography.ranks,
-    fontSize: 28,
-    lineHeight: 32,
+    fontSize: 14,
+    fontWeight: '700',
   },
   suitText: {
     fontFamily: typography.ranks,
-    fontSize: 24,
-    marginTop: -4,
+    fontSize: 12,
+    marginTop: -2,
   },
-  badgeContainer: {
+  matchBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: colors.charcoal,
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(168, 34, 34, 0.9)',
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    zIndex: 10,
-    borderWidth: 2,
-    borderColor: colors.cream,
+    paddingVertical: 3,
+    borderRadius: 6,
+    zIndex: 20,
   },
-  badgeText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+  matchBadgeText: {
     color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 9,
     fontWeight: '800',
-    letterSpacing: 1,
   },
-  imageContainer: {
-    flex: 1,
-    marginTop: 20,
-    marginBottom: 74, // Space for bottom section
-    marginHorizontal: 32,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    backgroundColor: colors.bgCard, // Improved background for contain
+  imageWrapper: {
+    width: '100%',
+    height: 180,
+    backgroundColor: '#F8FAFB',
+    borderRadius: 12,
+    marginTop: 20, 
+    marginBottom: 12,
     overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
-    width: '100%',
+    width: '100%', 
     height: '100%',
   },
   placeholderImage: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.cream,
+    backgroundColor: '#F0F4F8',
   },
   placeholderText: {
     fontFamily: typography.mono,
-    color: 'rgba(30,31,34,0.3)',
-    fontSize: 8,
-    transform: [{ rotate: '-90deg' }],
-    letterSpacing: 2,
+    color: colors.textMuted,
+    fontSize: 10,
   },
-  flavorTextContainer: {
-    position: 'absolute',
-    right: -60,
-    top: 140,
-    transform: [{ rotate: '90deg' }],
-    width: 160,
+  contentContainer: {
+    paddingHorizontal: 4,
   },
-  flavorText: {
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  sizeBadge: {
     fontFamily: typography.mono,
-    fontSize: 8,
-    color: 'rgba(30, 31, 34, 0.4)',
-    letterSpacing: 2,
-    textAlign: 'center',
-  },
-  bottomSection: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    backgroundColor: colors.cream,
-    padding: 12,
-    borderTopWidth: 2,
-    borderColor: colors.charcoal,
-    height: 70,
-    justifyContent: 'center',
+    fontSize: 9,
+    color: colors.textMuted,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   productName: {
     fontFamily: typography.headings,
-    fontSize: 24,
+    fontSize: 16,
     color: colors.charcoal,
-    letterSpacing: 1,
-    marginBottom: 4,
-    lineHeight: 24,
+    flex: 1,
+    marginRight: 8,
+    fontWeight: '600',
   },
   detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  sizeBox: {
-    borderWidth: 1,
-    borderColor: colors.red,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  sizeText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: colors.red,
-    fontWeight: '800',
+    marginTop: 4,
   },
   priceText: {
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 15, 
     color: colors.charcoal,
     fontWeight: '800',
+  },
+  conditionTag: {
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  conditionTagText: {
+    color: colors.crimson,
+    fontFamily: typography.mono,
+    fontSize: 8,
+    letterSpacing: 0.5,
+    fontWeight: '700',
+  },
+  cartBtn: {
+    width: 32,
+    height: 32,
+    backgroundColor: colors.charcoal,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.textMuted,
+    marginTop: 2,
     letterSpacing: 1,
+    fontWeight: '700',
   },
 });

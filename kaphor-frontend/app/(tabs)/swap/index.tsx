@@ -8,14 +8,16 @@ import { colors, typography } from '../../../src/theme';
 
 export default function SwapFeedScreen() {
   const router = useRouter();
-  const { garments, isLoading, fetchGarments } = useGarmentStore();
+  const { garments, isLoading, fetchFeed } = useGarmentStore();
 
   useEffect(() => {
-    fetchGarments();
+    fetchFeed({ listingType: 'ACCESSORY_SWAP' });
   }, []);
 
-  // The backend determines true swap eligibility via garment listings not marked internal-sale
-  const swappableItems = garments.filter(g => (g as any).forSale !== true);
+  // Strictly filter for swap items only
+  const swappableItems = garments.filter(g => 
+    g.listingType === 'ACCESSORY_SWAP'
+  );
 
   return (
     <View style={styles.container}>
@@ -35,36 +37,40 @@ export default function SwapFeedScreen() {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
           <View style={styles.grid}>
-            {/* If very few specific swap items, just map all for visual demo */}
-            {(swappableItems.length > 0 ? swappableItems : garments).map((item, index) => {
-              const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
-              const ranks = ['J', 'Q', 'K', 'A', '8', '7'];
+            {swappableItems.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>NO SWAPPABLE ASSETS DETECTED</Text>
+              </View>
+            ) : (
+              swappableItems.map((item, index) => {
+                const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
+                const ranks = ['J', 'Q', 'K', 'A', '8', '7'];
 
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.cardWrapper}
-                  onPress={() => router.push(`/(tabs)/swap/${item.id}` as any)}
-                >
-                  <PlayingCard
-                    rank={ranks[index % ranks.length]}
-                    suit={suits[index % 4]}
-                    productName={item.title}
-                    size="M"
-                    price={item.price ? item.price / 100 : 0}
-                    matchPercent={Math.floor(Math.random() * 20) + 70}
-                    imageUrl={item.images[0]}
-                    flavorText="eligible for exchange"
-                    style={{ width: '100%' }}
-                  />
-                  <View style={styles.cardActions}>
-                    <View style={styles.swapBtn}>
-                      <Text style={styles.swapBtnText}>REQUEST SWAP →</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              )
-            })}
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.cardWrapper}
+                    onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
+                  >
+                    <PlayingCard
+                      rank={ranks[index % ranks.length]}
+                      suit={suits[index % 4]}
+                      productName={item.title}
+                      size="M"
+                      category={item.category}
+                      subCategory={item.subCategory}
+                      price={item.price ? item.price / 100 : 0}
+                      matchPercent={Math.floor(Math.random() * 20) + 70}
+                      imageUrl={item.images[0]}
+                      condition="Like New"
+                      buttonText="SWAP REQUEST"
+                      onSwapRequest={() => router.push(`/(tabs)/swap/${item.id}` as any)}
+                      style={{ width: '100%' }}
+                    />
+                  </TouchableOpacity>
+                );
+              })
+            )}
           </View>
         </ScrollView>
       )}
@@ -139,5 +145,30 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '800',
     letterSpacing: 1,
+  },
+  cartButton: {
+    width: 60,
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.crimson,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 40,
+    padding: 32,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    borderStyle: 'dashed',
+    width: '100%',
+  },
+  emptyText: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    color: colors.charcoal,
+    fontWeight: '800',
   },
 });

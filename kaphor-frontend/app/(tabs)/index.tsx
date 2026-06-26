@@ -1,22 +1,32 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { useGarmentStore } from '../../src/store/garmentStore';
+import { cartService } from '../../src/services/cartService';
 import { PlayingCard } from '../../src/components/PlayingCard';
 import { colors, typography } from '../../src/theme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Header } from '../../src/components/common/Header';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { garments, isLoading, fetchGarments } = useGarmentStore();
+  const { garments, isLoading, fetchGarments, fetchFeed } = useGarmentStore();
 
   useEffect(() => {
-    fetchGarments();
+    fetchFeed({ listingType: 'SALE' });
   }, []);
+
+  const handleAddToCart = async (item: any) => {
+    try {
+      await cartService.addToCart(item.id);
+      Alert.alert('✓ Added', `${item.title} has been added to your cart.`);
+    } catch (error) {
+      Alert.alert('Error', 'Could not add to cart. Please try again.');
+      console.error(error);
+    }
+  };
 
   const CRTOverlay = () => (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -27,7 +37,8 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      <Header showLogo />
       {/* GLOBAL SYSTEM TICKER */}
       <View style={styles.ticker}>
         <Text style={styles.tickerText} numberOfLines={1}>
@@ -90,14 +101,24 @@ export default function HomeScreen() {
             <View style={styles.badgeLine}><Text style={styles.badgeText}>IDENTIFIED</Text></View>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-            {['ETHNIC', 'APPAREL', 'ACCESSORIES', 'FOOTWEAR'].map((group, i) => (
+            {[
+              { name: 'ETHNIC', id: 'S-01', img: 'https://images.unsplash.com/photo-1621231718224-8b63486a482d?q=80&w=400&auto=format&fit=crop' },
+              { name: 'APPAREL', id: 'S-02', img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop' },
+              { name: 'ACCESSORIES', id: 'S-03', img: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=400&auto=format&fit=crop' },
+              { name: 'FOOTWEAR', id: 'S-04', img: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=400&auto=format&fit=crop' },
+            ].map((sector, i) => (
               <TouchableOpacity 
                 key={i} 
                 style={styles.categoryCard}
-                onPress={() => router.push({ pathname: '/(tabs)/shop', params: { category: group } })}
+                onPress={() => router.push({ pathname: '/(tabs)/shop', params: { category: sector.name } } as any)}
               >
-                <Text style={styles.categoryInitials}>{group.substring(0, 2)}</Text>
-                <Text style={styles.categoryName}>{group}</Text>
+                <Image source={{ uri: sector.img }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(26,26,26,0.4)' }]} />
+                <View style={styles.sectorOverlay}>
+                  <Text style={styles.sectorId}>{sector.id}</Text>
+                  <Text style={styles.categoryName}>{sector.name}</Text>
+                </View>
+                <View style={styles.scannerLine} />
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -115,7 +136,7 @@ export default function HomeScreen() {
             <ActivityIndicator size="small" color={colors.charcoal} style={{ marginVertical: 40 }} />
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-              {garments.slice(0, 5).map((item, index) => {
+              {garments.filter(g => g.listingType === 'SALE').slice(0, 8).map((item, index) => {
                  const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
                  return (
                   <TouchableOpacity
@@ -124,13 +145,18 @@ export default function HomeScreen() {
                     onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
                   >
                     <PlayingCard
-                      rank={['Q', '8', '!', 'K', 'A'][index % 5]}
+                      rank={['A', 'K', 'Q', 'J', '8'][index % 5]}
                       suit={suits[index % 4]}
                       productName={item.title}
                       price={item.price ? item.price / 100 : 0}
-                      size="OS"
+                      size={item.size || 'M'}
+                      category={item.category}
+                      subCategory={item.subCategory}
                       imageUrl={item.images[0]}
-                      flavorText="intercepted asset"
+                      matchPercent={88 + (index % 12)}
+                      condition={item.condition || "Excellent"}
+                      onAddToCart={() => handleAddToCart(item)}
+                      onSwapRequest={() => router.push(`/(tabs)/shop/${item.id}` as any)}
                     />
                   </TouchableOpacity>
                 )
@@ -234,7 +260,12 @@ const styles = StyleSheet.create({
   badgeText: { color: colors.white, fontSize: 10, fontFamily: typography.mono, fontWeight: '800', letterSpacing: 1 },
   
   horizontalScroll: { paddingLeft: 16, paddingRight: 16, paddingBottom: 16 },
-  cardWrapper: { marginRight: 16, marginBottom: 0 },
+  
+  cardWrapper: { 
+    width: 185, 
+    marginRight: 16, 
+    marginBottom: 8,
+  },
   
   tileGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 12 },
   tile: {
@@ -317,30 +348,54 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
   },
+  
   categoryCard: {
-    width: 100,
-    height: 120,
+    width: 130,
+    height: 160,
     backgroundColor: colors.charcoal,
     borderWidth: 2,
     borderColor: colors.charcoal,
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 8,
+    marginRight: 16,
+    justifyContent: 'flex-end',
+    padding: 12,
+    overflow: 'hidden',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
-  categoryInitials: {
-    fontFamily: typography.headings,
+  sectorOverlay: {
+    zIndex: 10,
+  },
+  sectorId: {
+    fontFamily: typography.mono,
     color: colors.red,
-    fontSize: 24,
+    fontSize: 10,
+    fontWeight: '800',
     marginBottom: 4,
   },
   categoryName: {
-    fontFamily: typography.mono,
+    fontFamily: typography.headings,
     color: colors.white,
-    fontSize: 9,
+    fontSize: 18,
     fontWeight: '700',
-    textAlign: 'center',
     letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  scannerLine: {
+    position: 'absolute',
+    top: '30%',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.red,
+    opacity: 0.6,
+    zIndex: 5,
+    shadowColor: colors.red,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
   },
 });
 

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGarmentStore } from '../../../src/store/garmentStore';
+import { cartService } from '../../../src/services/cartService';
 import { PlayingCard } from '../../../src/components/PlayingCard';
 import { colors, typography } from '../../../src/theme';
 import { 
@@ -13,6 +14,7 @@ import {
 
 export default function ShopScreen() {
   const router = useRouter();
+  const isFirstRender = React.useRef(true);
   const categories = ['ALL', ...MARKET_CATEGORIES.map(g => g.group)];
   const SIZES = MARKET_SIZES;
   const CONDITIONS = MARKET_CONDITIONS;
@@ -43,7 +45,16 @@ export default function ShopScreen() {
   }, [filterCategory, openFilters]);
 
   useEffect(() => {
-    applyFilters();
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      applyFilters();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      applyFilters();
+    }, 500); // 500ms debounce
+    return () => clearTimeout(timer);
   }, [searchQuery, selectedFilters]);
 
   const applyFilters = () => {
@@ -66,6 +77,9 @@ export default function ShopScreen() {
     if (selectedFilters.sizes.length > 0) params.size = selectedFilters.sizes.join(',');
     if (selectedFilters.conditions.length > 0) params.condition = selectedFilters.conditions.join(',');
     
+    // Ensure we only show SALE items in the main shop feed
+    params.listingType = 'SALE';
+    
     fetchFeed(params);
   };
 
@@ -81,6 +95,16 @@ export default function ShopScreen() {
     };
   };
 
+  const handleAddToCart = async (item: any) => {
+    try {
+      await cartService.addToCart(item.id);
+      Alert.alert('✓ Added', `${item.title} has been added to your cart.`);
+    } catch (error) {
+      Alert.alert('Error', 'Could not add to cart. Please try again.');
+      console.error(error);
+    }
+  };
+
   const toggleFilter = (type: keyof typeof selectedFilters, value: any) => {
     setSelectedFilters(prev => {
       const current = prev[type] as any[];
@@ -90,6 +114,8 @@ export default function ShopScreen() {
       return { ...prev, [type]: next };
     });
   };
+
+  const showInitialLoader = isLoading && garments.length === 0;
 
   return (
     <View style={styles.container}>
@@ -117,13 +143,16 @@ export default function ShopScreen() {
         </View>
       </View>
 
-      {isLoading ? (
+      {showInitialLoader ? (
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={colors.red} />
           <Text style={styles.loadingText}>ACCESSING DOSSIERS...</Text>
         </View>
       ) : (
         <View style={{ flex: 1 }}>
+          {isLoading && garments.length > 0 && (
+             <View style={{ height: 2, backgroundColor: colors.red, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }} />
+          )}
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
             <View style={styles.activeFiltersRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -148,13 +177,13 @@ export default function ShopScreen() {
               </ScrollView>
             </View>
 
-            {garments.length === 0 ? (
+            {garments.filter(item => item.listingType === 'SALE').length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>NO LOGS MATCHING QUERY</Text>
+                <Text style={styles.emptyText}>NO SALE ASSETS MATCHING QUERY</Text>
               </View>
             ) : (
               <View style={styles.grid}>
-                {garments.map((item, index) => {
+                {garments.filter(item => item.listingType === 'SALE').map((item, index) => {
                   const { rank, suit } = getDeterminants(item.id, index);
                   return (
                     <TouchableOpacity
@@ -168,7 +197,17 @@ export default function ShopScreen() {
                         productName={item.title}
                         size={item.size || 'OS'}
                         price={item.price ? item.price / 100 : 0}
-                        imageUrl={item.images[0]}
+                        imageUrl={item.images?.[0] || undefined}
+                        category={item.category || undefined}
+                        subCategory={item.subCategory || undefined}
+                        matchPercent={Math.floor(Math.random() * 20) + 75}
+                        condition={item.condition || "Excellent"}
+                        onAddToCart={() => handleAddToCart(item)}
+                        buttonText={
+                          item.listingType === 'SALE' ? 'BUY ASSET' :
+                          item.listingType === 'RENTAL' ? 'RENT ASSET' : 'SWAP REQUEST'
+                        }
+                        onSwapRequest={() => router.push(`/(tabs)/shop/${item.id}`)}
                         style={{ width: '100%' }}
                       />
                     </TouchableOpacity>

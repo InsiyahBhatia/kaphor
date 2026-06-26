@@ -1,100 +1,114 @@
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
-import { IMPACT_CONSTANTS, calculateTier } from '../lib/impact.constants';
+import { ListingType } from '@prisma/client';
 
-/**
- * Updates the impact records for both buyer and seller when an order is completed/delivered.
- */
-export async function updateImpactOnTransaction(orderId: string) {
-  try {
-    const order = await db.order.findUnique({
-      where: { id: orderId },
-      include: {
-        items: {
-          include: {
-            garment: true,
-          },
-        },
-      },
-    });
-
-    if (!order) {
-      logger.error(`Order ${orderId} not found for impact update`);
-      return;
+export class ImpactService {
+    static async updateImpactOnTransaction(orderId: string) {
+        const order = await db.order.findUnique({
+            where: { id: orderId },
+            include: { items: true }
+        });
+        if (!order) return;
+        for (const item of order.items) {
+            await this.recordImpact(item.garmentId, order.buyerId);
+        }
     }
 
-    const { buyerId, sellerId, items } = order;
+    /**
+     * Calculates and records the environmental impact of a lifecycle event.
+     * Formula: Base Savings = Baseline × Reuse Factor
+     */
+    static async recordImpact(garmentId: string, userId: string) {
+        try {
+            const garment = await db.garment.findUnique({
+                where: { id: garmentId },
+                include: { seller: true }
+            });
 
-    let totalCo2Saved = 0;
-    let totalWaterSaved = 0;
-    const itemsCount = items.length;
+            if (!garment || !garment.materialId) {
+                logger.warn(`Skipping impact record: Garment ${garmentId} has no material baseline.`);
+                return;
+            }
 
-    for (const item of items) {
-      const type = item.garment.listingType;
-      let co2 = 0;
-      let water = 0;
+            const material = await db.materialImpact.findUnique({
+                where: { id: garment.materialId }
+            });
 
-      if (type === 'SALE') {
-        co2 = IMPACT_CONSTANTS.SALE.CO2_SAVED_KG;
-        water = IMPACT_CONSTANTS.SALE.WATER_SAVED_L;
-      } else if (type === 'RENTAL') {
-        co2 = IMPACT_CONSTANTS.RENTAL.CO2_SAVED_KG;
-        water = IMPACT_CONSTANTS.RENTAL.WATER_SAVED_L;
-      } else if (type === 'ACCESSORY_SWAP') {
-        co2 = IMPACT_CONSTANTS.SALE.CO2_SAVED_KG; // Swap is similar to a sale/new life
-        water = IMPACT_CONSTANTS.SALE.WATER_SAVED_L;
-      }
+            if (!material) return;
 
-      totalCo2Saved += co2;
-      totalWaterSaved += water;
+            // Increment reuse count
+            const updatedGarment = await db.garment.update({
+                where: { id: garmentId },
+                data: { reuseCount: { increment: 1 } }
+            });
+
+            // If it's the first reuse, we only count subsequent ones for "Total Carbon Saved"?
+            // Spec says: Total Impact = Base × (Reuse Count − 1)
+            // But individual event savings = Base × Reuse Factor
+            
+            const co2Saved = material.co2Kg * material.reuseFactor;
+            const waterSaved = material.waterL * material.reuseFactor;
+            const wasteSaved = material.avgWeightG; // Full weight saved per circulation
+
+            // Update user's impact record
+            await db.impactRecord.upsert({
+                where: { userId },
+                create: {
+                    userId,
+                    carbonSavedKg: co2Saved,
+                    waterSavedL: waterSaved,
+                    wasteSavedG: wasteSaved,
+                    itemsCirculated: 1
+                },
+                update: {
+                    carbonSavedKg: { increment: co2Saved },
+                    waterSavedL: { increment: waterSaved },
+                    wasteSavedG: { increment: wasteSaved },
+                    itemsCirculated: { increment: 1 }
+                }
+            });
+
+            logger.info(`Recorded impact for user ${userId}: ${co2Saved}kg CO2, ${waterSaved}L Water`);
+        } catch (error) {
+            logger.error('Failed to record impact', { error });
+        }
     }
 
-    // Update Buyer Impact
-    await updateIndividualImpact(buyerId, totalCo2Saved, totalWaterSaved, itemsCount);
-    
-    // Update Seller Impact
-    await updateIndividualImpact(sellerId, totalCo2Saved, totalWaterSaved, itemsCount);
+    /**
+     * Attempts to find the best matching material baseline for a garment.
+     */
+    static async findMatchingMaterialId(title: string, category: string, fabric?: string | null): Promise<string | null> {
+        const allMaterials = await db.materialImpact.findMany();
+        
+        const searchStr = `${title} ${fabric || ''} ${category}`.toLowerCase();
 
-    logger.info(`Impact records updated for order ${orderId}`, {
-      orderId,
-      totalCo2Saved,
-      totalWaterSaved,
-      itemsCount,
-    });
-  } catch (error) {
-    logger.error('Failed to update impact on transaction', {
-      orderId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+        // 1. Try exact matches on traditional Indian textiles first
+        const traditional = allMaterials.filter((m: any) => m.category === 'Indian Traditional');
+        for (const m of traditional) {
+            if (searchStr.includes(m.name.toLowerCase().split(' (')[0])) return m.id;
+        }
+
+        // 2. Try matching by material name
+        for (const m of allMaterials) {
+            const baseName = m.name.toLowerCase().split(' (')[0];
+            if (searchStr.includes(baseName)) return m.id;
+        }
+
+        // 3. Fallback by category
+        if (category.toLowerCase().includes('shirt') || category.toLowerCase().includes('top')) {
+            const cottonShirt = allMaterials.find((m: any) => m.name === 'Cotton (Shirt)');
+            return cottonShirt ? cottonShirt.id : null;
+        }
+        if (category.toLowerCase().includes('jeans') || category.toLowerCase().includes('denim')) {
+            const cottonJeans = allMaterials.find((m: any) => m.name === 'Cotton (Jeans)');
+            return cottonJeans ? cottonJeans.id : null;
+        }
+
+        return null;
+    }
 }
 
-async function updateIndividualImpact(
-  userId: string,
-  co2Add: number,
-  waterAdd: number,
-  itemsAdd: number
-) {
-  const record = await db.impactRecord.upsert({
-    where: { userId },
-    create: {
-      userId,
-      carbonSavedKg: co2Add,
-      waterSavedL: waterAdd,
-      itemsCirculated: itemsAdd,
-    },
-    update: {
-      carbonSavedKg: { increment: co2Add },
-      waterSavedL: { increment: waterAdd },
-      itemsCirculated: { increment: itemsAdd },
-    },
-  });
+/** Standalone export for controller compatibility */
+export const updateImpactOnTransaction = (orderId: string) => ImpactService.updateImpactOnTransaction(orderId);
 
-  // Calculate new tier
-  const tierInfo = calculateTier(record.carbonSavedKg);
-  
-  await db.user.update({
-    where: { id: userId },
-    data: { tier: tierInfo.currentTier as any },
-  });
-}
+export default ImpactService;

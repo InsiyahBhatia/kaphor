@@ -1,44 +1,106 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
 import { aiService } from '../../src/services/aiService';
 import { useToastStore } from '../../src/store/toastStore';
 import { colors, typography } from '../../src/theme';
+import { useAuth } from '../../src/context/AuthContext';
 
 const QUIZ_DATA = [
-  { question: "What best describes your style?", options: ["Casual", "Streetwear", "Ethnic/Traditional", "Minimal", "Chic/Trendy", "Vintage"] },
-  { question: "What type of outfits do you prefer?", options: ["Trendy & fashionable", "Timeless & classic"] },
-  { question: "Which fit do you like the most?", options: ["Loose/Relaxed", "Fitted", "Oversized", "Tailored"] },
-  { question: "Which color palette do you prefer?", options: ["Neutrals (black, white, beige)", "Bright colors", "Dark tones", "Pastels"] },
-  { question: "What kind of silhouettes do you prefer?", options: ["Flowing & loose", "Structured & sharp", "Body-hugging", "Layered styles"] },
-  { question: "What kind of prints do you prefer?", options: ["Solid/Plain", "Floral", "Graphic/Printed", "Patterns (stripes, checks)"] },
-  { question: "What fabric do you prefer?", options: ["Cotton", "Denim", "Silk", "Linen"] },
-  { question: "What fashion vibe do you connect with the most?", options: ["Clean & minimal", "Edgy & bold", "Elegant & refined", "Fun & experimental"] },
-  { question: "How do you like your outfits styled?", options: ["Simple & minimal", "Layered & detailed", "Statement pieces", "Balanced"] },
-  { question: "What kind of outfits attract you the most while browsing?", options: ["Simple everyday looks", "Eye-catching statement outfits", "Classy and polished styles", "Unique and experimental fits"] }
+  { 
+    question: "What's your usual look?", 
+    options: ["Simple & Clean", "Sporty/Urban", "Old-school/Retro", "Traditional/Cultural", "Bold & Unique", "Fancy/Polished", "All Black/Dark", "Easy/Loose", "Handmade/Natural", "Classic/Office"],
+    sub: "Choose what feels most like you.",
+    tokens: ["MINIMALIST", "STREETWEAR", "VINTAGE", "CULTURAL", "BOLD", "LUXURY", "DARK", "BOHO", "ARTISANAL", "PREPPY"]
+  },
+  { 
+    question: "How do your clothes fit?", 
+    options: ["Loose & Baggy", "Sharp & Tailored", "Light & Flowing", "Just Right"],
+    sub: "Think about the shape you prefer.",
+    tokens: ["OVERSIZED", "TAILORED", "FLOWING", "REGULAR"]
+  },
+  { 
+    question: "Which colors do you wear most?", 
+    options: ["Black, White & Grey", "Browns, Greens & Tans", "Dark Blues & Reds", "Bright & Loud Colors"],
+    sub: "Your go-to color palette.",
+    tokens: ["MONOCHROME", "EARTHY", "JEWEL", "BRIGHT"]
+  },
+  { 
+    question: "What fabric feels best on you?", 
+    options: ["Easy Cotton & Denim", "Soft Silk & Linen", "Warm Wool & Leather", "Sporty/Technical"],
+    sub: "The material matters.",
+    tokens: ["COTTON", "SILK", "WOOL", "TECHNICAL"]
+  },
+  { 
+    question: "Do you like patterns or prints?", 
+    options: ["No patterns (Plain)", "Traditional Prints", "Big Logos & Graphics", "Simple Stripes/Checks"],
+    sub: "Keep it simple or stand out?",
+    tokens: ["PLAIN", "CULTURAL", "GRAPHIC", "CLASSIC"]
+  },
+  { 
+    question: "How do you want people to see you?", 
+    options: ["Cool & Daring", "Polite & Proper", "Fun & Energetic", "Simple & Easy-going"],
+    sub: "The vibe you want to project.",
+    tokens: ["BOLD", "LUXURY", "STREETWEAR", "MINIMALIST"]
+  },
+  { 
+    question: "What's your goal when buying clothes?", 
+    options: ["Something that lasts forever", "Something rare & unique", "Something eco-friendly", "Something that turns heads"],
+    sub: "Why do you shop?",
+    tokens: ["LUXURY", "VINTAGE", "ARTISANAL", "BOLD"]
+  },
+  { 
+    question: "Where do you usually find clothes?", 
+    options: ["Thrift/Second-hand stores", "Local makers/Artisans", "New online drops", "Shopping malls/Fancy shops"],
+    sub: "Your shopping habit.",
+    tokens: ["VINTAGE", "ARTISANAL", "STREETWEAR", "LUXURY"]
+  },
+  { 
+    question: "Who is your style twin?", 
+    options: ["The 'No-fuss' person", "The 'City/Urban' person", "The 'Old Hollywood' person", "The 'Arty/Gallery' person"],
+    sub: "Pick your inspiration.",
+    tokens: ["MINIMALIST", "STREETWEAR", "PREPPY", "BOLD"]
+  },
+  { 
+    question: "Do you mix heritage into your style?", 
+    options: ["Yes, all the time", "Once in a while", "I mix in textures", "Not really"],
+    sub: "Connection to your roots.",
+    tokens: ["CULTURAL", "BOHO", "ARTISANAL", "MINIMALIST"]
+  },
+  { 
+    question: "How do you feel about trends?", 
+    options: ["I ignore them completely", "I follow them closely", "I pick what I like", "I make my own rules"],
+    sub: "Are you a trend-follower?",
+    tokens: ["MINIMALIST", "STREETWEAR", "VINTAGE", "BOLD"]
+  },
+  { 
+    question: "How often do you get new clothes?", 
+    options: ["Once a month", "Once a week", "Rarely/When needed", "All the time"],
+    sub: "Your wardrobe frequency.",
+    tokens: ["MINIMALIST", "STREETWEAR", "PREPPY", "LUXURY"]
+  }
 ];
 
 export default function StyleQuizScreen() {
   const router = useRouter();
-  
-  // Array of answers, one string per question index
-  const [answers, setAnswers] = useState<string[]>(Array(QUIZ_DATA.length).fill(''));
+  const { user, setUser } = useAuth();
+  const [answers, setAnswers] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToastStore();
 
   const currentQuestion = QUIZ_DATA[currentIndex];
 
-  const toggleOption = (option: string) => {
+  const selectOption = (option: string, index: number) => {
     const newAnswers = [...answers];
-    newAnswers[currentIndex] = option; // Single selection per question
+    // Map the simple option to the actual token the backend expects
+    newAnswers[currentIndex] = currentQuestion.tokens[index]; 
     setAnswers(newAnswers);
   };
 
   const handleNext = () => {
     if (!answers[currentIndex]) {
-      Alert.alert('Selection Required', 'Please select an option to proceed.');
+      Alert.alert('Selection Required', 'Please pick an option!');
       return;
     }
     if (currentIndex < QUIZ_DATA.length - 1) {
@@ -60,27 +122,56 @@ export default function StyleQuizScreen() {
     setSubmitting(true);
     try {
       await aiService.submitStyleQuiz(answers);
-      showToast('PROFILE GENERATION COMPLETE', 'success');
+      showToast('STYLE DNA READY', 'success');
+      
+      // Update the user in AuthContext so ProtectedRoute sees onboardingDone = true
+      if (user) {
+        setUser({ ...user, onboardingDone: true });
+      }
+      
       router.replace('/(tabs)');
     } catch (err: any) {
-      showToast(err?.message || 'CLASSIFICATION FAILED // RETRY', 'error');
+      showToast('FAILED // RETRY', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleSkip = async () => {
+    setSubmitting(true);
+    try {
+      await aiService.skipStyleQuiz();
+      showToast('PROFILE UPDATED', 'success');
+      if (user) {
+        setUser({ ...user, onboardingDone: true });
+      }
+      router.replace('/(tabs)');
+    } catch (err) {
+      router.replace('/(tabs)'); // Fallback redirect
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const currentSelectionToken = answers[currentIndex];
+  const currentSelectionIndex = currentQuestion.tokens.indexOf(currentSelectionToken);
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
-      
-      {/* HERO CARD */}
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* HERO SECTION */}
       <View style={styles.heroCard}>
-        <Text style={styles.heroRank}>A♠</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={styles.heroRank}>A♠</Text>
+          <TouchableOpacity onPress={handleSkip} disabled={submitting}>
+            <Text style={[styles.heroSubTitle, { color: colors.red, fontSize: 10 }]}>[ SKIP QUIZ ]</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.heroTitle}>✦ DOSSIER ✦</Text>
         
         <View style={styles.heroBottomBar}>
           <View>
-            <Text style={styles.heroSubTitle}>PROFILE GENERATION</Text>
-            <Text style={styles.heroItalic}>Answer truthfully. We are watching.</Text>
+            <Text style={styles.heroSubTitle}>QUIZ ANALYSIS</Text>
+            <Text style={styles.heroItalic}>{currentQuestion.sub}</Text>
           </View>
           <Text style={styles.heroZero}>{currentIndex + 1}</Text>
         </View>
@@ -88,9 +179,8 @@ export default function StyleQuizScreen() {
 
       {/* QUIZ PANEL */}
       <View style={styles.quizPanel}>
-        {/* Panel Header */}
         <View style={styles.panelHeader}>
-          <Text style={styles.panelHeaderText}>STYLE QUIZ · KAPHOR AGENCY</Text>
+          <Text style={styles.panelHeaderText}>KAPHOR STYLE PROTOCOL</Text>
           <View style={styles.dotsContainer}>
             <View style={[styles.dot, { backgroundColor: '#FF5F56' }]} />
             <View style={[styles.dot, { backgroundColor: '#FFBD2E' }]} />
@@ -98,23 +188,27 @@ export default function StyleQuizScreen() {
           </View>
         </View>
 
-        {/* Progress Indicator */}
-        <Text style={styles.progressLabel}>QUERY #{currentIndex + 1} OF #{QUIZ_DATA.length}</Text>
+        <View style={styles.progressHeader}>
+           <Text style={styles.progressText}>SIGNAL {currentIndex + 1} OF {QUIZ_DATA.length}</Text>
+           <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${((currentIndex + 1) / QUIZ_DATA.length) * 100}%` }]} />
+           </View>
+        </View>
 
-        {/* Question Text */}
         <Text style={styles.questionText}>
           {currentQuestion.question}
         </Text>
 
-        {/* Answer Options */}
         <View style={styles.optionsContainer}>
-          {currentQuestion.options.map((option) => {
-            const isActive = answers[currentIndex] === option;
+          {currentQuestion.options.map((option, idx) => {
+            const token = currentQuestion.tokens[idx];
+            const isActive = answers[currentIndex] === token;
             return (
               <TouchableOpacity
                 key={option}
                 style={[styles.optionRow, isActive && styles.optionRowActive]}
-                onPress={() => toggleOption(option)}
+                onPress={() => selectOption(option, idx)}
+                activeOpacity={0.7}
               >
                 <View style={[styles.radioOutline, isActive && styles.radioFilled]}>
                   {isActive && <View style={styles.radioInner} />}
@@ -132,12 +226,8 @@ export default function StyleQuizScreen() {
           })}
         </View>
 
-        {/* Nav Buttons */}
         <View style={styles.navButtonsRow}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={handleBack}
-          >
+          <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
             <Text style={styles.backBtnText}>[← BACK]</Text>
           </TouchableOpacity>
           
@@ -150,12 +240,11 @@ export default function StyleQuizScreen() {
               <ActivityIndicator color={colors.white} />
             ) : (
               <Text style={styles.nextBtnText}>
-                {currentIndex === QUIZ_DATA.length - 1 ? 'FINISH CLASSIFICATION →' : 'NEXT QUERY →'}
+                {currentIndex === QUIZ_DATA.length - 1 ? 'REVEAL DNA →' : 'NEXT →'}
               </Text>
             )}
           </TouchableOpacity>
         </View>
-
       </View>
     </ScrollView>
   );
@@ -166,31 +255,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F0609', 
     padding: 16,
-    paddingTop: 24,
+    paddingTop: 32,
   },
   heroCard: {
     backgroundColor: colors.charcoal,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: colors.charcoal,
-    height: 180,
+    height: 160,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 20,
     justifyContent: 'space-between',
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
   },
   heroRank: {
     fontFamily: typography.ranks,
-    fontSize: 28,
+    fontSize: 24,
     color: colors.red,
   },
   heroTitle: {
     fontFamily: typography.ranks,
-    fontSize: 24,
+    fontSize: 22,
     color: colors.cream,
     textAlign: 'center',
     letterSpacing: 4,
@@ -203,100 +287,101 @@ const styles = StyleSheet.create({
   heroSubTitle: {
     fontFamily: typography.headings,
     color: colors.cream,
-    fontSize: 16,
-    letterSpacing: 1,
+    fontSize: 12,
   },
   heroItalic: {
     fontFamily: typography.mono,
     color: 'rgba(245, 240, 232, 0.6)',
-    fontSize: 10,
-    marginTop: 4,
+    fontSize: 9,
+    marginTop: 2,
   },
   heroZero: {
     fontFamily: typography.ranks,
-    fontSize: 48,
+    fontSize: 40,
     color: colors.red,
-    lineHeight: 52,
+    lineHeight: 44,
   },
   quizPanel: {
     backgroundColor: colors.cream,
     borderWidth: 2,
     borderColor: colors.charcoal,
     paddingBottom: 24,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
+    marginBottom: 40,
   },
   panelHeader: {
     backgroundColor: colors.charcoal,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    height: 40,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.charcoal,
+    paddingHorizontal: 12,
+    height: 36,
   },
   panelHeaderText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 1,
   },
   dotsContainer: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
   },
   dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  progressLabel: {
-    fontFamily: typography.mono,
-    color: colors.red,
-    fontSize: 10,
-    fontWeight: 'bold',
+  progressHeader: {
     paddingHorizontal: 16,
     marginTop: 16,
-    marginBottom: 16,
-    letterSpacing: 1,
+  },
+  progressText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.red,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  progressTrack: {
+    height: 2,
+    backgroundColor: 'rgba(26,26,26,0.1)',
+  },
+  progressFill: {
+    height: 2,
+    backgroundColor: colors.red,
   },
   questionText: {
     fontFamily: typography.headings,
-    fontSize: 24,
+    fontSize: 22,
     color: colors.charcoal,
     paddingHorizontal: 16,
-    marginBottom: 24,
-    lineHeight: 28,
-    letterSpacing: 1,
+    marginVertical: 16,
+    letterSpacing: 0.5,
   },
   optionsContainer: {
     paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 32,
+    gap: 8,
+    marginBottom: 24,
   },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    height: 56,
-    borderWidth: 2,
-    borderColor: 'rgba(26,26,26,0.2)',
-    backgroundColor: colors.cream,
+    paddingHorizontal: 12,
+    height: 48,
+    borderWidth: 1.5,
+    borderColor: 'rgba(26,26,26,0.1)',
+    backgroundColor: colors.white,
   },
   optionRowActive: {
     backgroundColor: '#F0E8D5',
     borderColor: colors.red,
   },
   radioOutline: {
-    width: 16,
-    height: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(26,26,26,0.4)',
-    marginRight: 16,
+    width: 14,
+    height: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(26,26,26,0.2)',
+    marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -304,61 +389,55 @@ const styles = StyleSheet.create({
     borderColor: colors.red,
   },
   radioInner: {
-    width: 8,
-    height: 8,
+    width: 6,
+    height: 6,
     backgroundColor: colors.red,
   },
   optionText: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 10,
     color: 'rgba(26,26,26,0.6)',
     fontWeight: '800',
-    letterSpacing: 1,
   },
   optionTextActive: {
     color: colors.charcoal,
-    fontWeight: '800',
   },
   suitIcon: {
     fontFamily: typography.ranks,
-    fontSize: 16,
-    color: 'rgba(26,26,26,0.3)',
+    fontSize: 14,
+    color: 'rgba(26,26,26,0.15)',
   },
   navButtonsRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 10,
   },
   backBtn: {
     flex: 1,
-    height: 48,
-    borderWidth: 2,
+    height: 44,
+    borderWidth: 1.5,
     borderColor: colors.charcoal,
     justifyContent: 'center',
     alignItems: 'center',
   },
   backBtnText: {
     fontFamily: typography.mono,
+    fontSize: 9,
     color: colors.charcoal,
     fontWeight: '800',
-    fontSize: 10,
-    letterSpacing: 1,
   },
   nextBtn: {
     flex: 2,
-    height: 48,
+    height: 44,
     backgroundColor: colors.charcoal,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
     justifyContent: 'center',
     alignItems: 'center',
   },
   nextBtnText: {
     fontFamily: typography.mono,
+    fontSize: 9,
     color: colors.cream,
     fontWeight: '800',
-    fontSize: 10,
-    letterSpacing: 1,
   },
 });

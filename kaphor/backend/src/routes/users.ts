@@ -6,6 +6,7 @@ import {
   updateMe,
   updateAvatar,
   getMyListings,
+  getMyWardrobe,
   getMyPurchases,
   getPublicUserSummary,
   getUserReviews,
@@ -21,6 +22,7 @@ router.get('/me', getMe);
 router.put('/me', updateMe);
 router.put('/me/avatar', upload.single('avatar'), updateAvatar);
 router.get('/me/listings', getMyListings);
+router.get('/me/wardrobe', getMyWardrobe);
 router.get('/me/purchases', getMyPurchases);
 
 export { router as userRoutes };

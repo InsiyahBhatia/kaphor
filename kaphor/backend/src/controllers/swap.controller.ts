@@ -4,7 +4,22 @@ import { logger } from '../lib/logger';
 import { emitToUser } from '../lib/socket';
 import { getDownloadUrl } from '../lib/s3';
 
-const ALLOWED_SWAP_CATEGORIES = ['Accessories', 'Bags', 'Jewelry', 'Belts', 'Scarves'];
+const ALLOWED_SWAP_CATEGORIES = new Set([
+  'accessory',
+  'accessories',
+  'bag',
+  'bags',
+  'jewelry',
+  'jewellery',
+  'belt',
+  'belts',
+  'scarf',
+  'scarves',
+]);
+
+function normalizeCategory(category: string | null | undefined): string {
+  return (category ?? '').trim().toLowerCase();
+}
 
 /** Helpers to resolve media URLs */
 async function resolveUserMedia(user: any) {
@@ -69,7 +84,9 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
         }
 
         // Validate Categories
-        if (!ALLOWED_SWAP_CATEGORIES.includes(offeredGarment.category) || !ALLOWED_SWAP_CATEGORIES.includes(wantedGarment.category)) {
+        const offeredCategory = normalizeCategory(offeredGarment.category);
+        const wantedCategory = normalizeCategory(wantedGarment.category);
+        if (!ALLOWED_SWAP_CATEGORIES.has(offeredCategory) || !ALLOWED_SWAP_CATEGORIES.has(wantedCategory)) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Swaps are only supported for Accessories' });
             return;
         }

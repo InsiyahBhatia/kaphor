@@ -36,7 +36,12 @@ export function MyListingsScreen() {
                 <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
                 <Text style={styles.brand}>{item.brand}</Text>
                 <View style={styles.row}>
-                    <Text style={styles.price}>₹{item.price ? (item.price / 100).toLocaleString() : '0'}</Text>
+                    <Text style={styles.price}>
+                        {item.listingType === 'RENTAL' 
+                            ? `₹${((item.rentalPriceDay || 0) / 100).toLocaleString()}/day` 
+                            : `₹${((item.price || 0) / 100).toLocaleString()}`
+                        }
+                    </Text>
                     <View style={[styles.statusBadge, !item.isActive && styles.inactiveBadge]}>
                         <Text style={styles.statusText}>{item.isActive ? item.lifecycleState : 'INACTIVE'}</Text>
                     </View>

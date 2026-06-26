@@ -59,10 +59,25 @@ export async function getCart(req: Request, res: Response): Promise<void> {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ data: cartItems });
+    const resolvedItems = await Promise.all(
+      cartItems.map(async (item: any) => {
+        if (item.garment && item.garment.images) {
+          const { getDownloadUrl } = await import('../lib/s3');
+          const resolvedImages = await Promise.all(
+            item.garment.images.map((img: string) => getDownloadUrl(img))
+          );
+          return {
+            ...item,
+            garment: { ...item.garment, images: resolvedImages },
+          };
+        }
+        return item;
+      })
+    );
+
+    res.json({ data: resolvedItems });
   } catch (error) {
     logger.error('getCart failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });

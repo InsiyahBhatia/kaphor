@@ -9,6 +9,7 @@ import { Garment } from '../../../src/store/garmentStore';
 import { useAuth } from '../../../src/context/AuthContext';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
+import { KaphorImage } from '../../../src/components/KaphorImage';
 import { orderService } from '../../../src/services/orderService';
 import { cartService } from '../../../src/services/cartService';
 
@@ -117,10 +118,10 @@ export default function GarmentDetailScreen() {
       <Stack.Screen options={{ title: garment?.title || 'Details' }} />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: garment.images[0] || 'https://images.unsplash.com/photo-1580000000000?q=80&w=800&auto=format&fit=crop' }} 
+          <KaphorImage 
+            uri={garment.images[0]} 
             style={styles.image}
-            resizeMode="contain"
+            contentFit="contain"
           />
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
@@ -140,13 +141,21 @@ export default function GarmentDetailScreen() {
 
         <View style={styles.content}>
           <View style={styles.header}>
-            <View>
+            <View style={{ flex: 1, marginRight: 16 }}>
               <Text style={styles.brand}>{garment.brand || 'Kaphor Archive'}</Text>
+              <Text style={styles.categoryLabel}>{garment.category?.toUpperCase() || 'GENERAL ARCHIVE'} {garment.subCategory ? `> ${garment.subCategory.toUpperCase()}` : ''}</Text>
               <Text style={styles.title}>{garment.title}</Text>
             </View>
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>₹{garment.price ? (garment.price / 100).toLocaleString() : 'N/A'}</Text>
-              <Text style={styles.originalPrice}>₹{(garment.price ? (garment.price / 100) * 2 : 0).toLocaleString()}</Text>
+              <Text style={styles.price}>
+                ₹{garment.listingType === 'RENTAL' 
+                  ? (garment.rentalPriceDay ? (garment.rentalPriceDay / 100).toLocaleString() : '---')
+                  : (garment.price ? (garment.price / 100).toLocaleString() : '---')}
+                {garment.listingType === 'RENTAL' && <Text style={{ fontSize: 14 }}> / day</Text>}
+              </Text>
+              {garment.listingType !== 'RENTAL' && (
+                <Text style={styles.originalPrice}>₹{(garment.price ? (garment.price / 100) * 2 : 0).toLocaleString()}</Text>
+              )}
             </View>
           </View>
 
@@ -172,6 +181,62 @@ export default function GarmentDetailScreen() {
               <Ionicons name="sparkles" size={18} color="#C9A84C" />
               <Text style={styles.aiDoubtText}>DOUBTS? ASK KAPHOR AI</Text>
             </TouchableOpacity>
+          </View>
+
+          <View style={styles.infoSection}>
+            <Text style={styles.sectionTitle}>SPECIFICATIONS</Text>
+            <View style={styles.specGrid}>
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>SIZE</Text>
+                <Text style={styles.specValue}>{garment.size || 'N/A'}</Text>
+              </View>
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>CATEGORY</Text>
+                <Text style={styles.specValue}>{garment.category?.toUpperCase() || 'GENERAL'}</Text>
+              </View>
+              {garment.fabric && (
+                <View style={styles.specItem}>
+                  <Text style={styles.specLabel}>FABRIC</Text>
+                  <Text style={styles.specValue}>{garment.fabric}</Text>
+                </View>
+              )}
+              {garment.color && (
+                <View style={styles.specItem}>
+                  <Text style={styles.specLabel}>COLOR</Text>
+                  <Text style={styles.specValue}>{Array.isArray(garment.color) ? garment.color.join(', ') : garment.color}</Text>
+                </View>
+              )}
+              {garment.style && (
+                <View style={styles.specItem}>
+                  <Text style={styles.specLabel}>STYLE</Text>
+                  <Text style={styles.specValue}>{garment.style}</Text>
+                </View>
+              )}
+              {garment.sleeve && (
+                <View style={styles.specItem}>
+                  <Text style={styles.specLabel}>SLEEVE</Text>
+                  <Text style={styles.specValue}>{garment.sleeve}</Text>
+                </View>
+              )}
+              {garment.shape && (
+                <View style={styles.specItem}>
+                  <Text style={styles.specLabel}>SHAPE</Text>
+                  <Text style={styles.specValue}>{garment.shape}</Text>
+                </View>
+              )}
+              {garment.pattern && (
+                <View style={styles.specItem}>
+                  <Text style={styles.specLabel}>PATTERN</Text>
+                  <Text style={styles.specValue}>{garment.pattern}</Text>
+                </View>
+              )}
+              {garment.weight && (
+                <View style={styles.specItem}>
+                  <Text style={styles.specLabel}>WEIGHT</Text>
+                  <Text style={styles.specValue}>{garment.weight}</Text>
+                </View>
+              )}
+            </View>
           </View>
 
           <TouchableOpacity
@@ -239,54 +304,63 @@ export default function GarmentDetailScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        {garment && user && garment.sellerId === user.id ? (
-          <View style={{ flexDirection: 'row', gap: 12 }}>
+        {garment && user && (garment.sellerId === user.id || user.role === 'ADMIN') && (
+          <View style={styles.listingManagerBar}>
+            <Text style={styles.managerText}>YOU ARE MANAGING THIS ASSET</Text>
             <TouchableOpacity
-              style={[styles.buyButton, { flex: 1, backgroundColor: '#9B1B30' }]}
+              style={styles.deleteBtnSmall}
               onPress={async () => {
-                try {
-                  await api.delete(`/garments/${id}`);
-                  Alert.alert('Deleted', 'Garment removed.', [{ text: 'OK', onPress: () => router.back() }]);
-                } catch { Alert.alert('Error', 'Failed to delete.'); }
+                Alert.alert('Delete Asset', 'Confirm permanent removal from the deck?', [
+                  { text: 'CANCEL', style: 'cancel' },
+                  { text: 'DELETE', style: 'destructive', onPress: async () => {
+                    try {
+                      await api.delete(`/garments/${id}`);
+                      router.back();
+                    } catch { Alert.alert('Error', 'De-listing failed.'); }
+                  }}
+                ]);
               }}
             >
-              <Text style={{ color: 'white', fontWeight: '700', letterSpacing: 2 }}>DELETE</Text>
+              <Text style={styles.deleteTextSmall}>DE-LIST</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          <View style={styles.buyRow}>
-            {garment.listingType === 'SALE' ? (
-              <>
-                <TouchableOpacity
-                  style={styles.cartButton}
-                  onPress={handleAddToCart}
-                  disabled={addingToCart}
-                >
-                  {addingToCart ? <ActivityIndicator size="small" color={colors.crimson} /> : (
-                    <Ionicons name="cart-outline" size={24} color={colors.crimson} />
-                  )}
-                </TouchableOpacity>
-                <Button
-                  title="PURCHASE"
-                  onPress={() => router.push(`/(tabs)/shop/checkout/${id}`)}
-                  style={{ flex: 1 }}
-                />
-              </>
-            ) : garment.listingType === 'RENTAL' ? (
-              <Button
-                title="BOOK RENTAL"
-                onPress={() => router.push(`/(tabs)/rental/${id}`)}
-                style={{ flex: 1 }}
-              />
-            ) : (
-              <Button
-                title="INITIATE SWAP"
-                onPress={() => router.push('/(tabs)/swap')}
-                style={{ flex: 1 }}
-              />
-            )}
-          </View>
         )}
+
+        <View style={styles.buyRow}>
+          {garment.listingType?.toUpperCase() === 'SALE' ? (
+            <>
+              <TouchableOpacity
+                style={styles.cartButton}
+                onPress={handleAddToCart}
+                disabled={addingToCart || (garment.sellerId === user?.id)}
+              >
+                {addingToCart ? <ActivityIndicator size="small" color={colors.crimson} /> : (
+                  <Ionicons name="cart-outline" size={24} color={colors.crimson} />
+                )}
+              </TouchableOpacity>
+              <Button
+                title={garment.sellerId === user?.id ? "PREVIEW PURCHASE" : "BUY NOW"}
+                onPress={() => router.push(`/(tabs)/shop/checkout/delivery?orderId=${id}`)}
+                style={{ flex: 1 }}
+                disabled={garment.sellerId === user?.id}
+              />
+            </>
+          ) : (garment.listingType?.toUpperCase() === 'RENTAL' || garment.listingType?.toUpperCase() === 'LEASE') ? (
+            <Button
+              title="BOOK RENTAL"
+              onPress={() => router.push(`/(tabs)/rental/${id}`)}
+              style={{ flex: 1 }}
+              disabled={garment.sellerId === user?.id}
+            />
+          ) : (
+            <Button
+              title="INITIATE SWAP"
+              onPress={() => router.push(`/(tabs)/swap/${id}`)}
+              style={{ flex: 1 }}
+              disabled={garment.sellerId === user?.id}
+            />
+          )}
+        </View>
       </View>
     </View>
   );
@@ -342,6 +416,14 @@ const styles = StyleSheet.create({
     color: colors.crimson,
     fontSize: 12,
     letterSpacing: 2,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  categoryLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: typography.mono,
+    letterSpacing: 1.5,
     fontWeight: '800',
     marginBottom: 4,
   },
@@ -497,6 +579,37 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1,
   },
+  listingManagerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(26,26,26,0.05)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(26,26,26,0.1)',
+  },
+  managerText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.textMuted,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  deleteBtnSmall: {
+    backgroundColor: 'rgba(155, 27, 48, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  deleteTextSmall: {
+    color: colors.crimson,
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+  },
   cartButton: {
     width: 60,
     height: 56,
@@ -523,5 +636,31 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.5,
+  },
+  specGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    marginTop: 8,
+  },
+  specItem: {
+    width: '47%',
+    backgroundColor: 'rgba(26,26,26,0.02)',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(26,26,26,0.05)',
+  },
+  specLabel: {
+    fontSize: 9,
+    color: colors.textMuted,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  specValue: {
+    fontSize: 13,
+    color: colors.textPrimary,
+    fontWeight: '700',
   },
 });

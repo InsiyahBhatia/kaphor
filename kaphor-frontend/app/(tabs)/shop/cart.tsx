@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { cartService } from '../../../src/services/cartService';
 import { colors, typography } from '../../../src/theme';
 import { useAuth } from '../../../src/context/AuthContext';
+import { KaphorImage } from '../../../src/components/KaphorImage';
 
 const { width } = Dimensions.get('window');
 
@@ -70,11 +71,16 @@ export default function CartScreen() {
                 ) : (
                     items.map((item, index) => (
                         <View key={item.id} style={styles.cartItem}>
-                            <Image source={{ uri: item.garment.images[0] }} style={styles.itemImage} />
+                            <KaphorImage 
+                                uri={item.garment?.images?.[0]} 
+                                style={styles.itemImage} 
+                                contentFit="cover"
+                            />
+
                             <View style={styles.itemInfo}>
-                                <Text style={styles.brand}>{item.garment.brand}</Text>
-                                <Text style={styles.title}>{item.garment.title}</Text>
-                                <Text style={styles.price}>₹{(item.garment.price / 100).toLocaleString()}</Text>
+                                <Text style={styles.brand}>{item.garment?.brand}</Text>
+                                <Text style={styles.title}>{item.garment?.title}</Text>
+                                <Text style={styles.price}>₹{((item.garment?.price || 0) / 100).toLocaleString()}</Text>
                             </View>
                             <TouchableOpacity onPress={() => removeItem(item.garmentId)} style={styles.removeBtn}>
                                 <Ionicons name="trash-sharp" size={20} color={colors.red} />
@@ -127,6 +133,7 @@ const styles = StyleSheet.create({
         shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4 
     },
     itemImage: { width: 70, height: 80, borderWidth: 1, borderColor: colors.charcoal },
+    imagePlaceholder: { backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center' },
     itemInfo: { flex: 1, marginLeft: 16 },
     brand: { color: colors.red, fontFamily: typography.mono, fontSize: 10, letterSpacing: 1, fontWeight: '800', textTransform: 'uppercase' },
     title: { color: colors.charcoal, fontSize: 20, fontFamily: typography.headings, marginTop: 4 },

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { garmentService } from '../../../src/services/garmentService';
 import { colors } from '../../../src/theme';
+import { KaphorImage } from '../../../src/components/KaphorImage';
 
 export default function RentalDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -40,7 +41,7 @@ export default function RentalDetailScreen() {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Image source={{ uri: garment.images?.[0] || 'https://picsum.photos/600/700' }} style={styles.image} />
+        <KaphorImage uri={garment.images?.[0]} style={styles.image} contentFit="cover" />
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -68,10 +69,7 @@ export default function RentalDetailScreen() {
             <View style={styles.detailRow}><Text style={styles.detailLabel}>CATEGORY</Text><Text style={styles.detailValue}>{garment.category}</Text></View>
           </View>
 
-          <View style={styles.impactCard}>
-            <Ionicons name="leaf" size={18} color="#4CAF50" />
-            <Text style={styles.impactText}>Renting saves ~90% of the environmental impact of buying new</Text>
-          </View>
+
         </View>
       </ScrollView>
 

@@ -22,11 +22,11 @@ export default function ImpactScreen() {
   }, []);
 
   const stats = [
-    { icon: 'leaf-sharp', label: 'CO₂ SAVED', value: `${(impact?.carbonSavedKg || 0).toFixed(1)} KG`, color: colors.forest },
-    { icon: 'water-sharp', label: 'WATER SAVED', value: `${(impact?.waterSavedL || 0).toFixed(0)} L`, color: colors.navy },
-    { icon: 'swap-horizontal-sharp', label: 'CIRCULATED', value: `${impact?.itemsCirculated || 0}`, color: colors.red },
-    { icon: 'hammer-sharp', label: 'UPCYCLED', value: `${impact?.itemsUpcycled || 0}`, color: colors.copper },
-    { icon: 'refresh-sharp', label: 'RECYCLED', value: `${impact?.itemsRecycled || 0}`, color: colors.charcoal },
+    { icon: 'leaf-sharp', label: 'CO₂ SAVED', value: `${(impact?.impactRecord?.carbonSavedKg || 0).toFixed(1)} KG`, color: colors.forest },
+    { icon: 'water-sharp', label: 'WATER SAVED', value: `${((impact?.impactRecord?.waterSavedL || 0) / 1000).toFixed(1)} KL`, color: colors.navy },
+    { icon: 'leaf', label: 'TREES SAVED', value: `${impact?.equivalentTrees || 0}`, color: colors.forest },
+    { icon: 'trash-sharp', label: 'WASTE SAVED', value: `${((impact?.impactRecord?.wasteSavedG || 0) / 1000).toFixed(1)} KG`, color: colors.charcoal },
+    { icon: 'swap-horizontal-sharp', label: 'CIRCULATED', value: `${impact?.impactRecord?.itemsCirculated || 0}`, color: colors.red },
   ];
 
   return (

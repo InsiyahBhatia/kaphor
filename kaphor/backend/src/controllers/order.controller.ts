@@ -74,6 +74,12 @@ export async function createInquiryOrder(req: Request, res: Response): Promise<v
             },
         });
 
+        // Transition garment to PURCHASE_INTENT
+        await db.garment.update({
+            where: { id: garment.id },
+            data: { lifecycleState: 'PURCHASE_INTENT' }
+        });
+
         res.status(201).json({ data: { orderId: order.id, existing: false } });
     } catch (error) {
         logger.error('createInquiryOrder failed', {
@@ -145,6 +151,12 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
                     },
                 },
             });
+
+            // Transition garment to PURCHASE_INTENT
+            await db.garment.update({
+                where: { id: garment.id },
+                data: { lifecycleState: 'PURCHASE_INTENT' }
+            });
         }
 
         if (order.stripePaymentId) {
@@ -193,6 +205,83 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
     } catch (error) {
         logger.error('Failed to create payment intent', { error: error instanceof Error ? error.message : String(error) });
         res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to initialize payment' });
+    }
+}
+
+export async function createCartOrder(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const { garmentIds } = req.body; // Optional list of IDs to checkout
+
+        const whereClause: any = { userId: req.user.id };
+        if (Array.isArray(garmentIds) && garmentIds.length > 0) {
+            whereClause.garmentId = { in: garmentIds };
+        }
+
+        const cartItems = await db.cartItem.findMany({
+            where: whereClause,
+            include: { garment: true }
+        });
+
+        if (cartItems.length === 0) {
+            res.status(400).json({ error: 'EMPTY_CART', message: 'Your cart is empty' });
+            return;
+        }
+
+        const validItems = cartItems.filter((i: any) => i.garment && i.garment.isActive);
+        if (validItems.length === 0) {
+            res.status(400).json({ error: 'INVALID_CART', message: 'Items in your cart are no longer available' });
+            return;
+        }
+
+        // Calculate total
+        const totalAmount = validItems.reduce((sum: number, item: any) => sum + (item.garment?.price || 0), 0);
+
+        // For simplicity, we use the first seller as the main seller for the order object, 
+        // but in a complex app we'd split orders per seller.
+        const sellerId = validItems[0].garment!.sellerId;
+
+        const order = await db.order.create({
+            data: {
+                buyerId: req.user.id,
+                sellerId,
+                totalAmount,
+                status: 'PENDING',
+                items: {
+                    create: validItems.map((item: any) => ({
+                        garmentId: item.garmentId,
+                        price: item.garment!.price || 0,
+                        quantity: 1,
+                    }))
+                }
+            },
+            include: {
+                items: {
+                    include: { garment: true }
+                }
+            }
+        });
+
+        // Optionally clear cart after order creation (or wait for payment)
+        // For this demo, let's keep it until payment is confirmed or just clear it now to show progress
+        // await db.cartItem.deleteMany({ where: { userId: req.user.id } });
+
+        // Transition garments to PURCHASE_INTENT
+        for (const item of validItems) {
+            await db.garment.update({
+                where: { id: item.garmentId },
+                data: { lifecycleState: 'PURCHASE_INTENT' }
+            });
+        }
+
+        res.status(201).json({ data: order });
+    } catch (error) {
+        logger.error('createCartOrder failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
     }
 }
 

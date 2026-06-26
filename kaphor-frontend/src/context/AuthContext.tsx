@@ -11,6 +11,14 @@ export interface User {
   role?: string;
   avatarUrl?: string;
   styleAesthetic?: string;
+  onboardingDone?: boolean;
+  stats?: {
+    listings: number;
+    sold: number;
+    following: number;
+    followers: number;
+    purchases: number;
+  };
 }
 
 interface AuthContextType {
@@ -36,6 +44,8 @@ function normalizeUser(raw: Record<string, unknown>): User {
     avatarUrl:
       (raw.avatarUrl as string | undefined) ?? (raw.avatar as string | undefined),
     styleAesthetic: raw.styleAesthetic != null ? String(raw.styleAesthetic) : undefined,
+    onboardingDone: raw.onboardingDone != null ? Boolean(raw.onboardingDone) : false,
+    stats: raw.stats as User['stats'],
   };
 }
 
@@ -93,9 +103,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(accessToken);
       setUser(normalized);
 
-      const { authService } = await import('../services/authService');
+      const { userService } = await import('../services/userService');
       try {
-        await authService.getMe();
+        const updatedUser = await userService.getMe();
+        if (updatedUser) {
+          const freshNormalized = normalizeUser(updatedUser);
+          setUser(freshNormalized);
+          // Also update SecureStore so next boot is faster
+          await SecureStore.setItemAsync(
+            AUTH_DATA_KEY,
+            JSON.stringify({ accessToken, refreshToken, user: freshNormalized })
+          );
+        }
       } catch {
         await clearLocalSession();
       }

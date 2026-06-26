@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image,
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
 import { colors } from '../../../src/theme';
 import { 
@@ -29,7 +30,52 @@ export default function SellScreen() {
   const [price, setPrice] = useState('');
   const [rentalDay, setRentalDay] = useState('');
   const [rentalWeek, setRentalWeek] = useState('');
+  const [fabric, setFabric] = useState('');
+  const [color, setColor] = useState('');
+  const [styleAttr, setStyleAttr] = useState('');
+  const [sleeve, setSleeve] = useState('');
+  const [shape, setShape] = useState('');
+  const [pattern, setPattern] = useState('');
+  const [weight, setWeight] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleAiFill = async () => {
+    if (images.length === 0) {
+      Alert.alert('Image Required', 'Upload at least one photo first.');
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const base64 = await FileSystem.readAsStringAsync(images[0], { encoding: 'base64' });
+      const { data } = await api.post('/ai/analyze-listing', { image: `data:image/jpeg;base64,${base64}` });
+      const res = data.data;
+
+      if (res) {
+        setTitle(res.title || '');
+        setDescription(res.description || '');
+        setBrand(res.brand || '');
+        setCategory(res.category || '');
+        setPrice(String(res.estimatedPrice || ''));
+        setFabric(res.styleAttributes?.fabric || '');
+        setColor(res.color?.[0] || '');
+        setStyleAttr(res.styleAttributes?.style || '');
+        setSleeve(res.styleAttributes?.sleeve || '');
+        setShape(res.styleAttributes?.shape || '');
+        setPattern(res.styleAttributes?.pattern || '');
+        setWeight(res.styleAttributes?.weight || '');
+        setCondition(res.condition || 'GOOD');
+        
+        Alert.alert('AI Success', 'Garment details have been auto-filled from your photo.');
+        setStep(2);
+      }
+    } catch (err) {
+      console.error('AI Fill failed', err);
+      Alert.alert('AI Error', 'Failed to analyze image. Please fill details manually.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const pickImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -39,12 +85,32 @@ export default function SellScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: false,
-      allowsMultipleSelection: false,
+      allowsEditing: true,
+      aspect: [3, 4],
       quality: 0.8,
     });
     if (!result.canceled) {
       setImages((prev) => [...prev, result.assets[0].uri].slice(0, 5));
+    }
+  };
+
+  const editImage = async (idx: number) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setImages((prev) => {
+        const next = [...prev];
+        next[idx] = result.assets[0].uri;
+        return next;
+      });
     }
   };
 
@@ -85,6 +151,14 @@ export default function SellScreen() {
       } else {
         formData.append('price', price);
       }
+
+      formData.append('fabric', fabric);
+      formData.append('color', color);
+      formData.append('style', styleAttr);
+      formData.append('sleeve', sleeve);
+      formData.append('shape', shape);
+      formData.append('pattern', pattern);
+      formData.append('weight', weight);
 
       images.forEach((uri, i) => {
         formData.append('images', {
@@ -129,9 +203,14 @@ export default function SellScreen() {
               {images.map((uri, i) => (
                 <View key={i} style={styles.imageThumb}>
                   <Image source={{ uri }} style={styles.thumbImg} />
-                  <TouchableOpacity style={styles.removeBtn} onPress={() => removeImage(i)}>
-                    <Ionicons name="close-circle" size={22} color="#9B1B30" />
-                  </TouchableOpacity>
+                  <View style={styles.thumbActions}>
+                    <TouchableOpacity style={styles.editBtn} onPress={() => editImage(i)}>
+                      <Ionicons name="pencil-sharp" size={14} color={colors.white} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.removeBtn} onPress={() => removeImage(i)}>
+                      <Ionicons name="close-sharp" size={14} color={colors.white} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
               {images.length < 5 && (
@@ -148,6 +227,23 @@ export default function SellScreen() {
             >
               <Text style={styles.mainButtonText}>CONTINUE</Text>
             </TouchableOpacity>
+
+            {images.length > 0 && (
+              <TouchableOpacity
+                style={[styles.aiButton, aiLoading && { opacity: 0.7 }]}
+                onPress={handleAiFill}
+                disabled={aiLoading}
+              >
+                {aiLoading ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <>
+                    <Ionicons name="sparkles" size={20} color={colors.white} />
+                    <Text style={styles.aiButtonText}>AI MAGIC FILL</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         );
       case 2:
@@ -203,6 +299,14 @@ export default function SellScreen() {
                 keyboardType="numeric"
               />
             )}
+
+            <TextInput style={styles.input} placeholder="FABRIC" placeholderTextColor={colors.textMuted} value={fabric} onChangeText={setFabric} />
+            <TextInput style={styles.input} placeholder="COLOR" placeholderTextColor={colors.textMuted} value={color} onChangeText={setColor} />
+            <TextInput style={styles.input} placeholder="STYLE" placeholderTextColor={colors.textMuted} value={styleAttr} onChangeText={setStyleAttr} />
+            <TextInput style={styles.input} placeholder="SLEEVE" placeholderTextColor={colors.textMuted} value={sleeve} onChangeText={setSleeve} />
+            <TextInput style={styles.input} placeholder="SHAPE" placeholderTextColor={colors.textMuted} value={shape} onChangeText={setShape} />
+            <TextInput style={styles.input} placeholder="PATTERN" placeholderTextColor={colors.textMuted} value={pattern} onChangeText={setPattern} />
+            <TextInput style={styles.input} placeholder="WEIGHT" placeholderTextColor={colors.textMuted} value={weight} onChangeText={setWeight} />
 
             <DropdownPicker
               label="CATEGORY"
@@ -261,6 +365,13 @@ export default function SellScreen() {
                   {listingType === 'RENTAL' ? `₹${rentalDay}` : `₹${price}`}
                 </Text>
               </Text>
+              {fabric ? <Text style={styles.summaryLabel}>FABRIC: <Text style={styles.summaryValue}>{fabric}</Text></Text> : null}
+              {color ? <Text style={styles.summaryLabel}>COLOR: <Text style={styles.summaryValue}>{color}</Text></Text> : null}
+              {styleAttr ? <Text style={styles.summaryLabel}>STYLE: <Text style={styles.summaryValue}>{styleAttr}</Text></Text> : null}
+              {sleeve ? <Text style={styles.summaryLabel}>SLEEVE: <Text style={styles.summaryValue}>{sleeve}</Text></Text> : null}
+              {shape ? <Text style={styles.summaryLabel}>SHAPE: <Text style={styles.summaryValue}>{shape}</Text></Text> : null}
+              {pattern ? <Text style={styles.summaryLabel}>PATTERN: <Text style={styles.summaryValue}>{pattern}</Text></Text> : null}
+              {weight ? <Text style={styles.summaryLabel}>WEIGHT: <Text style={styles.summaryValue}>{weight}</Text></Text> : null}
               <Text style={styles.summaryLabel}>PHOTOS: <Text style={styles.summaryValue}>{images.length}</Text></Text>
             </View>
             <Text style={styles.policyText}>By listing, you agree to our Circular Economy standards and Luxury Authentication process.</Text>
@@ -314,9 +425,31 @@ const styles = StyleSheet.create({
   stepTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, marginBottom: 4 },
   stepSubtitle: { fontSize: 16, color: colors.textSecond, lineHeight: 22 },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  imageThumb: { width: 100, height: 100, borderRadius: 12, position: 'relative' },
-  thumbImg: { width: '100%', height: '100%', borderRadius: 12 },
-  removeBtn: { position: 'absolute', top: -6, right: -6 },
+  imageThumb: { width: 100, height: 133, borderRadius: 12, position: 'relative', overflow: 'hidden' }, // 3:4 ratio for thumb
+  thumbImg: { width: '100%', height: '100%' },
+  thumbActions: { 
+    position: 'absolute', 
+    top: 4, 
+    right: 4, 
+    flexDirection: 'row', 
+    gap: 4 
+  },
+  editBtn: { 
+    width: 24, 
+    height: 24, 
+    borderRadius: 12, 
+    backgroundColor: 'rgba(26,26,26,0.6)', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  removeBtn: { 
+    width: 24, 
+    height: 24, 
+    borderRadius: 12, 
+    backgroundColor: colors.crimson, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
   uploadBox: { width: 100, height: 100, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
   uploadText: { color: colors.textMuted, fontSize: 10, marginTop: 4, letterSpacing: 2, fontWeight: '700' },
   input: { height: 56, borderBottomWidth: 1, borderBottomColor: colors.border, color: colors.textPrimary, fontSize: 16, paddingHorizontal: 4 },
@@ -339,6 +472,17 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   mainButtonText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
+  aiButton: {
+    backgroundColor: colors.charcoal,
+    height: 60,
+    borderRadius: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+  },
+  aiButtonText: { color: colors.white, fontSize: 14, fontWeight: '800', letterSpacing: 1 },
   secondaryButton: { flex: 1, height: 60, borderRadius: 16, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
   secondaryButtonText: { color: colors.textSecond, fontSize: 14, letterSpacing: 2, fontWeight: '700' },
   row: { flexDirection: 'row', marginTop: 12, gap: 12 },

@@ -108,16 +108,18 @@ export async function getMe(req: Request, res: Response): Promise<void> {
         });
 
         const resolvedUser = await resolveUserMedia(user);
+        const stats = {
+            listings: user._count.garments,
+            sold: soldCount,
+            following: user._count.following,
+            followers: user._count.followers,
+            purchases: user._count.ordersAsBuyer
+        };
+        console.log(`[USER_DEBUG] Stats for ${user.email}:`, stats);
         res.json({
             data: {
                 ...resolvedUser,
-                stats: {
-                    listings: user._count.garments,
-                    sold: soldCount,
-                    following: user._count.following,
-                    followers: user._count.followers,
-                    purchases: user._count.ordersAsBuyer
-                }
+                stats
             }
         });
     } catch (error) {
@@ -196,11 +198,15 @@ export async function getMyListings(req: Request, res: Response): Promise<void> 
         if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
         const garments = await db.garment.findMany({
-            where: { sellerId: req.user.id },
+            where: { 
+                sellerId: req.user.id,
+                lifecycleState: { in: ['LISTED', 'INTEREST', 'SELL_INTENT', 'PURCHASE_INTENT'] }
+            },
             orderBy: { createdAt: 'desc' },
             select: {
                 id: true, title: true, brand: true, images: true,
-                price: true, condition: true, lifecycleState: true,
+                price: true, rentalPriceDay: true, rentalPriceWeek: true,
+                listingType: true, condition: true, lifecycleState: true,
                 isActive: true, createdAt: true
             }
         });
@@ -209,6 +215,33 @@ export async function getMyListings(req: Request, res: Response): Promise<void> 
         res.json({ data: resolvedGarments });
     } catch (error) {
         logger.error('getMyListings failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+// ── GET /users/me/wardrobe ────────────────────────────────────────────────────
+export async function getMyWardrobe(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
+
+        const garments = await db.garment.findMany({
+            where: { 
+                sellerId: req.user.id,
+                lifecycleState: { in: ['OWNERSHIP', 'DECLINE'] }
+            },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true, title: true, brand: true, images: true,
+                price: true, rentalPriceDay: true, rentalPriceWeek: true,
+                listingType: true, condition: true, lifecycleState: true,
+                isActive: true, createdAt: true
+            }
+        });
+
+        const resolvedGarments = await resolveGarmentsMedia(garments);
+        res.json({ data: resolvedGarments });
+    } catch (error) {
+        logger.error('getMyWardrobe failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
     }
 }

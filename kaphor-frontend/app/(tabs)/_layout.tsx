@@ -10,16 +10,7 @@ export default function TabLayout() {
     <Tabs 
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
-        header: ({ options, route }) => {
-          const cleanTitle = options.title || route.name.split('/').pop()?.replace(/\[|\]/g, '').toUpperCase();
-          return (
-            <Header 
-              title={cleanTitle} 
-              showLogo={route.name === 'index'} 
-            />
-          );
-        },
-        headerShown: true,
+        headerShown: false,
       }}
     >
 
@@ -44,11 +35,12 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Ionicons name="infinite-outline" size={24} color={color} />,
         }}
       />
+      <Tabs.Screen name="swap/index" options={{ href: null }} />
       <Tabs.Screen
-        name="swap/index"
+        name="cart"
         options={{
-          title: 'Swap',
-          tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal-outline" size={24} color={color} />,
+          title: 'Cart',
+          tabBarIcon: ({ color }) => <Ionicons name="cart-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -76,6 +68,7 @@ export default function TabLayout() {
       <Tabs.Screen name="shop/[id]" options={{ href: null }} />
       <Tabs.Screen name="shop/sell" options={{ href: null }} />
       <Tabs.Screen name="shop/order-confirmed" options={{ href: null }} />
+      <Tabs.Screen name="shop/checkout/delivery" options={{ href: null }} />
       <Tabs.Screen name="shop/checkout/[orderId]" options={{ href: null }} />
       <Tabs.Screen name="shop/orders/index" options={{ href: null }} />
       <Tabs.Screen name="shop/orders/[orderId]" options={{ href: null }} />

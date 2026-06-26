@@ -42,41 +42,20 @@ export function ShopScreen() {
     // Mock fetch function simulating api integration
     const fetchFeed = async (cursor: string | null = null, reset = false) => {
         try {
-            // Setup mock delays and responses
-            // Replace with: axios.get('/api/v1/garments/feed', { params: { after: cursor, ...filters, q: searchQuery } })
-            await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network latency
+            setLoading(true);
+            const response = await api.get('/garments/feed', {
+                params: {
+                    listingType: 'SALE',
+                    after: cursor,
+                    q: searchQuery
+                }
+            });
 
-            const newItems = Array.from({ length: 10 }).map((_, i) => ({
-                id: `mock-${Date.now()}-${i}-${cursor || '0'}`,
-                sellerId: 'mock-seller',
-                title: `Vintage Mock Luxury Item ${i + (cursor ? 10 : 0)}`,
-                description: 'Mock description...',
-                brand: 'LUXURY MOCK',
-                category: 'Outwear',
-                size: 'M',
-                color: ['Black'],
-                material: ['Leather'],
-                condition: 'PRISTINE',
-                images: ['https://picsum.photos/seed/' + Math.random() + '/300/400'],
-                tags: [],
-                styleTags: [],
-                garmentVector: [],
-                lifecycleState: 'LISTED',
-                listingType: 'SALE',
-                price: 450.0 + (i * 10),
-                popularityScore: 0,
-                diversityScore: 0,
-                viewCount: 0,
-                isActive: true,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                fitScore: 0.85 + (Math.random() * 0.15) // Generate 85-100%
-            })) as any[];
+            const newItems = response.data.data;
+            const pagination = response.data.pagination;
 
             setGarments(prev => reset ? newItems : [...prev, ...newItems]);
-
-            // Simulate pagination returning a nextCursor
-            setNextCursor(newItems.length === 10 ? newItems[newItems.length - 1].id : null);
+            setNextCursor(pagination?.nextCursor || null);
         } catch (error) {
             console.error('Failed to fetch garments', error);
         } finally {

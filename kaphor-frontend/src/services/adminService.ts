@@ -54,6 +54,23 @@ export const adminService = {
     const { data } = await api.patch<{ data: any }>(`/admin/users/${id}`, updates);
     return data.data;
   },
+
+  deleteUser: async (id: string) => {
+    const { data } = await api.delete<{ data: any }>(`/admin/users/${id}`);
+    return data.data;
+  },
+  
+  listGarments: async (params?: { limit?: number }) => {
+    const { data } = await api.get<{ data: any[] }>('/admin/garments', {
+      params: {
+        ...(params?.limit ? { limit: params.limit } : {}),
+      },
+    });
+    return data.data;
+  },
+
+  deleteGarment: async (id: string) => {
+    const { data } = await api.delete<{ data: any }>(`/garments/${id}`);
+    return data.data;
+  },
 };
-
-

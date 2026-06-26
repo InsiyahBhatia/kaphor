@@ -12,14 +12,19 @@ const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 const bucketName = process.env.AWS_S3_BUCKET_NAME;
 
+let cachedIp: string | null = null;
+
 function getLocalIp(): string {
+  if (cachedIp) return cachedIp;
+
   const interfaces = os.networkInterfaces();
   
   // Prefer 192.168.x.x addresses (typical for home networks/phones)
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name] || []) {
       if (iface.family === 'IPv4' && !iface.internal && iface.address.startsWith('192.168.')) {
-        return iface.address;
+        cachedIp = iface.address;
+        return cachedIp;
       }
     }
   }
@@ -28,11 +33,13 @@ function getLocalIp(): string {
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name] || []) {
       if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
+        cachedIp = iface.address;
+        return cachedIp;
       }
     }
   }
-  return 'localhost';
+  cachedIp = 'localhost';
+  return cachedIp;
 }
 
 const s3Client = new S3Client({

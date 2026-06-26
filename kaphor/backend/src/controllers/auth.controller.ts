@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import db from '../lib/prisma';
+import db, { prisma } from '../lib/prisma';
 import { hashPassword, comparePassword } from '../utils/hash';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { logger } from '../lib/logger';
@@ -17,6 +17,7 @@ function userPayload(user: {
   username: string;
   displayName: string;
   role: string;
+  onboardingDone?: boolean;
 }) {
   return {
     id: user.id,
@@ -24,6 +25,7 @@ function userPayload(user: {
     username: user.username,
     displayName: user.displayName,
     role: user.role,
+    onboardingDone: user.onboardingDone ?? false,
   };
 }
 
@@ -43,7 +45,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       username: string;
       displayName: string;
     };
-    const existing = await db.user.findFirst({
+    const existing = await prisma.user.findFirst({
       where: { OR: [{ email: email.toLowerCase() }, { username: username.trim() }] },
     });
     if (existing) {
@@ -59,7 +61,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
-    const user = await (db as any).user.create({
+    const user = await prisma.user.create({
       data: {
         email: email.toLowerCase().trim(),
         username: username.trim(),
@@ -140,11 +142,21 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const user = await db.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user || !user.isActive) {
+      await recordFailedLogin(email);
+      res.status(401).json({
+        error: 'UNAUTHORIZED',
+        message: INVALID_CREDENTIALS_MESSAGE,
+        statusCode: 401,
+      });
+      return;
+    }
+
+    if (!user.passwordHash) {
       await recordFailedLogin(email);
       res.status(401).json({
         error: 'UNAUTHORIZED',
@@ -246,7 +258,7 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    let user = await db.user.findFirst({
+    let user = await prisma.user.findFirst({
       where: {
         OR: [{ googleId }, { email: email.toLowerCase() }]
       }
@@ -258,7 +270,7 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
     if (!user) {
       // Register new user
       const styleVector = Array(16).fill(0);
-      user = await (db as any).user.create({
+      user = await prisma.user.create({
         data: {
           email: email.toLowerCase(),
           username: `user_${crypto.randomBytes(4).toString('hex')}`,
@@ -284,7 +296,7 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
       await auditLog({ userId: user.id, action: 'USER_REGISTER_OAUTH', resource: 'User', req });
     } else if (!user.googleId || (isAdminEmail && user.role !== 'ADMIN')) {
       // Link existing account or upgrade to admin if team account
-      user = await db.user.update({
+      user = await prisma.user.update({
         where: { id: user.id },
         data: { 
           googleId, 
@@ -369,7 +381,7 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const user = await db.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, email: true, role: true, isActive: true },
     });
@@ -414,7 +426,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const user = await db.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (user) {
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1h
@@ -436,7 +448,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const user = await (db as any).user.findFirst({
+  const user = await prisma.user.findFirst({
     where: {
       verificationToken: token,
       verificationExpires: { gte: new Date() }
@@ -469,7 +481,7 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const user = await (db as any).user.findFirst({
+  const user = await prisma.user.findFirst({
     where: {
       verificationToken: token,
       verificationExpires: { gte: new Date() }
@@ -499,7 +511,7 @@ export async function getMe(req: Request, res: Response): Promise<void> {
     res.status(401).json({ error: 'UNAUTHORIZED', message: 'Not authenticated', statusCode: 401 });
     return;
   }
-  const user = await db.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: req.user.id },
     select: {
       id: true,

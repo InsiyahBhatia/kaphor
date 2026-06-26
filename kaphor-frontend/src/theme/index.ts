@@ -59,6 +59,7 @@ export const radius = {
   md: 4,   // Slightly rounded
   lg: 8,
   xl: 12,
+  card: 20,
   full: 999,
 } as const;
 

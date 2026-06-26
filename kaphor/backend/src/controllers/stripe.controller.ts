@@ -54,10 +54,22 @@ async function handlePaymentSuccess(paymentIntent: any) {
           stripePaymentId: paymentIntent.id,
         },
         include: {
-          items: { include: { garment: { select: { title: true } } } },
-          sellerId: true,
+          items: { include: { garment: true } },
         },
       });
+
+      // Transfer ownership
+      for (const item of updatedOrder.items) {
+        if (item.garmentId) {
+          await db.garment.update({
+            where: { id: item.garmentId },
+            data: {
+              sellerId: updatedOrder.buyerId,
+              lifecycleState: 'OWNERSHIP',
+            },
+          });
+        }
+      }
 
       // Notify Seller
       await createNotification({

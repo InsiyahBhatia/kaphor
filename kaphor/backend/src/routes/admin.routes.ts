@@ -8,6 +8,8 @@ import {
   listAdminRentals,
   listAdminUsers,
   updateAdminUser,
+  deleteAdminUser,
+  listAdminGarments,
 } from '../controllers/admin.controller';
 
 export const adminRouter = Router();
@@ -22,4 +24,5 @@ adminRouter.get('/swaps', listAdminSwaps);
 adminRouter.get('/rentals', listAdminRentals);
 adminRouter.get('/users', listAdminUsers);
 adminRouter.patch('/users/:id', updateAdminUser);
-
+adminRouter.delete('/users/:id', deleteAdminUser);
+adminRouter.get('/garments', listAdminGarments);

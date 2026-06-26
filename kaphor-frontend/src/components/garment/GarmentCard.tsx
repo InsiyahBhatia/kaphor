@@ -18,7 +18,12 @@ export function GarmentCard({ item, onPress, onSave, isSaved }: GarmentCardProps
 
     // Format fit score
     const fitPercentage = item.fitScore !== undefined ? Math.round(item.fitScore * 100) : null;
-    const formattedPrice = item.price ? `$${item.price.toFixed(2)}` : 'N/A';
+    
+    const formattedPrice = item.listingType === 'RENTAL' 
+        ? `₹${((item.rentalPriceDay || 0) / 100).toLocaleString()}`
+        : `₹${((item.price || 0) / 100).toLocaleString()}`;
+
+    const priceSuffix = item.listingType === 'RENTAL' ? ' / day' : '';
 
     return (
         <Pressable style={styles.container} onPress={onPress}>
@@ -29,12 +34,16 @@ export function GarmentCard({ item, onPress, onSave, isSaved }: GarmentCardProps
                     contentFit="cover"
                 />
 
-                {/* Fit Score Badge */}
-                {fitPercentage !== null && (
+                {/* Fit Score or Rental Badge */}
+                {fitPercentage !== null ? (
                     <View style={styles.badge}>
                         <Text style={styles.badgeText}>{fitPercentage}% FIT</Text>
                     </View>
-                )}
+                ) : item.listingType === 'RENTAL' ? (
+                    <View style={[styles.badge, { backgroundColor: colors.gold }]}>
+                        <Text style={[styles.badgeText, { color: colors.bg }]}>RENTAL</Text>
+                    </View>
+                ) : null}
 
                 {/* Save/Heart Icon */}
                 <Pressable style={styles.saveButton} onPress={onSave} hitSlop={10}>
@@ -49,7 +58,10 @@ export function GarmentCard({ item, onPress, onSave, isSaved }: GarmentCardProps
             <View style={styles.detailsContainer}>
                 <Text style={styles.brand} numberOfLines={1}>{item.brand}</Text>
                 <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-                <Text style={styles.price}>{formattedPrice}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                    <Text style={styles.price}>{formattedPrice}</Text>
+                    <Text style={{ fontSize: 9, color: colors.textMuted, fontFamily: typography.mono }}>{priceSuffix}</Text>
+                </View>
             </View>
         </Pressable>
     );

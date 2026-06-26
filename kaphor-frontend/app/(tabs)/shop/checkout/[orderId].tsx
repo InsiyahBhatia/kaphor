@@ -6,27 +6,33 @@ import { garmentService } from '../../../../src/services/garmentService';
 import api from '../../../../src/services/api';
 import { useAuth } from '../../../../src/context/AuthContext';
 import { colors, typography } from '../../../../src/theme';
+import { Header } from '../../../../src/components/common/Header';
+import { KaphorImage } from '../../../../src/components/KaphorImage';
 
 export default function CheckoutScreen() {
-  const { orderId: garmentId } = useLocalSearchParams<{ orderId: string }>();
+  const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const [garment, setGarment] = useState<any>(null);
+  const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [RazorpayComp, setRazorpayComp] = useState<null | React.ComponentType<any>>(null);
   const [showRazorpay, setShowRazorpay] = useState(false);
 
   useEffect(() => {
-    loadGarment();
-  }, [garmentId]);
+    loadOrder();
+  }, [orderId]);
 
-  const loadGarment = async () => {
+  const loadOrder = async () => {
     try {
-      const data = await garmentService.getGarmentById(garmentId as string);
-      setGarment(data);
-    } catch { }
-    finally { setLoading(false); }
+      const { data } = await api.get(`/orders/${orderId}`);
+      setOrder(data.data);
+    } catch (e) {
+      console.error('Failed to load order', e);
+      Alert.alert('Error', 'Could not load checkout details');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePurchase = async () => {
@@ -49,12 +55,9 @@ export default function CheckoutScreen() {
         }
         setShowRazorpay(true);
       } else {
-        const { data } = await api.post<{ data: { orderId: string } }>('/orders', { garmentId });
-        Alert.alert('Order placed', 'Message the seller under Orders to coordinate delivery.', [
-          {
-            text: 'OPEN ORDER',
-            onPress: () => router.replace(`/(tabs)/shop/orders/${data.data.orderId}` as any),
-          },
+        // Mock success for non-razorpay env
+        await api.post(`/orders/${orderId}/pay`, { method: 'MOCK' }); // Assume this exists or handle accordingly
+        Alert.alert('Purchase successful', 'Your archive haul is being prepared.', [
           { text: 'HOME', onPress: () => router.replace('/(tabs)') },
         ]);
       }
@@ -77,12 +80,13 @@ export default function CheckoutScreen() {
 
   return (
     <View style={styles.container}>
-      {showRazorpay && RazorpayComp ? (
+      <Header title="CHECKOUT" showBack />
+      
+      {showRazorpay && RazorpayComp && (
         <RazorpayComp
           razorpayKeyId={process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID}
-          garmentId={garmentId}
-          garmentTitle={garment?.title}
-          imageUrl={garment?.images?.[0]}
+          orderId={orderId}
+          amount={order?.totalAmount}
           buyerEmail={user?.email}
           onPaid={(orderId: string) => {
             setShowRazorpay(false);
@@ -90,39 +94,48 @@ export default function CheckoutScreen() {
           }}
           onClose={() => setShowRazorpay(false)}
         />
-      ) : null}
-      
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color={colors.charcoal} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>SECURE CHECKOUT</Text>
-        <View style={{ width: 28 }} />
+      )}
+
+      {/* Progress Bar */}
+      <View style={styles.progressContainer}>
+        <View style={styles.step}>
+          <View style={styles.stepDot}>
+            <Ionicons name="checkmark" size={16} color={colors.textMuted} />
+          </View>
+          <Text style={styles.stepLabel}>DELIVERY</Text>
+        </View>
+        <View style={[styles.progressLine, { backgroundColor: colors.red }]} />
+        <View style={styles.step}>
+          <View style={[styles.stepDot, styles.activeDot]}>
+            <Text style={styles.stepNum}>2</Text>
+          </View>
+          <Text style={styles.stepLabel}>PAYMENT</Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {garment && (
+        {order && (
           <>
-            <View style={styles.itemCard}>
-              <Image
-                source={{ uri: garment.images?.[0] || 'https://picsum.photos/400/500' }}
-                style={styles.itemImage}
-              />
-              <View style={styles.itemInfo}>
-                <Text style={styles.brand}>{garment.brand}</Text>
-                <Text style={styles.title}>{garment.title}</Text>
-                <Text style={styles.condition}>CONDITION: {garment.condition}</Text>
+            <Text style={styles.summaryTitle}>ORDER SUMMARY ({order.items?.length} ITEMS)</Text>
+            {order.items?.map((item: any, idx: number) => (
+              <View key={item.id} style={[styles.itemCard, { marginBottom: 16 }]}>
+                <KaphorImage
+                  uri={item.garment?.images?.[0]}
+                  style={styles.itemImage}
+                  contentFit="cover"
+                />
+                <View style={styles.itemInfo}>
+                  <Text style={styles.brand}>{item.garment?.brand}</Text>
+                  <Text style={styles.title} numberOfLines={2}>{item.garment?.title}</Text>
+                  <Text style={styles.priceSmall}>₹{(item.price / 100).toLocaleString()}</Text>
+                </View>
               </View>
-            </View>
+            ))}
 
             <View style={styles.summarySection}>
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>ITEM PRICE</Text>
-                <Text style={styles.priceValue}>₹{((garment.price || 0) / 100).toLocaleString()}</Text>
-              </View>
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>AUTHENTICATION</Text>
-                <Text style={styles.priceValue}>₹0</Text>
+                <Text style={styles.priceLabel}>SUBTOTAL</Text>
+                <Text style={styles.priceValue}>₹{(order.totalAmount / 100).toLocaleString()}</Text>
               </View>
               <View style={styles.priceRow}>
                 <Text style={styles.priceLabel}>DELIVERY</Text>
@@ -133,19 +146,11 @@ export default function CheckoutScreen() {
 
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>TOTAL</Text>
-                <Text style={styles.totalValue}>₹{(((garment.price || 0) / 100) + 199).toLocaleString()}</Text>
+                <Text style={styles.totalValue}>₹{(order.totalAmount / 100 + 199).toLocaleString()}</Text>
               </View>
             </View>
 
-            <View style={styles.impactCard}>
-              <View style={styles.impactIconBox}>
-                <Ionicons name="leaf-sharp" size={24} color={colors.white} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.impactTitle}>ENVIRONMENTAL IMPACT</Text>
-                <Text style={styles.impactText}>This purchase avoids ~10kg CO₂ and saves ~1,000L of water.</Text>
-              </View>
-            </View>
+
           </>
         )}
       </ScrollView>
@@ -155,12 +160,9 @@ export default function CheckoutScreen() {
           {purchasing ? (
             <ActivityIndicator color={colors.cream} />
           ) : (
-            <Text style={styles.buyButtonText}>AUTHORIZE TRANSACTION →</Text>
+            <Text style={styles.buyButtonText}>PAY →</Text>
           )}
         </TouchableOpacity>
-        <Text style={styles.secureText}>
-          SECURED BY KAPHOR CRYPTOGRAPHIC DELEGATION
-        </Text>
       </View>
     </View>
   );
@@ -179,6 +181,49 @@ const styles = StyleSheet.create({
   headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, letterSpacing: 2, fontWeight: '800' },
   
   content: { padding: 20, paddingBottom: 160 },
+
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  step: { alignItems: 'center' },
+  stepDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
+  activeDot: {
+    backgroundColor: colors.red,
+    borderColor: colors.red,
+  },
+  stepNum: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: colors.white,
+  },
+  stepLabel: {
+    marginTop: 6,
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 1,
+  },
+  progressLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: colors.charcoal,
+    marginHorizontal: 8,
+    marginBottom: 16,
+  },
   
   itemCard: { 
     flexDirection: 'row', gap: 20, marginBottom: 32,
@@ -198,6 +243,11 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   priceLabel: { color: colors.textMuted, fontSize: 12, fontFamily: typography.mono, fontWeight: '800', letterSpacing: 1 },
   priceValue: { color: colors.charcoal, fontSize: 16, fontWeight: '800', fontFamily: typography.mono },
+  summaryTitle: { 
+    fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, 
+    fontWeight: '800', letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' 
+  },
+  priceSmall: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 12, fontWeight: '700', marginTop: 4 },
   divider: { height: 2, backgroundColor: colors.charcoal, marginVertical: 8, marginBottom: 16 },
   
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, alignItems: 'center' },

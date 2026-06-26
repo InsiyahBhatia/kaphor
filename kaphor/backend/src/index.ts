@@ -139,13 +139,18 @@ async function main() {
   if (!fs.existsSync(garmentDirs)) fs.mkdirSync(garmentDirs, { recursive: true });
   if (!fs.existsSync(profileDirs)) fs.mkdirSync(profileDirs, { recursive: true });
 
-  await db.$connect();
-  console.log('Database connected');
+  // Try to connect but don't crash if unreachable — Prisma will retry lazily
+  try {
+    await db.$connect();
+    console.log('✅ Database connected');
+  } catch (err: any) {
+    console.warn('⚠️  Database connection failed at startup (will retry on first request):', err.message);
+  }
 
   httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
     initSocket(httpServer);
-    console.log('Socket.io initialized');
+    console.log('🔌 Socket.io initialized');
   });
 }
 

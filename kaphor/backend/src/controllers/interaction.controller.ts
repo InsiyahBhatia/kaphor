@@ -36,9 +36,21 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
             WISHLIST: 0.20,
             ADD_TO_CART: 0.30,
             PURCHASE_INTENT: 0.40,
+            LOG_WEAR: 0.50,
         };
 
         const impact = scoreImpact[eventType as string] || 0.05;
+
+        // If it's a LOG_WEAR event, reset decay.
+        const decayUpdate = eventType === 'LOG_WEAR' ? { interactionDecay: 0 } : {};
+
+        // If it's a SELL_INTENT event, transition the garment.
+        if (eventType === 'SELL_INTENT') {
+            await db.garment.update({
+                where: { id: String(garmentId) },
+                data: { lifecycleState: 'SELL_INTENT' }
+            });
+        }
 
         await db.behaviourSignal.upsert({
             where: {
@@ -47,6 +59,7 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
             update: {
                 recentEventCount: { increment: 1 },
                 interestScore: { increment: impact },
+                ...decayUpdate,
             },
             create: {
                 userId: req.user.id,

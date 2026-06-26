@@ -4,46 +4,23 @@ import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { impactService } from '../../../src/services/impactService';
 import { colors, typography } from '../../../src/theme';
+import { Header } from '../../../src/components/common/Header';
 
 export default function CircularScreen() {
   const router = useRouter();
-  const [impact, setImpact] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await impactService.getMyImpact();
-        setImpact(data);
-      } catch {
-        setImpact(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    // Impact calculation removed for performance
+    setLoading(false);
   }, []);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>MY IMPACT</Text>
-        <Text style={styles.subtitle}>TRACK YOUR SUSTAINABILITY JOURNEY</Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Header title="CIRCULAR HUB" />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-      {loading ? (
-        <ActivityIndicator color={colors.red} style={{ marginVertical: 20 }} />
-      ) : (
-        <View style={styles.statsContainer}>
-          <View style={styles.statBox}>
-            <Text style={styles.statLine}>{impact?.itemsCirculated || 0}</Text>
-            <Text style={styles.statLabel}>ITEMS SHARED</Text>
-          </View>
-          <View style={[styles.statBox, { backgroundColor: colors.red }]}>
-            <Text style={[styles.statLine, { color: colors.white }]}>{(impact?.carbonSavedKg || 0).toFixed(1)}</Text>
-            <Text style={[styles.statLabel, { color: colors.white }]}>KG CARBON SAVED</Text>
-          </View>
-        </View>
-      )}
+      <View style={{ height: 20 }} />
 
       <View style={styles.options}>
         {/* AI Condition Check */}
@@ -107,6 +84,7 @@ export default function CircularScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+  </View>
   );
 }
 
@@ -138,31 +116,83 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   statsContainer: {
-    flexDirection: 'row',
-    gap: 16,
     marginBottom: 32,
   },
-  statBox: {
+  statsRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+  },
+  statCardHalf: {
     flex: 1,
-    height: 110,
     backgroundColor: colors.charcoal,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 12,
     borderWidth: 2,
     borderColor: colors.charcoal,
+    position: 'relative',
+    height: 90,
+    justifyContent: 'center',
   },
-  statLine: {
-    fontSize: 42,
-    fontFamily: typography.headings,
+  statRank: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    fontFamily: typography.ranks,
     color: colors.cream,
+    fontSize: 16,
   },
   statLabel: {
-    fontSize: 10,
     fontFamily: typography.mono,
-    color: 'rgba(245, 240, 232, 0.7)',
-    marginTop: 4,
-    letterSpacing: 2,
-    fontWeight: '800',
+    color: colors.red,
+    fontSize: 10,
+    marginBottom: 2,
+    marginTop: 12,
+  },
+  statValue: {
+    fontFamily: typography.headings,
+    color: colors.white,
+    fontSize: 32,
+    lineHeight: 32,
+  },
+  statSub: {
+    fontFamily: typography.mono,
+    color: 'rgba(245, 240, 232, 0.5)',
+    fontSize: 10,
+  },
+  statCardFull: {
+    backgroundColor: colors.red,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    position: 'relative',
+    height: 100,
+    justifyContent: 'center',
+  },
+  statRankFull: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    fontFamily: typography.ranks,
+    color: colors.white,
+    fontSize: 16,
+  },
+  statLabelFull: {
+    fontFamily: typography.mono,
+    color: colors.white,
+    fontSize: 12,
+    marginBottom: 0,
+    marginTop: 12,
+  },
+  statValueFull: {
+    fontFamily: typography.headings,
+    color: colors.white,
+    fontSize: 44,
+    lineHeight: 44,
+  },
+  statSubFull: {
+    fontFamily: typography.mono,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 10,
   },
   options: {
     gap: 16,

@@ -56,23 +56,22 @@ export default function RentalScreen() {
                 <TouchableOpacity
                   key={item.id}
                   style={styles.cardWrapper}
-                  onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)}
+                  onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
                 >
                   <PlayingCard
                     rank={ranks[index % ranks.length]}
                     suit={suits[index % 4]}
                     productName={item.title}
                     size="OS"
-                    price={item.pricePerDay || 0}
+                    category={item.category}
+                    subCategory={item.subCategory}
+                    price={item.rentalPriceDay ? item.rentalPriceDay / 100 : 0}
                     imageUrl={item.images?.[0]}
-                    flavorText="daily lease"
+                    condition="Pristine"
+                    buttonText="Request Lease"
+                    onSwapRequest={() => router.push(`/(tabs)/rental/${item.id}` as any)}
                     style={{ width: '100%' }}
                   />
-                  <View style={styles.cardActions}>
-                    <View style={styles.leaseBtn}>
-                      <Text style={styles.leaseBtnText}>REQUEST LEASE</Text>
-                    </View>
-                  </View>
                 </TouchableOpacity>
               )
             })}

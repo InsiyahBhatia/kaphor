@@ -69,72 +69,173 @@ function cosineSimilarity(a: number[], b: number[]): number {
     return denom === 0 ? 0 : dot / denom;
 }
 
-/** Sophisticated scoring logic to determine user style aesthetic deterministically */
+export const AESTHETIC_VECTORS: Record<string, number[]> = {
+    MINIMALIST:   [0.1, 0.1, 0.1, 0.9, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.8],
+    STREETWEAR:   [0.9, 0.8, 0.1, 0.1, 0.2, 0.9, 0.1, 0.1, 0.7, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.8, 0.1, 0.2, 0.1],
+    VINTAGE:      [0.2, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.8, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1],
+    CULTURAL:     [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.9, 0.8, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2],
+    BOLD:         [0.8, 0.9, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.9, 0.9, 0.1, 0.3, 0.1, 0.1, 0.1],
+    LUXURY:       [0.1, 0.1, 0.1, 0.5, 0.5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1, 0.7, 0.9],
+    DARK:         [0.7, 0.3, 0.2, 0.6, 0.1, 0.4, 0.1, 0.1, 0.1, 0.1, 0.7, 0.1, 0.1, 0.1, 0.3, 0.2, 0.9, 0.1, 0.4, 0.1],
+    BOHO:         [0.1, 0.1, 0.6, 0.1, 0.1, 0.1, 0.5, 0.5, 0.1, 0.4, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.6, 0.1, 0.1],
+    ARTISANAL:    [0.1, 0.1, 0.8, 0.3, 0.1, 0.1, 0.9, 0.6, 0.1, 0.7, 0.1, 0.8, 0.3, 0.1, 0.1, 0.3, 0.1, 0.7, 0.1, 0.1],
+    PREPPY:       [0.1, 0.2, 0.3, 0.7, 0.4, 0.1, 0.1, 0.1, 0.4, 0.2, 0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.6, 0.5],
+};
+
+export const AESTHETIC_SUMMARIES: Record<string, string> = {
+    MINIMALIST:  "Your archive is built on restraint and precision. You believe in 'less but better'—investing in architectural silhouettes, high-quality neutral basics, and impeccably made essentials that endure beyond trend cycles. Your wardrobe is a master equation: every piece is intentional, every combination effortlessly calibrated. The quality of a single well-made shirt matters more to you than a closet full of novelty.",
+    STREETWEAR:  "Your style is a living document of urban culture. Rooted in subculture, movement, and community, you gravitate toward oversized silhouettes, bold graphics, and limited-edition archival pieces that tell the story of city life. Technical fabrics, functional hardware, and loud branding are your language—you dress like you belong to the future.",
+    VINTAGE:     "You are an archivist of fashion history. Every piece you own is a curated find—a story told through aged silk, perfectly faded denim, and silhouettes that outlived their era. You favor the soul of 'one-of-a-kind' over the algorithm of new arrivals, and you know the thrill of finding a forgotten gem that nobody else has.",
+    CULTURAL:    "Your wardrobe is a love letter to heritage and craft. You are drawn to the rich materiality of handloom weaves, embroidery traditions, and artisanal techniques passed down across generations. Vibrant patterns, natural textiles, and flowing silhouettes carry stories that fast fashion can never replicate. You dress with cultural pride and depth.",
+    BOLD:        "You dress like you have something to say. Experimental cuts, clashing textures, unexpected proportions, and colors that stop traffic—your style is an act of radical self-expression. You are not afraid of volume or tension in an outfit. Convention bores you. You are drawn to the avant-garde edge of fashion where art and clothing merge.",
+    LUXURY:      "Your standard is impeccable. You seek out garments where the quality of the craft is its own statement—cashmere that drapes like water, leather that softens with time, tailoring that holds its form for decades. You invest in pieces that appreciate in rarity and resonance. Your look is a quiet authority; you have nothing to prove.",
+    DARK:        "Your palette is nocturnal and your silhouettes are deliberate. You are drawn to the dramatic—dark fabrics, architectural edges, heavy textures like matte leather and structured wool. Your style is a mood: introspective, considered, and powerfully understated. You dress with intention, not for attention.",
+    BOHO:        "You move through the world in beautiful, flowing layers. Your style is deeply intuitive—mixing textures, prints, and global finds in a way that feels effortlessly composed. You are drawn to earthy tones, natural fibers, artisan jewelry, and pieces that feel as alive as the outdoors. Freedom of expression is your north star.",
+    ARTISANAL:   "You are a connoisseur of making. Your wardrobe is built around handcrafted pieces—hand-block prints, hand-stitched embroidery, natural indigo dyes, and ethically made garments where the maker's identity is as important as the material. You support slow fashion at its most genuine expression.",
+    PREPPY:      "Your style is rooted in a refined academic tradition. Clean silhouettes, structured outerwear, classic patterns like plaid and herringbone, and a palette that signals understated confidence. You appreciate the discipline of a well-executed classic look—polished, reliable, and subtly prestigious.",
+};
+
+export function getAestheticDetails(aesthetic: string) {
+    const allAesthetics = Object.keys(AESTHETIC_VECTORS);
+    const safeAesthetic = allAesthetics.includes(aesthetic) ? aesthetic : 'LUXURY';
+
+    const metadata: Record<string, any> = {
+        MINIMALIST: {
+            recommendedBrands: ["The Row", "Jil Sander", "Lemaire", "Auralee", "COS Archive"],
+            topCategories: ["Structured Blazers", "Fine Knitwear", "Wide-leg Trousers", "Tonal Coats"],
+            dnaTags: ["ARCHITECTURAL", "MONOCHROME", "TIMELESS", "PRECISE"],
+            colorPalette: ["#1A1A1A", "#FFFFFF", "#E8E8E4", "#C8C4BB"],
+            aestheticVibe: "The Editor"
+        },
+        STREETWEAR: {
+            recommendedBrands: ["Off-White", "Stone Island", "Stüssy", "Fear of God", "Palace"],
+            topCategories: ["Graphic Tees", "Technical Outerwear", "Vintage Denim", "Statement Sneakers"],
+            dnaTags: ["URBAN", "GRAPHIC", "CULTURAL", "FUNCTIONAL"],
+            colorPalette: ["#000000", "#FFFFFF", "#FF0000", "#4A4AFF"],
+            aestheticVibe: "The Archivist"
+        },
+        VINTAGE: {
+            recommendedBrands: ["Levi's Big E", "Vintage Dior", "Missoni", "European Deadstock"],
+            topCategories: ["Heritage Denim", "Silk Scarves", "Leather Bombers", "Deadstock Tees"],
+            dnaTags: ["SOULFUL", "HISTORIC", "CURATED", "UNIQUE"],
+            colorPalette: ["#8B7355", "#C4A882", "#6B4C3B", "#D4C4A0"],
+            aestheticVibe: "The Collector"
+        },
+        CULTURAL: {
+            recommendedBrands: ["FabIndia", "Raw Mango", "Sabyasachi Archive", "Handloom House"],
+            topCategories: ["Hand-printed Sarees", "Linen Kurtas", "Block-print Tops", "Artisan Dupattas"],
+            dnaTags: ["HERITAGE", "VIBRANT", "HANDCRAFTED", "EARTHY"],
+            colorPalette: ["#8B2500", "#D4891A", "#2D6A4F", "#E9C46A"],
+            aestheticVibe: "The Heritage Keeper"
+        },
+        BOLD: {
+            recommendedBrands: ["Comme des Garçons", "Rick Owens", "Maison Margiela", "JW Anderson"],
+            topCategories: ["Sculptural Coats", "Experimental Knits", "Statement Boots", "Avant-garde Dresses"],
+            dnaTags: ["AVANT-GARDE", "EXPRESSIVE", "DISRUPTIVE", "FEARLESS"],
+            colorPalette: ["#FF0000", "#000000", "#FFFF00", "#7B2D8B"],
+            aestheticVibe: "The Disruptor"
+        },
+        LUXURY: {
+            recommendedBrands: ["Hermès", "Brunello Cucinelli", "Loro Piana", "Chanel Vintage"],
+            topCategories: ["Cashmere Overcoats", "Structured Bags", "Silk Blouses", "Tailored Trousers"],
+            dnaTags: ["IMPECCABLE", "INVESTMENT", "POLISHED", "ELEVATED"],
+            colorPalette: ["#1A1A1A", "#F5F0E8", "#8B7E6A", "#D4AF37"],
+            aestheticVibe: "The Connoisseur"
+        },
+        DARK: {
+            recommendedBrands: ["Rick Owens", "Ann Demeulemeester", "Yohji Yamamoto", "Julius"],
+            topCategories: ["Leather Jackets", "Draped Coats", "Heavy Knitwear", "Wide-leg Black Trousers"],
+            dnaTags: ["NOCTURNAL", "DRAMATIC", "ARCHITECTURAL", "DELIBERATE"],
+            colorPalette: ["#0A0A0A", "#1C1C1C", "#2C2C2C", "#4A4040"],
+            aestheticVibe: "The Architect of Darkness"
+        },
+        BOHO: {
+            recommendedBrands: ["Isabel Marant", "Free People Archive", "Antik Batik", "Tigmi Trading"],
+            topCategories: ["Flowing Midi Dresses", "Embroidered Blouses", "Linen Trousers", "Artisan Jewelry"],
+            dnaTags: ["FREE-SPIRITED", "LAYERED", "ORGANIC", "INTUITIVE"],
+            colorPalette: ["#C8956C", "#D4A76A", "#6B8F71", "#E8D5B7"],
+            aestheticVibe: "The Free Spirit"
+        },
+        ARTISANAL: {
+            recommendedBrands: ["Studio by Bhumi", "Arjuna Natural", "The Loom Art", "Usha Silks"],
+            topCategories: ["Hand-block Prints", "Natural Indigo Textiles", "Handloom Sarees", "Craft Accessories"],
+            dnaTags: ["SLOW FASHION", "HANDMADE", "ETHICAL", "MEANINGFUL"],
+            colorPalette: ["#5C4033", "#7A9E7E", "#C9B99A", "#4A6741"],
+            aestheticVibe: "The Craft Guardian"
+        },
+        PREPPY: {
+            recommendedBrands: ["Ralph Lauren Vintage", "Brooks Brothers Archive", "Lacoste", "Barbour"],
+            topCategories: ["Blazers & Tailoring", "Oxford Shirts", "Chinos & Trousers", "Heritage Outerwear"],
+            dnaTags: ["CLASSIC", "STRUCTURED", "COLLEGIATE", "RELIABLE"],
+            colorPalette: ["#1B3A6B", "#C8102E", "#F5F0EB", "#2E5902"],
+            aestheticVibe: "The Classic"
+        },
+    };
+
+    const extra = metadata[safeAesthetic] || metadata.LUXURY;
+    return {
+        styleVector: AESTHETIC_VECTORS[safeAesthetic],
+        styleAesthetic: safeAesthetic,
+        summary: AESTHETIC_SUMMARIES[safeAesthetic],
+        ...extra,
+    };
+}
+
+/** Sophisticated scoring logic — maps all quiz signals to deep aesthetic scores */
 function generateHeuristicProfile(answers: string[]) {
     const text = answers.join(' ').toUpperCase();
-    
-    const scores = {
-        MINIMALIST: 0,
-        VINTAGE: 0,
-        BOLD: 0,
-        ETHNIC: 0,
-        STREETWEAR: 0,
-        LUXURY: 0
+
+    const scores: Record<string, number> = {
+        MINIMALIST: 0, STREETWEAR: 0, VINTAGE: 0, CULTURAL: 0, BOLD: 0,
+        LUXURY: 0, DARK: 0, BOHO: 0, ARTISANAL: 0, PREPPY: 0,
     };
 
-    // 1. Scoring Logic
     answers.forEach(ans => {
         const a = ans.toUpperCase();
-        
-        // Streetwear cues
-        if (a.includes('STREETWEAR') || a.includes('OVERSIZED') || a.includes('GRAPHIC') || a.includes('DENIM') || a.includes('EDGY') || a.includes('RELAXED') || a.includes('LOOSE')) scores.STREETWEAR += 2;
-        
-        // Minimalist cues
-        if (a.includes('MINIMAL') || a.includes('NEUTRALS') || a.includes('CLEAN') || a.includes('SIMPLE') || a.includes('TIMELESS') || a.includes('SOLID')) scores.MINIMALIST += 2;
-        
-        // Vintage cues
-        if (a.includes('VINTAGE') || a.includes('FLORAL') || a.includes('SILK') || a.includes('LINEN') || a.includes('RETRO')) scores.VINTAGE += 2;
-        
-        // Ethnic cues
-        if (a.includes('ETHNIC') || a.includes('TRADITIONAL') || a.includes('FLOWING') || a.includes('PATTERNS')) scores.ETHNIC += 2;
-        
-        // Bold cues
-        if (a.includes('BOLD') || a.includes('BRIGHT') || a.includes('EXPERIMENTAL') || a.includes('STATEMENT') || a.includes('CHIC') || a.includes('TRENDY')) scores.BOLD += 2;
-        
-        // Luxury cues
-        if (a.includes('LUXURY') || a.includes('ELEGANT') || a.includes('REFINED') || a.includes('POLISHED') || a.includes('TAILORED') || a.includes('CLASSY')) scores.LUXURY += 2;
+
+        // ── MINIMALIST signals
+        if (a.match(/MINIMAL|NEUTRAL|CLEAN|SIMPLE|TIMELESS|SOLID|QUIET|UNIFORM|PARED.DOWN|ARCHITECTURAL|PRECISE|RESTRAINED/)) scores.MINIMALIST += 2;
+        if (a.match(/LESS IS MORE|NO PRINT|TONAL|MONOCHROME|UNIFORM|JAPANESE/)) scores.MINIMALIST += 3;
+
+        // ── STREETWEAR signals
+        if (a.match(/STREETWEAR|OVERSIZED|GRAPHIC|DENIM|EDGY|RELAXED|LOOSE|URBAN|HYPE|DROP|LOGOMANIA/)) scores.STREETWEAR += 2;
+        if (a.match(/SKATE|HIP.HOP|TRACK|HOODIE|SNEAKER|BOXY|UTILITY/)) scores.STREETWEAR += 3;
+
+        // ── VINTAGE signals
+        if (a.match(/VINTAGE|RETRO|HERITAGE|DEADSTOCK|FLORAL|SILK|LINEN|ARCHIVE|1970|1980|1990/)) scores.VINTAGE += 2;
+        if (a.match(/THRIFT|COLLECTOR|ANTIQUE|SECOND.?HAND|CURATED|RARE FIND/)) scores.VINTAGE += 3;
+
+        // ── CULTURAL signals
+        if (a.match(/CULTURAL|TRADITIONAL|ETHNIC|HERITAGE|INDIAN|HANDLOOM|COTTON|SAREE|KURTA|BLOCK.?PRINT/)) scores.CULTURAL += 2;
+        if (a.match(/KHADI|WEAVE|CRAFT|ARTISAN|EMBROIDERY|ZARDOSI|IKAT|KALAMKARI/)) scores.CULTURAL += 3;
+
+        // ── BOLD signals
+        if (a.match(/BOLD|BRIGHT|EXPERIMENTAL|STATEMENT|AVANT.?GARDE|MAX|EXTREME|CLASH|UNEXPECTED|VOLUME/)) scores.BOLD += 2;
+        if (a.match(/SCULPTURAL|DEVIANT|DISRUPTIVE|SURREAL|PERFORMATIVE|EXTREME SILHOUETTE/)) scores.BOLD += 3;
+
+        // ── LUXURY signals
+        if (a.match(/LUXURY|ELEGANT|REFINED|POLISHED|TAILORED|CLASSY|INVESTMENT|PREMIUM|COUTURE|PRESTIGE/)) scores.LUXURY += 2;
+        if (a.match(/CASHMERE|SILK CREPE|IMPECCABLE|HERM|LORO PIANA|BRUNELLO|QUIET LUXURY/)) scores.LUXURY += 3;
+
+        // ── DARK signals
+        if (a.match(/DARK|GOTHIC|MOODY|NOIR|BLACK|DRAMATIC|HEAVY|SHADOW|NOCTURNAL|MATTE/)) scores.DARK += 2;
+        if (a.match(/ARCHITECTURAL BLACK|AUSTERE|DECONSTRUCTED|STARK|YOHJI|RICK OWENS|ANN D/)) scores.DARK += 3;
+
+        // ── BOHO signals
+        if (a.match(/BOHO|BOHEMIAN|FLOWING|EARTHY|NATURAL|FREE|LAYERED|GLOBAL|WANDERLUST|FLOWY/)) scores.BOHO += 2;
+        if (a.match(/FESTIVAL|ORGANIC|MACRAME|CROCHET|FRINGE|PATCHWORK|WRAP|NOMADIC|SPIRITUAL/)) scores.BOHO += 3;
+
+        // ── ARTISANAL signals
+        if (a.match(/ARTISAN|HANDMADE|HAND.?CRAFTED|SLOW FASHION|NATURAL DYE|BLOCK PRINT|HANDWOVEN|ETHICAL/)) scores.ARTISANAL += 2;
+        if (a.match(/KHADI|INDIGO|SUSTAINABLE CRAFT|MAKER|HANDLOOM|SUPPORT ARTISAN|ZERO WASTE/)) scores.ARTISANAL += 3;
+
+        // ── PREPPY signals
+        if (a.match(/PREPPY|CLASSIC|COLLEGIATE|CLEAN.?CUT|STRUCTURED|POLO|BLAZER|PLAID|HERRINGBONE/)) scores.PREPPY += 2;
+        if (a.match(/NAVY|STRIPE|OXFORD|CHINO|LOAFER|HERITAGE|ACADEMIC|OLD MONEY|NAUTICAL/)) scores.PREPPY += 3;
     });
 
-    // 2. Find winner
-    const aesthetic = (Object.keys(scores) as (keyof typeof scores)[]).reduce((a, b) => scores[a] > scores[b] ? a : b);
-
-    // 3. Vector Definition (Stable seeds for each aesthetic)
-    const vectors: Record<string, number[]> = {
-        MINIMALIST: [0.1, 0.1, 0.1, 0.9, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1],
-        STREETWEAR: [0.9, 0.8, 0.1, 0.1, 0.2, 0.9, 0.1, 0.1, 0.7, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
-        VINTAGE:    [0.2, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.8, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
-        ETHNIC:     [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.9, 0.8, 0.1, 0.1, 0.1],
-        BOLD:       [0.8, 0.9, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.9, 0.9, 0.1],
-        LUXURY:     [0.1, 0.1, 0.1, 0.5, 0.5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.1, 0.1, 0.9]
-    };
-
-    const summaries: Record<string, string> = {
-        MINIMALIST: "Your archive priorities are clean lines, high-quality basics, and a versatile neutral palette.",
-        STREETWEAR: "You thrive in oversized silhouettes, bold graphics, and urban-industrial textures.",
-        VINTAGE:    "You value the history of garments, seeking unique silhouettes and heritage textiles.",
-        ETHNIC:     "Your style celebrates traditional craftsmanship, vibrant patterns, and natural flowing fabrics.",
-        BOLD:       "You are a statement-maker, choosing experimental cuts and high-impact color combinations.",
-        LUXURY:     "Your aesthetic is defined by impeccable tailoring, refined materials, and a polished contemporary silhouette."
-    };
-
-    return {
-        styleVector: vectors[aesthetic] || vectors.LUXURY,
-        styleAesthetic: aesthetic,
-        recommendedBrands: ["KaPhor Selects", "Heritage Archive"],
-        preferredCategories: ["Apparel", "Outerwear"],
-        colorPalette: ["#1A1A1A", "#F5F0E8", "#C41E3A"], // Brand palette
-        summary: summaries[aesthetic]
-    };
+    const aesthetic = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+    return getAestheticDetails(aesthetic);
 }
 
 function safeJson(text: string): any {
@@ -196,6 +297,46 @@ export async function processStyleQuiz(req: Request, res: Response): Promise<voi
         });
     } catch (error) {
         logger.error('Style quiz failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+export async function skipStyleQuiz(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
+
+        await db.user.update({
+            where: { id: req.user.id },
+            data: {
+                onboardingDone: true
+            }
+        });
+
+        res.json({ data: { message: 'Style quiz skipped' } });
+    } catch (error) {
+        logger.error('Style quiz skip failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+export async function getStyleProfile(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
+
+        const user = await db.user.findUnique({
+            where: { id: req.user.id },
+            select: { styleAesthetic: true, onboardingDone: true }
+        });
+
+        if (!user || !user.styleAesthetic || !user.onboardingDone) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'No style profile generated yet' });
+            return;
+        }
+
+        const details = getAestheticDetails(user.styleAesthetic);
+        res.status(200).json({ data: details });
+    } catch (error) {
+        logger.error('Fetch style profile failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
     }
 }
@@ -422,7 +563,92 @@ Be warm, knowledgeable, and concise. Never suggest fast fashion.`;
     }
 }
 
-// ── 5. AI Vision: Condition Assessment + Upcycle ─────────────────────────────
+// ── 6. AI Vision: Analyze Listing Image ───────────────────────────────────
+export async function analyzeListingImage(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
+
+        const { image } = req.body;
+        if (!image) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Provide an image (base64)' });
+            return;
+        }
+
+        const prompt = `You are a professional fashion archivist for KaPhor. 
+Analyze the provided garment image and extract all relevant details for a marketplace listing.
+Return ONLY valid JSON with this exact structure:
+{
+  "title": "Short descriptive title (3-5 words)",
+  "brand": "Detected brand or 'Unknown'",
+  "category": "One of: APPAREL, FOOTWEAR, ACCESSORIES",
+  "subCategory": "Specific type (e.g. Vintage Denim, Silk Saree, Leather Boots)",
+  "description": "Professional 2-3 sentence description emphasizing craftsmanship and style",
+  "size": "Estimated size (S/M/L/XL or OS)",
+  "condition": "EXCELLENT|GOOD|FAIR|POOR",
+  "color": ["Main colors"],
+  "material": ["Main fabrics"],
+  "estimatedPrice": 1000, // Suggest a reasonable price in INR
+  "styleAttributes": {
+    "fabric": "Specific fabric detail",
+    "style": "Aesthetic style (e.g. Minimalist, Streetwear, Ethnic)",
+    "sleeve": "Sleeve type or null",
+    "shape": "Fit/Shape type",
+    "pattern": "Pattern type",
+    "weight": "Light/Medium/Heavy"
+  }
+}
+Be precise. If the brand is visible, identify it. If it looks vintage, mention it.`;
+
+        let base64Data = image;
+        let mimeType = 'image/jpeg';
+        if (image.startsWith('data:')) {
+            const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
+            if (match) {
+                mimeType = match[1];
+                base64Data = match[2];
+            }
+        }
+
+        const result = await models.primary.generateContent({
+            contents: [{ role: 'user', parts: [{ inlineData: { mimeType, data: base64Data } }, { text: prompt }] }],
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
+        });
+        const raw = result.response.text();
+
+        let data: any;
+        try {
+            data = safeJson(raw);
+        } catch {
+            // Avoid hard-failing AI Fill when model output is malformed.
+            data = {
+                title: 'Luxury Item',
+                brand: 'Unknown',
+                category: 'ACCESSORIES',
+                subCategory: 'Accessory',
+                description: 'Curated pre-loved item ready for circular fashion.',
+                size: 'OS',
+                condition: 'GOOD',
+                color: [],
+                material: [],
+                estimatedPrice: 0,
+                styleAttributes: {
+                    fabric: '',
+                    style: '',
+                    sleeve: null,
+                    shape: '',
+                    pattern: '',
+                    weight: ''
+                }
+            };
+        }
+        res.json({ data });
+    } catch (error) {
+        logger.error('Analyze listing failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+// ── 7. AI Vision: Condition Assessment + Upcycle ─────────────────────────────
 export async function assessCondition(req: Request, res: Response): Promise<void> {
     try {
         if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }

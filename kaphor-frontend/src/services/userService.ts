@@ -16,6 +16,11 @@ export const userService = {
     return data.data;
   },
 
+  getMyWardrobe: async () => {
+    const { data } = await api.get('/users/me/wardrobe');
+    return data.data;
+  },
+
   getMyPurchases: async () => {
     const { data } = await api.get('/users/me/purchases');
     return data.data;

@@ -9,7 +9,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
   const insets = useSafeAreaInsets();
 
   // Enforce 5 tabs with Circular in the center
-  const mainTabs = ['index', 'shop/index', 'circular/index', 'swap/index', 'profile'];
+  const mainTabs = ['index', 'shop/index', 'circular/index', 'cart', 'profile'];
 
 
 
@@ -36,6 +36,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
             case 'shop/index': return { label: 'SHOP', icon: 'bag-handle-sharp' as any };
             case 'circular/index': return { label: 'CIRCULAR', icon: 'infinite-sharp' as any };
             case 'swap/index': return { label: 'SWAP', icon: 'swap-horizontal-sharp' as any };
+            case 'cart': return { label: 'CART', icon: 'cart-sharp' as any };
             case 'profile': return { label: 'PROFILE', icon: 'person-sharp' as any };
             default: return { label: name.toUpperCase(), icon: 'ellipse-sharp' as any };
           }

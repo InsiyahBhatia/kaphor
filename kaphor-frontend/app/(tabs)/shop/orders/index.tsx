@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Image,
 } from 'react-native';
+import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../../src/theme';
@@ -72,13 +72,7 @@ export default function OrdersInboxScreen() {
         onPress={() => router.push(`/(tabs)/shop/orders/${item.id}`)}
         activeOpacity={0.85}
       >
-        {thumb ? (
-          <Image source={{ uri: thumb }} style={styles.thumb} />
-        ) : (
-          <View style={[styles.thumb, styles.thumbPlaceholder]}>
-            <Ionicons name="shirt-outline" size={28} color={colors.textMuted} />
-          </View>
-        )}
+        <KaphorImage uri={thumb} style={styles.thumb} contentFit="cover" />
         <View style={styles.cardBody}>
           <Text style={styles.itemTitle} numberOfLines={1}>
             {item.items[0]?.garment?.title ?? 'Order'}

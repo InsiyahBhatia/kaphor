@@ -18,9 +18,17 @@ function resolveApiBaseUrl(): string {
 
   try {
     const u = new URL(raw);
+    const useAdbReverse = process.env.EXPO_PUBLIC_USE_ADB_REVERSE === 'true';
+
     if (u.hostname !== 'localhost' && u.hostname !== '127.0.0.1') {
       return raw;
     }
+
+    // If explicitly using ADB reverse, don't swap the hostname
+    if (useAdbReverse) {
+      return raw;
+    }
+
     const hostUri =
       Constants.expoConfig?.hostUri ?? (Constants as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost;
     let hostname = '10.0.2.2';
@@ -47,7 +55,10 @@ const REFRESH_KEY = 'kaphor_refresh_token';
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true'
+  },
 });
 
 let isRefreshing = false;

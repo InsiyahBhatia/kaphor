@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { emitToUser } from '../lib/socket';
 import { updateImpactOnTransaction } from '../services/impact.service';
 import { createNotification } from '../services/notification.service';
+import { withPrismaRetry } from '../lib/prisma';
 
 /** Messaging allowed for any active order, including PENDING (pre-payment coordination). */
 const MESSAGE_BLOCKED: Set<string> = new Set(['CANCELLED', 'REFUNDED']);
@@ -39,20 +40,22 @@ export async function listTransactionOrders(req: AuthRequest, res: Response): Pr
       return;
     }
     const uid = req.user.id;
-    const orders = await db.order.findMany({
-      where: {
-        OR: [{ buyerId: uid }, { sellerId: uid }],
-      },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        ...orderInclude,
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: { id: true, body: true, createdAt: true, senderId: true },
+    const orders = await withPrismaRetry(() =>
+      db.order.findMany({
+        where: {
+          OR: [{ buyerId: uid }, { sellerId: uid }],
         },
-      },
-    });
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          ...orderInclude,
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { id: true, body: true, createdAt: true, senderId: true },
+          },
+        },
+      })
+    );
     res.json({ data: orders });
   } catch (e) {
     logger.error('listTransactionOrders failed', { error: e instanceof Error ? e.message : String(e) });
@@ -67,15 +70,37 @@ export async function getOrderDetail(req: AuthRequest, res: Response): Promise<v
       return;
     }
     const { orderId } = req.params;
-    const order = await db.order.findUnique({
-      where: { id: orderId },
-      include: orderInclude,
-    });
+    const order = await withPrismaRetry(() =>
+      db.order.findUnique({
+        where: { id: orderId },
+        include: orderInclude,
+      })
+    );
+
     if (!order || !isParticipant(order, req.user.id)) {
       res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
       return;
     }
-    res.json({ data: order });
+
+    const orderData: any = { ...order };
+    if (orderData.items) {
+      const { getDownloadUrl } = await import('../lib/s3');
+      orderData.items = await Promise.all(
+        orderData.items.map(async (item: any) => {
+          if (item.garment && item.garment.images) {
+            const resolvedImages = await Promise.all(
+              item.garment.images.map((img: string) => getDownloadUrl(img))
+            );
+            return {
+              ...item,
+              garment: { ...item.garment, images: resolvedImages },
+            };
+          }
+          return item;
+        })
+      );
+    }
+    res.json({ data: orderData });
   } catch (e) {
     logger.error('getOrderDetail failed', { error: e instanceof Error ? e.message : String(e) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to load order' });
@@ -89,7 +114,7 @@ export async function markOrderShipped(req: AuthRequest, res: Response): Promise
       return;
     }
     const { orderId } = req.params;
-    const order = await db.order.findUnique({ where: { id: orderId } });
+    const order = await withPrismaRetry(() => db.order.findUnique({ where: { id: orderId } }));
     if (!order || order.sellerId !== req.user.id) {
       res.status(403).json({ error: 'FORBIDDEN', message: 'Only the seller can mark shipped' });
       return;
@@ -127,7 +152,7 @@ export async function markOrderDelivered(req: AuthRequest, res: Response): Promi
       return;
     }
     const { orderId } = req.params;
-    const order = await db.order.findUnique({ where: { id: orderId } });
+    const order = await withPrismaRetry(() => db.order.findUnique({ where: { id: orderId } }));
     if (!order || order.buyerId !== req.user.id) {
       res.status(403).json({ error: 'FORBIDDEN', message: 'Only the buyer can confirm delivery' });
       return;
@@ -181,13 +206,15 @@ export async function getOrderMessages(req: AuthRequest, res: Response): Promise
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Messaging is closed for this order' });
       return;
     }
-    const messages = await db.orderMessage.findMany({
-      where: { orderId },
-      orderBy: { createdAt: 'asc' },
-      include: {
-        sender: { select: { id: true, displayName: true, avatar: true, username: true } },
-      },
-    });
+    const messages = await withPrismaRetry(() =>
+      db.orderMessage.findMany({
+        where: { orderId },
+        orderBy: { createdAt: 'asc' },
+        include: {
+          sender: { select: { id: true, displayName: true, avatar: true, username: true } },
+        },
+      })
+    );
     res.json({ data: messages });
   } catch (e) {
     logger.error('getOrderMessages failed', { error: e instanceof Error ? e.message : String(e) });
@@ -207,7 +234,7 @@ export async function postOrderMessage(req: AuthRequest, res: Response): Promise
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Message must be 1–4000 characters' });
       return;
     }
-    const order = await db.order.findUnique({ where: { id: orderId } });
+    const order = await withPrismaRetry(() => db.order.findUnique({ where: { id: orderId } }));
     if (!order || !isParticipant(order, req.user.id)) {
       res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
       return;

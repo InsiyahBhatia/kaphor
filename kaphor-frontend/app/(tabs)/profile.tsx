@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { KaphorImage } from '../../src/components/KaphorImage';
 import { useAuth } from '../../src/context/AuthContext';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,12 +9,16 @@ import * as ImagePicker from 'expo-image-picker';
 import api from '../../src/services/api';
 import { colors, typography } from '../../src/theme';
 import { garmentService } from '../../src/services/garmentService';
+import { aiService } from '../../src/services/aiService';
 import { PlayingCard } from '../../src/components/PlayingCard';
+
+import { Header } from '../../src/components/common/Header';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
+  const [styleProfile, setStyleProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [savedAssets, setSavedAssets] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
@@ -40,10 +45,20 @@ export default function ProfileScreen() {
     }
   }, []);
 
+  const fetchStyleProfile = useCallback(async () => {
+    try {
+      const data = await aiService.getStyleProfile();
+      setStyleProfile(data);
+    } catch {
+      setStyleProfile(null);
+    }
+  }, []);
+
   useEffect(() => {
     fetchProfile();
     fetchSavedAssets();
-  }, [fetchProfile, fetchSavedAssets]);
+    fetchStyleProfile();
+  }, [fetchProfile, fetchSavedAssets, fetchStyleProfile]);
 
   const handleLogout = async () => {
     await signOut();
@@ -55,97 +70,174 @@ export default function ProfileScreen() {
   const avatar = profile?.avatar || user?.avatarUrl;
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: 'PROFILE',
-          headerRight: () => (
-            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 16 }}>
-              <Ionicons name="log-out-outline" size={24} color={colors.red} />
-            </TouchableOpacity>
-          )
-        }}
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Header 
+        title="PROFILE" 
+        rightElement={
+          <TouchableOpacity onPress={handleLogout} style={{ padding: 4 }}>
+            <Ionicons name="log-out-outline" size={24} color={colors.red} />
+          </TouchableOpacity>
+        }
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* STAT CARDS ROW */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCardHalf}>
-            <Text style={styles.statRank}>Q♠</Text>
-            <Text style={styles.statLabel}>CO₂ SAVED</Text>
-            <Text style={styles.statValue}>2.4KG</Text>
-            <Text style={styles.statSub}>not released</Text>
+        {/* IDENTITY SECTION */}
+        <View style={styles.identitySection}>
+          <View style={styles.avatarRow}>
+            <View style={styles.avatarWrapper}>
+              {avatar ? (
+                <KaphorImage uri={avatar} style={styles.avatar} contentFit="cover" />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Ionicons name="person" size={40} color={colors.charcoal} />
+                </View>
+              )}
+              <View style={styles.roleBadge}><Text style={styles.roleBadgeText}>{role || 'MEMBER'}</Text></View>
+            </View>
+            <View style={styles.identityText}>
+              <Text style={styles.displayName}>{displayName}</Text>
+              <Text style={styles.emailText}>{user?.email || profile?.email}</Text>
+              <View style={styles.joinRow}>
+                <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
+                <Text style={styles.joinText}>JOINED {profile?.createdAt ? new Date(profile.createdAt).getFullYear() : '2024'}</Text>
+              </View>
+            </View>
           </View>
-
-          <View style={styles.statCardHalf}>
-            <Text style={styles.statRank}>K♥</Text>
-            <Text style={styles.statLabel}>GARMENTS</Text>
-            <Text style={styles.statValue}>17</Text>
-            <Text style={styles.statSub}>circulating</Text>
-          </View>
-        </View>
-
-        {/* FULL WIDTH STAT CARD */}
-        <View style={styles.statCardFull}>
-          <Text style={styles.statRankFull}>A♠</Text>
-          <Text style={styles.statLabelFull}>WATER SAVED</Text>
-          <Text style={styles.statValueFull}>46K L</Text>
         </View>
 
         {/* AI MATCH PANEL */}
         <View style={styles.aiMatchPanel}>
-          <Text style={styles.aiMatchHeader}>SYSTEM SAYS: → AI MATCH</Text>
+          <View style={styles.aiHeaderRow}>
+            <Text style={styles.aiMatchHeader}>SYSTEM SAYS: → {styleProfile?.styleAesthetic || 'AI MATCH'}</Text>
+            <View style={styles.liveIndicator} />
+          </View>
+          
           <Text style={styles.aiMatchBody}>
-            Your style score reads <Text style={styles.highlightText}>[VINTAGE CHAOS]</Text> + <Text style={styles.highlightText}>[BITTER BLACK COFFEE]</Text>.
-            3 items on the deck match your hand right now.
+            {styleProfile?.summary || (
+              <>
+                Your style score is being calculated. 
+                3 items on the deck match your hand right now.
+              </>
+            )}
           </Text>
-          <TouchableOpacity style={styles.ctaButton} onPress={() => router.push('/(tabs)/shop')}>
-            <Text style={styles.ctaButtonText}>SEE MY MATCHES →</Text>
+          
+          {styleProfile?.dnaTags && (
+            <View style={styles.dnaGrid}>
+              {styleProfile.dnaTags.map((tag: string) => (
+                <View key={tag} style={styles.dnaTag}>
+                  <Text style={styles.dnaTagText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {styleProfile?.topCategories && (
+            <View style={styles.categoriesSection}>
+              <Text style={styles.sectionMiniTitle}>CURATED CATEGORIES</Text>
+              <View style={styles.categoryRow}>
+                {styleProfile.topCategories.map((cat: string) => (
+                  <View key={cat} style={styles.catBadge}>
+                    <Text style={styles.catBadgeText}>{cat.toUpperCase()}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {styleProfile?.colorPalette && (
+            <View style={styles.paletteSection}>
+               <Text style={styles.sectionMiniTitle}>COLOR ARCHIVE</Text>
+               <View style={styles.paletteRow}>
+                  {styleProfile.colorPalette.map((hex: string) => (
+                    <View key={hex} style={[styles.colorCircle, { backgroundColor: hex }]} />
+                  ))}
+               </View>
+            </View>
+          )}
+
+          {styleProfile?.recommendedBrands && (
+            <View style={styles.brandsSection}>
+              <Text style={styles.sectionMiniTitle}>ARCHIVE BRANDS TO HUNT</Text>
+              <Text style={styles.brandList}>{styleProfile.recommendedBrands.join('  //  ')}</Text>
+            </View>
+          )}
+
+          <TouchableOpacity 
+            style={styles.ctaButton} 
+            onPress={() => styleProfile ? router.push('/(tabs)/shop') : router.push('/(auth)/style-quiz')}
+          >
+            <Text style={styles.ctaButtonText}>
+              {styleProfile ? 'SEE MY MATCHES →' : 'GENERATE AI PROFILE →'}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* SAVED ASSETS // THE VAULT */}
-        <View style={styles.savedSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>SAVED ASSETS</Text>
-            <View style={styles.badgeLine}><Text style={styles.badgeText}>// THE VAULT</Text></View>
+        {/* ECO-IMPACT DASHBOARD */}
+        <View style={styles.impactDashboard}>
+          <View style={styles.impactHeader}>
+            <Text style={styles.impactTitle}>ENVIRONMENTAL DIVIDENDS</Text>
+            <Ionicons name="leaf" size={16} color={colors.charcoal} />
           </View>
-          {loadingSaved ? (
-            <ActivityIndicator size="small" color={colors.red} style={{ marginVertical: 20 }} />
-          ) : savedAssets.length === 0 ? (
-            <View style={styles.emptySaved}>
-              <Text style={styles.emptySavedText}>THE VAULT IS EMPTY</Text>
+          
+          <View style={styles.impactGrid}>
+            <View style={styles.impactStat}>
+              <Text style={styles.statValue}>{(profile?.impactRecord?.carbonSavedKg || 0).toFixed(1)}<Text style={styles.statUnit}>KG</Text></Text>
+              <Text style={styles.statLabel}>CO₂ SAVED</Text>
             </View>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.savedScroll}>
-              {savedAssets.map((item, index) => (
-                <TouchableOpacity 
-                  key={item.id} 
-                  style={styles.savedCardWrapper}
-                  onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
-                >
-                  <PlayingCard
-                    rank={['A', 'K', 'Q', 'J'][index % 4]}
-                    suit={(['♠', '♥', '♦', '♣'] as const)[index % 4]}
-                    productName={item.title}
-                    price={item.price ? item.price / 100 : 0}
-                    size={item.size || 'OS'}
-                    imageUrl={item.images[0]}
-                    flavorText="archived asset"
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
+            <View style={styles.impactStat}>
+              <Text style={styles.statValue}>{Math.floor((profile?.impactRecord?.carbonSavedKg || 0) / 22)}</Text>
+              <Text style={styles.statLabel}>TREES 🌳</Text>
+            </View>
+            <View style={styles.impactStat}>
+              <Text style={styles.statValue}>{((profile?.impactRecord?.waterSavedL || 0) / 1000).toFixed(1)}<Text style={styles.statUnit}>KL</Text></Text>
+              <Text style={styles.statLabel}>WATER 💧</Text>
+            </View>
+            <View style={styles.impactStat}>
+              <Text style={styles.statValue}>{((profile?.impactRecord?.wasteSavedG || 0) / 1000).toFixed(1)}<Text style={styles.statUnit}>KG</Text></Text>
+              <Text style={styles.statLabel}>WASTE 🗑️</Text>
+            </View>
+          </View>
+
+          <View style={styles.impactFooter}>
+            <Text style={styles.impactFooterText}>
+              BY CIRCULATING {profile?.impactRecord?.itemsCirculated || 0} ITEMS, YOU DISPLACED THE NEED FOR NEW PRODUCTION EMISSIONS.
+            </Text>
+          </View>
         </View>
-
-
         {/* SYSTEM OPERATIONS (Existing Menus) */}
         <View style={styles.menuContainer}>
-          <Text style={styles.menuSectionTitle}>SYSTEM OPS</Text>
+          <Text style={styles.menuSectionTitle}>COLLECTIONS</Text>
+          
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/saved')}>
+            <Ionicons name="heart-sharp" size={20} color={colors.red} style={{ marginRight: 12 }} />
+            <Text style={styles.menuText}>THE VAULT // SAVED ITEMS</Text>
+            <View style={styles.countBadge}><Text style={styles.countBadgeText}>{savedAssets.length}</Text></View>
+            <Ionicons name="chevron-forward" size={16} color={colors.charcoal} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/my-listings')}>
+            <Ionicons name="pricetag" size={20} color={colors.charcoal} style={{ marginRight: 12 }} />
+            <Text style={styles.menuText}>MY LISTINGS</Text>
+            <View style={styles.countBadge}><Text style={styles.countBadgeText}>{profile?.stats?.listings || 0}</Text></View>
+            <Ionicons name="chevron-forward" size={16} color={colors.charcoal} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/wardrobe')}>
+            <Ionicons name="shirt-outline" size={20} color={colors.charcoal} style={{ marginRight: 12 }} />
+            <Text style={styles.menuText}>DIGITAL CLOSET // WARDROBE</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.charcoal} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuItem, { borderColor: '#C41E3A', borderWidth: 1.5 }]} onPress={() => router.push('/(auth)/style-quiz')}>
+            <Ionicons name="sparkles" size={20} color="#C41E3A" style={{ marginRight: 12 }} />
+            <Text style={[styles.menuText, { color: '#C41E3A' }]}>RETAKE STYLE QUIZ</Text>
+            <Text style={{ fontFamily: 'monospace', fontSize: 9, color: '#C41E3A', marginRight: 8 }}>REFRESH DNA</Text>
+            <Ionicons name="chevron-forward" size={16} color="#C41E3A" />
+          </TouchableOpacity>
+
+          <Text style={[styles.menuSectionTitle, { marginTop: 16 }]}>SYSTEM OPS</Text>
 
           {[
             { icon: 'notifications', title: 'NOTIFICATIONS', route: '/(tabs)/notifications' },
-            { icon: 'pricetag', title: 'MY LISTINGS', route: '/my-listings' },
             { icon: 'star', title: 'MY REVIEWS', route: '/reviews' },
             { icon: 'chatbubbles', title: 'COMMUNICATIONS', route: '/(tabs)/shop/orders' },
             { icon: 'settings', title: 'ACCOUNT SETTINGS', route: '/settings' },
@@ -171,7 +263,7 @@ export default function ProfileScreen() {
         </View>
 
       </ScrollView>
-    </>
+    </View>
   );
 }
 
@@ -199,119 +291,94 @@ const styles = StyleSheet.create({
     width: '100%',
     letterSpacing: 2,
   },
-  avatarContainer: {
+  identitySection: {
+    marginBottom: 24,
+    backgroundColor: colors.white,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  avatarWrapper: {
     position: 'relative',
-    marginBottom: 16,
-    zIndex: 10,
   },
   avatar: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
     borderWidth: 2,
     borderColor: colors.charcoal,
     borderRadius: 8,
   },
   avatarPlaceholder: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.bgMuted,
     justifyContent: 'center',
     alignItems: 'center',
-    borderStyle: 'dashed',
   },
-  badge: {
+  roleBadge: {
     position: 'absolute',
-    bottom: -10,
-    right: -20,
+    bottom: -8,
+    right: -10,
     backgroundColor: colors.red,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderWidth: 2,
     borderColor: colors.charcoal,
-    transform: [{ rotate: '-5deg' }],
   },
-  badgeText: {
+  roleBadgeText: {
     color: colors.white,
     fontFamily: typography.mono,
     fontSize: 10,
+    fontWeight: '800',
+  },
+  identityText: {
+    flex: 1,
+  },
+  displayName: {
+    fontSize: 24,
+    fontFamily: typography.headings,
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  emailText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: typography.mono,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  joinRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  joinText: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: typography.mono,
     fontWeight: '700',
   },
-  agentName: {
-    fontSize: 20,
+  countBadge: {
+    backgroundColor: colors.bgMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  countBadgeText: {
     fontFamily: typography.mono,
-    color: colors.charcoal,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 2,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
-  },
-  statCardHalf: {
-    flex: 1,
-    backgroundColor: colors.charcoal,
-    padding: 12,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    position: 'relative',
-    height: 90,
-    justifyContent: 'center',
-  },
-  statRank: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    fontFamily: typography.ranks,
-    color: colors.cream,
-    fontSize: 16,
-  },
-  statLabel: {
-    fontFamily: typography.mono,
-    color: colors.red,
-    fontSize: 10,
-    marginBottom: 2,
-    marginTop: 12,
-  },
-  statValue: {
-    fontFamily: typography.headings,
-    color: colors.white,
-    fontSize: 32,
-    lineHeight: 32,
-  },
-  statSub: {
-    fontFamily: typography.mono,
-    color: colors.textMuted,
-    fontSize: 10,
-  },
-  statCardFull: {
-    backgroundColor: colors.red,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    position: 'relative',
-    height: 100,
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  statRankFull: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    fontFamily: typography.ranks,
-    color: colors.white,
-    fontSize: 16,
-  },
-  statLabelFull: {
-    fontFamily: typography.mono,
-    color: colors.white,
-    fontSize: 12,
-    marginBottom: 0,
-    marginTop: 12,
-  },
-  statValueFull: {
-    fontFamily: typography.headings,
-    color: colors.white,
-    fontSize: 44,
-    lineHeight: 44,
+    color: colors.charcoal,
   },
   aiMatchPanel: {
     backgroundColor: colors.cream,
@@ -568,6 +635,163 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.textMuted,
     fontWeight: '800',
+  },
+  aiHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  liveIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#00FF00',
+    shadowColor: '#00FF00',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+  },
+  dnaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  dnaTag: {
+    backgroundColor: 'rgba(26,26,26,0.05)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  dnaTagText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.charcoal,
+  },
+  sectionMiniTitle: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.textMuted,
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
+  categoriesSection: {
+    marginBottom: 20,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  catBadge: {
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  catBadgeText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  paletteSection: {
+    marginBottom: 20,
+  },
+  paletteRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  colorCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  brandsSection: {
+    marginBottom: 24,
+    padding: 12,
+    backgroundColor: 'rgba(212, 207, 199, 0.2)',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.red,
+  },
+  brandList: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 16,
+    color: colors.charcoal,
+  },
+  impactDashboard: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    padding: 16,
+    marginBottom: 24,
+  },
+  impactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.charcoal,
+    paddingBottom: 8,
+  },
+  impactTitle: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  impactGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  impactStat: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: colors.cream,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  statValue: {
+    fontFamily: typography.headings,
+    fontSize: 24,
+    color: colors.charcoal,
+  },
+  statUnit: {
+    fontSize: 10,
+    fontFamily: typography.mono,
+    color: colors.textMuted,
+  },
+  statLabel: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  impactFooter: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.charcoal,
+    borderStyle: 'dashed',
+  },
+  impactFooterText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.charcoal,
+    lineHeight: 12,
+    textAlign: 'center',
   },
 });
 

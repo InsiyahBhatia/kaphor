@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
 import { colors } from '../../../src/theme';
+import { KaphorImage } from '../../../src/components/KaphorImage';
 
 export default function SwapDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -69,7 +70,7 @@ export default function SwapDetailScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {garment && (
           <View style={styles.wantedCard}>
-            <Image source={{ uri: garment.images?.[0] || 'https://picsum.photos/400/500' }} style={styles.wantedImage} />
+            <KaphorImage uri={garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
             <View style={styles.wantedInfo}>
               <Text style={styles.label}>YOU WANT</Text>
               <Text style={styles.wantedTitle}>{garment.title}</Text>
@@ -98,7 +99,7 @@ export default function SwapDetailScreen() {
                 style={[styles.offerCard, selectedOffer === g.id && styles.offerCardSelected]}
                 onPress={() => setSelectedOffer(g.id)}
               >
-                <Image source={{ uri: g.images?.[0] || 'https://picsum.photos/200/250' }} style={styles.offerImage} />
+                <KaphorImage uri={g.images?.[0]} style={styles.offerImage} contentFit="cover" />
                 <Text style={styles.offerTitle} numberOfLines={1}>{g.title}</Text>
                 {selectedOffer === g.id && (
                   <View style={styles.checkmark}><Ionicons name="checkmark-circle" size={24} color={colors.crimson} /></View>

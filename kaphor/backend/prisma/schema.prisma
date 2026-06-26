@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ═══════════════════════════════════════════════
@@ -84,6 +85,7 @@ enum EventType {
   SELL_INTENT
   RELIST
   REPOST
+  LOG_WEAR
 }
 
 enum StyleAesthetic {
@@ -204,6 +206,12 @@ model Garment {
   size             String
   color            String[]
   material         String[]
+  fabric           String?
+  style            String?
+  sleeve           String?
+  shape            String?
+  pattern          String?
+  weight           String?
   condition        GarmentCondition
   images           String[]
   tags             String[]
@@ -219,6 +227,8 @@ model Garment {
   diversityScore   Float           @default(0)
   viewCount        Int             @default(0)
   isActive         Boolean         @default(true)
+  materialId       String?
+  reuseCount       Int             @default(0)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -467,6 +477,7 @@ model ImpactRecord {
   itemsCirculated Int      @default(0)
   itemsUpcycled   Int      @default(0)
   itemsRecycled   Int      @default(0)
+  wasteSavedG     Float    @default(0)
   updatedAt       DateTime @updatedAt
 
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -636,4 +647,19 @@ model ChatMessage {
   conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
+}
+
+model MaterialImpact {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  category      String
+  co2Kg         Float
+  waterL        Float
+  avgWeightG    Float
+  reuseFactor   Float
+  sourceRef     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("material_impact_db")
 }

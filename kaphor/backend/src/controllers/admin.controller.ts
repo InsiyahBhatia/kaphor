@@ -183,4 +183,39 @@ export async function updateAdminUser(req: Request, res: Response): Promise<void
   }
 }
 
+export async function deleteAdminUser(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    if (req.user?.id === id) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'You cannot delete your own account.' });
+      return;
+    }
 
+    await db.user.delete({
+      where: { id },
+    });
+
+    res.json({ data: { success: true } });
+  } catch (e) {
+    logger.error('deleteAdminUser failed', { error: e instanceof Error ? e.message : String(e) });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+export async function listAdminGarments(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = Math.min(Number(req.query.limit ?? 50), 200);
+    const garments = await db.garment.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        seller: { select: { id: true, displayName: true } }
+      }
+    });
+    res.json({ data: garments });
+  } catch (e) {
+    logger.error('listAdminGarments failed', { error: e instanceof Error ? e.message : String(e) });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}

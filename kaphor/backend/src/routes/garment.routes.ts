@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, query } from 'express-validator';
 import { validateRequeset } from '../middleware/validation.middleware';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuth } from '../middleware/auth';
 import { upload } from '../middleware/upload.middleware';
 import {
   createGarment,
@@ -19,11 +19,11 @@ import {
 
 export const garmentRouter = Router();
 
-garmentRouter.get('/', searchGarments);
-garmentRouter.get('/feed', authenticate, getGarmentFeed);
+garmentRouter.get('/', optionalAuth, searchGarments);
+garmentRouter.get('/feed', optionalAuth, getGarmentFeed);
 garmentRouter.get('/me', authenticate, getSellerGarments);
 garmentRouter.get('/wishlist', authenticate, getWishlistGarments);
-garmentRouter.get('/browse', getGarments);
+garmentRouter.get('/browse', optionalAuth, getGarments);
 garmentRouter.get('/:id', getGarmentById);
 garmentRouter.get('/:id/lifecycle', authenticate, getGarmentLifecycle);
 garmentRouter.get('/:id/compatibility', authenticate, getCompatibilityScore);

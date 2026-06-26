@@ -5,6 +5,7 @@ import { uploadToS3, getDownloadUrl } from '../lib/s3';
 import { GarmentCondition, ListingType, EventType } from '@prisma/client';
 import { logger } from '../lib/logger';
 import { evaluateLifecycle } from '../services/lifecycle.service';
+import { ImpactService } from '../services/impact.service';
 
 const DEFAULT_VECTOR = Array(16).fill(0);
 
@@ -19,8 +20,18 @@ async function resolveGarmentImages(garment: any) {
   return { ...garment, images: resolvedImages };
 }
 
-async function resolveGarmentsImages(garments: any[]) {
-  return Promise.all(garments.map(g => resolveGarmentImages(g)));
+async function resolveGarmentsImages(garments: any[], onlyFirst = false) {
+  return Promise.all(garments.map(async (g) => {
+    if (!g || !g.images) return g;
+    if (onlyFirst && g.images.length > 0) {
+      const resolved = await getDownloadUrl(g.images[0]);
+      return { ...g, images: [resolved] };
+    }
+    const resolvedImages = await Promise.all(
+      g.images.map((img: string) => getDownloadUrl(img))
+    );
+    return { ...g, images: resolvedImages };
+  }));
 }
 
 export async function searchGarments(req: Request, res: Response): Promise<void> {
@@ -29,12 +40,13 @@ export async function searchGarments(req: Request, res: Response): Promise<void>
     const garments = await db.garment.findMany({
       where: {
         isActive: true,
+        ...(req.user ? { sellerId: { not: req.user.id } } : {}),
         ...(q ? { OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] } : {}),
       },
       take: 20,
       include: { seller: { select: { id: true, displayName: true } } },
     });
-    const resolvedGarments = await resolveGarmentsImages(garments);
+    const resolvedGarments = await resolveGarmentsImages(garments, true);
     res.status(200).json({ data: resolvedGarments });
   } catch (err) {
     logger.error('searchGarments failed', { error: err instanceof Error ? err.message : String(err) });
@@ -44,19 +56,23 @@ export async function searchGarments(req: Request, res: Response): Promise<void>
 
 export async function getGarmentFeed(req: Request, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
-      return;
-    }
     const { category, size, color, priceMin, priceMax, condition, listingType, after } = req.query;
     const limit = 20;
 
-    const whereClause: any = { isActive: true };
+    const whereClause: any = { 
+      isActive: true,
+      ...(req.user ? { sellerId: { not: req.user.id } } : {})
+    };
     
     // Multi-select handling (comma separated strings)
     if (category) {
       const cats = String(category).split(',').filter(Boolean);
-      if (cats.length > 0) whereClause.category = { in: cats };
+      if (cats.length > 0) {
+        whereClause.OR = [
+          { category: { in: cats } },
+          { subCategory: { in: cats } }
+        ];
+      }
     }
     if (size) {
       const sizes = String(size).split(',').filter(Boolean);
@@ -68,7 +84,10 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
       if (conds.length > 0) whereClause.condition = { in: conds };
     }
     if (listingType) {
-      const types = String(listingType).split(',').filter(Boolean) as ListingType[];
+      const validTypes: ListingType[] = ['SALE', 'RENTAL', 'ACCESSORY_SWAP'];
+      const types = String(listingType)
+        .split(',')
+        .filter(t => validTypes.includes(t as ListingType)) as ListingType[];
       if (types.length > 0) whereClause.listingType = { in: types };
     }
 
@@ -83,7 +102,23 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
       take: limit + 1,
       cursor: after ? { id: String(after) } : undefined,
       skip: after ? 1 : 0,
-      include: { seller: { select: { id: true, displayName: true, username: true } } },
+      select: {
+        id: true,
+        title: true,
+        price: true,
+        images: true,
+        brand: true,
+        category: true,
+        subCategory: true,
+        size: true,
+        condition: true,
+        fabric: true,
+        style: true,
+        pattern: true,
+        listingType: true,
+        garmentVector: true, // Needed for scoring
+        seller: { select: { id: true, displayName: true, username: true } },
+      }
     });
 
     let hasNextPage = false;
@@ -94,7 +129,7 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
 
     // Proxy for compatibility score in feed (ideal relies on vector db or LOE scoring pre-fetch)
     // Here we compute a basic "fitScore" on the fly for demonstration.
-    const user = await db.user.findUnique({ where: { id: req.user.id } });
+    const user = req.user ? await db.user.findUnique({ where: { id: req.user.id } }) : null;
     const scoredGarments = garments.map((g: any) => {
       let fitScore = 0;
       if (user && user.styleVector.length && g.garmentVector.length) {
@@ -112,7 +147,7 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
     // sorting by fitScore descending
     scoredGarments.sort((a: any, b: any) => b.fitScore - a.fitScore);
 
-    const resolvedGarments = await resolveGarmentsImages(scoredGarments);
+    const resolvedGarments = await resolveGarmentsImages(scoredGarments, true);
 
     const nextCursor = hasNextPage ? garments[garments.length - 1].id : null;
     res.status(200).json({ data: resolvedGarments, pagination: { nextCursor } });
@@ -125,11 +160,14 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
 export async function getGarments(req: Request, res: Response): Promise<void> {
   try {
     const garments = await db.garment.findMany({
-      where: { isActive: true },
+      where: { 
+        isActive: true,
+        ...(req.user ? { sellerId: { not: req.user.id } } : {})
+      },
       take: 50,
       include: { seller: { select: { id: true, displayName: true } } },
     });
-    const resolvedGarments = await resolveGarmentsImages(garments);
+    const resolvedGarments = await resolveGarmentsImages(garments, true);
     res.status(200).json({ data: resolvedGarments });
   } catch (err) {
     logger.error('getGarments failed', { error: err instanceof Error ? err.message : String(err) });
@@ -148,7 +186,7 @@ export async function getSellerGarments(req: Request, res: Response): Promise<vo
       orderBy: { createdAt: 'desc' },
       include: { seller: { select: { id: true, displayName: true } } }
     });
-    const resolvedGarments = await resolveGarmentsImages(garments);
+    const resolvedGarments = await resolveGarmentsImages(garments, true);
     res.status(200).json({ data: resolvedGarments });
   } catch (err) {
     logger.error('getSellerGarments failed', { error: err instanceof Error ? err.message : String(err) });
@@ -189,7 +227,7 @@ export async function getWishlistGarments(req: Request, res: Response): Promise<
       }
     });
 
-    const resolvedGarments = await resolveGarmentsImages(garments);
+    const resolvedGarments = await resolveGarmentsImages(garments, true);
     res.status(200).json({ data: resolvedGarments });
   } catch (err) {
     logger.error('getWishlistGarments failed', { error: err instanceof Error ? err.message : String(err) });
@@ -262,6 +300,13 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
     const body = req.body as Record<string, unknown>;
     const condition = (body.condition as string) || 'PRISTINE';
 
+    // Auto-match material impact
+    const materialId = await ImpactService.findMatchingMaterialId(
+      String(body.title),
+      String(body.category),
+      body.fabric ? String(body.fabric) : null
+    );
+
     // Create garment transaction
     const garment = await (db as any).$transaction(async (tx: any) => {
       const g = await tx.garment.create({
@@ -277,6 +322,13 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
           material: Array.isArray(body.material) ? body.material.map(String) : [],
           condition: condition in GarmentCondition ? (condition as GarmentCondition) : 'PRISTINE',
           images: imageUrls,
+          fabric: body.fabric ? String(body.fabric) : null,
+          style: body.style ? String(body.style) : null,
+          sleeve: body.sleeve ? String(body.sleeve) : null,
+          shape: body.shape ? String(body.shape) : null,
+          pattern: body.pattern ? String(body.pattern) : null,
+          weight: body.weight ? String(body.weight) : null,
+          materialId,
           tags: Array.isArray(body.tags) ? body.tags.map(String) : [],
           styleTags: Array.isArray(body.styleTags) ? body.styleTags.map(String) : [],
           garmentVector: Array.isArray(body.garmentVector) ? (body.garmentVector as number[]) : DEFAULT_VECTOR,
@@ -353,7 +405,13 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
         ...(body.price != null && { price: Math.round(Number(body.price) * 100) }),
         ...(body.rentalPriceDay != null && { rentalPriceDay: Math.round(Number(body.rentalPriceDay) * 100) }),
         ...(body.rentalPriceWeek != null && { rentalPriceWeek: Math.round(Number(body.rentalPriceWeek) * 100) }),
-        },
+        ...(body.fabric != null && { fabric: String(body.fabric) }),
+        ...(body.style != null && { style: String(body.style) }),
+        ...(body.sleeve != null && { sleeve: String(body.sleeve) }),
+        ...(body.shape != null && { shape: String(body.shape) }),
+        ...(body.pattern != null && { pattern: String(body.pattern) }),
+        ...(body.weight != null && { weight: String(body.weight) }),
+      },
     });
     const resolvedGarment = await resolveGarmentImages(garment);
     res.status(200).json({ data: resolvedGarment });
@@ -370,7 +428,11 @@ export async function deleteGarment(req: Request, res: Response): Promise<void> 
       return;
     }
     const { id } = req.params;
-    const existing = await db.garment.findFirst({ where: { id, sellerId: req.user.id } });
+    const whereClause: any = { id };
+    if (req.user.role !== 'ADMIN') {
+      whereClause.sellerId = req.user.id;
+    }
+    const existing = await db.garment.findFirst({ where: whereClause });
     if (!existing) {
       res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found', statusCode: 404 });
       return;
