@@ -89,13 +89,15 @@ jobs:
           NODE_ENV: test
 
   deploy:
-    name: Deploy
+    name: Deploy to Railway
     needs: [typecheck, lint, test]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to production
-        run: |
-          echo "Deployment step — configure your target (SSH, AWS ECS, Railway, etc.)"
-          # Example: ssh deploy@host "cd /app && git pull && docker compose up -d --build"
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy to Railway
+        run: railway up --cwd ./kaphor/backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
