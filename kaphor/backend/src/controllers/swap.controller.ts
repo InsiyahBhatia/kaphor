@@ -265,14 +265,27 @@ export async function completeSwap(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const updated = await db.swap.update({
-            where: { id },
-            data: {
-                status: 'COMPLETED',
-                completedAt: new Date()
-            }
+        await db.$transaction(async (tx: any) => {
+            await tx.swap.update({
+                where: { id },
+                data: {
+                    status: 'COMPLETED',
+                    completedAt: new Date()
+                }
+            });
+
+            await tx.garment.update({
+                where: { id: swap.garmentOffered },
+                data: { sellerId: swap.receiverId, lifecycleState: 'OWNERSHIP' }
+            });
+
+            await tx.garment.update({
+                where: { id: swap.garmentWanted },
+                data: { sellerId: swap.initiatorId, lifecycleState: 'OWNERSHIP' }
+            });
         });
 
+        const updated = await db.swap.findUnique({ where: { id } });
         res.json({ data: updated });
     } catch (error) {
         logger.error('Failed to complete swap', { error });

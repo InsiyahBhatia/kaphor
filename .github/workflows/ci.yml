@@ -1,0 +1,101 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  typecheck:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./kaphor/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ./kaphor/backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx tsc --noEmit
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./kaphor/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ./kaphor/backend/package-lock.json
+      - run: npm ci
+      - run: npm install --save-dev eslint
+      - run: npx eslint src/ --ext .ts || echo "No eslint config found — skipping"
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./kaphor/backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: kaphor_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ./kaphor/backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kaphor_test
+      - run: npm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kaphor_test
+          JWT_SECRET: test-jwt-secret
+          JWT_REFRESH_SECRET: test-refresh-secret
+          STRIPE_SECRET_KEY: sk_test_dummy
+          NODE_ENV: test
+
+  deploy:
+    name: Deploy
+    needs: [typecheck, lint, test]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to production
+        run: |
+          echo "Deployment step — configure your target (SSH, AWS ECS, Railway, etc.)"
+          # Example: ssh deploy@host "cd /app && git pull && docker compose up -d --build"

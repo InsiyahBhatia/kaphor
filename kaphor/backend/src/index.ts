@@ -7,10 +7,45 @@ import cors from 'cors';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import RedisStore from 'rate-limit-redis';
+import { z } from 'zod';
 
 import db from './lib/prisma';
 import { logger } from './lib/logger';
 import path from 'path';
+
+// ── Startup Environment Validation ──────────────────────────────────────────
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  PORT: z.coerce.number().int().positive().default(4000),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
+  JWT_REFRESH_SECRET: z.string().min(16, 'JWT_REFRESH_SECRET must be at least 16 characters'),
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
+  AWS_REGION: z.string().optional(),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_S3_BUCKET_NAME: z.string().optional(),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
+  FIREBASE_PROJECT_ID: z.string().optional(),
+  FIREBASE_CLIENT_EMAIL: z.string().optional(),
+  FIREBASE_PRIVATE_KEY: z.string().optional(),
+  ALLOWED_ORIGINS: z.string().default('http://localhost:8081'),
+});
+
+const envResult = envSchema.safeParse(process.env);
+if (!envResult.success) {
+  console.error('❌ Invalid or missing environment variables:');
+  for (const issue of envResult.error.issues) {
+    console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
+  }
+  process.exit(1);
+}
+const validatedEnv = envResult.data;
 
 // Routes
 import { authRouter } from './routes/auth.routes';
@@ -34,12 +69,13 @@ import { adminRouter } from './routes/admin.routes';
 const app = express();
 const httpServer = http.createServer(app);
 
-const PORT = Number(process.env.PORT) || 4000;
+const PORT = validatedEnv.PORT;
 const API_VERSION = process.env.API_VERSION || 'v1';
+const REDIS_URL = validatedEnv.REDIS_URL;
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:8081')
+const ALLOWED_ORIGINS = validatedEnv.ALLOWED_ORIGINS
   .split(',')
-  .map((o) => o.trim());
+  .map((o: string) => o.trim());
 
 /** Middleware */
 app.use(helmet());
@@ -63,14 +99,31 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: process.env.NODE_ENV === 'production' ? ALLOWED_ORIGINS : true,
+    origin: validatedEnv.NODE_ENV === 'production' ? ALLOWED_ORIGINS : true,
     credentials: true,
   })
 );
 
+// ── Redis-backed Rate Limiter ────────────────────────────────────────────────
+let redisRateStore: any = undefined;
+try {
+  const Redis = require('ioredis');
+  const redisClient = new Redis(REDIS_URL, {
+    enableOfflineQueue: false,
+    maxRetriesPerRequest: 1,
+  });
+  redisClient.on('error', () => { /* fallback to memory store */ });
+  redisRateStore = new RedisStore({
+    sendCommand: (...args: [string, ...string[]]) => (redisClient as any).call(...args),
+  });
+} catch {
+  logger.warn('Redis unavailable for rate limiter — using default memory store');
+}
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000,
+  store: redisRateStore,
 });
 
 app.use(limiter);
@@ -79,6 +132,7 @@ const authLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
   message: { error: 'TOO_MANY_REQUESTS', message: 'Too many attempts, try again later' },
+  store: redisRateStore,
 });
 
 /** Routes */

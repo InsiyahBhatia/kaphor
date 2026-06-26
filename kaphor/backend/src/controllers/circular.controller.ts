@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 
-// Mock Cloudinary/Anthropic response for now (since we don't have keys)
-// Real implementation would upload to Cloudinary -> pass URL to Anthropic -> parse JSON response
+const genAI = process.env.GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null;
+
 export async function checkCondition(req: Request, res: Response): Promise<void> {
     try {
         if (!req.user) {
@@ -12,7 +15,6 @@ export async function checkCondition(req: Request, res: Response): Promise<void>
         }
 
         const { garmentId } = req.body;
-        // conditionImages[] would be in req.files if we used multer
 
         if (!garmentId) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing garmentId' });
@@ -25,28 +27,57 @@ export async function checkCondition(req: Request, res: Response): Promise<void>
             return;
         }
 
-        // --- Mock Anthropic Assessment ---
-        // Let's assume the AI determines it based on its initial recyclableFiber or random mock
-        const mockFiber = garment.recyclableFiber || 75;
+        let conditionStr = garment.condition;
         let recommendedAction = 'RE_SELL';
-        let conditionStr = 'PRISTINE';
+        let recyclableFiber = garment.recyclableFiber || 50;
 
-        if (mockFiber > 80) {
-            recommendedAction = 'RECYCLE_ONLY';
-            conditionStr = 'RECYCLE_ONLY';
-        } else if (mockFiber > 50) {
-            recommendedAction = 'UPCYCLE';
-            conditionStr = 'UPCYCLE';
+        if (genAI && garment.images?.length > 0) {
+            try {
+                const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+                const imageUrl = garment.images[0];
+
+                const prompt = `You are a textile condition assessment AI. Analyze this garment image and return ONLY valid JSON with these fields:
+{
+  "condition": "PRISTINE" | "MINOR_WEAR" | "MODERATE_WEAR" | "SIGNIFICANT_WEAR" | "DAMAGED",
+  "recyclableFiberPercent": <number 0-100>,
+  "recommendedAction": "RE_SELL" | "UPCYCLE" | "RECYCLE_ONLY",
+  "notes": "<brief explanation>"
+}
+
+Base the recyclableFiberPercent on how much of the material can be mechanically or chemically recycled.`;
+
+                const result = await model.generateContent([
+                    { text: prompt },
+                    { inlineData: { mimeType: 'image/jpeg', data: imageUrl.startsWith('http') ? '' : imageUrl } }
+                ]);
+
+                const text = result.response.text();
+                const parsed = JSON.parse(text.replace(/```json?/g, '').replace(/```/g, '').trim());
+
+                conditionStr = parsed.condition || conditionStr;
+                recyclableFiber = typeof parsed.recyclableFiberPercent === 'number' ? parsed.recyclableFiberPercent : recyclableFiber;
+                recommendedAction = parsed.recommendedAction || recommendedAction;
+            } catch (aiErr) {
+                logger.warn('Gemini condition assessment failed, using fallback', { error: aiErr instanceof Error ? aiErr.message : String(aiErr) });
+                if (recyclableFiber > 80) {
+                    recommendedAction = 'RECYCLE_ONLY';
+                } else if (recyclableFiber > 50) {
+                    recommendedAction = 'UPCYCLE';
+                }
+            }
         } else {
-            // Let it default to resell if fiber is low or it's new
-            conditionStr = 'MINOR_WEAR';
+            if (recyclableFiber > 80) {
+                recommendedAction = 'RECYCLE_ONLY';
+            } else if (recyclableFiber > 50) {
+                recommendedAction = 'UPCYCLE';
+            }
         }
 
         res.json({
             data: {
                 condition: conditionStr,
                 recommendedAction,
-                recyclableFiber: mockFiber
+                recyclableFiber,
             }
         });
     } catch (error) {

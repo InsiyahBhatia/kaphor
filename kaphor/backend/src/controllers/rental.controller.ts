@@ -84,12 +84,27 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             return;
         }
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
         const reqStart = new Date(startDate);
         const reqEnd = new Date(endDate);
-        const days = Math.ceil((reqEnd.getTime() - reqStart.getTime()) / (1000 * 3600 * 24));
 
+        if (reqStart < tomorrow) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Start date must be at least tomorrow' });
+            return;
+        }
+
+        const days = Math.ceil((reqEnd.getTime() - reqStart.getTime()) / (1000 * 3600 * 24));
         if (days <= 0) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid date range' });
+            return;
+        }
+
+        if (days > 30) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Rental period cannot exceed 30 days' });
             return;
         }
 
@@ -119,8 +134,19 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const amount = (garment.rentalPriceDay || 0) * days;
-        const stripeAmount = amount; // Already in cents
+        const dayRate = garment.rentalPriceDay || 0;
+        const weekRate = garment.rentalPriceWeek || 0;
+
+        let amount: number;
+        if (days >= 7 && weekRate > 0) {
+            const weeks = Math.floor(days / 7);
+            const remainderDays = days % 7;
+            amount = weeks * weekRate + remainderDays * dayRate;
+        } else {
+            amount = dayRate * days;
+        }
+
+        const stripeAmount = amount;
 
         if (stripeAmount <= 0) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid rental pricing' });

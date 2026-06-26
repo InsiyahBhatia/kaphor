@@ -1,32 +1,46 @@
-import { redisGet, redisSet, redisDel, redisIncr, redisExpire } from '../lib/redis';
+import { prisma } from '../lib/prisma';
 
-const LOCK_PREFIX = 'auth:lock:';
-const FAILURES_PREFIX = 'auth:failures:';
 const MAX_FAILURES = 5;
-const LOCK_TTL_SECONDS = 15 * 60; // 15 minutes
-const FAILURES_TTL_SECONDS = 15 * 60;
+const LOCK_MINUTES = 15;
 
 export async function isAccountLocked(email: string): Promise<boolean> {
-  const key = `${LOCK_PREFIX}${email.toLowerCase().trim()}`;
-  const exists = await redisGet(key);
-  return exists !== null;
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase().trim() },
+    select: { lockUntil: true },
+  });
+  if (!user?.lockUntil) return false;
+  return user.lockUntil > new Date();
 }
 
 export async function recordFailedLogin(email: string): Promise<void> {
   const normalized = email.toLowerCase().trim();
-  const key = `${FAILURES_PREFIX}${normalized}`;
-  const count = await redisIncr(key);
-  if (count === 1) {
-    await redisExpire(key, FAILURES_TTL_SECONDS);
-  }
-  if (count >= MAX_FAILURES) {
-    const lockKey = `${LOCK_PREFIX}${normalized}`;
-    await redisSet(lockKey, '1', LOCK_TTL_SECONDS);
-    await redisDel(key);
+  const user = await prisma.user.findUnique({
+    where: { email: normalized },
+    select: { id: true, failedLoginAttempts: true, lockUntil: true },
+  });
+  if (!user) return;
+
+  const nextCount = (user.failedLoginAttempts || 0) + 1;
+
+  if (nextCount >= MAX_FAILURES) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        failedLoginAttempts: nextCount,
+        lockUntil: new Date(Date.now() + LOCK_MINUTES * 60 * 1000),
+      },
+    });
+  } else {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: nextCount },
+    });
   }
 }
 
 export async function clearFailedLogins(email: string): Promise<void> {
-  const normalized = email.toLowerCase().trim();
-  await redisDel(`${FAILURES_PREFIX}${normalized}`);
+  await prisma.user.updateMany({
+    where: { email: email.toLowerCase().trim() },
+    data: { failedLoginAttempts: 0, lockUntil: null },
+  });
 }
