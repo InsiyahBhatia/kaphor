@@ -1,0 +1,14 @@
+node_modules/
+.env
+dist/
+.git
+*.log
+.gitignore
+.gitattributes
+README.md
+.vscode/
+.expo/
+coverage/
+tests/
+**/*.test.ts
+**/*.spec.ts

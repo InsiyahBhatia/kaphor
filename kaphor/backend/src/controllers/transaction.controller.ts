@@ -70,7 +70,7 @@ export async function getOrderDetail(req: AuthRequest, res: Response): Promise<v
       return;
     }
     const { orderId } = req.params;
-    const order = await withPrismaRetry(() =>
+    const order: any = await withPrismaRetry(() =>
       db.order.findUnique({
         where: { id: orderId },
         include: orderInclude,
@@ -114,7 +114,7 @@ export async function markOrderShipped(req: AuthRequest, res: Response): Promise
       return;
     }
     const { orderId } = req.params;
-    const order = await withPrismaRetry(() => db.order.findUnique({ where: { id: orderId } }));
+    const order: any = await withPrismaRetry(() => db.order.findUnique({ where: { id: orderId } }));
     if (!order || order.sellerId !== req.user.id) {
       res.status(403).json({ error: 'FORBIDDEN', message: 'Only the seller can mark shipped' });
       return;
@@ -152,7 +152,7 @@ export async function markOrderDelivered(req: AuthRequest, res: Response): Promi
       return;
     }
     const { orderId } = req.params;
-    const order = await withPrismaRetry(() => db.order.findUnique({ where: { id: orderId } }));
+    const order: any = await withPrismaRetry(() => db.order.findUnique({ where: { id: orderId } }));
     if (!order || order.buyerId !== req.user.id) {
       res.status(403).json({ error: 'FORBIDDEN', message: 'Only the buyer can confirm delivery' });
       return;
@@ -234,7 +234,7 @@ export async function postOrderMessage(req: AuthRequest, res: Response): Promise
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Message must be 1–4000 characters' });
       return;
     }
-    const order = await withPrismaRetry(() => db.order.findUnique({ where: { id: orderId } }));
+    const order: any = await withPrismaRetry(() => db.order.findUnique({ where: { id: orderId } }));
     if (!order || !isParticipant(order, req.user.id)) {
       res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
       return;

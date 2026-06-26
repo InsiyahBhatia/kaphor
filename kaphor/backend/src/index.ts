@@ -168,18 +168,6 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-/** TEST DB CONNECTION */
-app.get('/test-db', async (_req, res) => {
-  try {
-    await db.$connect();
-    res.json({ message: 'DB connected successfully' });
-  } catch (err: any) {
-    res.status(500).json({
-      error: err.message,
-    });
-  }
-});
-
 /** GLOBAL ERROR HANDLER */
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   logger.error('Unhandled Error', {
