@@ -260,6 +260,11 @@ export async function completeSwap(req: Request, res: Response): Promise<void> {
             return;
         }
 
+        if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to complete this swap' });
+            return;
+        }
+
         const updated = await db.swap.update({
             where: { id },
             data: {

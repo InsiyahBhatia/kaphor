@@ -70,13 +70,27 @@ app.use(
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000, // Generous for local development
+  max: 1000,
 });
 
 app.use(limiter);
 
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: 'TOO_MANY_REQUESTS', message: 'Too many attempts, try again later' },
+});
+
 /** Routes */
 const baseApiUrl = `/api/${API_VERSION}`;
+
+// Stricter rate limiting on auth endpoints
+app.use(`${baseApiUrl}/auth/login`, authLimiter);
+app.use(`${baseApiUrl}/auth/register`, authLimiter);
+app.use(`${baseApiUrl}/auth/google`, authLimiter);
+app.use(`${baseApiUrl}/auth/forgot-password`, authLimiter);
+app.use(`${baseApiUrl}/auth/reset-password`, authLimiter);
+
 app.use(`${baseApiUrl}/auth`, authRouter);
 app.use(`${baseApiUrl}/garments`, garmentRouter);
 app.use(`${baseApiUrl}/social`, socialRoutes);

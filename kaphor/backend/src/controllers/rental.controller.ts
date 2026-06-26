@@ -198,6 +198,11 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
             return;
         }
 
+        if (rental.renterId !== req.user.id) {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to return this rental' });
+            return;
+        }
+
         // Technically, a cron job or webhook would verify physical return, but we simulate it via PATCH
         const updated = await db.rental.update({
             where: { id },

@@ -7,6 +7,7 @@ import { isAccountLocked, recordFailedLogin, clearFailedLogins } from '../servic
 import { auditLog } from '../services/audit.service';
 import crypto from 'crypto';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.service';
+import admin from '../lib/firebase';
 
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid credentials';
 const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
@@ -221,37 +222,16 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    // Verify the raw Google OAuth ID token using Google's public tokeninfo endpoint.
-    const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`;
-    let tokenInfo;
+    let payload;
     try {
-      const axios = require('axios');
-      const response = await axios.get(tokenInfoUrl);
-      tokenInfo = response.data;
-    } catch (apiErr: any) {
-      const fs = require('fs');
-      fs.writeFileSync('google_debug.log', JSON.stringify({ 
-        token: idToken, 
-        status: apiErr.response?.status, 
-        errorData: apiErr.response?.data, 
-        message: apiErr.message 
-      }, null, 2));
-
-      logger.warn('Google tokeninfo verification failed', { 
-        status: apiErr.response?.status, 
-        data: apiErr.response?.data,
-        message: apiErr.message 
-      });
-      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Invalid Google token', details: apiErr.response?.data || apiErr.message });
+      payload = await admin.auth().verifyIdToken(idToken);
+    } catch (verifyErr) {
+      logger.warn('Google ID token verification failed');
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Invalid Google token' });
       return;
     }
 
-    const { sub: googleId, email, name, picture } = tokenInfo as {
-      sub: string;
-      email: string;
-      name?: string;
-      picture?: string;
-    };
+    const { uid: googleId, email, name, picture } = payload;
 
     if (!email) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Google account has no email' });
@@ -333,19 +313,11 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
         refreshToken,
       },
     });
-  } catch (err: any) {
-    const fs = require('fs');
-    fs.writeFileSync('db_crash.log', JSON.stringify({
-      message: err.message,
-      stack: err.stack,
-      name: err.name,
-      code: err.code
-    }, null, 2));
-
-    logger.error('Database or unexpected error in Google login', { 
-      error: err.message,
+  } catch (err) {
+    logger.error('Database or unexpected error in Google login', {
+      error: err instanceof Error ? err.message : String(err),
     });
-    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process Google login locally', detail: err.message });
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process Google login' });
   }
 }
 
@@ -372,11 +344,9 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
 
     // 1. Detect Token Reuse (Security: rotation breach)
     if (!stored || (stored as any).isRevoked || stored.expiresAt < new Date()) {
-      // Invalidate all tokens for this user if we detect reuse
-      await (db as any).refreshToken.updateMany({
-        where: { userId },
-        data: { isRevoked: true }
-      });
+      logger.warn('Refresh token reuse detected', { userId, token: token.slice(0, 8) + '...' });
+      // Invalid tokens are handled atomically in the rotation transaction below.
+      // If this token is a reuse attempt, the transaction will revoke all sessions.
       res.status(401).json({ error: 'UNAUTHORIZED', message: 'Token reuse detected or expired. All sessions revoked.', statusCode: 401 });
       return;
     }
@@ -391,19 +361,30 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // 2. Rotate Token: Invalidate old, create new
+    // 2. Rotate Token atomically: revoke old + create new in a $transaction
     const newRefreshToken = signRefreshToken(user.id);
-    await (db as any).refreshToken.update({
-      where: { token },
-      data: { isRevoked: true, replacedBy: newRefreshToken }
-    });
+    await prisma.$transaction(async (tx) => {
+      const revoked = await (tx as any).refreshToken.updateMany({
+        where: { token, isRevoked: false },
+        data: { isRevoked: true, replacedBy: newRefreshToken },
+      });
 
-    await (db as any).refreshToken.create({
-      data: {
-        token: newRefreshToken,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + REFRESH_EXPIRES_MS),
-      },
+      if (revoked.count === 0) {
+        // Race lost — token was already revoked by another request (reuse detected)
+        await (tx as any).refreshToken.updateMany({
+          where: { userId },
+          data: { isRevoked: true },
+        });
+        throw new Error('TOKEN_REUSE_DETECTED');
+      }
+
+      await (tx as any).refreshToken.create({
+        data: {
+          token: newRefreshToken,
+          userId: user.id,
+          expiresAt: new Date(Date.now() + REFRESH_EXPIRES_MS),
+        },
+      });
     });
 
     const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role });
@@ -414,8 +395,11 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
         refreshToken: newRefreshToken,
       },
     });
-  } catch (error) {
-    res.status(401).json({ error: 'UNAUTHORIZED', message: 'Invalid or expired refresh token', statusCode: 401 });
+  } catch (error: any) {
+    const message = error?.message === 'TOKEN_REUSE_DETECTED'
+      ? 'Token reuse detected. All sessions revoked.'
+      : 'Invalid or expired refresh token';
+    res.status(401).json({ error: 'UNAUTHORIZED', message, statusCode: 401 });
   }
 }
 
