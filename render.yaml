@@ -4,11 +4,13 @@ services:
     env: node
     plan: free
     rootDir: kaphor/backend
-    buildCommand: npm ci && npx prisma generate && npm run build
+    buildCommand: npm install && ./node_modules/.bin/prisma generate && npm run build
     startCommand: node dist/index.js
     healthCheckPath: /health
     autoDeploy: true
     envVars:
+      - key: NODE_VERSION
+        value: 20.14.0
       - key: NODE_ENV
         value: production
       - key: PORT
