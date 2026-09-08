@@ -50,7 +50,7 @@ async function searchYouTubeTutorials(
       return getFallbackYouTubeVideos(query);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
     const items = data?.items || [];
 
     if (items.length === 0) return getFallbackYouTubeVideos(query);
