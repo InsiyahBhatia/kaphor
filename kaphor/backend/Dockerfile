@@ -17,6 +17,8 @@ RUN npm ci --omit=dev
 COPY prisma/ prisma/
 RUN npx prisma generate
 
+COPY data/ data/
+COPY uploads/ uploads/
 COPY --from=builder /app/dist/ dist/
 
 EXPOSE 4000

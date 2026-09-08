@@ -23,6 +23,7 @@ export function initSocket(httpServer: HttpServer): Server {
 
     const userId = socket.handshake.auth?.userId as string | undefined;
     if (userId) {
+      socket.join(`user:${userId}`);
       redisSet(`${USER_SOCKET_PREFIX}${userId}`, socket.id, 60 * 60 * 24).catch((err) =>
         logger.error('Redis set socket mapping failed', { error: err.message })
       );
@@ -35,23 +36,29 @@ export function initSocket(httpServer: HttpServer): Server {
   return io;
 }
 
-export function getIO(): Server | null {
-  return io;
-}
-
-export async function getSocketId(userId: string): Promise<string | null> {
-  return redisGet(`${USER_SOCKET_PREFIX}${userId}`);
+async function getSocketId(userId: string): Promise<string | null> {
+  try {
+    return await redisGet(`${USER_SOCKET_PREFIX}${userId}`);
+  } catch {
+    return null;
+  }
 }
 
 export async function emitToUser(userId: string, event: string, data: unknown): Promise<void> {
+  if (!io) return;
+  // Emit to user room (reliable regardless of Redis state)
+  io.to(`user:${userId}`).emit(event, data);
+
+  // Also emit to direct socket ID if cached
   const socketId = await getSocketId(userId);
-  if (socketId && io) {
+  if (socketId) {
     io.to(socketId).emit(event, data);
   }
 }
 
-export function emitToRoom(room: string, event: string, data: unknown): void {
+export function emitToConversation(conversationId: string, event: string, data: unknown): void {
   if (io) {
-    io.to(room).emit(event, data);
+    io.to(`conversation:${conversationId}`).emit(event, data);
   }
 }
+

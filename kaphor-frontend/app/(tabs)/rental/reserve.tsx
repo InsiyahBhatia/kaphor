@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../../src/services/api';
-import { colors } from '../../../src/theme';
+import { colors, typography } from '../../../src/theme';
 
 export default function RentalReserveScreen() {
   const { garmentId, dayRate } = useLocalSearchParams();
@@ -23,19 +23,24 @@ export default function RentalReserveScreen() {
   const handleReserve = async () => {
     setSubmitting(true);
     try {
-      await api.post('/rentals', {
+      const { data } = await api.post('/rentals', {
         garmentId,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         message: message.trim() || undefined,
       });
-      Alert.alert(
-        'Reserved!',
-        `Your rental is confirmed for ${days} days.${message.trim() ? ' Your message was sent to the owner.' : ''}`,
-        [
-        { text: 'VIEW RENTALS', onPress: () => router.replace('/(tabs)/rental') },
-        ]
-      );
+      const rentalOrderId = data.data?.id || data.data?.rentalOrderId;
+      
+      // Navigate to payment screen with rental details
+      router.replace({
+        pathname: '/(tabs)/rental/payment',
+        params: {
+          rentalOrderId,
+          garmentId,
+          days: String(days),
+          dayRate: String(rate),
+        },
+      });
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Reservation failed.';
       Alert.alert('Error', msg);
@@ -85,11 +90,15 @@ export default function RentalReserveScreen() {
           </View>
         </View>
 
+        {/* Security Deposit Note */}
         <View style={styles.policyCard}>
           <Ionicons name="shield-checkmark" size={20} color={colors.crimson} />
-          <Text style={styles.policyText}>
-            Free returns within 24h of delivery. Insurance included for heritage pieces.
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.policyTitle}>SECURITY DEPOSIT REQUIRED</Text>
+            <Text style={styles.policyText}>
+              A refundable deposit of 2× the rental fee will be charged and returned within 48 hours after item is returned in good condition.
+            </Text>
+          </View>
         </View>
 
         <View style={{ marginTop: 18 }}>
@@ -107,7 +116,7 @@ export default function RentalReserveScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.reserveBtn} onPress={handleReserve} disabled={submitting}>
-          {submitting ? <ActivityIndicator color={colors.white} /> : <Text style={styles.reserveBtnText}>CONFIRM RESERVATION</Text>}
+          {submitting ? <ActivityIndicator color={colors.white} /> :          <Text style={styles.reserveBtnText}>PROCEED TO PAYMENT</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -134,6 +143,7 @@ const styles = StyleSheet.create({
   totalLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: '800', letterSpacing: 2 },
   totalValue: { color: colors.crimson, fontSize: 24, fontWeight: '800' },
   policyCard: { flexDirection: 'row', gap: 12, padding: 16, backgroundColor: 'rgba(155, 27, 48, 0.03)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(155, 27, 48, 0.1)' },
+  policyTitle: { color: colors.crimson, fontSize: 11, fontFamily: typography.mono, fontWeight: '800', letterSpacing: 1, marginBottom: 6 },
   policyText: { color: colors.textMuted, fontSize: 12, flex: 1, lineHeight: 18, fontWeight: '500' },
   messageInput: {
     marginTop: 10,

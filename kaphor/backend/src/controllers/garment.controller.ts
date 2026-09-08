@@ -6,8 +6,8 @@ import { GarmentCondition, ListingType, EventType } from '@prisma/client';
 import { logger } from '../lib/logger';
 import { evaluateLifecycle } from '../services/lifecycle.service';
 import { ImpactService } from '../services/impact.service';
-
-const DEFAULT_VECTOR = Array(16).fill(0);
+import { getFeedGarments } from '../services/garment.service';
+import { generateGarmentVectorHybrid } from '../services/garmentVector.service';
 
 /**
  * Helper to resolve all image URLs for a garment (handles S3 presigning and local fallback)
@@ -57,100 +57,23 @@ export async function searchGarments(req: Request, res: Response): Promise<void>
 export async function getGarmentFeed(req: Request, res: Response): Promise<void> {
   try {
     const { category, size, color, priceMin, priceMax, condition, listingType, after } = req.query;
-    const limit = 20;
 
-    const whereClause: any = { 
-      isActive: true,
-      ...(req.user ? { sellerId: { not: req.user.id } } : {})
-    };
-    
-    // Multi-select handling (comma separated strings)
-    if (category) {
-      const cats = String(category).split(',').filter(Boolean);
-      if (cats.length > 0) {
-        whereClause.OR = [
-          { category: { in: cats } },
-          { subCategory: { in: cats } }
-        ];
-      }
-    }
-    if (size) {
-      const sizes = String(size).split(',').filter(Boolean);
-      if (sizes.length > 0) whereClause.size = { in: sizes };
-    }
-    if (color) whereClause.color = { has: String(color) };
-    if (condition) {
-      const conds = String(condition).split(',').filter(Boolean) as GarmentCondition[];
-      if (conds.length > 0) whereClause.condition = { in: conds };
-    }
-    if (listingType) {
-      const validTypes: ListingType[] = ['SALE', 'RENTAL', 'ACCESSORY_SWAP'];
-      const types = String(listingType)
-        .split(',')
-        .filter(t => validTypes.includes(t as ListingType)) as ListingType[];
-      if (types.length > 0) whereClause.listingType = { in: types };
-    }
-
-    if (priceMin || priceMax) {
-      whereClause.price = {};
-      if (priceMin) whereClause.price.gte = Math.round(Number(priceMin) * 100);
-      if (priceMax) whereClause.price.lte = Math.round(Number(priceMax) * 100);
-    }
-
-    const garments = await db.garment.findMany({
-      where: whereClause,
-      take: limit + 1,
-      cursor: after ? { id: String(after) } : undefined,
-      skip: after ? 1 : 0,
-      select: {
-        id: true,
-        title: true,
-        price: true,
-        images: true,
-        brand: true,
-        category: true,
-        subCategory: true,
-        size: true,
-        condition: true,
-        fabric: true,
-        style: true,
-        pattern: true,
-        listingType: true,
-        garmentVector: true, // Needed for scoring
-        seller: { select: { id: true, displayName: true, username: true } },
-      }
+    const result = await getFeedGarments({
+      userId: req.user?.id,
+      cursor: after ? String(after) : undefined,
+      categories: category ? String(category).split(',').filter(Boolean) : undefined,
+      sizes: size ? String(size).split(',').filter(Boolean) : undefined,
+      colors: color ? [String(color)] : undefined,
+      priceMin: priceMin ? Number(priceMin) : undefined,
+      priceMax: priceMax ? Number(priceMax) : undefined,
+      condition: condition ? String(condition) : undefined,
+      listingType: listingType ? String(listingType) : undefined,
     });
 
-    let hasNextPage = false;
-    if (garments.length > limit) {
-      hasNextPage = true;
-      garments.pop();
-    }
+    // Resolve image URLs (cached via S3 presign cache)
+    const resolvedGarments = await resolveGarmentsImages(result.items, true);
 
-    // Proxy for compatibility score in feed (ideal relies on vector db or LOE scoring pre-fetch)
-    // Here we compute a basic "fitScore" on the fly for demonstration.
-    const user = req.user ? await db.user.findUnique({ where: { id: req.user.id } }) : null;
-    const scoredGarments = garments.map((g: any) => {
-      let fitScore = 0;
-      if (user && user.styleVector.length && g.garmentVector.length) {
-        let dot = 0, magA = 0, magB = 0;
-        for (let i = 0; i < Math.min(user.styleVector.length, g.garmentVector.length); i++) {
-          dot += user.styleVector[i] * g.garmentVector[i];
-          magA += user.styleVector[i] ** 2;
-          magB += g.garmentVector[i] ** 2;
-        }
-        fitScore = dot / (Math.sqrt(magA) * Math.sqrt(magB) || 1);
-      }
-      return { ...g, fitScore, conditionLabel: g.condition };
-    });
-
-    // sorting by fitScore descending
-    scoredGarments.sort((a: any, b: any) => b.fitScore - a.fitScore);
-
-    const resolvedGarments = await resolveGarmentsImages(scoredGarments, true);
-
-    const nextCursor = hasNextPage ? garments[garments.length - 1].id : null;
-    res.status(200).json({ data: resolvedGarments, pagination: { nextCursor } });
+    res.status(200).json({ data: resolvedGarments, pagination: { nextCursor: result.nextCursor } });
   } catch (err) {
     logger.error('getGarmentFeed failed', { error: err instanceof Error ? err.message : String(err) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Internal server error' });
@@ -239,7 +162,6 @@ export async function getWishlistGarments(req: Request, res: Response): Promise<
 export async function getGarmentById(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    logger.info(`[DEBUG] Fetching garment by ID: ${id}`);
     const garment = await db.garment.findFirst({
       where: { id, isActive: true },
       include: {
@@ -247,33 +169,36 @@ export async function getGarmentById(req: Request, res: Response): Promise<void>
         reviews: true
       },
     });
-    logger.info(`[DEBUG] Garment found: ${garment ? garment.id : 'null'}`);
     if (!garment) {
       res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found', statusCode: 404 });
       return;
     }
 
-    // Increment viewCount and record event if authenticated
-    await db.garment.update({ where: { id }, data: { viewCount: { increment: 1 } } });
+    // Parallel: increment viewCount + record VIEW event + check wishlist
+    const sideEffects: Promise<any>[] = [
+      db.garment.update({ where: { id }, data: { viewCount: { increment: 1 } } }),
+    ];
+
     if (req.user && req.user.id !== garment.sellerId) {
-      await db.behaviourEvent.create({
-        data: {
-          garmentId: id,
-          userId: req.user.id,
-          eventType: EventType.VIEW
-        }
-      });
-      // Optionally run LOE asynchronously
+      sideEffects.push(
+        db.behaviourEvent.create({
+          data: { garmentId: id, userId: req.user.id, eventType: EventType.VIEW }
+        })
+      );
+      // LOE async, fire-and-forget
       evaluateLifecycle(id, req.user.id, EventType.VIEW).catch((e: Error) => logger.error('LOE failed on view', { error: e.message }));
     }
 
-    let isLiked = false;
     if (req.user) {
-      const wishlisted = await db.behaviourEvent.findFirst({
-        where: { userId: req.user.id, garmentId: id as string, eventType: EventType.WISHLIST }
-      });
-      isLiked = !!wishlisted;
+      sideEffects.push(
+        db.behaviourEvent.findFirst({
+          where: { userId: req.user.id, garmentId: id, eventType: EventType.WISHLIST }
+        })
+      );
     }
+
+    const results = await Promise.all(sideEffects);
+    const isLiked = req.user ? !!results[results.length - 1] : false;
 
     const resolvedGarment = await resolveGarmentImages(garment);
     res.status(200).json({ data: { ...resolvedGarment, isLiked } });
@@ -299,6 +224,25 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
     }
     const body = req.body as Record<string, unknown>;
     const condition = (body.condition as string) || 'PRISTINE';
+
+    // Generate style vector — Gemini Vision on image, fallback to attributes
+    const garmentVector = Array.isArray(body.garmentVector)
+      ? (body.garmentVector as number[])
+      : (await generateGarmentVectorHybrid(
+          imageUrls[0] || null,
+          {
+            category: body.category ? String(body.category) : undefined,
+            subCategory: body.subCategory ? String(body.subCategory) : undefined,
+            style: body.style ? String(body.style) : undefined,
+            color: Array.isArray(body.color) ? body.color.map(String) : typeof body.color === 'string' ? [body.color] : undefined,
+            fabric: body.fabric ? String(body.fabric) : undefined,
+            pattern: body.pattern ? String(body.pattern) : undefined,
+            sleeve: body.sleeve ? String(body.sleeve) : undefined,
+            shape: body.shape ? String(body.shape) : undefined,
+            tags: Array.isArray(body.tags) ? body.tags.map(String) : undefined,
+            styleTags: Array.isArray(body.styleTags) ? body.styleTags.map(String) : undefined,
+          }
+        )).vector;
 
     // Auto-match material impact
     const materialId = await ImpactService.findMatchingMaterialId(
@@ -331,7 +275,7 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
           materialId,
           tags: Array.isArray(body.tags) ? body.tags.map(String) : [],
           styleTags: Array.isArray(body.styleTags) ? body.styleTags.map(String) : [],
-          garmentVector: Array.isArray(body.garmentVector) ? (body.garmentVector as number[]) : DEFAULT_VECTOR,
+          garmentVector,
           lifecycleState: 'LISTED',
           listingType: (body.listingType as ListingType) || 'SALE',
           price: body.price != null ? Math.round(Number(body.price) * 100) : null,
@@ -393,6 +337,25 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
       updatedImages = [...updatedImages, ...newImageUrls];
     }
 
+    // Regenerate vector if relevant attributes changed or new images uploaded
+    const attrsChanged = body.category || body.style || body.color || body.fabric || body.pattern;
+    const imagesChanged = newImageUrls.length > 0;
+    const updatedVector = (attrsChanged || imagesChanged)
+      ? (await generateGarmentVectorHybrid(
+          newImageUrls[0] || updatedImages[0] || null,
+          {
+            category: body.category ? String(body.category) : existing.category,
+            subCategory: body.subCategory ? String(body.subCategory) : existing.subCategory || undefined,
+            style: body.style ? String(body.style) : existing.style || undefined,
+            color: body.color
+              ? (Array.isArray(body.color) ? body.color.map(String) : [String(body.color)])
+              : existing.color,
+            fabric: body.fabric ? String(body.fabric) : existing.fabric || undefined,
+            pattern: body.pattern ? String(body.pattern) : existing.pattern || undefined,
+          }
+        )).vector
+      : undefined;
+
     const garment = await db.garment.update({
       where: { id },
       data: {
@@ -405,12 +368,16 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
         ...(body.price != null && { price: Math.round(Number(body.price) * 100) }),
         ...(body.rentalPriceDay != null && { rentalPriceDay: Math.round(Number(body.rentalPriceDay) * 100) }),
         ...(body.rentalPriceWeek != null && { rentalPriceWeek: Math.round(Number(body.rentalPriceWeek) * 100) }),
+        ...(body.listingType != null && { listingType: body.listingType as ListingType }),
+        ...(body.condition != null && { condition: body.condition as GarmentCondition }),
+        ...(body.isActive != null && { isActive: Boolean(body.isActive) }),
         ...(body.fabric != null && { fabric: String(body.fabric) }),
         ...(body.style != null && { style: String(body.style) }),
         ...(body.sleeve != null && { sleeve: String(body.sleeve) }),
         ...(body.shape != null && { shape: String(body.shape) }),
         ...(body.pattern != null && { pattern: String(body.pattern) }),
         ...(body.weight != null && { weight: String(body.weight) }),
+        ...(updatedVector && { garmentVector: updatedVector }),
       },
     });
     const resolvedGarment = await resolveGarmentImages(garment);

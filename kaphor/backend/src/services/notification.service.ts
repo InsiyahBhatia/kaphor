@@ -2,7 +2,14 @@ import db from '../lib/prisma';
 import { emitToUser } from '../lib/socket';
 import { logger } from '../lib/logger';
 
-export type NotificationType = 'ORDER_PAID' | 'ORDER_SHIPPED' | 'ORDER_DELIVERED' | 'NEW_MESSAGE' | 'PEER_REVIEW';
+export type NotificationType =
+  | 'ORDER_PAID' | 'ORDER_SHIPPED' | 'ORDER_DELIVERED'
+  | 'NEW_MESSAGE' | 'DIRECT_MESSAGE' | 'PEER_REVIEW'
+  | 'SWAP_REQUEST' | 'SWAP_ACCEPTED' | 'SWAP_REJECTED' | 'SWAP_COMPLETED'
+  | 'SWAP_SHIPPED' | 'SWAP_RECEIVED' | 'SWAP_DISPUTED' | 'SWAP_CANCELLED'
+  | 'RENTAL_RESERVED' | 'RENTAL_ACTIVE' | 'RENTAL_RETURNED' | 'RENTAL_OVERDUE'
+  | 'CIRCULAR_COMPLETED'
+  | 'ADMIN_BESPOKE_REQUEST';
 
 export interface NotificationPayload {
   userId: string;

@@ -33,4 +33,14 @@ export const garmentService = {
     const { data } = await api.get('/garments/wishlist');
     return data.data;
   },
+
+  updateGarment: async (id: string, updates: any) => {
+    const { data } = await api.put(`/garments/${id}`, updates);
+    return data.data;
+  },
+
+  deleteGarment: async (id: string) => {
+    const { data } = await api.delete(`/garments/${id}`);
+    return data.data;
+  },
 };

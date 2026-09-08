@@ -7,7 +7,6 @@ import cors from 'cors';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
 import { z } from 'zod';
 
 import db from './lib/prisma';
@@ -50,7 +49,6 @@ const validatedEnv = envResult.data;
 // Routes
 import { authRouter } from './routes/auth.routes';
 import { garmentRouter } from './routes/garment.routes';
-import { socialRoutes } from './routes/social';
 import { interactionRouter } from './routes/interaction.routes';
 import { userRoutes } from './routes/users';
 import { impactRoutes } from './routes/impact';
@@ -65,9 +63,15 @@ import { stripeRouter } from './routes/stripe';
 import { razorpayRouter } from './routes/razorpay.routes';
 import { cartRouter } from './routes/cart.routes';
 import { adminRouter } from './routes/admin.routes';
+import { repairRouter } from './routes/repair.routes';
+import { messageRoutes } from './routes/messages';
+import { assessGarment, initGLIE } from './services/glie';
+import { upload } from './middleware/upload.middleware';
+import { uploadToS3 } from './lib/s3';
 
 const app = express();
 const httpServer = http.createServer(app);
+app.set('trust proxy', 1);
 
 const PORT = validatedEnv.PORT;
 const API_VERSION = process.env.API_VERSION || 'v1';
@@ -104,26 +108,10 @@ app.use(
   })
 );
 
-// ── Redis-backed Rate Limiter ────────────────────────────────────────────────
-let redisRateStore: any = undefined;
-try {
-  const Redis = require('ioredis');
-  const redisClient = new Redis(REDIS_URL, {
-    enableOfflineQueue: false,
-    maxRetriesPerRequest: 1,
-  });
-  redisClient.on('error', () => { /* fallback to memory store */ });
-  redisRateStore = new RedisStore({
-    sendCommand: (...args: [string, ...string[]]) => (redisClient as any).call(...args),
-  });
-} catch {
-  logger.warn('Redis unavailable for rate limiter — using default memory store');
-}
-
+// ── Rate Limiter ─────────────────────────────────────────────────────────────
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000,
-  store: redisRateStore,
 });
 
 app.use(limiter);
@@ -132,7 +120,6 @@ const authLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
   message: { error: 'TOO_MANY_REQUESTS', message: 'Too many attempts, try again later' },
-  store: redisRateStore,
 });
 
 /** Routes */
@@ -147,7 +134,6 @@ app.use(`${baseApiUrl}/auth/reset-password`, authLimiter);
 
 app.use(`${baseApiUrl}/auth`, authRouter);
 app.use(`${baseApiUrl}/garments`, garmentRouter);
-app.use(`${baseApiUrl}/social`, socialRoutes);
 app.use(`${baseApiUrl}/interactions`, interactionRouter);
 app.use(`${baseApiUrl}/users`, userRoutes);
 app.use(`${baseApiUrl}/impact`, impactRoutes);
@@ -162,6 +148,59 @@ app.use(`${baseApiUrl}/payments`, stripeRouter);
 app.use(`${baseApiUrl}/payments/razorpay`, razorpayRouter);
 app.use(`${baseApiUrl}/cart`, cartRouter);
 app.use(`${baseApiUrl}/admin`, adminRouter);
+app.use(`${baseApiUrl}/repair`, repairRouter);
+app.use(`${baseApiUrl}/messages`, messageRoutes);
+
+// ── GLIE Temp Image Upload (fast, no auth required) ────────────────────────
+app.post(`${baseApiUrl}/glie/upload-temp`, upload.single('image'), async (req: Request, res: Response) => {
+  try {
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ error: 'image file is required' });
+      return;
+    }
+    const result = await uploadToS3(file.buffer, 'glie-temp', file.mimetype);
+    res.json({ url: result.url, key: result.key });
+  } catch (e: any) {
+    logger.error('GLIE temp upload failed', { error: e.message });
+    res.status(500).json({ error: 'Upload failed', message: e.message });
+  }
+});
+
+// ── GLIE Condition Check (RAG + Gemini Vision Pipeline) ────────────────────
+app.post(`${baseApiUrl}/glie/assess`, async (req: Request, res: Response) => {
+  try {
+    const input = req.body;
+    // Accept either image_base64 (legacy) or image_s3_url (preferred)
+    if (!input.image_base64 && !input.image_s3_url) {
+      res.status(400).json({ error: 'image_base64 or image_s3_url is required' });
+      return;
+    }
+    // If image_s3_url provided, download the image and convert to base64
+    if (input.image_s3_url && !input.image_base64) {
+      try {
+        const response = await fetch(input.image_s3_url);
+        if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        input.image_base64 = buffer.toString('base64');
+      } catch (fetchErr: any) {
+        logger.error('GLIE: Failed to download image from S3', { error: fetchErr.message, url: input.image_s3_url });
+        res.status(400).json({ error: 'Failed to fetch image from provided URL' });
+        return;
+      }
+    }
+    if (!process.env.GEMINI_API_KEY) {
+      res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+      return;
+    }
+    const result = await assessGarment(input);
+    res.json(result);
+  } catch (e: any) {
+    logger.error('GLIE assessment failed', { error: e.message });
+    res.status(500).json({ error: 'Assessment failed', message: e.message });
+  }
+});
 
 /** HEALTH CHECK */
 app.get('/health', (_req, res) => {
@@ -213,6 +252,17 @@ async function main() {
     console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
     initSocket(httpServer);
     console.log('🔌 Socket.io initialized');
+
+    // Load GLIE data asynchronously after server is accepting connections
+    // This avoids blocking startup with 3.5MB+ of CSV/JSON parsing
+    setImmediate(() => {
+      try {
+        initGLIE();
+        console.log('📊 GLIE data loaders initialized');
+      } catch (err: any) {
+        console.warn('⚠️  GLIE init failed (will retry on first request):', err.message);
+      }
+    });
   });
 }
 

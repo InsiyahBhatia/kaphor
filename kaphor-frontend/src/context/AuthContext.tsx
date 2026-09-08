@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { persistTokens, clearStoredTokens } from '../services/api';
 import { useAuthStore, type AuthUser } from '../store/authStore';
 
-export interface User {
+interface User {
   id: string;
   email: string;
   displayName: string;

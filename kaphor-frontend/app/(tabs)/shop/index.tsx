@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { cartService } from '../../../src/services/cartService';
 import { PlayingCard } from '../../../src/components/PlayingCard';
+import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { 
   MARKET_CATEGORIES, 
@@ -126,7 +127,7 @@ export default function ShopScreen() {
             <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)}>
               <Ionicons name="options-sharp" size={20} color={colors.white} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cartHeaderButton} onPress={() => router.push('/(tabs)/shop/cart')}>
+            <TouchableOpacity style={styles.cartHeaderButton} onPress={() => router.push('/(tabs)/cart')}>
               <Ionicons name="briefcase" size={20} color={colors.white} />
             </TouchableOpacity>
           </View>
@@ -144,10 +145,7 @@ export default function ShopScreen() {
       </View>
 
       {showInitialLoader ? (
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color={colors.red} />
-          <Text style={styles.loadingText}>ACCESSING DOSSIERS...</Text>
-        </View>
+        <DossierLoading variant="shop" />
       ) : (
         <View style={{ flex: 1 }}>
           {isLoading && garments.length > 0 && (
@@ -200,7 +198,6 @@ export default function ShopScreen() {
                         imageUrl={item.images?.[0] || undefined}
                         category={item.category || undefined}
                         subCategory={item.subCategory || undefined}
-                        matchPercent={Math.floor(Math.random() * 20) + 75}
                         condition={item.condition || "Excellent"}
                         onAddToCart={() => handleAddToCart(item)}
                         buttonText={

@@ -15,4 +15,14 @@ export const notificationService = {
     const { data } = await api.patch('/notifications/read-all');
     return data.data;
   },
+
+  deleteNotification: async (id: string) => {
+    const { data } = await api.delete(`/notifications/${id}`);
+    return data;
+  },
+
+  clearAll: async () => {
+    const { data } = await api.delete('/notifications/clear-all');
+    return data;
+  },
 };

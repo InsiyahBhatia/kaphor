@@ -26,6 +26,35 @@ export function setupSocketHandlers(io: Server, socket: Socket) {
     }
   });
 
+  // Join direct conversation room
+  socket.on('join:conversation', (conversationId: string) => {
+    if (conversationId) {
+      socket.join(`conversation:${conversationId}`);
+      logger.info(`Socket ${socket.id} joined conversation:${conversationId}`);
+    }
+  });
+
+  // Leave direct conversation room
+  socket.on('leave:conversation', (conversationId: string) => {
+    if (conversationId) {
+      socket.leave(`conversation:${conversationId}`);
+      logger.info(`Socket ${socket.id} left conversation:${conversationId}`);
+    }
+  });
+
+  // Typing indicators
+  socket.on('typing', ({ conversationId, userId, displayName }: { conversationId: string; userId: string; displayName?: string }) => {
+    if (conversationId) {
+      socket.to(`conversation:${conversationId}`).emit('user_typing', { conversationId, userId, displayName });
+    }
+  });
+
+  socket.on('stop_typing', ({ conversationId, userId }: { conversationId: string; userId: string }) => {
+    if (conversationId) {
+      socket.to(`conversation:${conversationId}`).emit('user_stop_typing', { conversationId, userId });
+    }
+  });
+
   socket.on('disconnect', () => {
     logger.info(`Socket disconnected: ${socket.id}`);
   });

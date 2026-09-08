@@ -56,17 +56,27 @@ export default function TabLayout() {
       <Tabs.Screen name="rental/index" options={{ href: null }} />
       <Tabs.Screen name="rental/[id]" options={{ href: null }} />
       <Tabs.Screen name="rental/reserve" options={{ href: null }} />
+      <Tabs.Screen name="rental/payment" options={{ href: null }} />
       <Tabs.Screen name="swap/[id]" options={{ href: null }} />
-
       <Tabs.Screen name="swap/[wantedId]" options={{ href: null }} />
+      <Tabs.Screen name="swap/details" options={{ href: null }} />
+      <Tabs.Screen name="swap/agreement" options={{ href: null }} />
+      <Tabs.Screen name="swap/shipping" options={{ href: null }} />
+      <Tabs.Screen name="circular/condition-check" options={{ href: null }} />
       <Tabs.Screen name="impact/index" options={{ href: null }} />
       <Tabs.Screen name="impact/report" options={{ href: null }} />
       <Tabs.Screen name="studio/index" options={{ href: null }} />
       <Tabs.Screen name="studio/bespoke" options={{ href: null }} />
       <Tabs.Screen name="studio/chat" options={{ href: null }} />
       <Tabs.Screen name="studio/upcycle" options={{ href: null }} />
+      <Tabs.Screen name="studio/upcycle-request" options={{ href: null }} />
+      <Tabs.Screen name="studio/repair-refresh" options={{ href: null }} />
       <Tabs.Screen name="shop/[id]" options={{ href: null }} />
+      <Tabs.Screen name="shop/edit/[id]" options={{ href: null }} />
       <Tabs.Screen name="shop/sell" options={{ href: null }} />
+      <Tabs.Screen name="shop/cart" options={{ href: null }} />
+      <Tabs.Screen name="shop/payment-history" options={{ href: null }} />
+      <Tabs.Screen name="shop/ai-chat" options={{ href: null }} />
       <Tabs.Screen name="shop/order-confirmed" options={{ href: null }} />
       <Tabs.Screen name="shop/checkout/delivery" options={{ href: null }} />
       <Tabs.Screen name="shop/checkout/[orderId]" options={{ href: null }} />
@@ -74,6 +84,7 @@ export default function TabLayout() {
       <Tabs.Screen name="shop/orders/[orderId]" options={{ href: null }} />
       <Tabs.Screen name="shop/seller/[userId]" options={{ href: null }} />
       <Tabs.Screen name="notifications/index" options={{ href: null }} />
+      <Tabs.Screen name="messages" options={{ href: null }} />
 
 
 

@@ -35,8 +35,12 @@ export const userService = {
       avatar: string | null;
       bio: string | null;
       tier: string;
+      isVerified?: boolean;
+      verificationStatus?: string;
+      verificationType?: string;
       peerReviewCount: number;
       peerReviewAvg: number | null;
+      ratingBreakdown?: { 5: number; 4: number; 3: number; 2: number; 1: number };
       trustedSeller: boolean;
     };
   },

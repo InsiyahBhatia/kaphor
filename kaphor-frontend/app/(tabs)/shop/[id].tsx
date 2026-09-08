@@ -8,10 +8,13 @@ import { garmentService } from '../../../src/services/garmentService';
 import { Garment } from '../../../src/store/garmentStore';
 import { useAuth } from '../../../src/context/AuthContext';
 import api from '../../../src/services/api';
+import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { orderService } from '../../../src/services/orderService';
 import { cartService } from '../../../src/services/cartService';
+import { messageService } from '../../../src/services/messageService';
+import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
 
 const { width } = Dimensions.get('window');
 
@@ -58,12 +61,34 @@ export default function GarmentDetailScreen() {
     }
   };
 
+  const [buying, setBuying] = useState(false);
+
+  const handleBuyNow = async () => {
+    if (!id || garment?.sellerId === user?.id || buying) return;
+    setBuying(true);
+    try {
+      const { data } = await api.post('/orders', { garmentId: id });
+      const orderId = data?.data?.orderId || data?.data?.id;
+      if (!orderId) {
+        Alert.alert('Checkout Error', 'Could not initiate checkout.');
+        return;
+      }
+      router.push(`/(tabs)/shop/checkout/delivery?orderId=${orderId}` as any);
+    } catch (e: any) {
+      Alert.alert('Checkout Error', e?.response?.data?.message || 'Could not initiate checkout.');
+    } finally {
+      setBuying(false);
+    }
+  };
+
   const handleMessageSeller = async () => {
-    if (!id) return;
+    if (!garment) return;
+    const sellerId = garment.seller?.id || garment.sellerId;
+    if (!sellerId) return;
     setStartingInquiry(true);
     try {
-      const { orderId } = await orderService.createInquiry(id as string);
-      router.push(`/(tabs)/shop/orders/${orderId}`);
+      const conv = await messageService.getOrCreateConversation(sellerId, garment.id);
+      router.push(`/messages/${conv.id}` as any);
     } catch (e: any) {
       Alert.alert('Inquiry', e?.response?.data?.message || 'Failed to start conversation');
     } finally {
@@ -97,7 +122,7 @@ export default function GarmentDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={colors.crimson} />
+        <DossierLoading variant="product" compact />
       </View>
     );
   }
@@ -246,7 +271,10 @@ export default function GarmentDetailScreen() {
           >
             <Ionicons name="shield-checkmark-outline" size={22} color={colors.crimson} />
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.sellerTrustTitle}>SELLER PROFILE & REVIEWS</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.sellerTrustTitle}>SELLER PROFILE & REVIEWS</Text>
+                {garment.seller?.isVerified && <VerifiedBadge size="compact" />}
+              </View>
               <Text style={styles.sellerTrustSub}>
                 {garment.seller?.displayName ?? 'Seller'} · peer ratings from completed sales
               </Text>
@@ -307,22 +335,31 @@ export default function GarmentDetailScreen() {
         {garment && user && (garment.sellerId === user.id || user.role === 'ADMIN') && (
           <View style={styles.listingManagerBar}>
             <Text style={styles.managerText}>YOU ARE MANAGING THIS ASSET</Text>
-            <TouchableOpacity
-              style={styles.deleteBtnSmall}
-              onPress={async () => {
-                Alert.alert('Delete Asset', 'Confirm permanent removal from the deck?', [
-                  { text: 'CANCEL', style: 'cancel' },
-                  { text: 'DELETE', style: 'destructive', onPress: async () => {
-                    try {
-                      await api.delete(`/garments/${id}`);
-                      router.back();
-                    } catch { Alert.alert('Error', 'De-listing failed.'); }
-                  }}
-                ]);
-              }}
-            >
-              <Text style={styles.deleteTextSmall}>DE-LIST</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                style={styles.editBtnSmall}
+                onPress={() => router.push(`/(tabs)/shop/edit/${id}` as any)}
+              >
+                <Ionicons name="create-outline" size={12} color={colors.gold} />
+                <Text style={styles.editTextSmall}>EDIT</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteBtnSmall}
+                onPress={async () => {
+                  Alert.alert('Delete Asset', 'Confirm permanent removal from the deck?', [
+                    { text: 'CANCEL', style: 'cancel' },
+                    { text: 'DELETE', style: 'destructive', onPress: async () => {
+                      try {
+                        await api.delete(`/garments/${id}`);
+                        router.back();
+                      } catch { Alert.alert('Error', 'De-listing failed.'); }
+                    }}
+                  ]);
+                }}
+              >
+                <Text style={styles.deleteTextSmall}>DE-LIST</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -339,10 +376,10 @@ export default function GarmentDetailScreen() {
                 )}
               </TouchableOpacity>
               <Button
-                title={garment.sellerId === user?.id ? "PREVIEW PURCHASE" : "BUY NOW"}
-                onPress={() => router.push(`/(tabs)/shop/checkout/delivery?orderId=${id}`)}
+                title={garment.sellerId === user?.id ? "OWNED BY YOU" : (buying ? "PREPARING..." : "BUY NOW")}
+                onPress={handleBuyNow}
                 style={{ flex: 1 }}
-                disabled={garment.sellerId === user?.id}
+                disabled={garment.sellerId === user?.id || buying}
               />
             </>
           ) : (garment.listingType?.toUpperCase() === 'RENTAL' || garment.listingType?.toUpperCase() === 'LEASE') ? (
@@ -597,6 +634,23 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontWeight: '800',
     letterSpacing: 1,
+  },
+  editBtnSmall: {
+    backgroundColor: 'rgba(201, 168, 76, 0.12)',
+    borderWidth: 1,
+    borderColor: colors.gold,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  editTextSmall: {
+    color: colors.gold,
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
   },
   deleteBtnSmall: {
     backgroundColor: 'rgba(155, 27, 48, 0.1)',

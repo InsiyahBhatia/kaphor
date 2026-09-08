@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { garmentService } from '../../../src/services/garmentService';
+import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 
@@ -23,7 +24,7 @@ export default function RentalDetailScreen() {
   }, [id]);
 
   if (loading) {
-    return <View style={[styles.container, styles.center]}><ActivityIndicator size="large" color={colors.crimson} /></View>;
+    return <View style={[styles.container, styles.center]}><DossierLoading variant="rental" compact /></View>;
   }
 
   if (!garment) {

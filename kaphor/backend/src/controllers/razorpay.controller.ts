@@ -3,6 +3,10 @@ import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import { createRazorpayOrderForOrder } from '../services/payment.service';
+import { createNotification } from '../services/notification.service';
+
+const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 
 function getRazorpayInstance(): Razorpay {
   const keyId = process.env.RAZORPAY_KEY_ID;
@@ -100,6 +104,123 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
   }
 }
 
+/**
+ * Create a Razorpay order for an existing order (cart flow, direct checkout).
+ */
+export async function createRazorpayOrderForExistingOrder(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+
+    const { orderId } = req.body as { orderId?: string };
+    if (!orderId) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'orderId is required' });
+      return;
+    }
+
+    // Verify the user owns this order
+    const existingOrder = await db.order.findUnique({
+      where: { id: orderId },
+      select: { buyerId: true },
+    });
+    if (!existingOrder) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
+      return;
+    }
+    if (existingOrder.buyerId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to pay for this order' });
+      return;
+    }
+
+    const result = await createRazorpayOrderForOrder(orderId);
+
+    res.json({ data: result });
+  } catch (e: any) {
+    const message = e?.message || 'Failed to create Razorpay order';
+    logger.error('createRazorpayOrderForExistingOrder failed', { error: message });
+    res.status(400).json({ error: 'BAD_REQUEST', message });
+  }
+}
+
+/**
+ * Create a Razorpay order for a rental reservation (rental fee + refundable deposit + delivery).
+ */
+export async function createRazorpayOrderForRental(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+
+    const { rentalOrderId } = req.body as { rentalOrderId?: string };
+    if (!rentalOrderId) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'rentalOrderId is required' });
+      return;
+    }
+
+    const rental = await db.rental.findUnique({
+      where: { id: rentalOrderId },
+      include: { garment: true },
+    });
+
+    if (!rental) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Rental reservation not found' });
+      return;
+    }
+
+    if (rental.renterId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to pay for this rental' });
+      return;
+    }
+
+    // Total amount in paise: rental fee + 2x security deposit + 10% insurance + 199 INR delivery
+    const rentalFee = rental.totalPrice * 100;
+    const securityDeposit = rentalFee * 2;
+    const insuranceFee = Math.round(rentalFee * 0.1);
+    const deliveryFee = 19900;
+    const totalAmount = rentalFee + securityDeposit + insuranceFee + deliveryFee;
+
+    const razorpay = getRazorpayInstance();
+    const receipt = `rent_${rental.id.replace(/-/g, '').slice(0, 16)}`;
+    const rpOrder = await razorpay.orders.create({
+      amount: totalAmount,
+      currency: 'INR',
+      receipt,
+      notes: {
+        rentalId: rental.id,
+        garmentId: rental.garmentId,
+        renterId: rental.renterId,
+        type: 'RENTAL',
+      },
+    });
+
+    // Store Razorpay order ID in rental stripeId column for gateway tracking
+    await db.rental.update({
+      where: { id: rental.id },
+      data: { stripeId: rpOrder.id },
+    });
+
+    res.json({
+      data: {
+        orderId: rental.id,
+        rentalOrderId: rental.id,
+        razorpayOrderId: rpOrder.id,
+        amount: totalAmount,
+        currency: 'INR',
+      },
+    });
+  } catch (e: any) {
+    const message = e?.message || 'Failed to create Razorpay rental order';
+    logger.error('createRazorpayOrderForRental failed', { error: message });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message });
+  }
+}
+
+/**
+ * Verify Razorpay payment signature for both regular garment orders and rental reservations.
+ */
 export async function verifyRazorpayPayment(req: Request, res: Response): Promise<void> {
   try {
     if (!req.user) {
@@ -138,35 +259,304 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
       return;
     }
 
+    // 1. Check if this is a standard Order
     const order = await db.order.findUnique({ where: { id: orderId } });
-    if (!order) {
-      res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
+    if (order) {
+      if (order.buyerId !== req.user.id) {
+        res.status(403).json({ error: 'FORBIDDEN', message: 'Not allowed to verify this order' });
+        return;
+      }
+
+      if (order.razorpayOrderId && order.razorpayOrderId !== razorpay_order_id) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Razorpay order mismatch' });
+        return;
+      }
+
+      const updated = await db.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'CONFIRMED',
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+        },
+      });
+
+      // Transition garments from PURCHASE_INTENT to OWNERSHIP + transfer sellerId to buyer + deactivate
+      const orderItems = await db.orderItem.findMany({
+        where: { orderId },
+        include: { garment: true },
+      });
+      const purchasedGarmentIds = orderItems
+        .filter((item: any) => item.garment && item.garment.lifecycleState === 'PURCHASE_INTENT')
+        .map((item: any) => item.garmentId);
+
+      if (purchasedGarmentIds.length > 0) {
+        await db.garment.updateMany({
+          where: { id: { in: purchasedGarmentIds } },
+          data: {
+            lifecycleState: 'OWNERSHIP',
+            sellerId: req.user.id,
+            isActive: false, // Item is now owned by buyer; remove from marketplace listing
+          },
+        });
+      }
+
+      // Auto-clear purchased items from buyer's cart
+      if (purchasedGarmentIds.length > 0) {
+        try {
+          await db.cartItem.deleteMany({
+            where: {
+              userId: req.user.id,
+              garmentId: { in: purchasedGarmentIds },
+            },
+          });
+        } catch (cartErr) {
+          logger.warn('Failed to clear cart items after purchase', { error: cartErr });
+        }
+      }
+
+      // Notify Seller
+      try {
+        const firstTitle = orderItems[0]?.garment?.title || 'item';
+        await createNotification({
+          userId: order.sellerId,
+          type: 'ORDER_PAID',
+          title: '💰 Item Sold!',
+          body: `Your item "${firstTitle}" has been purchased! Please prepare for shipping.`,
+          data: { orderId: order.id },
+        });
+      } catch (notifErr) {
+        logger.warn('Failed to send order paid notification to seller', { error: notifErr });
+      }
+
+      res.json({ data: updated, isRental: false });
       return;
     }
 
-    if (order.buyerId !== req.user.id) {
-      res.status(403).json({ error: 'FORBIDDEN', message: 'Not allowed to verify this order' });
-      return;
-    }
-
-    if (order.razorpayOrderId && order.razorpayOrderId !== razorpay_order_id) {
-      res.status(400).json({ error: 'BAD_REQUEST', message: 'Razorpay order mismatch' });
-      return;
-    }
-
-    const updated = await db.order.update({
+    // 2. Check if this is a Rental reservation
+    const rental = await db.rental.findUnique({
       where: { id: orderId },
-      data: {
-        status: 'CONFIRMED',
-        razorpayOrderId: razorpay_order_id,
-        razorpayPaymentId: razorpay_payment_id,
-      },
+      include: { garment: true },
     });
 
-    res.json({ data: updated });
+    if (rental) {
+      if (rental.renterId !== req.user.id) {
+        res.status(403).json({ error: 'FORBIDDEN', message: 'Not allowed to verify this rental' });
+        return;
+      }
+
+      if (rental.stripeId && rental.stripeId !== razorpay_order_id) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Razorpay order mismatch for rental' });
+        return;
+      }
+
+      const updatedRental = await db.rental.update({
+        where: { id: orderId },
+        data: {
+          status: 'ACTIVE',
+          stripeId: razorpay_order_id,
+        },
+        include: { garment: true },
+      });
+
+      // Notify Owner
+      try {
+        await createNotification({
+          userId: rental.garment.sellerId,
+          type: 'RENTAL_RESERVED',
+          title: '🎉 Rental Confirmed & Paid!',
+          body: `"${rental.garment.title}" has been booked and paid for. Please prepare for dispatch.`,
+          data: { rentalId: rental.id },
+        });
+      } catch (notifErr) {
+        logger.warn('Failed to send rental confirmed notification to seller', { error: notifErr });
+      }
+
+      // Notify Renter
+      try {
+        await createNotification({
+          userId: rental.renterId,
+          type: 'RENTAL_RESERVED',
+          title: '✅ Rental Booking Confirmed!',
+          body: `Your rental booking for "${rental.garment.title}" has been confirmed.`,
+          data: { rentalId: rental.id },
+        });
+      } catch (notifErr) {
+        logger.warn('Failed to send rental confirmed notification to renter', { error: notifErr });
+      }
+
+      res.json({ data: updatedRental, isRental: true });
+      return;
+    }
+
+    res.status(404).json({ error: 'NOT_FOUND', message: 'Order or rental not found' });
   } catch (e) {
     logger.error('verifyRazorpayPayment failed', { error: e instanceof Error ? e.message : String(e) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to verify payment' });
   }
 }
 
+/**
+ * Razorpay webhook — receives automatic payment confirmations.
+ * Uses signature verification (no Bearer token).
+ */
+export async function razorpayWebhook(req: Request, res: Response): Promise<void> {
+  try {
+    const signature = req.headers['x-razorpay-signature'] as string;
+    if (!signature) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing signature header' });
+      return;
+    }
+
+    // Verify webhook signature
+    if (WEBHOOK_SECRET) {
+      const expected = crypto
+        .createHmac('sha256', WEBHOOK_SECRET)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+      if (expected !== signature) {
+        logger.warn('Razorpay webhook signature mismatch');
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid signature' });
+        return;
+      }
+    }
+
+    const event = req.body.event;
+    const payload = req.body.payload;
+
+    logger.info('Razorpay webhook received', { event });
+
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const razorpayOrderId = payload?.order?.entity?.id;
+      const razorpayPaymentId = payload?.payment?.entity?.id;
+
+      if (!razorpayOrderId) {
+        res.status(200).json({ status: 'ignored' });
+        return;
+      }
+
+      // 1. Check if matches a standard purchase order
+      const order = await db.order.findFirst({
+        where: { razorpayOrderId },
+      });
+
+      if (order) {
+        if (order.status === 'CONFIRMED') {
+          res.status(200).json({ status: 'already_confirmed' });
+          return;
+        }
+
+        await db.order.update({
+          where: { id: order.id },
+          data: {
+            status: 'CONFIRMED',
+            razorpayPaymentId: razorpayPaymentId || order.razorpayPaymentId,
+          },
+        });
+
+        // Transition purchased garments to OWNERSHIP + transfer sellerId to buyer + deactivate
+        const webhookItems = await db.orderItem.findMany({
+          where: { orderId: order.id },
+          include: { garment: true },
+        });
+        const webhookGarmentIds: string[] = [];
+        for (const whItem of webhookItems) {
+          if (whItem.garment && whItem.garment.lifecycleState === 'PURCHASE_INTENT') {
+            webhookGarmentIds.push(whItem.garmentId);
+            await db.garment.update({
+              where: { id: whItem.garmentId },
+              data: {
+                lifecycleState: 'OWNERSHIP',
+                sellerId: order.buyerId,
+                isActive: false,
+              },
+            });
+          }
+        }
+
+        if (webhookGarmentIds.length > 0) {
+          try {
+            await db.cartItem.deleteMany({
+              where: {
+                userId: order.buyerId,
+                garmentId: { in: webhookGarmentIds },
+              },
+            });
+          } catch (cartErr) {
+            logger.warn('Webhook failed to clear cart items', { error: cartErr });
+          }
+        }
+
+        try {
+          const firstTitle = webhookItems[0]?.garment?.title || 'item';
+          await createNotification({
+            userId: order.sellerId,
+            type: 'ORDER_PAID',
+            title: '💰 Item Sold!',
+            body: `Your item "${firstTitle}" has been purchased! Please prepare for shipping.`,
+            data: { orderId: order.id },
+          });
+        } catch (notifErr) {
+          logger.warn('Failed to notify seller in webhook', { error: notifErr });
+        }
+
+        logger.info('Order auto-confirmed via webhook', {
+          orderId: order.id,
+          razorpayOrderId,
+          razorpayPaymentId,
+        });
+
+        res.status(200).json({ status: 'ok' });
+        return;
+      }
+
+      // 2. Check if matches a rental reservation
+      const rental = await db.rental.findFirst({
+        where: { stripeId: razorpayOrderId },
+        include: { garment: true },
+      });
+
+      if (rental) {
+        if (rental.status === 'ACTIVE') {
+          res.status(200).json({ status: 'already_active' });
+          return;
+        }
+
+        await db.rental.update({
+          where: { id: rental.id },
+          data: { status: 'ACTIVE' },
+        });
+
+        try {
+          await createNotification({
+            userId: rental.garment.sellerId,
+            type: 'RENTAL_RESERVED',
+            title: '🎉 Rental Confirmed & Paid!',
+            body: `"${rental.garment.title}" has been booked and paid for via webhook.`,
+            data: { rentalId: rental.id },
+          });
+        } catch (notifErr) {
+          logger.warn('Failed to notify seller in webhook', { error: notifErr });
+        }
+
+        logger.info('Rental auto-confirmed via webhook', {
+          rentalId: rental.id,
+          razorpayOrderId,
+          razorpayPaymentId,
+        });
+
+        res.status(200).json({ status: 'ok' });
+        return;
+      }
+
+      logger.warn('Webhook: neither order nor rental found for Razorpay order', { razorpayOrderId });
+      res.status(200).json({ status: 'entity_not_found' });
+      return;
+    }
+
+    res.status(200).json({ status: 'ok' });
+  } catch (e) {
+    logger.error('razorpayWebhook failed', { error: e instanceof Error ? e.message : String(e) });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Webhook processing failed' });
+  }
+}

@@ -19,6 +19,13 @@ enum UserRole {
   ADMIN
 }
 
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
 enum UserTier {
   BRONZE
   SILVER
@@ -104,6 +111,15 @@ enum PostType {
   CIRCULAR_STORY
 }
 
+enum UpcycleRequestStatus {
+  PENDING_REVIEW
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
 // ═══════════════════════════════════════════════
 // USER
 // ═══════════════════════════════════════════════
@@ -121,6 +137,11 @@ model User {
   role              UserRole        @default(BOTH)
   tier              UserTier        @default(BRONZE)
   isVerified        Boolean         @default(false)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  verificationType  String?
+  verificationDocUrl String?
+  idNumberLast4     String?
+  verificationSubmittedAt DateTime?
   isActive          Boolean         @default(true)
   styleVector       Float[]
   styleAesthetic    StyleAesthetic?
@@ -161,6 +182,13 @@ model User {
   peerReviewsReceived PeerReview[] @relation("PeerReviewsReceived")
   cartItems           CartItem[]
   conversations       ChatConversation[]
+  conversationsAsP1   Conversation[]  @relation("Participant1Conversations")
+  conversationsAsP2   Conversation[]  @relation("Participant2Conversations")
+  directMessagesSent  DirectMessage[] @relation("DirectMessagesSent")
+  directMessagesRecv  DirectMessage[] @relation("DirectMessagesReceived")
+  reportsSubmitted    UserReport[]    @relation("ReportsSubmitted")
+  reportsReceived     UserReport[]    @relation("ReportsReceived")
+  upcycleRequests     UpcycleRequest[]
 
   @@map("users")
 }
@@ -169,13 +197,20 @@ model Address {
   id        String   @id @default(uuid())
   userId    String
   label     String
+  fullName  String
+  phone     String
   line1     String
   line2     String?
+  landmark  String?
   city      String
-  country   String
-  postcode  String
+  state     String
+  country   String   @default("India")
+  pincode  String
   isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("addresses")
 }
 
@@ -244,6 +279,8 @@ model Garment {
   reviews          Review[]
   cartItems        CartItem[]
   conversations    ChatConversation[]
+  inquiries        Conversation[]
+  upcycleRequests  UpcycleRequest[]
 
   @@map("garments")
 }
@@ -649,6 +686,64 @@ model ChatMessage {
   @@map("chat_messages")
 }
 
+// ═══════════════════════════════════════════════
+// UPCYCLING
+// ═══════════════════════════════════════════════
+
+model UpcycleRequest {
+  id              String               @id @default(uuid())
+  userId          String
+  garmentId       String
+  suggestionIndex Int?
+  customIdea      String?
+  notes           String?
+  images          String[]
+  status          UpcycleRequestStatus @default(PENDING_REVIEW)
+  estimatedCost   Float?
+  estimatedDays   Int?
+  adminNotes      String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  user            User                 @relation(fields: [userId], references: [id])
+  garment         Garment              @relation(fields: [garmentId], references: [id])
+
+  @@map("upcycle_requests")
+}
+
+// ═══════════════════════════════════════════════
+// STUDIO — Tutorials & Transformations
+// ═══════════════════════════════════════════════
+
+model Tutorial {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  thumbnail   String?
+  duration    String?
+  difficulty  String?
+  tags        String[]
+  videoUrl    String?
+  type        String?
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tutorials")
+}
+
+model Transformation {
+  id              String   @id @default(uuid())
+  beforeImage     String?
+  afterImage      String?
+  description     String?
+  creatorUsername String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("transformations")
+}
+
 model MaterialImpact {
   id            String   @id @default(uuid())
   name          String   @unique
@@ -662,4 +757,69 @@ model MaterialImpact {
   updatedAt     DateTime @updatedAt
 
   @@map("material_impact_db")
+}
+
+// ═══════════════════════════════════════════════
+// DIRECT USER-TO-USER MESSAGING & CONVERSATIONS
+// ═══════════════════════════════════════════════
+
+model Conversation {
+  id              String          @id @default(uuid())
+  participant1Id  String
+  participant2Id  String
+  garmentId       String?
+  lastMessageText String?
+  lastMessageAt   DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  participant1    User            @relation("Participant1Conversations", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2    User            @relation("Participant2Conversations", fields: [participant2Id], references: [id], onDelete: Cascade)
+  garment         Garment?        @relation(fields: [garmentId], references: [id], onDelete: SetNull)
+  messages        DirectMessage[]
+
+  @@unique([participant1Id, participant2Id, garmentId])
+  @@index([participant1Id, lastMessageAt])
+  @@index([participant2Id, lastMessageAt])
+  @@map("conversations")
+}
+
+model DirectMessage {
+  id             String       @id @default(uuid())
+  conversationId String
+  senderId       String
+  recipientId    String
+  content        String
+  imageUrl       String?
+  isFlagged      Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("DirectMessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient      User         @relation("DirectMessagesReceived", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([recipientId, readAt])
+  @@map("direct_messages")
+}
+
+// ═══════════════════════════════════════════════
+// TRUST & SAFETY: USER REPORTS
+// ═══════════════════════════════════════════════
+
+model UserReport {
+  id             String   @id @default(uuid())
+  reporterId     String
+  reportedUserId String
+  reason         String
+  details        String?
+  status         String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt      DateTime @default(now())
+
+  reporter       User     @relation("ReportsSubmitted", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser   User     @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+
+  @@index([reportedUserId])
+  @@map("user_reports")
 }

@@ -14,6 +14,29 @@ const bucketName = process.env.AWS_S3_BUCKET_NAME;
 
 let cachedIp: string | null = null;
 
+// ── Presigned URL Cache ──────────────────────────────────────────────────────
+// S3 presigned URLs are valid for 1 hour; cache them for 50 minutes.
+const presignCache = new Map<string, { url: string; expiresAt: number }>();
+const PRESIGN_TTL_MS = 50 * 60 * 1000; // 50 minutes
+
+function getCachedPresign(key: string): string | null {
+  const entry = presignCache.get(key);
+  if (entry && Date.now() < entry.expiresAt) return entry.url;
+  if (entry) presignCache.delete(key);
+  return null;
+}
+
+function setCachedPresign(key: string, url: string): void {
+  presignCache.set(key, { url, expiresAt: Date.now() + PRESIGN_TTL_MS });
+  // Evict stale entries periodically (max 1000)
+  if (presignCache.size > 1000) {
+    const now = Date.now();
+    for (const [k, v] of presignCache) {
+      if (now >= v.expiresAt) presignCache.delete(k);
+    }
+  }
+}
+
 function getLocalIp(): string {
   if (cachedIp) return cachedIp;
 
@@ -147,13 +170,18 @@ export async function getDownloadUrl(originalUrlOrKey: string): Promise<string> 
       const urlParts = new URL(originalUrlOrKey);
       const key = urlParts.pathname.startsWith('/') ? urlParts.pathname.substring(1) : urlParts.pathname;
 
+      // Check cache first
+      const cached = getCachedPresign(key);
+      if (cached) return cached;
+
       const command = new GetObjectCommand({
         Bucket: bucketName,
         Key: key,
       });
 
-      // Valid for 1 hour
-      return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+      setCachedPresign(key, signedUrl);
+      return signedUrl;
     } catch (err: any) {
       logger.error('Failed to generate presigned URL', { error: err.message, url: originalUrlOrKey });
       return originalUrlOrKey; // Fallback to original
@@ -162,5 +190,3 @@ export async function getDownloadUrl(originalUrlOrKey: string): Promise<string> 
 
   return originalUrlOrKey;
 }
-
-export default uploadToS3;

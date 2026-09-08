@@ -38,6 +38,9 @@ export async function getPublicUserSummary(req: Request, res: Response): Promise
         avatar: true,
         bio: true,
         tier: true,
+        isVerified: true,
+        verificationStatus: true,
+        verificationType: true,
         createdAt: true,
       },
     });
@@ -45,20 +48,30 @@ export async function getPublicUserSummary(req: Request, res: Response): Promise
       res.status(404).json({ error: 'NOT_FOUND', message: 'User not found' });
       return;
     }
-    const agg = await db.peerReview.aggregate({
+    const allReviews = await db.peerReview.findMany({
       where: { sellerId: userId },
-      _avg: { rating: true },
-      _count: { _all: true },
+      select: { rating: true },
     });
-    const peerReviewCount = agg._count._all;
-    const peerReviewAvg = agg._avg.rating;
-    const trustedSeller = peerReviewCount >= 3 && (peerReviewAvg ?? 0) >= 4;
+    const peerReviewCount = allReviews.length;
+    const peerReviewAvg =
+      peerReviewCount > 0
+        ? allReviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / peerReviewCount
+        : null;
+    const ratingBreakdown = {
+      5: allReviews.filter((r: { rating: number }) => r.rating === 5).length,
+      4: allReviews.filter((r: { rating: number }) => r.rating === 4).length,
+      3: allReviews.filter((r: { rating: number }) => r.rating === 3).length,
+      2: allReviews.filter((r: { rating: number }) => r.rating === 2).length,
+      1: allReviews.filter((r: { rating: number }) => r.rating === 1).length,
+    };
+    const trustedSeller = (peerReviewCount >= 3 && (peerReviewAvg ?? 0) >= 4) || user.isVerified;
     const resolvedUser = await resolveUserMedia(user);
     res.json({
       data: {
         ...resolvedUser,
         peerReviewCount,
         peerReviewAvg,
+        ratingBreakdown,
         trustedSeller,
       },
     });
@@ -200,7 +213,7 @@ export async function getMyListings(req: Request, res: Response): Promise<void> 
         const garments = await db.garment.findMany({
             where: { 
                 sellerId: req.user.id,
-                lifecycleState: { in: ['LISTED', 'INTEREST', 'SELL_INTENT', 'PURCHASE_INTENT'] }
+                lifecycleState: { in: ['LISTED', 'INTEREST'] }
             },
             orderBy: { createdAt: 'desc' },
             select: {
@@ -227,7 +240,7 @@ export async function getMyWardrobe(req: Request, res: Response): Promise<void> 
         const garments = await db.garment.findMany({
             where: { 
                 sellerId: req.user.id,
-                lifecycleState: { in: ['OWNERSHIP', 'DECLINE'] }
+                lifecycleState: { in: ['OWNERSHIP', 'DECLINE', 'CIRCULATION', 'REUSE_UPCYCLE_RECYCLE', 'SELL_INTENT', 'PURCHASE_INTENT'] }
             },
             orderBy: { createdAt: 'desc' },
             select: {
@@ -288,18 +301,111 @@ export async function getUserReviews(req: Request, res: Response): Promise<void>
             orderBy: { createdAt: 'desc' },
             include: {
                 reviewer: {
-                    select: { id: true, displayName: true, avatar: true, username: true }
+                    select: { id: true, displayName: true, avatar: true, username: true, isVerified: true }
+                },
+                order: {
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        items: {
+                            take: 1,
+                            include: {
+                                garment: {
+                                    select: { id: true, title: true, brand: true, images: true }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         });
 
-        const resolvedReviews = await Promise.all(reviews.map(async (r: any) => ({
-            ...r,
-            reviewer: await resolveUserMedia(r.reviewer)
-        })));
+        const resolvedReviews = await Promise.all(reviews.map(async (r: any) => {
+            const reviewer = await resolveUserMedia(r.reviewer);
+            let garment = null;
+            if (r.order?.items?.[0]?.garment) {
+                garment = await resolveGarmentMedia(r.order.items[0].garment);
+            }
+            return {
+                id: r.id,
+                rating: r.rating,
+                comment: r.comment,
+                createdAt: r.createdAt,
+                reviewer,
+                garment,
+            };
+        }));
         res.json({ data: resolvedReviews });
     } catch (error) {
         logger.error('getUserReviews failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+// ── POST /users/me/verify-identity ──────────────────────────────────────────
+export async function submitIdentityVerification(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+        const { verificationType, idNumber, documentUrl } = req.body;
+        if (!verificationType || !idNumber) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'verificationType and idNumber are required' });
+            return;
+        }
+
+        const idNumberLast4 = String(idNumber).trim().slice(-4);
+        const updated = await db.user.update({
+            where: { id: req.user.id },
+            data: {
+                isVerified: true,
+                verificationStatus: 'VERIFIED',
+                verificationType,
+                idNumberLast4,
+                verificationDocUrl: documentUrl || null,
+                verificationSubmittedAt: new Date(),
+            },
+            select: {
+                id: true,
+                isVerified: true,
+                verificationStatus: true,
+                verificationType: true,
+                idNumberLast4: true,
+                verificationSubmittedAt: true,
+            },
+        });
+
+        res.json({
+            data: updated,
+            message: 'Identity successfully verified! Your verified luxury trust badge is now active.',
+        });
+    } catch (error) {
+        logger.error('submitIdentityVerification failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+// ── GET /users/me/verification-status ───────────────────────────────────────
+export async function getVerificationStatus(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+        const user = await db.user.findUnique({
+            where: { id: req.user.id },
+            select: {
+                isVerified: true,
+                verificationStatus: true,
+                verificationType: true,
+                idNumberLast4: true,
+                verificationSubmittedAt: true,
+            },
+        });
+        res.json({ data: user });
+    } catch (error) {
+        logger.error('getVerificationStatus failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
     }
 }

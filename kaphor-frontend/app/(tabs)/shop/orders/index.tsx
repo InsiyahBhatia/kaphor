@@ -5,12 +5,12 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { DossierLoading } from '../../../../src/components/common/DossierLoading';
 import { colors } from '../../../../src/theme';
 import { orderService, TransactionOrder } from '../../../../src/services/orderService';
 import { useAuth } from '../../../../src/context/AuthContext';
@@ -100,7 +100,7 @@ export default function OrdersInboxScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.crimson} />
+        <DossierLoading variant="order" compact />
       </View>
     );
   }

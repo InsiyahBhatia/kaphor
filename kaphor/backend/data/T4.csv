@@ -1,0 +1,51 @@
+fiber_id,fiber_name,garment_type_example,co2_per_garment_kg,co2_raw_material_kg,co2_processing_kg,co2_source,water_per_garment_litres,water_source,circulation_multiplier_base,carbon_saving_per_cycle_kg,water_saving_per_cycle_l,trees_equivalent_per_cycle,carbon_saving_score,water_saving_score,max_co2_benchmark_kg,max_water_benchmark_l,source_confidence,source_type
+f31b9e84-e4dc-5055-a071-11804eb72fa6,Mulberry Silk,silk saree,8.0,3.5,4.5,Ecoinvent,1900.0,Ecoinvent,2.5,20.0,4750.0,0.9091,0.5,0.625,40.0,7600.0,high,ecoinvent
+41bb3721-231d-5de8-a295-379eb7dc3796,Banarasi Silk,banarasi saree,9.5,3.5,6.0,Estimated,2100.0,Estimated,2.4,22.8,5040.0,1.0364,0.57,0.6632,40.0,7600.0,medium,estimated
+699051ee-b5f7-536d-af21-a4a5121e7981,Kanjivaram Silk,kanjivaram saree,9.8,3.8,6.0,Estimated,2150.0,Estimated,2.5,24.5,5375.0,1.1136,0.6125,0.7072,40.0,7600.0,medium,estimated
+724b0a8b-4fa3-5b89-9954-c52cd6574e5d,Tussar Silk,silk kurta,7.2,3.0,4.2,Ecoinvent,1650.0,Ecoinvent,2.2,15.84,3630.0,0.72,0.396,0.4776,40.0,7600.0,medium,ecoinvent
+a5d7bb09-c41c-58fa-b514-0610baa755c0,Muga Silk,muga mekhela chador,6.8,2.8,4.0,Published LCA (Assam Agricultural University),1400.0,Published LCA (Assam Agricultural University),2.8,19.04,3920.0,0.8655,0.476,0.5158,40.0,7600.0,high,academic_lca
+bba545ab-4aac-5527-a988-017319716e77,Eri Silk,eri shawl,6.0,2.5,3.5,Published LCA,1200.0,Published LCA,2.4,14.4,2880.0,0.6545,0.36,0.3789,40.0,7600.0,high,academic_lca
+98be2d0d-f7c0-5eb6-bfe9-b62c350b19ce,Standard Cotton,cotton t-shirt,5.5,2.0,3.5,Ecoinvent,2700.0,Ecoinvent,1.8,9.9,4860.0,0.45,0.2475,0.6395,40.0,7600.0,high,ecoinvent
+33a98b26-0091-54d8-9d2c-dc191064c136,Khadi,khadi kurta,3.2,1.2,2.0,Published LCA,1200.0,Published LCA,2.2,7.04,2640.0,0.32,0.176,0.3474,40.0,7600.0,high,academic_lca
+b3b3d2ae-47c3-5041-9f35-4a590ab157cf,Organic Cotton,organic cotton kurta,4.8,1.8,3.0,Ecoinvent,2200.0,Ecoinvent,2.0,9.6,4400.0,0.4364,0.24,0.5789,40.0,7600.0,high,ecoinvent
+ec2cd436-c66d-5fd4-a5a6-2d04e217a27e,Kala Cotton,kala cotton kurta,2.5,0.8,1.7,Published LCA (Khamir),800.0,Published LCA (Khamir),2.4,6.0,1920.0,0.2727,0.15,0.2526,40.0,7600.0,high,academic_lca
+bd6123a4-903d-5536-8780-77946a378418,Chanderi,chanderi blouse,4.8,1.8,3.0,Estimated,1450.0,Estimated,1.8,8.64,2610.0,0.3927,0.216,0.3434,40.0,7600.0,medium,estimated
+148a6a88-d0d8-54aa-82a8-f7b148f393fc,Maheshwari,maheshwari saree,5.2,2.0,3.2,Estimated,1550.0,Estimated,1.8,9.36,2790.0,0.4255,0.234,0.3671,40.0,7600.0,medium,estimated
+1b0dcecb-3108-58d8-aa83-a5e99b2107f0,Linen,linen shirt,4.5,1.5,3.0,Ecoinvent,800.0,Ecoinvent,2.2,9.9,1760.0,0.45,0.2475,0.2316,40.0,7600.0,high,ecoinvent
+487ffac5-39ac-532e-a863-178fa77ad176,Jute,jute bag,1.8,0.6,1.2,Ecoinvent,450.0,Ecoinvent,2.0,3.6,900.0,0.1636,0.09,0.1184,40.0,7600.0,high,ecoinvent
+3a045d4d-9d68-502e-b825-c0b2f9ec2b0e,Hemp,hemp shirt,3.1,1.0,2.1,Ecoinvent,360.0,Ecoinvent,2.5,7.75,900.0,0.3523,0.1938,0.1184,40.0,7600.0,high,ecoinvent
+833acf7f-182b-55eb-8c09-193b17ddecef,Nettle,nettle waistcoat,2.8,0.8,2.0,Published LCA,290.0,Published LCA,2.4,6.72,696.0,0.3055,0.168,0.0916,40.0,7600.0,high,academic_lca
+097ce57e-6b38-577c-8bc2-0d88affde544,Banana Fiber,banana fiber saree,2.2,0.7,1.5,Published LCA,150.0,Published LCA,1.8,3.96,270.0,0.18,0.099,0.0355,40.0,7600.0,high,academic_lca
+836e202d-8c2d-5352-a172-c6e59a8130bc,Pineapple Fiber,pina tunic,2.4,0.8,1.6,Published LCA,180.0,Published LCA,2.0,4.8,360.0,0.2182,0.12,0.0474,40.0,7600.0,high,academic_lca
+39550740-9ef9-5c85-84d2-9a5cd7ac1657,Coir,coir sandals,0.9,0.3,0.6,Ecoinvent,50.0,Ecoinvent,1.5,1.35,75.0,0.0614,0.0338,0.0099,40.0,7600.0,high,ecoinvent
+b8e975c0-8ce4-51d1-8e45-196acfdbc057,Viscose,viscose kurta,5.5,2.2,3.3,Ecoinvent,450.0,Ecoinvent,1.4,7.7,630.0,0.35,0.1925,0.0829,40.0,7600.0,high,ecoinvent
+da5b9b93-8f5c-5fb3-8232-0cf4c3a7f205,Modal,modal kurti,4.6,1.6,3.0,Carbonfact,320.0,Carbonfact,1.8,8.28,576.0,0.3764,0.207,0.0758,40.0,7600.0,high,carbonfact
+46fd02eb-2ec5-560e-8ef6-9319597b23d9,Lyocell,tencel trousers,3.8,1.3,2.5,Ecoinvent,250.0,Ecoinvent,2.0,7.6,500.0,0.3455,0.19,0.0658,40.0,7600.0,high,ecoinvent
+9e0ff480-7954-5442-ad3c-3f9368b40055,Cupro,cupro blouse,4.2,1.4,2.8,Published LCA (Asahi Kasei),650.0,Published LCA (Asahi Kasei),1.9,7.98,1235.0,0.3627,0.1995,0.1625,40.0,7600.0,high,academic_lca
+132e722d-eec8-5edd-8ef3-aaa225a5115a,Polyester,polyester kurta,5.5,2.0,3.5,Ecoinvent,90.0,Ecoinvent,1.5,8.25,135.0,0.375,0.2062,0.0178,40.0,7600.0,high,ecoinvent
+4c7032bf-55f4-5cb3-bf6c-4767aab98387,Recycled Polyester,recycled polyester jacket,2.2,0.8,1.4,Ecoinvent,45.0,Ecoinvent,1.8,3.96,81.0,0.18,0.099,0.0107,40.0,7600.0,high,ecoinvent
+8f3112b2-bda7-5612-9110-9782d9b1e187,Nylon,nylon windbreaker,7.3,2.5,4.8,Ecoinvent,150.0,Ecoinvent,1.6,11.68,240.0,0.5309,0.292,0.0316,40.0,7600.0,high,ecoinvent
+e6d0fdb5-6cb8-5105-91a1-c714633c8ab1,Recycled Nylon,recycled nylon leggings,3.1,1.0,2.1,Ecoinvent,60.0,Ecoinvent,1.8,5.58,108.0,0.2536,0.1395,0.0142,40.0,7600.0,high,ecoinvent
+29d4c99e-c7d5-5d3e-82b1-383133ec6f35,Acrylic,acrylic sweater,9.8,3.2,6.6,Ecoinvent,120.0,Ecoinvent,1.3,12.74,156.0,0.5791,0.3185,0.0205,40.0,7600.0,high,ecoinvent
+ee951b3a-177f-5caa-8051-222c35ebb7ee,Spandex,leggings,6.2,2.2,4.0,Carbonfact,180.0,Carbonfact,1.4,8.68,252.0,0.3945,0.217,0.0332,40.0,7600.0,high,carbonfact
+20624a1a-49ac-5dd4-87b2-ce6d4924df51,Wool,wool sweater,35.0,20.0,15.0,Ecoinvent,2800.0,Ecoinvent,2.5,87.5,7000.0,3.9773,1.0,0.9211,40.0,7600.0,high,ecoinvent
+234e89e1-0e2e-5dca-9ec9-9337d17f4fec,Cashmere,pashmina shawl,40.0,25.0,15.0,Ecoinvent,3100.0,Ecoinvent,2.8,112.0,8680.0,5.0909,1.0,1.0,40.0,7600.0,high,ecoinvent
+b634e888-6579-5a4b-b77d-bc3e5113a663,Hosiery Cotton,hosiery t-shirt,5.5,2.0,3.5,Ecoinvent,2700.0,Ecoinvent,1.7,9.35,4590.0,0.425,0.2337,0.6039,40.0,7600.0,high,ecoinvent
+7115c1f7-5cf3-5215-a66a-2b4d128e04c2,Cotton-Polyester Blend,school uniform shirt,5.5,2.0,3.5,Estimated,1390.0,Estimated,1.8,9.9,2502.0,0.45,0.2475,0.3292,40.0,7600.0,medium,estimated
+1e799e89-8fd0-5277-951c-5049785d5c0b,Cotton-Silk Blend,cotton-silk saree,5.0,2.0,3.0,Estimated,1500.0,Estimated,1.8,9.0,2700.0,0.4091,0.225,0.3553,40.0,7600.0,medium,estimated
+5f97ab32-cc58-58c7-8602-f1f13ace8a4a,Silk-Metallic Blend,brocade sherwani,9.5,3.5,6.0,Estimated,2100.0,Estimated,2.4,22.8,5040.0,1.0364,0.57,0.6632,40.0,7600.0,medium,estimated
+803294ed-fbf1-5e94-a8c6-37de3c9e1082,Kota Doria,kota doria saree,3.5,1.2,2.3,Published LCA,1100.0,Published LCA,1.6,5.6,1760.0,0.2545,0.14,0.2316,40.0,7600.0,high,academic_lca
+4ff8cdc1-5097-563e-a7c3-e1f00627b228,Jamdani,jamdani saree,3.0,1.0,2.0,Published LCA,950.0,Published LCA,2.0,6.0,1900.0,0.2727,0.15,0.25,40.0,7600.0,high,academic_lca
+dfa15710-debf-588a-a2e4-0e4d5dbf2427,Mulmul,mulmul kurta,2.8,0.9,1.9,Published LCA,1800.0,Published LCA,1.8,5.04,3240.0,0.2291,0.126,0.4263,40.0,7600.0,high,academic_lca
+28ab001c-5476-53ee-ad75-16f260fa04a1,Ikat,ikat kurta,4.2,1.5,2.7,Published LCA,2100.0,Published LCA,2.2,9.24,4620.0,0.42,0.231,0.6079,40.0,7600.0,high,academic_lca
+9fd0f35e-4473-5042-9eb8-069a6ae25c94,Chikankari,chikankari kurta,4.5,1.5,3.0,Published LCA,2150.0,Published LCA,2.0,9.0,4300.0,0.4091,0.225,0.5658,40.0,7600.0,high,academic_lca
+0046467b-7edf-5355-9143-4023b78df708,Recycled Cotton,recycled cotton tote,1.2,0.4,0.8,Ecoinvent,150.0,Ecoinvent,1.6,1.92,240.0,0.0873,0.048,0.0316,40.0,7600.0,high,ecoinvent
+0281bf83-1d88-5a8f-a016-a951554beeeb,Aloe Vera Fiber,aloe vera tunic,RESEARCH_REQUIRED,RESEARCH_REQUIRED,RESEARCH_REQUIRED,RESEARCH_REQUIRED,RESEARCH_REQUIRED,RESEARCH_REQUIRED,1.5,RESEARCH_REQUIRED,RESEARCH_REQUIRED,RESEARCH_REQUIRED,RESEARCH_REQUIRED,RESEARCH_REQUIRED,40.0,7600.0,estimated,estimated
+99e09969-030d-58b1-9844-7507297b914f,Georgette,georgette saree,5.8,1.8,4.0,Estimated,95.0,Estimated,1.8,10.44,171.0,0.4745,0.261,0.0225,40.0,7600.0,medium,estimated
+55908724-d0c7-560f-9b4c-19b0a6113b88,Chiffon,chiffon dupatta,4.8,1.5,3.3,Estimated,80.0,Estimated,1.6,7.68,128.0,0.3491,0.192,0.0168,40.0,7600.0,medium,estimated
+c6c9ed1f-e58c-5f10-a17a-c0ca89f35e85,Crepe,crepe kurti,5.4,1.8,3.6,Estimated,90.0,Estimated,1.7,9.18,153.0,0.4173,0.2295,0.0201,40.0,7600.0,medium,estimated
+0fe09c72-1d82-565e-a20e-e0e359c832d9,Satin,satin nightwear,5.6,1.9,3.7,Estimated,92.0,Estimated,1.6,8.96,147.2,0.4073,0.224,0.0194,40.0,7600.0,medium,estimated
+9eb7640c-2e0c-576d-89fa-7f702d5991dd,Organza,organza saree,5.2,1.8,3.4,Estimated,88.0,Estimated,1.5,7.8,132.0,0.3545,0.195,0.0174,40.0,7600.0,medium,estimated
+f4b994be-b355-5555-95ff-6fa39cfbc50d,Net / Mesh,net dupatta,3.5,1.2,2.3,Estimated,65.0,Estimated,1.4,4.9,91.0,0.2227,0.1225,0.012,40.0,7600.0,medium,estimated
+860a9024-84e5-5f73-9cd6-0e76eb2232f3,Fleece,fleece jacket,8.5,2.5,6.0,Ecoinvent,110.0,Ecoinvent,1.8,15.3,198.0,0.6955,0.3825,0.0261,40.0,7600.0,high,ecoinvent
+05e06caa-6fea-5a72-827f-a75bb66cfd3f,Velvet,velvet blouse,7.8,2.8,5.0,Estimated,105.0,Estimated,1.8,14.04,189.0,0.6382,0.351,0.0249,40.0,7600.0,medium,estimated

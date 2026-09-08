@@ -10,6 +10,8 @@ import { ThemeProvider } from '../src/context/ThemeContext';
 import { AuthProvider } from '../src/context/AuthContext';
 import { StatusBar } from 'expo-status-bar';
 import { Toast } from '../src/components/common/Toast';
+import { NotificationToast } from '../src/components/common/NotificationToast';
+import { LoadingScreen } from '../src/components/common/LoadingScreen';
 import { useAuth } from '../src/context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
 
@@ -64,7 +66,7 @@ export default function RootLayout() {
   }, [loaded, error]);
 
   if (!loaded && !error) {
-    return null;
+    return <LoadingScreen />;
   }
 
   return (
@@ -72,6 +74,7 @@ export default function RootLayout() {
       <ThemeProvider>
         <ProtectedRoute>
           <StatusBar style="dark" />
+          <NotificationToast />
           <Toast />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" options={{ animation: 'fade' }} />

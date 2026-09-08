@@ -24,32 +24,13 @@ class MemoryStore {
   async del(key: string): Promise<void> {
     this.data.delete(key);
   }
-
-  async exists(key: string): Promise<number> {
-    const val = await this.get(key);
-    return val !== null ? 1 : 0;
-  }
-
-  async incr(key: string): Promise<number> {
-    const val = await this.get(key);
-    const num = val ? parseInt(val, 10) + 1 : 1;
-    await this.set(key, num.toString());
-    return num;
-  }
-
-  async expire(key: string, seconds: number): Promise<void> {
-    const item = this.data.get(key);
-    if (item) {
-      item.expires = Date.now() + seconds * 1000;
-    }
-  }
 }
 
 const memoryStore = new MemoryStore();
 let client: Redis | null = null;
 let isRedisAvailable = false;
 
-export function getRedisClient(): Redis | null {
+function getRedisClient(): Redis | null {
   if (!client && process.env.NODE_ENV !== 'test') {
     client = new Redis(REDIS_URL, {
       maxRetriesPerRequest: 1,
@@ -105,45 +86,3 @@ export async function redisDel(key: string): Promise<void> {
   }
 }
 
-export async function redisExists(key: string): Promise<boolean> {
-  if (!isRedisAvailable) return (await memoryStore.exists(key)) === 1;
-  try {
-    const n = await getRedisClient()!.exists(key);
-    return n === 1;
-  } catch {
-    return (await memoryStore.exists(key)) === 1;
-  }
-}
-
-export async function redisIncr(key: string): Promise<number> {
-  if (!isRedisAvailable) return memoryStore.incr(key);
-  try {
-    return await getRedisClient()!.incr(key);
-  } catch {
-    return memoryStore.incr(key);
-  }
-}
-
-export async function redisExpire(key: string, seconds: number): Promise<void> {
-  if (!isRedisAvailable) return memoryStore.expire(key, seconds);
-  try {
-    await getRedisClient()!.expire(key, seconds);
-  } catch {
-    return memoryStore.expire(key, seconds);
-  }
-}
-
-export async function closeRedis(): Promise<void> {
-  if (client) {
-    try {
-      await client.quit();
-    } catch {
-      // ignore
-    }
-    client = null;
-    isRedisAvailable = false;
-    logger.info('Redis connection closed');
-  }
-}
-
-export default getRedisClient;

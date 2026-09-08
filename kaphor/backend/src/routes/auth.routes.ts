@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { 
-  validateRequeset, 
-  commonValidations 
-} from '../middleware/validation.middleware';
+import { validate } from '../middleware/validate';
+import {
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '../schemas';
 import {
   register,
   login,
@@ -18,47 +21,18 @@ import {
 
 export const authRouter = Router();
 
-authRouter.post(
-  '/register',
-  [
-    commonValidations.email(),
-    commonValidations.password(),
-    commonValidations.username(),
-    commonValidations.displayName(),
-  ],
-  validateRequeset,
-  register
-);
+authRouter.post('/register', validate({ body: registerSchema }), register);
 
-authRouter.post(
-  '/login',
-  [
-    commonValidations.email(),
-  ],
-  validateRequeset,
-  login
-);
+authRouter.post('/login', validate({ body: loginSchema }), login);
 
 authRouter.post('/google', googleLogin);
 
 authRouter.post('/logout', logout);
 authRouter.post('/refresh', refreshToken);
 
-authRouter.post(
-  '/forgot-password',
-  [commonValidations.email()],
-  validateRequeset,
-  forgotPassword
-);
+authRouter.post('/forgot-password', validate({ body: forgotPasswordSchema }), forgotPassword);
 
-authRouter.post(
-  '/reset-password',
-  [
-    commonValidations.password(),
-  ],
-  validateRequeset,
-  resetPassword
-);
+authRouter.post('/reset-password', validate({ body: resetPasswordSchema }), resetPassword);
 
 authRouter.get('/verify-email/:token', verifyEmail);
 authRouter.get('/me', authenticate, getMe);

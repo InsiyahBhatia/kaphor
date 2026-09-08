@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import { KaphorImage } from '../../src/components/KaphorImage';
 import { useAuth } from '../../src/context/AuthContext';
 import { useRouter, Stack } from 'expo-router';
@@ -13,6 +13,7 @@ import { aiService } from '../../src/services/aiService';
 import { PlayingCard } from '../../src/components/PlayingCard';
 
 import { Header } from '../../src/components/common/Header';
+import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -22,6 +23,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [savedAssets, setSavedAssets] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -58,6 +60,11 @@ export default function ProfileScreen() {
     fetchProfile();
     fetchSavedAssets();
     fetchStyleProfile();
+    api.get('/notifications?limit=30').then((res) => {
+      const list = res.data?.data || [];
+      const unread = list.filter((n: any) => !n.isRead).length;
+      setUnreadNotifs(unread);
+    }).catch(() => {});
   }, [fetchProfile, fetchSavedAssets, fetchStyleProfile]);
 
   const handleLogout = async () => {
@@ -71,8 +78,8 @@ export default function ProfileScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <Header 
-        title="PROFILE" 
+      <Header
+        title="PROFILE"
         rightElement={
           <TouchableOpacity onPress={handleLogout} style={{ padding: 4 }}>
             <Ionicons name="log-out-outline" size={24} color={colors.red} />
@@ -94,7 +101,10 @@ export default function ProfileScreen() {
               <View style={styles.roleBadge}><Text style={styles.roleBadgeText}>{role || 'MEMBER'}</Text></View>
             </View>
             <View style={styles.identityText}>
-              <Text style={styles.displayName}>{displayName}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.displayName}>{displayName}</Text>
+                {Boolean(profile?.isVerified) && <VerifiedBadge size="compact" />}
+              </View>
               <Text style={styles.emailText}>{user?.email || profile?.email}</Text>
               <View style={styles.joinRow}>
                 <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
@@ -110,16 +120,16 @@ export default function ProfileScreen() {
             <Text style={styles.aiMatchHeader}>SYSTEM SAYS: → {styleProfile?.styleAesthetic || 'AI MATCH'}</Text>
             <View style={styles.liveIndicator} />
           </View>
-          
+
           <Text style={styles.aiMatchBody}>
             {styleProfile?.summary || (
               <>
-                Your style score is being calculated. 
+                Your style score is being calculated.
                 3 items on the deck match your hand right now.
               </>
             )}
           </Text>
-          
+
           {styleProfile?.dnaTags && (
             <View style={styles.dnaGrid}>
               {styleProfile.dnaTags.map((tag: string) => (
@@ -161,8 +171,8 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          <TouchableOpacity 
-            style={styles.ctaButton} 
+          <TouchableOpacity
+            style={styles.ctaButton}
             onPress={() => styleProfile ? router.push('/(tabs)/shop') : router.push('/(auth)/style-quiz')}
           >
             <Text style={styles.ctaButtonText}>
@@ -177,7 +187,7 @@ export default function ProfileScreen() {
             <Text style={styles.impactTitle}>ENVIRONMENTAL DIVIDENDS</Text>
             <Ionicons name="leaf" size={16} color={colors.charcoal} />
           </View>
-          
+
           <View style={styles.impactGrid}>
             <View style={styles.impactStat}>
               <Text style={styles.statValue}>{(profile?.impactRecord?.carbonSavedKg || 0).toFixed(1)}<Text style={styles.statUnit}>KG</Text></Text>
@@ -206,7 +216,7 @@ export default function ProfileScreen() {
         {/* SYSTEM OPERATIONS (Existing Menus) */}
         <View style={styles.menuContainer}>
           <Text style={styles.menuSectionTitle}>COLLECTIONS</Text>
-          
+
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/saved')}>
             <Ionicons name="heart-sharp" size={20} color={colors.red} style={{ marginRight: 12 }} />
             <Text style={styles.menuText}>THE VAULT // SAVED ITEMS</Text>
@@ -238,13 +248,21 @@ export default function ProfileScreen() {
 
           {[
             { icon: 'notifications', title: 'NOTIFICATIONS', route: '/(tabs)/notifications' },
+            { icon: 'shield-checkmark', title: 'IDENTITY VERIFICATION', route: '/profile/verify-identity' },
+            { icon: 'chatbubbles', title: 'MESSAGES & INBOX', route: '/(tabs)/messages' },
             { icon: 'star', title: 'MY REVIEWS', route: '/reviews' },
-            { icon: 'chatbubbles', title: 'COMMUNICATIONS', route: '/(tabs)/shop/orders' },
+            { icon: 'wallet', title: 'PAYOUT ACCOUNTS', route: '/profile/payout' },
+            { icon: 'location', title: 'ADDRESS BOOK', route: '/profile/addresses' },
             { icon: 'settings', title: 'ACCOUNT SETTINGS', route: '/settings' },
           ].map((item, idx) => (
             <TouchableOpacity key={idx} style={styles.menuItem} onPress={() => router.push(item.route as any)}>
               <Ionicons name={item.icon as any} size={20} color={colors.charcoal} style={{ marginRight: 12 }} />
               <Text style={styles.menuText}>{item.title}</Text>
+              {item.title === 'NOTIFICATIONS' && unreadNotifs > 0 && (
+                <View style={[styles.countBadge, { backgroundColor: '#C41E3A' }]}>
+                  <Text style={[styles.countBadgeText, { color: colors.cream }]}>{unreadNotifs}</Text>
+                </View>
+              )}
               <Ionicons name="chevron-forward" size={16} color={colors.charcoal} />
             </TouchableOpacity>
           ))}
@@ -794,4 +812,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

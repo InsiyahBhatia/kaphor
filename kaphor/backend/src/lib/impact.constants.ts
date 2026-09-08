@@ -18,7 +18,7 @@ export const IMPACT_CONSTANTS = {
     TREE_CO2_EQ_KG: 9 // 1 French Oak tree equivalent
 };
 
-export const TIERS = [
+const TIERS = [
     { name: 'BRONZE', minKg: 0 },
     { name: 'SILVER', minKg: 10 },
     { name: 'GOLD', minKg: 30 },

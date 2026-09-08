@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../../src/services/api';
+import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -34,6 +35,20 @@ export default function StudioScreen() {
 
       <TouchableOpacity
         style={styles.bespokeCard}
+        onPress={() => router.push('/(tabs)/studio/repair-refresh')}
+      >
+        <View style={[styles.bespokeIconBox, { backgroundColor: colors.forest }]}>
+          <Ionicons name="construct-sharp" size={24} color={colors.white} />
+        </View>
+        <View style={{ flex: 1, marginLeft: 16 }}>
+          <Text style={styles.bespokeTitle}>REPAIR & REFRESH</Text>
+          <Text style={styles.bespokeSubtitle}>AI-powered repair guides, tutorials & upcycling ideas</Text>
+        </View>
+        <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.bespokeCard, { marginTop: 0 }]}
         onPress={() => router.push('/(tabs)/studio/bespoke')}
       >
         <View style={styles.bespokeIconBox}>
@@ -52,8 +67,7 @@ export default function StudioScreen() {
 
       {loading ? (
         <View style={styles.loader}>
-          <ActivityIndicator size="large" color={colors.red} />
-          <Text style={styles.loadingText}>DOWNLOADING RECORDS...</Text>
+          <DossierLoading variant="studio" compact />
         </View>
       ) : tutorials.length === 0 ? (
         <View style={styles.emptyState}>

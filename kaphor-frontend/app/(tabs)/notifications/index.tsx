@@ -1,16 +1,51 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  AppState,
+  AppStateStatus,
+  Alert,
+} from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { notificationService } from '../../../src/services/notificationService';
-import { colors } from '../../../src/theme';
+import { cachedGet, fetchFresh } from '../../../src/services/api';
+import { getSocket, connectSocket } from '../../../src/services/socket';
+import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { colors, typography } from '../../../src/theme';
+
+type NotificationCategory = 'ALL' | 'MESSAGES' | 'SWAPS' | 'ORDERS' | 'SYSTEM';
+
+function formatRelativeTime(dateString: string): string {
+  try {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+
+    if (diffSeconds < 60) return 'JUST NOW';
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}M AGO`;
+    if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}H AGO`;
+    if (diffSeconds < 172800) return 'YESTERDAY';
+    return past.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }).toUpperCase();
+  } catch {
+    return 'RECENT';
+  }
+}
 
 export default function NotificationsScreen() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState<NotificationCategory>('ALL');
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (forceFresh = false) => {
     try {
-      const data = await notificationService.getNotifications();
+      const data = forceFresh
+        ? await fetchFresh('/notifications')
+        : await cachedGet('/notifications');
       setNotifications(Array.isArray(data) ? data : []);
     } catch {
       setNotifications([]);
@@ -21,6 +56,34 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Real-time Socket.IO listener
+  useEffect(() => {
+    const socket = connectSocket() || getSocket();
+    if (!socket) return;
+
+    const handleNewNotification = (notif: any) => {
+      if (notif && notif.id) {
+        setNotifications((prev) => [notif, ...prev.filter((item) => item.id !== notif.id)]);
+      }
+    };
+
+    socket.on('new_notification', handleNewNotification);
+
+    return () => {
+      socket.off('new_notification', handleNewNotification);
+    };
+  }, []);
+
+  // Foreground refresh
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (next === 'active') {
+        fetchNotifications(true);
+      }
+    });
+    return () => sub.remove();
   }, [fetchNotifications]);
 
   const handleMarkRead = async (id: string) => {
@@ -39,112 +102,436 @@ export default function NotificationsScreen() {
     } catch {}
   };
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'SWAP_REQUEST': return 'swap-horizontal';
-      case 'ORDER_PAID': return 'wallet';
-      case 'ORDER_SHIPPED': return 'airplane';
-      case 'ORDER_DELIVERED': return 'briefcase';
-      case 'PEER_REVIEW': return 'star';
-      case 'LIKE': return 'heart';
-      case 'COMMENT': return 'chatbubble';
-      case 'FOLLOW': return 'person-add';
-      default: return 'notifications';
+  const handleDelete = async (id: string) => {
+    try {
+      await notificationService.deleteNotification(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch {}
+  };
+
+  const handleClearAll = () => {
+    Alert.alert(
+      'Clear All Notifications',
+      'Are you sure you want to dismiss all notifications?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await notificationService.clearAll();
+              setNotifications([]);
+            } catch {}
+          },
+        },
+      ]
+    );
+  };
+
+  const handlePressNotification = async (n: any) => {
+    handleMarkRead(n.id);
+    const type = n.type || '';
+    const data = n.data || {};
+
+    if (type === 'DIRECT_MESSAGE' || type === 'NEW_MESSAGE') {
+      if (data.conversationId) {
+        router.push(`/messages/${data.conversationId}` as any);
+        return;
+      }
+      router.push('/(tabs)/messages' as any);
+      return;
+    }
+
+    if (type.startsWith('SWAP_')) {
+      if (data.swapId) {
+        if (type === 'SWAP_SHIPPED' || type === 'SWAP_DELIVERED') {
+          router.push(`/(tabs)/swap/shipping?swapId=${data.swapId}` as any);
+        } else if (type === 'SWAP_AGREEMENT') {
+          router.push(`/(tabs)/swap/agreement?swapId=${data.swapId}` as any);
+        } else {
+          router.push(`/(tabs)/swap/details?swapId=${data.swapId}` as any);
+        }
+        return;
+      }
+      router.push('/(tabs)/swap' as any);
+      return;
+    }
+
+    if (type.startsWith('ORDER_')) {
+      if (data.orderId) {
+        router.push(`/(tabs)/shop/orders/${data.orderId}` as any);
+        return;
+      }
+      router.push('/(tabs)/shop/orders' as any);
+      return;
+    }
+
+    if (type.startsWith('RENTAL_')) {
+      if (data.rentalId) {
+        router.push(`/rental/${data.rentalId}` as any);
+        return;
+      }
+      router.push('/(tabs)/rental' as any);
+      return;
+    }
+
+    if (type === 'PEER_REVIEW') {
+      router.push('/reviews' as any);
+      return;
     }
   };
 
-  const activeColor = colors.crimson;
-  const inactiveColor = colors.textMuted;
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'DIRECT_MESSAGE':
+      case 'NEW_MESSAGE':
+        return 'chatbubble-ellipses';
+      case 'SWAP_REQUEST':
+      case 'SWAP_ACCEPTED':
+      case 'SWAP_SHIPPED':
+      case 'SWAP_COMPLETED':
+        return 'swap-horizontal';
+      case 'ORDER_PAID':
+      case 'ORDER_SHIPPED':
+      case 'ORDER_DELIVERED':
+        return 'bag-check';
+      case 'RENTAL_RESERVED':
+      case 'RENTAL_ACTIVE':
+      case 'RENTAL_REMINDER':
+        return 'calendar';
+      case 'PEER_REVIEW':
+        return 'star';
+      default:
+        return 'notifications';
+    }
+  };
+
+  // Category Filtering
+  const filteredNotifications = notifications.filter((n) => {
+    if (category === 'ALL') return true;
+    const t = n.type || '';
+    if (category === 'MESSAGES') return t === 'DIRECT_MESSAGE' || t === 'NEW_MESSAGE';
+    if (category === 'SWAPS') return t.startsWith('SWAP_');
+    if (category === 'ORDERS') return t.startsWith('ORDER_') || t.startsWith('RENTAL_');
+    if (category === 'SYSTEM') return !t.startsWith('SWAP_') && !t.startsWith('ORDER_') && !t.startsWith('RENTAL_') && t !== 'DIRECT_MESSAGE';
+    return true;
+  });
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.subtitle}>Stay updated on your activity</Text>
-        </View>
-        {notifications.some((n) => !n.isRead) && (
-          <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllBtn}>
-            <Text style={styles.markAllText}>MARK ALL READ</Text>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
-        )}
-      </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>NOTIFICATIONS</Text>
+            <Text style={styles.subtitle}>
+              {unreadCount > 0 ? `${unreadCount} UNREAD ALERTS` : 'ALL ALERTS CLEAR'}
+            </Text>
+          </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color={colors.crimson} style={{ marginTop: 60 }} />
-      ) : notifications.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="notifications-off-outline" size={48} color={colors.border} />
-          <Text style={styles.emptyText}>NO NOTIFICATIONS YET</Text>
+          <View style={styles.headerActions}>
+            {unreadCount > 0 && (
+              <TouchableOpacity onPress={handleMarkAllRead} style={styles.actionBtn}>
+                <Ionicons name="checkmark-done" size={16} color={colors.charcoal} />
+              </TouchableOpacity>
+            )}
+            {notifications.length > 0 && (
+              <TouchableOpacity onPress={handleClearAll} style={styles.actionBtn}>
+                <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      ) : (
-        <View style={styles.list}>
-          {notifications.map((n) => (
+
+        {/* Category Filters */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryRow}
+        >
+          {(['ALL', 'MESSAGES', 'SWAPS', 'ORDERS', 'SYSTEM'] as NotificationCategory[]).map((cat) => (
             <TouchableOpacity
-              key={n.id}
-              style={[styles.card, !n.isRead && styles.cardUnread]}
-              onPress={() => handleMarkRead(n.id)}
+              key={cat}
+              style={[styles.categoryChip, category === cat && styles.categoryChipActive]}
+              onPress={() => setCategory(cat)}
             >
-              <View style={[styles.iconCircle, !n.isRead && styles.iconCircleUnread]}>
-                <Ionicons name={getIcon(n.type) as any} size={20} color={n.isRead ? inactiveColor : activeColor} />
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={[styles.cardTitle, !n.isRead && styles.cardTitleUnread]} numberOfLines={1}>
-                  {n.title || n.type}
-                </Text>
-                <Text style={styles.cardBody} numberOfLines={2}>
-                  {n.body}
-                </Text>
-                <Text style={styles.cardTime}>
-                  {new Date(n.createdAt).toLocaleDateString()}
-                </Text>
-              </View>
-              {!n.isRead && <View style={styles.unreadDot} />}
+              <Text style={[styles.categoryChipText, category === cat && styles.categoryChipTextActive]}>
+                {cat}
+              </Text>
             </TouchableOpacity>
           ))}
-        </View>
-      )}
-    </ScrollView>
+        </ScrollView>
+      </View>
+
+      {/* Content List */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {loading ? (
+          <View style={{ marginTop: 40 }}>
+            <DossierLoading variant="notifications" compact />
+          </View>
+        ) : filteredNotifications.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="notifications-off-outline" size={44} color={colors.charcoal} />
+            <Text style={styles.emptyText}>NO NOTIFICATIONS IN {category}</Text>
+            <Text style={styles.emptySubtext}>
+              Real-time activity regarding swaps, messages, and orders will appear here.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {filteredNotifications.map((n) => (
+              <TouchableOpacity
+                key={n.id}
+                style={[styles.card, !n.isRead && styles.cardUnread]}
+                onPress={() => handlePressNotification(n)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.iconWrap, !n.isRead && styles.iconWrapUnread]}>
+                  <Ionicons
+                    name={getIcon(n.type) as any}
+                    size={20}
+                    color={!n.isRead ? colors.cream : colors.charcoal}
+                  />
+                </View>
+
+                <View style={styles.cardContent}>
+                  <View style={styles.cardHeaderRow}>
+                    <Text style={[styles.cardTitle, !n.isRead && styles.cardTitleUnread]} numberOfLines={1}>
+                      {n.title || n.type}
+                    </Text>
+                    <Text style={styles.cardTime}>
+                      {formatRelativeTime(n.createdAt)}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.cardBody} numberOfLines={2}>
+                    {n.body}
+                  </Text>
+
+                  <View style={styles.tapToOpenRow}>
+                    <Text style={styles.tapToOpenText}>TAP TO VIEW DETAILS →</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.deleteCardBtn}
+                  onPress={() => handleDelete(n.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+
+                {!n.isRead && <View style={styles.unreadDot} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 24, paddingBottom: 100 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 40, marginBottom: 24 },
-  title: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary },
-  subtitle: { fontSize: 16, color: colors.textSecond, marginTop: 4, fontWeight: '500' },
-  markAllBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginTop: 4, backgroundColor: colors.bgCard },
-  markAllText: { color: colors.textPrimary, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  emptyState: { alignItems: 'center', marginTop: 100, gap: 16 },
-  emptyText: { color: colors.textMuted, fontSize: 14, fontWeight: '800', letterSpacing: 2 },
-  list: { gap: 12 },
-  card: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    padding: 20, 
-    backgroundColor: colors.bg, 
-    borderRadius: 20, 
-    gap: 16, 
-    borderWidth: 1, 
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+  container: {
+    flex: 1,
+    backgroundColor: '#FAF9F6',
   },
-  cardUnread: { 
-    borderColor: colors.crimson, 
-    backgroundColor: 'rgba(155, 27, 48, 0.02)',
+  header: {
+    paddingTop: 54,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    backgroundColor: '#FAF9F6',
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.charcoal,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontFamily: typography.mono,
+    fontSize: 16,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 1.5,
+  },
+  subtitle: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 6,
     borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  iconCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  iconCircleUnread: { backgroundColor: colors.white, borderColor: 'rgba(155, 27, 48, 0.2)' },
-  cardContent: { flex: 1 },
-  cardTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
-  cardTitleUnread: { color: colors.crimson },
-  cardBody: { color: colors.textSecond, fontSize: 13, lineHeight: 18, marginTop: 4 },
-  cardTime: { color: colors.textMuted, fontSize: 11, marginTop: 8, fontWeight: '500' },
-  unreadDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.crimson },
+  categoryRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  categoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.white,
+  },
+  categoryChipActive: {
+    backgroundColor: colors.charcoal,
+  },
+  categoryChipText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.8,
+  },
+  categoryChipTextActive: {
+    color: colors.cream,
+  },
+  content: {
+    padding: 20,
+    paddingBottom: 120,
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 80,
+    paddingHorizontal: 30,
+    gap: 10,
+  },
+  emptyText: {
+    fontFamily: typography.mono,
+    color: colors.charcoal,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginTop: 8,
+  },
+  emptySubtext: {
+    fontFamily: typography.mono,
+    color: colors.textMuted,
+    fontSize: 10,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  list: {
+    gap: 12,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: 'rgba(30,31,34,0.15)',
+    gap: 14,
+    position: 'relative',
+  },
+  cardUnread: {
+    borderColor: colors.charcoal,
+    backgroundColor: '#FFFDF9',
+    borderLeftWidth: 4,
+    borderLeftColor: '#C41E3A',
+  },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: 'rgba(30,31,34,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconWrapUnread: {
+    backgroundColor: colors.charcoal,
+  },
+  cardContent: {
+    flex: 1,
+    gap: 4,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingRight: 16,
+  },
+  cardTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.charcoal,
+    flex: 1,
+    marginRight: 6,
+  },
+  cardTitleUnread: {
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  cardTime: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
+  cardBody: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.charcoal,
+    lineHeight: 15,
+  },
+  tapToOpenRow: {
+    marginTop: 6,
+  },
+  tapToOpenText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '900',
+    color: '#8C6D3B',
+    letterSpacing: 0.5,
+  },
+  deleteCardBtn: {
+    padding: 4,
+    position: 'absolute',
+    top: 12,
+    right: 12,
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#C41E3A',
+  },
 });

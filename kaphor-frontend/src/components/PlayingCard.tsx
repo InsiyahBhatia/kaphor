@@ -12,11 +12,11 @@ export interface PlayingCardProps {
   price: number;
   size: string;
   matchPercent?: number;
-  imageUrl?: string;
+  imageUrl?: string | null;
   flavorText?: string;
   condition?: string;
-  category?: string;
-  subCategory?: string;
+  category?: string | null;
+  subCategory?: string | null;
   onSwapRequest?: () => void;
   onAddToCart?: () => void;
   buttonText?: string;

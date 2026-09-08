@@ -72,3 +72,36 @@ export async function markAllAsRead(req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: 'INTERNAL_ERROR' });
   }
 }
+
+// ── DELETE /notifications/:id ────────────────────────────────────────────────
+export async function deleteNotification(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
+    const { id } = req.params;
+
+    await db.notification.deleteMany({
+      where: { id, userId: req.user.id },
+    });
+
+    res.json({ message: 'Notification deleted' });
+  } catch (error) {
+    logger.error('deleteNotification failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+// ── DELETE /notifications ─────────────────────────────────────────────────────
+export async function clearAllNotifications(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
+
+    await db.notification.deleteMany({
+      where: { userId: req.user.id },
+    });
+
+    res.json({ message: 'All notifications cleared' });
+  } catch (error) {
+    logger.error('clearAllNotifications failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}

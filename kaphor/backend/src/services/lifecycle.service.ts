@@ -14,15 +14,13 @@ interface LOEInput {
   userId: string;
 }
 
-interface LOEResult {
+export interface LOEResult {
   action: LOEAction;
   newState?: string;
   targetUsers?: string[];
   cooldownEnd?: Date;
   score: number;
 }
-
-import { EventType } from '@prisma/client';
 
 // ── Configurable thresholds ──────────────────────
 const THRESHOLDS = {
@@ -50,7 +48,7 @@ function cosine(a: number[], b: number[]): number {
   return denom === 0 ? 0 : dot / denom;
 }
 
-export function computeCompatibilityScore(userVector: number[], garmentVector: number[]): number {
+function computeCompatibilityScore(userVector: number[], garmentVector: number[]): number {
   return cosine(userVector, garmentVector);
 }
 
@@ -113,14 +111,6 @@ export async function evaluateLifecycle(garmentId: string, userId: string, event
   }
 
   // 4. & 5. Transition Logic
-  if (eventType === EventType.PURCHASE) {
-    await db.garment.update({
-      where: { id: garmentId },
-      data: { lifecycleState: 'OWNERSHIP' },
-    });
-    return { action: 'TRANSITION', newState: 'OWNERSHIP', score: compatScore };
-  }
-
   if (interestScore < THRESHOLDS.DECLINE_THRESHOLD && interactionDecay > THRESHOLDS.DECAY_MAX && garment.lifecycleState !== 'DECLINE') {
     await db.garment.update({
       where: { id: garmentId },
@@ -175,6 +165,35 @@ export async function evaluateLifecycle(garmentId: string, userId: string, event
   return { action: 'PROMOTE', score: compatScore };
 }
 
+// ── Initiate resell: OWNERSHIP → SELL_INTENT ───────
+export async function initiateResell(garmentId: string, userId: string): Promise<LOEResult> {
+  const garment = await db.garment.findUnique({ where: { id: garmentId } });
+  if (!garment) {
+    return { action: 'SUPPRESS', score: 0 };
+  }
+
+  if (garment.sellerId !== userId) {
+    return { action: 'SUPPRESS', score: 0 };
+  }
+
+  if (garment.lifecycleState !== 'OWNERSHIP') {
+    return { action: 'SUPPRESS', score: 0 };
+  }
+
+  await db.garment.update({
+    where: { id: garmentId },
+    data: { lifecycleState: 'SELL_INTENT' },
+  });
+
+  emitToUser(userId, 'lifecycle:update', {
+    garmentId,
+    newState: 'SELL_INTENT',
+    message: 'Garment marked for resale. Complete the listing to put it back on the marketplace.',
+  });
+
+  return { action: 'TRANSITION', newState: 'SELL_INTENT', score: 1.0 };
+}
+
 // ── Find compatible users for a garment ──────────
 async function findCompatibleUsers(
   garmentVector: number[],
@@ -195,32 +214,3 @@ async function findCompatibleUsers(
     .map((u: any) => u.id);
 }
 
-// ── Process a cooldown expiry ─────────────────────
-export async function processExpiredCooldowns(): Promise<void> {
-  const expired = await db.circulationSchedule.findMany({
-    where: {
-      status: 'PENDING',
-      cooldownEnd: { lte: new Date() },
-    },
-  });
-
-  for (const schedule of expired) {
-    // Re-introduce garment to target users
-    emitToUser(schedule.userId, 'feed:new_item', {
-      garmentId: schedule.garmentId,
-      reason: 'Curated for you',
-    });
-
-    // Update garment state
-    await db.garment.update({
-      where: { id: schedule.garmentId },
-      data: { lifecycleState: 'CIRCULATION' },
-    });
-
-    // Mark schedule complete
-    await db.circulationSchedule.update({
-      where: { id: schedule.id },
-      data: { status: 'COMPLETED' },
-    });
-  }
-}

@@ -47,5 +47,3 @@ export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
   transports,
 });
-
-export default logger;

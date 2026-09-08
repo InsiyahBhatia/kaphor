@@ -10,12 +10,10 @@
     ],
     "ios": {
       "bundleIdentifier": "com.kaphor.app",
-      "supportsTablet": false,
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "supportsTablet": false
     },
     "android": {
-      "package": "com.kaphor.app",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.kaphor.app"
     },
     "icon": "./assets/icon.png",
     "splash": {
@@ -28,13 +26,6 @@
       "expo-secure-store",
       "expo-font",
       "expo-image",
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "com.kaphor.app",
-          "enableGooglePay": true
-        }
-      ],
       "expo-web-browser",
       "@react-native-google-signin/google-signin"
     ],

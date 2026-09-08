@@ -8,12 +8,13 @@ import { colors, typography, spacing } from '../../theme';
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
+  onBack?: () => void;
   unreadCount?: number;
   showLogo?: boolean;
   rightElement?: React.ReactNode;
 }
 
-export function Header({ title, showBack, unreadCount = 0, showLogo = false, rightElement }: HeaderProps) {
+export function Header({ title, showBack, onBack, unreadCount = 0, showLogo = false, rightElement }: HeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -23,7 +24,7 @@ export function Header({ title, showBack, unreadCount = 0, showLogo = false, rig
 
       <View style={styles.left}>
         {showBack ? (
-          <Pressable onPress={() => router.back()} style={styles.iconBtn}>
+          <Pressable onPress={() => { if (onBack) onBack(); else router.back(); }} style={styles.iconBtn}>
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </Pressable>
         ) : (

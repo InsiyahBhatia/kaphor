@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { cartService } from '../../src/services/cartService';
+import { DossierLoading } from '../../src/components/common/DossierLoading';
 import { colors, typography } from '../../src/theme';
 import { Header } from '../../src/components/common/Header';
 import { KaphorImage } from '../../src/components/KaphorImage';
-import api from '../../src/services/api';
+import api, { cachedGet, fetchFresh, invalidateCache } from '../../src/services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -18,10 +19,10 @@ export default function CartScreen() {
 
     const loadCart = async () => {
         try {
-            const data = await cartService.getCart();
+            // cachedGet shows stale data instantly, refreshes in background
+            const data = await cachedGet('/cart');
             const validItems = Array.isArray(data) ? data.filter(i => i.garment) : [];
             setItems(validItems);
-            // Select all by default
             setSelectedIds(new Set(validItems.map(i => i.garmentId)));
         } catch (e) {
             console.error('Cart load failed', e);
@@ -30,6 +31,7 @@ export default function CartScreen() {
         }
     };
 
+    // useFocusEffect handles mount + every focus — cachedGet returns instantly if data exists
     useFocusEffect(
         React.useCallback(() => {
             loadCart();
@@ -46,6 +48,7 @@ export default function CartScreen() {
     const removeItem = async (id: string) => {
         try {
             await cartService.removeFromCart(id);
+            invalidateCache('/cart');
             setItems(prev => prev.filter(item => item.garmentId !== id));
             const next = new Set(selectedIds);
             next.delete(id);
@@ -66,7 +69,13 @@ export default function CartScreen() {
         setLoading(true);
         try {
             const { data } = await api.post('/orders/cart', { garmentIds: Array.from(selectedIds) });
-            const orderId = data.data.id;
+            const orderId = data.data.id || data.data.orderId;
+            if (!orderId) {
+              Alert.alert('Error', 'Could not create order. Please try again.');
+              setLoading(false);
+              return;
+            }
+            // Navigate to delivery address screen first
             router.push(`/(tabs)/shop/checkout/delivery?orderId=${orderId}` as any);
         } catch (e: any) {
             const msg = e.response?.data?.message || e.message || 'Failed to initialize checkout';
@@ -80,8 +89,7 @@ export default function CartScreen() {
     if (loading) {
         return (
             <View style={[styles.container, styles.center]}>
-                <ActivityIndicator size="large" color={colors.red} />
-                <Text style={styles.loadingText}>LOADING...</Text>
+                <DossierLoading variant="cart" compact />
             </View>
         );
     }

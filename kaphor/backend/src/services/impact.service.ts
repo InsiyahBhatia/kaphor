@@ -110,5 +110,3 @@ export class ImpactService {
 
 /** Standalone export for controller compatibility */
 export const updateImpactOnTransaction = (orderId: string) => ImpactService.updateImpactOnTransaction(orderId);
-
-export default ImpactService;

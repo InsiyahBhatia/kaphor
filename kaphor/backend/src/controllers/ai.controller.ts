@@ -69,7 +69,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
     return denom === 0 ? 0 : dot / denom;
 }
 
-export const AESTHETIC_VECTORS: Record<string, number[]> = {
+const AESTHETIC_VECTORS: Record<string, number[]> = {
     MINIMALIST:   [0.1, 0.1, 0.1, 0.9, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.8],
     STREETWEAR:   [0.9, 0.8, 0.1, 0.1, 0.2, 0.9, 0.1, 0.1, 0.7, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.8, 0.1, 0.2, 0.1],
     VINTAGE:      [0.2, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.8, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1],
@@ -82,7 +82,7 @@ export const AESTHETIC_VECTORS: Record<string, number[]> = {
     PREPPY:       [0.1, 0.2, 0.3, 0.7, 0.4, 0.1, 0.1, 0.1, 0.4, 0.2, 0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.6, 0.5],
 };
 
-export const AESTHETIC_SUMMARIES: Record<string, string> = {
+const AESTHETIC_SUMMARIES: Record<string, string> = {
     MINIMALIST:  "Your archive is built on restraint and precision. You believe in 'less but better'—investing in architectural silhouettes, high-quality neutral basics, and impeccably made essentials that endure beyond trend cycles. Your wardrobe is a master equation: every piece is intentional, every combination effortlessly calibrated. The quality of a single well-made shirt matters more to you than a closet full of novelty.",
     STREETWEAR:  "Your style is a living document of urban culture. Rooted in subculture, movement, and community, you gravitate toward oversized silhouettes, bold graphics, and limited-edition archival pieces that tell the story of city life. Technical fabrics, functional hardware, and loud branding are your language—you dress like you belong to the future.",
     VINTAGE:     "You are an archivist of fashion history. Every piece you own is a curated find—a story told through aged silk, perfectly faded denim, and silhouettes that outlived their era. You favor the soul of 'one-of-a-kind' over the algorithm of new arrivals, and you know the thrill of finding a forgotten gem that nobody else has.",
@@ -95,7 +95,7 @@ export const AESTHETIC_SUMMARIES: Record<string, string> = {
     PREPPY:      "Your style is rooted in a refined academic tradition. Clean silhouettes, structured outerwear, classic patterns like plaid and herringbone, and a palette that signals understated confidence. You appreciate the discipline of a well-executed classic look—polished, reliable, and subtly prestigious.",
 };
 
-export function getAestheticDetails(aesthetic: string) {
+function getAestheticDetails(aesthetic: string) {
     const allAesthetics = Object.keys(AESTHETIC_VECTORS);
     const safeAesthetic = allAesthetics.includes(aesthetic) ? aesthetic : 'LUXURY';
 

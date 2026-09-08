@@ -134,6 +134,38 @@ export function AccountSettingsScreen() {
                     />
                     <Text style={styles.helperText}>Valid: MINIMALIST, VINTAGE, BOLD, ETHNIC, STREETWEAR, LUXURY</Text>
                 </View>
+
+                {/* Seller Operations & Payouts */}
+                <View style={styles.sectionDivider} />
+                <Text style={styles.sectionHeader}>PAYMENT & SELLER OPERATIONS</Text>
+
+                <Pressable
+                    style={styles.actionCard}
+                    onPress={() => router.push('/profile/payout' as any)}
+                >
+                    <View style={styles.actionCardIcon}>
+                        <Ionicons name="wallet-outline" size={22} color={colors.gold} />
+                    </View>
+                    <View style={styles.actionCardBody}>
+                        <Text style={styles.actionCardTitle}>PAYOUT ACCOUNTS</Text>
+                        <Text style={styles.actionCardDesc}>Manage bank accounts and UPI IDs for sales earnings</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </Pressable>
+
+                <Pressable
+                    style={styles.actionCard}
+                    onPress={() => router.push('/(tabs)/shop/payment-history' as any)}
+                >
+                    <View style={styles.actionCardIcon}>
+                        <Ionicons name="receipt-outline" size={22} color={colors.gold} />
+                    </View>
+                    <View style={styles.actionCardBody}>
+                        <Text style={styles.actionCardTitle}>PAYMENT & EARNINGS HISTORY</Text>
+                        <Text style={styles.actionCardDesc}>View ledger of purchases, rentals, and payout transfers</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </Pressable>
             </ScrollView>
         </SafeAreaView>
     );
@@ -155,5 +187,40 @@ const styles = StyleSheet.create({
     label: { color: colors.textPrimary, fontFamily: typography.mono, fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', marginBottom: spacing.sm },
     input: { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.md, color: colors.textPrimary, fontFamily: typography.body, fontSize: 16 },
     textArea: { height: 100, textAlignVertical: 'top' },
-    helperText: { color: colors.textMuted, fontFamily: typography.body, fontSize: 12, marginTop: spacing.xs }
+    helperText: { color: colors.textMuted, fontFamily: typography.body, fontSize: 12, marginTop: spacing.xs },
+    sectionDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.xl },
+    sectionHeader: { color: colors.gold, fontFamily: typography.mono, fontSize: 11, letterSpacing: 2, marginBottom: spacing.md },
+    actionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.bgCard,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: radius.md,
+        padding: spacing.md,
+        marginBottom: spacing.md,
+    },
+    actionCardIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: radius.sm,
+        backgroundColor: 'rgba(200, 168, 130, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.md,
+    },
+    actionCardBody: { flex: 1 },
+    actionCardTitle: {
+        color: colors.textPrimary,
+        fontFamily: typography.headings,
+        fontSize: 14,
+        letterSpacing: 1,
+        marginBottom: 2,
+    },
+    actionCardDesc: {
+        color: colors.textMuted,
+        fontFamily: typography.body,
+        fontSize: 12,
+        lineHeight: 16,
+    },
 });

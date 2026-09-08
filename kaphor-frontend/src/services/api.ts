@@ -9,7 +9,7 @@ import { useAuthStore } from '../store/authStore';
  * When the URL points at localhost/127.0.0.1, swap in the Metro host IP (physical device) or 10.0.2.2 (emulator).
  */
 function resolveApiBaseUrl(): string {
-  const fallback = 'http://localhost:4000/api/v1';
+  const fallback = 'http://10.214.166.156:4000/api/v1';
   const raw = process.env.EXPO_PUBLIC_API_URL ?? fallback;
 
   if (!__DEV__ || Platform.OS !== 'android') {
@@ -18,27 +18,20 @@ function resolveApiBaseUrl(): string {
 
   try {
     const u = new URL(raw);
-    const useAdbReverse = process.env.EXPO_PUBLIC_USE_ADB_REVERSE === 'true';
-
-    if (u.hostname !== 'localhost' && u.hostname !== '127.0.0.1') {
-      return raw;
-    }
-
-    // If explicitly using ADB reverse, don't swap the hostname
-    if (useAdbReverse) {
-      return raw;
-    }
-
-    const hostUri =
-      Constants.expoConfig?.hostUri ?? (Constants as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost;
-    let hostname = '10.0.2.2';
-    if (hostUri) {
-      const metroHost = hostUri.split(':')[0];
-      if (metroHost && metroHost !== '127.0.0.1' && metroHost !== 'localhost') {
-        hostname = metroHost;
+    // Only adapt local LAN/loopback IP addresses dynamically in development
+    const isLocal = u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname.startsWith('10.') || u.hostname.startsWith('192.168.');
+    if (isLocal) {
+      const hostUri =
+        Constants.expoConfig?.hostUri ?? (Constants as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost;
+      let hostname = '10.214.166.156';
+      if (hostUri) {
+        const metroHost = hostUri.split(':')[0];
+        if (metroHost && metroHost !== '127.0.0.1' && metroHost !== 'localhost') {
+          hostname = metroHost;
+        }
       }
+      u.hostname = hostname;
     }
-    u.hostname = hostname;
     return u.toString().replace(/\/$/, '');
   } catch {
     return raw;
@@ -54,14 +47,16 @@ const REFRESH_KEY = 'kaphor_refresh_token';
 
 export const api = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 30000,
   headers: { 
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true'
   },
 });
 
+// ── Refresh token queue (prevents concurrent refreshes) ────────
 let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
 let failedQueue: Array<{
   resolve: (token: string | null) => void;
   reject: (err: unknown) => void;
@@ -83,6 +78,47 @@ api.interceptors.request.use(
   (err) => Promise.reject(err)
 );
 
+/**
+ * Attempt to refresh the access token.
+ * Returns true on success, false on failure.
+ */
+async function attemptTokenRefresh(): Promise<boolean> {
+  const refreshTokenVal = await SecureStore.getItemAsync(REFRESH_KEY);
+  if (!refreshTokenVal) return false;
+
+  try {
+    const { data } = await axios.post<{
+      data: { accessToken: string; refreshToken: string };
+    }>(`${API_URL}/auth/refresh`, { refreshToken: refreshTokenVal }, {
+      headers: { 'Content-Type': 'application/json' },
+      // Use shorter timeout for refresh to fail fast
+      timeout: 10000,
+    });
+
+    const accessToken = data.data?.accessToken;
+    const newRefresh = data.data?.refreshToken;
+
+    if (!accessToken) {
+      throw new Error('No access token in refresh response');
+    }
+
+    // ALWAYS update both tokens — even if newRefresh is somehow missing,
+    // save at least the access token so subsequent requests can retry.
+    await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
+    if (newRefresh) {
+      await SecureStore.setItemAsync(REFRESH_KEY, newRefresh);
+    }
+    useAuthStore.getState().setTokens(accessToken);
+    return true;
+  } catch {
+    // Refresh failed — clear tokens
+    useAuthStore.getState().logout();
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(REFRESH_KEY);
+    return false;
+  }
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (err: AxiosError) => {
@@ -90,48 +126,40 @@ api.interceptors.response.use(
     if (err.response?.status !== 401 || original._retry) {
       return Promise.reject(err);
     }
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
+
+    // ── If a refresh is already in-flight, queue this request ──────
+    if (isRefreshing && refreshPromise) {
+      return new Promise<string | null>((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       }).then((token) => {
         if (token) original.headers.Authorization = `Bearer ${token}`;
         return api(original);
       });
     }
+
+    // ── Start a new token refresh (first 401 wins) ────────────────
     original._retry = true;
     isRefreshing = true;
-    const refreshToken = await SecureStore.getItemAsync(REFRESH_KEY);
-    if (!refreshToken) {
-      useAuthStore.getState().logout();
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+
+    refreshPromise = attemptTokenRefresh().then((success) => {
       isRefreshing = false;
+      refreshPromise = null;
+      return success;
+    });
+
+    const success = await refreshPromise;
+
+    if (success) {
+      // Re-read the new access token from the store (set by attemptTokenRefresh)
+      const newToken = useAuthStore.getState().accessToken ??
+        (await SecureStore.getItemAsync(TOKEN_KEY));
+      processQueue(null, newToken);
+      if (newToken) original.headers.Authorization = `Bearer ${newToken}`;
+      return api(original);
+    } else {
+      processQueue(new Error('Token refresh failed'), null);
       return Promise.reject(err);
     }
-    try {
-      const { data } = await axios.post<{
-        data: { accessToken: string; refreshToken?: string };
-      }>(`${API_URL}/auth/refresh`, { refreshToken }, { headers: { 'Content-Type': 'application/json' } });
-      const accessToken = data.data?.accessToken;
-      const newRefresh = data.data?.refreshToken;
-      if (accessToken) {
-        await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
-        if (newRefresh) {
-          await SecureStore.setItemAsync(REFRESH_KEY, newRefresh);
-        }
-        useAuthStore.getState().setTokens(accessToken);
-        processQueue(null, accessToken);
-        original.headers.Authorization = `Bearer ${accessToken}`;
-        return api(original);
-      }
-    } catch (refreshErr) {
-      processQueue(refreshErr, null);
-      useAuthStore.getState().logout();
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
-      await SecureStore.deleteItemAsync(REFRESH_KEY);
-    } finally {
-      isRefreshing = false;
-    }
-    return Promise.reject(err);
   }
 );
 
@@ -147,6 +175,75 @@ export async function persistTokens(accessToken: string, refreshToken: string): 
 export async function clearStoredTokens(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
   await SecureStore.deleteItemAsync(REFRESH_KEY);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Simple TTL-based GET cache (stale-while-revalidate)
+// ═══════════════════════════════════════════════════════════════
+
+interface CacheEntry {
+  data: any;
+  expiry: number;
+}
+
+const GET_CACHE = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 30_000; // 30 seconds
+
+/**
+ * Fetch a GET endpoint with built-in TTL caching.
+ * - If fresh cached data exists (< 30s old), return it immediately.
+ * - If stale cached data exists (> 30s old), return it AND trigger a background refresh.
+ * - If no cached data, fetch and cache.
+ */
+export async function cachedGet<T = any>(url: string, params?: Record<string, any>): Promise<T> {
+  const cacheKey = `${url}${params ? JSON.stringify(params) : ''}`;
+  const now = Date.now();
+  const cached = GET_CACHE.get(cacheKey);
+
+  // If cache hit and still fresh, return immediately
+  if (cached && now < cached.expiry) {
+    return cached.data as T;
+  }
+
+  // If stale cache exists, fire background refresh but return stale data
+  if (cached) {
+    // Fire background refresh (don't await)
+    api.get(url, { params }).then(({ data }) => {
+      GET_CACHE.set(cacheKey, { data: data.data ?? data, expiry: Date.now() + CACHE_TTL_MS });
+    }).catch(() => {
+      // Silently fail — stale data is better than nothing
+    });
+    return cached.data as T;
+  }
+
+  // No cache — fetch and store
+  const { data } = await api.get(url, { params });
+  const result = data.data ?? data;
+  GET_CACHE.set(cacheKey, { data: result, expiry: now + CACHE_TTL_MS });
+  return result as T;
+}
+
+/**
+ * Bypass cache and force-refresh a GET endpoint, updating the cache.
+ */
+export async function fetchFresh<T = any>(url: string, params?: Record<string, any>): Promise<T> {
+  const cacheKey = `${url}${params ? JSON.stringify(params) : ''}`;
+  const { data } = await api.get(url, { params });
+  const result = data.data ?? data;
+  GET_CACHE.set(cacheKey, { data: result, expiry: Date.now() + CACHE_TTL_MS });
+  return result as T;
+}
+
+/**
+ * Invalidate all cached GET responses for URLs matching a prefix.
+ * Useful after a mutation (POST/PUT/PATCH/DELETE) to force a fresh fetch.
+ */
+export function invalidateCache(prefix: string): void {
+  for (const key of GET_CACHE.keys()) {
+    if (key.startsWith(prefix)) {
+      GET_CACHE.delete(key);
+    }
+  }
 }
 
 export default api;

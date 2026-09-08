@@ -1,8 +1,17 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { emitToUser } from '../lib/socket';
 import { getDownloadUrl } from '../lib/s3';
+import { createNotification } from '../services/notification.service';
+import Razorpay from 'razorpay';
+import {
+  getSwapMetadata,
+  updateSwapMetadata,
+  SwapAddressData,
+  SwapTrackingData,
+} from '../services/swap-metadata.service';
 
 const ALLOWED_SWAP_CATEGORIES = new Set([
   'accessory',
@@ -15,280 +24,1439 @@ const ALLOWED_SWAP_CATEGORIES = new Set([
   'belts',
   'scarf',
   'scarves',
+  'eyewear',
+  'hat',
+  'hats',
+  'footwear',
+  'shoes',
 ]);
 
 function normalizeCategory(category: string | null | undefined): string {
   return (category ?? '').trim().toLowerCase();
 }
 
-/** Helpers to resolve media URLs */
-async function resolveUserMedia(user: any) {
-  if (!user || !user.avatar) return user;
-  const avatar = await getDownloadUrl(user.avatar);
-  return { ...user, avatar };
+function isAccessoryGarment(garment: any): boolean {
+  if (!garment) return false;
+  if ((garment as any).isAccessory === true) return true;
+  const cat = normalizeCategory(garment.category);
+  const sub = normalizeCategory(garment.subCategory);
+  return ALLOWED_SWAP_CATEGORIES.has(cat) || ALLOWED_SWAP_CATEGORIES.has(sub);
 }
 
-async function resolveGarmentMedia(garment: any) {
-  if (!garment || !garment.images) return garment;
-  const images = await Promise.all(garment.images.map((img: string) => getDownloadUrl(img)));
-  return { ...garment, images };
+/** Format garment into clean snapshot for swap UI */
+function toGarmentSnapshot(g: any, resolvedFirstImage?: string): any {
+  if (!g) return undefined;
+  const img = resolvedFirstImage || (g.images && g.images[0]) || '';
+  return {
+    id: g.id,
+    title: g.title,
+    brand: g.brand || 'Unknown',
+    images: img ? [img] : [],
+    category: g.category,
+    size: g.size,
+    condition: g.condition,
+    estimatedValue: g.price || 0, // in paise
+  };
 }
 
-async function resolveSwapMedia(swap: any) {
-  if (!swap) return swap;
-  const [initiator, receiver, offered, wanted] = await Promise.all([
-    resolveUserMedia(swap.initiator),
-    resolveUserMedia(swap.receiver),
-    resolveGarmentMedia(swap.offeredGarment),
-    resolveGarmentMedia(swap.wantedGarment)
-  ]);
-  return { ...swap, initiator, receiver, offeredGarment: offered, wantedGarment: wanted };
-}
+/** Transform internal swap + metadata into client SwapTransaction */
+function formatSwapTransaction(swap: any, currentUserId?: string, resolvedImages?: Record<string, string>): any {
+  const meta = getSwapMetadata(swap.id);
 
-async function resolveSwapsMedia(swaps: any[]) {
-  return Promise.all(swaps.map(s => resolveSwapMedia(s)));
-}
+  // Compute composite status
+  let compositeStatus = swap.status;
+  if (meta.dispute && meta.dispute.status === 'OPEN') {
+    compositeStatus = 'DISPUTED';
+  } else if (meta.cancelledAt || swap.status === 'REJECTED') {
+    compositeStatus = 'CANCELLED';
+  } else if (swap.status === 'ACCEPTED') {
+    const bothAgreed = meta.initiatorAcceptedTerms && meta.receiverAcceptedTerms;
+    const bothAddressed = !!(meta.initiatorAddress && meta.receiverAddress);
+    const bothShipped = !!(meta.initiatorTracking && meta.receiverTracking);
+    const oneShipped = !!(meta.initiatorTracking || meta.receiverTracking);
+    const bothReceived = meta.initiatorReceived && meta.receiverReceived;
+    const oneReceived = meta.initiatorReceived || meta.receiverReceived;
 
-export async function createSwapRequest(req: Request, res: Response): Promise<void> {
-    try {
-        if (!req.user) {
-            res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
-            return;
-        }
-
-        const { garmentOfferedId, garmentWantedId, message } = req.body;
-        const initiatorId = req.user.id;
-
-        if (!garmentOfferedId || !garmentWantedId) {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'Both garments are required' });
-            return;
-        }
-
-        // Fetch garments
-        const offeredGarment = await db.garment.findUnique({ where: { id: String(garmentOfferedId) } });
-        const wantedGarment = await db.garment.findUnique({ where: { id: String(garmentWantedId) } });
-
-        if (!offeredGarment || !wantedGarment) {
-            res.status(404).json({ error: 'NOT_FOUND', message: 'Garment(s) not found' });
-            return;
-        }
-
-        // Validate Ownership
-        if (offeredGarment.sellerId !== initiatorId) {
-            res.status(403).json({ error: 'FORBIDDEN', message: 'You do not own the offered garment' });
-            return;
-        }
-        if (wantedGarment.sellerId === initiatorId) {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'Cannot swap with your own garment' });
-            return;
-        }
-
-        // Validate Categories
-        const offeredCategory = normalizeCategory(offeredGarment.category);
-        const wantedCategory = normalizeCategory(wantedGarment.category);
-        if (!ALLOWED_SWAP_CATEGORIES.has(offeredCategory) || !ALLOWED_SWAP_CATEGORIES.has(wantedCategory)) {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'Swaps are only supported for Accessories' });
-            return;
-        }
-
-        // Validate ListingType and State
-        if (offeredGarment.listingType !== 'ACCESSORY_SWAP' || wantedGarment.listingType !== 'ACCESSORY_SWAP') {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'Both garments must be listed for swap' });
-            return;
-        }
-        if (!offeredGarment.isActive || !wantedGarment.isActive) {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'One or both garments are no longer active' });
-            return;
-        }
-
-        // Create Swap Request
-        const swap = await db.swap.create({
-            data: {
-                initiatorId,
-                receiverId: wantedGarment.sellerId,
-                garmentOffered: offeredGarment.id,
-                garmentWanted: wantedGarment.id,
-                message: message || null,
-                status: 'REQUESTED'
-            }
-        });
-
-        // Notifications
-        emitToUser(wantedGarment.sellerId, 'swap:request_received', {
-            swapId: swap.id,
-            message: 'You have a new swap request!'
-        });
-
-        // Placeholder for Email Notification
-        logger.info(`Email Note: Send swap request email to ${wantedGarment.sellerId}`);
-
-        res.status(201).json({ data: swap });
-    } catch (error) {
-        logger.error('Failed to create swap request', { error: error instanceof Error ? error.message : String(error) });
-        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to process swap request' });
+    if (bothReceived) {
+      compositeStatus = 'COMPLETED';
+    } else if (oneReceived) {
+      compositeStatus = 'DELIVERED';
+    } else if (bothShipped) {
+      compositeStatus = 'BOTH_SHIPPED';
+    } else if (oneShipped) {
+      compositeStatus = 'SHIPPED';
+    } else if (bothAddressed) {
+      compositeStatus = 'ADDRESS_SHARED';
+    } else if (bothAgreed) {
+      compositeStatus = 'AGREEMENT_SIGNED';
+    } else {
+      compositeStatus = 'AGREEMENT_PENDING';
     }
+  }
+
+  const isInitiator = currentUserId === swap.initiatorId;
+  const isReceiver = currentUserId === swap.receiverId;
+  const bothSigned = !!(meta.initiatorAcceptedTerms && meta.receiverAcceptedTerms);
+
+  const offeredImg = resolvedImages?.[swap.offeredGarment?.images?.[0]];
+  const wantedImg = resolvedImages?.[swap.wantedGarment?.images?.[0]];
+
+  return {
+    id: swap.id,
+    initiatorId: swap.initiatorId,
+    receiverId: swap.receiverId,
+    status: compositeStatus,
+
+    garmentOfferedId: swap.garmentOffered,
+    garmentWantedId: swap.garmentWanted,
+    garmentOffered: toGarmentSnapshot(swap.offeredGarment, offeredImg),
+    garmentWanted: toGarmentSnapshot(swap.wantedGarment, wantedImg),
+
+    agreementSignedAt: meta.termsAcceptedAt,
+    initiatorAcceptedTerms: !!meta.initiatorAcceptedTerms,
+    receiverAcceptedTerms: !!meta.receiverAcceptedTerms,
+    termsAcceptedAt: meta.termsAcceptedAt,
+
+    // Address privacy: only visible if both signed
+    initiatorAddress: bothSigned || isInitiator ? meta.initiatorAddress : undefined,
+    receiverAddress: bothSigned || isReceiver ? meta.receiverAddress : undefined,
+    addressSharedAt: meta.addressSharedAt,
+
+    initiatorTracking: meta.initiatorTracking,
+    receiverTracking: meta.receiverTracking,
+
+    initiatorReceived: !!meta.initiatorReceived,
+    receiverReceived: !!meta.receiverReceived,
+
+    securityDepositAmount: meta.securityDepositAmount || 50000,
+    securityDepositPaidBy: meta.securityDepositPaidBy,
+    depositEscrowId: meta.depositEscrowId,
+    depositReleasedAt: meta.depositReleasedAt,
+    swapFee: meta.swapFee || 25000,
+
+    conditionPhotos: meta.conditionPhotos,
+
+    createdAt: swap.createdAt instanceof Date ? swap.createdAt.toISOString() : swap.createdAt,
+    completedAt: swap.completedAt ? (swap.completedAt instanceof Date ? swap.completedAt.toISOString() : swap.completedAt) : undefined,
+    disputedAt: meta.disputedAt,
+    disputeReason: meta.disputeReason,
+    disputeResolution: meta.disputeResolution,
+    message: swap.message,
+    reviews: meta.reviews,
+
+    initiator: swap.initiator,
+    receiver: swap.receiver,
+  };
 }
 
+/** Batch resolve media URLs */
+async function resolveSwapMediaBatch(swaps: any[]): Promise<Record<string, string>> {
+  const imageUrls = new Set<string>();
+  for (const swap of swaps) {
+    if (swap.offeredGarment?.images?.length) imageUrls.add(swap.offeredGarment.images[0]);
+    if (swap.wantedGarment?.images?.length) imageUrls.add(swap.wantedGarment.images[0]);
+  }
+
+  const imageMap = await Promise.all(
+    Array.from(imageUrls).map(async (url) => ({ url, resolved: await getDownloadUrl(url) }))
+  );
+
+  return Object.fromEntries(imageMap.map((r) => [r.url, r.resolved]));
+}
+
+/**
+ * GET /swaps/feed
+ * Discover available swappable accessories.
+ */
+export async function getSwapFeed(req: Request, res: Response): Promise<void> {
+  try {
+    const { category, limit = '20' } = req.query;
+    const take = Math.min(Math.max(1, Number(limit) || 20), 50);
+
+    const where: any = {
+      listingType: 'ACCESSORY_SWAP',
+      isActive: true,
+      lifecycleState: 'LISTED',
+    };
+
+    if (req.user) {
+      where.sellerId = { not: req.user.id };
+    }
+
+    if (category) {
+      where.category = String(category);
+    }
+
+    const garments = await db.garment.findMany({
+      where,
+      include: {
+        seller: { select: { id: true, displayName: true, avatar: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take,
+    });
+
+    const resolved = await Promise.all(
+      garments.map(async (g: any) => {
+        const img = g.images?.length ? await getDownloadUrl(g.images[0]) : null;
+        return {
+          ...g,
+          images: img ? [img, ...g.images.slice(1)] : g.images,
+        };
+      })
+    );
+
+    res.json({ data: resolved });
+  } catch (error) {
+    logger.error('getSwapFeed failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /swaps
+ * List all swaps for the current user.
+ */
 export async function getSwaps(req: Request, res: Response): Promise<void> {
-    try {
-        if (!req.user) {
-            res.status(401).json({ error: 'UNAUTHORIZED' });
-            return;
-        }
-
-        const userId = req.user.id;
-
-        const swaps = await db.swap.findMany({
-            where: {
-                OR: [
-                    { initiatorId: userId },
-                    { receiverId: userId }
-                ]
-            },
-            include: {
-                initiator: { select: { id: true, displayName: true, avatar: true } },
-                receiver: { select: { id: true, displayName: true, avatar: true } },
-                offeredGarment: true,
-                wantedGarment: true,
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-
-        const resolved = await resolveSwapsMedia(swaps);
-        res.json({ data: resolved });
-    } catch (error) {
-        logger.error('Failed to fetch swaps', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
     }
+
+    const userId = req.user.id;
+
+    const swaps = await db.swap.findMany({
+      where: {
+        OR: [{ initiatorId: userId }, { receiverId: userId }],
+      },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const imageLookup = await resolveSwapMediaBatch(swaps);
+    const formatted = swaps.map((s: any) => formatSwapTransaction(s, userId, imageLookup));
+
+    res.json({ data: formatted });
+  } catch (error) {
+    logger.error('Failed to fetch swaps', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
 }
 
+/**
+ * GET /swaps/:id
+ * Get single swap detail with agreement, address, and tracking status.
+ */
+export async function getSwapById(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const swap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    if (!swap) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Swap not found' });
+      return;
+    }
+
+    if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied' });
+      return;
+    }
+
+    const imageLookup = await resolveSwapMediaBatch([swap]);
+    const formatted = formatSwapTransaction(swap, req.user.id, imageLookup);
+
+    res.json({ data: formatted });
+  } catch (error) {
+    logger.error('getSwapById failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps
+ * Create a new swap request.
+ */
+export async function createSwapRequest(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+
+    const { garmentOfferedId, garmentWantedId, message, conditionPhotos } = req.body;
+    const initiatorId = req.user.id;
+
+    if (!garmentOfferedId || !garmentWantedId) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Both garments are required' });
+      return;
+    }
+
+    const offeredGarment = await db.garment.findUnique({ where: { id: String(garmentOfferedId) } });
+    const wantedGarment = await db.garment.findUnique({ where: { id: String(garmentWantedId) } });
+
+    if (!offeredGarment || !wantedGarment) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Garment(s) not found' });
+      return;
+    }
+
+    if (offeredGarment.sellerId !== initiatorId) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'You do not own the offered garment' });
+      return;
+    }
+    if (wantedGarment.sellerId === initiatorId) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Cannot swap with your own garment' });
+      return;
+    }
+
+    // Validate Accessory Constraint
+    if (!isAccessoryGarment(offeredGarment) || !isAccessoryGarment(wantedGarment)) {
+      res.status(400).json({
+        error: 'BAD_REQUEST',
+        message: 'Swapping is strictly reserved for Accessories (bags, jewelry, belts, scarves, footwear).',
+      });
+      return;
+    }
+
+    // Validate ListingType and State
+    if (offeredGarment.listingType !== 'ACCESSORY_SWAP' || wantedGarment.listingType !== 'ACCESSORY_SWAP') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Both garments must be listed for swap' });
+      return;
+    }
+    if (!offeredGarment.isActive || !wantedGarment.isActive) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'One or both garments are no longer active' });
+      return;
+    }
+
+    // Create Swap in DB
+    const swap = await db.swap.create({
+      data: {
+        initiatorId,
+        receiverId: wantedGarment.sellerId,
+        garmentOffered: offeredGarment.id,
+        garmentWanted: wantedGarment.id,
+        message: message || null,
+        status: 'REQUESTED',
+      },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    // Save initial metadata
+    if (Array.isArray(conditionPhotos) && conditionPhotos.length > 0) {
+      updateSwapMetadata(swap.id, (meta) => {
+        meta.conditionPhotos = {
+          offeredPhotos: conditionPhotos,
+          wantedPhotos: [],
+        };
+      });
+    }
+
+    // Real-time socket notification
+    emitToUser(wantedGarment.sellerId, 'swap:request_received', {
+      swapId: swap.id,
+      message: 'You have a new accessory swap request!',
+    });
+
+    // In-app Notification
+    try {
+      await createNotification({
+        userId: wantedGarment.sellerId,
+        type: 'SWAP_REQUEST',
+        title: 'New Swap Proposal!',
+        body: `${(req.user as any)?.displayName || req.user.email || 'A collector'} proposed swapping for your "${wantedGarment.title}".`,
+        data: { swapId: swap.id },
+      });
+    } catch (notifErr) {
+      logger.warn('Failed to send swap request notification', { error: notifErr });
+    }
+
+    const formatted = formatSwapTransaction(swap, initiatorId);
+    res.status(201).json({ data: formatted });
+  } catch (error) {
+    logger.error('Failed to create swap request', { error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to process swap request' });
+  }
+}
+
+/**
+ * PATCH /swaps/:id
+ * Respond to a swap proposal (Accept / Decline).
+ */
 export async function respondToSwap(req: Request, res: Response): Promise<void> {
-    try {
-        if (!req.user) {
-            res.status(401).json({ error: 'UNAUTHORIZED' });
-            return;
-        }
-
-        const { id } = req.params;
-        const { accept } = req.body;
-
-        const swap = await db.swap.findUnique({ where: { id } });
-
-        if (!swap) {
-            res.status(404).json({ error: 'NOT_FOUND', message: 'Swap not found' });
-            return;
-        }
-
-        if (swap.receiverId !== req.user.id) {
-            res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to respond to this swap' });
-            return;
-        }
-
-        if (swap.status !== 'REQUESTED') {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap is no longer pending' });
-            return;
-        }
-
-        if (accept) {
-            // Setup transaction for logical atomicity
-            await (db as any).$transaction(async (tx: any) => {
-                await tx.swap.update({
-                    where: { id },
-                    data: { status: 'ACCEPTED' }
-                });
-
-                // De-list items
-                await tx.garment.updateMany({
-                    where: { id: { in: [swap.garmentOffered, swap.garmentWanted] } },
-                    data: {
-                        isActive: false,
-                        lifecycleState: 'OWNERSHIP'
-                    }
-                });
-
-                // Update Impacts
-                const carbonSaved = 10;
-                const waterSaved = 1000;
-
-                await tx.impactRecord.upsert({
-                    where: { userId: swap.initiatorId },
-                    update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
-                    create: { userId: swap.initiatorId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved }
-                });
-
-                await tx.impactRecord.upsert({
-                    where: { userId: swap.receiverId },
-                    update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
-                    create: { userId: swap.receiverId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved }
-                });
-            });
-
-            emitToUser(swap.initiatorId, 'swap:accepted', { swapId: swap.id });
-        } else {
-            await db.swap.update({
-                where: { id },
-                data: { status: 'REJECTED' }
-            });
-            emitToUser(swap.initiatorId, 'swap:rejected', { swapId: swap.id });
-        }
-
-        const updated = await db.swap.findUnique({ where: { id } });
-        res.json({ data: updated });
-    } catch (error) {
-        logger.error('Failed to respond to swap', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
     }
-}
 
-export async function completeSwap(req: Request, res: Response): Promise<void> {
-    try {
-        if (!req.user) {
-            res.status(401).json({ error: 'UNAUTHORIZED' });
-            return;
-        }
+    const { id } = req.params;
+    const body = req.body || {};
 
-        const { id } = req.params;
-        const swap = await db.swap.findUnique({ where: { id } });
+    // Support both { action: 'ACCEPTED' | 'REJECTED' } and { accept: boolean }
+    const isAccepted = body.action === 'ACCEPTED' || body.accept === true;
+    const isRejected = body.action === 'REJECTED' || body.accept === false;
 
-        if (!swap) {
-            res.status(404).json({ error: 'NOT_FOUND' });
-            return;
-        }
+    if (!isAccepted && !isRejected) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Valid action (ACCEPTED or REJECTED) is required' });
+      return;
+    }
 
-        if (swap.status !== 'ACCEPTED') {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap is not ready to be completed' });
-            return;
-        }
+    const swap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
 
-        if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
-            res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to complete this swap' });
-            return;
-        }
+    if (!swap) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Swap not found' });
+      return;
+    }
 
-        await db.$transaction(async (tx: any) => {
-            await tx.swap.update({
-                where: { id },
-                data: {
-                    status: 'COMPLETED',
-                    completedAt: new Date()
-                }
-            });
+    if (swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to respond to this swap' });
+      return;
+    }
 
-            await tx.garment.update({
-                where: { id: swap.garmentOffered },
-                data: { sellerId: swap.receiverId, lifecycleState: 'OWNERSHIP' }
-            });
+    if (swap.status !== 'REQUESTED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap proposal is no longer pending' });
+      return;
+    }
 
-            await tx.garment.update({
-                where: { id: swap.garmentWanted },
-                data: { sellerId: swap.initiatorId, lifecycleState: 'OWNERSHIP' }
-            });
+    if (isAccepted) {
+      await (db as any).$transaction(async (tx: any) => {
+        await tx.swap.update({
+          where: { id },
+          data: { status: 'ACCEPTED' },
         });
 
-        const updated = await db.swap.findUnique({ where: { id } });
-        res.json({ data: updated });
-    } catch (error) {
-        logger.error('Failed to complete swap', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        // Reserve garments so they cannot be purchased while swap is underway
+        await tx.garment.updateMany({
+          where: { id: { in: [swap.garmentOffered, swap.garmentWanted] } },
+          data: { isActive: false },
+        });
+      });
+
+      emitToUser(swap.initiatorId, 'swap:accepted', { swapId: swap.id });
+
+      try {
+        await createNotification({
+          userId: swap.initiatorId,
+          type: 'SWAP_ACCEPTED',
+          title: 'Swap Accepted!',
+          body: `Your swap proposal for "${swap.wantedGarment?.title || 'item'}" was accepted! Please review and sign agreement.`,
+          data: { swapId: swap.id },
+        });
+      } catch (notifErr) {
+        logger.warn('Failed to send swap accepted notification', { error: notifErr });
+      }
+    } else {
+      await db.swap.update({
+        where: { id },
+        data: { status: 'REJECTED' },
+      });
+
+      emitToUser(swap.initiatorId, 'swap:rejected', { swapId: swap.id });
+
+      try {
+        await createNotification({
+          userId: swap.initiatorId,
+          type: 'SWAP_REJECTED',
+          title: 'Swap Declined',
+          body: `Your swap proposal was declined.`,
+          data: { swapId: swap.id },
+        });
+      } catch (notifErr) {
+        logger.warn('Failed to send swap rejected notification', { error: notifErr });
+      }
     }
+
+    const updated = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    const formatted = formatSwapTransaction(updated, req.user.id);
+    res.json({ data: formatted });
+  } catch (error) {
+    logger.error('Failed to respond to swap', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
 }
+
+/**
+ * POST /swaps/:id/sign-agreement
+ * Digital signature acceptance for mutual terms.
+ */
+export async function signSwapAgreement(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const swap = await db.swap.findUnique({ where: { id } });
+
+    if (!swap) {
+      res.status(404).json({ error: 'NOT_FOUND' });
+      return;
+    }
+
+    if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN' });
+      return;
+    }
+
+    const isInitiator = swap.initiatorId === req.user.id;
+
+    updateSwapMetadata(id, (meta) => {
+      if (isInitiator) {
+        meta.initiatorAcceptedTerms = true;
+      } else {
+        meta.receiverAcceptedTerms = true;
+      }
+      if (meta.initiatorAcceptedTerms && meta.receiverAcceptedTerms) {
+        meta.termsAcceptedAt = new Date().toISOString();
+      }
+    });
+
+    const meta = getSwapMetadata(id);
+    if (meta.initiatorAcceptedTerms && meta.receiverAcceptedTerms) {
+      emitToUser(swap.initiatorId, 'swap:agreement_ready', { swapId: id });
+      emitToUser(swap.receiverId, 'swap:agreement_ready', { swapId: id });
+    }
+
+    const fullSwap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+  } catch (error) {
+    logger.error('signSwapAgreement failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /swaps/:id/agreement
+ */
+export async function getSwapAgreement(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const meta = getSwapMetadata(id);
+    res.json({
+      data: {
+        swapId: id,
+        terms: [
+          'I confirm the accessory I am offering matches the photos and description.',
+          'I agree to dispatch the accessory within 3 business days of the agreement.',
+          'I will use secure shipping with tracking for safe delivery.',
+          'If the item received is materially different, a dispute may be initiated within 48 hours.',
+        ],
+        acceptedByInitiator: !!meta.initiatorAcceptedTerms,
+        acceptedByReceiver: !!meta.receiverAcceptedTerms,
+        signedAt: meta.termsAcceptedAt,
+      },
+    });
+  } catch (error) {
+    logger.error('getSwapAgreement failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps/:id/address
+ * Share encrypted shipping destination address.
+ */
+export async function shareSwapAddress(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const address: SwapAddressData = req.body;
+
+    if (!address || !address.fullName || !address.line1 || !address.pincode) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Complete delivery address is required' });
+      return;
+    }
+
+    const swap = await db.swap.findUnique({ where: { id } });
+    if (!swap) {
+      res.status(404).json({ error: 'NOT_FOUND' });
+      return;
+    }
+
+    const isInitiator = swap.initiatorId === req.user.id;
+    const isReceiver = swap.receiverId === req.user.id;
+
+    if (!isInitiator && !isReceiver) {
+      res.status(403).json({ error: 'FORBIDDEN' });
+      return;
+    }
+
+    updateSwapMetadata(id, (meta) => {
+      if (isInitiator) {
+        meta.initiatorAddress = address;
+      } else {
+        meta.receiverAddress = address;
+      }
+      if (meta.initiatorAddress && meta.receiverAddress) {
+        meta.addressSharedAt = new Date().toISOString();
+      }
+    });
+
+    const fullSwap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+  } catch (error) {
+    logger.error('shareSwapAddress failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /swaps/:id/shipping-address
+ * Retrieve counterpart's shipping address (privacy-guarded).
+ */
+export async function getShippingAddress(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const swap = await db.swap.findUnique({ where: { id } });
+
+    if (!swap) {
+      res.status(404).json({ error: 'NOT_FOUND' });
+      return;
+    }
+
+    const meta = getSwapMetadata(id);
+    const bothSigned = !!(meta.initiatorAcceptedTerms && meta.receiverAcceptedTerms);
+
+    if (!bothSigned) {
+      res.json({
+        data: null,
+        message: 'Addresses are protected and only revealed once both parties sign the swap agreement.',
+      });
+      return;
+    }
+
+    const isInitiator = swap.initiatorId === req.user.id;
+    const counterpartAddress = isInitiator ? meta.receiverAddress : meta.initiatorAddress;
+
+    res.json({ data: counterpartAddress || null });
+  } catch (error) {
+    logger.error('getShippingAddress failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps/:id/ship
+ * Submit dispatch & tracking details.
+ */
+export async function markSwapShipped(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const tracking: SwapTrackingData = req.body;
+
+    if (!tracking || !tracking.courierPartner || !tracking.trackingNumber) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Courier partner and tracking number are required' });
+      return;
+    }
+
+    const swap = await db.swap.findUnique({ where: { id } });
+    if (!swap) {
+      res.status(404).json({ error: 'NOT_FOUND' });
+      return;
+    }
+
+    const isInitiator = swap.initiatorId === req.user.id;
+    const isReceiver = swap.receiverId === req.user.id;
+
+    if (!isInitiator && !isReceiver) {
+      res.status(403).json({ error: 'FORBIDDEN' });
+      return;
+    }
+
+    tracking.shippedAt = tracking.shippedAt || new Date().toISOString();
+
+    updateSwapMetadata(id, (meta) => {
+      if (isInitiator) {
+        meta.initiatorTracking = tracking;
+      } else {
+        meta.receiverTracking = tracking;
+      }
+    });
+
+    const fullSwap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+  } catch (error) {
+    logger.error('markSwapShipped failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps/:id/confirm-received
+ * Confirm condition and receipt. When both confirm, execute atomic ownership swap!
+ */
+export async function confirmSwapReceived(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const swap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    if (!swap) {
+      res.status(404).json({ error: 'NOT_FOUND' });
+      return;
+    }
+
+    const isInitiator = swap.initiatorId === req.user.id;
+    const isReceiver = swap.receiverId === req.user.id;
+
+    if (!isInitiator && !isReceiver) {
+      res.status(403).json({ error: 'FORBIDDEN' });
+      return;
+    }
+
+    updateSwapMetadata(id, (meta) => {
+      if (isInitiator) {
+        meta.initiatorReceived = true;
+      } else {
+        meta.receiverReceived = true;
+      }
+    });
+
+    const meta = getSwapMetadata(id);
+    const bothConfirmed = meta.initiatorReceived && meta.receiverReceived;
+
+    // If both confirmed, execute atomic transfer
+    if (bothConfirmed) {
+      updateSwapMetadata(id, (m) => {
+        m.depositReleasedAt = new Date().toISOString();
+      });
+
+      await (db as any).$transaction(async (tx: any) => {
+        await tx.swap.update({
+          where: { id },
+          data: {
+            status: 'COMPLETED',
+            completedAt: new Date(),
+          },
+        });
+
+        // 1. Swap ownership of offered garment to receiver
+        await tx.garment.update({
+          where: { id: swap.garmentOffered },
+          data: {
+            sellerId: swap.receiverId,
+            lifecycleState: 'OWNERSHIP',
+            isActive: false,
+          },
+        });
+
+        // 2. Swap ownership of wanted garment to initiator
+        await tx.garment.update({
+          where: { id: swap.garmentWanted },
+          data: {
+            sellerId: swap.initiatorId,
+            lifecycleState: 'OWNERSHIP',
+            isActive: false,
+          },
+        });
+
+        // 3. Update sustainability impact for both users
+        const carbonSaved = 10;
+        const waterSaved = 1000;
+
+        await tx.impactRecord.upsert({
+          where: { userId: swap.initiatorId },
+          update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
+          create: { userId: swap.initiatorId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved },
+        });
+
+        await tx.impactRecord.upsert({
+          where: { userId: swap.receiverId },
+          update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
+          create: { userId: swap.receiverId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved },
+        });
+      });
+
+      // Socket & in-app notifications
+      emitToUser(swap.initiatorId, 'swap:completed', { swapId: id });
+      emitToUser(swap.receiverId, 'swap:completed', { swapId: id });
+
+      try {
+        await createNotification({
+          userId: swap.initiatorId,
+          type: 'SWAP_COMPLETED',
+          title: '🎉 Swap Completed!',
+          body: `Your accessory exchange is complete. Ownership of "${swap.wantedGarment?.title || 'accessory'}" is now yours!`,
+          data: { swapId: id },
+        });
+        await createNotification({
+          userId: swap.receiverId,
+          type: 'SWAP_COMPLETED',
+          title: '🎉 Swap Completed!',
+          body: `Your accessory exchange is complete. Ownership of "${swap.offeredGarment?.title || 'accessory'}" is now yours!`,
+          data: { swapId: id },
+        });
+      } catch (notifErr) {
+        logger.warn('Failed to send swap completed notification', { error: notifErr });
+      }
+    } else {
+      const otherUserId = isInitiator ? swap.receiverId : swap.initiatorId;
+      emitToUser(otherUserId, 'swap:item_received', { swapId: id, confirmedBy: req.user.id });
+      try {
+        await createNotification({
+          userId: otherUserId,
+          type: 'SWAP_RECEIVED',
+          title: 'Package Received Confirmation',
+          body: 'Your swap partner confirmed receiving their accessory. Please confirm when yours arrives to finalize.',
+          data: { swapId: id },
+        });
+      } catch (notifErr) {
+        logger.warn('Failed to send swap received notification', { error: notifErr });
+      }
+    }
+
+    const fullSwap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+  } catch (error) {
+    logger.error('confirmSwapReceived failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps/:id/complete
+ * Directly trigger completion (marks both received and executes ownership swap).
+ */
+export async function completeSwap(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const swap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    if (!swap) {
+      res.status(404).json({ error: 'NOT_FOUND' });
+      return;
+    }
+
+    if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN' });
+      return;
+    }
+
+    updateSwapMetadata(id, (meta) => {
+      meta.initiatorReceived = true;
+      meta.receiverReceived = true;
+      meta.depositReleasedAt = new Date().toISOString();
+    });
+
+    await (db as any).$transaction(async (tx: any) => {
+      await tx.swap.update({
+        where: { id },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+        },
+      });
+
+      await tx.garment.update({
+        where: { id: swap.garmentOffered },
+        data: {
+          sellerId: swap.receiverId,
+          lifecycleState: 'OWNERSHIP',
+          isActive: false,
+        },
+      });
+
+      await tx.garment.update({
+        where: { id: swap.garmentWanted },
+        data: {
+          sellerId: swap.initiatorId,
+          lifecycleState: 'OWNERSHIP',
+          isActive: false,
+        },
+      });
+
+      const carbonSaved = 10;
+      const waterSaved = 1000;
+
+      await tx.impactRecord.upsert({
+        where: { userId: swap.initiatorId },
+        update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
+        create: { userId: swap.initiatorId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved },
+      });
+
+      await tx.impactRecord.upsert({
+        where: { userId: swap.receiverId },
+        update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
+        create: { userId: swap.receiverId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved },
+      });
+    });
+
+    emitToUser(swap.initiatorId, 'swap:completed', { swapId: id });
+    emitToUser(swap.receiverId, 'swap:completed', { swapId: id });
+
+    const fullSwap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+  } catch (error) {
+    logger.error('completeSwap failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps/:id/pay-deposit
+ * Pay security deposit for swap transaction.
+ */
+export async function paySecurityDeposit(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const userId = req.user.id;
+    const { id } = req.params;
+    const swap = await db.swap.findUnique({ where: { id } });
+    if (!swap) {
+      res.status(404).json({ error: 'SWAP_NOT_FOUND', message: 'Swap request not found' });
+      return;
+    }
+    if (swap.initiatorId !== userId && swap.receiverId !== userId) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this swap' });
+      return;
+    }
+
+    const meta = getSwapMetadata(id);
+    const amount = meta.securityDepositAmount || 50000;
+
+    let razorpayOrderId = `order_swap_dep_${id.slice(0, 8)}_${Date.now()}`;
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (keyId && keySecret) {
+      try {
+        const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+        const order = await rzp.orders.create({
+          amount,
+          currency: 'INR',
+          receipt: `swap_dep_${id.slice(0, 10)}`,
+          notes: { swapId: id, userId, type: 'SWAP_DEPOSIT' },
+        });
+        razorpayOrderId = order.id;
+      } catch (rzpErr) {
+        logger.warn('Failed to create Razorpay order for swap deposit, using fallback id', { error: rzpErr });
+      }
+    }
+
+    updateSwapMetadata(id, (m) => {
+      m.securityDepositPaidBy = userId;
+      m.depositEscrowId = razorpayOrderId;
+    });
+
+    res.json({
+      data: {
+        razorpayOrderId,
+        amount,
+      },
+    });
+  } catch (error) {
+    logger.error('paySecurityDeposit failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /swaps/:id/deposit
+ * Get deposit status for swap.
+ */
+export async function getDepositStatus(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const swap = await db.swap.findUnique({ where: { id } });
+    if (!swap) {
+      res.status(404).json({ error: 'SWAP_NOT_FOUND', message: 'Swap request not found' });
+      return;
+    }
+    if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this swap' });
+      return;
+    }
+
+    const meta = getSwapMetadata(id);
+    const isInitiator = swap.initiatorId === req.user.id;
+    const myDepositPaid = isInitiator ? !!meta.initiatorDepositPaid : !!meta.receiverDepositPaid;
+    res.json({
+      data: {
+        amount: meta.securityDepositAmount || 50000,
+        paid: myDepositPaid || !!meta.securityDepositPaidBy,
+        paidBy: meta.securityDepositPaidBy || null,
+        releasedAt: meta.depositReleasedAt || null,
+      },
+    });
+  } catch (error) {
+    logger.error('getDepositStatus failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps/:id/verify-deposit
+ * Verify Razorpay payment signature for swap security deposit.
+ */
+export async function verifySecurityDeposit(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    const swap = await db.swap.findUnique({ where: { id } });
+    if (!swap) {
+      res.status(404).json({ error: 'SWAP_NOT_FOUND', message: 'Swap request not found' });
+      return;
+    }
+
+    if (swap.initiatorId !== userId && swap.receiverId !== userId) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this swap' });
+      return;
+    }
+
+    // Verify signature if credentials and signature provided
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (secret && razorpay_signature && razorpay_order_id && razorpay_payment_id) {
+      const expected = crypto
+        .createHmac('sha256', secret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest('hex');
+      if (expected !== razorpay_signature) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid Razorpay signature' });
+        return;
+      }
+    }
+
+    const isInitiator = swap.initiatorId === userId;
+    const partnerId = isInitiator ? swap.receiverId : swap.initiatorId;
+
+    updateSwapMetadata(id, (meta) => {
+      if (isInitiator) {
+        meta.initiatorDepositPaid = true;
+        meta.initiatorDepositPaymentId = razorpay_payment_id || 'mock_pay_' + Date.now();
+      } else {
+        meta.receiverDepositPaid = true;
+        meta.receiverDepositPaymentId = razorpay_payment_id || 'mock_pay_' + Date.now();
+      }
+      meta.securityDepositPaidBy = userId;
+      meta.securityDepositPaidAt = new Date().toISOString();
+      meta.depositEscrowId = razorpay_order_id || meta.depositEscrowId;
+    });
+
+    // Notify other party that escrow deposit is secured
+    try {
+      await createNotification({
+        userId: partnerId,
+        type: 'SWAP_ACCEPTED',
+        title: '🛡️ Escrow Deposit Secured!',
+        body: `${(req.user as any)?.displayName || 'Your partner'} has deposited the ₹500 refundable security escrow.`,
+        data: { swapId: id },
+      });
+    } catch (notifErr) {
+      logger.warn('Failed to send swap deposit notification', { error: notifErr });
+    }
+
+    // Emit live socket event
+    emitToUser(partnerId, 'swap:deposit_paid', { swapId: id, paidBy: userId });
+    emitToUser(userId, 'swap:deposit_paid', { swapId: id, paidBy: userId });
+
+    const updatedMeta = getSwapMetadata(id);
+
+    res.json({
+      success: true,
+      message: 'Security deposit confirmed and held in escrow',
+      data: {
+        swapId: id,
+        depositPaid: true,
+        amount: updatedMeta.securityDepositAmount || 50000,
+        paidAt: updatedMeta.securityDepositPaidAt,
+      },
+    });
+  } catch (error) {
+    logger.error('verifySecurityDeposit failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps/:id/dispute
+ * Open a dispute for a swap.
+ */
+export async function openDispute(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { reason, description, evidencePhotos = [] } = req.body;
+
+    if (!reason || !description) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'reason and description are required' });
+      return;
+    }
+
+    const swap = await db.swap.findUnique({ where: { id } });
+    if (!swap) {
+      res.status(404).json({ error: 'SWAP_NOT_FOUND', message: 'Swap request not found' });
+      return;
+    }
+    if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this swap' });
+      return;
+    }
+
+    const otherUserId = swap.initiatorId === req.user.id ? swap.receiverId : swap.initiatorId;
+
+    const dispute = {
+      swapId: id,
+      openedBy: req.user.id,
+      reason,
+      description,
+      evidencePhotos: Array.isArray(evidencePhotos) ? evidencePhotos : [],
+      status: 'OPEN' as const,
+    };
+
+    updateSwapMetadata(id, (m) => {
+      m.dispute = dispute;
+      m.disputedAt = new Date().toISOString();
+      m.disputeReason = reason;
+    });
+
+    emitToUser(otherUserId, 'swap:disputed', { swapId: id, reason });
+
+    try {
+      await createNotification({
+        userId: otherUserId,
+        type: 'SWAP_DISPUTED',
+        title: '⚠️ Swap Dispute Opened',
+        body: `A dispute has been opened for your swap: "${reason}". Support is reviewing the transaction.`,
+        data: { swapId: id },
+      });
+    } catch (notifErr) {
+      logger.warn('Failed to send swap disputed notification', { error: notifErr });
+    }
+
+    res.json({ data: dispute });
+  } catch (error) {
+    logger.error('openDispute failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /swaps/:id/dispute
+ * Get dispute details for a swap.
+ */
+export async function getDispute(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const swap = await db.swap.findUnique({ where: { id } });
+    if (!swap) {
+      res.status(404).json({ error: 'SWAP_NOT_FOUND', message: 'Swap request not found' });
+      return;
+    }
+    if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this swap' });
+      return;
+    }
+
+    const meta = getSwapMetadata(id);
+    res.json({ data: meta.dispute || null });
+  } catch (error) {
+    logger.error('getDispute failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps/:id/cancel
+ * Cancel a swap before both parties have shipped.
+ */
+export async function cancelSwap(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const swap = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    if (!swap) {
+      res.status(404).json({ error: 'SWAP_NOT_FOUND', message: 'Swap request not found' });
+      return;
+    }
+    if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this swap' });
+      return;
+    }
+    if (swap.status === 'COMPLETED') {
+      res.status(400).json({ error: 'ALREADY_COMPLETED', message: 'Cannot cancel a completed swap' });
+      return;
+    }
+
+    const meta = getSwapMetadata(id);
+    if (meta.initiatorTracking && meta.receiverTracking) {
+      res.status(400).json({ error: 'ALREADY_SHIPPED', message: 'Cannot cancel after both parties have shipped items' });
+      return;
+    }
+
+    await db.swap.update({
+      where: { id },
+      data: { status: 'REJECTED' },
+    });
+
+    updateSwapMetadata(id, (m) => {
+      m.cancelledAt = new Date().toISOString();
+      if (m.securityDepositPaidBy && !m.depositReleasedAt) {
+        m.depositReleasedAt = new Date().toISOString();
+      }
+    });
+
+    const otherUserId = swap.initiatorId === req.user.id ? swap.receiverId : swap.initiatorId;
+    emitToUser(otherUserId, 'swap:cancelled', { swapId: id });
+
+    try {
+      await createNotification({
+        userId: otherUserId,
+        type: 'SWAP_CANCELLED',
+        title: 'Swap Request Cancelled',
+        body: 'The accessory swap request was cancelled.',
+        data: { swapId: id },
+      });
+    } catch (notifErr) {
+      logger.warn('Failed to send swap cancelled notification', { error: notifErr });
+    }
+
+    const updated = await db.swap.findUnique({
+      where: { id },
+      include: {
+        initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+        receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+        offeredGarment: true,
+        wantedGarment: true,
+      },
+    });
+
+    res.json({ data: formatSwapTransaction(updated, req.user.id) });
+  } catch (error) {
+    logger.error('cancelSwap failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /swaps/:id/review
+ * Submit a peer review for a completed swap.
+ */
+export async function postSwapReview(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { rating, comment } = req.body;
+
+    const numRating = Number(rating);
+    if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Rating must be an integer between 1 and 5' });
+      return;
+    }
+
+    const swap = await db.swap.findUnique({
+      where: { id },
+    });
+
+    if (!swap) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Swap not found' });
+      return;
+    }
+
+    if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied' });
+      return;
+    }
+
+    const otherUserId = swap.initiatorId === req.user.id ? swap.receiverId : swap.initiatorId;
+
+    const meta = getSwapMetadata(id);
+    const reviews = meta.reviews || {};
+
+    if (reviews[req.user.id]) {
+      res.status(409).json({ error: 'CONFLICT', message: 'You have already submitted a review for this swap' });
+      return;
+    }
+
+    const newReview = {
+      rating: numRating,
+      comment: typeof comment === 'string' ? comment.trim().slice(0, 1000) : undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    reviews[req.user.id] = newReview;
+    updateSwapMetadata(id, (m) => {
+      m.reviews = reviews;
+    });
+
+    // Send notification to the partner
+    try {
+      await createNotification({
+        userId: otherUserId,
+        type: 'PEER_REVIEW',
+        title: '⭐️ Swap Review Received!',
+        body: `${req.user?.displayName || 'Your swap partner'} left you a ${numRating}-star review for swap #${id.slice(0, 8).toUpperCase()}.`,
+        data: { swapId: id },
+      });
+    } catch (notifErr) {
+      logger.warn('Failed to send swap review notification', { error: notifErr });
+    }
+
+    res.status(201).json({ success: true, data: newReview });
+  } catch (error) {
+    logger.error('postSwapReview failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
+

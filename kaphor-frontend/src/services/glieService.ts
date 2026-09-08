@@ -1,0 +1,215 @@
+/**
+ * GLIE (Garment Lifecycle Intelligence Engine) Service
+ *
+ * Communicates with the Kaphor GLIE RAGBOT FastAPI backend
+ * (src.api.main) running separately on the configured GLIE_API_URL.
+ *
+ * The API returns a structured assessment with routing decision,
+ * condition score, and route-specific enrichment (price suggestion,
+ * upcycle tutorial, or recycling info).
+ */
+
+const GLIE_API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+
+export interface GLIERequest {
+  garment_id: string;
+  /** Local file path or URL to the garment image */
+  image_url: string;
+  /** Base64-encoded image data (sent when image is local) */
+  image_base64?: string;
+  garment_category: string;
+  fiber_type: string;
+  original_price_inr: number;
+  style_tags?: string;
+  color_family?: string;
+  season?: string;
+  condition_override?: number;
+  damage_type?: string;
+  damage_location?: string;
+}
+
+export interface GLIEResponse {
+  glie_score: number;
+  routing_decision: 'RESELL' | 'UPCYCLE' | 'RECYCLE';
+  condition_score: number;
+  material_score: number;
+  market_demand_score: number;
+  sustainability_score: number;
+  damage_breakdown: {
+    damage_ratio: number;
+    wear_zone_ratio: number;
+    stain_ratio: number;
+    fiber_degradation_score: number;
+    damage_types: string[];
+  };
+  carbon_saved_kg: number;
+  water_saved_litres: number;
+  trees_equivalent: number;
+  repair_feasibility: string;
+  suggested_repair_technique: string;
+  suggested_price_inr?: number;
+  description: string;
+  rag_context: {
+    examples_used: number;
+    guides_matched: number;
+    market_listings_matched: number;
+    prompt_tokens_estimated: number;
+    gemini_model: string;
+  };
+}
+
+/** Garment categories recognisable by the GLIE system */
+export const GARMENT_CATEGORIES = [
+  'top', 'tshirt', 'shirt', 'blouse', 'kurta', 'kurti', 'saree', 'lehenga',
+  'dress', 'skirt', 'trousers', 'jeans', 'shorts',
+  'jacket', 'blazer', 'coat', 'sweater', 'hoodie', 'sweatshirt',
+  'activewear', 'other',
+];
+
+export const COLOR_FAMILIES = [
+  'neutrals', 'black', 'white', 'blue', 'red', 'green', 'pink',
+  'yellow', 'purple', 'brown', 'gray', 'multicolor',
+];
+
+export const SEASONS = [
+  'all_season', 'summer', 'winter', 'spring', 'fall', 'monsoon',
+];
+
+export const STYLE_TAGS = [
+  'casual', 'formal', 'party', 'ethnic', 'sport', 'traditional', 'western',
+];
+
+/**
+ * Sends a garment image + metadata to the GLIE RAGBOT for assessment.
+ * Uploads image to S3 first (fast), then sends only the URL to GLIE.
+ * Falls back to base64 if upload fails.
+ * @param onProgress - callback with step index (0=upload, 1=fibre, 2=scan, 3=score, 4=route)
+ */
+export async function assessGarment(
+  req: GLIERequest,
+  onProgress?: (step: number) => void,
+): Promise<GLIEResponse> {
+  let s3Url: string | undefined;
+
+  // Step 0: UPLOADING IMAGE — upload to S3 via temp endpoint
+  onProgress?.(0);
+  if (req.image_base64) {
+    try {
+      const base64Data = req.image_base64.includes(',')
+        ? req.image_base64.split(',')[1]
+        : req.image_base64;
+      const binaryStr = atob(base64Data);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'image/jpeg' });
+
+      const formData = new FormData();
+      formData.append('image', blob, 'garment.jpg');
+
+      const uploadResp = await fetch(`${GLIE_API_URL}/glie/upload-temp`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (uploadResp.ok) {
+        const uploadData = await uploadResp.json();
+        s3Url = uploadData.url;
+      }
+    } catch {
+      // Upload failed — will fall back to base64
+    }
+  }
+
+  // Step 1: ANALYSING FIBRE — building RAG context
+  onProgress?.(1);
+
+  // Step 2: SCANNING CONDITION — send to Gemini Vision
+  onProgress?.(2);
+
+  const payload: Record<string, any> = { ...req };
+  if (s3Url) {
+    payload.image_s3_url = s3Url;
+    delete payload.image_base64;
+  }
+
+  const response = await fetch(`${GLIE_API_URL}/glie/assess`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  // Step 3: COMPUTING SCORE — Gemini responded, computing sub-scores
+  onProgress?.(3);
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    throw new Error(
+      `GLIE assessment failed (${response.status}): ${errorBody || response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+
+  // Step 4: DETERMINING ROUTE
+  onProgress?.(4);
+
+  return data;
+}
+
+/**
+ * Returns a human-readable condition grade based on the condition score.
+ * Hides the raw score — shows only the grade.
+ */
+export function conditionGrade(score: number): { label: string; color: string } {
+  if (score >= 0.85) return { label: 'Excellent', color: '#1E3B2F' };
+  if (score >= 0.65) return { label: 'Good', color: '#C95F12' };
+  if (score >= 0.45) return { label: 'Fair', color: '#4A2E1A' };
+  return { label: 'Poor', color: '#A82222' };
+}
+
+/**
+ * Returns display info for a routing decision.
+ * Clean, user-friendly labels — no scores or technical terms.
+ */
+export function routeDisplayInfo(decision: string): {
+  emoji: string;
+  title: string;
+  subtitle: string;
+  color: string;
+  bgColor: string;
+} {
+  switch (decision) {
+    case 'RESELL':
+      return {
+        emoji: '🔄',
+        title: 'Resell',
+        subtitle: 'This garment has good resale value. List it on the marketplace.',
+        color: '#1E3B2F',
+        bgColor: '#E8F5E9',
+      };
+    case 'UPCYCLE':
+      return {
+        emoji: '♻️',
+        title: 'Upcycle & Repair',
+        subtitle: 'Give this garment a new life with a creative transformation.',
+        color: '#C95F12',
+        bgColor: '#FFF3E0',
+      };
+    case 'RECYCLE':
+      return {
+        emoji: '♻️',
+        title: 'Recycle',
+        subtitle: 'This garment has reached end of life. We\'ll help recycle it responsibly.',
+        color: '#A82222',
+        bgColor: '#FFEBEE',
+      };
+    default:
+      return {
+        emoji: '❓',
+        title: 'Unknown',
+        subtitle: 'Could not determine the best route for this garment.',
+        color: '#666',
+        bgColor: '#F5F5F5',
+      };
+  }
+}

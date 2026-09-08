@@ -62,12 +62,3 @@ export const radius = {
   card: 20,
   full: 999,
 } as const;
-
-export const theme = {
-  colors,
-  typography,
-  spacing,
-  radius,
-} as const;
-
-export type Theme = typeof theme;

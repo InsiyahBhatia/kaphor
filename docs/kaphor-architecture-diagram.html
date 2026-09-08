@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaphor — Complete Architecture Diagram</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .container {
+    max-width: 1400px;
+    width: 100%;
+    background: #16213e;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    margin-bottom: 20px;
+  }
+  h1 {
+    color: #e94560;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  h1 small {
+    color: #8899aa;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .subtitle {
+    color: #a0b0c0;
+    font-size: 14px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #2a3a5e;
+    padding-bottom: 12px;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: #0f3460;
+    border-radius: 10px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #c0d0e0;
+    font-size: 13px;
+  }
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .footer-note {
+    color: #607080;
+    font-size: 12px;
+    margin-top: 16px;
+    text-align: center;
+    max-width: 900px;
+    line-height: 1.6;
+  }
+  .toggle-btn {
+    background: #0f3460;
+    color: #a0b0c0;
+    border: 1px solid #2a3a5e;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: 12px;
+    transition: all 0.2s;
+  }
+  .toggle-btn:hover {
+    background: #1a4a7a;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>KAPHOR <small>— Architecture Diagram</small></h1>
+  <div class="subtitle">AI-Driven Circular Fashion Platform · Full System Architecture</div>
+
+  <svg viewBox="0 0 1340 960" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Gradients -->
+      <linearGradient id="gradFrontend" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#e94560;stop-opacity:0.95" />
+        <stop offset="100%" style="stop-color:#c23152;stop-opacity:0.95" />
+      </linearGradient>
+      <linearGradient id="gradBackend" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#0f3460;stop-opacity:0.95" />
+        <stop offset="100%" style="stop-color:#1a5276;stop-opacity:0.95" />
+      </linearGradient>
+      <linearGradient id="gradGLIE" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#2d6a4f;stop-opacity:0.95" />
+        <stop offset="100%" style="stop-color:#40916c;stop-opacity:0.95" />
+      </linearGradient>
+      <linearGradient id="gradDB" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#5a189a;stop-opacity:0.9" />
+        <stop offset="100%" style="stop-color:#7b2cbf;stop-opacity:0.9" />
+      </linearGradient>
+      <linearGradient id="gradExternal" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#e85d04;stop-opacity:0.85" />
+        <stop offset="100%" style="stop-color:#f48c06;stop-opacity:0.85" />
+      </linearGradient>
+      <linearGradient id="gradExternal2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#9d0208;stop-opacity:0.85" />
+        <stop offset="100%" style="stop-color:#dc2f02;stop-opacity:0.85" />
+      </linearGradient>
+      <filter id="shadow">
+        <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.3"/>
+      </filter>
+      <filter id="glow">
+        <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#e94560" flood-opacity="0.4"/>
+      </filter>
+      <marker id="arrowF" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+        <path d="M0,1 L8,5 L0,9" fill="#e94560" />
+      </marker>
+      <marker id="arrowB" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+        <path d="M0,1 L8,5 L0,9" fill="#4a8ec4" />
+      </marker>
+      <marker id="arrowG" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+        <path d="M0,1 L8,5 L0,9" fill="#52b788" />
+      </marker>
+      <marker id="arrowO" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+        <path d="M0,1 L8,5 L0,9" fill="#f48c06" />
+      </marker>
+    </defs>
+
+    <!-- ===================== BACKGROUND ZONES ===================== -->
+
+    <!-- Frontend Zone -->
+    <rect x="20" y="50" width="400" height="890" rx="14" fill="none" stroke="#e94560" stroke-width="2" stroke-opacity="0.2" stroke-dasharray="6,4" />
+    <text x="30" y="74" fill="#e94560" font-size="13" font-weight="600" opacity="0.7">kaphor-frontend</text>
+
+    <!-- Backend Zone -->
+    <rect x="440" y="50" width="440" height="890" rx="14" fill="none" stroke="#4a8ec4" stroke-width="2" stroke-opacity="0.2" stroke-dasharray="6,4" />
+    <text x="450" y="74" fill="#4a8ec4" font-size="13" font-weight="600" opacity="0.7">kaphor/backend</text>
+
+    <!-- GLIE Zone -->
+    <rect x="900" y="50" width="420" height="890" rx="14" fill="none" stroke="#52b788" stroke-width="2" stroke-opacity="0.2" stroke-dasharray="6,4" />
+    <text x="910" y="74" fill="#52b788" font-size="13" font-weight="600" opacity="0.7">Kaphor GLIE (Python)</text>
+
+    <!-- ===================== SECTION HEADERS ===================== -->
+
+    <!-- Frontend Header -->
+    <rect x="40" y="90" width="360" height="36" rx="8" fill="url(#gradFrontend)" filter="url(#shadow)" />
+    <text x="220" y="114" fill="#fff" font-size="16" font-weight="700" text-anchor="middle">📱 REACT NATIVE APP (Expo 55)</text>
+
+    <!-- Backend Header -->
+    <rect x="460" y="90" width="400" height="36" rx="8" fill="url(#gradBackend)" filter="url(#shadow)" />
+    <text x="660" y="114" fill="#fff" font-size="16" font-weight="700" text-anchor="middle">⚙️ NODE.JS API SERVER (Express)</text>
+
+    <!-- GLIE Header -->
+    <rect x="920" y="90" width="380" height="36" rx="8" fill="url(#gradGLIE)" filter="url(#shadow)" />
+    <text x="1110" y="114" fill="#fff" font-size="16" font-weight="700" text-anchor="middle">🧠 GLIE AI ENGINE (FastAPI)</text>
+
+    <!-- ===================== FRONTEND COMPONENTS ===================== -->
+
+    <!-- Section: Screens (left column) -->
+    <rect x="40" y="145" width="160" height="24" rx="4" fill="#e94560" fill-opacity="0.15" />
+    <text x="120" y="161" fill="#e94560" font-size="11" font-weight="600" text-anchor="middle">📂 APP SCREENS</text>
+
+    <!-- Screen blocks -->
+    <rect x="40" y="178" width="160" height="28" rx="5" fill="#2a1a30" stroke="#e94560" stroke-width="1" />
+    <text x="120" y="196" fill="#e0b0c0" font-size="11" text-anchor="middle">🏠 Home · Shop · Cart</text>
+
+    <rect x="40" y="212" width="160" height="28" rx="5" fill="#2a1a30" stroke="#e94560" stroke-width="1" />
+    <text x="120" y="230" fill="#e0b0c0" font-size="11" text-anchor="middle">♻️ Circular · Impact · Studio</text>
+
+    <rect x="40" y="246" width="160" height="28" rx="5" fill="#2a1a30" stroke="#e94560" stroke-width="1" />
+    <text x="120" y="264" fill="#e0b0c0" font-size="11" text-anchor="middle">👤 Profile · Admin · Auth</text>
+
+    <rect x="40" y="280" width="160" height="28" rx="5" fill="#2a1a30" stroke="#e94560" stroke-width="1" />
+    <text x="120" y="298" fill="#e0b0c0" font-size="11" text-anchor="middle">💳 Checkout · Orders · Swap</text>
+
+    <rect x="40" y="314" width="160" height="28" rx="5" fill="#2a1a30" stroke="#e94560" stroke-width="1" />
+    <text x="120" y="332" fill="#e0b0c0" font-size="11" text-anchor="middle">🔧 Repair · Upcycle · Chat</text>
+
+    <!-- Section: Stores -->
+    <rect x="40" y="360" width="160" height="24" rx="4" fill="#e94560" fill-opacity="0.15" />
+    <text x="120" y="376" fill="#e94560" font-size="11" font-weight="600" text-anchor="middle">🗄️ STATE STORES</text>
+
+    <rect x="40" y="390" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="78" y="407" fill="#d0a0b0" font-size="10" text-anchor="middle">authStore</text>
+    <rect x="124" y="390" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="162" y="407" fill="#d0a0b0" font-size="10" text-anchor="middle">cartStore</text>
+    <rect x="40" y="422" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="78" y="439" fill="#d0a0b0" font-size="10" text-anchor="middle">garmentStore</text>
+    <rect x="124" y="422" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="162" y="439" fill="#d0a0b0" font-size="10" text-anchor="middle">toastStore</text>
+
+    <!-- Section: Components -->
+    <rect x="40" y="466" width="160" height="24" rx="4" fill="#e94560" fill-opacity="0.15" />
+    <text x="120" y="482" fill="#e94560" font-size="11" font-weight="600" text-anchor="middle">🧩 COMPONENTS</text>
+
+    <rect x="40" y="496" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="78" y="513" fill="#d0a0b0" font-size="10" text-anchor="middle">TabBar</text>
+    <rect x="124" y="496" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="162" y="513" fill="#d0a0b0" font-size="10" text-anchor="middle">Header</text>
+    <rect x="40" y="528" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="78" y="545" fill="#d0a0b0" font-size="10" text-anchor="middle">RazorpayBtn</text>
+    <rect x="124" y="528" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="162" y="545" fill="#d0a0b0" font-size="10" text-anchor="middle">DossierLoad</text>
+    <rect x="40" y="560" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="78" y="577" fill="#d0a0b0" font-size="10" text-anchor="middle">KaphorImg</text>
+    <rect x="124" y="560" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="162" y="577" fill="#d0a0b0" font-size="10" text-anchor="middle">GarmentCard</text>
+
+    <!-- Section: Services -->
+    <rect x="40" y="604" width="160" height="24" rx="4" fill="#e94560" fill-opacity="0.15" />
+    <text x="120" y="620" fill="#e94560" font-size="11" font-weight="600" text-anchor="middle">🔌 API SERVICES</text>
+
+    <rect x="40" y="634" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="78" y="651" fill="#d0a0b0" font-size="10" text-anchor="middle">api.ts (axios)</text>
+    <rect x="124" y="634" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="162" y="651" fill="#d0a0b0" font-size="10" text-anchor="middle">glieService</text>
+    <rect x="40" y="666" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="78" y="683" fill="#d0a0b0" font-size="10" text-anchor="middle">authService</text>
+    <rect x="124" y="666" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="162" y="683" fill="#d0a0b0" font-size="10" text-anchor="middle">orderService</text>
+    <rect x="40" y="698" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="78" y="715" fill="#d0a0b0" font-size="10" text-anchor="middle">repairService</text>
+    <rect x="124" y="698" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="162" y="715" fill="#d0a0b0" font-size="10" text-anchor="middle">impactService</text>
+    <rect x="40" y="730" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="78" y="747" fill="#d0a0b0" font-size="10" text-anchor="middle">socket.ts</text>
+    <rect x="124" y="730" width="76" height="26" rx="5" fill="#1e1a30" stroke="#e94560" stroke-width="0.8" />
+    <text x="162" y="747" fill="#d0a0b0" font-size="10" text-anchor="middle">savedRepair</text>
+
+    <!-- Section: Auth -->
+    <rect x="40" y="774" width="160" height="24" rx="4" fill="#e94560" fill-opacity="0.15" />
+    <text x="120" y="790" fill="#e94560" font-size="11" font-weight="600" text-anchor="middle">🔐 AUTH & CONTEXT</text>
+
+    <rect x="40" y="804" width="160" height="28" rx="5" fill="#2a1a30" stroke="#e94560" stroke-width="1" />
+    <text x="120" y="822" fill="#e0b0c0" font-size="10" text-anchor="middle">AuthContext + useAuth</text>
+    <rect x="40" y="838" width="160" height="28" rx="5" fill="#2a1a30" stroke="#e94560" stroke-width="1" />
+    <text x="120" y="856" fill="#e0b0c0" font-size="10" text-anchor="middle">useGoogleAuth hook</text>
+    <rect x="40" y="872" width="160" height="28" rx="5" fill="#2a1a30" stroke="#e94560" stroke-width="1" />
+    <text x="120" y="890" fill="#e0b0c0" font-size="10" text-anchor="middle">Theme / Design System</text>
+
+    <!-- ===================== BACKEND COMPONENTS ===================== -->
+
+    <!-- Section: Routes -->
+    <rect x="460" y="145" width="170" height="24" rx="4" fill="#4a8ec4" fill-opacity="0.15" />
+    <text x="545" y="161" fill="#4a8ec4" font-size="11" font-weight="600" text-anchor="middle">🛣️ API ROUTES (/api/v1/)</text>
+
+    <rect x="460" y="178" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="193" fill="#a0c0e0" font-size="9" text-anchor="middle">auth</text>
+    <rect x="548" y="178" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="193" fill="#a0c0e0" font-size="9" text-anchor="middle">garments</text>
+    <rect x="460" y="205" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="220" fill="#a0c0e0" font-size="9" text-anchor="middle">orders</text>
+    <rect x="548" y="205" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="220" fill="#a0c0e0" font-size="9" text-anchor="middle">cart</text>
+    <rect x="460" y="232" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="247" fill="#a0c0e0" font-size="9" text-anchor="middle">razorpay</text>
+    <rect x="548" y="232" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="247" fill="#a0c0e0" font-size="9" text-anchor="middle">social</text>
+    <rect x="460" y="259" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="274" fill="#a0c0e0" font-size="9" text-anchor="middle">impact</text>
+    <rect x="548" y="259" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="274" fill="#a0c0e0" font-size="9" text-anchor="middle">circular</text>
+    <rect x="460" y="286" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="301" fill="#a0c0e0" font-size="9" text-anchor="middle">studio</text>
+    <rect x="548" y="286" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="301" fill="#a0c0e0" font-size="9" text-anchor="middle">ai</text>
+    <rect x="460" y="313" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="328" fill="#a0c0e0" font-size="9" text-anchor="middle">repair</text>
+    <rect x="548" y="313" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="328" fill="#a0c0e0" font-size="9" text-anchor="middle">glie</text>
+    <rect x="460" y="340" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="355" fill="#a0c0e0" font-size="9" text-anchor="middle">admin</text>
+    <rect x="548" y="340" width="82" height="22" rx="4" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="355" fill="#a0c0e0" font-size="9" text-anchor="middle">users</text>
+
+    <!-- Section: Controllers -->
+    <rect x="460" y="380" width="170" height="24" rx="4" fill="#4a8ec4" fill-opacity="0.15" />
+    <text x="545" y="396" fill="#4a8ec4" font-size="11" font-weight="600" text-anchor="middle">🎮 CONTROLLERS</text>
+
+    <rect x="460" y="410" width="170" height="90" rx="6" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="545" y="430" fill="#a0c0e0" font-size="10" text-anchor="middle">auth · garment · order</text>
+    <text x="545" y="446" fill="#a0c0e0" font-size="10" text-anchor="middle">cart · razorpay · social</text>
+    <text x="545" y="462" fill="#a0c0e0" font-size="10" text-anchor="middle">swap · rental · impact</text>
+    <text x="545" y="478" fill="#a0c0e0" font-size="10" text-anchor="middle">circular · ai · studio</text>
+    <text x="545" y="494" fill="#a0c0e0" font-size="10" text-anchor="middle">user · interaction · admin</text>
+
+    <!-- Section: Middleware -->
+    <rect x="460" y="515" width="170" height="24" rx="4" fill="#4a8ec4" fill-opacity="0.15" />
+    <text x="545" y="531" fill="#4a8ec4" font-size="11" font-weight="600" text-anchor="middle">🛡️ MIDDLEWARE</text>
+
+    <rect x="460" y="545" width="170" height="65" rx="6" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="545" y="563" fill="#a0c0e0" font-size="10" text-anchor="middle">auth (JWT verify + DB check)</text>
+    <text x="545" y="580" fill="#a0c0e0" font-size="10" text-anchor="middle">validate (Zod schemas)</text>
+    <text x="545" y="597" fill="#a0c0e0" font-size="10" text-anchor="middle">upload (Multer)</text>
+
+    <!-- Section: Services -->
+    <rect x="460" y="625" width="170" height="24" rx="4" fill="#4a8ec4" fill-opacity="0.15" />
+    <text x="545" y="641" fill="#4a8ec4" font-size="11" font-weight="600" text-anchor="middle">⚡ SERVICES</text>
+
+    <rect x="460" y="655" width="170" height="90" rx="6" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="545" y="673" fill="#a0c0e0" font-size="10" text-anchor="middle">user · garment · order</text>
+    <text x="545" y="690" fill="#a0c0e0" font-size="10" text-anchor="middle">payment · swap · rental</text>
+    <text x="545" y="707" fill="#a0c0e0" font-size="10" text-anchor="middle">impact · social · circular</text>
+    <text x="545" y="724" fill="#a0c0e0" font-size="10" text-anchor="middle">lifecycle · notification</text>
+    <text x="545" y="741" fill="#a0c0e0" font-size="10" text-anchor="middle">authLock · upcycling</text>
+
+    <!-- Section: Utils -->
+    <rect x="460" y="760" width="170" height="24" rx="4" fill="#4a8ec4" fill-opacity="0.15" />
+    <text x="545" y="776" fill="#4a8ec4" font-size="11" font-weight="600" text-anchor="middle">🔧 UTILITIES</text>
+
+    <rect x="460" y="790" width="82" height="26" rx="5" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="807" fill="#a0c0e0" font-size="10" text-anchor="middle">jwt.ts</text>
+    <rect x="548" y="790" width="82" height="26" rx="5" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="807" fill="#a0c0e0" font-size="10" text-anchor="middle">hash.ts</text>
+    <rect x="460" y="822" width="82" height="26" rx="5" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="839" fill="#a0c0e0" font-size="10" text-anchor="middle">pagination.ts</text>
+    <rect x="548" y="822" width="82" height="26" rx="5" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="839" fill="#a0c0e0" font-size="10" text-anchor="middle">prisma.ts</text>
+    <rect x="460" y="854" width="82" height="26" rx="5" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="501" y="871" fill="#a0c0e0" font-size="10" text-anchor="middle">scheduler.ts</text>
+    <rect x="548" y="854" width="82" height="26" rx="5" fill="#1a2a40" stroke="#4a8ec4" stroke-width="0.8" />
+    <text x="589" y="871" fill="#a0c0e0" font-size="10" text-anchor="middle">impact.constants</text>
+
+    <!-- ===================== GLIE COMPONENTS ===================== -->
+
+    <!-- Section: Vision -->
+    <rect x="920" y="145" width="170" height="24" rx="4" fill="#52b788" fill-opacity="0.15" />
+    <text x="1005" y="161" fill="#52b788" font-size="11" font-weight="600" text-anchor="middle">👁️ VISION MODELS</text>
+
+    <rect x="920" y="178" width="170" height="65" rx="6" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1005" y="196" fill="#a0d0b0" font-size="10" text-anchor="middle">gemini_scorer.py ⭐</text>
+    <text x="1005" y="213" fill="#a0d0b0" font-size="10" text-anchor="middle">hf_vlm_scorer.py (fallback)</text>
+    <text x="1005" y="230" fill="#a0d0b0" font-size="10" text-anchor="middle">infer.py (orchestrator)</text>
+    <rect x="920" y="250" width="170" height="40" rx="6" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1005" y="268" fill="#a0d0b0" font-size="10" text-anchor="middle">condition_model.py</text>
+    <text x="1005" y="283" fill="#a0d0b0" font-size="10" text-anchor="middle">siglip_encoder.py</text>
+
+    <!-- Section: RAG -->
+    <rect x="920" y="305" width="170" height="24" rx="4" fill="#52b788" fill-opacity="0.15" />
+    <text x="1005" y="321" fill="#52b788" font-size="11" font-weight="600" text-anchor="middle">📚 RAG PIPELINE</text>
+
+    <rect x="920" y="335" width="170" height="65" rx="6" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1005" y="353" fill="#a0d0b0" font-size="10" text-anchor="middle">retriever.py (fiber match)</text>
+    <text x="1005" y="370" fill="#a0d0b0" font-size="10" text-anchor="middle">vector_store.py (FAISS)</text>
+    <text x="1005" y="387" fill="#a0d0b0" font-size="10" text-anchor="middle">qwen_embedder.py (0.6B)</text>
+
+    <!-- Section: Formulas -->
+    <rect x="920" y="415" width="170" height="24" rx="4" fill="#52b788" fill-opacity="0.15" />
+    <text x="1005" y="431" fill="#52b788" font-size="11" font-weight="600" text-anchor="middle">🧮 GLIE FORMULAS</text>
+
+    <rect x="920" y="445" width="170" height="65" rx="6" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1005" y="463" fill="#a0d0b0" font-size="10" text-anchor="middle">formulas.py</text>
+    <text x="1005" y="480" fill="#a0d0b0" font-size="10" text-anchor="middle">condition_score.py</text>
+    <text x="1005" y="497" fill="#a0d0b0" font-size="10" text-anchor="middle">material_score.py</text>
+    <text x="920" y="517" width="170" height="40" rx="6" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1005" y="535" fill="#a0d0b0" font-size="10" text-anchor="middle">sustainability_score.py</text>
+    <text x="1005" y="550" fill="#a0d0b0" font-size="10" text-anchor="middle">market_demand.py</text>
+
+    <!-- Section: Datasets -->
+    <rect x="920" y="572" width="170" height="24" rx="4" fill="#52b788" fill-opacity="0.15" />
+    <text x="1005" y="588" fill="#52b788" font-size="11" font-weight="600" text-anchor="middle">💾 DATASETS (T1–T5)</text>
+
+    <rect x="920" y="602" width="82" height="22" rx="4" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="961" y="617" fill="#a0d0b0" font-size="9" text-anchor="middle">T1: Condition</text>
+    <rect x="1008" y="602" width="82" height="22" rx="4" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1049" y="617" fill="#a0d0b0" font-size="9" text-anchor="middle">T2: Materials</text>
+    <rect x="920" y="629" width="82" height="22" rx="4" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="961" y="644" fill="#a0d0b0" font-size="9" text-anchor="middle">T3: Market</text>
+    <rect x="1008" y="629" width="82" height="22" rx="4" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1049" y="644" fill="#a0d0b0" font-size="9" text-anchor="middle">T4: Sustain.</text>
+    <rect x="920" y="656" width="82" height="22" rx="4" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="961" y="671" fill="#a0d0b0" font-size="9" text-anchor="middle">T5: Tutorials</text>
+
+    <!-- Section: Tutorial Gen -->
+    <rect x="920" y="693" width="170" height="24" rx="4" fill="#52b788" fill-opacity="0.15" />
+    <text x="1005" y="709" fill="#52b788" font-size="11" font-weight="600" text-anchor="middle">🤖 LLM GENERATION</text>
+
+    <rect x="920" y="723" width="170" height="40" rx="6" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1005" y="741" fill="#a0d0b0" font-size="10" text-anchor="middle">tutorial_generator.py</text>
+    <text x="1005" y="756" fill="#a0d0b0" font-size="10" text-anchor="middle">(Qwen2.5-7B-Instruct)</text>
+
+    <!-- Section: API Layer -->
+    <rect x="920" y="778" width="170" height="24" rx="4" fill="#52b788" fill-opacity="0.15" />
+    <text x="1005" y="794" fill="#52b788" font-size="11" font-weight="600" text-anchor="middle">🌐 API LAYER</text>
+
+    <rect x="920" y="808" width="170" height="40" rx="6" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1005" y="826" fill="#a0d0b0" font-size="10" text-anchor="middle">api/main.py (FastAPI)</text>
+    <text x="1005" y="841" fill="#a0d0b0" font-size="10" text-anchor="middle">api/schemas.py (Pydantic)</text>
+
+    <!-- Section: Gradio UI -->
+    <rect x="920" y="860" width="170" height="24" rx="4" fill="#52b788" fill-opacity="0.15" />
+    <text x="1005" y="876" fill="#52b788" font-size="11" font-weight="600" text-anchor="middle">🖥️ DEMO UI</text>
+
+    <rect x="920" y="890" width="170" height="30" rx="6" fill="#1a2f20" stroke="#52b788" stroke-width="0.8" />
+    <text x="1005" y="909" fill="#a0d0b0" font-size="10" text-anchor="middle">app.py (Gradio)</text>
+
+    <!-- ===================== DATABASE BOX ===================== -->
+
+    <rect x="460" y="870" width="380" height="50" rx="10" fill="url(#gradDB)" filter="url(#shadow)" />
+    <text x="650" y="892" fill="#e0d0ff" font-size="14" font-weight="700" text-anchor="middle">🐘 POSTGRESQL DATABASE</text>
+    <text x="650" y="910" fill="#c0a0e0" font-size="11" text-anchor="middle">Prisma ORM · 28 models · Migrations · Soft Delete</text>
+
+    <rect x="460" y="860" width="380" height="2" fill="none" />
+
+    <!-- ===================== EXTERNAL SERVICES ===================== -->
+
+    <!-- Box: External Services -->
+    <rect x="40" y="908" width="380" height="22" rx="4" fill="#e85d04" fill-opacity="0.12" />
+    <text x="230" y="923" fill="#f48c06" font-size="11" font-weight="600" text-anchor="middle">☁️ EXTERNAL SERVICES</text>
+
+    <rect x="40" y="935" width="90" height="24" rx="5" fill="#1e1a20" stroke="#f48c06" stroke-width="0.8" />
+    <text x="85" y="952" fill="#e0b080" font-size="9" text-anchor="middle">Cloudinary</text>
+    <rect x="138" y="935" width="90" height="24" rx="5" fill="#1e1a20" stroke="#f48c06" stroke-width="0.8" />
+    <text x="183" y="952" fill="#e0b080" font-size="9" text-anchor="middle">AWS S3</text>
+    <rect x="236" y="935" width="90" height="24" rx="5" fill="#1e1a20" stroke="#f48c06" stroke-width="0.8" />
+    <text x="281" y="952" fill="#e0b080" font-size="9" text-anchor="middle">Firebase</text>
+    <rect x="334" y="935" width="86" height="24" rx="5" fill="#1e1a20" stroke="#f48c06" stroke-width="0.8" />
+    <text x="377" y="952" fill="#e0b080" font-size="9" text-anchor="middle">Redis</text>
+
+    <rect x="40" y="965" width="90" height="24" rx="5" fill="#1e1a20" stroke="#9d0208" stroke-width="0.8" />
+    <text x="85" y="982" fill="#e08080" font-size="9" text-anchor="middle">Razorpay</text>
+    <rect x="138" y="965" width="90" height="24" rx="5" fill="#1e1a20" stroke="#9d0208" stroke-width="0.8" />
+    <text x="183" y="982" fill="#e08080" font-size="9" text-anchor="middle">Stripe</text>
+    <rect x="236" y="965" width="90" height="24" rx="5" fill="#1e1a20" stroke="#f48c06" stroke-width="0.8" />
+    <text x="281" y="982" fill="#e0b080" font-size="9" text-anchor="middle">Google Auth</text>
+    <rect x="334" y="965" width="86" height="24" rx="5" fill="#1e1a20" stroke="#f48c06" stroke-width="0.8" />
+    <text x="377" y="982" fill="#e0b080" font-size="9" text-anchor="middle">Socket.IO</text>
+
+    <!-- ===================== ARROWS / CONNECTIONS ===================== -->
+
+    <!-- Frontend → Backend: REST API -->
+    <line x1="200" y1="340" x2="440" y2="220" stroke="#e94560" stroke-width="2.5" stroke-dasharray="8,4" marker-end="url(#arrowF)" />
+    <rect x="250" y="260" width="120" height="24" rx="6" fill="#1a1a2e" stroke="#e94560" stroke-width="1" />
+    <text x="310" y="277" fill="#e94560" font-size="11" text-anchor="middle">REST API (axios)</text>
+    <text x="310" y="292" fill="#888" font-size="8" text-anchor="middle">Port 4000</text>
+
+    <!-- Frontend → Backend: Socket.IO -->
+    <line x1="200" y1="730" x2="440" y2="840" stroke="#f48c06" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowO)" />
+    <text x="310" y="795" fill="#f48c06" font-size="10" text-anchor="middle">📡 Socket.IO</text>
+
+    <!-- Backend → PostgreSQL -->
+    <line x1="650" y1="870" x2="650" y2="860" stroke="#7b2cbf" stroke-width="2" />
+    <line x1="650" y1="830" x2="650" y2="860" stroke="#7b2cbf" stroke-width="2" marker-end="url(#arrowO)" />
+    <text x="670" y="850" fill="#a080c0" font-size="9">Prisma ORM</text>
+
+    <!-- Backend → GLIE -->
+    <line x1="630" y1="178" x2="900" y2="178" stroke="#52b788" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#arrowG)" />
+    <rect x="660" y="155" width="180" height="22" rx="6" fill="#1a1a2e" stroke="#52b788" stroke-width="1" />
+    <text x="750" y="170" fill="#52b788" font-size="10" text-anchor="middle">POST /api/glie/assess</text>
+    <text x="750" y="190" fill="#888" font-size="8" text-anchor="middle">Port 8000 (FastAPI)</text>
+
+    <!-- Backend → Gemini -->
+    <line x1="630" y1="200" x2="900" y2="200" stroke="#e85d04" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrowO)" />
+    <rect x="680" y="205" width="140" height="22" rx="6" fill="#1a1a2e" stroke="#f48c06" stroke-width="1" />
+    <text x="750" y="220" fill="#f48c06" font-size="10" text-anchor="middle">Gemini Vision API</text>
+
+    <!-- GLIE → LLM (Qwen) -->
+    <line x1="1090" y1="763" x2="1090" y2="723" stroke="#52b788" stroke-width="1.5" marker-end="url(#arrowG)" />
+    <text x="1110" y="748" fill="#52b788" font-size="8">Qwen LLM</text>
+
+    <!-- GLIE → Databases -->
+    <rect x="1140" y="590" width="160" height="100" rx="8" fill="#1a1a2e" stroke="#5a189a" stroke-width="1.2" />
+    <text x="1220" y="608" fill="#c0a0e0" font-size="10" font-weight="600" text-anchor="middle">GLIE Datasets (CSV)</text>
+    <text x="1220" y="625" fill="#a0b0c0" font-size="9" text-anchor="middle">T1: Condition (↕3000 rows)</text>
+    <text x="1220" y="640" fill="#a0b0c0" font-size="9" text-anchor="middle">T2: Materials (↕200 rows)</text>
+    <text x="1220" y="655" fill="#a0b0c0" font-size="9" text-anchor="middle">T3: Market Demand</text>
+    <text x="1220" y="670" fill="#a0b0c0" font-size="9" text-anchor="middle">T4: Sustainability LCA</text>
+    <text x="1220" y="685" fill="#a0b0c0" font-size="9" text-anchor="middle">T5: Tutorials (JSON)</text>
+
+    <line x1="1090" y1="620" x2="1140" y2="640" stroke="#5a189a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowO)" />
+
+    <!-- FAISS Indexes -->
+    <rect x="1140" y="450" width="160" height="55" rx="8" fill="#1a1a2e" stroke="#52b788" stroke-width="1" />
+    <text x="1220" y="468" fill="#a0d0b0" font-size="10" font-weight="600" text-anchor="middle">FAISS Indexes</text>
+    <text x="1220" y="484" fill="#a0b0c0" font-size="9" text-anchor="middle">t2_material.faiss</text>
+    <text x="1220" y="499" fill="#a0b0c0" font-size="9" text-anchor="middle">t5_upcycle.faiss</text>
+    <line x1="1090" y1="470" x2="1140" y2="478" stroke="#52b788" stroke-width="1.5" marker-end="url(#arrowG)" />
+
+  </svg>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#e94560"></div> Frontend (React Native / Expo)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4a8ec4"></div> Backend (Node.js / Express)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#52b788"></div> GLIE AI Engine (Python / FastAPI)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7b2cbf"></div> Database (PostgreSQL)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f48c06"></div> External Services</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#9d0208"></div> Payment Gateways</div>
+    <div class="legend-item"><div style="display:flex;gap:3px"><span style="border-top:2px dashed #e94560;width:16px;display:inline-block"></span></div> REST API / RPC Calls</div>
+  </div>
+
+  <div class="footer-note">
+    <strong>Ports:</strong> Frontend 8081 · Backend API 4000 · GLIE FastAPI 8000 · GLIE Gradio UI 7861 · PostgreSQL 5432 · Redis 6379<br>
+    <strong>Deployment:</strong> Docker Compose (3 containers) · EAS Build for development APK · GitHub Actions CI
+  </div>
+</div>
+
+</body>
+</html>

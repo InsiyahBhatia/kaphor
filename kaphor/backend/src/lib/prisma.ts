@@ -51,7 +51,7 @@ export async function withPrismaRetry<T>(
  * Enhanced Database Client with Security Overrides
  */
 // @ts-ignore - Prisma $extends typing can be tricky in some environments
-export const db = prisma.$extends({
+const db = prisma.$extends({
   model: {
     user: {
       async delete(args: any) {

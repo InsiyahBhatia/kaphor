@@ -43,10 +43,14 @@ export default function RegisterScreen() {
       await signUp({ email, password, displayName, username });
       router.replace('/(auth)/style-quiz');
     } catch (error: any) {
-      const apiErrors = error?.response?.data?.errors;
-      if (apiErrors && Array.isArray(apiErrors)) {
+      const data = error?.response?.data;
+      // Backend returns field errors as `errors` (legacy) or `details` (zod validate())
+      const apiErrors = data?.errors ?? data?.details;
+      if (apiErrors && Array.isArray(apiErrors) && apiErrors.length > 0) {
         const msg = apiErrors.map((e: any) => `${e.field}: ${e.message}`).join('\n');
         Alert.alert('Validation Error', msg);
+      } else if (data?.message) {
+        Alert.alert('Registration Failed', data.message);
       } else {
         Alert.alert('Registration Failed', 'Could not create account. Please try again.');
       }

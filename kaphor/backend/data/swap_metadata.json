@@ -1,0 +1,160 @@
+{
+  "test_swap_1788786219359": {
+    "swapId": "test_swap_1788786219359",
+    "initiatorAcceptedTerms": true,
+    "receiverAcceptedTerms": true,
+    "securityDepositAmount": 50000,
+    "swapFee": 25000,
+    "conditionPhotos": {
+      "offeredPhotos": [],
+      "wantedPhotos": []
+    },
+    "createdAt": "2026-09-07T13:03:39.360Z",
+    "updatedAt": "2026-09-07T13:03:39.378Z",
+    "termsAcceptedAt": "2026-09-07T13:03:39.365Z",
+    "initiatorAddress": {
+      "fullName": "Collector A",
+      "phone": "9876543210",
+      "line1": "12 Fashion Blvd",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400001"
+    },
+    "receiverAddress": {
+      "fullName": "Collector B",
+      "phone": "9876543211",
+      "line1": "45 Artisan Way",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pincode": "560001"
+    },
+    "addressSharedAt": "2026-09-07T13:03:39.367Z",
+    "securityDepositPaidBy": "user_initiator_123",
+    "depositEscrowId": "order_rzp_swap_dep_123",
+    "initiatorTracking": {
+      "courierPartner": "BlueDart",
+      "trackingNumber": "BD12345678IN",
+      "trackingUrl": "https://bluedart.com/track/BD12345678IN",
+      "shippedAt": "2026-09-07T13:03:39.372Z"
+    },
+    "receiverTracking": {
+      "courierPartner": "Delhivery",
+      "trackingNumber": "DEL87654321IN",
+      "trackingUrl": "https://delhivery.com/track/DEL87654321IN",
+      "shippedAt": "2026-09-07T13:03:39.372Z"
+    },
+    "initiatorReceived": true,
+    "receiverReceived": true,
+    "depositReleasedAt": "2026-09-07T13:03:39.378Z"
+  },
+  "test_dispute_swap_1788786219379": {
+    "swapId": "test_dispute_swap_1788786219379",
+    "initiatorAcceptedTerms": false,
+    "receiverAcceptedTerms": false,
+    "securityDepositAmount": 50000,
+    "swapFee": 25000,
+    "conditionPhotos": {
+      "offeredPhotos": [],
+      "wantedPhotos": []
+    },
+    "createdAt": "2026-09-07T13:03:39.380Z",
+    "updatedAt": "2026-09-07T13:03:39.380Z",
+    "dispute": {
+      "swapId": "test_dispute_swap_1788786219379",
+      "openedBy": "user_456",
+      "reason": "Item condition mismatch",
+      "description": "Leather belt has noticeable buckle scratches not shown in pictures",
+      "evidencePhotos": [
+        "https://s3.kaphor.com/proof1.jpg"
+      ],
+      "status": "OPEN"
+    },
+    "disputedAt": "2026-09-07T13:03:39.380Z",
+    "disputeReason": "Item condition mismatch"
+  },
+  "8580a266-8bcb-4c17-9b3e-1ef3f03e3d6e": {
+    "swapId": "8580a266-8bcb-4c17-9b3e-1ef3f03e3d6e",
+    "initiatorAcceptedTerms": false,
+    "receiverAcceptedTerms": true,
+    "securityDepositAmount": 50000,
+    "swapFee": 25000,
+    "conditionPhotos": {
+      "offeredPhotos": [],
+      "wantedPhotos": []
+    },
+    "createdAt": "2026-09-08T05:39:41.017Z",
+    "updatedAt": "2026-09-08T13:08:53.187Z",
+    "securityDepositPaidBy": "59723ac8-e3ab-476d-91d1-f3c1aa54bbec",
+    "depositEscrowId": "order_TZY6i4P5GrpqWc",
+    "receiverTracking": {
+      "courierPartner": "OTHER",
+      "trackingNumber": "FFGH",
+      "shippedAt": "2026-09-08T13:08:48.439Z"
+    }
+  },
+  "7665bed3-0320-42f9-807d-09fdca4a94d5": {
+    "swapId": "7665bed3-0320-42f9-807d-09fdca4a94d5",
+    "initiatorAcceptedTerms": false,
+    "receiverAcceptedTerms": false,
+    "securityDepositAmount": 50000,
+    "swapFee": 25000,
+    "conditionPhotos": {
+      "offeredPhotos": [],
+      "wantedPhotos": []
+    },
+    "createdAt": "2026-09-08T05:42:35.289Z",
+    "updatedAt": "2026-09-08T05:42:35.289Z"
+  },
+  "5af00a85-a3cb-40f4-9a74-9412f1407f98": {
+    "swapId": "5af00a85-a3cb-40f4-9a74-9412f1407f98",
+    "initiatorAcceptedTerms": false,
+    "receiverAcceptedTerms": false,
+    "securityDepositAmount": 50000,
+    "swapFee": 25000,
+    "conditionPhotos": {
+      "offeredPhotos": [],
+      "wantedPhotos": []
+    },
+    "createdAt": "2026-09-08T05:42:35.292Z",
+    "updatedAt": "2026-09-08T05:42:35.293Z"
+  },
+  "ee71c43d-9473-40d6-b0f4-3e3acb1e1762": {
+    "swapId": "ee71c43d-9473-40d6-b0f4-3e3acb1e1762",
+    "initiatorAcceptedTerms": false,
+    "receiverAcceptedTerms": false,
+    "securityDepositAmount": 50000,
+    "swapFee": 25000,
+    "conditionPhotos": {
+      "offeredPhotos": [],
+      "wantedPhotos": []
+    },
+    "createdAt": "2026-09-08T05:42:35.295Z",
+    "updatedAt": "2026-09-08T05:42:35.295Z"
+  },
+  "32a913ee-b0cb-4896-9206-a7ef8d8f3732": {
+    "swapId": "32a913ee-b0cb-4896-9206-a7ef8d8f3732",
+    "initiatorAcceptedTerms": false,
+    "receiverAcceptedTerms": false,
+    "securityDepositAmount": 50000,
+    "swapFee": 25000,
+    "conditionPhotos": {
+      "offeredPhotos": [],
+      "wantedPhotos": []
+    },
+    "createdAt": "2026-09-08T05:42:35.299Z",
+    "updatedAt": "2026-09-08T05:42:35.299Z"
+  },
+  "b7e9c3bb-000c-459f-8d86-27650809c7b4": {
+    "swapId": "b7e9c3bb-000c-459f-8d86-27650809c7b4",
+    "initiatorAcceptedTerms": false,
+    "receiverAcceptedTerms": false,
+    "securityDepositAmount": 50000,
+    "swapFee": 25000,
+    "conditionPhotos": {
+      "offeredPhotos": [],
+      "wantedPhotos": []
+    },
+    "createdAt": "2026-09-08T13:41:22.214Z",
+    "updatedAt": "2026-09-08T13:41:22.214Z"
+  }
+}

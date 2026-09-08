@@ -2,6 +2,20 @@ import api from './api';
 
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
 
+export interface ShippingAddress {
+  addressId?: string;
+  label?: string;
+  fullName: string;
+  phone: string;
+  line1: string;
+  line2?: string | null;
+  landmark?: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  country?: string;
+}
+
 export interface TransactionOrder {
   id: string;
   buyerId: string;
@@ -9,6 +23,7 @@ export interface TransactionOrder {
   status: OrderStatus;
   totalAmount: number;
   currency: string;
+  shippingAddress: ShippingAddress | null;
   createdAt: string;
   updatedAt: string;
   items: Array<{

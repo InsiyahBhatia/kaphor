@@ -25,14 +25,6 @@ export function signRefreshToken(userId: string): string {
   });
 }
 
-export function verifyAccessToken(token: string): AccessTokenPayload {
-  const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as jwt.JwtPayload & AccessTokenPayload;
-  if (!decoded.id || !decoded.email || !decoded.role) {
-    throw new jwt.JsonWebTokenError('Invalid token payload');
-  }
-  return { id: decoded.id, email: decoded.email, role: decoded.role };
-}
-
 export function verifyRefreshToken(token: string): { userId: string } {
   const decoded = jwt.verify(token, JWT_REFRESH_SECRET, { algorithms: ['HS256'] }) as jwt.JwtPayload & { sub: string };
   if (!decoded.sub) throw new jwt.JsonWebTokenError('Invalid refresh token payload');

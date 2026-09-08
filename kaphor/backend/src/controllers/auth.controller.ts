@@ -7,7 +7,6 @@ import { isAccountLocked, recordFailedLogin, clearFailedLogins } from '../servic
 import { auditLog } from '../services/audit.service';
 import crypto from 'crypto';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.service';
-import admin from '../lib/firebase';
 
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid credentials';
 const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
@@ -222,102 +221,23 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    let payload;
-    try {
-      payload = await admin.auth().verifyIdToken(idToken);
-    } catch (verifyErr) {
-      logger.warn('Google ID token verification failed');
-      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Invalid Google token' });
-      return;
-    }
-
-    const { uid: googleId, email, name, picture } = payload;
-
-    if (!email) {
-      res.status(400).json({ error: 'BAD_REQUEST', message: 'Google account has no email' });
-      return;
-    }
-
-    let user = await prisma.user.findFirst({
-      where: {
-        OR: [{ googleId }, { email: email.toLowerCase() }]
-      }
-    });
-
-    const isAdminEmail = email.toLowerCase() === 'kaphor.team@gmail.com';
-
-
-    if (!user) {
-      // Register new user
-      const styleVector = Array(16).fill(0);
-      user = await prisma.user.create({
-        data: {
-          email: email.toLowerCase(),
-          username: `user_${crypto.randomBytes(4).toString('hex')}`,
-          displayName: name || 'Google User',
-          googleId,
-          avatar: picture,
-          styleVector,
-          isActive: true,
-          isVerified: true, // Google emails are verified
-          role: isAdminEmail ? 'ADMIN' : 'BOTH',
-        }
-      });
-      await (db as any).impactRecord.create({
-        data: {
-          userId: user.id,
-          carbonSavedKg: 0,
-          waterSavedL: 0,
-          itemsCirculated: 0,
-          itemsUpcycled: 0,
-          itemsRecycled: 0,
-        },
-      });
-      await auditLog({ userId: user.id, action: 'USER_REGISTER_OAUTH', resource: 'User', req });
-    } else if (!user.googleId || (isAdminEmail && user.role !== 'ADMIN')) {
-      // Link existing account or upgrade to admin if team account
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { 
-          googleId, 
-          isVerified: true,
-          ...(isAdminEmail ? { role: 'ADMIN' } : {})
-        }
-      });
-    }
-
-
-    if (!user.isActive) {
-      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Account deactivated' });
-      return;
-    }
-
-    const accessToken = signAccessToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    });
-    const refreshToken = signRefreshToken(user.id);
-    await db.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + REFRESH_EXPIRES_MS),
-      },
-    });
+    const { googleLoginUser } = await import('../services/auth.service');
+    const data = await googleLoginUser(idToken, req);
 
     res.status(200).json({
       data: {
-        user: userPayload(user as any),
-        accessToken,
-        refreshToken,
+        user: data.user,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
       },
     });
-  } catch (err) {
-    logger.error('Database or unexpected error in Google login', {
-      error: err instanceof Error ? err.message : String(err),
-    });
-    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process Google login' });
+  } catch (err: any) {
+    const message = err?.message || 'Failed to process Google login';
+    const status = message.includes('deactivated') ? 401
+      : message.includes('no email') ? 400
+      : 401;
+    logger.error('Google login failed', { error: message });
+    res.status(status).json({ error: 'UNAUTHORIZED', message });
   }
 }
 
@@ -343,11 +263,16 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
     const stored = await (db as any).refreshToken.findUnique({ where: { token } });
 
     // 1. Detect Token Reuse (Security: rotation breach)
-    if (!stored || (stored as any).isRevoked || stored.expiresAt < new Date()) {
-      logger.warn('Refresh token reuse detected', { userId, token: token.slice(0, 8) + '...' });
-      // Invalid tokens are handled atomically in the rotation transaction below.
-      // If this token is a reuse attempt, the transaction will revoke all sessions.
-      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Token reuse detected or expired. All sessions revoked.', statusCode: 401 });
+    if (!stored || stored.expiresAt < new Date()) {
+      logger.warn('Refresh token reuse detected or expired', { userId, token: token.slice(0, 8) + '...' });
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Session expired. Please log in again.', statusCode: 401 });
+      return;
+    }
+    if ((stored as any).isRevoked) {
+      logger.warn('Refresh token already revoked (possible reuse attempt)', { userId, token: token.slice(0, 8) + '...' });
+      // Token was already rotated by a previous refresh — the client has stale tokens.
+      // Don't revoke all sessions here; just let the client know to re-authenticate.
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Session expired. Please log in again.', statusCode: 401 });
       return;
     }
 

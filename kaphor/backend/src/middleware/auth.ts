@@ -42,7 +42,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
 };
 
 /** High-order middleware to require specific roles */
-export const requireRole = (roles: string[]) => {
+const requireRole = (roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ 

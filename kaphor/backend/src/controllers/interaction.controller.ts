@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { EventType } from '@prisma/client';
 import { logger } from '../lib/logger';
-import { evaluateLifecycle } from '../services/lifecycle.service';
+import { evaluateLifecycle, initiateResell } from '../services/lifecycle.service';
 
 export async function createInteraction(req: Request, res: Response): Promise<void> {
     try {
@@ -44,12 +44,32 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
         // If it's a LOG_WEAR event, reset decay.
         const decayUpdate = eventType === 'LOG_WEAR' ? { interactionDecay: 0 } : {};
 
-        // If it's a SELL_INTENT event, transition the garment.
+        // If it's a SELL_INTENT event, transition via lifecycle service (validates OWNERSHIP state)
+        // Then return early — initiateResell handles the complete transition including socket emit.
+        // Skipping evaluateLifecycle prevents LOE from overwriting SELL_INTENT state.
         if (eventType === 'SELL_INTENT') {
-            await db.garment.update({
-                where: { id: String(garmentId) },
-                data: { lifecycleState: 'SELL_INTENT' }
+            const resellResult = await initiateResell(String(garmentId), req.user.id);
+            if (resellResult.action === 'SUPPRESS') {
+                res.status(400).json({ error: 'BAD_REQUEST', message: 'Cannot sell: garment is not in OWNERSHIP state' });
+                return;
+            }
+            await db.behaviourSignal.upsert({
+                where: {
+                    userId_garmentId: { userId: req.user.id, garmentId: String(garmentId) }
+                },
+                update: {
+                    recentEventCount: { increment: 1 },
+                    interestScore: { increment: scoreImpact['SELL_INTENT'] || 0.50 },
+                },
+                create: {
+                    userId: req.user.id,
+                    garmentId: String(garmentId),
+                    recentEventCount: 1,
+                    interestScore: scoreImpact['SELL_INTENT'] || 0.50,
+                }
             });
+            res.status(201).json({ data: { action: 'TRANSITION', newState: 'SELL_INTENT', score: 1.0 } });
+            return;
         }
 
         await db.behaviourSignal.upsert({

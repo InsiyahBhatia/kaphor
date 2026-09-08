@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
-import { sendNotification } from '../services/notificationService';
+import { createNotification } from '../services/notification.service';
 import { sendEmail } from '../services/email.service';
 
 // ── MOCK DATA (real impl would be a DB seed / CMS) ───────────────────────────
@@ -141,7 +141,8 @@ export async function createBespokeRequest(req: Request, res: Response): Promise
         if (adminUsers.length) {
             await Promise.all(
                 adminUsers.map((u: { id: string }) =>
-                    sendNotification(u.id, {
+                    createNotification({
+                        userId: u.id,
                         type: 'ADMIN_BESPOKE_REQUEST',
                         title: 'New Bespoke Consultation',
                         body: `New request from ${requester?.displayName ?? 'a user'}`,
