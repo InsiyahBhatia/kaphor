@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/services/api';
 import { colors } from '../../src/theme';
+import { safeBack } from '../../src/utils/navigation';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -41,7 +42,11 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+      <TouchableOpacity 
+        style={styles.backBtn} 
+        onPress={() => safeBack('/(auth)/login')}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      >
         <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
       </TouchableOpacity>
       <View style={styles.center}>

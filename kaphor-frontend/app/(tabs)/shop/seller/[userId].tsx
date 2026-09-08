@@ -15,6 +15,7 @@ import { userService } from '../../../../src/services/userService';
 import { messageService } from '../../../../src/services/messageService';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../../src/components/common/VerifiedBadge';
+import { safeBack } from '../../../../src/utils/navigation';
 
 interface ReviewItem {
   id: string;
@@ -112,7 +113,11 @@ export default function PublicSellerProfileScreen() {
     return (
       <View style={[styles.container, styles.center]}>
         <Text style={styles.miss}>Seller profile unavailable</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity 
+          style={styles.backBtn} 
+          onPress={() => safeBack('/(tabs)/shop')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Text style={styles.backBtnText}>GO BACK</Text>
         </TouchableOpacity>
       </View>
@@ -127,7 +132,11 @@ export default function PublicSellerProfileScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => safeBack('/(tabs)/shop')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>SELLER SCORECARD</Text>

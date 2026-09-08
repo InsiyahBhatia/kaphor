@@ -6,6 +6,7 @@ import { garmentService } from '../../../src/services/garmentService';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
+import { safeBack } from '../../../src/utils/navigation';
 
 export default function RentalDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -31,7 +32,12 @@ export default function RentalDetailScreen() {
     return (
       <View style={[styles.container, styles.center]}>
         <Text style={{ color: colors.textPrimary }}>Item not found</Text>
-        <TouchableOpacity onPress={() => router.back()}><Text style={{ color: colors.crimson, marginTop: 16 }}>Go Back</Text></TouchableOpacity>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/shop')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Text style={{ color: colors.crimson, marginTop: 16 }}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -43,7 +49,11 @@ export default function RentalDetailScreen() {
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <KaphorImage uri={garment.images?.[0]} style={styles.image} contentFit="cover" />
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => safeBack('/(tabs)/shop')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
 

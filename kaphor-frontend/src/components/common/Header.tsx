@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../theme';
 
+import { safeBack } from '../../utils/navigation';
+
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
@@ -24,7 +26,11 @@ export function Header({ title, showBack, onBack, unreadCount = 0, showLogo = fa
 
       <View style={styles.left}>
         {showBack ? (
-          <Pressable onPress={() => { if (onBack) onBack(); else router.back(); }} style={styles.iconBtn}>
+          <Pressable 
+            onPress={() => { if (onBack) onBack(); else safeBack(); }} 
+            style={styles.iconBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </Pressable>
         ) : (

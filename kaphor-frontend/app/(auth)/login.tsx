@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 import { useGoogleAuth } from '../../src/hooks/useGoogleAuth';
+import { safeBack } from '../../src/utils/navigation';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -34,6 +35,13 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity 
+        style={styles.backBtn} 
+        onPress={() => safeBack('/(auth)/welcome')}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      >
+        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
+      </TouchableOpacity>
       <View style={styles.header}>
         <Text style={styles.title}>Welcome Back</Text>
         <Text style={styles.subtitle}>Enter your credentials to continue</Text>
@@ -104,8 +112,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     padding: 24,
   },
+  backBtn: {
+    marginTop: 36,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
   header: {
-    marginTop: 80,
+    marginTop: 20,
     marginBottom: 40,
   },
   title: {

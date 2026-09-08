@@ -20,6 +20,7 @@ import { DossierLoading } from '../../../../src/components/common/DossierLoading
 import { colors, typography, spacing } from '../../../../src/theme';
 import { Header } from '../../../../src/components/common/Header';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
+import { safeBack } from '../../../../src/utils/navigation';
 
 const { width } = Dimensions.get('window');
 
@@ -116,7 +117,7 @@ export default function CheckoutScreen() {
     } catch (e: any) {
       console.error('Failed to load order', e);
       Alert.alert('Error', 'Could not load checkout details', [
-        { text: 'Go Back', onPress: () => router.back() },
+        { text: 'Go Back', onPress: () => safeBack('/(tabs)/shop') },
       ]);
     } finally {
       setLoading(false);
@@ -263,7 +264,11 @@ export default function CheckoutScreen() {
         <View style={styles.center}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
           <Text style={styles.emptyText}>Order not found</Text>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity 
+            style={styles.backBtn} 
+            onPress={() => safeBack('/(tabs)/shop')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Text style={styles.backBtnText}>GO BACK</Text>
           </TouchableOpacity>
         </View>

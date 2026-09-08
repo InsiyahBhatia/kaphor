@@ -26,6 +26,7 @@ import {
 } from '../../src/services/messageService';
 import { useAuth } from '../../src/context/AuthContext';
 import { getSocket, connectSocket } from '../../src/services/socket';
+import { safeBack } from '../../src/utils/navigation';
 
 export default function DirectChatScreen() {
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
@@ -53,7 +54,7 @@ export default function DirectChatScreen() {
     } catch (e: any) {
       console.error('Failed to load conversation', e);
       Alert.alert('Error', 'Could not open conversation', [
-        { text: 'Go Back', onPress: () => router.back() },
+        { text: 'Go Back', onPress: () => safeBack('/(tabs)/shop/orders') },
       ]);
     } finally {
       setLoading(false);
@@ -279,7 +280,11 @@ export default function DirectChatScreen() {
     >
       {/* Top Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/shop/orders')} 
+          style={styles.backBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
 

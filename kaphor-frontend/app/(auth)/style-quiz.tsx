@@ -5,6 +5,7 @@ import { aiService } from '../../src/services/aiService';
 import { useToastStore } from '../../src/store/toastStore';
 import { colors, typography } from '../../src/theme';
 import { useAuth } from '../../src/context/AuthContext';
+import { safeBack } from '../../src/utils/navigation';
 
 const QUIZ_DATA = [
   { 
@@ -114,7 +115,7 @@ export default function StyleQuizScreen() {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     } else {
-      router.back();
+      safeBack('/(tabs)');
     }
   };
 
@@ -227,7 +228,11 @@ export default function StyleQuizScreen() {
         </View>
 
         <View style={styles.navButtonsRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+          <TouchableOpacity 
+            style={styles.backBtn} 
+            onPress={handleBack}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Text style={styles.backBtnText}>[← BACK]</Text>
           </TouchableOpacity>
           

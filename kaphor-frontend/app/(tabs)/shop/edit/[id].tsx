@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { garmentService } from '../../../../src/services/garmentService';
 import { colors, typography, spacing, radius } from '../../../../src/theme';
+import { safeBack } from '../../../../src/utils/navigation';
 import {
   ALL_CATEGORY_ITEMS,
   MARKET_CONDITIONS,
@@ -78,7 +79,7 @@ export default function EditListingScreen() {
       }
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || 'Could not load listing details.');
-      router.back();
+      safeBack('/my-listings');
     } finally {
       setLoading(false);
     }
@@ -128,7 +129,7 @@ export default function EditListingScreen() {
 
       await garmentService.updateGarment(id as string, updates);
       Alert.alert('Listing Updated', 'Your garment listing has been saved successfully.', [
-        { text: 'OK', onPress: () => router.back() },
+        { text: 'OK', onPress: () => safeBack('/my-listings') },
       ]);
     } catch (err: any) {
       Alert.alert('Save Failed', err?.response?.data?.message || 'Failed to update listing.');
@@ -148,7 +149,7 @@ export default function EditListingScreen() {
           try {
             await garmentService.deleteGarment(id as string);
             Alert.alert('De-Listed', 'Your listing has been removed.', [
-              { text: 'OK', onPress: () => router.back() },
+              { text: 'OK', onPress: () => safeBack('/my-listings') },
             ]);
           } catch (err: any) {
             Alert.alert('Error', err?.response?.data?.message || 'Could not delete listing.');
@@ -173,7 +174,11 @@ export default function EditListingScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/my-listings')} 
+          style={styles.backBtn} 
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>EDIT LISTING</Text>

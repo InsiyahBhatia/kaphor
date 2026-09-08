@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { userService } from '../../services/userService';
 import { colors, typography, spacing, radius } from '../../theme';
+import { safeBack } from '../../utils/navigation';
 
 export function AccountSettingsScreen() {
     const router = useRouter();
@@ -53,7 +54,7 @@ export function AccountSettingsScreen() {
             }
             
             Alert.alert('Success', 'Profile updated successfully.');
-            router.back();
+            safeBack('/(tabs)/profile');
         } catch (err) {
             console.error('Failed to save settings', err);
             Alert.alert('Error', 'Failed to update profile.');
@@ -73,7 +74,11 @@ export function AccountSettingsScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} style={styles.backBtn}>
+                <Pressable 
+                    onPress={() => safeBack('/(tabs)/profile')} 
+                    style={styles.backBtn}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
                     <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Account Settings</Text>

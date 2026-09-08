@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
+import { safeBack } from '../../../src/utils/navigation';
 import { swapService } from '../../../src/services/swapService';
 import { messageService } from '../../../src/services/messageService';
 import { useRazorpay } from '@codearcade/expo-razorpay';
@@ -178,7 +179,7 @@ export default function SwapShippingScreen() {
 
       await swapService.markShipped(swapId!, tracking);
       Alert.alert('Marked Shipped!', 'The other party will be notified.', [
-        { text: 'OK', onPress: () => router.back() },
+        { text: 'OK', onPress: () => safeBack('/(tabs)/swap') },
       ]);
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Failed to mark as shipped');

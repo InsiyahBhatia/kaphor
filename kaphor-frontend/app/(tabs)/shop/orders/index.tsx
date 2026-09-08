@@ -12,8 +12,9 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { DossierLoading } from '../../../../src/components/common/DossierLoading';
 import { colors } from '../../../../src/theme';
-import { orderService, TransactionOrder } from '../../../../src/services/orderService';
 import { useAuth } from '../../../../src/context/AuthContext';
+import { orderService, TransactionOrder } from '../../../../src/services/orderService';
+import { safeBack } from '../../../../src/utils/navigation';
 
 function statusLabel(s: string) {
   switch (s) {
@@ -108,7 +109,11 @@ export default function OrdersInboxScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/shop')} 
+          style={styles.backBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ORDERS & MESSAGES</Text>

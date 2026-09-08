@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography } from '../../../src/theme';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { safeBack } from '../../../src/utils/navigation';
 
 import {
   assessGarment,
@@ -329,7 +330,10 @@ export default function ConditionCheckScreen() {
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity 
+            onPress={() => safeBack('/(tabs)/circular')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>CONDITION CHECK</Text>

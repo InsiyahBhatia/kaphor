@@ -21,6 +21,7 @@ import {
   CreateAddressInput,
 } from '../../src/services/addressService';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
+import { safeBack } from '../../src/utils/navigation';
 
 type ScreenMode = 'list' | 'add' | 'edit';
 
@@ -302,7 +303,10 @@ export default function AddressBookScreen() {
     <View style={{ flex: 1, backgroundColor: colors.cream }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/profile')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ADDRESS BOOK</Text>

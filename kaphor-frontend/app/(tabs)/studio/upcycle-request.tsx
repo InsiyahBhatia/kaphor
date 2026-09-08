@@ -8,6 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
 import { youTubeUrl } from '../../../src/services/repairService';
+import { safeBack } from '../../../src/utils/navigation';
 
 const DIFFICULTY_COLORS: Record<string, string> = {
   BEGINNER: '#1E3B2F',
@@ -125,7 +126,7 @@ export default function UpcycleRequestScreen() {
         garmentId
           ? 'Your upcycling request has been sent to our team. We will review it and get back to you.'
           : 'Your upcycling interest has been noted. Our team will reach out with options.',
-        [{ text: 'OK', onPress: () => router.back() }],
+        [{ text: 'OK', onPress: () => safeBack('/(tabs)/circular') }],
       );
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Could not submit request. Try again.';
@@ -138,7 +139,11 @@ export default function UpcycleRequestScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/circular')} 
+          style={styles.backBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>UPCYCLE REQUEST</Text>

@@ -15,6 +15,7 @@ import { orderService } from '../../../src/services/orderService';
 import { cartService } from '../../../src/services/cartService';
 import { messageService } from '../../../src/services/messageService';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
+import { safeBack } from '../../../src/utils/navigation';
 
 const { width } = Dimensions.get('window');
 
@@ -131,7 +132,10 @@ export default function GarmentDetailScreen() {
     return (
       <View style={[styles.container, styles.center]}>
         <Text style={{ color: colors.textPrimary }}>Garment not found</Text>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/shop')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Text style={{ color: colors.crimson, marginTop: 20 }}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -148,7 +152,11 @@ export default function GarmentDetailScreen() {
             style={styles.image}
             contentFit="contain"
           />
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => safeBack('/(tabs)/shop')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
           <TouchableOpacity 
@@ -351,7 +359,7 @@ export default function GarmentDetailScreen() {
                     { text: 'DELETE', style: 'destructive', onPress: async () => {
                       try {
                         await api.delete(`/garments/${id}`);
-                        router.back();
+                        safeBack('/(tabs)/shop');
                       } catch { Alert.alert('Error', 'De-listing failed.'); }
                     }}
                   ]);

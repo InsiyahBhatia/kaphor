@@ -21,6 +21,7 @@ import api from '../../../src/services/api';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { safeBack } from '../../../src/utils/navigation';
 import type { SwapTransaction } from '../../../src/types/swap';
 
 const { width } = Dimensions.get('window');
@@ -74,7 +75,7 @@ export default function SwapDetailsScreen() {
     } catch (err: any) {
       console.error('Failed to load swap details:', err);
       Alert.alert('Error', 'Unable to load swap request details.', [
-        { text: 'GO BACK', onPress: () => router.back() },
+        { text: 'GO BACK', onPress: () => safeBack('/(tabs)/circular') },
       ]);
     } finally {
       setLoading(false);
@@ -213,7 +214,7 @@ export default function SwapDetailsScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}
-          onPress={() => router.back()}
+          onPress={() => safeBack('/(tabs)/circular')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="arrow-back" size={20} color={colors.charcoal} />

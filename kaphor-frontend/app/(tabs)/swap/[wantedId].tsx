@@ -7,6 +7,7 @@ import api from '../../../src/services/api';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
+import { safeBack } from '../../../src/utils/navigation';
 
 export default function SwapWithWantedScreen() {
   const { wantedId } = useLocalSearchParams();
@@ -45,7 +46,7 @@ export default function SwapWithWantedScreen() {
         message: message.trim() || undefined,
       });
       Alert.alert('Swap Requested!', 'The owner has been notified.', [
-        { text: 'OK', onPress: () => router.back() },
+        { text: 'OK', onPress: () => safeBack('/(tabs)/swap') },
       ]);
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || 'Swap request failed.');
@@ -61,7 +62,10 @@ export default function SwapWithWantedScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/swap')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SWAP REQUEST</Text>

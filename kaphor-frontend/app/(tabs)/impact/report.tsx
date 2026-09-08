@@ -15,6 +15,7 @@ import { colors, typography, spacing } from '../../../src/theme';
 import { impactService } from '../../../src/services/impactService';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
+import { safeBack } from '../../../src/utils/navigation';
 
 const { width } = Dimensions.get('window');
 
@@ -75,7 +76,11 @@ export default function ImpactReportScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+        <TouchableOpacity 
+          style={styles.iconBtn} 
+          onPress={() => safeBack('/(tabs)/profile')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="arrow-back" size={20} color={colors.charcoal} />
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>

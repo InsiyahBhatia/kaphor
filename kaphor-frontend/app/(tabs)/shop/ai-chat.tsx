@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../src/theme';
 import { useAuth } from '../../../src/context/AuthContext';
 import api from '../../../src/services/api';
+import { safeBack } from '../../../src/utils/navigation';
 
 export default function AIChatScreen() {
     const { garmentId, initialMessage } = useLocalSearchParams<{ garmentId?: string; initialMessage?: string }>();
@@ -72,7 +73,10 @@ export default function AIChatScreen() {
             keyboardVerticalOffset={100}
         >
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
+                <TouchableOpacity 
+                    onPress={() => safeBack('/(tabs)/shop')}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
                     <Ionicons name="close" size={28} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>KAPHOR AI ASSISTANT</Text>

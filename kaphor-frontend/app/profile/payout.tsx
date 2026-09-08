@@ -18,6 +18,7 @@ import { colors, typography } from '../../src/theme';
 import paymentService from '../../src/services/paymentService';
 import type { SellerPayoutAccount } from '../../src/types/payment';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
+import { safeBack } from '../../src/utils/navigation';
 
 type ScreenMode = 'list' | 'add' | 'edit';
 type PayoutMethod = 'BANK' | 'UPI';
@@ -382,7 +383,10 @@ export default function PayoutAccountsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.cream }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/profile')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>PAYOUT ACCOUNTS</Text>

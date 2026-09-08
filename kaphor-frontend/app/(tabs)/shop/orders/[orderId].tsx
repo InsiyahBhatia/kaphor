@@ -20,6 +20,7 @@ import { orderService, TransactionOrder, OrderMessage, ShippingAddress } from '.
 import paymentService from '../../../../src/services/paymentService';
 import api from '../../../../src/services/api';
 import { useAuth } from '../../../../src/context/AuthContext';
+import { safeBack } from '../../../../src/utils/navigation';
 
 const statusConfig = {
   PENDING:    { label: 'AWAITING PAYMENT',   color: colors.red,        icon: 'time-outline' },
@@ -285,7 +286,11 @@ export default function OrderThreadScreen() {
       <View style={styles.centered}>
         <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
         <Text style={[styles.miss, { marginTop: 12 }]}>Order not found</Text>
-        <TouchableOpacity style={styles.goBackBtn} onPress={() => router.back()}>
+        <TouchableOpacity 
+          style={styles.goBackBtn} 
+          onPress={() => safeBack('/(tabs)/shop/orders')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Text style={styles.goBackText}>GO BACK</Text>
         </TouchableOpacity>
       </View>
@@ -310,7 +315,11 @@ export default function OrderThreadScreen() {
     >
       {/* ── Header ──────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/shop/orders')} 
+          style={styles.backBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <View style={styles.headerMid}>

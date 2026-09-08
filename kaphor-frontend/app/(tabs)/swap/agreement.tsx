@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
+import { safeBack } from '../../../src/utils/navigation';
 import { swapService } from '../../../src/services/swapService';
 import { messageService } from '../../../src/services/messageService';
 import { SWAP_AGREEMENT_TERMS, SWAP_STATUS_LABELS } from '../../../src/types/swap';
@@ -75,7 +76,7 @@ export default function SwapAgreementScreen() {
             text: 'Go to Escrow & Shipping',
             onPress: () => router.replace(`/(tabs)/swap/shipping?swapId=${swapId}` as any),
           },
-          { text: 'Done', onPress: () => router.back() },
+          { text: 'Done', onPress: () => safeBack(`/(tabs)/swap/details?swapId=${swapId}`) },
         ]
       );
     } catch (e: any) {

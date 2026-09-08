@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
+import { safeBack } from '../../../src/utils/navigation';
 
 export default function UpcycleSuggestionsScreen() {
   const router = useRouter();
@@ -49,7 +50,10 @@ export default function UpcycleSuggestionsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/studio')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="chevron-back" size={28} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>UPCYCLE STUDIO</Text>

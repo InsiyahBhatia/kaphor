@@ -10,6 +10,7 @@ import { colors, typography } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { safeBack } from '../../../src/utils/navigation';
 
 export default function SwapDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -84,7 +85,7 @@ export default function SwapDetailScreen() {
         conditionPhotos: photoData,
       });
       Alert.alert('Swap Requested!', 'The owner has been notified. Next step: both parties review and sign the swap agreement.', [
-        { text: 'OK', onPress: () => router.back() },
+        { text: 'OK', onPress: () => safeBack('/(tabs)/circular') },
       ]);
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || 'Swap request failed.');
@@ -100,7 +101,10 @@ export default function SwapDetailScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/circular')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SWAP REQUEST</Text>

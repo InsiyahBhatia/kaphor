@@ -16,6 +16,7 @@ import { cachedGet, fetchFresh } from '../../../src/services/api';
 import { getSocket, connectSocket } from '../../../src/services/socket';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
+import { safeBack } from '../../../src/utils/navigation';
 
 type NotificationCategory = 'ALL' | 'MESSAGES' | 'SWAPS' | 'ORDERS' | 'SYSTEM';
 
@@ -225,7 +226,11 @@ export default function NotificationsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity 
+            onPress={() => safeBack('/(tabs)/profile')} 
+            style={styles.backBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>

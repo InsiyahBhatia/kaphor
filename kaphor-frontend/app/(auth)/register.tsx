@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 import { useGoogleAuth } from '../../src/hooks/useGoogleAuth';
+import { safeBack } from '../../src/utils/navigation';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -64,6 +65,13 @@ export default function RegisterScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
+      <TouchableOpacity 
+        style={styles.backBtn} 
+        onPress={() => safeBack('/(auth)/welcome')}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      >
+        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
+      </TouchableOpacity>
       <View style={styles.header}>
         <Text style={styles.title}>Join Kaphor</Text>
         <Text style={styles.subtitle}>Begin your circular luxury journey</Text>
@@ -162,9 +170,16 @@ const styles = StyleSheet.create({
   inner: {
     padding: 24,
   },
+  backBtn: {
+    marginTop: 20,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
   header: {
-    marginTop: 60,
-    marginBottom: 40,
+    marginTop: 10,
+    marginBottom: 30,
   },
   title: {
     fontSize: 40,

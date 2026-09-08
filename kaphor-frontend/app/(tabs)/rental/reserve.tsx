@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
+import { safeBack } from '../../../src/utils/navigation';
 
 export default function RentalReserveScreen() {
   const { garmentId, dayRate } = useLocalSearchParams();
@@ -52,7 +53,10 @@ export default function RentalReserveScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/shop')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>BOOK RENTAL</Text>

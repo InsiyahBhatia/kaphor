@@ -17,6 +17,7 @@ import { userService } from '../../services/userService';
 import { garmentService } from '../../services/garmentService';
 import { KaphorImage } from '../../components/KaphorImage';
 import { colors, typography, spacing, radius } from '../../theme';
+import { safeBack } from '../../utils/navigation';
 
 export function MyListingsScreen() {
   const router = useRouter();
@@ -137,7 +138,11 @@ export function MyListingsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable 
+          onPress={() => safeBack('/(tabs)/profile')} 
+          style={styles.backBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>MY LISTINGS</Text>

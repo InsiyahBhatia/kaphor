@@ -14,8 +14,7 @@ import {
   MARKET_SIZES 
 } from '../../../src/constants/market';
 import { DropdownPicker } from '../../../src/components/DropdownPicker';
-
-
+import { safeBack } from '../../../src/utils/navigation';
 
 export default function SellScreen() {
   const router = useRouter();
@@ -418,7 +417,10 @@ export default function SellScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/shop')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="close" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SECURE LISTING</Text>

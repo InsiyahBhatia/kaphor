@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
+import { safeBack } from '../../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BespokeScreen() {
@@ -22,7 +23,7 @@ export default function BespokeScreen() {
     try {
       await api.post('/studio/bespoke-request', { description, contactEmail: email });
       Alert.alert('Request Sent!', 'Our artisan team will contact you within 48 hours.', [
-        { text: 'OK', onPress: () => router.back() },
+        { text: 'OK', onPress: () => safeBack('/(tabs)/circular') },
       ]);
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || 'Request failed.');
@@ -34,7 +35,10 @@ export default function BespokeScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity 
+          onPress={() => safeBack('/(tabs)/circular')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="chevron-back-sharp" size={28} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>BESPOKE CONSULTATION</Text>
