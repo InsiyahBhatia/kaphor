@@ -10,6 +10,7 @@ interface User {
   username?: string;
   role?: string;
   avatarUrl?: string;
+  avatar?: string;
   styleAesthetic?: string;
   onboardingDone?: boolean;
   stats?: {
@@ -43,6 +44,8 @@ function normalizeUser(raw: Record<string, unknown>): User {
     role: raw.role != null ? String(raw.role) : undefined,
     avatarUrl:
       (raw.avatarUrl as string | undefined) ?? (raw.avatar as string | undefined),
+    avatar:
+      (raw.avatar as string | undefined) ?? (raw.avatarUrl as string | undefined),
     styleAesthetic: raw.styleAesthetic != null ? String(raw.styleAesthetic) : undefined,
     onboardingDone: raw.onboardingDone != null ? Boolean(raw.onboardingDone) : false,
     stats: raw.stats as User['stats'],
@@ -115,8 +118,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             JSON.stringify({ accessToken, refreshToken, user: freshNormalized })
           );
         }
-      } catch {
-        await clearLocalSession();
+      } catch (err: any) {
+        // Only clear if the token was explicitly revoked or invalid (401)
+        if (err?.response?.status === 401) {
+          console.log('Session expired or revoked (401), clearing session');
+          await clearLocalSession();
+          return;
+        }
+        // Network timeout / Render cold start: preserve offline/cached session!
+        console.log('Backend cold start / slow response, keeping cached session');
+      }
+
+      // Connect socket now that user session is active
+      try {
+        const { connectSocket } = await import('../services/socket');
+        connectSocket();
+      } catch (sockErr) {
+        console.log('Socket connect warning on boot:', sockErr);
       }
     } catch (e) {
       console.log('Error loading auth data', e);
@@ -143,6 +161,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user: newUser,
       })
     );
+
+    // Connect socket on new session
+    try {
+      const { connectSocket } = await import('../services/socket');
+      connectSocket();
+    } catch (sockErr) {
+      console.log('Socket connect warning on persistSession:', sockErr);
+    }
   }
 
   const signIn = async (email: string, password?: string) => {

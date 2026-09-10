@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../theme';
 import { connectSocket, getSocket } from '../../services/socket';
+import { useAuthStore } from '../../store/authStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface ToastPayload {
@@ -25,6 +26,7 @@ export interface ToastPayload {
 export function NotificationToast() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const userId = useAuthStore((s) => s.user?.id);
   const [toast, setToast] = useState<ToastPayload | null>(null);
 
   const translateY = useRef(new Animated.Value(-150)).current;
@@ -111,7 +113,7 @@ export function NotificationToast() {
       socket.off('new_direct_message', handleNewDirectMessage);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [userId]);
 
   if (!toast) return null;
 

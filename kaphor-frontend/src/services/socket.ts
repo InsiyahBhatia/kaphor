@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 import { useAuthStore } from '../store/authStore';
 
 function resolveSocketUrl(): string {
-  const fallback = 'http://10.214.166.156:4000';
+  const fallback = 'https://kaphor-backend.onrender.com';
   const raw = process.env.EXPO_PUBLIC_SOCKET_URL ?? fallback;
 
   if (!__DEV__ || Platform.OS !== 'android') {
@@ -15,14 +15,12 @@ function resolveSocketUrl(): string {
     const u = new URL(raw);
     const hostUri =
       Constants.expoConfig?.hostUri ?? (Constants as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost;
-    let hostname = '10.214.166.156';
     if (hostUri) {
       const metroHost = hostUri.split(':')[0];
       if (metroHost && metroHost !== '127.0.0.1' && metroHost !== 'localhost') {
-        hostname = metroHost;
+        u.hostname = metroHost;
       }
     }
-    u.hostname = hostname;
     return u.origin;
   } catch {
     return raw;
@@ -48,7 +46,7 @@ export function connectSocket(): Socket | null {
       userId: user.id,
       token,
     },
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
   });
   return socket;
 }

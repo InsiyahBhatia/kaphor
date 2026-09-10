@@ -32,4 +32,4 @@ export const LISTING_TYPES = [
   { id: 'ACCESSORY_SWAP', label: 'SWAP', desc: 'Direct exchange for other assets.' },
 ];
 
-export const MARKET_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+export const MARKET_SIZES = ['FREE SIZE', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];

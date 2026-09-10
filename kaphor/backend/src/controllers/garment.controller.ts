@@ -214,21 +214,48 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
       res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required', statusCode: 401 });
       return;
     }
+
+    const body = req.body as Record<string, unknown>;
+    const title = String(body.title || '').trim();
+    const brand = String(body.brand || 'Unknown').trim();
+
+    // Duplicate prevention: check if this user listed the exact same item within the last 60 seconds
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const existingRecent = await db.garment.findFirst({
+      where: {
+        sellerId: req.user.id,
+        title,
+        brand,
+        createdAt: { gte: oneMinuteAgo },
+      },
+    });
+    if (existingRecent) {
+      logger.info('Duplicate garment listing intercepted within 60s window', { garmentId: existingRecent.id });
+      const resolvedGarment = await resolveGarmentImages(existingRecent);
+      res.status(200).json({ data: resolvedGarment, message: 'Garment already listed' });
+      return;
+    }
+
     const files = req.files as Express.Multer.File[] | undefined;
     const imageUrls: string[] = [];
     if (files?.length) {
-      for (const file of files) {
-        const result = await uploadToS3(file.buffer, 'garments', file.mimetype);
-        imageUrls.push(result.url);
+      // Parallelize image uploads for maximum performance
+      const uploadResults = await Promise.all(
+        files.map(file => uploadToS3(file.buffer, 'garments', file.mimetype))
+      );
+      for (const res of uploadResults) {
+        imageUrls.push(res.url);
       }
     }
-    const body = req.body as Record<string, unknown>;
     const condition = (body.condition as string) || 'PRISTINE';
 
-    // Generate style vector — Gemini Vision on image, fallback to attributes
-    const garmentVector = Array.isArray(body.garmentVector)
-      ? (body.garmentVector as number[])
-      : (await generateGarmentVectorHybrid(
+    // Generate style vector with 3.5s timeout so slow external AI calls don't block listing
+    let garmentVector: number[] = [];
+    if (Array.isArray(body.garmentVector)) {
+      garmentVector = body.garmentVector as number[];
+    } else {
+      try {
+        const vectorPromise = generateGarmentVectorHybrid(
           imageUrls[0] || null,
           {
             category: body.category ? String(body.category) : undefined,
@@ -242,11 +269,23 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
             tags: Array.isArray(body.tags) ? body.tags.map(String) : undefined,
             styleTags: Array.isArray(body.styleTags) ? body.styleTags.map(String) : undefined,
           }
-        )).vector;
+        );
+        const timeoutPromise = new Promise<{ vector: number[] }>((_, reject) =>
+          setTimeout(() => reject(new Error('Vector generation timeout')), 3500)
+        );
+        const result = await Promise.race([vectorPromise, timeoutPromise]);
+        garmentVector = result.vector;
+      } catch (vecErr) {
+        logger.warn('Garment vector generation timed out or failed; proceeding with fallback', {
+          error: (vecErr as any)?.message,
+        });
+        garmentVector = [];
+      }
+    }
 
     // Auto-match material impact
     const materialId = await ImpactService.findMatchingMaterialId(
-      String(body.title),
+      title,
       String(body.category),
       body.fabric ? String(body.fabric) : null
     );

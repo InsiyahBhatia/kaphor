@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, ActivityIndicator, Alert, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { userService } from '../../services/userService';
 import { colors, typography, spacing, radius } from '../../theme';
@@ -14,8 +15,10 @@ export function AccountSettingsScreen() {
     
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
     
     // Form state
+    const [avatar, setAvatar] = useState<string | null>(null);
     const [displayName, setDisplayName] = useState('');
     const [bio, setBio] = useState('');
     const [location, setLocation] = useState('');
@@ -25,6 +28,7 @@ export function AccountSettingsScreen() {
         const fetchProfile = async () => {
             try {
                 const profile = await userService.getMe();
+                setAvatar(profile.avatar || null);
                 setDisplayName(profile.displayName || '');
                 setBio(profile.bio || '');
                 setLocation(profile.location || '');
@@ -37,6 +41,37 @@ export function AccountSettingsScreen() {
         };
         fetchProfile();
     }, []);
+
+    const handlePickAvatar = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'Permission to access photos is needed.');
+                return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.7,
+            });
+            if (!result.canceled && result.assets[0]?.uri) {
+                setUploadingAvatar(true);
+                const res = await userService.updateAvatar(result.assets[0].uri);
+                if (res?.avatar) {
+                    setAvatar(res.avatar);
+                    if (setUser) {
+                        setUser((prev: any) => ({ ...prev, avatar: res.avatar }));
+                    }
+                    Alert.alert('Success', 'Profile photo updated!');
+                }
+            }
+        } catch (err: any) {
+            Alert.alert('Error', err?.message || 'Failed to update photo.');
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -92,6 +127,30 @@ export function AccountSettingsScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                <View style={styles.avatarSection}>
+                    <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={styles.avatarWrap}>
+                        {avatar ? (
+                            <Image source={{ uri: avatar }} style={styles.avatarImg} />
+                        ) : (
+                            <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
+                                <Ionicons name="person" size={36} color={colors.textMuted} />
+                            </View>
+                        )}
+                        <View style={styles.cameraIconBadge}>
+                            {uploadingAvatar ? (
+                                <ActivityIndicator size="small" color={colors.white} />
+                            ) : (
+                                <Ionicons name="camera" size={14} color={colors.gold} />
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={{ marginTop: 8 }}>
+                        <Text style={styles.changePhotoText}>
+                            {uploadingAvatar ? 'UPLOADING...' : 'CHANGE PROFILE PHOTO'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Display Name</Text>
                     <TextInput
@@ -188,6 +247,50 @@ const styles = StyleSheet.create({
     
     content: { padding: spacing.xl },
     
+    avatarSection: {
+        alignItems: 'center',
+        marginBottom: spacing.xl,
+        paddingBottom: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    avatarWrap: {
+        position: 'relative',
+    },
+    avatarImg: {
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        borderWidth: 2,
+        borderColor: colors.gold,
+    },
+    avatarPlaceholder: {
+        backgroundColor: colors.bgCard,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cameraIconBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: '#1E1F22',
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        borderWidth: 1.5,
+        borderColor: colors.gold,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    changePhotoText: {
+        color: colors.gold,
+        fontFamily: typography.mono,
+        fontSize: 11,
+        letterSpacing: 1,
+        fontWeight: 'bold',
+        marginTop: 4,
+    },
+
     inputGroup: { marginBottom: spacing.xl },
     label: { color: colors.textPrimary, fontFamily: typography.mono, fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', marginBottom: spacing.sm },
     input: { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.md, color: colors.textPrimary, fontFamily: typography.body, fontSize: 16 },

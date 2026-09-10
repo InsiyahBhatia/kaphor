@@ -128,10 +128,11 @@ export async function uploadToS3(
     const localPath = path.join(folderPath, filename);
     fs.writeFileSync(localPath, buffer);
 
-    const port = process.env.PORT || 4000;
-    const ip = getLocalIp();
-    // Using IP instead of localhost so physical devices can reach it
-    const url = `http://${ip}:${port}/uploads/${folder}/${filename}`;
+    const isProd = process.env.NODE_ENV === 'production' || !!process.env.BACKEND_URL;
+    const baseUrl = isProd
+      ? (process.env.BACKEND_URL || 'https://kaphor-backend.onrender.com')
+      : `http://${getLocalIp()}:${process.env.PORT || 4000}`;
+    const url = `${baseUrl}/uploads/${folder}/${filename}`;
     logger.info(`File saved locally: ${url}`);
 
     return { url, key: `local://${key}` };
@@ -152,13 +153,27 @@ export async function getDownloadUrl(originalUrlOrKey: string): Promise<string> 
   if (!originalUrlOrKey) return '';
 
   // Local Fallback handle
-  if (originalUrlOrKey.startsWith('local://') || originalUrlOrKey.includes('localhost:4000') || originalUrlOrKey.includes(':4000')) {
-    const ip = getLocalIp();
-    const port = process.env.PORT || 4000;
-    // Replace whatever host is there with current local IP for reliability
+  if (
+    originalUrlOrKey.startsWith('local://') || 
+    originalUrlOrKey.includes('/uploads/') ||
+    originalUrlOrKey.includes('localhost:4000') || 
+    originalUrlOrKey.includes(':4000') ||
+    originalUrlOrKey.includes(':10000')
+  ) {
+    const isProd = process.env.NODE_ENV === 'production' || !!process.env.BACKEND_URL;
+    const baseUrl = isProd
+      ? (process.env.BACKEND_URL || 'https://kaphor-backend.onrender.com')
+      : `http://${getLocalIp()}:${process.env.PORT || 4000}`;
+
+    if (originalUrlOrKey.startsWith('local://')) {
+      return `${baseUrl}/uploads/${originalUrlOrKey.replace('local://', '')}`;
+    }
+    if (originalUrlOrKey.includes('/uploads/')) {
+      const relativePath = originalUrlOrKey.substring(originalUrlOrKey.indexOf('/uploads/'));
+      return `${baseUrl}${relativePath}`;
+    }
     return originalUrlOrKey
-      .replace('local://', `http://${ip}:${port}/uploads/`)
-      .replace(/^(http:\/\/)(localhost|[\d\.]+)(:4000\/uploads\/)/, `$1${ip}$3`);
+      .replace(/^(http:\/\/)(localhost|[\d\.]+)(:(?:4000|10000)\/uploads\/)/, `${baseUrl}/uploads/`);
   }
 
   // S3 Presigned URL handle

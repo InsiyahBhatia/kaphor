@@ -138,7 +138,7 @@ function toFiniteNumber(value: unknown): number | null {
 export const createGarmentSchema = z
   .object({
     title: z.string().min(3).max(100),
-    description: z.string().min(10).max(1000),
+    description: z.string().min(3).max(1000),
     category: z.string().min(1),
     condition: z.string().min(1),
     size: z.string().min(1),
@@ -150,10 +150,10 @@ export const createGarmentSchema = z
   })
   .passthrough()
   .superRefine((value, ctx) => {
-    const needsPrice = value.listingType === 'SALE' || value.listingType === 'ACCESSORY_SWAP';
+    const needsPrice = value.listingType === 'SALE';
     const needsRental = value.listingType === 'RENTAL';
 
-    // price is required + numeric for SALE / ACCESSORY_SWAP
+    // price is required + numeric for SALE only (swaps don't require price)
     if (needsPrice) {
       const n = toFiniteNumber(value.price);
       if (n === null) {
@@ -184,7 +184,7 @@ export const createGarmentSchema = z
 export const updateGarmentSchema = z
   .object({
     title: z.string().min(3).max(100).optional(),
-    description: z.string().min(10).max(1000).optional(),
+    description: z.string().min(3).max(1000).optional(),
     category: z.string().min(1).optional(),
     condition: z.string().min(1).optional(),
     size: z.string().min(1).optional(),

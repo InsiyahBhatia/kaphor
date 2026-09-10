@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { KaphorImage } from '../../src/components/KaphorImage';
 import { useAuth } from '../../src/context/AuthContext';
 import { useRouter, Stack } from 'expo-router';
@@ -16,7 +16,7 @@ import { Header } from '../../src/components/common/Header';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, setUser } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [styleProfile, setStyleProfile] = useState<any>(null);
@@ -24,6 +24,42 @@ export default function ProfileScreen() {
   const [savedAssets, setSavedAssets] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
+
+  const handlePickAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Photos permission is required to update profile picture.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets[0]?.uri) {
+        setUpdatingAvatar(true);
+        const res = await userService.updateAvatar(result.assets[0].uri);
+        const newAvatar = res?.avatar;
+        if (newAvatar) {
+          if (user) {
+            setUser({ ...user, avatar: newAvatar, avatarUrl: newAvatar });
+          }
+          setProfile((prev: any) => (prev ? { ...prev, avatar: newAvatar } : prev));
+          Alert.alert('Success', 'Profile picture updated successfully!');
+        }
+      }
+    } catch (e: any) {
+      console.error('Failed to update avatar', e);
+      Alert.alert('Upload Failed', e?.response?.data?.message || e?.message || 'Could not update profile photo.');
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  };
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -90,7 +126,12 @@ export default function ProfileScreen() {
         {/* IDENTITY SECTION */}
         <View style={styles.identitySection}>
           <View style={styles.avatarRow}>
-            <View style={styles.avatarWrapper}>
+            <TouchableOpacity
+              style={styles.avatarWrapper}
+              onPress={handlePickAvatar}
+              disabled={updatingAvatar}
+              activeOpacity={0.8}
+            >
               {avatar ? (
                 <KaphorImage uri={avatar} style={styles.avatar} contentFit="cover" />
               ) : (
@@ -98,8 +139,15 @@ export default function ProfileScreen() {
                   <Ionicons name="person" size={40} color={colors.charcoal} />
                 </View>
               )}
+              <View style={styles.cameraBadge}>
+                {updatingAvatar ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Ionicons name="camera" size={13} color={colors.gold} />
+                )}
+              </View>
               <View style={styles.roleBadge}><Text style={styles.roleBadgeText}>{role || 'MEMBER'}</Text></View>
-            </View>
+            </TouchableOpacity>
             <View style={styles.identityText}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={styles.displayName}>{displayName}</Text>
@@ -350,6 +398,21 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderWidth: 2,
     borderColor: colors.charcoal,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#1E1F22',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: colors.gold,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    elevation: 4,
   },
   roleBadgeText: {
     color: colors.white,

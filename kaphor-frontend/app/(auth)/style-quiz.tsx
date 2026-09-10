@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { aiService } from '../../src/services/aiService';
 import { useToastStore } from '../../src/store/toastStore';
 import { colors, typography } from '../../src/theme';
@@ -85,23 +86,25 @@ const QUIZ_DATA = [
 export default function StyleQuizScreen() {
   const router = useRouter();
   const { user, setUser } = useAuth();
-  const [answers, setAnswers] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Record<number, string[]>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToastStore();
 
   const currentQuestion = QUIZ_DATA[currentIndex];
+  const currentSelections = answers[currentIndex] || [];
 
-  const selectOption = (option: string, index: number) => {
-    const newAnswers = [...answers];
-    // Map the simple option to the actual token the backend expects
-    newAnswers[currentIndex] = currentQuestion.tokens[index]; 
-    setAnswers(newAnswers);
+  const toggleOption = (token: string) => {
+    const exists = currentSelections.includes(token);
+    const updated = exists
+      ? currentSelections.filter((t) => t !== token)
+      : [...currentSelections, token];
+    setAnswers({ ...answers, [currentIndex]: updated });
   };
 
   const handleNext = () => {
-    if (!answers[currentIndex]) {
-      Alert.alert('Selection Required', 'Please pick an option!');
+    if (currentSelections.length === 0) {
+      Alert.alert('Selection Required', 'Please pick at least one option!');
       return;
     }
     if (currentIndex < QUIZ_DATA.length - 1) {
@@ -122,7 +125,8 @@ export default function StyleQuizScreen() {
   const handleFinish = async () => {
     setSubmitting(true);
     try {
-      await aiService.submitStyleQuiz(answers);
+      const allTokens = Object.values(answers).flat();
+      await aiService.submitStyleQuiz(allTokens);
       showToast('STYLE DNA READY', 'success');
       
       // Update the user in AuthContext so ProtectedRoute sees onboardingDone = true
@@ -154,9 +158,6 @@ export default function StyleQuizScreen() {
     }
   };
 
-  const currentSelectionToken = answers[currentIndex];
-  const currentSelectionIndex = currentQuestion.tokens.indexOf(currentSelectionToken);
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HERO SECTION */}
@@ -172,7 +173,7 @@ export default function StyleQuizScreen() {
         <View style={styles.heroBottomBar}>
           <View>
             <Text style={styles.heroSubTitle}>QUIZ ANALYSIS</Text>
-            <Text style={styles.heroItalic}>{currentQuestion.sub}</Text>
+            <Text style={styles.heroItalic}>{currentQuestion.sub} (Select 1 or more)</Text>
           </View>
           <Text style={styles.heroZero}>{currentIndex + 1}</Text>
         </View>
@@ -203,16 +204,16 @@ export default function StyleQuizScreen() {
         <View style={styles.optionsContainer}>
           {currentQuestion.options.map((option, idx) => {
             const token = currentQuestion.tokens[idx];
-            const isActive = answers[currentIndex] === token;
+            const isActive = currentSelections.includes(token);
             return (
               <TouchableOpacity
                 key={option}
                 style={[styles.optionRow, isActive && styles.optionRowActive]}
-                onPress={() => selectOption(option, idx)}
+                onPress={() => toggleOption(token)}
                 activeOpacity={0.7}
               >
                 <View style={[styles.radioOutline, isActive && styles.radioFilled]}>
-                  {isActive && <View style={styles.radioInner} />}
+                  {isActive && <Ionicons name="checkmark" size={12} color={colors.white} />}
                 </View>
                 
                 <Text style={[styles.optionText, isActive && styles.optionTextActive]}>
@@ -237,9 +238,9 @@ export default function StyleQuizScreen() {
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.nextBtn, !answers[currentIndex] && { opacity: 0.5 }]}
+            style={[styles.nextBtn, currentSelections.length === 0 && { opacity: 0.5 }]}
             onPress={handleNext}
-            disabled={submitting || !answers[currentIndex]}
+            disabled={submitting || currentSelections.length === 0}
           >
             {submitting ? (
               <ActivityIndicator color={colors.white} />

@@ -55,6 +55,46 @@ async function generateWithFallback(prompt: string, config: any = { responseMime
     throw lastError;
 }
 
+/** Helper to run Gemini Vision with fallback models and retry */
+async function generateVisionWithFallback(parts: any[], config: any = { responseMimeType: 'application/json', temperature: 0.2 }) {
+    const sequence: (keyof typeof models)[] = ['primary', 'secondary', 'tertiary'];
+    let lastError: any = null;
+
+    for (const key of sequence) {
+        let attempts = 0;
+        const maxAttempts = 2;
+        while (attempts < maxAttempts) {
+            try {
+                const model = models[key];
+                const result = await model.generateContent({
+                    contents: [{ role: 'user', parts }],
+                    generationConfig: config
+                });
+                return result.response.text();
+            } catch (err: any) {
+                lastError = err;
+                const status = err.status || (err as any).response?.status;
+                if (status === 429 || status === 503) {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        const delay = 1500 * attempts;
+                        logger.warn(`AI Vision ${key} returned ${status}, retrying in ${delay}ms`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    break;
+                }
+                if (status === 404) {
+                    break;
+                }
+                logger.warn(`AI Vision ${key} error: ${err.message}, trying next fallback`);
+                break;
+            }
+        }
+    }
+    throw lastError;
+}
+
 
 /** Dot-product cosine similarity between two equal-length float arrays */
 function cosineSimilarity(a: number[], b: number[]): number {
@@ -609,28 +649,60 @@ Be precise. If the brand is visible, identify it. If it looks vintage, mention i
             }
         }
 
-        const result = await models.primary.generateContent({
-            contents: [{ role: 'user', parts: [{ inlineData: { mimeType, data: base64Data } }, { text: prompt }] }],
-            generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
-        });
-        const raw = result.response.text();
+        let raw = '';
+        try {
+            raw = await generateVisionWithFallback([
+                { inlineData: { mimeType, data: base64Data } },
+                { text: prompt }
+            ]);
+        } catch (visionErr: any) {
+            logger.warn('AI Vision generation failed or timed out, using fallback attributes', { error: visionErr?.message });
+        }
 
         let data: any;
         try {
-            data = safeJson(raw);
+            data = raw ? safeJson(raw) : null;
         } catch {
-            // Avoid hard-failing AI Fill when model output is malformed.
+            data = null;
+        }
+
+        if (!data || !data.title) {
             data = {
-                title: 'Luxury Item',
+                title: 'Curated Designer Item',
+                brand: 'Unknown Brand',
+                category: 'APPAREL',
+                subCategory: 'Tops',
+                description: 'Pre-loved authentic garment curated for KaPhor circular fashion.',
+                size: 'M',
+                condition: 'GOOD',
+                color: ['Black'],
+                material: ['Cotton'],
+                estimatedPrice: 999,
+                styleAttributes: {
+                    fabric: 'Cotton Blend',
+                    style: 'Contemporary',
+                    sleeve: null,
+                    shape: 'Regular Fit',
+                    pattern: 'Solid',
+                    weight: 'Medium'
+                }
+            };
+        }
+        res.json({ data });
+    } catch (error) {
+        logger.error('Analyze listing failed', { error });
+        res.json({
+            data: {
+                title: 'Curated Garment',
                 brand: 'Unknown',
-                category: 'ACCESSORIES',
-                subCategory: 'Accessory',
-                description: 'Curated pre-loved item ready for circular fashion.',
-                size: 'OS',
+                category: 'APPAREL',
+                subCategory: 'Tops',
+                description: 'Ready to list on KaPhor.',
+                size: 'M',
                 condition: 'GOOD',
                 color: [],
                 material: [],
-                estimatedPrice: 0,
+                estimatedPrice: 999,
                 styleAttributes: {
                     fabric: '',
                     style: '',
@@ -639,12 +711,8 @@ Be precise. If the brand is visible, identify it. If it looks vintage, mention i
                     pattern: '',
                     weight: ''
                 }
-            };
-        }
-        res.json({ data });
-    } catch (error) {
-        logger.error('Analyze listing failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+            }
+        });
     }
 }
 

@@ -11,6 +11,19 @@ export const userService = {
     return data.data;
   },
 
+  updateAvatar: async (imageUri: string) => {
+    const formData = new FormData();
+    formData.append('avatar', {
+      uri: imageUri,
+      type: 'image/jpeg',
+      name: 'avatar.jpg',
+    } as any);
+    const { data } = await api.put('/users/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.data;
+  },
+
   getMyListings: async () => {
     const { data } = await api.get('/users/me/listings');
     return data.data;

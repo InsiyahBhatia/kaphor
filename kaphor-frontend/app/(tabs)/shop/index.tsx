@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGarmentStore } from '../../../src/store/garmentStore';
@@ -22,6 +22,7 @@ export default function ShopScreen() {
 
   const { garments, isLoading, fetchFeed } = useGarmentStore();
 
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
@@ -82,6 +83,15 @@ export default function ShopScreen() {
     params.listingType = 'SALE';
     
     fetchFeed(params);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      applyFilters();
+    } finally {
+      setTimeout(() => setRefreshing(false), 600);
+    }
   };
 
   const getDeterminants = (id: string, index: number) => {
@@ -151,7 +161,18 @@ export default function ShopScreen() {
           {isLoading && garments.length > 0 && (
              <View style={{ height: 2, backgroundColor: colors.red, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }} />
           )}
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.gold}
+                colors={[colors.gold]}
+              />
+            }
+          >
             <View style={styles.activeFiltersRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {categories.map((cat: string) => {

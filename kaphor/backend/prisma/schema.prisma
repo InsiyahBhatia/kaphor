@@ -282,6 +282,10 @@ model Garment {
   inquiries        Conversation[]
   upcycleRequests  UpcycleRequest[]
 
+  @@index([sellerId])
+  @@index([isActive, createdAt])
+  @@index([category, isActive])
+  @@index([listingType, isActive])
   @@map("garments")
 }
 
