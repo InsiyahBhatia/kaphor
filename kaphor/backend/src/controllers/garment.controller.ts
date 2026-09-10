@@ -236,6 +236,31 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const listingType = String(body.listingType || 'SALE').toUpperCase();
+    const category = String(body.category || '').trim();
+    const subCategory = String(body.subCategory || '').trim();
+
+    if (listingType === 'ACCESSORY_SWAP') {
+      const accessoryTerms = [
+        'accessory', 'accessories', 'bag', 'bags', 'jewelry', 'jewellery',
+        'watch', 'watches', 'eyewear', 'belt', 'belts', 'hat', 'hats',
+        'scarf', 'scarves', 'wallet', 'wallets', 'tie', 'ties',
+        'footwear', 'shoes', 'sneakers', 'heels', 'boots', 'sandals'
+      ];
+      const catLower = category.toLowerCase();
+      const subLower = subCategory.toLowerCase();
+      const isAcc = accessoryTerms.some(term => catLower.includes(term) || subLower.includes(term)) ||
+        body.isAccessory === true || body.isAccessory === 'true';
+      if (!isAcc) {
+        res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'Only accessories (bags, jewelry, watches, eyewear, belts, hats, scarves, wallets, ties, footwear) are eligible for swap listings.',
+          statusCode: 400,
+        });
+        return;
+      }
+    }
+
     const files = req.files as Express.Multer.File[] | undefined;
     const imageUrls: string[] = [];
     if (files?.length) {
@@ -355,6 +380,30 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const body = req.body as Record<string, unknown>;
+    const newListingType = body.listingType ? String(body.listingType).toUpperCase() : existing.listingType;
+    const newCategory = body.category ? String(body.category) : existing.category;
+    const newSubCategory = body.subCategory ? String(body.subCategory) : existing.subCategory;
+    if (newListingType === 'ACCESSORY_SWAP') {
+      const accessoryTerms = [
+        'accessory', 'accessories', 'bag', 'bags', 'jewelry', 'jewellery',
+        'watch', 'watches', 'eyewear', 'belt', 'belts', 'hat', 'hats',
+        'scarf', 'scarves', 'wallet', 'wallets', 'tie', 'ties',
+        'footwear', 'shoes', 'sneakers', 'heels', 'boots', 'sandals'
+      ];
+      const catLower = (newCategory || '').toLowerCase();
+      const subLower = (newSubCategory || '').toLowerCase();
+      const isAcc = accessoryTerms.some(term => catLower.includes(term) || subLower.includes(term));
+      if (!isAcc) {
+        res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'Only accessories (bags, jewelry, watches, eyewear, belts, hats, scarves, wallets, ties, footwear) are eligible for swap listings.',
+          statusCode: 400,
+        });
+        return;
+      }
+    }
+
     const files = req.files as Express.Multer.File[] | undefined;
     const newImageUrls: string[] = [];
     if (files?.length) {
@@ -364,8 +413,6 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
       }
     }
 
-    const body = req.body as Record<string, unknown>;
-    
     // If new images are uploaded, we typically replace or append.
     // Here we'll take existing images from body (if provided) and append new ones.
     let updatedImages = existing.images;

@@ -8,6 +8,7 @@ import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { safeBack } from '../../../src/utils/navigation';
+import { isAccessoryCategory } from '../../../src/constants/market';
 
 export default function SwapWithWantedScreen() {
   const { wantedId } = useLocalSearchParams();
@@ -27,7 +28,10 @@ export default function SwapWithWantedScreen() {
           api.get('/garments/me').then((r) => r.data.data).catch(() => []),
         ]);
         setGarment(gData);
-        setMyGarments(Array.isArray(myData) ? myData : []);
+        const accessoriesOnly = (Array.isArray(myData) ? myData : []).filter((item: any) =>
+          isAccessoryCategory(item.category, item.subCategory) || item.listingType === 'ACCESSORY_SWAP'
+        );
+        setMyGarments(accessoriesOnly);
       } catch {}
       finally { setLoading(false); }
     })();
@@ -35,7 +39,7 @@ export default function SwapWithWantedScreen() {
 
   const handleSwap = async () => {
     if (!selectedOffer) {
-      Alert.alert('Select a garment', 'Choose one of your garments to offer.');
+      Alert.alert('Select an Accessory', 'Choose one of your accessories to offer in exchange.');
       return;
     }
     setSubmitting(true);
@@ -88,12 +92,12 @@ export default function SwapWithWantedScreen() {
           <Ionicons name="swap-vertical" size={32} color={colors.red} />
         </View>
 
-        <Text style={styles.sectionTitle}>SELECT YOUR OFFER</Text>
+        <Text style={styles.sectionTitle}>SELECT AN ACCESSORY TO OFFER</Text>
         {myGarments.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>You don't have any garments listed yet.</Text>
+            <Text style={styles.emptyText}>You don't have any accessories listed for swap yet.</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/shop/sell')}>
-              <Text style={styles.linkText}>LIST A GARMENT</Text>
+              <Text style={styles.linkText}>LIST AN ACCESSORY</Text>
             </TouchableOpacity>
           </View>
         ) : (

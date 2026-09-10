@@ -178,6 +178,27 @@ export const createGarmentSchema = z
     if (week !== null && (Number.isNaN(week) || week < 0)) {
       ctx.addIssue({ code: 'custom', path: ['rentalPriceWeek'], message: 'rentalPriceWeek must be a number >= 0' });
     }
+
+    // ACCESSORY_SWAP listings are strictly reserved for accessories
+    if (value.listingType === 'ACCESSORY_SWAP') {
+      const cat = String(value.category || '').toLowerCase();
+      const sub = String((value as any).subCategory || '').toLowerCase();
+      const accessoryTerms = [
+        'accessory', 'accessories', 'bag', 'bags', 'jewelry', 'jewellery',
+        'watch', 'watches', 'eyewear', 'belt', 'belts', 'hat', 'hats',
+        'scarf', 'scarves', 'wallet', 'wallets', 'tie', 'ties',
+        'footwear', 'shoes', 'sneakers', 'heels', 'boots', 'sandals'
+      ];
+      const isAcc = accessoryTerms.some(term => cat.includes(term) || sub.includes(term)) ||
+        value.isAccessory === true || value.isAccessory === 'true';
+      if (!isAcc) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['category'],
+          message: 'Only accessories (bags, jewelry, watches, eyewear, belts, hats, scarves, wallets, ties, footwear) are eligible for swap listings',
+        });
+      }
+    }
   });
 
 /** PUT /:id — update a garment listing (all fields optional) */
@@ -199,6 +220,24 @@ export const updateGarmentSchema = z
       const n = toFiniteNumber(value[key]);
       if (n !== null && (Number.isNaN(n) || n < 0)) {
         ctx.addIssue({ code: 'custom', path: [key], message: `${key} must be a number >= 0` });
+      }
+    }
+
+    if (value.listingType === 'ACCESSORY_SWAP' && value.category) {
+      const cat = String(value.category).toLowerCase();
+      const accessoryTerms = [
+        'accessory', 'accessories', 'bag', 'bags', 'jewelry', 'jewellery',
+        'watch', 'watches', 'eyewear', 'belt', 'belts', 'hat', 'hats',
+        'scarf', 'scarves', 'wallet', 'wallets', 'tie', 'ties',
+        'footwear', 'shoes', 'sneakers', 'heels', 'boots', 'sandals'
+      ];
+      const isAcc = accessoryTerms.some(term => cat.includes(term));
+      if (!isAcc) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['category'],
+          message: 'Only accessories are eligible for swap listings',
+        });
       }
     }
   });

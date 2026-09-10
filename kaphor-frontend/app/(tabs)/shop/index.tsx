@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGarmentStore } from '../../../src/store/garmentStore';
+import { useAuthStore } from '../../../src/store/authStore';
 import { cartService } from '../../../src/services/cartService';
 import { PlayingCard } from '../../../src/components/PlayingCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
@@ -196,43 +197,55 @@ export default function ShopScreen() {
               </ScrollView>
             </View>
 
-            {garments.filter(item => item.listingType === 'SALE').length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>NO SALE ASSETS MATCHING QUERY</Text>
-              </View>
-            ) : (
-              <View style={styles.grid}>
-                {garments.filter(item => item.listingType === 'SALE').map((item, index) => {
-                  const { rank, suit } = getDeterminants(item.id, index);
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.cardWrapper}
-                      onPress={() => router.push(`/(tabs)/shop/${item.id}`)}
-                    >
-                      <PlayingCard
-                        rank={rank}
-                        suit={suit}
-                        productName={item.title}
-                        size={item.size || 'OS'}
-                        price={item.price ? item.price / 100 : 0}
-                        imageUrl={item.images?.[0] || undefined}
-                        category={item.category || undefined}
-                        subCategory={item.subCategory || undefined}
-                        condition={item.condition || "Excellent"}
-                        onAddToCart={() => handleAddToCart(item)}
-                        buttonText={
-                          item.listingType === 'SALE' ? 'BUY ASSET' :
-                          item.listingType === 'RENTAL' ? 'RENT ASSET' : 'SWAP REQUEST'
-                        }
-                        onSwapRequest={() => router.push(`/(tabs)/shop/${item.id}`)}
-                        style={{ width: '100%' }}
-                      />
-                    </TouchableOpacity>
-                  )
-                })}
-              </View>
-            )}
+            {(() => {
+              const currentUserId = useAuthStore.getState().user?.id;
+              const saleItems = garments.filter(
+                (item) =>
+                  item.listingType === 'SALE' &&
+                  item.sellerId !== currentUserId &&
+                  (item as any).seller?.id !== currentUserId
+              );
+              if (saleItems.length === 0) {
+                return (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyText}>NO SALE ASSETS MATCHING QUERY</Text>
+                  </View>
+                );
+              }
+              return (
+                <View style={styles.grid}>
+                  {saleItems.map((item, index) => {
+                    const { rank, suit } = getDeterminants(item.id, index);
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.cardWrapper}
+                        onPress={() => router.push(`/(tabs)/shop/${item.id}`)}
+                      >
+                        <PlayingCard
+                          rank={rank}
+                          suit={suit}
+                          productName={item.title}
+                          size={item.size || 'OS'}
+                          price={item.price ? item.price / 100 : 0}
+                          imageUrl={item.images?.[0] || undefined}
+                          category={item.category || undefined}
+                          subCategory={item.subCategory || undefined}
+                          condition={item.condition || "Excellent"}
+                          onAddToCart={() => handleAddToCart(item)}
+                          buttonText={
+                            item.listingType === 'SALE' ? 'BUY ASSET' :
+                            item.listingType === 'RENTAL' ? 'RENT ASSET' : 'SWAP REQUEST'
+                          }
+                          onSwapRequest={() => router.push(`/(tabs)/shop/${item.id}`)}
+                          style={{ width: '100%' }}
+                        />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              );
+            })()}
           </ScrollView>
 
           {/* FILTER MODAL OVERLAY */}

@@ -26,6 +26,27 @@ export async function getFeedGarments(params: FeedParams) {
   const limit = params.limit ?? DEFAULT_FEED_LIMIT;
   const where: Record<string, unknown> = { isActive: true };
 
+  // Exclude current user's own listings from their feed
+  if (params.userId) {
+    where.sellerId = { not: params.userId };
+  }
+
+  // Accessories allowed for swap
+  const ACCESSORY_TERMS = [
+    'Accessories', 'accessory', 'accessories',
+    'Bags', 'bag', 'bags',
+    'Jewelry', 'jewelry', 'jewellery',
+    'Watches', 'watch', 'watches',
+    'Eyewear', 'eyewear',
+    'Belts', 'belt', 'belts',
+    'Hats', 'hat', 'hats',
+    'Scarves', 'scarf', 'scarves',
+    'Wallets', 'wallet', 'wallets',
+    'Ties', 'tie', 'ties',
+    'Footwear', 'footwear', 'shoes',
+    'Sneakers', 'Heels', 'Boots', 'Sandals',
+  ];
+
   if (params.categories && params.categories.length > 0) {
     where.OR = [
       { category: { in: params.categories } },
@@ -55,6 +76,15 @@ export async function getFeedGarments(params: FeedParams) {
       .filter((t) => validTypes.includes(t as ListingType)) as ListingType[];
     if (types.length > 0) {
       where.listingType = { in: types };
+    }
+
+    // When querying specifically for ACCESSORY_SWAP, strictly enforce accessory categories
+    if (types.length === 1 && types[0] === 'ACCESSORY_SWAP') {
+      where.OR = [
+        { category: { in: ACCESSORY_TERMS } },
+        { subCategory: { in: ACCESSORY_TERMS } },
+        { isAccessory: true },
+      ];
     }
   }
 

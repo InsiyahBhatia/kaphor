@@ -9,12 +9,15 @@ import { colors, typography } from '../../../src/theme';
 import { 
   MARKET_CATEGORIES, 
   ALL_CATEGORY_ITEMS,
+  ACCESSORY_CATEGORY_ITEMS,
+  isAccessoryCategory,
   MARKET_CONDITIONS, 
   LISTING_TYPES, 
   MARKET_SIZES 
 } from '../../../src/constants/market';
 import { DropdownPicker } from '../../../src/components/DropdownPicker';
 import { safeBack } from '../../../src/utils/navigation';
+import { useGarmentStore } from '../../../src/store/garmentStore';
 
 export default function SellScreen() {
   const router = useRouter();
@@ -49,6 +52,16 @@ export default function SellScreen() {
     setCategory(cat);
     if (FREE_SIZE_CATEGORIES.includes(cat) && (!size || size === 'M')) {
       setSize('FREE SIZE');
+    }
+  };
+
+  const handleListingTypeChange = (type: string) => {
+    setListingType(type);
+    if (type === 'ACCESSORY_SWAP') {
+      if (!isAccessoryCategory(category)) {
+        setCategory('Bags');
+        setSize('FREE SIZE');
+      }
     }
   };
 
@@ -187,6 +200,15 @@ export default function SellScreen() {
       return;
     }
 
+    if (listingType === 'ACCESSORY_SWAP' && !isAccessoryCategory(finalCategory)) {
+      Alert.alert(
+        'Accessories Only',
+        'Swapping on KaPhor is exclusively for accessories (bags, jewelry, watches, eyewear, belts, hats, scarves, wallets, ties, footwear). Please select an accessory category.'
+      );
+      setStep(2);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const formData = new FormData();
@@ -227,8 +249,18 @@ export default function SellScreen() {
         timeout: 120000, // 2 minutes for multi-image uploads
       });
 
-      Alert.alert('Listed!', 'Your garment is now live on Kaphor.', [
-        { text: 'VIEW SHOP', onPress: () => router.replace('/(tabs)/shop') },
+      Alert.alert('Listed!', 'Your item is now live on KaPhor.', [
+        {
+          text: listingType === 'ACCESSORY_SWAP' ? 'VIEW SWAP' : 'VIEW SHOP',
+          onPress: () => {
+            useGarmentStore.getState().fetchFeed();
+            if (listingType === 'ACCESSORY_SWAP') {
+              router.replace('/(tabs)/swap');
+            } else {
+              router.replace('/(tabs)/shop');
+            }
+          },
+        },
       ]);
     } catch (err: any) {
       const data = err?.response?.data;
@@ -345,7 +377,7 @@ export default function SellScreen() {
                   keyboardType="numeric"
                 />
               </>
-            ) : (
+            ) : listingType === 'SALE' ? (
               <TextInput
                 style={styles.input}
                 placeholder="PRICE (₹)"
@@ -354,6 +386,13 @@ export default function SellScreen() {
                 onChangeText={setPrice}
                 keyboardType="numeric"
               />
+            ) : (
+              <View style={styles.swapNoticeBox}>
+                <Ionicons name="repeat" size={18} color={colors.crimson} />
+                <Text style={styles.swapNoticeText}>
+                  SWAP ASSET: Direct peer exchange. No price is required for swap listings.
+                </Text>
+              </View>
             )}
 
             <TextInput style={styles.input} placeholder="FABRIC" placeholderTextColor={colors.textMuted} value={fabric} onChangeText={setFabric} />
@@ -366,7 +405,11 @@ export default function SellScreen() {
 
             <DropdownPicker
               label="CATEGORY"
-              options={MARKET_CATEGORIES.flatMap(g => g.items.map(i => ({ id: i, label: i, group: g.group })))}
+              options={
+                listingType === 'ACCESSORY_SWAP'
+                  ? MARKET_CATEGORIES.filter(g => g.group === 'ACCESSORIES' || g.group === 'FOOTWEAR').flatMap(g => g.items.map(i => ({ id: i, label: i, group: g.group })))
+                  : MARKET_CATEGORIES.flatMap(g => g.items.map(i => ({ id: i, label: i, group: g.group })))
+              }
               selectedValue={category}
               onSelect={handleCategoryChange}
               isGrouped={true}
@@ -392,9 +435,18 @@ export default function SellScreen() {
               label="LISTING TYPE"
               options={LISTING_TYPES}
               selectedValue={listingType}
-              onSelect={setListingType}
+              onSelect={handleListingTypeChange}
               placeholder="SELECT LISTING TYPE"
             />
+
+            {listingType === 'ACCESSORY_SWAP' && (
+              <View style={[styles.swapNoticeBox, { marginTop: -6, marginBottom: 12 }]}>
+                <Ionicons name="shield-checkmark-outline" size={16} color={colors.forest} />
+                <Text style={styles.swapNoticeText}>
+                  Note: Swapping on KaPhor is exclusively for accessories & footwear.
+                </Text>
+              </View>
+            )}
 
             <View style={styles.row}>
               <TouchableOpacity style={styles.secondaryButton} onPress={prevStep}>
@@ -620,5 +672,24 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 16,
     fontStyle: 'italic',
+  },
+  swapNoticeBox: {
+    backgroundColor: 'rgba(168, 34, 34, 0.06)',
+    borderRadius: 12,
+    padding: 14,
+    marginVertical: 6,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(168, 34, 34, 0.2)',
+  },
+  swapNoticeText: {
+    color: colors.charcoal,
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 17,
+    fontWeight: '600',
+    fontFamily: typography.mono,
   },
 });

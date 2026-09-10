@@ -52,8 +52,14 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
     try {
       const { garmentService } = await import('../services/garmentService');
       const response = await garmentService.getFeed(filters);
+      const { useAuthStore } = await import('./authStore');
+      const currentUserId = useAuthStore.getState().user?.id;
+      const raw = Array.isArray(response.data) ? response.data : [];
+      const filtered = currentUserId
+        ? raw.filter((g: any) => g.sellerId !== currentUserId && g.seller?.id !== currentUserId)
+        : raw;
       set({ 
-        garments: response.data, 
+        garments: filtered, 
         pagination: response.pagination || { nextCursor: null }, 
         isLoading: false 
       });

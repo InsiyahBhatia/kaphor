@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { useGarmentStore } from '../../src/store/garmentStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { cartService } from '../../src/services/cartService';
 import { PlayingCard } from '../../src/components/PlayingCard';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
@@ -303,7 +304,13 @@ function NewArrivals({
     );
   }
 
-  const saleGarments = garments.filter(g => g.listingType === 'SALE').slice(0, 8);
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const saleGarments = garments.filter(
+    (g) =>
+      g.listingType === 'SALE' &&
+      g.sellerId !== currentUserId &&
+      (g as any).seller?.id !== currentUserId
+  ).slice(0, 8);
   
   if (saleGarments.length === 0) {
     return null;

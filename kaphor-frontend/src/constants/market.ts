@@ -19,6 +19,25 @@ export const MARKET_CATEGORIES = [
 
 export const ALL_CATEGORY_ITEMS = MARKET_CATEGORIES.flatMap((c) => c.items);
 
+export const ACCESSORY_CATEGORY_ITEMS = [
+  ...MARKET_CATEGORIES.find((c) => c.group === 'ACCESSORIES')?.items || [],
+  ...MARKET_CATEGORIES.find((c) => c.group === 'FOOTWEAR')?.items || [],
+];
+
+export function isAccessoryCategory(category?: string | null, subCategory?: string | null): boolean {
+  if (!category && !subCategory) return false;
+  const terms = [
+    'accessory', 'accessories', 'bag', 'bags', 'jewelry', 'jewellery',
+    'watch', 'watches', 'eyewear', 'belt', 'belts', 'hat', 'hats',
+    'scarf', 'scarves', 'wallet', 'wallets', 'tie', 'ties',
+    'footwear', 'shoes', 'sneakers', 'heels', 'boots', 'sandals',
+  ];
+  const cat = (category || '').trim().toLowerCase();
+  const sub = (subCategory || '').trim().toLowerCase();
+  return terms.some((t) => cat.includes(t) || sub.includes(t)) ||
+    ACCESSORY_CATEGORY_ITEMS.some((i) => i.toLowerCase() === cat || i.toLowerCase() === sub);
+}
+
 export const MARKET_CONDITIONS = [
   { id: 'PRISTINE', label: 'PRISTINE', desc: 'Brand new / unworn heritage piece.' },
   { id: 'MINOR_WEAR', label: 'MINOR WEAR', desc: 'Gently loved with faint signs of life.' },

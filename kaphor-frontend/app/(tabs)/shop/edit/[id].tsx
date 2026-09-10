@@ -20,6 +20,8 @@ import { colors, typography, spacing, radius } from '../../../../src/theme';
 import { safeBack } from '../../../../src/utils/navigation';
 import {
   ALL_CATEGORY_ITEMS,
+  ACCESSORY_CATEGORY_ITEMS,
+  isAccessoryCategory,
   MARKET_CONDITIONS,
   LISTING_TYPES,
   MARKET_SIZES,
@@ -79,7 +81,7 @@ export default function EditListingScreen() {
       }
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || 'Could not load listing details.');
-      safeBack('/my-listings');
+      safeBack('/(tabs)/profile');
     } finally {
       setLoading(false);
     }
@@ -96,6 +98,10 @@ export default function EditListingScreen() {
     }
     if (listingType === 'RENTAL' && (!rentalDay || isNaN(Number(rentalDay)) || Number(rentalDay) <= 0)) {
       Alert.alert('Validation', 'Please specify a valid daily rental price.');
+      return;
+    }
+    if (listingType === 'ACCESSORY_SWAP' && !isAccessoryCategory(category)) {
+      Alert.alert('Validation', 'Swapping on KaPhor is exclusively for accessories (bags, jewelry, watches, eyewear, belts, hats, scarves, wallets, ties, footwear).');
       return;
     }
 
@@ -128,8 +134,8 @@ export default function EditListingScreen() {
       }
 
       await garmentService.updateGarment(id as string, updates);
-      Alert.alert('Listing Updated', 'Your garment listing has been saved successfully.', [
-        { text: 'OK', onPress: () => safeBack('/my-listings') },
+      Alert.alert('Updated', 'Your listing has been updated.', [
+        { text: 'OK', onPress: () => safeBack('/(tabs)/profile') },
       ]);
     } catch (err: any) {
       Alert.alert('Save Failed', err?.response?.data?.message || 'Failed to update listing.');
@@ -221,7 +227,13 @@ export default function EditListingScreen() {
                   <TouchableOpacity
                     key={t.id}
                     style={[styles.typeCard, isSelected && styles.typeCardSelected]}
-                    onPress={() => setListingType(t.id)}
+                    onPress={() => {
+                      setListingType(t.id);
+                      if (t.id === 'ACCESSORY_SWAP' && !isAccessoryCategory(category)) {
+                        setCategory('Bags');
+                        setSize('FREE SIZE');
+                      }
+                    }}
                   >
                     <Text style={[styles.typeLabel, isSelected && styles.typeLabelSelected]}>
                       {t.label}
@@ -327,7 +339,7 @@ export default function EditListingScreen() {
             <View style={styles.inputWrap}>
               <DropdownPicker
                 label="CATEGORY"
-                options={ALL_CATEGORY_ITEMS.map((item) => ({ id: item, label: item }))}
+                options={(listingType === 'ACCESSORY_SWAP' ? ACCESSORY_CATEGORY_ITEMS : ALL_CATEGORY_ITEMS).map((item) => ({ id: item, label: item }))}
                 selectedValue={category}
                 onSelect={setCategory}
                 placeholder="Select Garment Category"

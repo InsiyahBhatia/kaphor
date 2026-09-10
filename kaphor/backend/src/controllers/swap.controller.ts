@@ -20,6 +20,8 @@ const ALLOWED_SWAP_CATEGORIES = new Set([
   'bags',
   'jewelry',
   'jewellery',
+  'watch',
+  'watches',
   'belt',
   'belts',
   'scarf',
@@ -27,8 +29,16 @@ const ALLOWED_SWAP_CATEGORIES = new Set([
   'eyewear',
   'hat',
   'hats',
+  'wallet',
+  'wallets',
+  'tie',
+  'ties',
   'footwear',
   'shoes',
+  'sneakers',
+  'heels',
+  'boots',
+  'sandals',
 ]);
 
 function normalizeCategory(category: string | null | undefined): string {
@@ -196,8 +206,10 @@ export async function getSwapFeed(req: Request, res: Response): Promise<void> {
       take,
     });
 
+    const accessoryGarments = garments.filter((g: any) => isAccessoryGarment(g));
+
     const resolved = await Promise.all(
-      garments.map(async (g: any) => {
+      accessoryGarments.map(async (g: any) => {
         const img = g.images?.length ? await getDownloadUrl(g.images[0]) : null;
         return {
           ...g,

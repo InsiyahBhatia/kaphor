@@ -9,6 +9,7 @@ import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { messageService } from '../../../src/services/messageService';
 import { colors, typography } from '../../../src/theme';
+import { isAccessoryCategory } from '../../../src/constants/market';
 import api, { cachedGet, invalidateCache } from '../../../src/services/api';
 
 export default function SwapFeedScreen() {
@@ -38,7 +39,13 @@ export default function SwapFeedScreen() {
     if (activeTab === 'requests') fetchMySwaps();
   }, [activeTab]);
 
-  const swappableItems = garments.filter(g => g.listingType === 'ACCESSORY_SWAP');
+  const swappableItems = garments.filter(
+    (g) =>
+      g.listingType === 'ACCESSORY_SWAP' &&
+      isAccessoryCategory(g.category, g.subCategory) &&
+      g.sellerId !== currentUserId &&
+      (g as any).seller?.id !== currentUserId
+  );
 
   // ── Message Partner handler ───────────────────────────────────
   const handleMessagePartner = async (swap: any) => {
