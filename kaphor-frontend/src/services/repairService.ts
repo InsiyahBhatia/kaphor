@@ -3,7 +3,7 @@
  * Calls the Kaphor backend POST /api/v1/repair/assess endpoint
  */
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import api from './api';
 
 export interface RepairInput {
   image_base64?: string;
@@ -90,19 +90,8 @@ export const FIBER_TYPES = [
  * Assess a garment for repair/upcycling: runs GLIE + T5 guides + YouTube search
  */
 export async function assessRepair(input: RepairInput): Promise<RepairResult> {
-  const response = await fetch(`${API_URL}/repair/assess`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new Error(`Repair assessment failed (${response.status}): ${text || response.statusText}`);
-  }
-
-  const json = await response.json();
-  return json.data;
+  const { data } = await api.post('/repair/assess', input, { timeout: 60000 });
+  return data.data;
 }
 
 /**

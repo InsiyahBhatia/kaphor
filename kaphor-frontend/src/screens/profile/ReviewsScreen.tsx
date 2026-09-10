@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { userService } from '../../services/userService';
 import { colors, typography, spacing, radius } from '../../theme';
 import { safeBack } from '../../utils/navigation';
+import { KaphorImage } from '../../components/KaphorImage';
 
 export function ReviewsScreen() {
     const router = useRouter();
@@ -39,30 +40,34 @@ export function ReviewsScreen() {
         fetchReviews();
     }, [userId]);
 
-    const ReviewCard = ({ item }: { item: any }) => (
-        <View style={styles.card}>
-            <View style={styles.headerRow}>
-                <Image 
-                    source={item.reviewer.avatar ? { uri: item.reviewer.avatar } : undefined} 
-                    style={styles.avatar} 
-                />
-                <View style={styles.reviewerInfo}>
-                    <Text style={styles.reviewerName}>{item.reviewer.displayName}</Text>
-                    <Text style={styles.reviewerUsername}>{item.reviewer.username}</Text>
+    const ReviewCard = ({ item }: { item: any }) => {
+        const reviewer = item.reviewer;
+        return (
+            <View style={styles.card}>
+                <View style={styles.headerRow}>
+                    <KaphorImage 
+                        uri={reviewer?.avatar || ''} 
+                        style={styles.avatar} 
+                        contentFit="cover"
+                    />
+                    <View style={styles.reviewerInfo}>
+                        <Text style={styles.reviewerName}>{reviewer?.displayName || 'Anonymous User'}</Text>
+                        <Text style={styles.reviewerUsername}>@{reviewer?.username || 'member'}</Text>
+                    </View>
+                    <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={12} color={colors.gold} />
+                        <Text style={styles.ratingText}>{item.rating}</Text>
+                    </View>
                 </View>
-                <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={12} color={colors.gold} />
-                    <Text style={styles.ratingText}>{item.rating}</Text>
-                </View>
+                {item.comment ? (
+                    <Text style={styles.commentText}>{item.comment}</Text>
+                ) : null}
+                <Text style={styles.dateText}>
+                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
+                </Text>
             </View>
-            {item.comment ? (
-                <Text style={styles.commentText}>{item.comment}</Text>
-            ) : null}
-            <Text style={styles.dateText}>
-                {new Date(item.createdAt).toLocaleDateString()}
-            </Text>
-        </View>
-    );
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>

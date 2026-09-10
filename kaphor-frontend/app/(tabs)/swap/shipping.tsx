@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import { safeBack } from '../../../src/utils/navigation';
+import { useAuth } from '../../../src/context/AuthContext';
 import { swapService } from '../../../src/services/swapService';
 import { messageService } from '../../../src/services/messageService';
 import { useRazorpay } from '@codearcade/expo-razorpay';
@@ -32,6 +33,7 @@ const COURIER_OPTIONS = [
 export default function SwapShippingScreen() {
   const { swapId } = useLocalSearchParams<{ swapId: string }>();
   const router = useRouter();
+  const { user } = useAuth();
 
   const [swap, setSwap] = useState<SwapTransaction | null>(null);
   const [address, setAddress] = useState<SwapAddress | null>(null);
@@ -46,7 +48,11 @@ export default function SwapShippingScreen() {
   const [courier, setCourier] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const isShipped = false;
+
+  const isInitiator = user?.id ? user.id === swap?.initiatorId : true;
+  const myTracking = isInitiator ? swap?.initiatorTracking : swap?.receiverTracking;
+  const theirTracking = isInitiator ? swap?.receiverTracking : swap?.initiatorTracking;
+  const isShipped = Boolean(myTracking);
 
   useEffect(() => {
     loadData();
@@ -320,72 +326,86 @@ export default function SwapShippingScreen() {
           )}
         </View>
 
-        {/* Mark as Shipped Form */}
-        <Text style={styles.sectionTitle}>MARK AS SHIPPED</Text>
-        <View style={styles.shipCard}>
-          <Text style={styles.shipCardDesc}>
-            Enter tracking details so both parties can track the package in real-time.
-          </Text>
-
-          {/* Courier Selector */}
-          <Text style={styles.formLabel}>COURIER PARTNER</Text>
-          <View style={styles.courierGrid}>
-            {COURIER_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.id}
-                style={[styles.courierChip, courier === opt.id && styles.courierChipActive]}
-                onPress={() => setCourier(opt.id)}
-              >
-                <Ionicons
-                  name={opt.icon as any}
-                  size={16}
-                  color={courier === opt.id ? colors.cream : colors.charcoal}
-                />
-                <Text style={[styles.courierChipText, courier === opt.id && styles.courierChipTextActive]}>
-                  {opt.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {/* Mark as Shipped Form / Confirmed Card */}
+        {isShipped ? (
+          <View style={styles.shipCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <Ionicons name="checkmark-circle" size={22} color={colors.forest} />
+              <Text style={[styles.sectionTitle, { marginBottom: 0, color: colors.charcoal, fontSize: 12 }]}>
+                SHIPMENT DISPATCHED
+              </Text>
+            </View>
+            <Text style={styles.shipCardDesc}>
+              You have registered tracking for your package. Both parties can follow progress below.
+            </Text>
           </View>
-
-          {/* Tracking Number */}
-          <Text style={styles.formLabel}>TRACKING NUMBER</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter tracking number from courier receipt"
-            placeholderTextColor={colors.textMuted}
-            value={trackingNumber}
-            onChangeText={setTrackingNumber}
-            autoCapitalize="characters"
-          />
-
-          <TouchableOpacity
-            style={[styles.submitBtn, saving && styles.submitBtnDisabled]}
-            onPress={handleMarkShipped}
-            disabled={saving}
-            activeOpacity={0.8}
-          >
-            {saving ? (
-              <ActivityIndicator color={colors.cream} />
-            ) : (
-              <>
-                <Ionicons name="cube" size={18} color={colors.cream} />
-                <Text style={styles.submitBtnText}>MARK AS SHIPPED</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Existing Tracking Info */}
-        {swap?.initiatorTracking && (
+        ) : (
           <>
-            <Text style={styles.sectionTitle}>TRACKING STATUS</Text>
-            {renderTracking('Your Outgoing', swap.initiatorTracking)}
+            <Text style={styles.sectionTitle}>MARK AS SHIPPED</Text>
+            <View style={styles.shipCard}>
+              <Text style={styles.shipCardDesc}>
+                Enter tracking details so both parties can track the package in real-time.
+              </Text>
+
+              {/* Courier Selector */}
+              <Text style={styles.formLabel}>COURIER PARTNER</Text>
+              <View style={styles.courierGrid}>
+                {COURIER_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[styles.courierChip, courier === opt.id && styles.courierChipActive]}
+                    onPress={() => setCourier(opt.id)}
+                  >
+                    <Ionicons
+                      name={opt.icon as any}
+                      size={16}
+                      color={courier === opt.id ? colors.cream : colors.charcoal}
+                    />
+                    <Text style={[styles.courierChipText, courier === opt.id && styles.courierChipTextActive]}>
+                      {opt.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Tracking Number */}
+              <Text style={styles.formLabel}>TRACKING NUMBER</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter tracking number from courier receipt"
+                placeholderTextColor={colors.textMuted}
+                value={trackingNumber}
+                onChangeText={setTrackingNumber}
+                autoCapitalize="characters"
+              />
+
+              <TouchableOpacity
+                style={[styles.submitBtn, saving && styles.submitBtnDisabled]}
+                onPress={handleMarkShipped}
+                disabled={saving}
+                activeOpacity={0.8}
+              >
+                {saving ? (
+                  <ActivityIndicator color={colors.cream} />
+                ) : (
+                  <>
+                    <Ionicons name="cube" size={18} color={colors.cream} />
+                    <Text style={styles.submitBtnText}>MARK AS SHIPPED</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </>
         )}
-        {swap?.receiverTracking && (
-          <View style={{ marginTop: -12 }}>
-            {renderTracking('Their Outgoing', swap.receiverTracking)}
+
+        {/* Existing Tracking Info */}
+        {(myTracking || theirTracking) && (
+          <Text style={styles.sectionTitle}>TRACKING STATUS</Text>
+        )}
+        {myTracking && renderTracking('Your Outgoing Shipment', myTracking)}
+        {theirTracking && (
+          <View style={{ marginTop: myTracking ? -12 : 0 }}>
+            {renderTracking("Partner's Incoming Shipment", theirTracking)}
           </View>
         )}
       </ScrollView>

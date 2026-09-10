@@ -9,7 +9,7 @@
  * upcycle tutorial, or recycling info).
  */
 
-const GLIE_API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const GLIE_API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://kaphor-backend.onrender.com/api/v1';
 
 export interface GLIERequest {
   garment_id: string;

@@ -54,7 +54,7 @@ export default function DirectChatScreen() {
     } catch (e: any) {
       console.error('Failed to load conversation', e);
       Alert.alert('Error', 'Could not open conversation', [
-        { text: 'Go Back', onPress: () => safeBack('/(tabs)/shop/orders') },
+        { text: 'Go Back', onPress: () => safeBack('/(tabs)/messages') },
       ]);
     } finally {
       setLoading(false);
@@ -281,7 +281,7 @@ export default function DirectChatScreen() {
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => safeBack('/(tabs)/shop/orders')} 
+          onPress={() => safeBack('/(tabs)/messages')} 
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
