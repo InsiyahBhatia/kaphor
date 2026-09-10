@@ -83,7 +83,6 @@ export async function getFeedGarments(params: FeedParams) {
       where.OR = [
         { category: { in: ACCESSORY_TERMS } },
         { subCategory: { in: ACCESSORY_TERMS } },
-        { isAccessory: true },
       ];
     }
   }
