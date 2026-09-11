@@ -358,8 +358,8 @@ export default function DirectChatScreen() {
       </View>
 
       {/* Quick Deal Assist Chips */}
-      <View style={styles.quickChipsContainer}>
-        {garment && (
+      {garment && (
+        <View style={styles.quickChipsContainer}>
           <TouchableOpacity
             style={styles.quickChip}
             onPress={() => router.push(`/(tabs)/swap/${garment.id}` as any)}
@@ -367,22 +367,8 @@ export default function DirectChatScreen() {
             <Ionicons name="swap-horizontal" size={12} color={colors.charcoal} />
             <Text style={styles.quickChipText}>REQUEST ACCESSORY SWAP</Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={styles.quickChip}
-          onPress={() => setInputText('Could you please share close-up photos of the material and labels?')}
-        >
-          <Ionicons name="camera-outline" size={12} color={colors.charcoal} />
-          <Text style={styles.quickChipText}>REQUEST EXTRA PHOTOS</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.quickChip}
-          onPress={() => setInputText('Hi! Would you be open to an offer on this piece?')}
-        >
-          <Ionicons name="pricetag-outline" size={12} color={colors.charcoal} />
-          <Text style={styles.quickChipText}>MAKE AN OFFER</Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      )}
 
       {/* Message List */}
       <FlatList
