@@ -43,6 +43,7 @@ enum GarmentState {
   DECLINE
   CIRCULATION
   REUSE_UPCYCLE_RECYCLE
+  RESERVED_SALE
 }
 
 enum GarmentCondition {
@@ -254,6 +255,7 @@ model Garment {
   garmentVector    Float[]
   lifecycleState   GarmentState    @default(LISTED)
   listingType      ListingType     @default(SALE)
+  reservedOrderId  String?
   price            Int?
   rentalPriceDay   Int?
   rentalPriceWeek  Int?
@@ -286,6 +288,7 @@ model Garment {
   @@index([isActive, createdAt])
   @@index([category, isActive])
   @@index([listingType, isActive])
+  @@index([reservedOrderId])
   @@map("garments")
 }
 
@@ -409,6 +412,7 @@ model Swap {
   garmentWanted   String
   status          SwapStatus @default(REQUESTED)
   message         String?
+  metadata        Json?
   completedAt     DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt

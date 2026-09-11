@@ -23,7 +23,7 @@ export async function createInquiryOrder(req: Request, res: Response): Promise<v
             where: { id: String(garmentId) },
         });
 
-        if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP') {
+        if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP' || garment.lifecycleState === 'RESERVED_SALE' || garment.reservedOrderId) {
             res.status(400).json({ error: 'UNAVAILABLE', message: 'Garment is no longer available' });
             return;
         }
@@ -106,7 +106,7 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
             where: { id: String(garmentId) }
         });
 
-        if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP') {
+        if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP' || garment.lifecycleState === 'RESERVED_SALE' || garment.reservedOrderId) {
             res.status(400).json({ error: 'UNAVAILABLE', message: 'Garment is no longer available' });
             return;
         }
@@ -211,7 +211,7 @@ export async function createCartOrder(req: Request, res: Response): Promise<void
             return;
         }
 
-        const validItems = cartItems.filter((i: any) => i.garment && i.garment.isActive);
+        const validItems = cartItems.filter((i: any) => i.garment && i.garment.isActive && i.garment.lifecycleState !== 'OWNERSHIP' && i.garment.lifecycleState !== 'RESERVED_SALE' && !i.garment.reservedOrderId);
         if (validItems.length === 0) {
             res.status(400).json({ error: 'INVALID_CART', message: 'Items in your cart are no longer available' });
             return;

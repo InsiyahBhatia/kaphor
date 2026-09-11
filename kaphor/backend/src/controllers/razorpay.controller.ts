@@ -6,6 +6,11 @@ import crypto from 'crypto';
 import { createRazorpayOrderForOrder, calculateDeliveryFee } from '../services/payment.service';
 import { createNotification } from '../services/notification.service';
 import { updateImpactOnTransaction } from '../services/impact.service';
+import {
+  claimGarmentsForOrder,
+  transferGarmentsToBuyer,
+  releaseGarmentReservations,
+} from '../services/garment-claim.service';
 
 const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 
@@ -32,7 +37,13 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
     }
 
     const garment = await db.garment.findUnique({ where: { id: String(garmentId) } });
-    if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP') {
+    if (
+      !garment ||
+      !garment.isActive ||
+      garment.lifecycleState === 'OWNERSHIP' ||
+      garment.lifecycleState === 'RESERVED_SALE' ||
+      garment.reservedOrderId
+    ) {
       res.status(400).json({ error: 'UNAVAILABLE', message: 'Garment is no longer available' });
       return;
     }
@@ -307,32 +318,39 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         },
       });
 
-      // Transition garments to OWNERSHIP + transfer ownership (sellerId) to buyer + deactivate marketplace listing
+      // Atomically reserve garments for this order so no other buyer can pay for them.
+      // Ownership itself transfers only at delivery (markOrderDelivered).
+      const claimed = await claimGarmentsForOrder(orderId, order.buyerId);
+      if (!claimed) {
+        logger.error('Payment verified but garments could not be reserved (sold elsewhere)', {
+          orderId,
+          razorpayOrderId: razorpay_order_id,
+        });
+        // Full refund — the items are no longer available.
+        try {
+          const rp = getRazorpayInstance();
+          await rp.payments.refund(razorpay_payment_id, {
+            speed: 'normal',
+            notes: { reason: 'ITEM_SOLD_ELSEWHERE', orderId },
+          });
+          await db.order.update({ where: { id: orderId }, data: { status: 'REFUNDED' } });
+        } catch (refundErr) {
+          logger.error('Auto-refund after failed reservation failed', { orderId, error: refundErr });
+        }
+        res.status(409).json({
+          error: 'CONFLICT',
+          message: 'Item(s) were just sold to another buyer. Your payment has been refunded.',
+        });
+        return;
+      }
+
+      // Clear purchased items from buyer's cart (they are now reserved for them)
       const orderItems = await db.orderItem.findMany({
         where: { orderId },
         include: { garment: true },
       });
       const purchasedGarmentIds = orderItems.map((item: any) => item.garmentId);
 
-      if (purchasedGarmentIds.length > 0) {
-        await db.garment.updateMany({
-          where: { id: { in: purchasedGarmentIds } },
-          data: {
-            lifecycleState: 'OWNERSHIP',
-            sellerId: req.user.id,
-            isActive: false, // Item is now owned by buyer; in their digital closet
-          },
-        });
-      }
-
-      // Record Environmental Impact metrics (CO2, Water, Waste, Items Circulated)
-      try {
-        await updateImpactOnTransaction(orderId);
-      } catch (impactErr) {
-        logger.warn('Failed to calculate impact for transaction', { error: impactErr });
-      }
-
-      // Auto-clear purchased items from buyer's cart
       if (purchasedGarmentIds.length > 0) {
         try {
           await db.cartItem.deleteMany({
@@ -485,32 +503,35 @@ export async function razorpayWebhook(req: Request, res: Response): Promise<void
           },
         });
 
-        // Transition purchased garments to OWNERSHIP + transfer sellerId to buyer + deactivate
+        // Atomically reserve garments for this order (idempotent — re-claiming
+        // an order's own reservation is a no-op). Ownership transfers at delivery.
+        const claimed = await claimGarmentsForOrder(order.id, order.buyerId);
+        if (!claimed) {
+          logger.error('Webhook: garments could not be reserved (sold elsewhere)', {
+            orderId: order.id,
+            razorpayOrderId,
+          });
+          try {
+            const rp = getRazorpayInstance();
+            if (razorpayPaymentId) {
+              await rp.payments.refund(razorpayPaymentId, {
+                speed: 'normal',
+                notes: { reason: 'ITEM_SOLD_ELSEWHERE', orderId: order.id },
+              });
+            }
+            await db.order.update({ where: { id: order.id }, data: { status: 'REFUNDED' } });
+          } catch (refundErr) {
+            logger.error('Webhook auto-refund after failed reservation failed', { orderId: order.id, error: refundErr });
+          }
+          res.status(200).json({ status: 'refunded_item_sold' });
+          return;
+        }
+
         const webhookItems = await db.orderItem.findMany({
           where: { orderId: order.id },
           include: { garment: true },
         });
-        const webhookGarmentIds: string[] = [];
-        for (const whItem of webhookItems) {
-          if (whItem.garment) {
-            webhookGarmentIds.push(whItem.garmentId);
-            await db.garment.update({
-              where: { id: whItem.garmentId },
-              data: {
-                lifecycleState: 'OWNERSHIP',
-                sellerId: order.buyerId,
-                isActive: false,
-              },
-            });
-          }
-        }
-
-        // Record Environmental Impact metrics (CO2, Water, Waste, Items Circulated)
-        try {
-          await updateImpactOnTransaction(order.id);
-        } catch (impactErr) {
-          logger.warn('Failed to calculate impact for transaction in webhook', { error: impactErr });
-        }
+        const webhookGarmentIds: string[] = webhookItems.map((whItem: any) => whItem.garmentId);
 
         if (webhookGarmentIds.length > 0) {
           try {

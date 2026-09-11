@@ -1,6 +1,13 @@
-import fs from 'fs';
-import path from 'path';
-import { logger } from '../lib/logger';
+/**
+ * Swap workflow metadata — persisted in Postgres (swaps.metadata JSONB).
+ *
+ * Replaces the previous data/swap_metadata.json file store which lost data on
+ * redeploy/multi-instance deployments and raced under concurrent writes.
+ * All operations now go through Prisma against the swap row itself.
+ */
+
+import { PrismaClient, Prisma } from '@prisma/client';
+import db from '../lib/prisma';
 
 export interface SwapAddressData {
   fullName: string;
@@ -76,77 +83,138 @@ export interface SwapMetadataRecord {
   updatedAt: string;
 }
 
-const DATA_FILE = path.join(__dirname, '../../data/swap_metadata.json');
+const DEFAULT_DEPOSIT = 50000;
+const DEFAULT_SWAP_FEE = 25000;
 
-function loadMetadata(): Record<string, SwapMetadataRecord> {
-  try {
-    if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, JSON.stringify({}), 'utf-8');
-      return {};
-    }
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    return JSON.parse(raw) as Record<string, SwapMetadataRecord>;
-  } catch (err) {
-    logger.error('Failed to read swap metadata file', { error: err });
-    return {};
-  }
-}
-
-function saveMetadata(data: Record<string, SwapMetadataRecord>): void {
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    logger.error('Failed to write swap metadata file', { error: err });
-  }
-}
-
-export function getSwapMetadata(swapId: string): SwapMetadataRecord {
-  const all = loadMetadata();
-  if (all[swapId]) {
-    return all[swapId];
-  }
-  const defaultRecord: SwapMetadataRecord = {
+function defaultRecord(swapId: string): SwapMetadataRecord {
+  return {
     swapId,
     initiatorAcceptedTerms: false,
     receiverAcceptedTerms: false,
-    securityDepositAmount: 50000,
-    swapFee: 25000,
+    securityDepositAmount: DEFAULT_DEPOSIT,
+    swapFee: DEFAULT_SWAP_FEE,
     conditionPhotos: { offeredPhotos: [], wantedPhotos: [] },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  all[swapId] = defaultRecord;
-  saveMetadata(all);
-  return defaultRecord;
 }
 
-export function updateSwapMetadata(
+/** Rehydrate a legacy record written by the old JSON-file store, if any. */
+async function importLegacyRecordIfNeeded(swapId: string): Promise<void> {
+  try {
+    // Lazy require keeps the service importable in build environments without fs access.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require('fs') as typeof import('fs');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const path = require('path') as typeof import('path');
+    const DATA_FILE = path.join(__dirname, '../../data/swap_metadata.json');
+    if (!fs.existsSync(DATA_FILE)) return;
+
+    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+    const all = JSON.parse(raw) as Record<string, SwapMetadataRecord>;
+    const legacy = all[swapId];
+    if (!legacy) return;
+
+    // One-time import: backfill fields the DB row may not have yet.
+    await db.swap.update({
+      where: { id: swapId },
+      data: {
+        metadata: {
+          ...(legacy as any),
+          swapId,
+          securityDepositAmount: legacy.securityDepositAmount || DEFAULT_DEPOSIT,
+          swapFee: legacy.swapFee || DEFAULT_SWAP_FEE,
+          updatedAt: new Date().toISOString(),
+        } as Prisma.InputJsonValue,
+      },
+    });
+
+    // Remove from the legacy file so this import runs only once.
+    delete all[swapId];
+    fs.writeFileSync(DATA_FILE, JSON.stringify(all, null, 2), 'utf-8');
+  } catch {
+    // Best-effort migration; the DB record remains authoritative either way.
+  }
+}
+
+/** Read a swap's workflow metadata, creating the default record on first access. */
+export async function getSwapMetadata(swapId: string): Promise<SwapMetadataRecord> {
+  const swap = await db.swap.findUnique({
+    where: { id: swapId },
+    select: { metadata: true },
+  });
+
+  if (!swap) {
+    throw new Error(`Swap not found: ${swapId}`);
+  }
+
+  if (swap.metadata && typeof swap.metadata === 'object') {
+    return swap.metadata as unknown as SwapMetadataRecord;
+  }
+
+  // First access with no metadata — check legacy file, else seed defaults.
+  await importLegacyRecordIfNeeded(swapId);
+  const fresh = await db.swap.findUnique({
+    where: { id: swapId },
+    select: { metadata: true },
+  });
+  if (fresh?.metadata && typeof fresh.metadata === 'object') {
+    return fresh.metadata as unknown as SwapMetadataRecord;
+  }
+
+  const seed = defaultRecord(swapId);
+  await db.swap.update({
+    where: { id: swapId },
+    data: { metadata: seed as unknown as Prisma.InputJsonValue },
+  });
+  return seed;
+}
+
+/**
+ * Update a swap's workflow metadata.
+ *
+ * Uses a row-level lock (SELECT ... FOR UPDATE inside a transaction) so
+ * concurrent actions from both parties (signing, shipping, confirming,
+ * deposits) cannot clobber each other — the exact race the JSON file had.
+ *
+ * updater may be a mutator function or a plain partial object, mirroring the
+ * previous API so call sites port over 1:1.
+ */
+export async function updateSwapMetadata(
   swapId: string,
   updater: ((record: SwapMetadataRecord) => void) | Partial<SwapMetadataRecord>
-): SwapMetadataRecord {
-  const all = loadMetadata();
-  const record = all[swapId] || {
-    swapId,
-    initiatorAcceptedTerms: false,
-    receiverAcceptedTerms: false,
-    securityDepositAmount: 50000,
-    swapFee: 25000,
-    conditionPhotos: { offeredPhotos: [], wantedPhotos: [] },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+): Promise<SwapMetadataRecord> {
+  return (db as unknown as PrismaClient).$transaction(async (tx: any) => {
+    // Row-level lock serializes concurrent metadata writers for this swap.
+    const rows: Array<{ metadata: unknown }> = await tx.$queryRaw`
+      SELECT metadata FROM swaps WHERE id = ${swapId} FOR UPDATE
+    `;
+    if (!rows || rows.length === 0) {
+      throw new Error(`Swap not found: ${swapId}`);
+    }
 
-  if (typeof updater === 'function') {
-    updater(record);
-  } else {
-    Object.assign(record, updater);
-  }
-  record.updatedAt = new Date().toISOString();
-  all[swapId] = record;
-  saveMetadata(all);
-  return record;
+    let record: SwapMetadataRecord;
+    const existing = rows[0].metadata;
+    if (existing && typeof existing === 'object' && !Array.isArray(existing)) {
+      record = existing as unknown as SwapMetadataRecord;
+    } else {
+      record = defaultRecord(swapId);
+    }
+
+    if (typeof updater === 'function') {
+      updater(record);
+    } else {
+      Object.assign(record, updater);
+    }
+    record.swapId = swapId;
+    record.updatedAt = new Date().toISOString();
+
+    await tx.swap.update({
+      where: { id: swapId },
+      data: { metadata: record as unknown as Prisma.InputJsonValue },
+    });
+    return record;
+  });
 }
+
+export { Prisma };

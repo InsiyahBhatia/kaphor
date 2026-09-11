@@ -8,6 +8,7 @@ import {
   deletePayoutAccount,
 } from '../services/payout.service';
 import { createNotification } from '../services/notification.service';
+import { releaseGarmentReservations } from '../services/garment-claim.service';
 
 function getRazorpayInstance(): Razorpay | null {
   const keyId = process.env.RAZORPAY_KEY_ID;
@@ -291,17 +292,9 @@ export async function requestRefund(req: Request, res: Response): Promise<void> 
       data: { status: 'REFUNDED' },
     });
 
-    // Relist garments back to LISTED and active
-    for (const item of order.items) {
-      await db.garment.update({
-        where: { id: item.garmentId },
-        data: {
-          lifecycleState: 'LISTED',
-          isActive: true,
-          sellerId: order.sellerId, // Restore original seller
-        },
-      });
-    }
+    // Relist garments back to LISTED and active, restoring the original seller
+    // and clearing any reservation pointer.
+    await releaseGarmentReservations(order.id, order.sellerId);
 
     // Notify buyer and seller
     try {

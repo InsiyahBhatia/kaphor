@@ -6,6 +6,7 @@ import { emitToUser } from '../lib/socket';
 import { updateImpactOnTransaction } from '../services/impact.service';
 import { createNotification } from '../services/notification.service';
 import { withPrismaRetry } from '../lib/prisma';
+import { transferGarmentsToBuyer } from '../services/garment-claim.service';
 
 /** Messaging allowed for any active order, including PENDING (pre-payment coordination). */
 const MESSAGE_BLOCKED: Set<string> = new Set(['CANCELLED', 'REFUNDED']);
@@ -184,6 +185,9 @@ export async function markOrderDelivered(req: AuthRequest, res: Response): Promi
       data: { status: 'DELIVERED' },
       include: orderInclude,
     });
+
+    // Ownership transfers at delivery: garments become the buyer's property.
+    await transferGarmentsToBuyer(orderId, order.buyerId);
 
     // Notify Seller
     await createNotification({

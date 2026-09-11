@@ -70,8 +70,8 @@ function toGarmentSnapshot(g: any, resolvedFirstImage?: string): any {
 }
 
 /** Transform internal swap + metadata into client SwapTransaction */
-function formatSwapTransaction(swap: any, currentUserId?: string, resolvedImages?: Record<string, string>): any {
-  const meta = getSwapMetadata(swap.id);
+async function formatSwapTransaction(swap: any, currentUserId?: string, resolvedImages?: Record<string, string>): Promise<any> {
+  const meta = await getSwapMetadata(swap.id);
 
   // Compute composite status
   let compositeStatus = swap.status;
@@ -252,7 +252,7 @@ export async function getSwaps(req: Request, res: Response): Promise<void> {
     });
 
     const imageLookup = await resolveSwapMediaBatch(swaps);
-    const formatted = swaps.map((s: any) => formatSwapTransaction(s, userId, imageLookup));
+    const formatted = await Promise.all(swaps.map((s: any) => formatSwapTransaction(s, userId, imageLookup)));
 
     res.json({ data: formatted });
   } catch (error) {
@@ -294,7 +294,7 @@ export async function getSwapById(req: Request, res: Response): Promise<void> {
     }
 
     const imageLookup = await resolveSwapMediaBatch([swap]);
-    const formatted = formatSwapTransaction(swap, req.user.id, imageLookup);
+    const formatted = await formatSwapTransaction(swap, req.user.id, imageLookup);
 
     res.json({ data: formatted });
   } catch (error) {
@@ -376,14 +376,19 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
       },
     });
 
-    // Save initial metadata
+    // Save initial metadata (cap count and size to keep the JSONB payload sane)
     if (Array.isArray(conditionPhotos) && conditionPhotos.length > 0) {
-      updateSwapMetadata(swap.id, (meta) => {
-        meta.conditionPhotos = {
-          offeredPhotos: conditionPhotos,
-          wantedPhotos: [],
-        };
-      });
+      const safePhotos = conditionPhotos
+        .filter((p: any) => typeof p === 'string' && p.length > 0 && p.length <= 40000)
+        .slice(0, 3);
+      if (safePhotos.length > 0) {
+        await updateSwapMetadata(swap.id, (meta) => {
+          meta.conditionPhotos = {
+            offeredPhotos: safePhotos,
+            wantedPhotos: [],
+          };
+        });
+      }
     }
 
     // Real-time socket notification
@@ -405,7 +410,7 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
       logger.warn('Failed to send swap request notification', { error: notifErr });
     }
 
-    const formatted = formatSwapTransaction(swap, initiatorId);
+    const formatted = await formatSwapTransaction(swap, initiatorId);
     res.status(201).json({ data: formatted });
   } catch (error) {
     logger.error('Failed to create swap request', { error: error instanceof Error ? error.message : String(error) });
@@ -519,7 +524,7 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
       },
     });
 
-    const formatted = formatSwapTransaction(updated, req.user.id);
+    const formatted = await formatSwapTransaction(updated, req.user.id);
     res.json({ data: formatted });
   } catch (error) {
     logger.error('Failed to respond to swap', { error });
@@ -551,9 +556,14 @@ export async function signSwapAgreement(req: Request, res: Response): Promise<vo
       return;
     }
 
+    if (swap.status !== 'ACCEPTED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Agreement can only be signed on an accepted swap' });
+      return;
+    }
+
     const isInitiator = swap.initiatorId === req.user.id;
 
-    updateSwapMetadata(id, (meta) => {
+    const meta = await updateSwapMetadata(id, (meta) => {
       if (isInitiator) {
         meta.initiatorAcceptedTerms = true;
       } else {
@@ -564,7 +574,6 @@ export async function signSwapAgreement(req: Request, res: Response): Promise<vo
       }
     });
 
-    const meta = getSwapMetadata(id);
     if (meta.initiatorAcceptedTerms && meta.receiverAcceptedTerms) {
       emitToUser(swap.initiatorId, 'swap:agreement_ready', { swapId: id });
       emitToUser(swap.receiverId, 'swap:agreement_ready', { swapId: id });
@@ -580,7 +589,7 @@ export async function signSwapAgreement(req: Request, res: Response): Promise<vo
       },
     });
 
-    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+    res.json({ data: await formatSwapTransaction(fullSwap, req.user.id) });
   } catch (error) {
     logger.error('signSwapAgreement failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -593,7 +602,7 @@ export async function signSwapAgreement(req: Request, res: Response): Promise<vo
 export async function getSwapAgreement(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    const meta = getSwapMetadata(id);
+    const meta = await getSwapMetadata(id);
     res.json({
       data: {
         swapId: id,
@@ -647,7 +656,12 @@ export async function shareSwapAddress(req: Request, res: Response): Promise<voi
       return;
     }
 
-    updateSwapMetadata(id, (meta) => {
+    if (swap.status !== 'ACCEPTED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Addresses can only be shared on an accepted swap' });
+      return;
+    }
+
+    await updateSwapMetadata(id, (meta) => {
       if (isInitiator) {
         meta.initiatorAddress = address;
       } else {
@@ -668,7 +682,7 @@ export async function shareSwapAddress(req: Request, res: Response): Promise<voi
       },
     });
 
-    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+    res.json({ data: await formatSwapTransaction(fullSwap, req.user.id) });
   } catch (error) {
     logger.error('shareSwapAddress failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -694,7 +708,7 @@ export async function getShippingAddress(req: Request, res: Response): Promise<v
       return;
     }
 
-    const meta = getSwapMetadata(id);
+    const meta = await getSwapMetadata(id);
     const bothSigned = !!(meta.initiatorAcceptedTerms && meta.receiverAcceptedTerms);
 
     if (!bothSigned) {
@@ -748,9 +762,21 @@ export async function markSwapShipped(req: Request, res: Response): Promise<void
       return;
     }
 
+    if (swap.status !== 'ACCEPTED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap must be accepted before shipping' });
+      return;
+    }
+
+    // Server-side guard: a refundable security deposit must be in escrow before dispatch.
+    const shipMeta = await getSwapMetadata(id);
+    if (!shipMeta.depositEscrowId) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Security deposit must be paid before shipping' });
+      return;
+    }
+
     tracking.shippedAt = tracking.shippedAt || new Date().toISOString();
 
-    updateSwapMetadata(id, (meta) => {
+    await updateSwapMetadata(id, (meta) => {
       if (isInitiator) {
         meta.initiatorTracking = tracking;
       } else {
@@ -768,7 +794,7 @@ export async function markSwapShipped(req: Request, res: Response): Promise<void
       },
     });
 
-    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+    res.json({ data: await formatSwapTransaction(fullSwap, req.user.id) });
   } catch (error) {
     logger.error('markSwapShipped failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -808,7 +834,13 @@ export async function confirmSwapReceived(req: Request, res: Response): Promise<
       return;
     }
 
-    updateSwapMetadata(id, (meta) => {
+    // Guard: receipt can only be confirmed once the swap is underway (accepted).
+    if (swap.status !== 'ACCEPTED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap is not active for delivery confirmation' });
+      return;
+    }
+
+    const meta = await updateSwapMetadata(id, (meta) => {
       if (isInitiator) {
         meta.initiatorReceived = true;
       } else {
@@ -816,12 +848,11 @@ export async function confirmSwapReceived(req: Request, res: Response): Promise<
       }
     });
 
-    const meta = getSwapMetadata(id);
     const bothConfirmed = meta.initiatorReceived && meta.receiverReceived;
 
     // If both confirmed, execute atomic transfer
     if (bothConfirmed) {
-      updateSwapMetadata(id, (m) => {
+      await updateSwapMetadata(id, (m) => {
         m.depositReleasedAt = new Date().toISOString();
       });
 
@@ -919,7 +950,7 @@ export async function confirmSwapReceived(req: Request, res: Response): Promise<
       },
     });
 
-    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+    res.json({ data: await formatSwapTransaction(fullSwap, req.user.id) });
   } catch (error) {
     logger.error('confirmSwapReceived failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -956,7 +987,28 @@ export async function completeSwap(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    updateSwapMetadata(id, (meta) => {
+    // Guard: ownership may only transfer for an accepted swap, and only once.
+    if (swap.status !== 'ACCEPTED') {
+      res.status(400).json({
+        error: 'BAD_REQUEST',
+        message:
+          'Swap must be accepted (with both items shipped and received) before completion can be triggered',
+      });
+      return;
+    }
+
+    const completionMeta = await getSwapMetadata(id);
+    const shippedBoth = !!(completionMeta.initiatorTracking && completionMeta.receiverTracking);
+    const alreadyCompleted = completionMeta.depositReleasedAt || swap.status === 'COMPLETED';
+    if (!shippedBoth || alreadyCompleted) {
+      res.status(400).json({
+        error: 'BAD_REQUEST',
+        message: 'Both parties must have shipped (and completion must not already be done) to trigger completion',
+      });
+      return;
+    }
+
+    await updateSwapMetadata(id, (meta) => {
       meta.initiatorReceived = true;
       meta.receiverReceived = true;
       meta.depositReleasedAt = new Date().toISOString();
@@ -1008,6 +1060,25 @@ export async function completeSwap(req: Request, res: Response): Promise<void> {
     emitToUser(swap.initiatorId, 'swap:completed', { swapId: id });
     emitToUser(swap.receiverId, 'swap:completed', { swapId: id });
 
+    try {
+      await createNotification({
+        userId: swap.initiatorId,
+        type: 'SWAP_COMPLETED',
+        title: '🎉 Swap Completed!',
+        body: `Your accessory exchange is complete. Ownership of "${swap.wantedGarment?.title || 'accessory'}" is now yours!`,
+        data: { swapId: id },
+      });
+      await createNotification({
+        userId: swap.receiverId,
+        type: 'SWAP_COMPLETED',
+        title: '🎉 Swap Completed!',
+        body: `Your accessory exchange is complete. Ownership of "${swap.offeredGarment?.title || 'accessory'}" is now yours!`,
+        data: { swapId: id },
+      });
+    } catch (notifErr) {
+      logger.warn('Failed to send swap completed notification', { error: notifErr });
+    }
+
     const fullSwap = await db.swap.findUnique({
       where: { id },
       include: {
@@ -1018,7 +1089,7 @@ export async function completeSwap(req: Request, res: Response): Promise<void> {
       },
     });
 
-    res.json({ data: formatSwapTransaction(fullSwap, req.user.id) });
+    res.json({ data: await formatSwapTransaction(fullSwap, req.user.id) });
   } catch (error) {
     logger.error('completeSwap failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -1048,8 +1119,14 @@ export async function paySecurityDeposit(req: Request, res: Response): Promise<v
       return;
     }
 
-    const meta = getSwapMetadata(id);
+    const meta = await getSwapMetadata(id);
     const amount = meta.securityDepositAmount || 50000;
+
+    // Server-side guard: deposits only make sense on an accepted swap.
+    if (swap.status !== 'ACCEPTED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Deposits can only be paid on an accepted swap' });
+      return;
+    }
 
     let razorpayOrderId = `order_swap_dep_${id.slice(0, 8)}_${Date.now()}`;
     const keyId = process.env.RAZORPAY_KEY_ID;
@@ -1069,7 +1146,7 @@ export async function paySecurityDeposit(req: Request, res: Response): Promise<v
       }
     }
 
-    updateSwapMetadata(id, (m) => {
+    await updateSwapMetadata(id, (m) => {
       m.securityDepositPaidBy = userId;
       m.depositEscrowId = razorpayOrderId;
     });
@@ -1108,7 +1185,7 @@ export async function getDepositStatus(req: Request, res: Response): Promise<voi
       return;
     }
 
-    const meta = getSwapMetadata(id);
+    const meta = await getSwapMetadata(id);
     const isInitiator = swap.initiatorId === req.user.id;
     const myDepositPaid = isInitiator ? !!meta.initiatorDepositPaid : !!meta.receiverDepositPaid;
     res.json({
@@ -1167,7 +1244,9 @@ export async function verifySecurityDeposit(req: Request, res: Response): Promis
     const isInitiator = swap.initiatorId === userId;
     const partnerId = isInitiator ? swap.receiverId : swap.initiatorId;
 
-    updateSwapMetadata(id, (meta) => {
+    // Single transaction: verify signature, flip deposit flags, and lock the
+    // metadata row so double-submits cannot double-count.
+    const updatedMeta = await updateSwapMetadata(id, (meta) => {
       if (isInitiator) {
         meta.initiatorDepositPaid = true;
         meta.initiatorDepositPaymentId = razorpay_payment_id || 'mock_pay_' + Date.now();
@@ -1196,8 +1275,6 @@ export async function verifySecurityDeposit(req: Request, res: Response): Promis
     // Emit live socket event
     emitToUser(partnerId, 'swap:deposit_paid', { swapId: id, paidBy: userId });
     emitToUser(userId, 'swap:deposit_paid', { swapId: id, paidBy: userId });
-
-    const updatedMeta = getSwapMetadata(id);
 
     res.json({
       success: true,
@@ -1255,7 +1332,7 @@ export async function openDispute(req: Request, res: Response): Promise<void> {
       status: 'OPEN' as const,
     };
 
-    updateSwapMetadata(id, (m) => {
+    await updateSwapMetadata(id, (m) => {
       m.dispute = dispute;
       m.disputedAt = new Date().toISOString();
       m.disputeReason = reason;
@@ -1304,7 +1381,7 @@ export async function getDispute(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const meta = getSwapMetadata(id);
+    const meta = await getSwapMetadata(id);
     res.json({ data: meta.dispute || null });
   } catch (error) {
     logger.error('getDispute failed', { error });
@@ -1347,7 +1424,7 @@ export async function cancelSwap(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const meta = getSwapMetadata(id);
+    const meta = await getSwapMetadata(id);
     if (meta.initiatorTracking && meta.receiverTracking) {
       res.status(400).json({ error: 'ALREADY_SHIPPED', message: 'Cannot cancel after both parties have shipped items' });
       return;
@@ -1358,7 +1435,13 @@ export async function cancelSwap(req: Request, res: Response): Promise<void> {
       data: { status: 'REJECTED' },
     });
 
-    updateSwapMetadata(id, (m) => {
+    // Reactivate the reserved garments — cancellation must not destroy listings.
+    await db.garment.updateMany({
+      where: { id: { in: [swap.garmentOffered, swap.garmentWanted] } },
+      data: { isActive: true },
+    });
+
+    await updateSwapMetadata(id, (m) => {
       m.cancelledAt = new Date().toISOString();
       if (m.securityDepositPaidBy && !m.depositReleasedAt) {
         m.depositReleasedAt = new Date().toISOString();
@@ -1390,7 +1473,7 @@ export async function cancelSwap(req: Request, res: Response): Promise<void> {
       },
     });
 
-    res.json({ data: formatSwapTransaction(updated, req.user.id) });
+    res.json({ data: await formatSwapTransaction(updated, req.user.id) });
   } catch (error) {
     logger.error('cancelSwap failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -1433,7 +1516,7 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
 
     const otherUserId = swap.initiatorId === req.user.id ? swap.receiverId : swap.initiatorId;
 
-    const meta = getSwapMetadata(id);
+    const meta = await getSwapMetadata(id);
     const reviews = meta.reviews || {};
 
     if (reviews[req.user.id]) {
@@ -1448,7 +1531,7 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
     };
 
     reviews[req.user.id] = newReview;
-    updateSwapMetadata(id, (m) => {
+    await updateSwapMetadata(id, (m) => {
       m.reviews = reviews;
     });
 
