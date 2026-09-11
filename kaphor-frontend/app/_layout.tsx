@@ -5,6 +5,7 @@ import { BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
 import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono';
 import { PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-display';
 import { IMFellEnglish_400Regular } from '@expo-google-fonts/im-fell-english';
+import { Ionicons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { AuthProvider } from '../src/context/AuthContext';
@@ -52,6 +53,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
+    ...Ionicons.font,
     BebasNeue_400Regular,
     IBMPlexMono_400Regular,
     PlayfairDisplay_400Regular_Italic,
