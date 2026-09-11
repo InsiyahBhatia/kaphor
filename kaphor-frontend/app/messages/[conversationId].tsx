@@ -148,23 +148,55 @@ export default function DirectChatScreen() {
   };
 
   const pickImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please grant photo access to share images in chat.');
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 0.7,
-      });
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
-      }
-    } catch {
-      Alert.alert('Error', 'Failed to pick image');
-    }
+    Alert.alert('Attach Photo', 'Select image source', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission Denied', 'Please grant camera access to take photos.');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              aspect: [4, 3],
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets[0]) {
+              setSelectedImage(result.assets[0].uri);
+            }
+          } catch {
+            Alert.alert('Error', 'Failed to capture photo');
+          }
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission Denied', 'Please grant photo access to share images in chat.');
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              aspect: [4, 3],
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets[0]) {
+              setSelectedImage(result.assets[0].uri);
+            }
+          } catch {
+            Alert.alert('Error', 'Failed to pick image');
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const uploadPhotoBase64 = async (uri: string): Promise<string> => {

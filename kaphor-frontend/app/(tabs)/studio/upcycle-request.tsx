@@ -70,8 +70,13 @@ export default function UpcycleRequestScreen() {
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const pick = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
-    if (!pick.canceled) {
+    const pick = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!pick.canceled && pick.assets?.[0]) {
       setPhotos((prev) => [...prev, pick.assets[0].uri]);
     }
   };

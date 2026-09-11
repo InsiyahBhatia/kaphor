@@ -18,8 +18,13 @@ export default function UpcycleSuggestionsScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const pick = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
-    if (!pick.canceled) setImage(pick.assets[0].uri);
+    const pick = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!pick.canceled && pick.assets?.[0]) setImage(pick.assets[0].uri);
   };
 
   const handleSubmit = async () => {

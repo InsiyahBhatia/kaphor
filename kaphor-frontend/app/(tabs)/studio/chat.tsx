@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -25,14 +25,45 @@ export default function AIChatScreen() {
   const scrollRef = useRef<ScrollView>(null);
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.8,
-    });
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-    }
+    Alert.alert('Attach Photo', 'Select image source for style advice', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') return;
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              aspect: [4, 3],
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets[0]) {
+              setImageUri(result.assets[0].uri);
+            }
+          } catch {}
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') return;
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              aspect: [4, 3],
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets[0]) {
+              setImageUri(result.assets[0].uri);
+            }
+          } catch {}
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const sendMessage = async () => {
