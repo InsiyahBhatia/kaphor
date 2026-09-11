@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useAuth } from '../context/AuthContext';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import axios, { AxiosError } from 'axios';
 
 const DEFAULT_WEB_CLIENT_ID = '1091661686962-8v9tqlipbm6jf3gom0bg4q8rj4q41m7v.apps.googleusercontent.com';
@@ -25,6 +25,7 @@ export function useGoogleAuth() {
   const inFlight = React.useRef(false);
 
   React.useEffect(() => {
+    if (Platform.OS === 'web') return;
     try {
       const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || DEFAULT_WEB_CLIENT_ID;
       GoogleSignin.configure({
