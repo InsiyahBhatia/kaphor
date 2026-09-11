@@ -1,6 +1,23 @@
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
+import { emitToUser } from '../lib/socket';
+
+// ── GET /notifications/unread-count ──────────────────────────────────────────
+export async function getUnreadCount(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
+
+    const unreadCount = await db.notification.count({
+      where: { userId: req.user.id, isRead: false },
+    });
+
+    res.json({ unreadCount });
+  } catch (error) {
+    logger.error('getUnreadCount failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}
 
 // ── GET /notifications ───────────────────────────────────────────────────────
 export async function getNotifications(req: Request, res: Response): Promise<void> {
@@ -49,7 +66,12 @@ export async function markAsRead(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    res.json({ message: 'Marked as read' });
+    const unreadCount = await db.notification.count({
+      where: { userId: req.user.id, isRead: false },
+    });
+    emitToUser(req.user.id, 'unread_count_updated', { unreadCount });
+
+    res.json({ message: 'Marked as read', unreadCount });
   } catch (error) {
     logger.error('markAsRead failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -66,7 +88,9 @@ export async function markAllAsRead(req: Request, res: Response): Promise<void> 
       data: { isRead: true },
     });
 
-    res.json({ message: 'All marked as read' });
+    emitToUser(req.user.id, 'unread_count_updated', { unreadCount: 0 });
+
+    res.json({ message: 'All marked as read', unreadCount: 0 });
   } catch (error) {
     logger.error('markAllAsRead failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });

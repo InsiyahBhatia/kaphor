@@ -6,13 +6,15 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
-  Dimensions,
+  PanResponder,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, typography } from '../../theme';
 import { connectSocket, getSocket } from '../../services/socket';
 import { useAuthStore } from '../../store/authStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface ToastPayload {
@@ -27,46 +29,107 @@ export function NotificationToast() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.user?.id);
+  const preferences = useNotificationStore((s) => s.preferences);
+  const loadPreferences = useNotificationStore((s) => s.loadPreferences);
+  const addRealtimeNotification = useNotificationStore((s) => s.addRealtimeNotification);
+  const fetchUnreadCount = useNotificationStore((s) => s.fetchUnreadCount);
+
   const [toast, setToast] = useState<ToastPayload | null>(null);
 
-  const translateY = useRef(new Animated.Value(-150)).current;
+  const translateY = useRef(new Animated.Value(-160)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    loadPreferences();
+  }, [loadPreferences]);
 
   const dismiss = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: -150,
-        duration: 250,
+        toValue: -160,
+        duration: 220,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 200,
+        duration: 180,
         useNativeDriver: true,
       }),
     ]).start(() => setToast(null));
   };
 
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return gestureState.dy < -6 || Math.abs(gestureState.dy) > 10;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy < 0) {
+          translateY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy < -25 || gestureState.vy < -0.5) {
+          try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          } catch {}
+          dismiss();
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            bounciness: 4,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   const showToast = (payload: ToastPayload) => {
+    // Check user preference
+    const currentPrefs = useNotificationStore.getState().preferences;
+    if (!currentPrefs.banners) return;
+
+    const t = payload.type || '';
+    if (t.startsWith('SWAP_') && !currentPrefs.swaps) return;
+    if (t.startsWith('ORDER_') && !currentPrefs.orders) return;
+    if (t.startsWith('RENTAL_') && !currentPrefs.orders) return;
+    if (t === 'DIRECT_MESSAGE' && !currentPrefs.messages) return;
+
     if (timerRef.current) clearTimeout(timerRef.current);
     setToast(payload);
 
-    translateY.setValue(-120);
+    // Haptic feedback
+    if (currentPrefs.haptics) {
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch {}
+    }
+
+    translateY.setValue(-140);
     opacity.setValue(0);
+    progressAnim.setValue(1);
 
     Animated.parallel([
       Animated.spring(translateY, {
         toValue: 0,
         bounciness: 6,
-        speed: 12,
+        speed: 13,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 250,
+        duration: 220,
         useNativeDriver: true,
+      }),
+      Animated.timing(progressAnim, {
+        toValue: 0,
+        duration: 4500,
+        useNativeDriver: false,
       }),
     ]).start();
 
@@ -81,32 +144,54 @@ export function NotificationToast() {
 
     const handleNewNotification = (notif: any) => {
       if (notif && notif.title) {
-        showToast({
+        const payload: ToastPayload = {
           id: notif.id || `notif_${Date.now()}`,
           type: notif.type || 'SYSTEM',
           title: notif.title,
           body: notif.body || '',
           data: notif.data,
+        };
+
+        addRealtimeNotification({
+          id: payload.id,
+          userId: notif.userId || userId || '',
+          type: payload.type,
+          title: payload.title,
+          body: payload.body,
+          data: payload.data,
+          isRead: false,
+          createdAt: notif.createdAt || new Date().toISOString(),
         });
+
+        showToast(payload);
       }
     };
 
     const handleNewDirectMessage = (data: any) => {
       if (data && data.message) {
         const senderName = data.message.sender?.displayName || 'Direct Message';
-        showToast({
+        const payload: ToastPayload = {
           id: data.message.id || `msg_${Date.now()}`,
           type: 'DIRECT_MESSAGE',
           title: `💬 ${senderName}`,
           body: data.message.content || 'Sent you an image',
           data: { conversationId: data.conversationId },
-        });
+        };
+
+        showToast(payload);
+      }
+    };
+
+    const handleUnreadCountUpdated = (data: any) => {
+      if (typeof data?.unreadCount === 'number') {
+        useNotificationStore.setState({ unreadCount: data.unreadCount });
       }
     };
 
     const attach = (s: any) => {
       s.on('new_notification', handleNewNotification);
       s.on('new_direct_message', handleNewDirectMessage);
+      s.on('unread_count_updated', handleUnreadCountUpdated);
     };
 
     if (activeSocket) {
@@ -126,6 +211,7 @@ export function NotificationToast() {
       if (activeSocket) {
         activeSocket.off('new_notification', handleNewNotification);
         activeSocket.off('new_direct_message', handleNewDirectMessage);
+        activeSocket.off('unread_count_updated', handleUnreadCountUpdated);
       }
       if (timerRef.current) clearTimeout(timerRef.current);
     };
@@ -145,7 +231,13 @@ export function NotificationToast() {
 
     if (type.startsWith('SWAP_')) {
       if (data.swapId) {
-        router.push(`/(tabs)/swap/shipping?swapId=${data.swapId}` as any);
+        if (type === 'SWAP_SHIPPED' || type === 'SWAP_DELIVERED') {
+          router.push(`/(tabs)/swap/shipping?swapId=${data.swapId}` as any);
+        } else if (type === 'SWAP_AGREEMENT') {
+          router.push(`/(tabs)/swap/agreement?swapId=${data.swapId}` as any);
+        } else {
+          router.push(`/(tabs)/swap/details?swapId=${data.swapId}` as any);
+        }
       } else {
         router.push('/(tabs)/swap' as any);
       }
@@ -174,26 +266,23 @@ export function NotificationToast() {
     router.push('/(tabs)/notifications' as any);
   };
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'DIRECT_MESSAGE':
-        return 'chatbubble-ellipses';
-      case 'SWAP_REQUEST':
-      case 'SWAP_ACCEPTED':
-      case 'SWAP_SHIPPED':
-      case 'SWAP_COMPLETED':
-        return 'swap-horizontal';
-      case 'ORDER_PAID':
-      case 'ORDER_SHIPPED':
-      case 'ORDER_DELIVERED':
-        return 'bag-check';
-      case 'RENTAL_RESERVED':
-      case 'RENTAL_ACTIVE':
-        return 'calendar';
-      default:
-        return 'notifications';
+  const getCategoryInfo = (type: string) => {
+    if (type === 'DIRECT_MESSAGE') {
+      return { icon: 'chatbubble-ellipses', label: 'MESSAGE', color: '#38A169', bg: 'rgba(56,161,105,0.2)' };
     }
+    if (type.startsWith('SWAP_')) {
+      return { icon: 'swap-horizontal', label: 'SWAP', color: '#C9A84C', bg: 'rgba(201,168,76,0.2)' };
+    }
+    if (type.startsWith('ORDER_')) {
+      return { icon: 'bag-check', label: 'ORDER', color: '#2B6CB0', bg: 'rgba(43,108,176,0.2)' };
+    }
+    if (type.startsWith('RENTAL_')) {
+      return { icon: 'calendar', label: 'RENTAL', color: '#805AD5', bg: 'rgba(128,90,213,0.2)' };
+    }
+    return { icon: 'notifications', label: 'ALERT', color: '#C41E3A', bg: 'rgba(196,30,58,0.2)' };
   };
+
+  const catInfo = getCategoryInfo(toast.type);
 
   return (
     <Animated.View
@@ -205,28 +294,51 @@ export function NotificationToast() {
           opacity,
         },
       ]}
+      {...panResponder.panHandlers}
     >
       <TouchableOpacity
         style={styles.card}
         onPress={handlePress}
-        activeOpacity={0.88}
+        activeOpacity={0.92}
       >
-        <View style={styles.iconWrap}>
-          <Ionicons name={getIcon(toast.type) as any} size={20} color={colors.cream} />
+        <View style={[styles.iconWrap, { backgroundColor: catInfo.bg }]}>
+          <Ionicons name={catInfo.icon as any} size={20} color={catInfo.color} />
         </View>
 
         <View style={styles.textWrap}>
-          <Text style={styles.title} numberOfLines={1}>
-            {toast.title}
-          </Text>
+          <View style={styles.titleRow}>
+            <View style={[styles.badgePill, { borderColor: catInfo.color }]}>
+              <Text style={[styles.badgeText, { color: catInfo.color }]}>{catInfo.label}</Text>
+            </View>
+            <Text style={styles.title} numberOfLines={1}>
+              {toast.title}
+            </Text>
+          </View>
           <Text style={styles.body} numberOfLines={2}>
             {toast.body}
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.closeBtn} onPress={dismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity
+          style={styles.closeBtn}
+          onPress={dismiss}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Ionicons name="close" size={16} color={colors.textMuted} />
         </TouchableOpacity>
+
+        {/* Bottom Countdown Progress Bar */}
+        <Animated.View
+          style={[
+            styles.progressBar,
+            {
+              width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '100%'],
+              }),
+            },
+          ]}
+        />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -235,8 +347,8 @@ export function NotificationToast() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    left: 14,
+    right: 14,
     zIndex: 99999,
     elevation: 100,
   },
@@ -245,7 +357,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#1E1F22',
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#C9A84C',
@@ -254,18 +366,36 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 12,
     gap: 12,
+    overflow: 'hidden',
+    position: 'relative',
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#8C6D3B',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
   },
   textWrap: {
     flex: 1,
-    gap: 2,
+    gap: 3,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  badgePill: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 3,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontFamily: typography.mono,
+    fontSize: 7.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   title: {
     fontFamily: typography.mono,
@@ -273,14 +403,22 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#FFF',
     letterSpacing: 0.5,
+    flex: 1,
   },
   body: {
     fontFamily: typography.mono,
-    fontSize: 10,
-    color: '#CCC',
+    fontSize: 9.5,
+    color: 'rgba(255,255,255,0.75)',
     lineHeight: 14,
   },
   closeBtn: {
-    padding: 4,
+    padding: 6,
+  },
+  progressBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    height: 2.5,
+    backgroundColor: '#C9A84C',
   },
 });

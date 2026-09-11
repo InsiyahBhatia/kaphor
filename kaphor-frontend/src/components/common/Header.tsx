@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../theme';
-
+import { useNotificationStore } from '../../store/notificationStore';
 import { safeBack, useBackHandler } from '../../utils/navigation';
 
 interface HeaderProps {
@@ -28,6 +28,12 @@ export function Header({
 }: HeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const notifUnread = useNotificationStore((s) => s.unreadCount);
+  const fetchUnreadCount = useNotificationStore((s) => s.fetchUnreadCount);
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
   // If this header has a back button, wire up hardware back press
   useBackHandler(
@@ -73,14 +79,33 @@ export function Header({
 
       <View style={styles.right}>
         {rightElement ? rightElement : (
-          <Pressable onPress={() => router.push('/messages')} style={styles.iconBtn}>
-            <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.textPrimary} />
-            {unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-              </View>
-            )}
-          </Pressable>
+          <>
+            <Pressable
+              onPress={() => router.push('/(tabs)/notifications' as any)}
+              style={styles.iconBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
+              {notifUnread > 0 && (
+                <View style={[styles.badge, styles.notifBadge]}>
+                  <Text style={styles.badgeText}>{notifUnread > 9 ? '9+' : notifUnread}</Text>
+                </View>
+              )}
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push('/messages')}
+              style={styles.iconBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.textPrimary} />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </>
         )}
       </View>
 
@@ -99,8 +124,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     backgroundColor: colors.bg,
   },
-  left: { width: 80 },
-  right: { width: 80, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
+  left: { minWidth: 80, flexDirection: 'row', alignItems: 'center' },
+  right: { minWidth: 80, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 10 },
 
   iconBtn: { padding: 4, position: 'relative' },
   title: {
@@ -121,21 +146,25 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: -2,
+    right: -2,
     backgroundColor: colors.crimson,
-    width: 16,
+    minWidth: 16,
     height: 16,
     borderRadius: 8,
+    paddingHorizontal: 3,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: colors.bg,
   },
+  notifBadge: {
+    backgroundColor: '#8C6D3B', // Kaphor signature gold
+  },
   badgeText: {
     color: 'white',
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 7.5,
     fontWeight: 'bold',
   },
 });
