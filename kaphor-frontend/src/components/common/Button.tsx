@@ -1,6 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 
+import { hapticFeedback } from '../../utils/haptics';
+
 interface ButtonProps {
   title: string;
   onPress: () => void;
@@ -24,6 +26,11 @@ export const Button: React.FC<ButtonProps> = ({
   const isSecondary = variant === 'secondary';
   const isGhost = variant === 'ghost';
 
+  const handlePress = () => {
+    hapticFeedback.light();
+    onPress();
+  };
+
   return (
     <TouchableOpacity 
       style={[
@@ -35,7 +42,7 @@ export const Button: React.FC<ButtonProps> = ({
         (disabled || loading) && styles.disabled,
         style
       ]}
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled || loading}
     >
       {loading ? (

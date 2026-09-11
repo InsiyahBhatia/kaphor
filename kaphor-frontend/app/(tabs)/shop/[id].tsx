@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,13 +17,14 @@ import { cartService } from '../../../src/services/cartService';
 import { messageService } from '../../../src/services/messageService';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { hapticFeedback } from '../../../src/utils/haptics';
 
 const { width } = Dimensions.get('window');
 
 export default function GarmentDetailScreen() {
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   useBackHandler('/(tabs)/shop');
   const [garment, setGarment] = useState<Garment | any>(null);
@@ -32,6 +33,9 @@ export default function GarmentDetailScreen() {
   const [startingInquiry, setStartingInquiry] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [togglingLike, setTogglingLike] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [zoomVisible, setZoomVisible] = useState(false);
+  const [buying, setBuying] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -54,6 +58,7 @@ export default function GarmentDetailScreen() {
 
   const handleAddToCart = async () => {
     if (!id) return;
+    hapticFeedback.light();
     setAddingToCart(true);
     try {
       await cartService.addToCart(id as string);
@@ -65,33 +70,39 @@ export default function GarmentDetailScreen() {
     }
   };
 
-  const [buying, setBuying] = useState(false);
-
   const handleBuyNow = async () => {
-    if (!id || garment?.sellerId === user?.id || buying) return;
+    if (!id || !garment) return;
+    hapticFeedback.medium();
     setBuying(true);
     try {
-      const { data } = await api.post('/orders', { garmentId: id });
-      const orderId = data?.data?.orderId || data?.data?.id;
-      if (!orderId) {
-        Alert.alert('Checkout Error', 'Could not initiate checkout.');
-        return;
-      }
-      router.push(`/(tabs)/shop/checkout/delivery?orderId=${orderId}` as any);
+      router.push({
+        pathname: '/(tabs)/shop/checkout/delivery',
+        params: {
+          garmentId: id as string,
+          price: String(garment.price || 0),
+          title: garment.title,
+          image: garment.images?.[0] || '',
+          brand: garment.brand || '',
+        },
+      });
     } catch (e: any) {
-      Alert.alert('Checkout Error', e?.response?.data?.message || 'Could not initiate checkout.');
+      Alert.alert('Checkout Error', e?.message || 'Could not start checkout.');
     } finally {
       setBuying(false);
     }
   };
 
-  const handleMessageSeller = async () => {
-    if (!garment) return;
+  const handleStartInquiry = async () => {
+    if (!garment?.seller?.id && !garment?.sellerId) return;
     const sellerId = garment.seller?.id || garment.sellerId;
-    if (!sellerId) return;
+    if (!sellerId || startingInquiry) return;
+    hapticFeedback.light();
     setStartingInquiry(true);
     try {
-      const conv = await messageService.getOrCreateConversation(sellerId, garment.id);
+      const conv = await messageService.getOrCreateConversation(
+        sellerId,
+        garment.id
+      );
       router.push(`/messages/${conv.id}` as any);
     } catch (e: any) {
       Alert.alert('Inquiry', e?.response?.data?.message || 'Failed to start conversation');
@@ -100,8 +111,11 @@ export default function GarmentDetailScreen() {
     }
   };
 
+  const handleMessageSeller = handleStartInquiry;
+
   const handleToggleLike = async () => {
     if (!id || togglingLike) return;
+    hapticFeedback.selection();
     setTogglingLike(true);
     
     // Optimistic UI
@@ -142,17 +156,29 @@ export default function GarmentDetailScreen() {
   }
 
   const topInset = Math.max(insets.top + 8, 48);
+  const imagesList = Array.isArray(garment.images) && garment.images.length > 0 ? garment.images : [''];
+  const currentImage = imagesList[activeImageIndex] || imagesList[0];
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: garment?.title || 'Details' }} />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
-          <KaphorImage 
-            uri={garment.images[0]} 
-            style={styles.image}
-            contentFit="contain"
-          />
+          <TouchableOpacity 
+            activeOpacity={0.95} 
+            onPress={() => setZoomVisible(true)}
+            style={{ width: '100%', height: '100%' }}
+          >
+            <KaphorImage 
+              uri={currentImage} 
+              style={styles.image}
+              contentFit="contain"
+            />
+            <View style={styles.zoomHintBadge}>
+              <Ionicons name="expand-outline" size={14} color="#FFFFFF" />
+              <Text style={styles.zoomHintText}>TAP TO ZOOM</Text>
+            </View>
+          </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.backButton, { top: topInset }]} 
             onPress={() => safeBack('/(tabs)/shop')}
@@ -172,6 +198,61 @@ export default function GarmentDetailScreen() {
             />
           </TouchableOpacity>
         </View>
+
+        {/* Thumbnail Selector for Multiple Images */}
+        {imagesList.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbScroll} contentContainerStyle={styles.thumbContainer}>
+            {imagesList.map((imgUri: string, idx: number) => (
+              <TouchableOpacity
+                key={idx}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setActiveImageIndex(idx);
+                }}
+                style={[
+                  styles.thumbButton,
+                  activeImageIndex === idx && styles.thumbButtonActive,
+                ]}
+              >
+                <KaphorImage uri={imgUri} style={styles.thumbImg} contentFit="cover" />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Full Screen Pinch & Zoom Modal */}
+        <Modal
+          visible={zoomVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setZoomVisible(false)}
+          statusBarTranslucent
+        >
+          <View style={styles.zoomModalBackdrop}>
+            <TouchableOpacity 
+              style={[styles.closeZoomBtn, { top: Math.max(insets.top + 10, 44) }]}
+              onPress={() => setZoomVisible(false)}
+              hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+            >
+              <Ionicons name="close" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+            <ScrollView
+              style={{ flex: 1, width: '100%' }}
+              contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+              maximumZoomScale={4}
+              minimumZoomScale={1}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              centerContent
+            >
+              <Image
+                source={{ uri: currentImage }}
+                style={styles.zoomFullImage}
+                resizeMode="contain"
+              />
+            </ScrollView>
+          </View>
+        </Modal>
 
         <View style={styles.content}>
           <View style={styles.header}>
@@ -725,5 +806,68 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textPrimary,
     fontWeight: '700',
+  },
+  zoomHintBadge: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  zoomHintText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontFamily: typography.mono,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  thumbScroll: {
+    backgroundColor: colors.bgCard,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  thumbContainer: {
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  thumbButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+  },
+  thumbButtonActive: {
+    borderColor: colors.crimson,
+  },
+  thumbImg: {
+    width: '100%',
+    height: '100%',
+  },
+  zoomModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+  },
+  closeZoomBtn: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomFullImage: {
+    width: width,
+    height: '85%',
   },
 });

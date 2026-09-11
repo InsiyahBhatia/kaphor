@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { hapticFeedback } from '../../../src/utils/haptics';
 
 const DURATION_PRESETS = [
   { days: 3, label: '3 DAYS', subtitle: 'Weekend Soirée', badge: 'POPULAR' },
@@ -38,6 +39,7 @@ export default function RentalReserveScreen() {
   endDate.setDate(endDate.getDate() + days);
 
   const handleReserve = async () => {
+    hapticFeedback.medium();
     setSubmitting(true);
     try {
       const { data } = await api.post('/rentals', {

@@ -177,8 +177,10 @@ export async function clearStoredTokens(): Promise<void> {
   await safeStorage.deleteItem(REFRESH_KEY);
 }
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // ═══════════════════════════════════════════════════════════════
-// Simple TTL-based GET cache (stale-while-revalidate)
+// TTL-based GET cache with persistent Offline Storage Fallback
 // ═══════════════════════════════════════════════════════════════
 
 interface CacheEntry {
@@ -187,40 +189,57 @@ interface CacheEntry {
 }
 
 const GET_CACHE = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 30_000; // 30 seconds
+const CACHE_TTL_MS = 60_000; // 60 seconds memory freshness
+const OFFLINE_PREFIX = '@kaphor_cache_';
 
 /**
- * Fetch a GET endpoint with built-in TTL caching.
- * - If fresh cached data exists (< 30s old), return it immediately.
- * - If stale cached data exists (> 30s old), return it AND trigger a background refresh.
- * - If no cached data, fetch and cache.
+ * Fetch a GET endpoint with built-in TTL caching and persistent offline fallback.
+ * - If fresh cached data exists in memory, return it immediately.
+ * - If stale cached data exists, return it and trigger a background refresh.
+ * - If offline or network fails, gracefully fall back to persisted local storage.
  */
 export async function cachedGet<T = any>(url: string, params?: Record<string, any>): Promise<T> {
   const cacheKey = `${url}${params ? JSON.stringify(params) : ''}`;
+  const storageKey = `${OFFLINE_PREFIX}${cacheKey}`;
   const now = Date.now();
   const cached = GET_CACHE.get(cacheKey);
 
-  // If cache hit and still fresh, return immediately
+  // 1. If cache hit and still fresh in memory, return immediately
   if (cached && now < cached.expiry) {
     return cached.data as T;
   }
 
-  // If stale cache exists, fire background refresh but return stale data
+  // 2. If stale memory cache exists, fire background refresh but return stale data
   if (cached) {
-    // Fire background refresh (don't await)
-    api.get(url, { params }).then(({ data }) => {
-      GET_CACHE.set(cacheKey, { data: data.data ?? data, expiry: Date.now() + CACHE_TTL_MS });
-    }).catch(() => {
-      // Silently fail — stale data is better than nothing
-    });
+    api.get(url, { params }).then(async ({ data }) => {
+      const result = data.data ?? data;
+      GET_CACHE.set(cacheKey, { data: result, expiry: Date.now() + CACHE_TTL_MS });
+      try {
+        await AsyncStorage.setItem(storageKey, JSON.stringify(result));
+      } catch {}
+    }).catch(() => {});
     return cached.data as T;
   }
 
-  // No cache — fetch and store
-  const { data } = await api.get(url, { params });
-  const result = data.data ?? data;
-  GET_CACHE.set(cacheKey, { data: result, expiry: now + CACHE_TTL_MS });
-  return result as T;
+  // 3. Try network fetch
+  try {
+    const { data } = await api.get(url, { params });
+    const result = data.data ?? data;
+    GET_CACHE.set(cacheKey, { data: result, expiry: now + CACHE_TTL_MS });
+    AsyncStorage.setItem(storageKey, JSON.stringify(result)).catch(() => {});
+    return result as T;
+  } catch (netErr) {
+    // 4. On network failure / offline, attempt to load persisted offline cache
+    try {
+      const persisted = await AsyncStorage.getItem(storageKey);
+      if (persisted) {
+        const parsed = JSON.parse(persisted);
+        GET_CACHE.set(cacheKey, { data: parsed, expiry: now + CACHE_TTL_MS });
+        return parsed as T;
+      }
+    } catch {}
+    throw netErr;
+  }
 }
 
 /**
@@ -228,9 +247,11 @@ export async function cachedGet<T = any>(url: string, params?: Record<string, an
  */
 export async function fetchFresh<T = any>(url: string, params?: Record<string, any>): Promise<T> {
   const cacheKey = `${url}${params ? JSON.stringify(params) : ''}`;
+  const storageKey = `${OFFLINE_PREFIX}${cacheKey}`;
   const { data } = await api.get(url, { params });
   const result = data.data ?? data;
   GET_CACHE.set(cacheKey, { data: result, expiry: Date.now() + CACHE_TTL_MS });
+  AsyncStorage.setItem(storageKey, JSON.stringify(result)).catch(() => {});
   return result as T;
 }
 
@@ -242,6 +263,7 @@ export function invalidateCache(prefix: string): void {
   for (const key of GET_CACHE.keys()) {
     if (key.startsWith(prefix)) {
       GET_CACHE.delete(key);
+      AsyncStorage.removeItem(`${OFFLINE_PREFIX}${key}`).catch(() => {});
     }
   }
 }

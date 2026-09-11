@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../theme';
 import { KaphorImage } from './KaphorImage';
 
+import { hapticFeedback } from '../utils/haptics';
+
 export interface PlayingCardProps {
   rank: string;
   suit: '♠' | '♥' | '♦' | '♣';
@@ -99,6 +101,7 @@ export function PlayingCard({
               style={({ pressed }) => [styles.cartBtn, pressed && { transform: [{ scale: 0.95 }] }]} 
               onPress={(e) => {
                 e.stopPropagation();
+                hapticFeedback.light();
                 onAddToCart();
               }}
             >

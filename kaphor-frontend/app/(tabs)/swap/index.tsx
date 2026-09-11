@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGarmentStore } from '../../../src/store/garmentStore';
@@ -11,6 +11,7 @@ import { messageService } from '../../../src/services/messageService';
 import { colors, typography } from '../../../src/theme';
 import { isAccessoryCategory } from '../../../src/constants/market';
 import api, { cachedGet, invalidateCache } from '../../../src/services/api';
+import { hapticFeedback } from '../../../src/utils/haptics';
 
 export default function SwapFeedScreen() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function SwapFeedScreen() {
   const currentUserId = useAuthStore((s) => s.user?.id);
   const [mySwaps, setMySwaps] = useState<any[]>([]);
   const [swapsLoading, setSwapsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'browse' | 'requests'>('browse');
 
   // Fetch user's swap requests (fresh live data)
@@ -33,6 +35,16 @@ export default function SwapFeedScreen() {
       setSwapsLoading(false);
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    hapticFeedback.light();
+    await Promise.all([
+      fetchFeed({ listingType: 'ACCESSORY_SWAP' }),
+      fetchMySwaps(),
+    ]);
+    setRefreshing(false);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -315,7 +327,18 @@ export default function SwapFeedScreen() {
 
       {renderTabBar()}
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.crimson}
+            colors={[colors.crimson]}
+          />
+        }
+      >
         {activeTab === 'requests' ? (
           <View style={styles.requestsContainer}>
             {renderSwapRequests()}

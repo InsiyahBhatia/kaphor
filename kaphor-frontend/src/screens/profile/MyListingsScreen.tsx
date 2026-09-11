@@ -18,6 +18,7 @@ import { garmentService } from '../../services/garmentService';
 import { KaphorImage } from '../../components/KaphorImage';
 import { colors, typography, spacing, radius } from '../../theme';
 import { safeBack, useBackHandler } from '../../utils/navigation';
+import { hapticFeedback } from '../../utils/haptics';
 
 export function MyListingsScreen() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export function MyListingsScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
+    hapticFeedback.light();
     fetchListings();
   };
 

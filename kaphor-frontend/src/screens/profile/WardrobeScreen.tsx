@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, AppState, AppStateStatus } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, AppState, AppStateStatus, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { Header } from '../../components/common/Header';
 import { DossierLoading } from '../../components/common/DossierLoading';
 import { cachedGet, fetchFresh, invalidateCache } from '../../services/api';
 import api from '../../services/api';
+import { hapticFeedback } from '../../utils/haptics';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -182,6 +183,7 @@ export function WardrobeScreen() {
   const router = useRouter();
   const [wardrobe, setWardrobe] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadWardrobe = useCallback(async () => {
     try {
@@ -191,6 +193,19 @@ export function WardrobeScreen() {
       console.error('Failed to load wardrobe', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    hapticFeedback.light();
+    try {
+      const data = await fetchFresh('/users/me/wardrobe');
+      setWardrobe(Array.isArray(data) ? data : []);
+    } catch {
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -301,7 +316,18 @@ export function WardrobeScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.crimson}
+              colors={[colors.crimson]}
+            />
+          }
+        >
           {/* Stats & Impact Multiplier */}
           <WardrobeStats garments={wardrobe} />
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity, Image, Dimensions, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity, Image, Dimensions, Alert, Linking, RefreshControl } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ import {
   youTubeUrl,
   difficultyColor,
 } from '../../src/services/repairService';
+import { hapticFeedback } from '../../src/utils/haptics';
 
 import { Header } from '../../src/components/common/Header';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
@@ -31,6 +32,7 @@ export default function SavedAssetsScreen() {
   const [savedAssets, setSavedAssets] = useState<any[]>([]);
   const [savedRepairs, setSavedRepairs] = useState<SavedRepairItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'shop' | 'repairs'>('shop');
 
   const fetchSavedAssets = useCallback(async () => {
@@ -50,6 +52,13 @@ export default function SavedAssetsScreen() {
       console.error('Failed to fetch saved repairs', error);
     }
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    hapticFeedback.light();
+    await Promise.all([fetchSavedAssets(), fetchSavedRepairs()]);
+    setRefreshing(false);
+  }, [fetchSavedAssets, fetchSavedRepairs]);
 
   const handleAddToCart = async (item: any) => {
     try {
@@ -227,6 +236,14 @@ export default function SavedAssetsScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.crimson}
+              colors={[colors.crimson]}
+            />
+          }
         >
           {/* ── Tab Switcher ─────────────────────────────────────── */}
           <View style={styles.tabBar}>

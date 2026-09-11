@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  ScrollView,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -29,6 +30,8 @@ import { useAuth } from '../../src/context/AuthContext';
 import { getSocket, connectSocket } from '../../src/services/socket';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { hapticFeedback } from '../../src/utils/haptics';
 
 export default function DirectChatScreen() {
   const insets = useSafeAreaInsets();
@@ -50,21 +53,45 @@ export default function DirectChatScreen() {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const partnerTypingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const cacheChatKey = `@kaphor_chat_${conversationId}`;
+
+  // Load offline cached messages immediately on mount
+  useEffect(() => {
+    if (!conversationId) return;
+    (async () => {
+      try {
+        const cached = await AsyncStorage.getItem(cacheChatKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.detail) setDetail(parsed.detail);
+          if (Array.isArray(parsed.messages) && parsed.messages.length > 0) {
+            setMessages(parsed.messages);
+            setLoading(false);
+          }
+        }
+      } catch {}
+    })();
+  }, [conversationId]);
+
   const loadConversation = useCallback(async () => {
     if (!conversationId) return;
     try {
       const data = await messageService.getConversationMessages(conversationId);
       setDetail(data);
       setMessages(data.messages);
+      // Persist to offline cache
+      AsyncStorage.setItem(cacheChatKey, JSON.stringify({ detail: data, messages: data.messages })).catch(() => {});
     } catch (e: any) {
       console.error('Failed to load conversation', e);
-      Alert.alert('Error', 'Could not open conversation', [
-        { text: 'Go Back', onPress: () => safeBack('/(tabs)/messages') },
-      ]);
+      if (messages.length === 0) {
+        Alert.alert('Error', 'Could not open conversation', [
+          { text: 'Go Back', onPress: () => safeBack('/(tabs)/messages') },
+        ]);
+      }
     } finally {
       setLoading(false);
     }
-  }, [conversationId]);
+  }, [conversationId, messages.length]);
 
   useEffect(() => {
     loadConversation();
@@ -215,6 +242,7 @@ export default function DirectChatScreen() {
     const hasImage = !!selectedImage;
     if ((!text && !hasImage) || !conversationId || sending) return;
 
+    hapticFeedback.light();
     const imgToSend = selectedImage;
     setInputText('');
     setSelectedImage(null);
@@ -641,11 +669,21 @@ export default function DirectChatScreen() {
             <Ionicons name="close" size={30} color="#FFFFFF" />
           </TouchableOpacity>
           {viewingImage && (
-            <Image
-              source={{ uri: viewingImage }}
-              style={styles.fullImageView}
-              resizeMode="contain"
-            />
+            <ScrollView
+              style={{ flex: 1, width: '100%' }}
+              contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+              maximumZoomScale={4}
+              minimumZoomScale={1}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              centerContent
+            >
+              <Image
+                source={{ uri: viewingImage }}
+                style={styles.fullImageView}
+                resizeMode="contain"
+              />
+            </ScrollView>
           )}
         </View>
       </Modal>

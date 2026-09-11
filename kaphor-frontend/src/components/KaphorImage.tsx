@@ -85,7 +85,9 @@ export function KaphorImage({
       style={[{ borderRadius: radius.md }, style]}
       contentFit={contentFit}
       recyclingKey={fullUri}
-      transition={200}
+      cachePolicy="memory-disk"
+      priority="high"
+      transition={150}
       onError={() => {
         setHasError(true);
       }}

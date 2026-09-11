@@ -62,15 +62,6 @@ export default function ImpactScreen() {
               </View>
             ))}
           </View>
-
-          <TouchableOpacity
-            style={styles.auditReportBtn}
-            onPress={() => router.push('/(tabs)/impact/report')}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="document-text" size={18} color={colors.cream} />
-            <Text style={styles.auditReportBtnText}>VIEW DETAILED AUDIT REPORT →</Text>
-          </TouchableOpacity>
         </>
       )}
     </ScrollView>
@@ -103,27 +94,4 @@ const styles = StyleSheet.create({
   cardTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   cardValue: { fontSize: 64, fontFamily: typography.headings, lineHeight: 64 },
   cardLabel: { fontSize: 12, fontFamily: typography.mono, letterSpacing: 1, fontWeight: '800', color: colors.charcoal },
-  auditReportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: colors.charcoal,
-    paddingVertical: 16,
-    marginTop: 20,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
-  },
-  auditReportBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.cream,
-    letterSpacing: 1,
-  },
 });
