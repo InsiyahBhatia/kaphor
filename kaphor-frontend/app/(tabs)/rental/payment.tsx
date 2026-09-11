@@ -89,16 +89,20 @@ export default function RentalPaymentScreen() {
       const bd = await paymentService.getRentalBreakdown(garmentId!, days);
       setBreakdown(bd);
     } catch {
-      // Fallback calculation if backend is unavailable
-      const deposit = dayRate * days * 2; // 2x rental as deposit
+      // Fallback calculation if backend is unavailable (minimal thrift rates)
+      const dailyRateInRupees = dayRate > 2000 ? Math.round(dayRate / 100) : (dayRate || 149);
+      const rentalFee = dailyRateInRupees * days * 100;
+      const securityDeposit = 29900; // Flat ₹299 minimal refundable deposit
+      const insuranceFee = 4900; // Flat ₹49
+      const deliveryFee = 19900; // ₹199 standard insured delivery
       setBreakdown({
         rentalDays: days,
-        dailyRate: dayRate,
-        rentalFee: dayRate * days * 100, // paise
-        securityDeposit: deposit * 100,
-        insuranceFee: Math.round(dayRate * days * 0.1 * 100), // 10% of rental
-        deliveryFee: 19900, // ₹199
-        totalAmount: 0, // computed below
+        dailyRate: dailyRateInRupees,
+        rentalFee,
+        securityDeposit,
+        insuranceFee,
+        deliveryFee,
+        totalAmount: rentalFee + securityDeposit + insuranceFee + deliveryFee,
       });
     } finally {
       setLoading(false);
@@ -182,10 +186,12 @@ export default function RentalPaymentScreen() {
     }
   };
 
+  const fallbackUrl = garmentId ? `/(tabs)/rental/reserve?garmentId=${garmentId}&dayRate=${dayRate}` : '/(tabs)/shop';
+
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="RENTAL PAYMENT" showBack />
+        <Header title="RENTAL PAYMENT" showBack fallbackPath={fallbackUrl} />
         <View style={styles.center}>
           <DossierLoading variant="checkout" compact />
         </View>
@@ -197,7 +203,7 @@ export default function RentalPaymentScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="PAYMENT" showBack />
+      <Header title="PAYMENT" showBack fallbackPath={fallbackUrl} />
 
       {/* Progress Steps */}
       <View style={styles.progressBar}>

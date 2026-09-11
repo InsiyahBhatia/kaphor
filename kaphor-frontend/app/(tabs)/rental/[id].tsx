@@ -2,17 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 export default function RentalDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [garment, setGarment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useBackHandler('/(tabs)/shop');
 
   useEffect(() => {
     (async () => {
@@ -25,7 +29,7 @@ export default function RentalDetailScreen() {
   }, [id]);
 
   if (loading) {
-    return <View style={[styles.container, styles.center]}><DossierLoading variant="rental" compact /></View>;
+    return <DossierLoading variant="rental" />;
   }
 
   if (!garment) {
@@ -44,13 +48,14 @@ export default function RentalDetailScreen() {
 
   const dayRate = (garment.rentalPriceDay || 0) / 100;
   const weekRate = (garment.rentalPriceWeek || 0) / 100;
+  const topInset = Math.max(insets.top + 8, 48);
 
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <KaphorImage uri={garment.images?.[0]} style={styles.image} contentFit="cover" />
         <TouchableOpacity 
-          style={styles.backButton} 
+          style={[styles.backButton, { top: topInset }]} 
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >

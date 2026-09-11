@@ -7,12 +7,13 @@ import api from '../../../src/services/api';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { isAccessoryCategory } from '../../../src/constants/market';
 
 export default function SwapWithWantedScreen() {
   const { wantedId } = useLocalSearchParams();
   const router = useRouter();
+  useBackHandler('/(tabs)/swap');
   const [garment, setGarment] = useState<any>(null);
   const [myGarments, setMyGarments] = useState<any[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<string | null>(null);

@@ -45,7 +45,7 @@ interface WardrobeItemProps {
 const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
   const state = item.lifecycleState || 'OWNERSHIP';
   const config = getStateConfig(state);
-  const imageUrl = item.images?.[0] || 'https://via.placeholder.com/300x400/1A0C10/F5F0EB?text=No+Image';
+  const imageUrl = item.images?.[0] || '';
 
   return (
     <View style={styles.card}>
@@ -74,14 +74,14 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
               style={[styles.actionBtn, { borderColor: colors.forest }]}
               onPress={() => onAction('LOG_WEAR', item.id)}
             >
-              <Ionicons name="footsteps" size={14} color={colors.forest} />
+              <Ionicons name="footsteps" size={13} color={colors.forest} />
               <Text style={[styles.actionBtnText, { color: colors.forest }]}>I WORE THIS</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, { borderColor: colors.charcoal }]}
               onPress={() => onAction('INITIATE_RESELL', item.id)}
             >
-              <Ionicons name="pricetag" size={14} color={colors.charcoal} />
+              <Ionicons name="pricetag" size={13} color={colors.charcoal} />
               <Text style={[styles.actionBtnText, { color: colors.charcoal }]}>SELL</Text>
             </TouchableOpacity>
           </>
@@ -145,18 +145,33 @@ function WardrobeStats({ garments }: { garments: any[] }) {
   ).length;
 
   return (
-    <View style={styles.statsRow}>
-      <View style={styles.statBox}>
-        <Text style={styles.statValue}>{owned}</Text>
-        <Text style={styles.statLabel}>IN CLOSET</Text>
+    <View style={styles.statsContainer}>
+      <View style={styles.statsRow}>
+        <View style={styles.statBox}>
+          <Text style={styles.statValue}>{owned}</Text>
+          <Text style={styles.statLabel}>IN CLOSET</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Text style={[styles.statValue, { color: colors.orange }]}>{sellReady}</Text>
+          <Text style={styles.statLabel}>SELL READY</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Text style={[styles.statValue, { color: colors.navy }]}>{inCirculation}</Text>
+          <Text style={styles.statLabel}>CIRCULATING</Text>
+        </View>
       </View>
-      <View style={styles.statBox}>
-        <Text style={[styles.statValue, { color: colors.orange }]}>{sellReady}</Text>
-        <Text style={styles.statLabel}>SELL READY</Text>
-      </View>
-      <View style={styles.statBox}>
-        <Text style={[styles.statValue, { color: colors.navy }]}>{inCirculation}</Text>
-        <Text style={styles.statLabel}>CIRCULATING</Text>
+
+      {/* Impact Multiplier Banner */}
+      <View style={styles.impactBanner}>
+        <View style={styles.impactIconWrap}>
+          <Ionicons name="leaf" size={16} color={colors.forest} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.impactBannerTitle}>CLOSET IMPACT MULTIPLIER</Text>
+          <Text style={styles.impactBannerSub}>
+            Tap "I WORE THIS" to log rewearing. Each wear prevents ~0.35kg CO₂ and credits your verified Impact Dossier.
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -199,15 +214,28 @@ export function WardrobeScreen() {
   const handleAction = async (action: string, garmentId: string) => {
     try {
       switch (action) {
-        case 'LOG_WEAR':
-          await api.post('/interactions', { garmentId, eventType: 'LOG_WEAR' });
-          Alert.alert('✅ Worn!', 'Garment wear logged. Your wardrobe decay has been reset.');
+        case 'LOG_WEAR': {
+          const res = await api.post('/interactions', { garmentId, eventType: 'LOG_WEAR' });
+          const wearImpact = res?.data?.data?.wearImpact;
+          const co2 = wearImpact?.carbonSavedKg || 0.35;
+          const water = wearImpact?.waterSavedL || 120;
+          const wearCountText = wearImpact?.totalWears ? ` (Worn ${wearImpact.totalWears}x)` : '';
+          
+          Alert.alert(
+            '🌱 Impact Saved!',
+            `+${co2} kg CO₂ & +${water}L Water saved by wearing what you own${wearCountText}!\n\nYour wardrobe utilization increased and decay was reset.`
+          );
+          invalidateCache('/users/me/wardrobe');
+          invalidateCache('/impact');
+          loadWardrobe();
           break;
+        }
 
         case 'INITIATE_RESELL':
           await api.post(`/garments/${garmentId}/initiate-resell`);
           Alert.alert('📦 Sell Intent', 'Garment marked for resale. Go to Listings to complete the relist.');
           invalidateCache('/users/me/wardrobe');
+          invalidateCache('/impact');
           loadWardrobe();
           break;
 
@@ -215,13 +243,14 @@ export function WardrobeScreen() {
           await api.post(`/garments/${garmentId}/relist`);
           Alert.alert('✅ Relisted!', 'Your garment is back on the marketplace.');
           invalidateCache('/users/me/wardrobe');
+          invalidateCache('/impact');
           loadWardrobe();
           break;
 
         case 'CIRCULAR_END':
           Alert.alert(
             '♻️ End of Life',
-            'Send this garment to the circular end-of-life path? It will be routed to reuse, upcycling, or recycling.',
+            'Send this garment to the circular end-of-life path? It will be routed to reuse, upcycling, or recycling, diverting 450g of textile waste.',
             [
               { text: 'Cancel', style: 'cancel' },
               {
@@ -229,8 +258,9 @@ export function WardrobeScreen() {
                 style: 'destructive',
                 onPress: async () => {
                   await api.post(`/garments/${garmentId}/circular-end`);
-                  Alert.alert('✅ Done!', 'Garment has been routed to its circular end-of-life.');
+                  Alert.alert('✅ Done!', 'Garment routed to circular end-of-life. +450g textile waste diversion credited to your Impact Dossier!');
                   invalidateCache('/users/me/wardrobe');
+                  invalidateCache('/impact');
                   loadWardrobe();
                 },
               },
@@ -249,7 +279,7 @@ export function WardrobeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Header title="DIGITAL CLOSET" showBack={true} />
+      <Header title="DIGITAL CLOSET" showBack={true} fallbackPath="/(tabs)/profile" />
 
       {loading ? (
         <View style={styles.center}>
@@ -272,7 +302,7 @@ export function WardrobeScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {/* Stats */}
+          {/* Stats & Impact Multiplier */}
           <WardrobeStats garments={wardrobe} />
 
           {/* Section label */}
@@ -309,7 +339,8 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 100 },
 
   // Stats
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
+  statsContainer: { marginBottom: 20 },
+  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   statBox: {
     flex: 1, backgroundColor: colors.white, padding: 14,
     borderWidth: 2, borderColor: colors.charcoal,
@@ -318,6 +349,39 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 32, fontFamily: typography.headings, color: colors.forest },
   statLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '800', marginTop: 2, letterSpacing: 1 },
+
+  // Impact Banner
+  impactBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3EFE6',
+    borderWidth: 1.5,
+    borderColor: colors.forest,
+    padding: 12,
+    gap: 10,
+  },
+  impactIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(40,54,24,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  impactBannerTitle: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.forest,
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  impactBannerSub: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.charcoal,
+    lineHeight: 12,
+  },
 
   // Section header
   sectionHeader: { marginBottom: 16 },

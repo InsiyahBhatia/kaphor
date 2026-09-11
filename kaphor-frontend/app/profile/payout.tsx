@@ -18,7 +18,7 @@ import { colors, typography } from '../../src/theme';
 import paymentService from '../../src/services/paymentService';
 import type { SellerPayoutAccount } from '../../src/types/payment';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
-import { safeBack } from '../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../src/utils/navigation';
 
 type ScreenMode = 'list' | 'add' | 'edit';
 type PayoutMethod = 'BANK' | 'UPI';
@@ -50,11 +50,30 @@ export default function PayoutAccountsScreen() {
   const insets = useSafeAreaInsets();
 
   const [mode, setMode] = useState<ScreenMode>('list');
+  const [showHistory, setShowHistory] = useState(false);
+
+  const handleBack = () => {
+    if (showHistory) {
+      setShowHistory(false);
+      return true;
+    }
+    if (mode !== 'list') {
+      setMode('list');
+      setErrors({});
+      setEditId(null);
+      setForm({ ...EMPTY_FORM });
+      return true;
+    }
+    safeBack('/(tabs)/profile');
+    return true;
+  };
+
+  useBackHandler('/(tabs)/profile', handleBack);
+
   const [accounts, setAccounts] = useState<SellerPayoutAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [payoutHistory, setPayoutHistory] = useState<any[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
 
   const [form, setForm] = useState<PayoutForm>({ ...EMPTY_FORM });
   const [errors, setErrors] = useState<Record<string, string>>({});

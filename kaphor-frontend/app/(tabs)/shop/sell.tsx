@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
@@ -16,11 +17,13 @@ import {
   MARKET_SIZES 
 } from '../../../src/constants/market';
 import { DropdownPicker } from '../../../src/components/DropdownPicker';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useGarmentStore } from '../../../src/store/garmentStore';
+import { DossierLoading } from '../../../src/components/common/DossierLoading';
 
 export default function SellScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     prefillImage?: string;
     prefillCategory?: string;
@@ -35,6 +38,17 @@ export default function SellScreen() {
   }>();
 
   const [step, setStep] = useState(1);
+
+  const handleBackNavigation = () => {
+    if (step > 1) {
+      setStep((s) => s - 1);
+      return true;
+    }
+    safeBack('/(tabs)/shop');
+    return true;
+  };
+
+  useBackHandler('/(tabs)/shop', handleBackNavigation);
   const [images, setImages] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -567,12 +581,17 @@ export default function SellScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      {/* Grand Dossier Loading Screen during AI Magic Fill Analysis */}
+      <Modal visible={aiLoading} animationType="fade" transparent={false} statusBarTranslucent>
+        <DossierLoading variant="magic_fill" />
+      </Modal>
+
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
         <TouchableOpacity 
-          onPress={() => safeBack('/(tabs)/shop')}
+          onPress={handleBackNavigation}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="close" size={28} color={colors.textPrimary} />
+          <Ionicons name={step > 1 ? "chevron-back" : "close"} size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SECURE LISTING</Text>
         <View style={{ width: 28 }} />
@@ -597,7 +616,7 @@ export default function SellScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  header: { paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   headerTitle: { color: colors.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   progressContainer: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 32 },
   progressDot: { width: 30, height: 4, backgroundColor: colors.bgCard, borderRadius: 2 },

@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { garmentService } from '../../../../src/services/garmentService';
 import { colors, typography, spacing, radius } from '../../../../src/theme';
-import { safeBack } from '../../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 import {
   ALL_CATEGORY_ITEMS,
   ACCESSORY_CATEGORY_ITEMS,
@@ -31,6 +31,7 @@ import { DropdownPicker } from '../../../../src/components/DropdownPicker';
 export default function EditListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  useBackHandler('/(tabs)/profile');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

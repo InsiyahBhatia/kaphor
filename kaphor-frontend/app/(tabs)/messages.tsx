@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,11 +17,14 @@ import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 import { messageService, ConversationSummary } from '../../src/services/messageService';
 import { getSocket, connectSocket } from '../../src/services/socket';
 
+type FilterTab = 'ALL' | 'ORDERS' | 'INQUIRIES';
+
 export default function MessagesScreen() {
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
 
   const loadConversations = useCallback(async () => {
     try {
@@ -43,15 +46,19 @@ export default function MessagesScreen() {
     useCallback(() => {
       loadConversations();
 
-      // Listen for incoming live socket events to update inbox in real time
+      // Listen for incoming live socket events to update inbox instantly in real time
       const socket = connectSocket() || getSocket();
       if (socket) {
         const handler = () => {
           loadConversations();
         };
         socket.on('new_direct_message', handler);
+        socket.on('direct_message', handler);
+        socket.on('connect', handler);
         return () => {
           socket.off('new_direct_message', handler);
+          socket.off('direct_message', handler);
+          socket.off('connect', handler);
         };
       }
     }, [loadConversations])
@@ -61,6 +68,19 @@ export default function MessagesScreen() {
     setRefreshing(true);
     loadConversations();
   };
+
+  const filteredConversations = useMemo(() => {
+    if (activeTab === 'ORDERS') {
+      return conversations.filter((c) => !!c.order);
+    }
+    if (activeTab === 'INQUIRIES') {
+      return conversations.filter((c) => !c.order);
+    }
+    return conversations;
+  }, [conversations, activeTab]);
+
+  const ordersCount = useMemo(() => conversations.filter((c) => !!c.order).length, [conversations]);
+  const inquiriesCount = useMemo(() => conversations.filter((c) => !c.order).length, [conversations]);
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -77,11 +97,35 @@ export default function MessagesScreen() {
     return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
   };
 
+  const getOrderStatusStyle = (status: string) => {
+    switch (status) {
+      case 'CONFIRMED':
+      case 'PAID':
+        return { bg: 'rgba(40,54,24,0.12)', color: colors.forest, label: 'ORDER PAID' };
+      case 'SHIPPED':
+        return { bg: 'rgba(30,58,138,0.12)', color: colors.navy, label: 'IN TRANSIT' };
+      case 'DELIVERED':
+        return { bg: 'rgba(201,168,76,0.18)', color: '#997300', label: 'DELIVERED' };
+      case 'PENDING':
+        return { bg: 'rgba(201,95,18,0.12)', color: colors.orange, label: 'ORDER PENDING' };
+      default:
+        return { bg: 'rgba(30,31,34,0.08)', color: colors.charcoal, label: status };
+    }
+  };
+
   const renderItem = ({ item }: { item: ConversationSummary }) => {
     const isUnread = item.unreadCount > 0;
+    const isGarmentInquiry = !!item.garment;
+    const hasOrder = !!item.order;
+    const orderStyle = hasOrder ? getOrderStatusStyle(item.order!.status) : null;
+
     return (
       <TouchableOpacity
-        style={[styles.convCard, isUnread && styles.convCardUnread]}
+        style={[
+          styles.convCard,
+          isUnread && styles.convCardUnread,
+          hasOrder && styles.convCardOrder,
+        ]}
         onPress={() => router.push(`/messages/${item.id}` as any)}
         activeOpacity={0.75}
       >
@@ -115,15 +159,35 @@ export default function MessagesScreen() {
             <Text style={styles.timeText}>{formatTime(item.lastMessageAt)}</Text>
           </View>
 
-          {/* Garment Context Tag */}
-          {item.garment && (
-            <View style={styles.garmentBadge}>
-              <Ionicons name="pricetag-outline" size={10} color={colors.textMuted} />
-              <Text style={styles.garmentBadgeText} numberOfLines={1}>
-                {item.garment.brand} · {item.garment.title}
-              </Text>
-            </View>
-          )}
+          {/* Context Badges */}
+          <View style={styles.badgeRow}>
+            {hasOrder && orderStyle && (
+              <View style={[styles.orderBadge, { backgroundColor: orderStyle.bg }]}>
+                <Ionicons name="bag-check" size={10} color={orderStyle.color} />
+                <Text style={[styles.orderBadgeText, { color: orderStyle.color }]}>
+                  {orderStyle.label} · #{item.order!.id.slice(0, 6).toUpperCase()}
+                </Text>
+              </View>
+            )}
+
+            {isGarmentInquiry && !hasOrder && (
+              <View style={styles.garmentBadge}>
+                <Ionicons name="pricetag" size={10} color={colors.red} />
+                <Text style={styles.garmentBadgeText} numberOfLines={1}>
+                  {item.garment?.brand} · {item.garment?.title}
+                </Text>
+              </View>
+            )}
+
+            {!isGarmentInquiry && !hasOrder && (
+              <View style={styles.directBadge}>
+                <Ionicons name="person" size={10} color={colors.forest || '#2D5A27'} />
+                <Text style={styles.directBadgeText} numberOfLines={1}>
+                  Direct Seller Chat
+                </Text>
+              </View>
+            )}
+          </View>
 
           {/* Message snippet */}
           <Text
@@ -134,8 +198,8 @@ export default function MessagesScreen() {
           </Text>
         </View>
 
-        {/* Garment Thumbnail */}
-        {item.garment?.image && (
+        {/* Garment Thumbnail if inquiry */}
+        {isGarmentInquiry && item.garment?.image && (
           <KaphorImage
             uri={item.garment.image}
             style={styles.garmentThumb}
@@ -157,12 +221,45 @@ export default function MessagesScreen() {
     <View style={styles.container}>
       <Header title="MESSAGES" />
 
-      {/* Safety Notice Bar */}
+      {/* Unified Secure Coordination Notice */}
       <View style={styles.safetyBar}>
-        <Ionicons name="shield-checkmark" size={14} color="#C9A84C" />
+        <Ionicons name="shield-checkmark" size={13} color="#C9A84C" />
         <Text style={styles.safetyBarText}>
-          Kaphor Encrypted Chat • Direct Buyer & Seller Communications
+          Kaphor Unified Threads • Pre-purchase Q&A & Shipping Coordination
         </Text>
+      </View>
+
+      {/* Filter Tabs */}
+      <View style={styles.tabsRow}>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'ALL' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('ALL')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabText, activeTab === 'ALL' && styles.tabTextActive]}>
+            ALL ({conversations.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'ORDERS' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('ORDERS')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabText, activeTab === 'ORDERS' && styles.tabTextActive]}>
+            ACTIVE ORDERS ({ordersCount})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'INQUIRIES' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('INQUIRIES')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabText, activeTab === 'INQUIRIES' && styles.tabTextActive]}>
+            INQUIRIES ({inquiriesCount})
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -171,21 +268,37 @@ export default function MessagesScreen() {
         </View>
       ) : (
         <FlatList
-          data={conversations}
+          data={filteredConversations}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={conversations.length === 0 ? styles.emptyContainer : styles.listContent}
+          contentContainerStyle={
+            filteredConversations.length === 0 ? styles.emptyContainer : styles.listContent
+          }
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.charcoal} />
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <View style={styles.emptyIconCircle}>
-                <Ionicons name="chatbubbles-outline" size={42} color={colors.charcoal} />
+                <Ionicons
+                  name={activeTab === 'ORDERS' ? 'bag-check-outline' : 'chatbubbles-outline'}
+                  size={42}
+                  color={colors.charcoal}
+                />
               </View>
-              <Text style={styles.emptyTitle}>NO CONVERSATIONS YET</Text>
+              <Text style={styles.emptyTitle}>
+                {activeTab === 'ORDERS'
+                  ? 'NO ACTIVE ORDER CHATS'
+                  : activeTab === 'INQUIRIES'
+                  ? 'NO GENERAL INQUIRIES'
+                  : 'NO CONVERSATIONS YET'}
+              </Text>
               <Text style={styles.emptyDesc}>
-                When you inquire about garments or negotiate deals with circular sellers, your direct chat threads appear here.
+                {activeTab === 'ORDERS'
+                  ? 'When you buy or sell items, your paid order dispatch & tracking threads appear here.'
+                  : activeTab === 'INQUIRIES'
+                  ? 'Pre-purchase questions and general seller chats will appear here.'
+                  : 'When you message sellers or coordinate deliveries, your unified conversation threads appear here.'}
               </Text>
               <TouchableOpacity
                 style={styles.exploreBtn}
@@ -216,7 +329,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
+    paddingVertical: 7,
     backgroundColor: colors.charcoal,
     borderBottomWidth: 1,
     borderBottomColor: '#C9A84C',
@@ -227,6 +340,40 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,
+  },
+  tabsRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 7,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  tabBtnActive: {
+    backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
+  },
+  tabText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  tabTextActive: {
+    color: colors.cream,
+    fontWeight: '900',
   },
   listContent: {
     padding: 16,
@@ -252,6 +399,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     elevation: 3,
+  },
+  convCardOrder: {
+    borderLeftWidth: 5,
+    borderLeftColor: colors.forest,
   },
   avatarWrap: {
     position: 'relative',
@@ -301,22 +452,62 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.textMuted,
   },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 4,
+  },
+  orderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(40,54,24,0.3)',
+  },
+  orderBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
   garmentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.cream,
+    backgroundColor: 'rgba(193,65,58,0.08)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     alignSelf: 'flex-start',
-    marginBottom: 4,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
+    borderColor: 'rgba(193,65,58,0.25)',
   },
   garmentBadgeText: {
     fontFamily: typography.mono,
     fontSize: 8.5,
-    color: colors.textMuted,
+    fontWeight: '700',
+    color: colors.red,
+  },
+  directBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(45,90,39,0.08)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(45,90,39,0.25)',
+  },
+  directBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '700',
+    color: colors.forest || '#2D5A27',
   },
   messageSnippet: {
     fontFamily: typography.mono,
@@ -328,9 +519,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   garmentThumb: {
-    width: 42,
-    height: 48,
-    borderWidth: 1,
+    width: 44,
+    height: 50,
+    borderWidth: 1.5,
     borderColor: colors.charcoal,
   },
   unreadPill: {

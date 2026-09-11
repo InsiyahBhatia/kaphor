@@ -55,7 +55,7 @@ export default function PaymentHistoryScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="PAYMENTS" showBack />
+      <Header title="PAYMENTS" showBack fallbackPath="/(tabs)/profile" />
 
       {/* Type Filters */}
       <ScrollView

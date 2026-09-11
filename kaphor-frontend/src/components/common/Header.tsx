@@ -5,29 +5,50 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../theme';
 
-import { safeBack } from '../../utils/navigation';
+import { safeBack, useBackHandler } from '../../utils/navigation';
 
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
   onBack?: () => void;
+  fallbackPath?: string;
   unreadCount?: number;
   showLogo?: boolean;
   rightElement?: React.ReactNode;
 }
 
-export function Header({ title, showBack, onBack, unreadCount = 0, showLogo = false, rightElement }: HeaderProps) {
+export function Header({
+  title,
+  showBack,
+  onBack,
+  fallbackPath = '/(tabs)',
+  unreadCount = 0,
+  showLogo = false,
+  rightElement,
+}: HeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  // If this header has a back button, wire up hardware back press
+  useBackHandler(
+    showBack ? fallbackPath : '/(tabs)',
+    showBack ? (onBack ? () => { onBack(); return true; } : null) : () => false
+  );
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      safeBack(fallbackPath);
+    }
+  };
+
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
-
-
+    <View style={[styles.container, { paddingTop: Math.max(insets.top + 8, 24), paddingBottom: 14 }]}>
       <View style={styles.left}>
         {showBack ? (
           <Pressable 
-            onPress={() => { if (onBack) onBack(); else safeBack(); }} 
+            onPress={handleBack} 
             style={styles.iconBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >

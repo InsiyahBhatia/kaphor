@@ -240,29 +240,33 @@ export async function calculateRentalBreakdown(req: Request, res: Response): Pro
             return;
         }
 
-        const dayRate = garment.rentalPriceDay || 0;
-        const weekRate = garment.rentalPriceWeek || 0;
+        const rawDayRate = garment.rentalPriceDay || 0;
+        const rawWeekRate = garment.rentalPriceWeek || 0;
+
+        // Normalize rates to Rupees if stored in paise (e.g. 15000 paise -> 150 INR)
+        const dailyRateInRupees = rawDayRate > 2000 ? Math.round(rawDayRate / 100) : (rawDayRate || 149);
+        const weekRateInRupees = rawWeekRate > 5000 ? Math.round(rawWeekRate / 100) : (rawWeekRate || dailyRateInRupees * 5);
 
         let rentalFeeInRupees: number;
-        if (days >= 7 && weekRate > 0) {
+        if (days >= 7 && weekRateInRupees > 0) {
             const weeks = Math.floor(days / 7);
             const remainderDays = days % 7;
-            rentalFeeInRupees = weeks * weekRate + remainderDays * dayRate;
+            rentalFeeInRupees = weeks * weekRateInRupees + remainderDays * dailyRateInRupees;
         } else {
-            rentalFeeInRupees = dayRate * days;
+            rentalFeeInRupees = dailyRateInRupees * days;
         }
 
         // Amount in paise (1 INR = 100 paise)
         const rentalFee = rentalFeeInRupees * 100;
-        const securityDeposit = rentalFee * 2; // 2x rental fee refundable security deposit
-        const insuranceFee = Math.round(rentalFee * 0.1); // 10% optional damage waiver
+        const securityDeposit = 29900; // Flat minimal refundable deposit of ₹299 for thrifting
+        const insuranceFee = 4900; // Flat ₹49 optional damage waiver
         const deliveryFee = 19900; // ₹199 standard insured delivery
         const totalAmount = rentalFee + securityDeposit + insuranceFee + deliveryFee;
 
         res.json({
             data: {
                 rentalDays: days,
-                dailyRate: dayRate,
+                dailyRate: dailyRateInRupees,
                 rentalFee,
                 securityDeposit,
                 insuranceFee,
@@ -302,7 +306,7 @@ export async function getRentalEscrow(req: Request, res: Response): Promise<void
             return;
         }
 
-        const depositAmount = rental.totalPrice * 2 * 100;
+        const depositAmount = 29900; // Flat ₹299 minimal refundable deposit
         const isReleased = rental.status === 'RETURNED';
 
         res.json({

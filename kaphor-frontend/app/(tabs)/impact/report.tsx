@@ -15,12 +15,13 @@ import { colors, typography, spacing } from '../../../src/theme';
 import { impactService } from '../../../src/services/impactService';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 const { width } = Dimensions.get('window');
 
 export default function ImpactReportScreen() {
   const router = useRouter();
+  useBackHandler('/(tabs)/impact');
   const [impactData, setImpactData] = useState<any>(null);
   const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);

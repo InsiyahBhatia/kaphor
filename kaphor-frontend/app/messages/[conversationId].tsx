@@ -26,7 +26,7 @@ import {
 } from '../../src/services/messageService';
 import { useAuth } from '../../src/context/AuthContext';
 import { getSocket, connectSocket } from '../../src/services/socket';
-import { safeBack } from '../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DirectChatScreen() {
@@ -34,6 +34,7 @@ export default function DirectChatScreen() {
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  useBackHandler('/(tabs)/messages');
 
   const [detail, setDetail] = useState<ConversationDetailResponse | null>(null);
   const [messages, setMessages] = useState<DirectMessageItem[]>([]);
@@ -66,13 +67,21 @@ export default function DirectChatScreen() {
   useEffect(() => {
     loadConversation();
 
-    // Connect socket and join conversation room
+    // Connect socket and join conversation room with auto-rejoin on connect
     const socket = connectSocket() || getSocket();
     if (socket && conversationId) {
-      socket.emit('join:conversation', conversationId);
+      const joinRoom = () => {
+        socket.emit('join:conversation', conversationId);
+      };
 
-      const messageHandler = (newMsg: DirectMessageItem) => {
-        if (newMsg.conversationId === conversationId) {
+      if (socket.connected) {
+        joinRoom();
+      }
+      socket.on('connect', joinRoom);
+
+      const messageHandler = (payload: any) => {
+        const newMsg: DirectMessageItem = payload?.message || payload;
+        if (newMsg && newMsg.conversationId === conversationId) {
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
@@ -101,12 +110,15 @@ export default function DirectChatScreen() {
       };
 
       socket.on('direct_message', messageHandler);
+      socket.on('new_direct_message', messageHandler);
       socket.on('user_typing', typingHandler);
       socket.on('user_stop_typing', stopTypingHandler);
 
       return () => {
         socket.emit('leave:conversation', conversationId);
+        socket.off('connect', joinRoom);
         socket.off('direct_message', messageHandler);
+        socket.off('new_direct_message', messageHandler);
         socket.off('user_typing', typingHandler);
         socket.off('user_stop_typing', stopTypingHandler);
         if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
@@ -265,6 +277,7 @@ export default function DirectChatScreen() {
 
   const garment = detail?.conversation.garment;
   const other = detail?.conversation.otherUser;
+  const order = detail?.conversation.order;
 
   if (loading) {
     return (
@@ -281,7 +294,7 @@ export default function DirectChatScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
     >
       {/* Top Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/messages')} 
           style={styles.backBtn}
@@ -324,8 +337,35 @@ export default function DirectChatScreen() {
         </View>
       </View>
 
-      {/* Garment Context Bar */}
-      {garment && (
+      {/* Active Order Coordination Bar (if an order is linked to this thread) */}
+      {order && (
+        <TouchableOpacity
+          style={styles.orderCoordinationBar}
+          onPress={() => router.push(`/(tabs)/shop/orders/${order.id}` as any)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.orderIconBox}>
+            <Ionicons name="cube" size={16} color={colors.cream} />
+          </View>
+          <View style={styles.orderCoordinationInfo}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.orderCoordinationTitle}>ORDER #{order.id.slice(0, 8).toUpperCase()}</Text>
+              <View style={styles.orderStatusChip}>
+                <Text style={styles.orderStatusChipText}>{order.status}</Text>
+              </View>
+            </View>
+            <Text style={styles.orderCoordinationSub} numberOfLines={1}>
+              ₹{(order.totalAmount / 100).toLocaleString('en-IN')} · Tap to view tracking & details
+            </Text>
+          </View>
+          <View style={styles.viewOrderBtn}>
+            <Text style={styles.viewOrderText}>TRACK →</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Context Banner: Garment Inquiry vs Direct Seller Chat */}
+      {garment && !order ? (
         <TouchableOpacity
           style={styles.garmentBar}
           onPress={() => router.push(`/(tabs)/shop/${garment.id}` as any)}
@@ -347,13 +387,32 @@ export default function DirectChatScreen() {
             <Text style={styles.viewListingText}>VIEW</Text>
           </View>
         </TouchableOpacity>
-      )}
+      ) : !garment && !order ? (
+        <TouchableOpacity
+          style={styles.directSellerBar}
+          onPress={() => other?.id && router.push(`/(tabs)/shop/seller/${other.id}` as any)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.directIconCircle}>
+            <Ionicons name="storefront" size={16} color={colors.forest || '#2D5A27'} />
+          </View>
+          <View style={styles.directSellerInfo}>
+            <Text style={styles.directSellerTitle}>DIRECT SELLER CHAT</Text>
+            <Text style={styles.directSellerSub} numberOfLines={1}>
+              Direct negotiation, custom styling & closet deals
+            </Text>
+          </View>
+          <View style={styles.viewClosetBtn}>
+            <Text style={styles.viewClosetText}>CLOSET →</Text>
+          </View>
+        </TouchableOpacity>
+      ) : null}
 
       {/* Safety Notice */}
       <View style={styles.safetyNotice}>
         <Ionicons name="lock-closed" size={11} color={colors.forest} />
         <Text style={styles.safetyNoticeText}>
-          Kaphor Trust Shield Active: Keep all transactions in-app for guaranteed purchase protection.
+          Kaphor Trust Shield: Keep transactions in-app for buyer & seller protection.
         </Text>
       </View>
 
@@ -625,6 +684,111 @@ const styles = StyleSheet.create({
     fontFamily: typography.mono,
     fontSize: 9,
     fontWeight: '800',
+  },
+  orderCoordinationBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F7F4EB',
+    padding: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.forest,
+    gap: 10,
+  },
+  orderIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 4,
+    backgroundColor: colors.forest,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  orderCoordinationInfo: {
+    flex: 1,
+  },
+  orderCoordinationTitle: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  orderStatusChip: {
+    backgroundColor: 'rgba(40,54,24,0.12)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  orderStatusChipText: {
+    fontFamily: typography.mono,
+    fontSize: 7.5,
+    fontWeight: '900',
+    color: colors.forest,
+    letterSpacing: 0.5,
+  },
+  orderCoordinationSub: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  viewOrderBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: colors.charcoal,
+  },
+  viewOrderText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  directSellerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,31,34,0.1)',
+    gap: 10,
+  },
+  directIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(45,90,39,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(45,90,39,0.2)',
+  },
+  directSellerInfo: {
+    flex: 1,
+  },
+  directSellerTitle: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: colors.forest || '#2D5A27',
+    letterSpacing: 0.5,
+  },
+  directSellerSub: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  viewClosetBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: colors.charcoal,
+  },
+  viewClosetText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   safetyNotice: {
     flexDirection: 'row',

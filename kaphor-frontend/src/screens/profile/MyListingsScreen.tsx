@@ -17,10 +17,11 @@ import { userService } from '../../services/userService';
 import { garmentService } from '../../services/garmentService';
 import { KaphorImage } from '../../components/KaphorImage';
 import { colors, typography, spacing, radius } from '../../theme';
-import { safeBack } from '../../utils/navigation';
+import { safeBack, useBackHandler } from '../../utils/navigation';
 
 export function MyListingsScreen() {
   const router = useRouter();
+  useBackHandler('/(tabs)/profile');
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

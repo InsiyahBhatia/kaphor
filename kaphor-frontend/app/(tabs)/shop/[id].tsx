@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../../src/components/common/Button';
 import { Badge } from '../../../src/components/Badge';
 import { garmentService } from '../../../src/services/garmentService';
@@ -15,14 +16,16 @@ import { orderService } from '../../../src/services/orderService';
 import { cartService } from '../../../src/services/cartService';
 import { messageService } from '../../../src/services/messageService';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 const { width } = Dimensions.get('window');
 
 export default function GarmentDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  useBackHandler('/(tabs)/shop');
   const [garment, setGarment] = useState<Garment | any>(null);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
@@ -121,11 +124,7 @@ export default function GarmentDetailScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <DossierLoading variant="product" compact />
-      </View>
-    );
+    return <DossierLoading variant="shop" />;
   }
 
   if (!garment) {
@@ -142,6 +141,8 @@ export default function GarmentDetailScreen() {
     );
   }
 
+  const topInset = Math.max(insets.top + 8, 48);
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: garment?.title || 'Details' }} />
@@ -153,14 +154,14 @@ export default function GarmentDetailScreen() {
             contentFit="contain"
           />
           <TouchableOpacity 
-            style={styles.backButton} 
+            style={[styles.backButton, { top: topInset }]} 
             onPress={() => safeBack('/(tabs)/shop')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.wishlistButton, isLiked && { backgroundColor: 'rgba(155, 27, 48, 0.1)' }]} 
+            style={[styles.wishlistButton, { top: topInset }, isLiked && { backgroundColor: 'rgba(155, 27, 48, 0.1)' }]} 
             onPress={handleToggleLike}
             disabled={togglingLike}
           >

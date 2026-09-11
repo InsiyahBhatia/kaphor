@@ -1,10 +1,8 @@
 .gradle/
-android/.gradle/
-android/app/build/
-android/build/
-ios/Pods/
-ios/build/
+android/
+ios/
 .expo/
 node_modules/
 dist/
 *.log
+

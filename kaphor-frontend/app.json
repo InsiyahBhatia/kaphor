@@ -14,7 +14,12 @@
       "supportsTablet": false
     },
     "android": {
-      "package": "com.kaphor.app"
+      "package": "com.kaphor.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "icon": "./assets/icon.png",
     "splash": {
@@ -38,6 +43,13 @@
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.1091661686962-8v9tqlipbm6jf3gom0bg4q8rj4q41m7v"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you list garments and upload condition evidence.",
+          "cameraPermission": "The app accesses your camera to take photos of garments for verification."
         }
       ]
     ],

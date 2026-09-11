@@ -5,12 +5,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { userService } from '../../services/userService';
 import { colors, typography, spacing, radius } from '../../theme';
-import { safeBack } from '../../utils/navigation';
+import { safeBack, useBackHandler } from '../../utils/navigation';
 import { KaphorImage } from '../../components/KaphorImage';
 
 export function ReviewsScreen() {
     const router = useRouter();
     const { userId } = useLocalSearchParams<{ userId: string }>();
+    useBackHandler('/(tabs)/profile');
     const [reviews, setReviews] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 

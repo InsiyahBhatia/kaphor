@@ -5,10 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { orderService, TransactionOrder } from '../../../src/services/orderService';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 export default function OrderConfirmedScreen() {
   const router = useRouter();
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
+  useBackHandler('/(tabs)/shop');
   const [order, setOrder] = useState<TransactionOrder | null>(null);
   const [loading, setLoading] = useState(!!orderId);
 

@@ -18,12 +18,16 @@ import {
   difficultyColor,
 } from '../../src/services/repairService';
 
+import { Header } from '../../src/components/common/Header';
+import { safeBack, useBackHandler } from '../../src/utils/navigation';
+
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
 
 export default function SavedAssetsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useBackHandler('/(tabs)/profile');
   const [savedAssets, setSavedAssets] = useState<any[]>([]);
   const [savedRepairs, setSavedRepairs] = useState<SavedRepairItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,15 +204,8 @@ export default function SavedAssetsScreen() {
   const bothEmpty = savedAssets.length === 0 && savedRepairs.length === 0;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Stack.Screen
-        options={{
-          title: 'THE VAULT',
-          headerTitleStyle: { fontFamily: typography.headings, fontSize: 24 },
-          headerTintColor: colors.charcoal,
-          headerTransparent: true,
-        }}
-      />
+    <View style={styles.container}>
+      <Header title="THE VAULT" showBack fallbackPath="/(tabs)/profile" />
 
       {loading ? (
         <View style={styles.loader}>

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
-import { createRazorpayOrder } from '../services/payment.service';
+import { createRazorpayOrder, calculateDeliveryFee } from '../services/payment.service';
 
 /**
  * Opens (or reuses) a PENDING order so buyer and seller can message before payment.
@@ -33,11 +33,14 @@ export async function createInquiryOrder(req: Request, res: Response): Promise<v
             return;
         }
 
-        const amount = garment.price || 0;
-        if (amount <= 0) {
+        const itemPrice = garment.price || 0;
+        if (itemPrice <= 0) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid amount configured for this garment' });
             return;
         }
+
+        const deliveryFee = calculateDeliveryFee(itemPrice);
+        const totalAmount = itemPrice + deliveryFee;
 
         const existing = await db.order.findFirst({
             where: {
@@ -58,13 +61,13 @@ export async function createInquiryOrder(req: Request, res: Response): Promise<v
             data: {
                 buyerId: req.user.id,
                 sellerId: garment.sellerId,
-                totalAmount: amount,
+                totalAmount,
                 currency: 'INR',
                 status: 'PENDING',
                 items: {
                     create: {
                         garmentId: garment.id,
-                        price: amount,
+                        price: itemPrice,
                         quantity: 1,
                     },
                 },
@@ -113,11 +116,14 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
             return;
         }
 
-        const amount = garment.price || 0;
-        if (amount <= 0) {
+        const itemPrice = garment.price || 0;
+        if (itemPrice <= 0) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid amount configured for this garment' });
             return;
         }
+
+        const deliveryFee = calculateDeliveryFee(itemPrice);
+        const totalAmount = itemPrice + deliveryFee;
 
         // Find or create a pending order for this garment
         let order = await db.order.findFirst({
@@ -135,13 +141,13 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
                 data: {
                     buyerId: req.user.id,
                     sellerId: garment.sellerId,
-                    totalAmount: amount,
+                    totalAmount,
                     currency: 'INR',
                     status: 'PENDING',
                     items: {
                         create: {
                             garmentId: garment.id,
-                            price: amount,
+                            price: itemPrice,
                             quantity: 1,
                         },
                     },
@@ -154,22 +160,24 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
             });
         }
 
-        // Create Razorpay order
-        const rpOrder = await createRazorpayOrder(amount, 'INR', order.id, {
+        // Create Razorpay order for total amount including delivery
+        const rpOrder = await createRazorpayOrder(totalAmount, 'INR', order.id, {
             orderId: order.id,
             garmentId: garment.id,
         });
 
         await db.order.update({
             where: { id: order.id },
-            data: { razorpayOrderId: rpOrder.id, totalAmount: amount, currency: 'INR' },
+            data: { razorpayOrderId: rpOrder.id, totalAmount, currency: 'INR' },
         });
 
         res.status(200).json({
             data: {
                 razorpayOrderId: rpOrder.id,
                 orderId: order.id,
-                amount: amount,
+                amount: totalAmount,
+                subtotal: itemPrice,
+                deliveryFee,
                 currency: 'INR',
             },
         });
@@ -209,11 +217,12 @@ export async function createCartOrder(req: Request, res: Response): Promise<void
             return;
         }
 
-        // Calculate total
-        const totalAmount = validItems.reduce((sum: number, item: any) => sum + (item.garment?.price || 0), 0);
+        // Calculate items subtotal and delivery fee
+        const itemsSubtotal = validItems.reduce((sum: number, item: any) => sum + (item.garment?.price || 0), 0);
+        const deliveryFee = calculateDeliveryFee(itemsSubtotal);
+        const totalAmount = itemsSubtotal + deliveryFee;
 
-        // For simplicity, we use the first seller as the main seller for the order object, 
-        // but in a complex app we'd split orders per seller.
+        // For simplicity, use first seller
         const sellerId = validItems[0].garment!.sellerId;
 
         const order = await db.order.create({
@@ -237,11 +246,7 @@ export async function createCartOrder(req: Request, res: Response): Promise<void
             }
         });
 
-        // Optionally clear cart after order creation (or wait for payment)
-        // For this demo, let's keep it until payment is confirmed or just clear it now to show progress
-        // await db.cartItem.deleteMany({ where: { userId: req.user.id } });
-
-        // Transition garments to PURCHASE_INTENT in a single batch query
+        // Transition garments to PURCHASE_INTENT
         const garmentIdsToUpdate = validItems.map((item: any) => item.garmentId);
         if (garmentIdsToUpdate.length > 0) {
             await db.garment.updateMany({
@@ -253,7 +258,6 @@ export async function createCartOrder(req: Request, res: Response): Promise<void
         // Create a Razorpay order for immediate payment readiness
         let razorpayOrderId: string | null = null;
         try {
-            const { createRazorpayOrder } = await import('../services/payment.service');
             const rpOrder = await createRazorpayOrder(totalAmount, 'INR', order.id, {
                 orderId: order.id,
                 type: 'CART',
@@ -272,6 +276,8 @@ export async function createCartOrder(req: Request, res: Response): Promise<void
                 id: order.id,
                 razorpayOrderId,
                 totalAmount,
+                subtotal: itemsSubtotal,
+                deliveryFee,
                 currency: 'INR',
                 items: order.items,
             },

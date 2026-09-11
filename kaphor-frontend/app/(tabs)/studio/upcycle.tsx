@@ -5,10 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 export default function UpcycleSuggestionsScreen() {
   const router = useRouter();
+  useBackHandler('/(tabs)/circular');
   const [image, setImage] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [result, setResult] = useState<any>(null);

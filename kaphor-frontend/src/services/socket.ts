@@ -36,17 +36,36 @@ export function getSocket(): Socket | null {
 }
 
 export function connectSocket(): Socket | null {
-  if (socket?.connected) return socket;
   const token = useAuthStore.getState().accessToken;
   const user = useAuthStore.getState().user;
   if (!user?.id) return null;
-  socket = io(SOCKET_URL, {
-    path: '/socket.io',
-    auth: {
-      userId: user.id,
-      token,
-    },
-    transports: ['websocket', 'polling'],
-  });
+
+  if (socket?.connected) return socket;
+
+  if (!socket) {
+    socket = io(SOCKET_URL, {
+      path: '/socket.io',
+      auth: {
+        userId: user.id,
+        token,
+      },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+
+    socket.on('connect', () => {
+      const currentUserId = useAuthStore.getState().user?.id;
+      if (currentUserId) {
+        socket?.emit('join:user', currentUserId);
+      }
+    });
+  } else if (!socket.connected) {
+    socket.connect();
+  }
+
   return socket;
 }
+

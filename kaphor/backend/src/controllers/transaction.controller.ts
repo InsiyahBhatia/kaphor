@@ -100,6 +100,22 @@ export async function getOrderDetail(req: AuthRequest, res: Response): Promise<v
         })
       );
     }
+
+    // Find associated unified conversation
+    const firstGarmentId = order.items?.[0]?.garmentId || null;
+    const conv = await db.conversation.findFirst({
+      where: {
+        OR: [
+          { participant1Id: order.buyerId, participant2Id: order.sellerId, garmentId: firstGarmentId },
+          { participant1Id: order.sellerId, participant2Id: order.buyerId, garmentId: firstGarmentId },
+          { participant1Id: order.buyerId, participant2Id: order.sellerId },
+          { participant1Id: order.sellerId, participant2Id: order.buyerId },
+        ],
+      },
+      select: { id: true },
+    });
+    orderData.conversationId = conv?.id || null;
+
     res.json({ data: orderData });
   } catch (e) {
     logger.error('getOrderDetail failed', { error: e instanceof Error ? e.message : String(e) });

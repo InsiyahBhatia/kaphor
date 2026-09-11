@@ -14,7 +14,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useRazorpay } from '@codearcade/expo-razorpay';
-import api from '../../../../src/services/api';
+import api, { invalidateCache } from '../../../../src/services/api';
 import { useAuth } from '../../../../src/context/AuthContext';
 import { DossierLoading } from '../../../../src/components/common/DossierLoading';
 import { colors, typography, spacing } from '../../../../src/theme';
@@ -95,6 +95,9 @@ export default function CheckoutScreen() {
   const { user } = useAuth();
 
   const [order, setOrder] = useState<OrderData | null>(null);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [razorpayReady, setRazorpayReady] = useState(false);
@@ -105,9 +108,19 @@ export default function CheckoutScreen() {
 
   const loadOrder = useCallback(async () => {
     try {
-      const { data } = await api.get(`/orders/${orderId}`);
-      const orderData = data.data as OrderData;
+      const [orderRes, addrRes] = await Promise.all([
+        api.get(`/orders/${orderId}`),
+        api.get('/users/me/addresses').catch(() => ({ data: { data: [] } })),
+      ]);
+      const orderData = orderRes.data.data as OrderData;
       setOrder(orderData);
+
+      const userAddrs = addrRes.data?.data || [];
+      setAddresses(userAddrs);
+      if (userAddrs.length > 0) {
+        const defaultAddr = userAddrs.find((a: any) => a.isDefault) || userAddrs[0];
+        setSelectedAddress(defaultAddr);
+      }
 
       // If we already have a Razorpay order ID, we can go straight to payment
       if (orderData.razorpayOrderId) {
@@ -172,9 +185,12 @@ export default function CheckoutScreen() {
       return;
     }
 
-    // Delivery charge: ₹199 (19,900 paise) if subtotal under ₹5,000 (500,000 paise)
-    const deliveryCharge = order.totalAmount < 500000 ? 19900 : 0;
-    const totalInPaise = order.totalAmount + deliveryCharge;
+    // Items subtotal and delivery charge: ₹199 (19,900 paise) if subtotal under ₹5,000 (500,000 paise)
+    const itemsSubtotal = order.items && order.items.length > 0
+      ? order.items.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
+      : order.totalAmount;
+    const deliveryCharge = itemsSubtotal < 500000 ? 19900 : 0;
+    const totalInPaise = itemsSubtotal + deliveryCharge;
 
     const options = {
       key: keyId,
@@ -202,6 +218,10 @@ export default function CheckoutScreen() {
             razorpay_payment_id: success.razorpay_payment_id,
             razorpay_signature: success.razorpay_signature,
           });
+          invalidateCache('/users/me/wardrobe');
+          invalidateCache('/impact');
+          invalidateCache('/users/me');
+          invalidateCache('/garments');
           router.replace(`/(tabs)/shop/order-confirmed?orderId=${order.id}`);
         } catch (verifyErr: any) {
           console.error('Verification call threw error, checking status fallback...', verifyErr);
@@ -249,7 +269,7 @@ export default function CheckoutScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="CHECKOUT" showBack />
+        <Header title="CHECKOUT" showBack fallbackPath="/(tabs)/shop" />
         <View style={styles.center}>
           <DossierLoading variant="checkout" compact />
         </View>
@@ -260,7 +280,7 @@ export default function CheckoutScreen() {
   if (!order) {
     return (
       <View style={styles.container}>
-        <Header title="CHECKOUT" showBack />
+        <Header title="CHECKOUT" showBack fallbackPath="/(tabs)/shop" />
         <View style={styles.center}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
           <Text style={styles.emptyText}>Order not found</Text>
@@ -276,15 +296,18 @@ export default function CheckoutScreen() {
     );
   }
 
-  const subtotal = order.totalAmount;
-  // subtotal is in paise; free delivery for orders ₹5,000+ (500,000 paise)
-  const deliveryCharge = subtotal < 500000 ? 19900 : 0; // ₹199 if under ₹5,000
-  const total = subtotal + deliveryCharge;
+  const itemsSubtotal = order.items && order.items.length > 0
+    ? order.items.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
+    : order.totalAmount;
+  // free delivery for orders ₹5,000+ (500,000 paise), ₹199 otherwise
+  const deliveryCharge = itemsSubtotal < 500000 ? 19900 : 0;
+  const subtotal = itemsSubtotal;
+  const total = itemsSubtotal + deliveryCharge;
   const itemCount = order.items?.length || 0;
 
   return (
     <View style={styles.container}>
-      <Header title="PAYMENT" showBack />
+      <Header title="PAYMENT" showBack fallbackPath="/(tabs)/shop" />
 
       {/* Progress Steps */}
       <View style={styles.progressBar}>
@@ -314,6 +337,56 @@ export default function CheckoutScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Shipping Destination Dossier Card */}
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>SHIPPING DESTINATION</Text>
+            {addresses.length > 1 && (
+              <TouchableOpacity
+                onPress={() => setShowAddressPicker(true)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.sectionActionText}>CHANGE</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <View style={styles.addressCard}>
+            <View style={styles.addressHeader}>
+              <View style={styles.addressIconBox}>
+                <Ionicons name="location-outline" size={18} color={colors.charcoal} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.addressNameRow}>
+                  <Text style={styles.addressRecipient}>
+                    {selectedAddress?.name || user?.displayName || 'Customer'}
+                  </Text>
+                  {selectedAddress?.isDefault && (
+                    <View style={styles.defaultBadge}>
+                      <Text style={styles.defaultBadgeText}>DEFAULT</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.addressPhone}>
+                  {selectedAddress?.phone || (user as any)?.phone || 'Phone on file'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.addressBody}>
+              {selectedAddress ? (
+                <Text style={styles.addressLine}>
+                  {[selectedAddress.street, selectedAddress.apartment, selectedAddress.city, selectedAddress.state, selectedAddress.postalCode]
+                    .filter(Boolean)
+                    .join(', ')}
+                </Text>
+              ) : (
+                <Text style={styles.addressEmpty}>
+                  Using registered dispatch profile. Standard insured express shipping.
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+
         {/* Order Items */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
@@ -343,6 +416,33 @@ export default function CheckoutScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PRICE DETAILS</Text>
           <View style={styles.priceCard}>
+            {/* Free Delivery Progress Bar */}
+            <View style={styles.deliveryProgressContainer}>
+              <View style={styles.deliveryProgressHeader}>
+                <Ionicons
+                  name={deliveryCharge === 0 ? "gift" : "car-outline"}
+                  size={15}
+                  color={deliveryCharge === 0 ? colors.forest : colors.charcoal}
+                />
+                <Text style={[styles.deliveryProgressTitle, deliveryCharge === 0 && { color: colors.forest }]}>
+                  {deliveryCharge === 0
+                    ? 'FREE INSURED DELIVERY UNLOCKED!'
+                    : `ADD ₹${((500000 - itemsSubtotal) / 100).toLocaleString('en-IN')} FOR FREE DELIVERY`}
+                </Text>
+              </View>
+              <View style={styles.progressBarTrack}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: `${Math.min(100, Math.round((itemsSubtotal / 500000) * 100))}%`,
+                      backgroundColor: deliveryCharge === 0 ? colors.forest : colors.red,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Subtotal ({itemCount} item{itemCount !== 1 ? 's' : ''})</Text>
               <Text style={styles.priceValue}>
@@ -350,19 +450,15 @@ export default function CheckoutScreen() {
               </Text>
             </View>
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Delivery</Text>
+              <Text style={styles.priceLabel}>Carbon-Neutral Express Delivery</Text>
               <Text style={[styles.priceValue, deliveryCharge === 0 && styles.priceFree]}>
                 {deliveryCharge === 0 ? 'FREE' : `₹${(deliveryCharge / 100).toLocaleString('en-IN')}`}
               </Text>
             </View>
-            {deliveryCharge > 0 && (
-              <View style={styles.freeDeliveryNote}>
-                <Ionicons name="information-circle-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.freeDeliveryText}>
-                  Free delivery on orders above ₹5,000
-                </Text>
-              </View>
-            )}
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Circular Verification & Quality Check</Text>
+              <Text style={styles.priceFree}>INCLUDED</Text>
+            </View>
             <View style={styles.divider} />
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>TOTAL</Text>
@@ -466,6 +562,50 @@ export default function CheckoutScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Address Picker Modal */}
+      {showAddressPicker && (
+        <View style={styles.addressModalOverlay}>
+          <View style={styles.addressModalContent}>
+            <View style={styles.addressModalHeader}>
+              <Text style={styles.addressModalTitle}>SELECT DELIVERY ADDRESS</Text>
+              <TouchableOpacity
+                onPress={() => setShowAddressPicker(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close" size={22} color={colors.charcoal} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 300 }}>
+              {addresses.map((addr) => {
+                const isCurrent = selectedAddress?.id === addr.id;
+                return (
+                  <TouchableOpacity
+                    key={addr.id}
+                    style={[styles.addressOptionCard, isCurrent && styles.addressOptionCardActive]}
+                    onPress={() => {
+                      setSelectedAddress(addr);
+                      setShowAddressPicker(false);
+                    }}
+                  >
+                    <View style={styles.addressOptionHeader}>
+                      <Text style={styles.addressOptionName}>{addr.name}</Text>
+                      {addr.isDefault && (
+                        <View style={styles.defaultBadge}>
+                          <Text style={styles.defaultBadgeText}>DEFAULT</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.addressOptionText}>
+                      {[addr.street, addr.apartment, addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ')}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      )}
 
       {/* Razorpay UI Overlay */}
       {RazorpayUI}
@@ -958,5 +1098,184 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '900',
     letterSpacing: 2,
+  },
+
+  // Address Section
+  sectionActionText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.red,
+    letterSpacing: 1,
+    textDecorationLine: 'underline',
+  },
+  addressCard: {
+    backgroundColor: colors.white,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  addressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 10,
+  },
+  addressIconBox: {
+    width: 36,
+    height: 36,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.cream,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addressNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  addressRecipient: {
+    fontFamily: typography.headings,
+    fontSize: 18,
+    color: colors.charcoal,
+  },
+  defaultBadge: {
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  defaultBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '800',
+    color: colors.cream,
+    letterSpacing: 0.5,
+  },
+  addressPhone: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  addressBody: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(30,31,34,0.1)',
+    paddingTop: 10,
+  },
+  addressLine: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    color: colors.charcoal,
+    lineHeight: 16,
+  },
+  addressEmpty: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+
+  // Delivery Progress
+  deliveryProgressContainer: {
+    backgroundColor: 'rgba(30,31,34,0.03)',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.1)',
+    marginBottom: 16,
+  },
+  deliveryProgressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  deliveryProgressTitle: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  progressBarTrack: {
+    height: 6,
+    backgroundColor: 'rgba(30,31,34,0.1)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+
+  // Address Modal
+  addressModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    zIndex: 999,
+  },
+  addressModalContent: {
+    width: '100%',
+    backgroundColor: colors.cream,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  addressModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,31,34,0.1)',
+    paddingBottom: 10,
+  },
+  addressModalTitle: {
+    fontFamily: typography.headings,
+    fontSize: 18,
+    color: colors.charcoal,
+  },
+  addressOptionCard: {
+    backgroundColor: colors.white,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(30,31,34,0.2)',
+    marginBottom: 10,
+  },
+  addressOptionCardActive: {
+    borderColor: colors.red,
+    borderWidth: 2,
+    backgroundColor: 'rgba(155, 27, 48, 0.04)',
+  },
+  addressOptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  addressOptionName: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.charcoal,
+  },
+  addressOptionText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.textMuted,
+    lineHeight: 14,
   },
 });

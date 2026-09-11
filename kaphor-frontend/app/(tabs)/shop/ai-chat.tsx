@@ -5,12 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../src/theme';
 import { useAuth } from '../../../src/context/AuthContext';
 import api from '../../../src/services/api';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 export default function AIChatScreen() {
     const { garmentId, initialMessage } = useLocalSearchParams<{ garmentId?: string; initialMessage?: string }>();
     const { user } = useAuth();
     const router = useRouter();
+    useBackHandler('/(tabs)/shop');
     
     const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
     const [inputText, setInputText] = useState('');

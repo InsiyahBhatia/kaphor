@@ -86,10 +86,12 @@ export default function SwapAgreementScreen() {
     }
   };
 
+  const fallback = swapId ? `/(tabs)/swap/details?swapId=${swapId}` : '/(tabs)/circular';
+
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="SWAP AGREEMENT" showBack />
+        <Header title="SWAP AGREEMENT" showBack fallbackPath={fallback} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.charcoal} />
         </View>
@@ -100,7 +102,7 @@ export default function SwapAgreementScreen() {
   if (!swap) {
     return (
       <View style={styles.container}>
-        <Header title="SWAP AGREEMENT" showBack />
+        <Header title="SWAP AGREEMENT" showBack fallbackPath={fallback} />
         <View style={styles.center}>
           <Text style={styles.errorText}>Swap not found</Text>
         </View>
@@ -128,7 +130,7 @@ export default function SwapAgreementScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="SWAP AGREEMENT" showBack />
+      <Header title="SWAP AGREEMENT" showBack fallbackPath={fallback} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Quick Chat With Partner Bar */}

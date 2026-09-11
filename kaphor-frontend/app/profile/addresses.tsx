@@ -21,7 +21,7 @@ import {
   CreateAddressInput,
 } from '../../src/services/addressService';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
-import { safeBack } from '../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../src/utils/navigation';
 
 type ScreenMode = 'list' | 'add' | 'edit';
 
@@ -46,6 +46,21 @@ export default function AddressBookScreen() {
 
   // Modes
   const [mode, setMode] = useState<ScreenMode>('list');
+
+  const handleBack = () => {
+    if (mode !== 'list') {
+      setMode('list');
+      setErrors({});
+      setEditId(null);
+      setForm({ ...EMPTY_FORM });
+      return true;
+    }
+    safeBack('/(tabs)/profile');
+    return true;
+  };
+
+  useBackHandler('/(tabs)/profile', handleBack);
+
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

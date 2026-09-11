@@ -8,7 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
 import { youTubeUrl } from '../../../src/services/repairService';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 const DIFFICULTY_COLORS: Record<string, string> = {
   BEGINNER: '#1E3B2F',
@@ -19,6 +19,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 export default function UpcycleRequestScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useBackHandler('/(tabs)/circular');
   const params = useLocalSearchParams<{
     garmentId?: string;
     garmentTitle?: string;

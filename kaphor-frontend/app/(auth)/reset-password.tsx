@@ -14,10 +14,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/services/api';
 import { colors } from '../../src/theme';
-import { safeBack } from '../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../src/utils/navigation';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  useBackHandler('/(auth)/login');
   const { token: urlToken } = useLocalSearchParams<{ token?: string }>();
 
   const [token, setToken] = useState(urlToken || '');

@@ -306,7 +306,7 @@ export default function DeliveryScreen() {
       style={{ flex: 1, backgroundColor: colors.cream }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Header title="DELIVERY" showBack />
+      <Header title="DELIVERY" showBack fallbackPath="/(tabs)/cart" />
 
       {/* Progress */}
       <View style={styles.progressBar}>

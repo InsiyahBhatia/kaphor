@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../../src/services/api';
 import { colors } from '../../../src/theme';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -15,6 +15,7 @@ interface Message {
 
 export default function AIChatScreen() {
   const router = useRouter();
+  useBackHandler('/(tabs)/circular');
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: "Namaste! I'm your Kaphor style advisor. Ask me about styling, fabric care, sustainable fashion, or how to mix heritage pieces with modern looks." },
   ]);

@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography } from '../../../src/theme';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 import {
   assessGarment,
@@ -31,6 +31,7 @@ import {
 
 export default function ConditionCheckScreen() {
   const router = useRouter();
+  useBackHandler('/(tabs)/circular');
 
   // ── Input state ──────────────────────────────────────────────
   const [imageUri, setImageUri] = useState<string | null>(null);

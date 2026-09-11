@@ -42,6 +42,10 @@ export async function createRazorpayOrder(
   }
 }
 
+export function calculateDeliveryFee(subtotalPaise: number): number {
+  return subtotalPaise < 500000 ? 19900 : 0; // ₹199 if under ₹5,000 (500,000 paise)
+}
+
 export async function createRazorpayOrderForOrder(orderId: string) {
   const order = await db.order.findUnique({
     where: { id: orderId },
@@ -56,24 +60,33 @@ export async function createRazorpayOrderForOrder(orderId: string) {
     throw new Error('Order is not in PENDING status');
   }
 
-  const amount = order.totalAmount;
+  // Calculate items subtotal and delivery fee
+  const itemsSubtotal = order.items && order.items.length > 0
+    ? order.items.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0)
+    : order.totalAmount;
+  const deliveryFee = calculateDeliveryFee(itemsSubtotal);
+  const totalAmount = itemsSubtotal + deliveryFee;
+
   const currency = order.currency || 'INR';
   const receipt = order.id;
 
-  const rpOrder = await createRazorpayOrder(amount, currency, receipt, {
+  const rpOrder = await createRazorpayOrder(totalAmount, currency, receipt, {
     orderId: order.id,
     type: 'ORDER',
   });
 
   await db.order.update({
     where: { id: order.id },
-    data: { razorpayOrderId: rpOrder.id, totalAmount: amount, currency },
+    data: { razorpayOrderId: rpOrder.id, totalAmount, currency },
   });
 
   return {
     orderId: order.id,
     razorpayOrderId: rpOrder.id,
-    amount,
+    amount: totalAmount,
+    subtotal: itemsSubtotal,
+    deliveryFee,
     currency,
   };
 }
+

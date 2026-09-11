@@ -4,7 +4,7 @@ import { logger } from '../lib/logger';
 import { AuthRequest } from '../middleware/auth';
 import { emitToUser, emitToConversation } from '../lib/socket';
 import { createNotification } from '../services/notification.service';
-import { getDownloadUrl } from '../lib/s3';
+import { getDownloadUrl, uploadToS3 } from '../lib/s3';
 
 // Helper to resolve media
 async function resolveAvatar(avatar: string | null): Promise<string | null> {
@@ -108,6 +108,26 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           },
         });
 
+        // Find associated active order if any exists between these participants
+        const activeOrder = await db.order.findFirst({
+          where: {
+            OR: [
+              { buyerId: c.participant1Id, sellerId: c.participant2Id },
+              { buyerId: c.participant2Id, sellerId: c.participant1Id },
+            ],
+            ...(c.garmentId ? { items: { some: { garmentId: c.garmentId } } } : {}),
+            status: { in: ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED'] },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            status: true,
+            totalAmount: true,
+            currency: true,
+            createdAt: true,
+          },
+        });
+
         return {
           id: c.id,
           otherUser: {
@@ -115,6 +135,7 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
             avatar: otherAvatar,
           },
           garment: garmentData,
+          order: activeOrder,
           lastMessageText: c.lastMessageText || c.messages[0]?.content || '',
           lastMessageAt: c.lastMessageAt || c.createdAt,
           unreadCount,
@@ -276,6 +297,7 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
     const resolvedMessages = await Promise.all(
       messages.map(async (m: any) => ({
         ...m,
+        imageUrl: m.imageUrl ? await getDownloadUrl(m.imageUrl) : null,
         sender: {
           ...m.sender,
           avatar: await resolveAvatar(m.sender.avatar),
@@ -283,12 +305,32 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
       }))
     );
 
+    // Find associated order between these users
+    const associatedOrder = await db.order.findFirst({
+      where: {
+        OR: [
+          { buyerId: conv.participant1Id, sellerId: conv.participant2Id },
+          { buyerId: conv.participant2Id, sellerId: conv.participant1Id },
+        ],
+        ...(conv.garmentId ? { items: { some: { garmentId: conv.garmentId } } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        status: true,
+        totalAmount: true,
+        currency: true,
+        createdAt: true,
+      },
+    });
+
     res.json({
       data: {
         conversation: {
           id: conv.id,
           otherUser: { ...otherUser, avatar: resolvedOtherAvatar },
           garment: resolvedGarment,
+          order: associatedOrder,
         },
         messages: resolvedMessages,
       },
@@ -296,6 +338,113 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
   } catch (error) {
     logger.error('getConversationMessages failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to load messages' });
+  }
+}
+
+/**
+ * Get or initialize a unified conversation for an existing Order.
+ * Links buyer and seller directly to the unified conversation thread.
+ */
+export async function getOrCreateOrderConversation(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+    const uid = req.user.id;
+    const { orderId } = req.params;
+
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: { garment: true },
+        },
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
+      return;
+    }
+
+    if (order.buyerId !== uid && order.sellerId !== uid) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this order' });
+      return;
+    }
+
+    const partnerId = order.buyerId === uid ? order.sellerId : order.buyerId;
+    const firstGarmentId = order.items[0]?.garmentId || null;
+
+    let conv = await db.conversation.findFirst({
+      where: {
+        OR: [
+          { participant1Id: uid, participant2Id: partnerId, garmentId: firstGarmentId },
+          { participant1Id: partnerId, participant2Id: uid, garmentId: firstGarmentId },
+          { participant1Id: uid, participant2Id: partnerId },
+          { participant1Id: partnerId, participant2Id: uid },
+        ],
+      },
+      include: {
+        participant1: {
+          select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+        },
+        participant2: {
+          select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+        },
+        garment: {
+          select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true },
+        },
+      },
+    });
+
+    if (!conv) {
+      conv = await db.conversation.create({
+        data: {
+          participant1Id: order.buyerId,
+          participant2Id: order.sellerId,
+          garmentId: firstGarmentId,
+        },
+        include: {
+          participant1: {
+            select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+          },
+          participant2: {
+            select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+          },
+          garment: {
+            select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true },
+          },
+        },
+      });
+    }
+
+    const otherUser = conv.participant1Id === uid ? conv.participant2 : conv.participant1;
+    const resolvedAvatar = await resolveAvatar(otherUser.avatar);
+    const resolvedGarment = conv.garment ? await resolveGarmentThumbnail(conv.garment) : null;
+
+    res.json({
+      data: {
+        id: conv.id,
+        otherUser: {
+          ...otherUser,
+          avatar: resolvedAvatar,
+        },
+        garment: resolvedGarment,
+        order: {
+          id: order.id,
+          status: order.status,
+          totalAmount: order.totalAmount,
+          currency: order.currency,
+          createdAt: order.createdAt,
+        },
+        lastMessageText: conv.lastMessageText,
+        lastMessageAt: conv.lastMessageAt,
+      },
+    });
+  } catch (error) {
+    logger.error('getOrCreateOrderConversation failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to access order conversation' });
   }
 }
 
@@ -310,7 +459,7 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
     }
     const { conversationId } = req.params;
     const content = typeof req.body?.content === 'string' ? req.body.content.trim() : '';
-    const imageUrl = typeof req.body?.imageUrl === 'string' && req.body.imageUrl.trim().length > 0 ? req.body.imageUrl.trim() : null;
+    let imageUrl = typeof req.body?.imageUrl === 'string' && req.body.imageUrl.trim().length > 0 ? req.body.imageUrl.trim() : null;
 
     if ((!content && !imageUrl) || content.length > 4000) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Message must have content or an image (max 4000 chars)' });
@@ -329,6 +478,21 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
 
     const recipientId = conv.participant1Id === uid ? conv.participant2Id : conv.participant1Id;
     const isSuspicious = checkOffPlatformRisk(content);
+
+    // If client sent base64 image data, upload to S3/local storage
+    if (imageUrl && imageUrl.startsWith('data:image/')) {
+      try {
+        const matches = imageUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const mimeType = matches[1];
+          const buffer = Buffer.from(matches[2], 'base64');
+          const uploadRes = await uploadToS3(buffer, 'messages', mimeType);
+          imageUrl = uploadRes.url;
+        }
+      } catch (uploadErr) {
+        logger.warn('Failed to upload message image to storage, saving directly', { error: uploadErr });
+      }
+    }
 
     const msg = await db.directMessage.create({
       data: {
@@ -359,7 +523,8 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
       ...msg.sender,
       avatar: await resolveAvatar(msg.sender.avatar),
     };
-    const outgoingData = { ...msg, sender: resolvedSender };
+    const resolvedImageUrl = msg.imageUrl ? await getDownloadUrl(msg.imageUrl) : null;
+    const outgoingData = { ...msg, imageUrl: resolvedImageUrl, sender: resolvedSender };
 
     // Emit live socket event to conversation room & recipient
     emitToConversation(conversationId, 'direct_message', outgoingData);

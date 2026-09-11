@@ -3,8 +3,9 @@ import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import { createRazorpayOrderForOrder } from '../services/payment.service';
+import { createRazorpayOrderForOrder, calculateDeliveryFee } from '../services/payment.service';
 import { createNotification } from '../services/notification.service';
+import { updateImpactOnTransaction } from '../services/impact.service';
 
 const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 
@@ -40,10 +41,14 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
       return;
     }
 
-    if (!garment.price || garment.price <= 0) {
+    const itemPrice = garment.price || 0;
+    if (itemPrice <= 0) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid garment price configuration' });
       return;
     }
+
+    const deliveryFee = calculateDeliveryFee(itemPrice);
+    const totalAmount = itemPrice + deliveryFee;
 
     // Reuse existing pending order thread for this buyer + seller + garment.
     let order = await db.order.findFirst({
@@ -62,24 +67,30 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
         data: {
           buyerId: req.user.id,
           sellerId: garment.sellerId,
-          totalAmount: garment.price,
+          totalAmount,
           currency: 'INR',
           status: 'PENDING',
           items: {
             create: {
               garmentId: garment.id,
-              price: garment.price,
+              price: itemPrice,
               quantity: 1,
             },
           },
         },
       });
+    } else if (order.totalAmount !== totalAmount) {
+      await db.order.update({
+        where: { id: order.id },
+        data: { totalAmount },
+      });
+      order.totalAmount = totalAmount;
     }
 
     const razorpay = getRazorpayInstance();
 
     const rpOrder = await razorpay.orders.create({
-      amount: order.totalAmount, // already in paise
+      amount: totalAmount, // already in paise including delivery
       currency: 'INR',
       receipt: order.id,
       notes: { orderId: order.id },
@@ -87,14 +98,16 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
 
     await db.order.update({
       where: { id: order.id },
-      data: { razorpayOrderId: rpOrder.id, currency: 'INR' },
+      data: { razorpayOrderId: rpOrder.id, totalAmount, currency: 'INR' },
     });
 
     res.json({
       data: {
         orderId: order.id,
         razorpayOrderId: rpOrder.id,
-        amount: order.totalAmount,
+        amount: totalAmount,
+        subtotal: itemPrice,
+        deliveryFee,
         currency: 'INR',
       },
     });
@@ -281,14 +294,12 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         },
       });
 
-      // Transition garments from PURCHASE_INTENT to OWNERSHIP + transfer sellerId to buyer + deactivate
+      // Transition garments to OWNERSHIP + transfer ownership (sellerId) to buyer + deactivate marketplace listing
       const orderItems = await db.orderItem.findMany({
         where: { orderId },
         include: { garment: true },
       });
-      const purchasedGarmentIds = orderItems
-        .filter((item: any) => item.garment && item.garment.lifecycleState === 'PURCHASE_INTENT')
-        .map((item: any) => item.garmentId);
+      const purchasedGarmentIds = orderItems.map((item: any) => item.garmentId);
 
       if (purchasedGarmentIds.length > 0) {
         await db.garment.updateMany({
@@ -296,9 +307,16 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
           data: {
             lifecycleState: 'OWNERSHIP',
             sellerId: req.user.id,
-            isActive: false, // Item is now owned by buyer; remove from marketplace listing
+            isActive: false, // Item is now owned by buyer; in their digital closet
           },
         });
+      }
+
+      // Record Environmental Impact metrics (CO2, Water, Waste, Items Circulated)
+      try {
+        await updateImpactOnTransaction(orderId);
+      } catch (impactErr) {
+        logger.warn('Failed to calculate impact for transaction', { error: impactErr });
       }
 
       // Auto-clear purchased items from buyer's cart
@@ -461,7 +479,7 @@ export async function razorpayWebhook(req: Request, res: Response): Promise<void
         });
         const webhookGarmentIds: string[] = [];
         for (const whItem of webhookItems) {
-          if (whItem.garment && whItem.garment.lifecycleState === 'PURCHASE_INTENT') {
+          if (whItem.garment) {
             webhookGarmentIds.push(whItem.garmentId);
             await db.garment.update({
               where: { id: whItem.garmentId },
@@ -472,6 +490,13 @@ export async function razorpayWebhook(req: Request, res: Response): Promise<void
               },
             });
           }
+        }
+
+        // Record Environmental Impact metrics (CO2, Water, Waste, Items Circulated)
+        try {
+          await updateImpactOnTransaction(order.id);
+        } catch (impactErr) {
+          logger.warn('Failed to calculate impact for transaction in webhook', { error: impactErr });
         }
 
         if (webhookGarmentIds.length > 0) {

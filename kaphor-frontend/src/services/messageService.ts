@@ -21,10 +21,19 @@ export interface ConversationGarment {
   listingType?: string;
 }
 
+export interface ConversationOrder {
+  id: string;
+  status: string;
+  totalAmount: number;
+  currency: string;
+  createdAt: string;
+}
+
 export interface ConversationSummary {
   id: string;
   otherUser: ConversationParticipant;
   garment: ConversationGarment | null;
+  order?: ConversationOrder | null;
   lastMessageText: string;
   lastMessageAt: string;
   unreadCount: number;
@@ -49,6 +58,7 @@ export interface ConversationDetailResponse {
     id: string;
     otherUser: ConversationParticipant;
     garment: ConversationGarment | null;
+    order?: ConversationOrder | null;
   };
   messages: DirectMessageItem[];
 }
@@ -64,6 +74,11 @@ export const messageService = {
       recipientId,
       garmentId,
     });
+    return data.data;
+  },
+
+  async getOrCreateOrderConversation(orderId: string): Promise<ConversationSummary> {
+    const { data } = await api.post<{ data: ConversationSummary }>(`/messages/orders/${orderId}/conversation`);
     return data.data;
   },
 

@@ -208,10 +208,12 @@ export default function SwapShippingScreen() {
     if (url) Linking.openURL(url);
   };
 
+  const fallback = swapId ? `/(tabs)/swap/details?swapId=${swapId}` : '/(tabs)/circular';
+
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="SHIPPING" showBack />
+        <Header title="SHIPPING" showBack fallbackPath={fallback} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.charcoal} />
         </View>
@@ -236,7 +238,7 @@ export default function SwapShippingScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="SHIPPING" showBack />
+      <Header title="SHIPPING" showBack fallbackPath={fallback} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Quick Chat With Partner Bar */}

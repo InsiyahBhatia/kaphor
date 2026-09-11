@@ -16,7 +16,7 @@ import { cachedGet, fetchFresh } from '../../../src/services/api';
 import { getSocket, connectSocket } from '../../../src/services/socket';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 type NotificationCategory = 'ALL' | 'MESSAGES' | 'SWAPS' | 'ORDERS' | 'SYSTEM';
 
@@ -38,6 +38,7 @@ function formatRelativeTime(dateString: string): string {
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  useBackHandler('/(tabs)/profile');
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<NotificationCategory>('ALL');

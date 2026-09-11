@@ -88,7 +88,7 @@ export default function VerifyIdentityScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="IDENTITY VERIFICATION" showBack />
+      <Header title="IDENTITY VERIFICATION" showBack fallbackPath="/(tabs)/profile" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Status Card */}

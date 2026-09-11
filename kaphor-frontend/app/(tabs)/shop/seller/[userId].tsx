@@ -15,7 +15,7 @@ import { userService } from '../../../../src/services/userService';
 import { messageService } from '../../../../src/services/messageService';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../../src/components/common/VerifiedBadge';
-import { safeBack } from '../../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 
 interface ReviewItem {
   id: string;
@@ -40,6 +40,7 @@ interface ReviewItem {
 export default function PublicSellerProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const router = useRouter();
+  useBackHandler('/(tabs)/shop');
   const [profile, setProfile] = useState<Awaited<ReturnType<typeof userService.getPublicProfile>> | null>(null);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);

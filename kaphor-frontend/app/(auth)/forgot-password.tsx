@@ -4,10 +4,11 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/services/api';
 import { colors } from '../../src/theme';
-import { safeBack } from '../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../src/utils/navigation';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  useBackHandler('/(auth)/login');
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);

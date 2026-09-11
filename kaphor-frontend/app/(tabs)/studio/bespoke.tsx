@@ -4,12 +4,13 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BespokeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useBackHandler('/(tabs)/circular');
   const [description, setDescription] = useState('');
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +15,7 @@ import { DossierLoading } from '../../../../src/components/common/DossierLoading
 import { colors } from '../../../../src/theme';
 import { useAuth } from '../../../../src/context/AuthContext';
 import { orderService, TransactionOrder } from '../../../../src/services/orderService';
-import { safeBack } from '../../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 
 function statusLabel(s: string) {
   switch (s) {
@@ -34,6 +35,7 @@ function statusLabel(s: string) {
 export default function OrdersInboxScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  useBackHandler('/(tabs)/shop');
   const [orders, setOrders] = useState<TransactionOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -98,17 +100,15 @@ export default function OrdersInboxScreen() {
     );
   };
 
+  const insets = useSafeAreaInsets();
+
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <DossierLoading variant="order" compact />
-      </View>
-    );
+    return <DossierLoading variant="order" />;
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/shop')} 
           style={styles.backBtn}

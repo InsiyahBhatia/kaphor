@@ -5,9 +5,6 @@ dist/
 .env
 .DS_Store
 .gradle/
-android/.gradle/
-android/app/build/
-android/build/
-ios/Pods/
-ios/build/
+android/
+ios/
 

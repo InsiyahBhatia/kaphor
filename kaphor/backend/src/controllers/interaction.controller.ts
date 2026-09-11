@@ -3,6 +3,7 @@ import db from '../lib/prisma';
 import { EventType } from '@prisma/client';
 import { logger } from '../lib/logger';
 import { evaluateLifecycle, initiateResell } from '../services/lifecycle.service';
+import { ImpactService } from '../services/impact.service';
 
 export async function createInteraction(req: Request, res: Response): Promise<void> {
     try {
@@ -41,7 +42,11 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
 
         const impact = scoreImpact[eventType as string] || 0.05;
 
-        // If it's a LOG_WEAR event, reset decay.
+        // If it's a LOG_WEAR event, reset decay and credit avoided manufacturing impact.
+        let wearImpactData: any = null;
+        if (eventType === 'LOG_WEAR') {
+            wearImpactData = await ImpactService.recordWearImpact(String(garmentId), req.user.id);
+        }
         const decayUpdate = eventType === 'LOG_WEAR' ? { interactionDecay: 0 } : {};
 
         // If it's a SELL_INTENT event, transition via lifecycle service (validates OWNERSHIP state)
@@ -93,7 +98,7 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
         const loeResult = await evaluateLifecycle(String(garmentId), req.user.id, String(eventType));
 
         // 4. Return action
-        res.status(201).json({ data: loeResult });
+        res.status(201).json({ data: { ...loeResult, wearImpact: wearImpactData } });
     } catch (err) {
         logger.error('createInteraction failed', { error: err instanceof Error ? err.message : String(err) });
         res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Internal server error' });

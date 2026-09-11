@@ -3,6 +3,7 @@ import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { createNotification } from '../services/notification.service';
 import { emitToUser } from '../lib/socket';
+import { ImpactService } from '../services/impact.service';
 
 /**
  * POST /garments/:id/initiate-resell
@@ -154,6 +155,13 @@ export async function markCircularEnd(req: Request, res: Response): Promise<void
       newState: 'REUSE_UPCYCLE_RECYCLE',
       message: 'Your garment has entered the circular end-of-life path.',
     });
+
+    // Record textile waste diversion impact
+    try {
+      await ImpactService.recordCircularEndImpact(id, req.user.id, 'RECYCLE');
+    } catch (impactErr) {
+      logger.warn('Failed to record circular end impact', { error: impactErr });
+    }
 
     logger.info('Garment marked for circular end', { garmentId: id, userId: req.user.id });
 

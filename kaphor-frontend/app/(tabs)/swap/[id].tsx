@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
 import { swapService } from '../../../src/services/swapService';
@@ -10,13 +11,15 @@ import { colors, typography } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 import { isAccessoryCategory } from '../../../src/constants/market';
 
 export default function SwapDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  useBackHandler('/(tabs)/circular');
   const [garment, setGarment] = useState<any>(null);
   const [myGarments, setMyGarments] = useState<any[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<string | null>(null);
@@ -100,12 +103,12 @@ export default function SwapDetailScreen() {
   };
 
   if (loading) {
-    return <View style={[styles.container, styles.center]}><DossierLoading variant="swap" compact /></View>;
+    return <DossierLoading variant="swap" />;
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/circular')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}

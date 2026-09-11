@@ -17,10 +17,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { DossierLoading } from '../../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../../src/theme';
 import { orderService, TransactionOrder, OrderMessage, ShippingAddress } from '../../../../src/services/orderService';
+import { messageService } from '../../../../src/services/messageService';
 import paymentService from '../../../../src/services/paymentService';
 import api from '../../../../src/services/api';
 import { useAuth } from '../../../../src/context/AuthContext';
-import { safeBack } from '../../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 
 const statusConfig = {
   PENDING:    { label: 'AWAITING PAYMENT',   color: colors.red,        icon: 'time-outline' },
@@ -149,6 +150,7 @@ export default function OrderThreadScreen() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  useBackHandler('/(tabs)/shop/orders');
   const [order, setOrder] = useState<TransactionOrder | null>(null);
   const [messages, setMessages] = useState<OrderMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -270,6 +272,20 @@ export default function OrderThreadScreen() {
       Alert.alert('Review', e?.response?.data?.message ?? 'Could not submit review');
     } finally {
       setReviewSubmitting(false);
+    }
+  };
+
+  const openUnifiedChat = async () => {
+    if (!orderId) return;
+    try {
+      const conv = await messageService.getOrCreateOrderConversation(orderId);
+      if (conv?.id) {
+        router.push(`/messages/${conv.id}` as any);
+      } else {
+        router.push('/(tabs)/messages');
+      }
+    } catch {
+      router.push('/(tabs)/messages');
     }
   };
 
@@ -438,14 +454,36 @@ export default function OrderThreadScreen() {
               </>
             )}
 
+            {/* ── Unified Messages & Coordination Card ───────── */}
+            <View style={styles.chatActionCard}>
+              <View style={styles.chatActionIconBox}>
+                <Ionicons name="chatbubbles" size={20} color={colors.cream} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.chatActionTitle}>
+                  {isBuyer ? 'COORDINATE WITH SELLER' : 'COORDINATE WITH BUYER'}
+                </Text>
+                <Text style={styles.chatActionSub}>
+                  Direct shipping coordination, dispatch photos & address updates in your unified messages thread.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.openChatBtn}
+                onPress={openUnifiedChat}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.openChatBtnText}>OPEN CHAT →</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* ── Messages Header ───────────────────────────────── */}
-            <Text style={[styles.sectionTitle, { marginTop: order.shippingAddress ? 0 : 20 }]}>
-              MESSAGES
+            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
+              ORDER HISTORY & LOG
             </Text>
             {messages.length === 0 && (
               <Text style={styles.hint}>
                 {canMessage
-                  ? 'Ask questions, negotiate details, or coordinate shipping — even before payment completes.'
+                  ? 'All communication and dispatch coordination can be managed in your unified chat.'
                   : 'This order was cancelled or refunded; messaging is closed.'}
               </Text>
             )}
@@ -640,6 +678,57 @@ const styles = StyleSheet.create({
   // List
   msgList: { flex: 1 },
   thread: { padding: 20, paddingBottom: 24, gap: 0 },
+
+  // Unified Chat Action Card
+  chatActionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F7F4EB',
+    borderWidth: 2,
+    borderColor: colors.forest,
+    padding: 14,
+    gap: 12,
+    marginTop: 16,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  chatActionIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 6,
+    backgroundColor: colors.forest,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatActionTitle: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.forest,
+    letterSpacing: 0.5,
+  },
+  chatActionSub: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.charcoal,
+    lineHeight: 12,
+    marginTop: 2,
+  },
+  openChatBtn: {
+    backgroundColor: colors.charcoal,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  openChatBtnText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
 
   // Section Title
   sectionTitle: {

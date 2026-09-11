@@ -92,18 +92,169 @@ const CATEGORY_LABELS: Record<string, string> = {
 // GLIE ASSESSMENT STEPS
 // ══════════════════════════════════════════════════════════════════════════════
 
-interface GLIEStep {
+// ══════════════════════════════════════════════════════════════════════════════
+// GLIE & VARIANT ASSESSMENT STEPS
+// ══════════════════════════════════════════════════════════════════════════════
+
+interface StepItem {
   label: string;
   duration: number; // ms
 }
 
-const GLIE_STEPS: GLIEStep[] = [
-  { label: 'UPLOADING IMAGE', duration: 2000 },
-  { label: 'ANALYSING FIBRE', duration: 3000 },
-  { label: 'SCANNING CONDITION', duration: 4000 },
-  { label: 'COMPUTING SCORE', duration: 2000 },
-  { label: 'DETERMINING ROUTE', duration: 1500 },
-];
+interface VariantConfig {
+  title: string;
+  subtitle: string;
+  steps: StepItem[];
+}
+
+export const VARIANT_CONFIGS: Record<string, VariantConfig> = {
+  magic_fill: {
+    title: 'KAPHOR AI',
+    subtitle: 'AUTONOMOUS VISION & DOSSIER GENERATION',
+    steps: [
+      { label: 'UPLOADING HIGH-RES', duration: 1500 },
+      { label: 'DETECTING SILHOUETTE', duration: 2000 },
+      { label: 'IDENTIFYING BRAND & FABRIC', duration: 2500 },
+      { label: 'ASSESSING CRAFTSMANSHIP', duration: 2000 },
+      { label: 'COMPOSING DOSSIER', duration: 1500 },
+    ],
+  },
+  glie: {
+    title: 'GLIE',
+    subtitle: 'GARMENT LIFECYCLE INTELLIGENCE ENGINE',
+    steps: [
+      { label: 'UPLOADING IMAGE', duration: 2000 },
+      { label: 'ANALYSING FIBRE', duration: 3000 },
+      { label: 'SCANNING CONDITION', duration: 4000 },
+      { label: 'COMPUTING SCORE', duration: 2000 },
+      { label: 'DETERMINING ROUTE', duration: 1500 },
+    ],
+  },
+  shop: {
+    title: 'KAPHOR ARCHIVE',
+    subtitle: 'AUTHENTICATED LUXURY RUNWAY FEED',
+    steps: [
+      { label: 'QUERYING ARCHIVE', duration: 1200 },
+      { label: 'CHECKING AUTHENTICITY', duration: 1500 },
+      { label: 'LOADING DOSSIERS', duration: 1200 },
+    ],
+  },
+  product: {
+    title: 'GARMENT DOSSIER',
+    subtitle: 'VERIFYING PIECE SPECIFICATIONS',
+    steps: [
+      { label: 'LOADING PROVENANCE', duration: 1200 },
+      { label: 'INSPECTING DETAILS', duration: 1500 },
+      { label: 'SYNCING SELLER STATUS', duration: 1200 },
+    ],
+  },
+  rental: {
+    title: 'CIRCULAR RENTAL',
+    subtitle: 'LUXURY WARDROBE RESERVATION',
+    steps: [
+      { label: 'VERIFYING CALENDAR', duration: 1200 },
+      { label: 'CALCULATING ESCROW', duration: 1500 },
+      { label: 'PREPARING DISPATCH', duration: 1200 },
+    ],
+  },
+  swap: {
+    title: 'ACCESSORY SWAP',
+    subtitle: 'PEER-TO-PEER ESCROW VERIFICATION',
+    steps: [
+      { label: 'SYNCING TRADING VAULT', duration: 1200 },
+      { label: 'VALIDATING CONDITION', duration: 1500 },
+      { label: 'GENERATING CONTRACT', duration: 1200 },
+    ],
+  },
+  studio: {
+    title: 'ATELIER STUDIO',
+    subtitle: 'BESPOKE UPCYCLING & ARTISAN CRAFT',
+    steps: [
+      { label: 'INITIALIZING STUDIO', duration: 1200 },
+      { label: 'ANALYSING PATTERNS', duration: 1500 },
+      { label: 'MATCHING ARTISANS', duration: 1200 },
+    ],
+  },
+  checkout: {
+    title: 'SECURE CHECKOUT',
+    subtitle: '256-BIT ENCRYPTED LUXURY ESCROW',
+    steps: [
+      { label: 'VALIDATING CART', duration: 1000 },
+      { label: 'ENCRYPTING CHANNEL', duration: 1400 },
+      { label: 'PREPARING GATEWAY', duration: 1200 },
+    ],
+  },
+  order: {
+    title: 'ORDER TRACKING',
+    subtitle: 'REAL-TIME CIRCULAR DISPATCH',
+    steps: [
+      { label: 'RETRIEVING ORDER', duration: 1000 },
+      { label: 'SYNCING LOGISTICS', duration: 1200 },
+      { label: 'LOADING THREAD', duration: 1000 },
+    ],
+  },
+  confirmed: {
+    title: 'CONFIRMING ORDER',
+    subtitle: 'ALLOCATING PROVENANCE CERTIFICATE',
+    steps: [
+      { label: 'VERIFYING PAYMENT', duration: 1000 },
+      { label: 'CREATING CERTIFICATE', duration: 1200 },
+      { label: 'NOTIFYING ARTISAN', duration: 1000 },
+    ],
+  },
+  impact: {
+    title: 'PLANETARY IMPACT',
+    subtitle: 'VERIFIED CARBON & WATER METRICS',
+    steps: [
+      { label: 'AGGREGATING METRICS', duration: 1000 },
+      { label: 'COMPUTING SAVINGS', duration: 1200 },
+      { label: 'GENERATING BADGES', duration: 1000 },
+    ],
+  },
+  notifications: {
+    title: 'ACTIVITY FEED',
+    subtitle: 'CIRCULAR ARCHIVE NOTIFICATIONS',
+    steps: [
+      { label: 'CONNECTING FEED', duration: 1000 },
+      { label: 'SYNCING DISPATCH', duration: 1000 },
+    ],
+  },
+  cart: {
+    title: 'SHOPPING BAG',
+    subtitle: 'VERIFYING ASSET AVAILABILITY',
+    steps: [
+      { label: 'SYNCING BAG', duration: 1000 },
+      { label: 'RESERVING ASSETS', duration: 1000 },
+    ],
+  },
+  home: {
+    title: 'KAPHOR',
+    subtitle: 'CIRCULAR LUXURY ARCHIVE',
+    steps: [
+      { label: 'CONNECTING NETWORK', duration: 1000 },
+      { label: 'CURATING ATELIER', duration: 1200 },
+    ],
+  },
+  seller: {
+    title: 'SELLER DOSSIER',
+    subtitle: 'VERIFYING CREDENTIALS & RATINGS',
+    steps: [
+      { label: 'LOADING PROFILE', duration: 1000 },
+      { label: 'FETCHING REPUTATION', duration: 1200 },
+    ],
+  },
+  default: {
+    title: 'KAPHOR',
+    subtitle: 'CIRCULAR LUXURY INTELLIGENCE',
+    steps: [
+      { label: 'INITIALIZING', duration: 1200 },
+      { label: 'AUTHENTICATING', duration: 1500 },
+      { label: 'COMPOSING DOSSIER', duration: 1200 },
+    ],
+  },
+};
+
+const GLIE_STEPS = VARIANT_CONFIGS.glie.steps;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -355,13 +506,20 @@ function FashionTipCard({ tip, compact = false }: { tip: FashionTip; compact?: b
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// GLIE PROGRESS STEPS
+// STEP PROGRESS
 // ══════════════════════════════════════════════════════════════════════════════
 
-function GLIEProgressSteps({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) {
+function StepProgressIndicators({
+  steps,
+  currentStep,
+}: {
+  steps: StepItem[];
+  currentStep: number;
+}) {
+  const totalSteps = steps.length;
   return (
     <View style={styles.progressContainer}>
-      {Array.from({ length: totalSteps }).map((_, i) => {
+      {steps.map((s, i) => {
         const isComplete = i < currentStep;
         const isActive = i === currentStep;
         return (
@@ -387,7 +545,7 @@ function GLIEProgressSteps({ currentStep, totalSteps }: { currentStep: number; t
               ]}
               numberOfLines={1}
             >
-              {GLIE_STEPS[i]?.label || ''}
+              {s.label}
             </Text>
             {i < totalSteps - 1 && (
               <View
@@ -408,7 +566,7 @@ function GLIEProgressSteps({ currentStep, totalSteps }: { currentStep: number; t
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════════
 
-type DossierVariant =
+export type DossierVariant =
   | 'home'
   | 'shop'
   | 'rental'
@@ -423,24 +581,46 @@ type DossierVariant =
   | 'seller'
   | 'confirmed'
   | 'glie'
+  | 'magic_fill'
   | 'default';
 
 interface DossierLoadingProps {
   variant?: DossierVariant;
   compact?: boolean;
-  /** GLIE-specific: show progress steps */
+  title?: string;
+  subtitle?: string;
+  /** Custom progress step override (0-indexed) */
+  step?: number;
+  /** GLIE-specific legacy step prop */
   glieStep?: number;
-  /** GLIE-specific: total steps */
+  /** GLIE-specific legacy total steps */
   glieTotalSteps?: number;
 }
 
 export function DossierLoading({
   variant = 'default',
   compact = false,
+  title: customTitle,
+  subtitle: customSubtitle,
+  step: customStep,
   glieStep,
-  glieTotalSteps = GLIE_STEPS.length,
+  glieTotalSteps,
 }: DossierLoadingProps) {
   const [tipIndex, setTipIndex] = useState(0);
+  const [autoStep, setAutoStep] = useState(0);
+
+  const config = VARIANT_CONFIGS[variant] || VARIANT_CONFIGS.default;
+  const steps = config.steps;
+  const currentStep = customStep ?? glieStep ?? autoStep;
+
+  // Auto-advance step timer for natural progression if step is not manually bound
+  useEffect(() => {
+    if (customStep !== undefined || glieStep !== undefined) return;
+    const interval = setInterval(() => {
+      setAutoStep((prev) => Math.min(steps.length - 1, prev + 1));
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [customStep, glieStep, steps.length]);
 
   // Shuffle tips on mount for variety
   const shuffledTips = useMemo(() => {
@@ -461,41 +641,8 @@ export function DossierLoading({
   }, [shuffledTips]);
 
   const currentTip = shuffledTips[tipIndex % shuffledTips.length];
-
-  // ── GLIE-specific loading ────────────────────────────────────────
-  if (variant === 'glie') {
-    const step = glieStep ?? 0;
-    return (
-      <View style={styles.glieContainer}>
-        <ScanningLine />
-        <DiamondGrid />
-
-        {/* Card dealing animation */}
-        <View style={styles.cardDealArea}>
-          {[0, 1, 2, 3].map((i) => (
-            <DealingCard key={i} index={i} />
-          ))}
-        </View>
-
-        {/* GLIE title */}
-        <Text style={styles.glieTitle}>GLIE</Text>
-        <Text style={styles.glieSubtitle}>GARMENT LIFECYCLE INTELLIGENCE ENGINE</Text>
-
-        {/* Progress steps */}
-        <GLIEProgressSteps currentStep={step} totalSteps={glieTotalSteps} />
-
-        {/* Fashion tip card */}
-        <FashionTipCard tip={currentTip} />
-
-        {/* Dots */}
-        <View style={styles.dotsRow}>
-          {[0, 1, 2].map((i) => (
-            <DotPulse key={i} delay={i * 300} />
-          ))}
-        </View>
-      </View>
-    );
-  }
+  const displayTitle = customTitle || config.title;
+  const displaySubtitle = customSubtitle || config.subtitle;
 
   // ── Compact mode ──────────────────────────────────────────────────
   if (compact) {
@@ -506,6 +653,9 @@ export function DossierLoading({
             <MiniDealingCard key={i} index={i} />
           ))}
         </View>
+
+        {/* Compact Title */}
+        <Text style={styles.compactTitle}>{displayTitle}</Text>
 
         {/* Fashion tip */}
         <FashionTipCard tip={currentTip} compact />
@@ -520,9 +670,9 @@ export function DossierLoading({
     );
   }
 
-  // ── Full mode ─────────────────────────────────────────────────────
+  // ── Full Grand Luxury mode (Like GLIE for all variants) ─────────────
   return (
-    <View style={styles.container}>
+    <View style={styles.grandContainer}>
       <ScanningLine />
       <DiamondGrid />
 
@@ -533,7 +683,14 @@ export function DossierLoading({
         ))}
       </View>
 
-      {/* Fashion tip card */}
+      {/* Grand Title & Subtitle */}
+      <Text style={styles.grandTitle}>{displayTitle}</Text>
+      <Text style={styles.grandSubtitle}>{displaySubtitle}</Text>
+
+      {/* Structured Multi-Step Progress */}
+      <StepProgressIndicators steps={steps} currentStep={currentStep} />
+
+      {/* Fashion Tip Card */}
       <FashionTipCard tip={currentTip} />
 
       {/* Dots */}
@@ -561,7 +718,33 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
-  // ── GLIE mode ──────────────────────────────────────────────────
+  // ── Grand Luxury mode (GLIE & all full screens) ────────────────
+  grandContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.cream,
+    gap: 14,
+    padding: 20,
+  },
+  grandTitle: {
+    fontFamily: typography.headings,
+    fontSize: 44,
+    color: colors.charcoal,
+    letterSpacing: 6,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  grandSubtitle: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    letterSpacing: 2,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+
+  // ── GLIE mode aliases ──────────────────────────────────────────
   glieContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -590,6 +773,13 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     alignItems: 'center',
     gap: 12,
+  },
+  compactTitle: {
+    fontFamily: typography.headings,
+    fontSize: 18,
+    color: colors.charcoal,
+    letterSpacing: 2,
+    textAlign: 'center',
   },
 
   // ── Card dealing (full) ────────────────────────────────────────

@@ -5,10 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 import { useGoogleAuth } from '../../src/hooks/useGoogleAuth';
-import { safeBack } from '../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../src/utils/navigation';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  useBackHandler('/(auth)/welcome');
   const { signUp, isLoading } = useAuth();
   const { loginWithGoogle, isGoogleLoading } = useGoogleAuth();
   const [email, setEmail] = useState('');

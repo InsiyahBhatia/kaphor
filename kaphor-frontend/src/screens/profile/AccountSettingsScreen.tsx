@@ -7,11 +7,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { userService } from '../../services/userService';
 import { colors, typography, spacing, radius } from '../../theme';
-import { safeBack } from '../../utils/navigation';
+import { safeBack, useBackHandler } from '../../utils/navigation';
 
 export function AccountSettingsScreen() {
     const router = useRouter();
     const { user, setUser } = useAuth();
+    useBackHandler('/(tabs)/profile');
     
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);

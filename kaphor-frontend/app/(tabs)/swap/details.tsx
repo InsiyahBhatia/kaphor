@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../../src/theme';
 import { swapService } from '../../../src/services/swapService';
 import { messageService } from '../../../src/services/messageService';
@@ -21,7 +22,7 @@ import api from '../../../src/services/api';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import type { SwapTransaction } from '../../../src/types/swap';
 
 const { width } = Dimensions.get('window');
@@ -38,6 +39,8 @@ export default function SwapDetailsScreen() {
   const params = useLocalSearchParams();
   const swapId = (params.swapId || params.id) as string;
   const router = useRouter();
+
+  useBackHandler('/(tabs)/circular');
 
   const [swap, setSwap] = useState<SwapTransaction | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -82,16 +85,14 @@ export default function SwapDetailsScreen() {
     }
   }, [swapId, router]);
 
+  const insets = useSafeAreaInsets();
+
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   if (loading || !swap) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <DossierLoading variant="swap" compact />
-      </View>
-    );
+    return <DossierLoading variant="swap" />;
   }
 
   const isInitiator = currentUserId === swap.initiatorId;
@@ -211,7 +212,7 @@ export default function SwapDetailsScreen() {
   return (
     <View style={styles.container}>
       {/* Top Navigation Bar */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => safeBack('/(tabs)/circular')}

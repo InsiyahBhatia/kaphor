@@ -18,7 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../../../src/theme';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
-import { safeBack } from '../../../src/utils/navigation';
+import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import {
   assessRepair,
   RepairResult,
@@ -38,6 +38,7 @@ import {
 export default function RepairRefreshScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useBackHandler('/(tabs)/circular');
 
   // ── Input state ──────────────────────────────────────────────
   const [imageUri, setImageUri] = useState<string | null>(null);
