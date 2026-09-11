@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +41,7 @@ export default function DirectChatScreen() {
   const [messages, setMessages] = useState<DirectMessageItem[]>([]);
   const [inputText, setInputText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
@@ -368,7 +370,15 @@ export default function DirectChatScreen() {
       {garment && !order ? (
         <TouchableOpacity
           style={styles.garmentBar}
-          onPress={() => router.push(`/(tabs)/shop/${garment.id}` as any)}
+          onPress={() => {
+            if (garment.listingType === 'RENTAL') {
+              router.push(`/(tabs)/rental/${garment.id}` as any);
+            } else if (garment.listingType === 'ACCESSORY_SWAP') {
+              router.push(`/(tabs)/swap/${garment.id}` as any);
+            } else {
+              router.push(`/(tabs)/shop/${garment.id}` as any);
+            }
+          }}
           activeOpacity={0.85}
         >
           {garment.image && (
@@ -467,11 +477,16 @@ export default function DirectChatScreen() {
               >
                 <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
                   {item.imageUrl && (
-                    <KaphorImage
-                      uri={item.imageUrl}
-                      style={styles.bubbleImage}
-                      contentFit="cover"
-                    />
+                    <TouchableOpacity
+                      onPress={() => setViewingImage(item.imageUrl || null)}
+                      activeOpacity={0.9}
+                    >
+                      <KaphorImage
+                        uri={item.imageUrl}
+                        style={styles.bubbleImage}
+                        contentFit="cover"
+                      />
+                    </TouchableOpacity>
                   )}
 
                   {item.content && item.content !== '📷 Photo' && (
@@ -507,7 +522,7 @@ export default function DirectChatScreen() {
                       })}
                     </Text>
                     {isMine && (
-                      <Ionicons
+                       <Ionicons
                         name={item.readAt ? 'checkmark-done' : 'checkmark'}
                         size={12}
                         color={item.readAt ? '#C9A84C' : colors.cream}
@@ -576,6 +591,32 @@ export default function DirectChatScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Full-Screen Image Viewer Modal */}
+      <Modal
+        visible={!!viewingImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewingImage(null)}
+        statusBarTranslucent
+      >
+        <View style={styles.fullImageModal}>
+          <TouchableOpacity
+            style={styles.closeFullImageBtn}
+            onPress={() => setViewingImage(null)}
+            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+          >
+            <Ionicons name="close" size={30} color="#FFFFFF" />
+          </TouchableOpacity>
+          {viewingImage && (
+            <Image
+              source={{ uri: viewingImage }}
+              style={styles.fullImageView}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -1003,5 +1044,28 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     opacity: 0.35,
+  },
+  fullImageModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.94)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  closeFullImageBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImageView: {
+    width: '100%',
+    height: '85%',
   },
 });

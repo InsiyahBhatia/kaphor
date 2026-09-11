@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -20,24 +20,26 @@ export default function SwapFeedScreen() {
   const [swapsLoading, setSwapsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'browse' | 'requests'>('browse');
 
-  // Fetch swap feed
-  useEffect(() => {
-    fetchFeed({ listingType: 'ACCESSORY_SWAP' });
-  }, []);
-
-  // Fetch user's swap requests (cached, stale-while-revalidate)
+  // Fetch user's swap requests (fresh live data)
   const fetchMySwaps = async () => {
     setSwapsLoading(true);
     try {
-      const data = await cachedGet('/swaps');
-      setMySwaps(Array.isArray(data) ? data : []);
-    } catch { setMySwaps([]); }
-    finally { setSwapsLoading(false); }
+      const { data } = await api.get('/swaps');
+      const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+      setMySwaps(list);
+    } catch {
+      setMySwaps([]);
+    } finally {
+      setSwapsLoading(false);
+    }
   };
 
-  useEffect(() => {
-    if (activeTab === 'requests') fetchMySwaps();
-  }, [activeTab]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchFeed({ listingType: 'ACCESSORY_SWAP' });
+      fetchMySwaps();
+    }, [])
+  );
 
   const swappableItems = garments.filter(
     (g) =>
@@ -241,13 +243,23 @@ export default function SwapFeedScreen() {
               </>
             )}
 
-            {swap.status === 'SHIPPED' && (
+            {(swap.status === 'SHIPPED' || swap.status === 'BOTH_SHIPPED' || swap.status === 'DELIVERED') && (
               <TouchableOpacity
                 style={[styles.swapActionBtn, { backgroundColor: colors.charcoal }]}
                 onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
               >
                 <Ionicons name="cube" size={14} color={colors.cream} />
-                <Text style={styles.swapActionText}>TRACK</Text>
+                <Text style={styles.swapActionText}>TRACK & DELIVER</Text>
+              </TouchableOpacity>
+            )}
+
+            {swap.status === 'COMPLETED' && (
+              <TouchableOpacity
+                style={[styles.swapActionBtn, { backgroundColor: colors.forest, borderColor: colors.forest }]}
+                onPress={() => router.push(`/(tabs)/swap/details?swapId=${swap.id}` as any)}
+              >
+                <Ionicons name="star" size={12} color={colors.cream} />
+                <Text style={styles.swapActionText}>REVIEW</Text>
               </TouchableOpacity>
             )}
 

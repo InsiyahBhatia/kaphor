@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { impactService } from '../../../src/services/impactService';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
@@ -11,18 +11,24 @@ export default function ImpactScreen() {
   const [impact, setImpact] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await impactService.getMyImpact();
-        setImpact(data);
-      } catch {
-        setImpact(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      (async () => {
+        try {
+          const data = await impactService.getMyImpact();
+          if (isMounted) setImpact(data);
+        } catch {
+          if (isMounted) setImpact(null);
+        } finally {
+          if (isMounted) setLoading(false);
+        }
+      })();
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
 
   const stats = [
     { icon: 'leaf-sharp', label: 'CO₂ SAVED', value: `${(impact?.impactRecord?.carbonSavedKg || 0).toFixed(1)} KG`, color: colors.forest },

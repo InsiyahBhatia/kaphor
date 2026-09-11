@@ -163,7 +163,7 @@ export async function getGarmentById(req: Request, res: Response): Promise<void>
   try {
     const { id } = req.params;
     const garment = await db.garment.findFirst({
-      where: { id, isActive: true },
+      where: { id },
       include: {
         seller: { select: { id: true, displayName: true, username: true, avatar: true } },
         reviews: true

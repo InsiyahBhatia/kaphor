@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/theme';
 import { impactService } from '../../../src/services/impactService';
@@ -26,22 +26,30 @@ export default function ImpactReportScreen() {
   const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [imp, rep] = await Promise.all([
-          impactService.getMyImpact(),
-          impactService.getImpactReport(),
-        ]);
-        setImpactData(imp);
-        setReportData(rep);
-      } catch (err) {
-        console.error('Failed to load impact report', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      (async () => {
+        try {
+          const [imp, rep] = await Promise.all([
+            impactService.getMyImpact(),
+            impactService.getImpactReport(),
+          ]);
+          if (isMounted) {
+            setImpactData(imp);
+            setReportData(rep);
+          }
+        } catch (err) {
+          console.error('Failed to load impact report', err);
+        } finally {
+          if (isMounted) setLoading(false);
+        }
+      })();
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
 
   const handleShareCertificate = async () => {
     try {

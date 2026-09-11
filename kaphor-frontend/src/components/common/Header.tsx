@@ -21,7 +21,7 @@ export function Header({
   title,
   showBack,
   onBack,
-  fallbackPath = '/(tabs)',
+  fallbackPath,
   unreadCount = 0,
   showLogo = false,
   rightElement,
@@ -31,7 +31,7 @@ export function Header({
 
   // If this header has a back button, wire up hardware back press
   useBackHandler(
-    showBack ? fallbackPath : '/(tabs)',
+    fallbackPath,
     showBack ? (onBack ? () => { onBack(); return true; } : null) : () => false
   );
 
@@ -62,9 +62,13 @@ export function Header({
       </View>
 
       {showLogo ? (
-        <Text style={styles.logo}>KAPHOR</Text>
+        <Pressable onPress={() => router.replace('/(tabs)' as any)} hitSlop={8}>
+          <Text style={styles.logo}>KAPHOR</Text>
+        </Pressable>
       ) : (
-        <Text style={styles.title}>{title?.toUpperCase()}</Text>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={styles.title}>{title?.toUpperCase()}</Text>
+        </View>
       )}
 
       <View style={styles.right}>

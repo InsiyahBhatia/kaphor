@@ -1,19 +1,19 @@
 export const MARKET_CATEGORIES = [
   {
     group: 'ETHNIC',
-    items: ['Sarees', 'Lehengas', 'Anarkalis', 'Sherwanis', 'Suits', 'Kurtas', 'Dupattas'],
+    items: ['Sarees', 'Lehengas', 'Anarkalis', 'Sherwanis', 'Suits', 'Kurtas', 'Dupattas', 'Kaftans', 'Pashminas', 'Shawls', 'Indo-Western'],
   },
   {
     group: 'APPAREL',
-    items: ['Jackets', 'Coats', 'Blazers', 'Dresses', 'Tops', 'Shirts', 'Bottoms', 'Denims', 'Knitwear'],
+    items: ['Skirts', 'Dresses', 'Gowns', 'Co-ords', 'Jumpsuits', 'Tops', 'Shirts', 'Bottoms', 'Pants', 'Denims', 'Jackets', 'Coats', 'Blazers', 'Knitwear'],
   },
   {
     group: 'ACCESSORIES',
-    items: ['Bags', 'Jewelry', 'Watches', 'Eyewear', 'Belts', 'Hats', 'Scarves', 'Wallets', 'Ties'],
+    items: ['Bags', 'Jewelry', 'Watches', 'Eyewear', 'Belts', 'Hats', 'Scarves', 'Wallets', 'Ties', 'Hair Accessories'],
   },
   {
     group: 'FOOTWEAR',
-    items: ['Sneakers', 'Heels', 'Boots', 'Dress Shoes', 'Sandals', 'Traditionals'],
+    items: ['Sneakers', 'Heels', 'Boots', 'Dress Shoes', 'Sandals', 'Flats', 'Traditionals', 'Juttis'],
   },
 ];
 
