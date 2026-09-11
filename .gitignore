@@ -51,4 +51,8 @@ kaphor-frontend/.env
 ml/
 *.ckpt
 *.pt
+.gradle/
+**/.gradle/
+**/build/
+ios/Pods/
 
