@@ -15,6 +15,10 @@ import {
   Modal,
   Dimensions,
   Keyboard,
+  Animated,
+  PanResponder,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +40,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { hapticFeedback } from '../../src/utils/haptics';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+export const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏', '🔥', '👏'];
 
 export interface QuotedReplyInfo {
   id: string;
@@ -69,6 +75,98 @@ export function parseReplyContent(rawContent: string): { replyTo: QuotedReplyInf
   return { replyTo: null, text: rawContent };
 }
 
+interface SwipeableMessageBubbleProps {
+  children: React.ReactNode;
+  onSwipeReply: () => void;
+  isMine: boolean;
+}
+
+function SwipeableMessageBubble({ children, onSwipeReply, isMine }: SwipeableMessageBubbleProps) {
+  const panX = useRef(new Animated.Value(0)).current;
+  const hasTriggeredHaptic = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return gestureState.dx > 14 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dx > 0) {
+          const translation = Math.min(gestureState.dx * 0.55, 60);
+          panX.setValue(translation);
+          if (translation > 36 && !hasTriggeredHaptic.current) {
+            hasTriggeredHaptic.current = true;
+            hapticFeedback.light();
+          } else if (translation <= 36) {
+            hasTriggeredHaptic.current = false;
+          }
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx * 0.55 > 36) {
+          onSwipeReply();
+        }
+        hasTriggeredHaptic.current = false;
+        Animated.spring(panX, {
+          toValue: 0,
+          friction: 6,
+          tension: 50,
+          useNativeDriver: true,
+        }).start();
+      },
+      onPanResponderTerminate: () => {
+        hasTriggeredHaptic.current = false;
+        Animated.spring(panX, {
+          toValue: 0,
+          friction: 6,
+          tension: 50,
+          useNativeDriver: true,
+        }).start();
+      },
+    })
+  ).current;
+
+  return (
+    <View style={styles.swipeContainer}>
+      <Animated.View
+        style={[
+          styles.swipeReplyIconWrap,
+          {
+            opacity: panX.interpolate({
+              inputRange: [0, 20, 36],
+              outputRange: [0, 0.4, 1],
+              extrapolate: 'clamp',
+            }),
+            transform: [
+              {
+                scale: panX.interpolate({
+                  inputRange: [0, 20, 36],
+                  outputRange: [0.5, 0.8, 1.1],
+                  extrapolate: 'clamp',
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <View style={styles.swipeReplyCircle}>
+          <Ionicons name="arrow-undo" size={14} color={colors.charcoal} />
+        </View>
+      </Animated.View>
+
+      <Animated.View
+        {...panResponder.panHandlers}
+        style={{
+          transform: [{ translateX: panX }],
+          width: '100%',
+        }}
+      >
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
+
 export default function DirectChatScreen() {
   const insets = useSafeAreaInsets();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
@@ -87,10 +185,21 @@ export default function DirectChatScreen() {
   const [sending, setSending] = useState(false);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [unreadWhileScrolled, setUnreadWhileScrolled] = useState(0);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const partnerTypingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    hapticFeedback.light();
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 2000);
+  };
 
   const handleStartReply = (item: DirectMessageItem) => {
     const isMine = item.senderId === user?.id;
@@ -199,9 +308,16 @@ export default function DirectChatScreen() {
             return [...prev, newMsg];
           });
           setIsPartnerTyping(false);
-          setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }, 100);
+          setShowScrollBottom((isScrolled) => {
+            if (isScrolled) {
+              setUnreadWhileScrolled((c) => c + 1);
+            } else {
+              setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+              }, 100);
+            }
+            return isScrolled;
+          });
         }
       };
 
@@ -239,6 +355,17 @@ export default function DirectChatScreen() {
     }
   }, [conversationId, loadConversation, user?.id]);
 
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    if (distanceFromBottom > 180) {
+      setShowScrollBottom(true);
+    } else {
+      setShowScrollBottom(false);
+      setUnreadWhileScrolled(0);
+    }
+  };
+
   const handleInputChange = (text: string) => {
     setInputText(text);
 
@@ -257,29 +384,32 @@ export default function DirectChatScreen() {
     }
   };
 
+  const openCameraDirectly = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Please grant camera access to capture photos.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri);
+        hapticFeedback.light();
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to capture photo');
+    }
+  };
+
   const pickImage = async () => {
-    Alert.alert('Attach Photo', 'Select image source', [
+    Alert.alert('Attach Content', 'Choose attachment', [
       {
         text: 'Take Photo',
-        onPress: async () => {
-          try {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission Denied', 'Please grant camera access to take photos.');
-              return;
-            }
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ['images'],
-              allowsEditing: true,
-              quality: 0.85,
-            });
-            if (!result.canceled && result.assets && result.assets[0]) {
-              setSelectedImage(result.assets[0].uri);
-            }
-          } catch {
-            Alert.alert('Error', 'Failed to capture photo');
-          }
-        },
+        onPress: openCameraDirectly,
       },
       {
         text: 'Choose from Gallery',
@@ -297,6 +427,7 @@ export default function DirectChatScreen() {
             });
             if (!result.canceled && result.assets && result.assets[0]) {
               setSelectedImage(result.assets[0].uri);
+              hapticFeedback.light();
             }
           } catch {
             Alert.alert('Error', 'Failed to pick image');
@@ -316,6 +447,60 @@ export default function DirectChatScreen() {
     } catch {
       return uri;
     }
+  };
+
+  const sendCustomMessage = async (content: string, imgUri?: string) => {
+    if (!conversationId || sending) return;
+    setSending(true);
+    hapticFeedback.light();
+
+    const tempMsg: DirectMessageItem = {
+      id: `temp-${Date.now()}`,
+      conversationId,
+      senderId: user?.id || '',
+      recipientId: detail?.conversation.otherUser.id || '',
+      content: content || '📷 Photo',
+      imageUrl: imgUri,
+      isFlagged: false,
+      readAt: null,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: user?.id || '',
+        displayName: user?.displayName || 'Me',
+        username: user?.username || 'me',
+        avatar: (user as any)?.avatar || (user as any)?.avatarUrl || null,
+      },
+    };
+
+    setMessages((prev) => [...prev, tempMsg]);
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+
+    try {
+      let finalImgUrl: string | undefined = undefined;
+      if (imgUri) {
+        finalImgUrl = await uploadPhotoBase64(imgUri);
+      }
+      const result = await messageService.sendMessage(conversationId, content, finalImgUrl);
+      setMessages((prev) => prev.map((m) => (m.id === tempMsg.id ? result.data : m)));
+    } catch (e: any) {
+      Alert.alert('Failed to send', e?.response?.data?.message || 'Could not send message');
+      setMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendReaction = (emoji: string) => {
+    if (!actionMessage) return;
+    hapticFeedback.medium();
+    const quoted = parseReplyContent(actionMessage.content);
+    const isMine = actionMessage.senderId === user?.id;
+    const senderName = isMine ? 'You' : (actionMessage.sender?.displayName || detail?.conversation.otherUser.displayName || 'Partner');
+    const replySnippet = quoted.text || (actionMessage.imageUrl ? '📷 Photo' : 'message');
+    const reactionText = `${emoji}`;
+    setActionMessage(null);
+    const finalContent = `[[REPLY:${actionMessage.id}|${senderName}|${replySnippet}]]${reactionText}`;
+    sendCustomMessage(finalContent);
   };
 
   const handleSend = async () => {
@@ -639,146 +824,233 @@ export default function DirectChatScreen() {
         contentContainerStyle={styles.messagesList}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onContentSizeChange={() => {
+          if (!showScrollBottom) {
+            flatListRef.current?.scrollToEnd({ animated: false });
+          }
+        }}
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
         renderItem={({ item, index }) => {
           const isMine = item.senderId === user?.id;
           const parsed = parseReplyContent(item.content || '');
+
+          const prevMsg = index > 0 ? messages[index - 1] : null;
+          const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
+
           const showDateDivider =
             index === 0 ||
             new Date(item.createdAt).toDateString() !==
               new Date(messages[index - 1]?.createdAt).toDateString();
 
-          const dateLabel =
-            new Date(item.createdAt).toDateString() === new Date().toDateString()
-              ? 'TODAY'
-              : new Date(item.createdAt).toLocaleDateString('en-IN', {
-                  month: 'short',
-                  day: 'numeric',
-                }).toUpperCase();
+          const isSameSenderAsPrev =
+            !showDateDivider &&
+            prevMsg &&
+            prevMsg.senderId === item.senderId &&
+            Math.abs(new Date(item.createdAt).getTime() - new Date(prevMsg.createdAt).getTime()) < 120000;
+
+          const isSameSenderAsNext =
+            nextMsg &&
+            nextMsg.senderId === item.senderId &&
+            Math.abs(new Date(nextMsg.createdAt).getTime() - new Date(item.createdAt).getTime()) < 120000 &&
+            new Date(nextMsg.createdAt).toDateString() === new Date(item.createdAt).toDateString();
+
+          const itemDate = new Date(item.createdAt);
+          const today = new Date();
+          const yesterday = new Date();
+          yesterday.setDate(today.getDate() - 1);
+
+          let dateLabel = itemDate.toLocaleDateString('en-IN', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }).toUpperCase();
+
+          if (itemDate.toDateString() === today.toDateString()) {
+            dateLabel = 'TODAY';
+          } else if (itemDate.toDateString() === yesterday.toDateString()) {
+            dateLabel = 'YESTERDAY';
+          }
+
+          const dynamicBubbleCorners = isMine
+            ? {
+                borderTopLeftRadius: 16,
+                borderBottomLeftRadius: 16,
+                borderTopRightRadius: isSameSenderAsPrev ? 16 : 4,
+                borderBottomRightRadius: isSameSenderAsNext ? 16 : 4,
+                marginBottom: isSameSenderAsNext ? 3 : 10,
+              }
+            : {
+                borderTopRightRadius: 16,
+                borderBottomRightRadius: 16,
+                borderTopLeftRadius: isSameSenderAsPrev ? 16 : 4,
+                borderBottomLeftRadius: isSameSenderAsNext ? 16 : 4,
+                marginBottom: isSameSenderAsNext ? 3 : 10,
+              };
 
           return (
             <View>
               {showDateDivider && (
                 <View style={styles.dateDivider}>
-                  <Text style={styles.dateDividerText}>{dateLabel}</Text>
+                  <View style={styles.dateDividerPill}>
+                    <Text style={styles.dateDividerText}>{dateLabel}</Text>
+                  </View>
                 </View>
               )}
 
-              <View
-                style={[
-                  styles.bubbleWrapper,
-                  isMine ? styles.myBubbleWrapper : styles.theirBubbleWrapper,
-                ]}
+              <SwipeableMessageBubble
+                onSwipeReply={() => handleStartReply(item)}
+                isMine={isMine}
               >
-                <TouchableOpacity
-                  style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}
-                  onLongPress={() => {
-                    setActionMessage(item);
-                    hapticFeedback.medium();
-                  }}
-                  activeOpacity={0.9}
-                  delayLongPress={220}
+                <View
+                  style={[
+                    styles.bubbleWrapper,
+                    isMine ? styles.myBubbleWrapper : styles.theirBubbleWrapper,
+                  ]}
                 >
-                  {/* Quoted Message Box */}
-                  {parsed.replyTo && (
-                    <TouchableOpacity
-                      style={[
-                        styles.quoteContainer,
-                        isMine ? styles.myQuoteContainer : styles.theirQuoteContainer,
-                      ]}
-                      onPress={() => scrollToMessage(parsed.replyTo!.id)}
-                      activeOpacity={0.8}
-                    >
-                      <View
+                  <TouchableOpacity
+                    style={[
+                      styles.bubble,
+                      isMine ? styles.myBubble : styles.theirBubble,
+                      dynamicBubbleCorners,
+                    ]}
+                    onLongPress={() => {
+                      setActionMessage(item);
+                      hapticFeedback.medium();
+                    }}
+                    activeOpacity={0.92}
+                    delayLongPress={220}
+                  >
+                    {/* WhatsApp-Style Quoted Message Header */}
+                    {parsed.replyTo && (
+                      <TouchableOpacity
                         style={[
-                          styles.quoteAccentBar,
-                          isMine ? styles.myQuoteAccent : styles.theirQuoteAccent,
+                          styles.quoteContainer,
+                          isMine ? styles.myQuoteContainer : styles.theirQuoteContainer,
                         ]}
-                      />
-                      <View style={styles.quoteContent}>
-                        <Text
+                        onPress={() => scrollToMessage(parsed.replyTo!.id)}
+                        activeOpacity={0.8}
+                      >
+                        <View
                           style={[
-                            styles.quoteSender,
-                            isMine ? styles.myQuoteSender : styles.theirQuoteSender,
+                            styles.quoteAccentBar,
+                            isMine ? styles.myQuoteAccent : styles.theirQuoteAccent,
                           ]}
-                          numberOfLines={1}
-                        >
-                          {parsed.replyTo.senderName}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.quoteText,
-                            isMine ? styles.myQuoteText : styles.theirQuoteText,
-                          ]}
-                          numberOfLines={2}
-                        >
-                          {parsed.replyTo.content}
+                        />
+                        <View style={styles.quoteContent}>
+                          <Text
+                            style={[
+                              styles.quoteSender,
+                              isMine ? styles.myQuoteSender : styles.theirQuoteSender,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {parsed.replyTo.senderName}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.quoteText,
+                              isMine ? styles.myQuoteText : styles.theirQuoteText,
+                            ]}
+                            numberOfLines={2}
+                          >
+                            {parsed.replyTo.content}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+
+                    {item.imageUrl && (
+                      <TouchableOpacity
+                        onPress={() => setViewingImage(item.imageUrl || null)}
+                        activeOpacity={0.9}
+                      >
+                        <KaphorImage
+                          uri={item.imageUrl}
+                          style={styles.bubbleImage}
+                          contentFit="cover"
+                        />
+                      </TouchableOpacity>
+                    )}
+
+                    {parsed.text && parsed.text !== '📷 Photo' && (
+                      <Text
+                        style={[
+                          styles.bubbleText,
+                          isMine ? styles.myBubbleText : styles.theirBubbleText,
+                        ]}
+                      >
+                        {parsed.text}
+                      </Text>
+                    )}
+
+                    {item.isFlagged && (
+                      <View style={styles.flaggedWarning}>
+                        <Ionicons name="warning" size={12} color={colors.red} />
+                        <Text style={styles.flaggedWarningText}>
+                          Potential off-platform payment detected
                         </Text>
                       </View>
-                    </TouchableOpacity>
-                  )}
-
-                  {item.imageUrl && (
-                    <TouchableOpacity
-                      onPress={() => setViewingImage(item.imageUrl || null)}
-                      activeOpacity={0.9}
-                    >
-                      <KaphorImage
-                        uri={item.imageUrl}
-                        style={styles.bubbleImage}
-                        contentFit="cover"
-                      />
-                    </TouchableOpacity>
-                  )}
-
-                  {parsed.text && parsed.text !== '📷 Photo' && (
-                    <Text
-                      style={[
-                        styles.bubbleText,
-                        isMine ? styles.myBubbleText : styles.theirBubbleText,
-                      ]}
-                    >
-                      {parsed.text}
-                    </Text>
-                  )}
-
-                  {item.isFlagged && (
-                    <View style={styles.flaggedWarning}>
-                      <Ionicons name="warning" size={12} color={colors.red} />
-                      <Text style={styles.flaggedWarningText}>
-                        Potential off-platform payment detected
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.timeRow}>
-                    <Text
-                      style={[
-                        styles.timeText,
-                        isMine ? styles.myTimeText : styles.theirTimeText,
-                      ]}
-                    >
-                      {new Date(item.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Text>
-                    {isMine && (
-                      <Ionicons
-                        name={item.readAt ? 'checkmark-done' : 'checkmark'}
-                        size={12}
-                        color={item.readAt ? '#C9A84C' : colors.cream}
-                        style={{ marginLeft: 3 }}
-                      />
                     )}
-                  </View>
-                </TouchableOpacity>
-              </View>
+
+                    {/* Integrated WhatsApp-Style Timestamp & Double Checkmarks */}
+                    <View style={styles.timeRow}>
+                      <Text
+                        style={[
+                          styles.timeText,
+                          isMine ? styles.myTimeText : styles.theirTimeText,
+                        ]}
+                      >
+                        {new Date(item.createdAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                      {isMine && (
+                        <Ionicons
+                          name={item.readAt ? 'checkmark-done' : 'checkmark'}
+                          size={13}
+                          color={item.readAt ? '#C9A84C' : 'rgba(247,244,235,0.7)'}
+                          style={{ marginLeft: 3 }}
+                        />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </SwipeableMessageBubble>
             </View>
           );
         }}
       />
+
+      {/* Floating Scroll-to-Bottom Button */}
+      {showScrollBottom && (
+        <TouchableOpacity
+          style={[
+            styles.floatingScrollBtn,
+            {
+              bottom: isKeyboardVisible
+                ? (Platform.OS === 'ios' ? 76 : 70)
+                : Math.max(insets.bottom + 12, Platform.OS === 'android' ? 32 : 20) + 55,
+            },
+          ]}
+          onPress={() => {
+            hapticFeedback.light();
+            flatListRef.current?.scrollToEnd({ animated: true });
+            setShowScrollBottom(false);
+            setUnreadWhileScrolled(0);
+          }}
+          activeOpacity={0.88}
+        >
+          <Ionicons name="chevron-down" size={20} color={colors.charcoal} />
+          {unreadWhileScrolled > 0 && (
+            <View style={styles.floatingScrollBadge}>
+              <Text style={styles.floatingScrollBadgeText}>{unreadWhileScrolled}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      )}
 
       {/* Typing Indicator */}
       {isPartnerTyping && (
@@ -826,30 +1098,39 @@ export default function DirectChatScreen() {
         </View>
       )}
 
-      {/* Input Bar */}
+      {/* WhatsApp-Style Modern Pill Input Bar */}
       <View
         style={[
           styles.inputContainer,
           {
             paddingBottom: isKeyboardVisible
               ? (Platform.OS === 'ios' ? 8 : 10)
-              : Math.max(insets.bottom + (Platform.OS === 'ios' ? 4 : 8), Platform.OS === 'android' ? 28 : 16),
+              : Math.max(insets.bottom + 8, Platform.OS === 'android' ? 24 : 14),
           },
         ]}
       >
-        <TouchableOpacity style={styles.attachBtn} onPress={pickImage} activeOpacity={0.7}>
-          <Ionicons name="image-outline" size={22} color={colors.charcoal} />
+        <TouchableOpacity style={styles.attachBtn} onPress={pickImage} activeOpacity={0.75}>
+          <Ionicons name="add" size={24} color={colors.charcoal} />
         </TouchableOpacity>
 
-        <TextInput
-          style={styles.input}
-          placeholder={replyingTo ? `Reply to ${replyingTo.senderName}...` : "Type a message or discuss terms..."}
-          placeholderTextColor={colors.textMuted}
-          value={inputText}
-          onChangeText={handleInputChange}
-          multiline
-          maxLength={4000}
-        />
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.input}
+            placeholder={replyingTo ? `Replying to ${replyingTo.senderName}...` : "Message..."}
+            placeholderTextColor={colors.textMuted}
+            value={inputText}
+            onChangeText={handleInputChange}
+            multiline
+            maxLength={4000}
+          />
+          <TouchableOpacity
+            style={styles.cameraQuickBtn}
+            onPress={openCameraDirectly}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="camera-outline" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={[
@@ -858,6 +1139,7 @@ export default function DirectChatScreen() {
           ]}
           onPress={handleSend}
           disabled={(!inputText.trim() && !selectedImage) || sending}
+          activeOpacity={0.85}
         >
           {sending ? (
             <ActivityIndicator color={colors.cream} size="small" />
@@ -910,7 +1192,7 @@ export default function DirectChatScreen() {
         </View>
       </Modal>
 
-      {/* Message Action Sheet Modal */}
+      {/* Message Action Sheet Modal with WhatsApp-Style Quick Emoji Bar */}
       <Modal
         visible={!!actionMessage}
         transparent
@@ -923,8 +1205,28 @@ export default function DirectChatScreen() {
           onPress={() => setActionMessage(null)}
         >
           <View style={styles.actionModalSheet}>
+            {/* WhatsApp Floating Reaction Bar */}
+            <View style={styles.reactionBarContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.reactionBarScroll}
+              >
+                {QUICK_REACTIONS.map((emoji) => (
+                  <TouchableOpacity
+                    key={emoji}
+                    style={styles.reactionEmojiBtn}
+                    onPress={() => handleSendReaction(emoji)}
+                    activeOpacity={0.65}
+                  >
+                    <Text style={styles.reactionEmojiText}>{emoji}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
             <View style={styles.actionModalHeader}>
-              <Text style={styles.actionModalTitle}>MESSAGE OPTIONS</Text>
+              <Text style={styles.actionModalTitle}>MESSAGE ACTIONS</Text>
             </View>
 
             <TouchableOpacity
@@ -946,8 +1248,10 @@ export default function DirectChatScreen() {
               onPress={() => {
                 if (actionMessage) {
                   const parsed = parseReplyContent(actionMessage.content);
-                  Alert.alert('Message Content', parsed.text || '📷 Photo attachment');
+                  const textToCopy = parsed.text || (actionMessage.imageUrl ? 'Photo attachment' : '');
+                  setInputText(textToCopy);
                   setActionMessage(null);
+                  showToast('Text copied into message input!');
                 }
               }}
               activeOpacity={0.8}
@@ -956,10 +1260,29 @@ export default function DirectChatScreen() {
                 <Ionicons name="copy-outline" size={16} color={colors.charcoal} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.actionItemTitle}>View Full Text</Text>
-                <Text style={styles.actionItemSub}>View complete snippet</Text>
+                <Text style={styles.actionItemTitle}>Copy Text</Text>
+                <Text style={styles.actionItemSub}>Copy content into input box</Text>
               </View>
             </TouchableOpacity>
+
+            {actionMessage?.imageUrl && (
+              <TouchableOpacity
+                style={styles.actionModalItem}
+                onPress={() => {
+                  setViewingImage(actionMessage.imageUrl || null);
+                  setActionMessage(null);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.actionIconBox, { backgroundColor: '#E8EFF9' }]}>
+                  <Ionicons name="expand-outline" size={16} color={colors.navy || '#1E3A8A'} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.actionItemTitle}>View Photo</Text>
+                  <Text style={styles.actionItemSub}>Full-screen pinch & zoom</Text>
+                </View>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.actionModalCancel}
@@ -970,6 +1293,14 @@ export default function DirectChatScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Floating In-App Toast */}
+      {toastMessage && (
+        <View style={[styles.toastContainer, { top: Math.max(insets.top + 50, 70) }]}>
+          <Ionicons name="checkmark-circle" size={16} color={colors.cream} />
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -1230,15 +1561,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 12,
   },
+  dateDividerPill: {
+    backgroundColor: '#EBE8DF',
+    paddingHorizontal: 12,
+    paddingVertical: 3,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 1.5,
+    elevation: 1,
+  },
   dateDividerText: {
     fontFamily: typography.mono,
     fontSize: 8,
     fontWeight: '900',
     color: colors.textMuted,
-    backgroundColor: '#EBE8DF',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
     letterSpacing: 0.5,
   },
   messagesList: {
@@ -1360,32 +1698,48 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    alignItems: 'flex-end',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     backgroundColor: colors.white,
     borderTopWidth: 1.5,
     borderTopColor: colors.charcoal,
     gap: 8,
   },
   attachBtn: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F5F0E8',
+    marginBottom: 2,
+  },
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAF9F6',
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.15)',
+    borderRadius: 22,
+    paddingHorizontal: 12,
+    minHeight: 42,
+    maxHeight: 120,
   },
   input: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 12.5,
     color: colors.charcoal,
-    maxHeight: 100,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    backgroundColor: '#FAF9F6',
-    borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
-    borderRadius: 6,
+    maxHeight: 110,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 6,
+    paddingRight: 6,
+  },
+  cameraQuickBtn: {
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sendBtn: {
     width: 40,
@@ -1394,6 +1748,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 2,
   },
   sendBtnDisabled: {
     opacity: 0.35,
@@ -1616,5 +1971,125 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
+  },
+  // Swipe to reply styles
+  swipeContainer: {
+    position: 'relative',
+    width: '100%',
+  },
+  swipeReplyIconWrap: {
+    position: 'absolute',
+    left: 8,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  swipeReplyCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EBF3ED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(45,90,39,0.2)',
+  },
+  // Floating Scroll to Bottom
+  floatingScrollBtn: {
+    position: 'absolute',
+    right: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    zIndex: 50,
+  },
+  floatingScrollBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.forest || '#2D5A27',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: colors.white,
+  },
+  floatingScrollBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.cream,
+  },
+  // Reaction Bar
+  reactionBarContainer: {
+    backgroundColor: '#F5F0E8',
+    borderRadius: 28,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    marginBottom: 16,
+    alignSelf: 'center',
+    maxWidth: '100%',
+  },
+  reactionBarScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  reactionEmojiBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  reactionEmojiText: {
+    fontSize: 22,
+  },
+  // Toast
+  toastContainer: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
+    zIndex: 999,
+  },
+  toastText: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.cream,
+    letterSpacing: 0.5,
   },
 });

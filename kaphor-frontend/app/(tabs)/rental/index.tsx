@@ -129,6 +129,63 @@ export default function RentalScreen() {
     </View>
   );
 
+  const renderBrowseRentals = () => {
+    const leasableRentals = rentals.filter(
+      (item: any) =>
+        item.sellerId !== currentUserId &&
+        item.seller?.id !== currentUserId
+    );
+
+    if (loading) {
+      return <DossierLoading variant="rental" />;
+    }
+
+    if (leasableRentals.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Ionicons name="calendar-sharp" size={48} color={colors.charcoal} />
+          <Text style={styles.emptyText}>NO LEASABLE ASSETS</Text>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)/shop')}>
+            <Text style={styles.buttonText}>BROWSE SHOP →</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        <View style={styles.grid}>
+          {leasableRentals.map((item: any, index: number) => {
+            const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
+            const ranks = ['K', 'Q', 'J', '10', '9'];
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.cardWrapper}
+                onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)}
+              >
+                <PlayingCard
+                  rank={ranks[index % ranks.length]}
+                  suit={suits[index % 4]}
+                  productName={item.title}
+                  size="OS"
+                  category={item.category}
+                  subCategory={item.subCategory}
+                  price={item.rentalPriceDay ? item.rentalPriceDay / 100 : 0}
+                  imageUrl={item.images?.[0]}
+                  condition="Pristine"
+                  buttonText="RENT NOW"
+                  onSwapRequest={() => router.push(`/(tabs)/rental/${item.id}` as any)}
+                  style={{ width: '100%' }}
+                />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -145,62 +202,7 @@ export default function RentalScreen() {
           {renderMyRentals()}
         </ScrollView>
       ) : (
-        {(() => {
-          const leasableRentals = rentals.filter(
-            (item: any) =>
-              item.sellerId !== currentUserId &&
-              item.seller?.id !== currentUserId
-          );
-
-          if (loading) {
-            return <DossierLoading variant="rental" />;
-          }
-
-          if (leasableRentals.length === 0) {
-            return (
-              <View style={styles.emptyState}>
-                <Ionicons name="calendar-sharp" size={48} color={colors.charcoal} />
-                <Text style={styles.emptyText}>NO LEASABLE ASSETS</Text>
-                <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)/shop')}>
-                  <Text style={styles.buttonText}>BROWSE SHOP →</Text>
-                </TouchableOpacity>
-              </View>
-            );
-          }
-
-          return (
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-              <View style={styles.grid}>
-                {leasableRentals.map((item: any, index: number) => {
-                  const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
-                  const ranks = ['K', 'Q', 'J', '10', '9'];
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.cardWrapper}
-                      onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)}
-                    >
-                      <PlayingCard
-                        rank={ranks[index % ranks.length]}
-                        suit={suits[index % 4]}
-                        productName={item.title}
-                        size="OS"
-                        category={item.category}
-                        subCategory={item.subCategory}
-                        price={item.rentalPriceDay ? item.rentalPriceDay / 100 : 0}
-                        imageUrl={item.images?.[0]}
-                        condition="Pristine"
-                        buttonText="RENT NOW"
-                        onSwapRequest={() => router.push(`/(tabs)/rental/${item.id}` as any)}
-                        style={{ width: '100%' }}
-                      />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </ScrollView>
-          );
-        })()}
+        renderBrowseRentals()
       )}
     </View>
   );
