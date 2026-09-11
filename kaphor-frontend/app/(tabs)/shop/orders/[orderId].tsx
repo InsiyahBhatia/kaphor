@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,11 @@ import {
   Platform,
   Alert,
   ScrollView,
+  Keyboard,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DossierLoading } from '../../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../../src/theme';
 import { orderService, TransactionOrder, OrderMessage, ShippingAddress } from '../../../../src/services/orderService';
@@ -149,6 +151,7 @@ function StatusTimeline({ currentStatus }: { currentStatus: string }) {
 export default function OrderThreadScreen() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   useBackHandler('/(tabs)/shop/orders');
   const [order, setOrder] = useState<TransactionOrder | null>(null);
@@ -160,6 +163,16 @@ export default function OrderThreadScreen() {
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [addressExpanded, setAddressExpanded] = useState(true);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setIsKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const loadAll = useCallback(async () => {
     if (!orderId) return;
@@ -550,7 +563,16 @@ export default function OrderThreadScreen() {
 
       {/* ── Message Composer ───────────────────────────────── */}
       {canMessage ? (
-        <View style={styles.composer}>
+        <View
+          style={[
+            styles.composer,
+            {
+              paddingBottom: isKeyboardVisible
+                ? (Platform.OS === 'ios' ? 10 : 8)
+                : Math.max(insets.bottom + (Platform.OS === 'ios' ? 4 : 8), Platform.OS === 'android' ? 28 : 16),
+            },
+          ]}
+        >
           <TextInput
             style={styles.input}
             placeholder="Message…"

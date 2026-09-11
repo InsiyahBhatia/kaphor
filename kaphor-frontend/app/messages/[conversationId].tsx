@@ -13,11 +13,13 @@ import {
   Alert,
   Image,
   Modal,
+  Dimensions,
+  Keyboard,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../src/theme';
-import { KaphorImage } from '../../src/components/KaphorImage';
+import { KaphorImage, normalizeImageUri } from '../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -33,6 +35,40 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { hapticFeedback } from '../../src/utils/haptics';
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+export interface QuotedReplyInfo {
+  id: string;
+  senderName: string;
+  content: string;
+}
+
+export function formatReplyContent(content: string, replyTo: QuotedReplyInfo | null): string {
+  if (!replyTo) return content;
+  const sanitizedText = (replyTo.content || '📷 Photo').replace(/[\r\n|\]]+/g, ' ').slice(0, 70);
+  const sanitizedSender = (replyTo.senderName || 'User').replace(/[\r\n|\]]+/g, ' ').slice(0, 30);
+  return `[[REPLY:${replyTo.id}|${sanitizedSender}|${sanitizedText}]]${content}`;
+}
+
+export function parseReplyContent(rawContent: string): { replyTo: QuotedReplyInfo | null; text: string } {
+  if (!rawContent || typeof rawContent !== 'string') {
+    return { replyTo: null, text: '' };
+  }
+  const match = rawContent.match(/^\[\[REPLY:([^|]+)\|([^|]+)\|([^\]]*)\]\](.*)$/s);
+  if (match) {
+    const [, id, senderName, quotedText, remainingText] = match;
+    return {
+      replyTo: {
+        id,
+        senderName,
+        content: quotedText,
+      },
+      text: remainingText,
+    };
+  }
+  return { replyTo: null, text: rawContent };
+}
+
 export default function DirectChatScreen() {
   const insets = useSafeAreaInsets();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
@@ -45,13 +81,60 @@ export default function DirectChatScreen() {
   const [inputText, setInputText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<QuotedReplyInfo | null>(null);
+  const [actionMessage, setActionMessage] = useState<DirectMessageItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const partnerTypingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleStartReply = (item: DirectMessageItem) => {
+    const isMine = item.senderId === user?.id;
+    const senderName = isMine ? 'You' : (item.sender?.displayName || detail?.conversation.otherUser.displayName || 'Partner');
+    const parsed = parseReplyContent(item.content);
+    setReplyingTo({
+      id: item.id,
+      senderName,
+      content: parsed.text || (item.imageUrl ? '📷 Photo' : ''),
+    });
+    setActionMessage(null);
+    hapticFeedback.selection();
+  };
+
+  const scrollToMessage = (messageId: string) => {
+    const targetIdx = messages.findIndex((m) => m.id === messageId);
+    if (targetIdx >= 0) {
+      try {
+        flatListRef.current?.scrollToIndex({ index: targetIdx, animated: true, viewPosition: 0.5 });
+        hapticFeedback.light();
+      } catch {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }
+    }
+  };
+
+  // Keyboard awareness listener
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      setKeyboardVisible(true);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const cacheChatKey = `@kaphor_chat_${conversationId}`;
 
@@ -188,8 +271,7 @@ export default function DirectChatScreen() {
             const result = await ImagePicker.launchCameraAsync({
               mediaTypes: ['images'],
               allowsEditing: true,
-              aspect: [4, 3],
-              quality: 0.8,
+              quality: 0.85,
             });
             if (!result.canceled && result.assets && result.assets[0]) {
               setSelectedImage(result.assets[0].uri);
@@ -211,8 +293,7 @@ export default function DirectChatScreen() {
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ['images'],
               allowsEditing: true,
-              aspect: [4, 3],
-              quality: 0.8,
+              quality: 0.85,
             });
             if (!result.canceled && result.assets && result.assets[0]) {
               setSelectedImage(result.assets[0].uri);
@@ -244,9 +325,13 @@ export default function DirectChatScreen() {
 
     hapticFeedback.light();
     const imgToSend = selectedImage;
+    const activeReply = replyingTo;
     setInputText('');
     setSelectedImage(null);
+    setReplyingTo(null);
     setSending(true);
+
+    const finalContent = formatReplyContent(text, activeReply);
 
     const socket = getSocket();
     if (socket && conversationId && user?.id) {
@@ -259,7 +344,7 @@ export default function DirectChatScreen() {
       conversationId,
       senderId: user?.id || '',
       recipientId: detail?.conversation.otherUser.id || '',
-      content: text || '📷 Photo',
+      content: finalContent || '📷 Photo',
       imageUrl: imgToSend,
       isFlagged: false,
       readAt: null,
@@ -281,7 +366,7 @@ export default function DirectChatScreen() {
         finalImgUrl = await uploadPhotoBase64(imgToSend);
       }
 
-      const result = await messageService.sendMessage(conversationId, text, finalImgUrl);
+      const result = await messageService.sendMessage(conversationId, finalContent, finalImgUrl);
       // Replace optimistic message with actual DB message
       setMessages((prev) =>
         prev.map((m) => (m.id === tempMsg.id ? result.data : m))
@@ -349,11 +434,13 @@ export default function DirectChatScreen() {
     );
   }
 
+  const isMyGarment = !!garment && (garment.sellerId === user?.id || (garment as any).seller?.id === user?.id);
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {/* Top Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
@@ -430,27 +517,27 @@ export default function DirectChatScreen() {
       {garment && !order ? (
         <TouchableOpacity
           style={styles.garmentBar}
-          onPress={() => {
-            if (garment.listingType === 'RENTAL') {
-              router.push(`/(tabs)/rental/${garment.id}` as any);
-            } else if (garment.listingType === 'ACCESSORY_SWAP') {
-              router.push(`/(tabs)/swap/${garment.id}` as any);
-            } else {
-              router.push(`/(tabs)/shop/${garment.id}` as any);
-            }
-          }}
+          onPress={() => router.push(`/(tabs)/shop/${garment.id}` as any)}
           activeOpacity={0.85}
         >
           {garment.image && (
             <KaphorImage uri={garment.image} style={styles.garmentBarThumb} contentFit="cover" />
           )}
           <View style={styles.garmentBarInfo}>
-            <Text style={styles.garmentBarBrand}>{garment.brand?.toUpperCase()}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.garmentBarBrand}>{garment.brand?.toUpperCase() || 'KAPHOR ARCHIVE'}</Text>
+              <View style={[styles.roleBadgePill, isMyGarment ? styles.sellerPill : styles.buyerPill]}>
+                <Text style={styles.roleBadgePillText}>{isMyGarment ? 'YOUR ITEM' : 'INQUIRING'}</Text>
+              </View>
+            </View>
             <Text style={styles.garmentBarTitle} numberOfLines={1}>
               {garment.title}
             </Text>
             {garment.price != null && (
-              <Text style={styles.garmentBarPrice}>₹{(garment.price / 100).toLocaleString('en-IN')}</Text>
+              <Text style={styles.garmentBarPrice}>
+                ₹{(garment.price / 100).toLocaleString('en-IN')}
+                {garment.listingType === 'RENTAL' ? ' / day' : ''}
+              </Text>
             )}
           </View>
           <View style={styles.viewListingBtn}>
@@ -489,13 +576,57 @@ export default function DirectChatScreen() {
       {/* Quick Deal Assist Chips */}
       {garment && (
         <View style={styles.quickChipsContainer}>
-          <TouchableOpacity
-            style={styles.quickChip}
-            onPress={() => router.push(`/(tabs)/swap/${garment.id}` as any)}
-          >
-            <Ionicons name="swap-horizontal" size={12} color={colors.charcoal} />
-            <Text style={styles.quickChipText}>REQUEST ACCESSORY SWAP</Text>
-          </TouchableOpacity>
+          {isMyGarment ? (
+            <>
+              <TouchableOpacity
+                style={styles.quickChip}
+                onPress={() => router.push(`/(tabs)/shop/edit/${garment.id}` as any)}
+              >
+                <Ionicons name="create-outline" size={12} color={colors.charcoal} />
+                <Text style={styles.quickChipText}>EDIT YOUR LISTING</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickChip}
+                onPress={() => router.push(`/(tabs)/shop/${garment.id}` as any)}
+              >
+                <Ionicons name="eye-outline" size={12} color={colors.charcoal} />
+                <Text style={styles.quickChipText}>VIEW LIVE DOSSIER</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              {garment.listingType === 'ACCESSORY_SWAP' && (
+                <TouchableOpacity
+                  style={styles.quickChip}
+                  onPress={() => router.push(`/(tabs)/swap/${garment.id}` as any)}
+                >
+                  <Ionicons name="swap-horizontal" size={12} color={colors.charcoal} />
+                  <Text style={styles.quickChipText}>PROPOSE SWAP EXCHANGE</Text>
+                </TouchableOpacity>
+              )}
+              {garment.listingType === 'RENTAL' && (
+                <TouchableOpacity
+                  style={styles.quickChip}
+                  onPress={() => router.push({
+                    pathname: '/(tabs)/rental/reserve',
+                    params: { garmentId: garment.id, dayRate: String(garment.price || 0) },
+                  } as any)}
+                >
+                  <Ionicons name="calendar-outline" size={12} color={colors.charcoal} />
+                  <Text style={styles.quickChipText}>BOOK RENTAL</Text>
+                </TouchableOpacity>
+              )}
+              {garment.listingType !== 'ACCESSORY_SWAP' && (
+                <TouchableOpacity
+                  style={styles.quickChip}
+                  onPress={() => router.push(`/(tabs)/shop/${garment.id}` as any)}
+                >
+                  <Ionicons name="bag-check-outline" size={12} color={colors.charcoal} />
+                  <Text style={styles.quickChipText}>BUY ITEM</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
       )}
 
@@ -504,10 +635,15 @@ export default function DirectChatScreen() {
         ref={flatListRef}
         data={messages}
         keyExtractor={(item) => item.id}
+        style={{ flex: 1 }}
         contentContainerStyle={styles.messagesList}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+        onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
         renderItem={({ item, index }) => {
           const isMine = item.senderId === user?.id;
+          const parsed = parseReplyContent(item.content || '');
           const showDateDivider =
             index === 0 ||
             new Date(item.createdAt).toDateString() !==
@@ -535,7 +671,54 @@ export default function DirectChatScreen() {
                   isMine ? styles.myBubbleWrapper : styles.theirBubbleWrapper,
                 ]}
               >
-                <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
+                <TouchableOpacity
+                  style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}
+                  onLongPress={() => {
+                    setActionMessage(item);
+                    hapticFeedback.medium();
+                  }}
+                  activeOpacity={0.9}
+                  delayLongPress={220}
+                >
+                  {/* Quoted Message Box */}
+                  {parsed.replyTo && (
+                    <TouchableOpacity
+                      style={[
+                        styles.quoteContainer,
+                        isMine ? styles.myQuoteContainer : styles.theirQuoteContainer,
+                      ]}
+                      onPress={() => scrollToMessage(parsed.replyTo!.id)}
+                      activeOpacity={0.8}
+                    >
+                      <View
+                        style={[
+                          styles.quoteAccentBar,
+                          isMine ? styles.myQuoteAccent : styles.theirQuoteAccent,
+                        ]}
+                      />
+                      <View style={styles.quoteContent}>
+                        <Text
+                          style={[
+                            styles.quoteSender,
+                            isMine ? styles.myQuoteSender : styles.theirQuoteSender,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {parsed.replyTo.senderName}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.quoteText,
+                            isMine ? styles.myQuoteText : styles.theirQuoteText,
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {parsed.replyTo.content}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
                   {item.imageUrl && (
                     <TouchableOpacity
                       onPress={() => setViewingImage(item.imageUrl || null)}
@@ -549,14 +732,14 @@ export default function DirectChatScreen() {
                     </TouchableOpacity>
                   )}
 
-                  {item.content && item.content !== '📷 Photo' && (
+                  {parsed.text && parsed.text !== '📷 Photo' && (
                     <Text
                       style={[
                         styles.bubbleText,
                         isMine ? styles.myBubbleText : styles.theirBubbleText,
                       ]}
                     >
-                      {item.content}
+                      {parsed.text}
                     </Text>
                   )}
 
@@ -582,7 +765,7 @@ export default function DirectChatScreen() {
                       })}
                     </Text>
                     {isMine && (
-                       <Ionicons
+                      <Ionicons
                         name={item.readAt ? 'checkmark-done' : 'checkmark'}
                         size={12}
                         color={item.readAt ? '#C9A84C' : colors.cream}
@@ -590,7 +773,7 @@ export default function DirectChatScreen() {
                       />
                     )}
                   </View>
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
           );
@@ -609,7 +792,7 @@ export default function DirectChatScreen() {
       {/* Selected Image Preview Bar */}
       {selectedImage && (
         <View style={styles.imagePreviewBar}>
-          <Image source={{ uri: selectedImage }} style={styles.imagePreviewThumb} />
+          <KaphorImage uri={selectedImage} style={styles.imagePreviewThumb} contentFit="cover" />
           <Text style={styles.imagePreviewText}>Image attached</Text>
           <TouchableOpacity
             style={styles.removeImageBtn}
@@ -620,15 +803,47 @@ export default function DirectChatScreen() {
         </View>
       )}
 
+      {/* Replying Preview Bar */}
+      {replyingTo && (
+        <View style={styles.replyPreviewBar}>
+          <View style={styles.replyBarAccent} />
+          <View style={styles.replyBarContent}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="arrow-undo" size={11} color={colors.forest || '#2D5A27'} />
+              <Text style={styles.replyBarSender}>Replying to {replyingTo.senderName}</Text>
+            </View>
+            <Text style={styles.replyBarText} numberOfLines={1}>
+              {replyingTo.content}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.cancelReplyBtn}
+            onPress={() => setReplyingTo(null)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Input Bar */}
-      <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View
+        style={[
+          styles.inputContainer,
+          {
+            paddingBottom: isKeyboardVisible
+              ? (Platform.OS === 'ios' ? 8 : 10)
+              : Math.max(insets.bottom + (Platform.OS === 'ios' ? 4 : 8), Platform.OS === 'android' ? 28 : 16),
+          },
+        ]}
+      >
         <TouchableOpacity style={styles.attachBtn} onPress={pickImage} activeOpacity={0.7}>
           <Ionicons name="image-outline" size={22} color={colors.charcoal} />
         </TouchableOpacity>
 
         <TextInput
           style={styles.input}
-          placeholder="Type a message or discuss terms..."
+          placeholder={replyingTo ? `Reply to ${replyingTo.senderName}...` : "Type a message or discuss terms..."}
           placeholderTextColor={colors.textMuted}
           value={inputText}
           onChangeText={handleInputChange}
@@ -652,7 +867,7 @@ export default function DirectChatScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Full-Screen Image Viewer Modal */}
+      {/* Full-Screen Zoomable Image Viewer Modal */}
       <Modal
         visible={!!viewingImage}
         transparent
@@ -666,26 +881,94 @@ export default function DirectChatScreen() {
             onPress={() => setViewingImage(null)}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
           >
-            <Ionicons name="close" size={30} color="#FFFFFF" />
+            <Ionicons name="close" size={28} color="#FFFFFF" />
           </TouchableOpacity>
+
+          <View style={styles.zoomInstructionWrap}>
+            <Ionicons name="scan-outline" size={12} color="rgba(255,255,255,0.7)" />
+            <Text style={styles.zoomInstructionText}>PINCH TO ZOOM</Text>
+          </View>
+
           {viewingImage && (
             <ScrollView
               style={{ flex: 1, width: '100%' }}
-              contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-              maximumZoomScale={4}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+              maximumZoomScale={5}
               minimumZoomScale={1}
               showsHorizontalScrollIndicator={false}
               showsVerticalScrollIndicator={false}
               centerContent
             >
-              <Image
-                source={{ uri: viewingImage }}
-                style={styles.fullImageView}
-                resizeMode="contain"
+              <KaphorImage
+                uri={viewingImage}
+                style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 0.8 }}
+                contentFit="contain"
+                fallbackIcon="image-outline"
               />
             </ScrollView>
           )}
         </View>
+      </Modal>
+
+      {/* Message Action Sheet Modal */}
+      <Modal
+        visible={!!actionMessage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActionMessage(null)}
+      >
+        <TouchableOpacity
+          style={styles.actionModalBackdrop}
+          activeOpacity={1}
+          onPress={() => setActionMessage(null)}
+        >
+          <View style={styles.actionModalSheet}>
+            <View style={styles.actionModalHeader}>
+              <Text style={styles.actionModalTitle}>MESSAGE OPTIONS</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.actionModalItem}
+              onPress={() => actionMessage && handleStartReply(actionMessage)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIconBox, { backgroundColor: '#EBF3ED' }]}>
+                <Ionicons name="arrow-undo" size={16} color={colors.forest || '#2D5A27'} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.actionItemTitle}>Reply to Message</Text>
+                <Text style={styles.actionItemSub}>Quote this message in your reply</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionModalItem}
+              onPress={() => {
+                if (actionMessage) {
+                  const parsed = parseReplyContent(actionMessage.content);
+                  Alert.alert('Message Content', parsed.text || '📷 Photo attachment');
+                  setActionMessage(null);
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIconBox, { backgroundColor: '#F5F0E8' }]}>
+                <Ionicons name="copy-outline" size={16} color={colors.charcoal} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.actionItemTitle}>View Full Text</Text>
+                <Text style={styles.actionItemSub}>View complete snippet</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionModalCancel}
+              onPress={() => setActionMessage(null)}
+            >
+              <Text style={styles.actionModalCancelText}>CANCEL</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -1137,5 +1420,201 @@ const styles = StyleSheet.create({
   fullImageView: {
     width: '100%',
     height: '85%',
+  },
+  roleBadgePill: {
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 3,
+  },
+  sellerPill: {
+    backgroundColor: 'rgba(196,112,79,0.15)',
+  },
+  buyerPill: {
+    backgroundColor: 'rgba(40,54,24,0.12)',
+  },
+  roleBadgePillText: {
+    fontFamily: typography.mono,
+    fontSize: 7.5,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  zoomInstructionWrap: {
+    position: 'absolute',
+    bottom: 30,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    zIndex: 10,
+  },
+  zoomInstructionText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.85)',
+    letterSpacing: 1,
+  },
+  // WhatsApp-style Quote Container inside Bubble
+  quoteContainer: {
+    flexDirection: 'row',
+    borderRadius: 6,
+    marginBottom: 6,
+    overflow: 'hidden',
+  },
+  myQuoteContainer: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  theirQuoteContainer: {
+    backgroundColor: 'rgba(30,31,34,0.06)',
+  },
+  quoteAccentBar: {
+    width: 3.5,
+  },
+  myQuoteAccent: {
+    backgroundColor: '#C9A84C',
+  },
+  theirQuoteAccent: {
+    backgroundColor: colors.forest || '#2D5A27',
+  },
+  quoteContent: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  quoteSender: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    marginBottom: 1,
+  },
+  myQuoteSender: {
+    color: '#C9A84C',
+  },
+  theirQuoteSender: {
+    color: colors.forest || '#2D5A27',
+  },
+  quoteText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    lineHeight: 12,
+  },
+  myQuoteText: {
+    color: 'rgba(247,244,235,0.75)',
+  },
+  theirQuoteText: {
+    color: colors.textMuted,
+  },
+  // Reply Preview Bar above Input Box
+  replyPreviewBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAF9F6',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(30,31,34,0.1)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  replyBarAccent: {
+    width: 3,
+    height: '100%',
+    backgroundColor: colors.forest || '#2D5A27',
+    borderRadius: 2,
+  },
+  replyBarContent: {
+    flex: 1,
+  },
+  replyBarSender: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.forest || '#2D5A27',
+    letterSpacing: 0.5,
+  },
+  replyBarText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.charcoal,
+    marginTop: 1,
+  },
+  cancelReplyBtn: {
+    padding: 4,
+  },
+  // Message Actions Modal Sheet
+  actionModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  actionModalSheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    borderTopWidth: 2,
+    borderTopColor: colors.charcoal,
+  },
+  actionModalHeader: {
+    paddingBottom: 12,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,31,34,0.1)',
+  },
+  actionModalTitle: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.textMuted,
+    letterSpacing: 1.5,
+  },
+  actionModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,31,34,0.06)',
+  },
+  actionIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionItemTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.charcoal,
+  },
+  actionItemSub: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  actionModalCancel: {
+    marginTop: 14,
+    paddingVertical: 12,
+    backgroundColor: '#F5F0E8',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  actionModalCancelText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 1,
   },
 });

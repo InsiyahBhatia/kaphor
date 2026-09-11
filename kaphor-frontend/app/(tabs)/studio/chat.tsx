@@ -1,11 +1,12 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Alert, Keyboard } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../../src/services/api';
 import { colors } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -14,6 +15,7 @@ interface Message {
 }
 
 export default function AIChatScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   useBackHandler('/(tabs)/circular');
   const [messages, setMessages] = useState<Message[]>([
@@ -22,7 +24,17 @@ export default function AIChatScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setIsKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const pickImage = async () => {
     Alert.alert('Attach Photo', 'Select image source for style advice', [
@@ -35,8 +47,7 @@ export default function AIChatScreen() {
             const result = await ImagePicker.launchCameraAsync({
               mediaTypes: ['images'],
               allowsEditing: true,
-              aspect: [4, 3],
-              quality: 0.8,
+              quality: 0.85,
             });
             if (!result.canceled && result.assets && result.assets[0]) {
               setImageUri(result.assets[0].uri);
@@ -53,8 +64,7 @@ export default function AIChatScreen() {
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ['images'],
               allowsEditing: true,
-              aspect: [4, 3],
-              quality: 0.8,
+              quality: 0.85,
             });
             if (!result.canceled && result.assets && result.assets[0]) {
               setImageUri(result.assets[0].uri);
@@ -118,7 +128,19 @@ export default function AIChatScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.inputContainer}>
+      <View
+        style={[
+          styles.inputContainer,
+          {
+            paddingBottom: isKeyboardVisible
+              ? (Platform.OS === 'ios' ? 10 : 8)
+              : Math.max(
+                  insets.bottom + (Platform.OS === 'ios' ? 4 : 8),
+                  Platform.OS === 'android' ? 28 : 16
+                ),
+          },
+        ]}
+      >
         {imageUri && (
           <View style={styles.imagePreviewContainer}>
             <Image source={{ uri: imageUri }} style={styles.imagePreview} />

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, TextInput, Modal, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,8 @@ import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
 import { isAccessoryCategory } from '../../../src/constants/market';
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function SwapDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams();
@@ -27,6 +29,7 @@ export default function SwapDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [conditionPhotos, setConditionPhotos] = useState<string[]>([]);
+  const [zoomImageUri, setZoomImageUri] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -54,8 +57,7 @@ export default function SwapDetailScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
+      quality: 0.85,
     });
     if (!result.canceled) {
       setConditionPhotos((prev) => [...prev, result.assets[0].uri].slice(0, 3));
@@ -122,7 +124,17 @@ export default function SwapDetailScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {garment && (
           <View style={styles.wantedCard}>
-            <KaphorImage uri={garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
+            <TouchableOpacity 
+              activeOpacity={0.9} 
+              onPress={() => garment.images?.[0] && setZoomImageUri(garment.images[0])}
+              style={{ position: 'relative' }}
+            >
+              <KaphorImage uri={garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
+              <View style={styles.zoomPillSmall}>
+                <Ionicons name="scan-outline" size={10} color="#FFFFFF" />
+                <Text style={styles.zoomPillSmallText}>ZOOM</Text>
+              </View>
+            </TouchableOpacity>
             <View style={styles.wantedInfo}>
               <Text style={styles.label}>YOU WANT</Text>
               <Text style={styles.wantedTitle}>{garment.title}</Text>
@@ -184,19 +196,27 @@ export default function SwapDetailScreen() {
         {/* Condition Photos */}
         <Text style={styles.sectionTitle}>CONDITION EVIDENCE (RECOMMENDED)</Text>
         <Text style={styles.sectionSubtext}>
-          Add close-up photos of your garment's condition. This protects both parties in case of disputes.
+          Add close-up photos of your garment's condition. Tap any photo to zoom.
         </Text>
         <View style={styles.photoRow}>
           {conditionPhotos.map((uri, idx) => (
-            <View key={idx} style={styles.photoThumb}>
+            <TouchableOpacity 
+              key={idx} 
+              style={styles.photoThumb}
+              activeOpacity={0.9}
+              onPress={() => setZoomImageUri(uri)}
+            >
               <Image source={{ uri }} style={styles.photoThumbImg} />
               <TouchableOpacity
                 style={styles.photoRemove}
-                onPress={() => setConditionPhotos((prev) => prev.filter((_, i) => i !== idx))}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setConditionPhotos((prev) => prev.filter((_, i) => i !== idx));
+                }}
               >
                 <Ionicons name="close-circle" size={20} color={colors.red} />
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           ))}
           {conditionPhotos.length < 3 && (
             <TouchableOpacity style={styles.photoAddBtn} onPress={pickConditionPhoto}>
@@ -226,6 +246,48 @@ export default function SwapDetailScreen() {
           {submitting ? <ActivityIndicator color={colors.cream} /> : <Text style={styles.swapBtnText}>SEND SECURE SWAP REQUEST</Text>}
         </TouchableOpacity>
       </View>
+
+      {/* Full Screen Pinch & Zoom Modal */}
+      <Modal
+        visible={!!zoomImageUri}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setZoomImageUri(null)}
+        statusBarTranslucent
+      >
+        <View style={styles.zoomModalBackdrop}>
+          <TouchableOpacity 
+            style={[styles.closeZoomBtn, { top: Math.max(insets.top + 10, 44) }]}
+            onPress={() => setZoomImageUri(null)}
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+          >
+            <Ionicons name="close" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
+            <Ionicons name="scan-outline" size={13} color="rgba(255,255,255,0.8)" />
+            <Text style={styles.zoomInstructionText}>PINCH TO ZOOM</Text>
+          </View>
+
+          {zoomImageUri && (
+            <ScrollView
+              style={{ flex: 1, width: '100%' }}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+              maximumZoomScale={5}
+              minimumZoomScale={1}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              centerContent
+            >
+              <KaphorImage
+                uri={zoomImageUri}
+                style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 0.8 }}
+                contentFit="contain"
+              />
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -315,12 +377,83 @@ const styles = StyleSheet.create({
   },
   photoAddText: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700' },
 
-  footer: { padding: 20, borderTopWidth: 2, borderTopColor: colors.charcoal, backgroundColor: colors.cream, position: 'absolute', bottom: 0, left: 0, right: 0 },
+  footer: { 
+    padding: 20, 
+    paddingBottom: 24,
+    borderTopWidth: 2, 
+    borderTopColor: colors.charcoal, 
+    backgroundColor: colors.cream, 
+    position: 'absolute', 
+    bottom: 0, 
+    left: 0, 
+    right: 0 
+  },
   swapBtn: {
-    backgroundColor: colors.charcoal, height: 56,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: colors.charcoal,
-    shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4,
+    backgroundColor: colors.charcoal, 
+    height: 56,
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 2, 
+    borderColor: colors.charcoal,
+    shadowColor: colors.charcoal, 
+    shadowOffset: { width: 4, height: 4 }, 
+    shadowOpacity: 1, 
+    shadowRadius: 0, 
+    elevation: 4,
   },
   swapBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 13, fontWeight: '900', letterSpacing: 2 },
+  zoomModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeZoomBtn: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 22,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomInstructionWrap: {
+    position: 'absolute',
+    left: 24,
+    zIndex: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  zoomInstructionText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  zoomPillSmall: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  zoomPillSmallText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+  },
 });

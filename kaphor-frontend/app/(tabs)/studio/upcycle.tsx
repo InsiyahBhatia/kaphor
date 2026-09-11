@@ -21,8 +21,7 @@ export default function UpcycleSuggestionsScreen() {
     const pick = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
+      quality: 0.85,
     });
     if (!pick.canceled && pick.assets?.[0]) setImage(pick.assets[0].uri);
   };

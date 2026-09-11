@@ -3,13 +3,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { rentalService } from '../../../src/services/rentalService';
-import { cachedGet, invalidateCache } from '../../../src/services/api';
+import { cachedGet } from '../../../src/services/api';
 import { PlayingCard } from '../../../src/components/PlayingCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
+import { useAuthStore } from '../../../src/store/authStore';
 
 export default function RentalScreen() {
   const router = useRouter();
+  const currentUserId = useAuthStore((s) => s.user?.id);
   const [rentals, setRentals] = useState<any[]>([]);
   const [myRentals, setMyRentals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,21 +145,33 @@ export default function RentalScreen() {
           {renderMyRentals()}
         </ScrollView>
       ) : (
-        <>
-          {loading ? (
-            <DossierLoading variant="rental" />
-          ) : rentals.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="calendar-sharp" size={48} color={colors.charcoal} />
-              <Text style={styles.emptyText}>NO LEASABLE ASSETS</Text>
-              <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)/shop')}>
-                <Text style={styles.buttonText}>BROWSE SHOP →</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
+        {(() => {
+          const leasableRentals = rentals.filter(
+            (item: any) =>
+              item.sellerId !== currentUserId &&
+              item.seller?.id !== currentUserId
+          );
+
+          if (loading) {
+            return <DossierLoading variant="rental" />;
+          }
+
+          if (leasableRentals.length === 0) {
+            return (
+              <View style={styles.emptyState}>
+                <Ionicons name="calendar-sharp" size={48} color={colors.charcoal} />
+                <Text style={styles.emptyText}>NO LEASABLE ASSETS</Text>
+                <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)/shop')}>
+                  <Text style={styles.buttonText}>BROWSE SHOP →</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+
+          return (
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
               <View style={styles.grid}>
-                {rentals.map((item: any, index: number) => {
+                {leasableRentals.map((item: any, index: number) => {
                   const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
                   const ranks = ['K', 'Q', 'J', '10', '9'];
                   return (
@@ -181,12 +195,12 @@ export default function RentalScreen() {
                         style={{ width: '100%' }}
                       />
                     </TouchableOpacity>
-                  )
+                  );
                 })}
               </View>
             </ScrollView>
-          )}
-        </>
+          );
+        })()}
       )}
     </View>
   );

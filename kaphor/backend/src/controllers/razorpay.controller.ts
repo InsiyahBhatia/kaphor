@@ -188,15 +188,22 @@ export async function createRazorpayOrderForRental(req: Request, res: Response):
       return;
     }
 
-    // Total amount in paise: rental fee + 2x security deposit + 10% insurance + 199 INR delivery
-    const rentalFee = rental.totalPrice * 100;
-    const securityDeposit = rentalFee * 2;
-    const insuranceFee = Math.round(rentalFee * 0.1);
-    const deliveryFee = 19900;
+    // rental.totalPrice is stored in paise (e.g., 45000 paise = ₹450)
+    const rawTotalPrice = rental.totalPrice || 0;
+    let rentalFee = rawTotalPrice > 2000 ? rawTotalPrice : rawTotalPrice * 100;
+    // Guard against double multiplication
+    if (rentalFee > 10000000) {
+      rentalFee = Math.round(rentalFee / 100);
+    }
+
+    // Standard rental fees matching breakdown (in paise)
+    const securityDeposit = 29900; // Flat ₹299 refundable security deposit
+    const insuranceFee = 4900;     // Flat ₹49 damage waiver
+    const deliveryFee = 19900;     // Flat ₹199 delivery fee
     const totalAmount = rentalFee + securityDeposit + insuranceFee + deliveryFee;
 
     const razorpay = getRazorpayInstance();
-    const receipt = `rent_${rental.id.replace(/-/g, '').slice(0, 16)}`;
+    const receipt = `rent_${rental.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20)}`;
     const rpOrder = await razorpay.orders.create({
       amount: totalAmount,
       currency: 'INR',
@@ -222,11 +229,17 @@ export async function createRazorpayOrderForRental(req: Request, res: Response):
         razorpayOrderId: rpOrder.id,
         amount: totalAmount,
         currency: 'INR',
+        breakdown: {
+          rentalFee,
+          securityDeposit,
+          insuranceFee,
+          deliveryFee,
+        },
       },
     });
   } catch (e: any) {
     const message = e?.message || 'Failed to create Razorpay rental order';
-    logger.error('createRazorpayOrderForRental failed', { error: message });
+    logger.error('createRazorpayOrderForRental failed', { error: message, stack: e?.stack });
     res.status(500).json({ error: 'INTERNAL_ERROR', message });
   }
 }

@@ -19,6 +19,9 @@ export interface ConversationGarment {
   price?: number;
   rentalPriceDay?: number;
   listingType?: string;
+  sellerId?: string;
+  userId?: string;
+  seller?: ConversationParticipant;
 }
 
 export interface ConversationOrder {

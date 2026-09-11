@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, TextInput, Modal, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
@@ -10,7 +11,10 @@ import { KaphorImage } from '../../../src/components/KaphorImage';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { isAccessoryCategory } from '../../../src/constants/market';
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function SwapWithWantedScreen() {
+  const insets = useSafeAreaInsets();
   const { wantedId } = useLocalSearchParams();
   const router = useRouter();
   useBackHandler('/(tabs)/swap');
@@ -20,6 +24,7 @@ export default function SwapWithWantedScreen() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [zoomImageUri, setZoomImageUri] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -61,12 +66,12 @@ export default function SwapWithWantedScreen() {
   };
 
   if (loading) {
-    return <View style={[styles.container, styles.center]}><DossierLoading variant="swap" compact /></View>;
+    return <DossierLoading variant="swap" />;
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/swap')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -80,7 +85,17 @@ export default function SwapWithWantedScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {garment && (
           <View style={styles.wantedCard}>
-            <KaphorImage uri={garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
+            <TouchableOpacity 
+              activeOpacity={0.9} 
+              onPress={() => garment.images?.[0] && setZoomImageUri(garment.images[0])}
+              style={{ position: 'relative' }}
+            >
+              <KaphorImage uri={garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
+              <View style={styles.zoomPillSmall}>
+                <Ionicons name="scan-outline" size={10} color="#FFFFFF" />
+                <Text style={styles.zoomPillSmallText}>ZOOM</Text>
+              </View>
+            </TouchableOpacity>
             <View style={styles.wantedInfo}>
               <Text style={styles.label}>YOU WANT</Text>
               <Text style={styles.wantedTitle}>{garment.title}</Text>
@@ -139,6 +154,48 @@ export default function SwapWithWantedScreen() {
           {submitting ? <ActivityIndicator color={colors.cream} /> : <Text style={styles.swapBtnText}>SEND SWAP REQUEST</Text>}
         </TouchableOpacity>
       </View>
+
+      {/* Full Screen Pinch & Zoom Modal */}
+      <Modal
+        visible={!!zoomImageUri}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setZoomImageUri(null)}
+        statusBarTranslucent
+      >
+        <View style={styles.zoomModalBackdrop}>
+          <TouchableOpacity 
+            style={[styles.closeZoomBtn, { top: Math.max(insets.top + 10, 44) }]}
+            onPress={() => setZoomImageUri(null)}
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+          >
+            <Ionicons name="close" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
+            <Ionicons name="scan-outline" size={13} color="rgba(255,255,255,0.8)" />
+            <Text style={styles.zoomInstructionText}>PINCH TO ZOOM</Text>
+          </View>
+
+          {zoomImageUri && (
+            <ScrollView
+              style={{ flex: 1, width: '100%' }}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+              maximumZoomScale={5}
+              minimumZoomScale={1}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              centerContent
+            >
+              <KaphorImage
+                uri={zoomImageUri}
+                style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 0.8 }}
+                contentFit="contain"
+              />
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -146,21 +203,17 @@ export default function SwapWithWantedScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { justifyContent: 'center', alignItems: 'center' },
-  header: {
-    paddingTop: 56, paddingHorizontal: 20, paddingBottom: 16,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderBottomWidth: 2, borderBottomColor: colors.charcoal, backgroundColor: colors.cream,
-  },
-  headerTitle: { color: colors.charcoal, fontSize: 14, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
+  header: { paddingHorizontal: 24, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.cream },
+  headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
   content: { padding: 20, paddingBottom: 120 },
-  wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', marginBottom: 8 },
+  wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden' },
   wantedImage: { width: 100, height: 120 },
   wantedInfo: { flex: 1, padding: 16, justifyContent: 'center' },
-  label: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 9, fontWeight: '800', letterSpacing: 1.5, marginBottom: 4 },
-  wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 22 },
+  label: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 9, letterSpacing: 1.5, marginBottom: 4, fontWeight: '800' },
+  wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 20 },
   wantedBrand: { color: colors.red, fontFamily: typography.mono, fontSize: 11, marginTop: 4, fontWeight: '700' },
   arrowContainer: { alignItems: 'center', marginVertical: 16 },
-  sectionTitle: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 16, marginTop: 8 },
+  sectionTitle: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 16 },
   messageInput: {
     backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal,
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
@@ -172,11 +225,80 @@ const styles = StyleSheet.create({
   linkText: { color: colors.red, fontFamily: typography.mono, fontSize: 11, fontWeight: '800', letterSpacing: 1, marginTop: 12 },
   offerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   offerCard: { width: '47%', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', position: 'relative' },
-  offerCardSelected: { borderColor: colors.red, borderWidth: 2 },
+  offerCardSelected: { borderColor: colors.red, borderWidth: 3 },
   offerImage: { width: '100%', height: 150 },
   offerTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 14, padding: 10 },
   checkmark: { position: 'absolute', top: 8, right: 8 },
-  footer: { padding: 20, borderTopWidth: 2, borderTopColor: colors.charcoal, backgroundColor: colors.cream, position: 'absolute', bottom: 0, left: 0, right: 0 },
-  swapBtn: { backgroundColor: colors.charcoal, height: 56, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.charcoal },
+  footer: { 
+    padding: 20, 
+    paddingBottom: 24,
+    borderTopWidth: 2, 
+    borderTopColor: colors.charcoal, 
+    backgroundColor: colors.cream, 
+    position: 'absolute', 
+    bottom: 0, 
+    left: 0, 
+    right: 0 
+  },
+  swapBtn: {
+    backgroundColor: colors.charcoal, height: 56,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: colors.charcoal,
+    shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4,
+  },
   swapBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 13, fontWeight: '900', letterSpacing: 2 },
+  zoomModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeZoomBtn: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 22,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomInstructionWrap: {
+    position: 'absolute',
+    left: 24,
+    zIndex: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  zoomInstructionText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  zoomPillSmall: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  zoomPillSmallText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+  },
 });

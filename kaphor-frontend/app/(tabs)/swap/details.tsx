@@ -50,6 +50,37 @@ export default function SwapDetailsScreen() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [confirmingReceived, setConfirmingReceived] = useState(false);
+
+  const handleConfirmReceived = async () => {
+    if (!swapId) return;
+    Alert.alert(
+      'Confirm Package Delivery',
+      'Are you sure you have received the item in satisfactory condition? Once confirmed by both parties, garment ownership is transferred and your ₹500 security deposit is released.',
+      [
+        { text: 'NOT YET', style: 'cancel' },
+        {
+          text: 'YES, CONFIRM',
+          onPress: async () => {
+            setConfirmingReceived(true);
+            try {
+              const res = await swapService.confirmReceived(swapId, true);
+              if (res?.status === 'COMPLETED') {
+                Alert.alert('🎉 Swap Completed!', 'Both packages confirmed! Escrow security deposits have been released and garment ownership transferred.');
+              } else {
+                Alert.alert('Receipt Confirmed!', 'We recorded your delivery confirmation. When your partner also confirms receipt, the swap will finalize automatically.');
+              }
+              await loadData();
+            } catch (e: any) {
+              Alert.alert('Error', e?.response?.data?.message || 'Failed to confirm receipt');
+            } finally {
+              setConfirmingReceived(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleSubmitReview = async () => {
     if (!swapId) return;
@@ -344,19 +375,18 @@ export default function SwapDetailsScreen() {
         <Text style={styles.sectionHeading}>EXCHANGE MANIFEST</Text>
         <View style={styles.manifestGrid}>
           {/* YOU GIVE CARD */}
-          <TouchableOpacity
-            style={styles.garmentCard}
-            onPress={() => {
-              if ((itemYouGive as any)?.id) {
-                router.push(`/(tabs)/shop/${(itemYouGive as any).id}` as any);
-              }
-            }}
-            activeOpacity={0.85}
-          >
+          <View style={styles.garmentCard}>
             <View style={styles.cardBadgeGive}>
               <Text style={styles.cardBadgeText}>YOU GIVE</Text>
             </View>
-            <View style={styles.garmentImgWrap}>
+            <TouchableOpacity
+              style={styles.garmentImgWrap}
+              activeOpacity={0.9}
+              onPress={() => {
+                const uri = (itemYouGive as any)?.primaryImage || (itemYouGive as any)?.images?.[0];
+                if (uri) setSelectedPhoto(uri);
+              }}
+            >
               <KaphorImage
                 uri={
                   (itemYouGive as any)?.primaryImage ||
@@ -366,8 +396,20 @@ export default function SwapDetailsScreen() {
                 style={styles.garmentImg}
                 contentFit="cover"
               />
-            </View>
-            <View style={styles.garmentCardBody}>
+              <View style={styles.zoomPillSmall}>
+                <Ionicons name="scan-outline" size={11} color="#FFFFFF" />
+                <Text style={styles.zoomPillSmallText}>ZOOM</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.garmentCardBody}
+              activeOpacity={0.7}
+              onPress={() => {
+                if ((itemYouGive as any)?.id) {
+                  router.push(`/(tabs)/shop/${(itemYouGive as any).id}` as any);
+                }
+              }}
+            >
               <Text style={styles.garmentBrand} numberOfLines={1}>
                 {(itemYouGive as any)?.brand || 'BRAND'}
               </Text>
@@ -387,8 +429,8 @@ export default function SwapDetailsScreen() {
               <Text style={styles.garmentValue}>
                 EST. ₹{Number((itemYouGive as any)?.estimatedValue || 0).toLocaleString('en-IN')}
               </Text>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
 
           {/* Center Swap Icon */}
           <View style={styles.exchangeDivider}>
@@ -398,19 +440,18 @@ export default function SwapDetailsScreen() {
           </View>
 
           {/* YOU RECEIVE CARD */}
-          <TouchableOpacity
-            style={styles.garmentCard}
-            onPress={() => {
-              if ((itemYouReceive as any)?.id) {
-                router.push(`/(tabs)/shop/${(itemYouReceive as any).id}` as any);
-              }
-            }}
-            activeOpacity={0.85}
-          >
+          <View style={styles.garmentCard}>
             <View style={styles.cardBadgeReceive}>
               <Text style={styles.cardBadgeText}>YOU RECEIVE</Text>
             </View>
-            <View style={styles.garmentImgWrap}>
+            <TouchableOpacity
+              style={styles.garmentImgWrap}
+              activeOpacity={0.9}
+              onPress={() => {
+                const uri = (itemYouReceive as any)?.primaryImage || (itemYouReceive as any)?.images?.[0];
+                if (uri) setSelectedPhoto(uri);
+              }}
+            >
               <KaphorImage
                 uri={
                   (itemYouReceive as any)?.primaryImage ||
@@ -420,8 +461,20 @@ export default function SwapDetailsScreen() {
                 style={styles.garmentImg}
                 contentFit="cover"
               />
-            </View>
-            <View style={styles.garmentCardBody}>
+              <View style={styles.zoomPillSmall}>
+                <Ionicons name="scan-outline" size={11} color="#FFFFFF" />
+                <Text style={styles.zoomPillSmallText}>ZOOM</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.garmentCardBody}
+              activeOpacity={0.7}
+              onPress={() => {
+                if ((itemYouReceive as any)?.id) {
+                  router.push(`/(tabs)/shop/${(itemYouReceive as any).id}` as any);
+                }
+              }}
+            >
               <Text style={styles.garmentBrand} numberOfLines={1}>
                 {(itemYouReceive as any)?.brand || 'BRAND'}
               </Text>
@@ -441,8 +494,8 @@ export default function SwapDetailsScreen() {
               <Text style={styles.garmentValue}>
                 EST. ₹{Number((itemYouReceive as any)?.estimatedValue || 0).toLocaleString('en-IN')}
               </Text>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Proposal Note */}
@@ -675,13 +728,30 @@ export default function SwapDetailsScreen() {
 
         {/* State 5: SHIPPED / BOTH_SHIPPED / DELIVERED */}
         {(swap.status === 'SHIPPED' || swap.status === 'BOTH_SHIPPED' || swap.status === 'DELIVERED') && (
-          <TouchableOpacity
-            style={[styles.dockBtn, styles.primaryBtn, { width: '100%' }]}
-            onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
-          >
-            <Ionicons name="cube" size={16} color={colors.cream} />
-            <Text style={styles.primaryBtnText}>TRACK SHIPMENT & CONFIRM DELIVERY</Text>
-          </TouchableOpacity>
+          <View style={styles.dockButtonRow}>
+            <TouchableOpacity
+              style={[styles.dockBtn, styles.secondaryBtn]}
+              onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
+            >
+              <Ionicons name="cube-outline" size={14} color={colors.charcoal} />
+              <Text style={styles.secondaryBtnText}>TRACKING</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.dockBtn, styles.forestBtn, { flex: 2 }]}
+              onPress={handleConfirmReceived}
+              disabled={confirmingReceived}
+              activeOpacity={0.85}
+            >
+              {confirmingReceived ? (
+                <ActivityIndicator color={colors.cream} size="small" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-done-circle" size={16} color={colors.cream} />
+                  <Text style={styles.forestBtnText}>CONFIRM PACKAGE RECEIVED</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* State 6: COMPLETED */}
@@ -693,18 +763,44 @@ export default function SwapDetailsScreen() {
         )}
       </View>
 
-      {/* Photo Lightbox Modal */}
-      <Modal visible={!!selectedPhoto} transparent animationType="fade">
+      {/* Photo Pinch & Zoom Lightbox Modal */}
+      <Modal 
+        visible={!!selectedPhoto} 
+        transparent 
+        animationType="fade"
+        onRequestClose={() => setSelectedPhoto(null)}
+        statusBarTranslucent
+      >
         <View style={styles.modalBackdrop}>
-          <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setSelectedPhoto(null)}>
-            <Ionicons name="close" size={26} color={colors.cream} />
+          <TouchableOpacity 
+            style={[styles.modalCloseBtn, { top: Math.max(insets.top + 10, 44) }]} 
+            onPress={() => setSelectedPhoto(null)}
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+          >
+            <Ionicons name="close" size={28} color="#FFFFFF" />
           </TouchableOpacity>
+
+          <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
+            <Ionicons name="scan-outline" size={13} color="rgba(255,255,255,0.8)" />
+            <Text style={styles.zoomInstructionText}>PINCH TO ZOOM</Text>
+          </View>
+
           {selectedPhoto && (
-            <Image
-              source={{ uri: selectedPhoto }}
-              style={styles.modalImage}
-              resizeMode="contain"
-            />
+            <ScrollView
+              style={{ flex: 1, width: '100%' }}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+              maximumZoomScale={5}
+              minimumZoomScale={1}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              centerContent
+            >
+              <KaphorImage
+                uri={selectedPhoto}
+                style={{ width: width, height: Dimensions.get('window').height * 0.8 }}
+                contentFit="contain"
+              />
+            </ScrollView>
           )}
         </View>
       </Modal>
@@ -1096,6 +1192,201 @@ const styles = StyleSheet.create({
   },
   photosScroll: {
     flexDirection: 'row',
+    height: 22,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  stepCircleActive: {
+    backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
+  },
+  stepCircleCompleted: {
+    backgroundColor: colors.forest,
+    borderColor: colors.forest,
+  },
+  stepNumber: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.textMuted,
+  },
+  stepNumberActive: {
+    color: colors.cream,
+    fontWeight: '700',
+  },
+  stepLabel: {
+    fontFamily: typography.mono,
+    fontSize: 7.5,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  stepLabelActive: {
+    color: colors.charcoal,
+    fontWeight: '700',
+  },
+  stepLabelCompleted: {
+    color: colors.forest,
+  },
+  stepLine: {
+    position: 'absolute',
+    top: 10,
+    left: '50%',
+    width: '100%',
+    height: 1,
+    backgroundColor: colors.bgMuted,
+    zIndex: -1,
+  },
+  stepLineActive: {
+    backgroundColor: colors.forest,
+  },
+
+  // Manifest
+  sectionHeading: {
+    fontFamily: typography.headings,
+    fontSize: 15,
+    color: colors.charcoal,
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
+  },
+  manifestGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  garmentCard: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  cardBadgeGive: {
+    backgroundColor: colors.charcoal,
+    paddingVertical: 3,
+    alignItems: 'center',
+  },
+  cardBadgeReceive: {
+    backgroundColor: '#8C6D3B',
+    paddingVertical: 3,
+    alignItems: 'center',
+  },
+  cardBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.cream,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  garmentImgWrap: {
+    width: '100%',
+    height: 130,
+    backgroundColor: colors.bgMuted,
+  },
+  garmentImg: {
+    width: '100%',
+    height: '100%',
+  },
+  garmentCardBody: {
+    padding: 8,
+  },
+  garmentBrand: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  garmentTitle: {
+    fontFamily: typography.headings,
+    fontSize: 13,
+    color: colors.charcoal,
+    marginVertical: 2,
+    lineHeight: 16,
+  },
+  garmentMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  garmentSize: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textSecond,
+  },
+  garmentCondition: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.forest,
+    fontWeight: '700',
+  },
+  garmentValue: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.charcoal,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  exchangeDivider: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exchangeIconCircle: {
+    width: 26,
+    height: 26,
+    backgroundColor: colors.charcoal,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Proposal Memo
+  messageBox: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  messageHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  messageLabel: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    letterSpacing: 1,
+    fontWeight: '700',
+  },
+  messageText: {
+    fontFamily: typography.accent,
+    fontSize: 13,
+    color: colors.charcoal,
+    lineHeight: 18,
+  },
+
+  // Evidence Photos
+  evidenceSection: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  evidenceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  photosScroll: {
+    flexDirection: 'row',
   },
   evidencePhotoWrap: {
     width: 75,
@@ -1150,6 +1441,7 @@ const styles = StyleSheet.create({
     fontSize: 9.5,
     color: colors.textSecond,
     lineHeight: 14,
+    marginBottom: 8,
   },
 
   // Action Dock
@@ -1236,6 +1528,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#8C6D3B',
   },
   goldBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.cream,
+    letterSpacing: 1,
+  },
+  forestBtn: {
+    backgroundColor: colors.forest,
+  },
+  forestBtnText: {
     fontFamily: typography.mono,
     fontSize: 11,
     fontWeight: '700',
@@ -1353,16 +1655,57 @@ const styles = StyleSheet.create({
   // Modal
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.92)',
+    backgroundColor: 'rgba(0,0,0,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalCloseBtn: {
     position: 'absolute',
-    top: 50,
     right: 20,
-    zIndex: 10,
-    padding: 8,
+    zIndex: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 22,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomInstructionWrap: {
+    position: 'absolute',
+    left: 24,
+    zIndex: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  zoomInstructionText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  zoomPillSmall: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  zoomPillSmallText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontFamily: typography.mono,
+    fontWeight: '800',
   },
   modalImage: {
     width: width * 0.9,

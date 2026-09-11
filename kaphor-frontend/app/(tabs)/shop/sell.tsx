@@ -210,8 +210,7 @@ export default function SellScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [3, 4],
-      quality: 0.7,
+      quality: 0.85,
     });
     if (!result.canceled) {
       setImages((prev) => [...prev, result.assets[0].uri].slice(0, 5));
@@ -225,8 +224,7 @@ export default function SellScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [3, 4],
-      quality: 0.7,
+      quality: 0.85,
     });
 
     if (!result.canceled) {

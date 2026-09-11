@@ -134,7 +134,15 @@ export default function ShopScreen() {
       <View style={styles.header}>
         <View style={styles.topRow}>
           <Text style={styles.title}>THE DECK // BROWSE</Text>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            <TouchableOpacity 
+              style={styles.aiHeaderBtn} 
+              onPress={() => router.push('/(tabs)/shop/ai-chat')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="sparkles" size={17} color="#E5D5A4" />
+              <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)}>
               <Ionicons name="options-sharp" size={20} color={colors.white} />
             </TouchableOpacity>
@@ -247,6 +255,16 @@ export default function ShopScreen() {
               );
             })()}
           </ScrollView>
+
+          {/* Floating AI Stylist Action Button */}
+          <TouchableOpacity
+            style={styles.floatingAiBtn}
+            onPress={() => router.push('/(tabs)/shop/ai-chat')}
+            activeOpacity={0.88}
+          >
+            <Ionicons name="sparkles" size={18} color="#C9A84C" />
+            <Text style={styles.floatingAiText}>ASK AI</Text>
+          </TouchableOpacity>
 
           {/* FILTER MODAL OVERLAY */}
           {showFilters && (
@@ -603,6 +621,51 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: 8,
     marginTop: 4,
+  },
+  aiHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1E1E1E',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#C9A84C',
+  },
+  aiHeaderBtnText: {
+    color: '#E5D5A4',
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: typography.mono,
+    letterSpacing: 1,
+  },
+  floatingAiBtn: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#181818',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: '#C9A84C',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 6,
+    zIndex: 99,
+  },
+  floatingAiText: {
+    color: '#F4E7C3',
+    fontSize: 12,
+    fontWeight: '900',
+    fontFamily: typography.mono,
+    letterSpacing: 1.5,
   },
 });
 

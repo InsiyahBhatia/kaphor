@@ -510,11 +510,12 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
       },
     });
 
-    // Update conversation last message timestamp & preview
+    // Update conversation last message timestamp & preview (cleaning reply prefix if present)
+    const cleanPreview = content.replace(/^\[\[REPLY:[^\]]+\]\]/, '');
     await db.conversation.update({
       where: { id: conversationId },
       data: {
-        lastMessageText: imageUrl && !content ? '📷 Photo' : content.slice(0, 100),
+        lastMessageText: imageUrl && !cleanPreview ? '📷 Photo' : cleanPreview.slice(0, 100),
         lastMessageAt: new Date(),
       },
     });
@@ -539,7 +540,7 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
         userId: recipientId,
         type: 'DIRECT_MESSAGE',
         title: `💬 New message from ${req.user.displayName}`,
-        body: content.length > 80 ? content.slice(0, 77) + '...' : content,
+        body: cleanPreview.length > 80 ? cleanPreview.slice(0, 77) + '...' : cleanPreview || '📷 Photo',
         data: { conversationId, senderId: uid },
       });
     } catch (notifErr) {

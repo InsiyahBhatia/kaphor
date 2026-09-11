@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../src/theme';
 import { useAuth } from '../../../src/context/AuthContext';
 import api from '../../../src/services/api';
@@ -11,13 +12,24 @@ export default function AIChatScreen() {
     const { garmentId, initialMessage } = useLocalSearchParams<{ garmentId?: string; initialMessage?: string }>();
     const { user } = useAuth();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     useBackHandler('/(tabs)/shop');
     
     const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
     const [conversationId, setConversationId] = useState<string | null>(null);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
+
+    useEffect(() => {
+        const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setIsKeyboardVisible(true));
+        const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setIsKeyboardVisible(false));
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
 
     useEffect(() => {
         if (initialMessage) {
@@ -111,7 +123,16 @@ export default function AIChatScreen() {
                 )}
             </ScrollView>
 
-            <View style={styles.inputArea}>
+            <View
+                style={[
+                    styles.inputArea,
+                    {
+                        paddingBottom: isKeyboardVisible
+                            ? (Platform.OS === 'ios' ? 12 : 10)
+                            : Math.max(insets.bottom + (Platform.OS === 'ios' ? 6 : 8), Platform.OS === 'android' ? 28 : 16),
+                    },
+                ]}
+            >
                 <TextInput
                     style={styles.input}
                     placeholder="Type your doubt here..."

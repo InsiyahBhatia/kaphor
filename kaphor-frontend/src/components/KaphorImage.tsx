@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Image, ImageStyle } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,16 +14,17 @@ interface KaphorImageProps {
 
 /**
  * Normalizes any image URI:
- * - Rewrites localhost / local IPs / obsolete dev URLs to the active API baseURL host.
+ * - Handles local device filesystem / base64 / blob / iOS ph URI directly.
+ * - Rewrites localhost / 127.0.0.1 / local LAN IPs to active API baseURL.
  * - Handles relative `/uploads/...` paths.
- * - Leaves S3, Cloudinary, data URIs, and external HTTP(S) intact.
+ * - Leaves S3, Cloudinary, Firebase Storage, and external HTTP(S) intact.
  */
-function normalizeImageUri(uri: string): string {
+export function normalizeImageUri(uri: string): string {
+  if (!uri || typeof uri !== 'string') return '';
   const trimmed = uri.trim();
-  const apiBase = (api.defaults.baseURL || 'https://kaphor-backend.onrender.com/api/v1')
-    .replace(/\/api\/v1\/?$/, '');
+  if (!trimmed) return '';
 
-  // 1. If it's a local filesystem / base64 / blob / iOS ph URI, return directly
+  // 1. Direct raw data / local device filesystem URI
   if (
     trimmed.startsWith('data:') ||
     trimmed.startsWith('file://') ||
@@ -34,25 +35,40 @@ function normalizeImageUri(uri: string): string {
     return trimmed;
   }
 
-  // 2. If it's a local:// placeholder prefix
+  const apiBase = (api.defaults.baseURL || 'https://kaphor-backend.onrender.com/api/v1')
+    .replace(/\/api\/v1\/?$/, '')
+    .replace(/\/$/, '');
+
+  // 2. Placeholder local:// prefix
   if (trimmed.startsWith('local://')) {
     const rel = trimmed.replace('local://', '');
-    return `${apiBase}/uploads/${rel.startsWith('/') ? rel.slice(1) : rel}`;
+    const cleanRel = rel.startsWith('/') ? rel.slice(1) : rel;
+    const finalRel = cleanRel.startsWith('uploads/') ? cleanRel : `uploads/${cleanRel}`;
+    return `${apiBase}/${finalRel}`;
   }
 
-  // 3. If it contains /uploads/ with localhost or an IP (e.g. http://localhost:4000/uploads/... or http://192.168.x.x:4000/uploads/...)
-  if (trimmed.includes('/uploads/')) {
+  // 3. Relative paths (e.g. "/uploads/messages/..." or "uploads/garments/...")
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    const cleanRel = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+    const finalRel = cleanRel.startsWith('uploads/') ? cleanRel : `uploads/${cleanRel}`;
+    return `${apiBase}/${finalRel}`;
+  }
+
+  // 4. If it's a loopback/localhost/local LAN IP (e.g. http://localhost:4000/uploads/... or http://127.0.0.1:4000/...)
+  const isLoopbackOrLocalIp =
+    trimmed.includes('://localhost') ||
+    trimmed.includes('://127.0.0.1') ||
+    /:\/\/10\.\d+\.\d+\.\d+/.test(trimmed) ||
+    /:\/\/192\.168\.\d+\.\d+/.test(trimmed) ||
+    /:\/\/172\.(1[6-9]|2\d|3[01])\.\d+\.\d+/.test(trimmed);
+
+  if (isLoopbackOrLocalIp && trimmed.includes('/uploads/')) {
     const uploadIndex = trimmed.indexOf('/uploads/');
     const relativePath = trimmed.substring(uploadIndex);
     return `${apiBase}${relativePath}`;
   }
 
-  // 4. If it's a relative path like "uploads/..." or "/garments/..."
-  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-    return `${apiBase}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
-  }
-
-  // 5. If it's an external HTTP/HTTPS URL (e.g. S3, Unsplash, Cloudinary), return directly
+  // 5. External URLs (S3, Cloudinary, Firebase Storage, Unsplash, etc.)
   return trimmed;
 }
 
@@ -63,6 +79,10 @@ export function KaphorImage({
   fallbackIcon = 'shirt-outline',
 }: KaphorImageProps) {
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [uri]);
 
   if (!uri || typeof uri !== 'string' || uri.trim() === '' || hasError) {
     return (

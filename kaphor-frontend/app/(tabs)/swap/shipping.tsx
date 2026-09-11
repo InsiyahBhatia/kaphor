@@ -41,6 +41,7 @@ export default function SwapShippingScreen() {
   const [saving, setSaving] = useState(false);
   const [depositPaid, setDepositPaid] = useState(false);
   const [payingDeposit, setPayingDeposit] = useState(false);
+  const [confirmingReceived, setConfirmingReceived] = useState(false);
 
   const { openCheckout } = useRazorpay();
 
@@ -53,6 +54,51 @@ export default function SwapShippingScreen() {
   const myTracking = isInitiator ? swap?.initiatorTracking : swap?.receiverTracking;
   const theirTracking = isInitiator ? swap?.receiverTracking : swap?.initiatorTracking;
   const isShipped = Boolean(myTracking);
+
+  const handleConfirmReceived = () => {
+    Alert.alert(
+      'Confirm Delivery & Condition',
+      'Have you received the package and verified that the accessory condition matches the agreed exchange?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm & Release Escrow',
+          onPress: async () => {
+            setConfirmingReceived(true);
+            try {
+              const updated = await swapService.confirmReceived(swapId!, true);
+              setSwap(updated);
+              if (updated.status === 'COMPLETED') {
+                Alert.alert(
+                  '🎉 Swap Complete!',
+                  'Both parties have confirmed receipt. The ownership transfer has been executed, your ₹500 security deposit is released, and your sustainability impact has been updated!',
+                  [
+                    {
+                      text: 'Leave Partner Review',
+                      onPress: () => router.push(`/(tabs)/swap/details?swapId=${swapId}` as any),
+                    },
+                    {
+                      text: 'View My Swaps',
+                      onPress: () => router.push('/(tabs)/swap' as any),
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert(
+                  'Delivery Confirmed!',
+                  'Your receipt confirmation has been recorded. Once your swap partner also confirms receipt of their package, the swap will complete and deposits will be released.'
+                );
+              }
+            } catch (err: any) {
+              Alert.alert('Error', err?.response?.data?.message || 'Failed to confirm receipt.');
+            } finally {
+              setConfirmingReceived(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     loadData();
@@ -408,6 +454,52 @@ export default function SwapShippingScreen() {
         {theirTracking && (
           <View style={{ marginTop: myTracking ? -12 : 0 }}>
             {renderTracking("Partner's Incoming Shipment", theirTracking)}
+          </View>
+        )}
+
+        {/* Delivery Confirmation & Condition Acceptance */}
+        {(theirTracking || swap?.status === 'SHIPPED' || swap?.status === 'BOTH_SHIPPED' || swap?.status === 'DELIVERED') && swap?.status !== 'COMPLETED' && (
+          <View style={styles.confirmReceiptCard}>
+            <View style={styles.confirmReceiptHeader}>
+              <Ionicons name="shield-checkmark" size={18} color={colors.forest} />
+              <Text style={styles.confirmReceiptTitle}>DELIVERY & CONDITION VERIFICATION</Text>
+            </View>
+            <Text style={styles.confirmReceiptSub}>
+              Once your package arrives, inspect the accessory and confirm receipt to complete the exchange, release your ₹500 security deposit, and update your impact metrics.
+            </Text>
+            <TouchableOpacity
+              style={[styles.confirmReceiptBtn, confirmingReceived && { opacity: 0.6 }]}
+              onPress={handleConfirmReceived}
+              disabled={confirmingReceived}
+              activeOpacity={0.85}
+            >
+              {confirmingReceived ? (
+                <ActivityIndicator color={colors.cream} />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-done" size={18} color={colors.cream} />
+                  <Text style={styles.confirmReceiptBtnText}>CONFIRM PACKAGE RECEIVED</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {swap?.status === 'COMPLETED' && (
+          <View style={styles.completedBanner}>
+            <Ionicons name="checkmark-circle" size={24} color={colors.forest} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.completedBannerTitle}>SWAP TRANSACTION COMPLETED</Text>
+              <Text style={styles.completedBannerSub}>
+                Both items received & verified. Security deposits released to your account.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.reviewPartnerBtn}
+              onPress={() => router.push(`/(tabs)/swap/details?swapId=${swapId}` as any)}
+            >
+              <Text style={styles.reviewPartnerBtnText}>REVIEW</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -790,6 +882,85 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
+    letterSpacing: 0.8,
+  },
+  confirmReceiptCard: {
+    backgroundColor: '#F7FBF8',
+    borderWidth: 2,
+    borderColor: colors.forest,
+    padding: 16,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  confirmReceiptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  confirmReceiptTitle: {
+    fontFamily: typography.mono,
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: colors.forest,
+    letterSpacing: 1,
+  },
+  confirmReceiptSub: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    lineHeight: 14,
+    color: colors.charcoal,
+    marginBottom: 14,
+  },
+  confirmReceiptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.forest,
+    paddingVertical: 12,
+  },
+  confirmReceiptBtnText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  completedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#EBF3ED',
+    borderWidth: 2,
+    borderColor: colors.forest,
+    padding: 14,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  completedBannerTitle: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.forest,
+    letterSpacing: 0.8,
+  },
+  completedBannerSub: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.charcoal,
+    marginTop: 2,
+  },
+  reviewPartnerBtn: {
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  reviewPartnerBtnText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
     letterSpacing: 0.8,
   },
 });

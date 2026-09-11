@@ -55,10 +55,9 @@ export default function ConditionCheckScreen() {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') { Alert.alert('Camera permission needed'); return; }
       const pick = await ImagePicker.launchCameraAsync({
-        quality: 0.8,
+        quality: 0.85,
         base64: true,
         allowsEditing: true,
-        aspect: [4, 3],
       });
       if (!pick.canceled && pick.assets[0]) { setImageUri(pick.assets[0].uri); setImageBase64(pick.assets[0].base64 || null); }
     } else {
@@ -66,10 +65,9 @@ export default function ConditionCheckScreen() {
       if (status !== 'granted') { Alert.alert('Gallery permission needed'); return; }
       const pick = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        quality: 0.8,
+        quality: 0.85,
         base64: true,
         allowsEditing: true,
-        aspect: [4, 3],
       });
       if (!pick.canceled && pick.assets[0]) { setImageUri(pick.assets[0].uri); setImageBase64(pick.assets[0].base64 || null); }
     }

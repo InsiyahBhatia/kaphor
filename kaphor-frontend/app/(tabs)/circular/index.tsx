@@ -23,6 +23,24 @@ export default function CircularScreen() {
       <View style={{ height: 20 }} />
 
       <View style={styles.options}>
+        {/* AI Stylist & Care Chat */}
+        <TouchableOpacity 
+          style={[styles.card, { borderColor: '#C9A84C', backgroundColor: '#FFFDF7' }]} 
+          onPress={() => router.push('/(tabs)/studio/chat')}
+        >
+          <View style={[styles.cardIcon, { backgroundColor: '#FBF5E6' }]}>
+            <Ionicons name="sparkles" size={26} color="#B8860B" />
+          </View>
+          <View style={styles.cardContent}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.cardTitle}>KAPHOR AI ADVISOR</Text>
+              <View style={styles.aiBadge}><Text style={styles.aiBadgeText}>AI</Text></View>
+            </View>
+            <Text style={styles.cardText}>Instant style suggestions, fabric care & garment guidance</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#B8860B" />
+        </TouchableOpacity>
+
         {/* AI Condition Check */}
         <TouchableOpacity style={styles.card} onPress={() => router.push('/(tabs)/circular/condition-check')}>
           <View style={styles.cardIcon}><Ionicons name="scan-sharp" size={28} color={colors.charcoal} /></View>
@@ -237,5 +255,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 6,
     lineHeight: 16,
+  },
+  aiBadge: {
+    backgroundColor: '#B8860B',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  aiBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
+    fontFamily: typography.mono,
+    letterSpacing: 0.5,
   },
 });

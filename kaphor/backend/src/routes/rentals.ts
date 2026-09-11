@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuth } from '../middleware/auth';
 import {
   getAvailableRentals,
   createRental,
@@ -12,8 +12,8 @@ import {
 
 const router = Router();
 
-// Public routes
-router.get('/available', getAvailableRentals);
+// Public routes (with optional authentication to exclude user's own garments)
+router.get('/available', optionalAuth, getAvailableRentals);
 router.post('/calculate', calculateRentalBreakdown);
 
 // Authenticated routes

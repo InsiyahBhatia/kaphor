@@ -22,6 +22,12 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
             query.rentalPriceDay = { lte: Math.round(Number(priceMax) * 100) };
         }
 
+        // Exclude garments listed by the requesting user themselves
+        const currentUserId = (req as any).user?.id;
+        if (currentUserId) {
+            query.sellerId = { not: currentUserId };
+        }
+
         // OPTIMIZATION: Only include rentals (N+1) when date filter is provided
         const hasDateFilter = Boolean(startDate && endDate);
 
@@ -37,7 +43,8 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
                     rentals: {
                         where: { status: { in: ['RESERVED', 'ACTIVE'] } },
                         select: { startDate: true, endDate: true },
-                    }
+                    },
+                    seller: { select: { id: true, displayName: true, avatar: true } },
                 },
                 orderBy: { createdAt: 'desc' },
                 take: 50
@@ -58,6 +65,7 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
                     condition: true, images: true, price: true,
                     rentalPriceDay: true, rentalPriceWeek: true,
                     listingType: true, lifecycleState: true,
+                    sellerId: true,
                     createdAt: true,
                     seller: { select: { id: true, displayName: true, avatar: true } },
                 },
@@ -144,17 +152,23 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const dayRate = garment.rentalPriceDay || 0;
-        const weekRate = garment.rentalPriceWeek || 0;
+        const rawDayRate = garment.rentalPriceDay || 0;
+        const rawWeekRate = garment.rentalPriceWeek || 0;
 
-        let amount: number;
-        if (days >= 7 && weekRate > 0) {
+        // Normalize rates to Rupees if stored in paise (e.g. 15000 paise -> 150 INR)
+        const dailyRateInRupees = rawDayRate > 2000 ? Math.round(rawDayRate / 100) : (rawDayRate || 149);
+        const weekRateInRupees = rawWeekRate > 5000 ? Math.round(rawWeekRate / 100) : (rawWeekRate || dailyRateInRupees * 5);
+
+        let rentalFeeInRupees: number;
+        if (days >= 7 && weekRateInRupees > 0) {
             const weeks = Math.floor(days / 7);
             const remainderDays = days % 7;
-            amount = weeks * weekRate + remainderDays * dayRate;
+            rentalFeeInRupees = weeks * weekRateInRupees + remainderDays * dailyRateInRupees;
         } else {
-            amount = dayRate * days;
+            rentalFeeInRupees = dailyRateInRupees * days;
         }
+
+        const amount = rentalFeeInRupees * 100; // stored in paise
 
         if (amount <= 0) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid rental pricing' });

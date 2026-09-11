@@ -95,6 +95,7 @@ app.use('/api/v1/payments/webhook',
 );
 app.use(express.json({ limit: '15mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/v1/uploads', express.static(path.join(__dirname, '../uploads')));
 // Request logging middleware
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.url}`);

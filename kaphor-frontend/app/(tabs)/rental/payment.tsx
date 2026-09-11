@@ -137,7 +137,7 @@ export default function RentalPaymentScreen() {
 
       const options = {
         key: keyId,
-        amount: totalAmount,
+        amount: rp.amount || totalAmount,
         currency: rp.currency || 'INR',
         order_id: rp.razorpayOrderId,
         name: 'Kaphor Luxury Circular Fashion',
