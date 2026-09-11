@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
@@ -64,18 +64,28 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
-      <TouchableOpacity 
-        style={styles.backBtn} 
-        onPress={() => safeBack('/(auth)/welcome')}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.inner} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-      </TouchableOpacity>
-      <View style={styles.header}>
-        <Text style={styles.title}>Join Kaphor</Text>
-        <Text style={styles.subtitle}>Begin your circular luxury journey</Text>
-      </View>
+        <TouchableOpacity 
+          style={styles.backBtn} 
+          onPress={() => safeBack('/(auth)/welcome')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <View style={styles.header}>
+          <Text style={styles.title}>Join Kaphor</Text>
+          <Text style={styles.subtitle}>Begin your circular luxury journey</Text>
+        </View>
 
       <View style={styles.form}>
         <TextInput 
@@ -158,7 +168,8 @@ export default function RegisterScreen() {
           <Text style={styles.footerText}>ALREADY HAVE AN ACCOUNT? LOGIN</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

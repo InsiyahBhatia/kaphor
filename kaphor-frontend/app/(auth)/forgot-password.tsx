@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/services/api';
@@ -41,39 +41,50 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.backBtn} 
-        onPress={() => safeBack('/(auth)/login')}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-      </TouchableOpacity>
-      <View style={styles.center}>
-        <Ionicons name="lock-open-outline" size={48} color={colors.crimson} />
-        <Text style={styles.title}>FORGOT PASSWORD</Text>
-        <Text style={styles.subtitle}>Enter your email and we'll send you a reset link</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="EMAIL ADDRESS"
-          placeholderTextColor="#6B5C52"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TouchableOpacity style={styles.mainBtn} onPress={handleSend} disabled={sending}>
-          {sending ? <ActivityIndicator color={colors.white} /> : <Text style={styles.mainBtnText}>SEND RESET LINK</Text>}
+        <TouchableOpacity 
+          style={styles.backBtn} 
+          onPress={() => safeBack('/(auth)/login')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
-      </View>
-    </View>
+        <View style={styles.center}>
+          <Ionicons name="lock-open-outline" size={48} color={colors.crimson} />
+          <Text style={styles.title}>FORGOT PASSWORD</Text>
+          <Text style={styles.subtitle}>Enter your email and we'll send you a reset link</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="EMAIL ADDRESS"
+            placeholderTextColor="#6B5C52"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <TouchableOpacity style={styles.mainBtn} onPress={handleSend} disabled={sending}>
+            {sending ? <ActivityIndicator color={colors.white} /> : <Text style={styles.mainBtnText}>SEND RESET LINK</Text>}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 24 },
-  backBtn: { marginTop: 50 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: { padding: 24, flexGrow: 1, justifyContent: 'space-between' },
+  backBtn: { marginTop: 36, width: 44, height: 44, justifyContent: 'center' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20, marginVertical: 20 },
   title: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, textAlign: 'center' },
   subtitle: { color: colors.textMuted, fontSize: 16, textAlign: 'center', lineHeight: 24, paddingHorizontal: 20, fontWeight: '500' },
   input: { width: '100%', height: 60, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 20, color: colors.textPrimary, fontSize: 15, letterSpacing: 1, backgroundColor: colors.bgCard },
@@ -92,3 +103,4 @@ const styles = StyleSheet.create({
   },
   mainBtnText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
 });
+

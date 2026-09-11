@@ -28,8 +28,8 @@ export function isAccessoryCategory(category?: string | null, subCategory?: stri
   if (!category && !subCategory) return false;
   const terms = [
     'accessory', 'accessories', 'bag', 'bags', 'jewelry', 'jewellery',
-    'watch', 'watches', 'eyewear', 'belt', 'belts', 'hat', 'hats',
-    'scarf', 'scarves', 'wallet', 'wallets', 'tie', 'ties',
+    'watch', 'watches', 'eyewear', 'sunglasses', 'belt', 'belts', 'hat', 'hats',
+    'cap', 'caps', 'headwear', 'scarf', 'scarves', 'wallet', 'wallets', 'tie', 'ties',
     'footwear', 'shoes', 'sneakers', 'heels', 'boots', 'sandals',
   ];
   const cat = (category || '').trim().toLowerCase();

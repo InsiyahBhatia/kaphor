@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
@@ -34,75 +34,85 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.backBtn} 
-        onPress={() => safeBack('/(auth)/welcome')}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-      </TouchableOpacity>
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Enter your credentials to continue</Text>
-      </View>
-
-      <View style={styles.form}>
-        <TextInput 
-          placeholder="EMAIL" 
-          placeholderTextColor="#6B5C52"
-          style={styles.input}
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-        />
-        <TextInput 
-          placeholder="PASSWORD" 
-          placeholderTextColor="#6B5C52"
-          style={styles.input}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-        <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 4 }} onPress={() => router.push('/(auth)/forgot-password')}>
-          <Text style={{ color: colors.gold, fontSize: 12, letterSpacing: 1, fontWeight: '700' }}>FORGOT PASSWORD?</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity 
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={isLoading}
+          style={styles.backBtn} 
+          onPress={() => safeBack('/(auth)/welcome')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          {isLoading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>LOGIN</Text>
-          )}
+          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
-
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.dividerLine} />
+        <View style={styles.header}>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Enter your credentials to continue</Text>
         </View>
 
-        <TouchableOpacity 
-          style={styles.googleButton}
-          onPress={handleGoogleLogin}
-          disabled={isLoading || isGoogleLoading}
-        >
-          {isGoogleLoading ? (
-            <ActivityIndicator color={colors.textPrimary} />
-          ) : (
-            <>
-              <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
-              <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
+        <View style={styles.form}>
+          <TextInput 
+            placeholder="EMAIL" 
+            placeholderTextColor="#6B5C52"
+            style={styles.input}
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+          />
+          <TextInput 
+            placeholder="PASSWORD" 
+            placeholderTextColor="#6B5C52"
+            style={styles.input}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 4 }} onPress={() => router.push('/(auth)/forgot-password')}>
+            <Text style={{ color: colors.gold, fontSize: 12, letterSpacing: 1, fontWeight: '700' }}>FORGOT PASSWORD?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.button, isLoading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.buttonText}>LOGIN</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TouchableOpacity 
+            style={styles.googleButton}
+            onPress={handleGoogleLogin}
+            disabled={isLoading || isGoogleLoading}
+          >
+            {isGoogleLoading ? (
+              <ActivityIndicator color={colors.textPrimary} />
+            ) : (
+              <>
+                <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
+                <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -110,7 +120,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  scrollContent: {
     padding: 24,
+    flexGrow: 1,
   },
   backBtn: {
     marginTop: 36,
