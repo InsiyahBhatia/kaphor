@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { safeStorage } from '../utils/storage';
 import api from './api';
 
 const REFRESH_KEY = 'kaphor_refresh_token';
@@ -25,7 +25,7 @@ export const authService = {
   },
 
   logout: async () => {
-    const refreshToken = await SecureStore.getItemAsync(REFRESH_KEY);
+    const refreshToken = await safeStorage.getItem(REFRESH_KEY);
     await api.post('/auth/logout', refreshToken ? { refreshToken } : {});
   },
 };

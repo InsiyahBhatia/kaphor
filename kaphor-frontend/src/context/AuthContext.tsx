@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import { safeStorage } from '../utils/storage';
 import { persistTokens, clearStoredTokens } from '../services/api';
 import { useAuthStore, type AuthUser } from '../store/authStore';
 
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
     setUser(null);
     useAuthStore.getState().logout();
-    await SecureStore.deleteItemAsync(AUTH_DATA_KEY);
+    await safeStorage.deleteItem(AUTH_DATA_KEY);
     await clearStoredTokens();
   };
 
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   async function loadStorageData() {
     try {
-      const authDataSerialized = await SecureStore.getItemAsync(AUTH_DATA_KEY);
+      const authDataSerialized = await safeStorage.getItem(AUTH_DATA_KEY);
       if (!authDataSerialized) {
         return;
       }
@@ -112,8 +112,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (updatedUser) {
           const freshNormalized = normalizeUser(updatedUser);
           setUser(freshNormalized);
-          // Also update SecureStore so next boot is faster
-          await SecureStore.setItemAsync(
+          // Also update Storage so next boot is faster
+          await safeStorage.setItem(
             AUTH_DATA_KEY,
             JSON.stringify({ accessToken, refreshToken, user: freshNormalized })
           );
@@ -153,7 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useAuthStore.getState().setAuth(toAuthStoreUser(newUser), accessToken);
     setToken(accessToken);
     setUser(newUser);
-    await SecureStore.setItemAsync(
+    await safeStorage.setItem(
       AUTH_DATA_KEY,
       JSON.stringify({
         accessToken,

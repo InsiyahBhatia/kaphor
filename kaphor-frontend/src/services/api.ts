@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { safeStorage } from '../utils/storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { useAuthStore } from '../store/authStore';
@@ -69,7 +69,7 @@ function processQueue(error: unknown, token: string | null) {
 
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    const token = useAuthStore.getState().accessToken ?? (await SecureStore.getItemAsync(TOKEN_KEY));
+    const token = useAuthStore.getState().accessToken ?? (await safeStorage.getItem(TOKEN_KEY));
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -83,7 +83,7 @@ api.interceptors.request.use(
  * Returns true on success, false on failure.
  */
 async function attemptTokenRefresh(): Promise<boolean> {
-  const refreshTokenVal = await SecureStore.getItemAsync(REFRESH_KEY);
+  const refreshTokenVal = await safeStorage.getItem(REFRESH_KEY);
   if (!refreshTokenVal) return false;
 
   try {
@@ -104,17 +104,17 @@ async function attemptTokenRefresh(): Promise<boolean> {
 
     // ALWAYS update both tokens — even if newRefresh is somehow missing,
     // save at least the access token so subsequent requests can retry.
-    await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
+    await safeStorage.setItem(TOKEN_KEY, accessToken);
     if (newRefresh) {
-      await SecureStore.setItemAsync(REFRESH_KEY, newRefresh);
+      await safeStorage.setItem(REFRESH_KEY, newRefresh);
     }
     useAuthStore.getState().setTokens(accessToken);
     return true;
   } catch {
     // Refresh failed — clear tokens
     useAuthStore.getState().logout();
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_KEY);
+    await safeStorage.deleteItem(TOKEN_KEY);
+    await safeStorage.deleteItem(REFRESH_KEY);
     return false;
   }
 }
@@ -152,7 +152,7 @@ api.interceptors.response.use(
     if (success) {
       // Re-read the new access token from the store (set by attemptTokenRefresh)
       const newToken = useAuthStore.getState().accessToken ??
-        (await SecureStore.getItemAsync(TOKEN_KEY));
+        (await safeStorage.getItem(TOKEN_KEY));
       processQueue(null, newToken);
       if (newToken) original.headers.Authorization = `Bearer ${newToken}`;
       return api(original);
@@ -164,17 +164,17 @@ api.interceptors.response.use(
 );
 
 export async function persistTokens(accessToken: string, refreshToken: string): Promise<void> {
-  await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
+  await safeStorage.setItem(TOKEN_KEY, accessToken);
   if (refreshToken) {
-    await SecureStore.setItemAsync(REFRESH_KEY, refreshToken);
+    await safeStorage.setItem(REFRESH_KEY, refreshToken);
   } else {
-    await SecureStore.deleteItemAsync(REFRESH_KEY);
+    await safeStorage.deleteItem(REFRESH_KEY);
   }
 }
 
 export async function clearStoredTokens(): Promise<void> {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
-  await SecureStore.deleteItemAsync(REFRESH_KEY);
+  await safeStorage.deleteItem(TOKEN_KEY);
+  await safeStorage.deleteItem(REFRESH_KEY);
 }
 
 // ═══════════════════════════════════════════════════════════════
