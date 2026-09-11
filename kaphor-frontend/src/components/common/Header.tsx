@@ -48,8 +48,13 @@ export function Header({ title, showBack, onBack, unreadCount = 0, showLogo = fa
 
       <View style={styles.right}>
         {rightElement ? rightElement : (
-          <Pressable onPress={() => router.push('/shop/orders')} style={styles.iconBtn}>
+          <Pressable onPress={() => router.push('/messages')} style={styles.iconBtn}>
             <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.textPrimary} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
           </Pressable>
         )}
       </View>

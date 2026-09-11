@@ -61,8 +61,7 @@ export default function NotificationsScreen() {
 
   // Real-time Socket.IO listener
   useEffect(() => {
-    const socket = connectSocket() || getSocket();
-    if (!socket) return;
+    let activeSocket = connectSocket() || getSocket();
 
     const handleNewNotification = (notif: any) => {
       if (notif && notif.id) {
@@ -70,10 +69,45 @@ export default function NotificationsScreen() {
       }
     };
 
-    socket.on('new_notification', handleNewNotification);
+    const handleNewDirectMessage = (data: any) => {
+      if (data && data.message) {
+        const senderName = data.message.sender?.displayName || 'Direct Message';
+        const newNotif = {
+          id: `msg_notif_${data.message.id || Date.now()}`,
+          type: 'DIRECT_MESSAGE',
+          title: `💬 New message from ${senderName}`,
+          body: data.message.content || 'Sent you an attachment',
+          data: { conversationId: data.conversationId },
+          isRead: false,
+          createdAt: data.message.createdAt || new Date().toISOString(),
+        };
+        setNotifications((prev) => [newNotif, ...prev.filter((item) => item.id !== newNotif.id)]);
+      }
+    };
+
+    const attach = (s: any) => {
+      s.on('new_notification', handleNewNotification);
+      s.on('new_direct_message', handleNewDirectMessage);
+    };
+
+    if (activeSocket) {
+      attach(activeSocket);
+    }
+
+    const interval = setInterval(() => {
+      const s = connectSocket() || getSocket();
+      if (s && s !== activeSocket) {
+        activeSocket = s;
+        attach(activeSocket);
+      }
+    }, 2000);
 
     return () => {
-      socket.off('new_notification', handleNewNotification);
+      clearInterval(interval);
+      if (activeSocket) {
+        activeSocket.off('new_notification', handleNewNotification);
+        activeSocket.off('new_direct_message', handleNewDirectMessage);
+      }
     };
   }, []);
 

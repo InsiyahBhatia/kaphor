@@ -77,8 +77,7 @@ export function NotificationToast() {
   };
 
   useEffect(() => {
-    const socket = connectSocket() || getSocket();
-    if (!socket) return;
+    let activeSocket = connectSocket() || getSocket();
 
     const handleNewNotification = (notif: any) => {
       if (notif && notif.title) {
@@ -105,12 +104,29 @@ export function NotificationToast() {
       }
     };
 
-    socket.on('new_notification', handleNewNotification);
-    socket.on('new_direct_message', handleNewDirectMessage);
+    const attach = (s: any) => {
+      s.on('new_notification', handleNewNotification);
+      s.on('new_direct_message', handleNewDirectMessage);
+    };
+
+    if (activeSocket) {
+      attach(activeSocket);
+    }
+
+    const interval = setInterval(() => {
+      const s = connectSocket() || getSocket();
+      if (s && s !== activeSocket) {
+        activeSocket = s;
+        attach(activeSocket);
+      }
+    }, 2000);
 
     return () => {
-      socket.off('new_notification', handleNewNotification);
-      socket.off('new_direct_message', handleNewDirectMessage);
+      clearInterval(interval);
+      if (activeSocket) {
+        activeSocket.off('new_notification', handleNewNotification);
+        activeSocket.off('new_direct_message', handleNewDirectMessage);
+      }
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [userId]);
