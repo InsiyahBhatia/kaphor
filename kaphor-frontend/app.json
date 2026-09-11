@@ -6,7 +6,8 @@
     "scheme": "kaphor",
     "platforms": [
       "ios",
-      "android"
+      "android",
+      "web"
     ],
     "ios": {
       "bundleIdentifier": "com.kaphor.app",
