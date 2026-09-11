@@ -15,7 +15,7 @@ import { LoadingScreen } from '../src/components/common/LoadingScreen';
 import { useAuth } from '../src/context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -58,15 +58,14 @@ export default function RootLayout() {
     IMFellEnglish_400Regular,
   });
 
-
   useEffect(() => {
     if (loaded || error) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {});
     }
   }, [loaded, error]);
 
   if (!loaded && !error) {
-    return <LoadingScreen />;
+    return null;
   }
 
   return (

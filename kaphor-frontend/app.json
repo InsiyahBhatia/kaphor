@@ -25,8 +25,14 @@
       "expo-router",
       "expo-secure-store",
       "expo-font",
-      "expo-image",
-      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F5F0E8"
+        }
+      ],
       "@react-native-google-signin/google-signin"
     ],
     "extra": {
