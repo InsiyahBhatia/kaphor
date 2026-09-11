@@ -116,12 +116,19 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           },
           garment: garmentData,
           lastMessageText: c.lastMessageText || c.messages[0]?.content || '',
-          lastMessageAt: c.lastMessageAt,
+          lastMessageAt: c.lastMessageAt || c.createdAt,
           unreadCount,
           createdAt: c.createdAt,
         };
       })
     );
+
+    // Sort by most recent activity (message time or creation time)
+    formatted.sort((a, b) => {
+      const timeA = new Date(a.lastMessageAt || a.createdAt).getTime();
+      const timeB = new Date(b.lastMessageAt || b.createdAt).getTime();
+      return timeB - timeA;
+    });
 
     res.json({ data: formatted });
   } catch (error) {

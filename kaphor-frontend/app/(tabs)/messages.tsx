@@ -35,6 +35,10 @@ export default function MessagesScreen() {
     }
   }, []);
 
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
   useFocusEffect(
     useCallback(() => {
       loadConversations();
@@ -82,7 +86,11 @@ export default function MessagesScreen() {
         activeOpacity={0.75}
       >
         {/* User Avatar */}
-        <View style={styles.avatarWrap}>
+        <TouchableOpacity
+          style={styles.avatarWrap}
+          onPress={() => item.otherUser?.id && router.push(`/(tabs)/shop/seller/${item.otherUser.id}` as any)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
           <KaphorImage
             uri={item.otherUser.avatar || ''}
             style={styles.avatar}
@@ -93,7 +101,7 @@ export default function MessagesScreen() {
               <Ionicons name="shield-checkmark" size={12} color="#C9A84C" />
             </View>
           )}
-        </View>
+        </TouchableOpacity>
 
         {/* Conversation Info */}
         <View style={styles.convInfo}>

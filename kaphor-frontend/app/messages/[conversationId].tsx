@@ -27,8 +27,10 @@ import {
 import { useAuth } from '../../src/context/AuthContext';
 import { getSocket, connectSocket } from '../../src/services/socket';
 import { safeBack } from '../../src/utils/navigation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DirectChatScreen() {
+  const insets = useSafeAreaInsets();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const router = useRouter();
   const { user } = useAuth();
@@ -290,8 +292,8 @@ export default function DirectChatScreen() {
 
         <TouchableOpacity
           style={styles.headerUserInfo}
-          onPress={() => other && router.push(`/(tabs)/shop/seller/${other.id}` as any)}
-          activeOpacity={0.8}
+          onPress={() => other?.id && router.push(`/(tabs)/shop/seller/${other.id}` as any)}
+          activeOpacity={0.7}
         >
           <KaphorImage uri={other?.avatar || ''} style={styles.headerAvatar} contentFit="cover" />
           <View style={{ flex: 1 }}>
@@ -302,14 +304,24 @@ export default function DirectChatScreen() {
               {other?.isVerified && <VerifiedBadge size="compact" />}
             </View>
             <Text style={styles.headerHandle}>
-              {isPartnerTyping ? 'typing...' : `@${other?.username}`}
+              {isPartnerTyping ? 'typing...' : `@${other?.username || 'user'} • View Profile`}
             </Text>
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.reportBtn} onPress={handleReport}>
-          <Ionicons name="shield-outline" size={20} color={colors.charcoal} />
-        </TouchableOpacity>
+        <View style={styles.headerRightActions}>
+          <TouchableOpacity 
+            style={styles.profileBtn} 
+            onPress={() => other?.id && router.push(`/(tabs)/shop/seller/${other.id}` as any)}
+            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+          >
+            <Ionicons name="person-circle-outline" size={24} color={colors.charcoal} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.reportBtn} onPress={handleReport} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+            <Ionicons name="shield-outline" size={18} color={colors.charcoal} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Garment Context Bar */}
@@ -489,7 +501,7 @@ export default function DirectChatScreen() {
       )}
 
       {/* Input Bar */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <TouchableOpacity style={styles.attachBtn} onPress={pickImage} activeOpacity={0.7}>
           <Ionicons name="image-outline" size={22} color={colors.charcoal} />
         </TouchableOpacity>
@@ -569,8 +581,16 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.textMuted,
   },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  profileBtn: {
+    padding: 4,
+  },
   reportBtn: {
-    padding: 6,
+    padding: 4,
   },
   garmentBar: {
     flexDirection: 'row',
