@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -21,6 +21,19 @@ import { useGarmentStore } from '../../../src/store/garmentStore';
 
 export default function SellScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    prefillImage?: string;
+    prefillCategory?: string;
+    prefillTitle?: string;
+    prefillDescription?: string;
+    prefillBrand?: string;
+    prefillCondition?: string;
+    prefillFabric?: string;
+    prefillColor?: string;
+    prefillStyle?: string;
+    prefillListingType?: string;
+  }>();
+
   const [step, setStep] = useState(1);
   const [images, setImages] = useState<string[]>([]);
   const [title, setTitle] = useState('');
@@ -47,6 +60,49 @@ export default function SellScreen() {
     'Sarees', 'Dupattas', 'Shawls', 'Scarves',
     'Bags', 'Jewelry', 'Watches', 'Eyewear', 'Belts', 'Hats', 'Wallets', 'Ties'
   ];
+
+  // Auto-populate when navigating from Condition Check / Assessment
+  useEffect(() => {
+    if (params.prefillImage) {
+      setImages([params.prefillImage]);
+      setStep(2); // Photo already captured, jump straight to details
+    }
+    if (params.prefillCategory) {
+      const rawCat = params.prefillCategory.toLowerCase();
+      let matchedCat = ALL_CATEGORY_ITEMS.find((item) => item.toLowerCase() === rawCat);
+      if (!matchedCat) {
+        if (rawCat.includes('saree')) matchedCat = 'Sarees';
+        else if (rawCat.includes('lehenga')) matchedCat = 'Lehengas';
+        else if (rawCat.includes('anarkali')) matchedCat = 'Anarkalis';
+        else if (rawCat.includes('kurta') || rawCat.includes('kurti')) matchedCat = 'Kurtas';
+        else if (rawCat.includes('dupatta')) matchedCat = 'Dupattas';
+        else if (rawCat.includes('jacket')) matchedCat = 'Jackets';
+        else if (rawCat.includes('blazer')) matchedCat = 'Blazers';
+        else if (rawCat.includes('dress')) matchedCat = 'Dresses';
+        else if (rawCat.includes('bag')) matchedCat = 'Bags';
+        else if (rawCat.includes('jewelry') || rawCat.includes('jewellery')) matchedCat = 'Jewelry';
+        else if (rawCat.includes('watch')) matchedCat = 'Watches';
+        else if (rawCat.includes('eyewear') || rawCat.includes('glasses')) matchedCat = 'Eyewear';
+        else if (rawCat.includes('top') || rawCat.includes('tshirt')) matchedCat = 'Tops';
+        else if (rawCat.includes('jeans') || rawCat.includes('denim')) matchedCat = 'Denims';
+        else if (rawCat.includes('pant') || rawCat.includes('trouser')) matchedCat = 'Bottoms';
+        else matchedCat = 'Tops';
+      }
+      setCategory(matchedCat);
+      if (FREE_SIZE_CATEGORIES.includes(matchedCat)) {
+        setSize('FREE SIZE');
+      }
+    }
+    if (params.prefillTitle) setTitle(params.prefillTitle);
+    if (params.prefillDescription) setDescription(params.prefillDescription);
+    if (params.prefillBrand) setBrand(params.prefillBrand);
+    if (params.prefillCondition) setCondition(params.prefillCondition);
+    if (params.prefillFabric) setFabric(params.prefillFabric);
+    if (params.prefillColor) setColor(params.prefillColor);
+    if (params.prefillStyle) setStyleAttr(params.prefillStyle);
+    if (params.prefillListingType) setListingType(params.prefillListingType);
+    // Intentionally leave price blank for manual user entry
+  }, [params.prefillImage, params.prefillCategory, params.prefillTitle]);
 
   const handleCategoryChange = (cat: string) => {
     setCategory(cat);
@@ -109,7 +165,7 @@ export default function SellScreen() {
           setSize(res.size);
         }
 
-        setPrice(String(res.estimatedPrice || ''));
+        // Intentionally do NOT autofill price - let user enter their desired price manually
         setFabric(res.styleAttributes?.fabric || '');
         setColor(res.color?.[0] || '');
         setStyleAttr(res.styleAttributes?.style || '');
@@ -119,7 +175,7 @@ export default function SellScreen() {
         setWeight(res.styleAttributes?.weight || '');
         setCondition(res.condition || 'PRISTINE');
         
-        Alert.alert('AI Success', 'Garment details have been auto-filled from your photo.');
+        Alert.alert('AI Success', 'Garment details have been auto-filled from your photo. Please set your desired price.');
         setStep(2);
       }
     } catch (err) {

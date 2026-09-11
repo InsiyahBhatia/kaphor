@@ -112,6 +112,34 @@ export default function ConditionCheckScreen() {
     setStyle('');
   };
 
+  const navigateToSell = () => {
+    const score = result?.condition_score ?? 0.8;
+    let cond = 'PRISTINE';
+    if (score < 0.6) cond = 'MINOR_WEAR';
+    else if (score < 0.85) cond = 'MINOR_WEAR';
+    else cond = 'PRISTINE';
+
+    const catName = category || (result as any)?.garment_category || (result as any)?.category || 'Dresses';
+    const displayTitle = (result as any)?.title || `${(fiber || (result as any)?.fiber_type || 'Heritage').toUpperCase()} ${catName.toUpperCase()}`;
+    const displayDesc = (result as any)?.description || `Pre-loved ${catName} in ${conditionGrade(score).label} condition. Assessed by Kaphor Circular AI.`;
+
+    router.push({
+      pathname: '/(tabs)/shop/sell',
+      params: {
+        prefillImage: imageUri || '',
+        prefillCategory: catName,
+        prefillTitle: displayTitle,
+        prefillDescription: displayDesc,
+        prefillBrand: '',
+        prefillCondition: cond,
+        prefillFabric: fiber || (result as any)?.fiber_type || '',
+        prefillColor: color || (result as any)?.color_family || '',
+        prefillStyle: style || '',
+        prefillListingType: 'SALE',
+      },
+    });
+  };
+
   // ── Result View ───────────────────────────────────────────────
   if (result) {
     const routeInfo = routeDisplayInfo(result.routing_decision);
@@ -151,21 +179,15 @@ export default function ConditionCheckScreen() {
           {/* ── Route-Specific Action Card ────────────────────────── */}
           {result.routing_decision === 'RESELL' && (
             <View style={styles.actionCard}>
-              <Text style={styles.actionCardTitle}>Recommended Price</Text>
-              {result.suggested_price_inr ? (
-                <Text style={styles.actionCardPrice}>
-                  ₹{result.suggested_price_inr.toLocaleString('en-IN')}
-                </Text>
-              ) : (
-                <Text style={styles.actionCardPlaceholder}>
-                  List at your desired price on the marketplace.
-                </Text>
-              )}
+              <Text style={styles.actionCardTitle}>Verified for Marketplace Resale</Text>
+              <Text style={styles.actionCardPlaceholder}>
+                Your garment is in good condition! Photo and details are ready to transfer directly. Set your own price on the next screen.
+              </Text>
               <TouchableOpacity
                 style={styles.actionBtn}
-                onPress={() => router.push('/(tabs)/shop/sell')}
+                onPress={navigateToSell}
               >
-                <Text style={styles.actionBtnText}>LIST FOR SALE →</Text>
+                <Text style={styles.actionBtnText}>LIST FOR SALE (1-CLICK) →</Text>
               </TouchableOpacity>
             </View>
           )}
