@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { logger } from './logger';
 import crypto from 'crypto';
@@ -247,4 +247,77 @@ export async function getDownloadUrl(originalUrlOrKey: string): Promise<string> 
   }
 
   return trimmed;
+}
+
+/**
+ * Deletes a file from S3 (or local disk fallback) to prevent orphaned files.
+ * @param originalUrlOrKey - The file URL or storage key.
+ */
+export async function deleteFromS3(originalUrlOrKey: string): Promise<boolean> {
+  if (!originalUrlOrKey) return false;
+  const trimmed = originalUrlOrKey.trim();
+
+  let s3Key: string | null = null;
+  if (trimmed.includes('.amazonaws.com/')) {
+    try {
+      const urlParts = new URL(trimmed);
+      s3Key = urlParts.pathname.startsWith('/') ? urlParts.pathname.substring(1) : urlParts.pathname;
+    } catch {
+      s3Key = null;
+    }
+  } else if (trimmed.startsWith('local://')) {
+    const raw = trimmed.replace('local://', '');
+    s3Key = raw.startsWith('/') ? raw.substring(1) : raw;
+  } else if (trimmed.startsWith('/uploads/')) {
+    s3Key = trimmed.substring(1);
+  } else if (trimmed.startsWith('uploads/')) {
+    s3Key = trimmed;
+  } else if (
+    trimmed.startsWith('garments/') ||
+    trimmed.startsWith('profiles/') ||
+    trimmed.startsWith('chat/') ||
+    trimmed.startsWith('swaps/')
+  ) {
+    s3Key = trimmed;
+  }
+
+  // 1. Delete from AWS S3
+  if (s3Key && accessKeyId && secretAccessKey && bucketName) {
+    try {
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: bucketName,
+          Key: s3Key,
+        })
+      );
+      if (!s3Key.startsWith('uploads/')) {
+        await s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: bucketName,
+            Key: `uploads/${s3Key}`,
+          })
+        ).catch(() => {});
+      }
+      logger.info(`Deleted file from S3: ${s3Key}`);
+      return true;
+    } catch (err: any) {
+      logger.warn(`Failed to delete file from S3: ${err.message}`);
+    }
+  }
+
+  // 2. Delete from local disk fallback
+  try {
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    const relativePath = (s3Key || '').replace(/^uploads\//, '');
+    const localPath = path.join(uploadsDir, relativePath);
+    if (fs.existsSync(localPath)) {
+      fs.unlinkSync(localPath);
+      logger.info(`Deleted local file: ${localPath}`);
+      return true;
+    }
+  } catch (err: any) {
+    logger.warn(`Failed to delete local fallback file: ${err.message}`);
+  }
+
+  return false;
 }

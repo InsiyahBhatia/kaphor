@@ -168,11 +168,8 @@ export default function GarmentDetailScreen() {
     ? garment.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0)
     : [];
 
-  const imagesList: string[] = rawImages.length > 0
-    ? rawImages
-    : [getCategoryFallbackImage(garment.category)];
-
-  const currentImage = imagesList[activeImageIndex] || imagesList[0];
+  const imagesList: string[] = rawImages.length > 0 ? rawImages : [''];
+  const currentImage = imagesList[activeImageIndex] || imagesList[0] || '';
   const effectiveUserId = user?.id || authStoreUserId;
   const isOwner = Boolean(effectiveUserId && (garment.sellerId === effectiveUserId || garment.seller?.id === effectiveUserId));
 

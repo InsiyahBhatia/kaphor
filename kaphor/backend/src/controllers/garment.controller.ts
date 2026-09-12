@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest as Request } from '../middleware/auth';
 import db from '../lib/prisma';
-import { uploadToS3, getDownloadUrl } from '../lib/s3';
+import { uploadToS3, getDownloadUrl, deleteFromS3 } from '../lib/s3';
 import { GarmentCondition, ListingType, EventType } from '@prisma/client';
 import { logger } from '../lib/logger';
 import { evaluateLifecycle } from '../services/lifecycle.service';
@@ -209,6 +209,7 @@ export async function getGarmentById(req: Request, res: Response): Promise<void>
 }
 
 export async function createGarment(req: Request, res: Response): Promise<void> {
+  const imageUrls: string[] = [];
   try {
     if (!req.user) {
       res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required', statusCode: 401 });
@@ -262,7 +263,6 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
     }
 
     const files = req.files as Express.Multer.File[] | undefined;
-    const imageUrls: string[] = [];
     if (files?.length) {
       // Parallelize image uploads for maximum performance
       const uploadResults = await Promise.all(
@@ -362,6 +362,11 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
     const resolvedGarment = await resolveGarmentImages(garment);
     res.status(201).json({ data: resolvedGarment });
   } catch (err) {
+    if (imageUrls.length > 0) {
+      for (const url of imageUrls) {
+        deleteFromS3(url).catch(() => {});
+      }
+    }
     logger.error('createGarment failed', { error: err instanceof Error ? err.message : String(err) });
     throw err;
   }
@@ -415,8 +420,13 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
 
     // If new images are uploaded, we typically replace or append.
     // Here we'll take existing images from body (if provided) and append new ones.
-    let updatedImages = existing.images;
+    let updatedImages = existing.images || [];
     if (body.images && Array.isArray(body.images)) {
+      const kept = new Set((body.images as string[]).map(String));
+      const removed = existing.images.filter((img: string) => !kept.has(img));
+      for (const img of removed) {
+        deleteFromS3(img).catch((delErr) => logger.warn('Failed to prune replaced S3 image', { img, error: delErr }));
+      }
       updatedImages = body.images.map(String);
     }
     if (newImageUrls.length > 0) {
@@ -464,6 +474,7 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
         ...(body.pattern != null && { pattern: String(body.pattern) }),
         ...(body.weight != null && { weight: String(body.weight) }),
         ...(updatedVector && { garmentVector: updatedVector }),
+        images: updatedImages,
       },
     });
     const resolvedGarment = await resolveGarmentImages(garment);
@@ -485,11 +496,26 @@ export async function deleteGarment(req: Request, res: Response): Promise<void> 
     if (req.user.role !== 'ADMIN') {
       whereClause.sellerId = req.user.id;
     }
-    const existing = await db.garment.findFirst({ where: whereClause });
+    const existing = await db.garment.findFirst({
+      where: whereClause,
+      include: {
+        orderItems: { select: { id: true }, take: 1 },
+        rentals: { select: { id: true }, take: 1 },
+      },
+    });
     if (!existing) {
       res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found', statusCode: 404 });
       return;
     }
+
+    // Prune S3 storage if this unsold/unrented garment is deleted
+    const hasHistory = (existing.orderItems && existing.orderItems.length > 0) || (existing.rentals && existing.rentals.length > 0);
+    if (!hasHistory && Array.isArray(existing.images)) {
+      for (const img of existing.images) {
+        deleteFromS3(img).catch((delErr) => logger.warn('Failed to prune S3 image on garment deletion', { img, error: delErr }));
+      }
+    }
+
     await db.garment.update({ where: { id }, data: { isActive: false } });
     res.status(200).json({ data: { message: 'Garment deleted' } });
   } catch (err) {

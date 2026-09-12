@@ -18,30 +18,11 @@ interface KaphorImageProps {
 const AWS_S3_BASE = 'https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com';
 
 /**
- * Curated high-resolution fashion editorial imagery for category fallbacks.
- * Ensures that if any user or network upload is missing/404, a beautiful authentic garment image is shown.
+ * Returns empty string for category fallback so mock Unsplash photos are NEVER shown.
+ * When no image exists or image is broken, KaphorImage displays the authentic brutalist Kaphor card.
  */
 export function getCategoryFallbackImage(category?: string | null): string {
-  const cat = String(category || '').toLowerCase();
-  if (cat.includes('kurta') || cat.includes('ethnic') || cat.includes('saree') || cat.includes('lehenga')) {
-    return 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=1000';
-  }
-  if (cat.includes('jewelry') || cat.includes('jewel') || cat.includes('accessory') || cat.includes('accessories') || cat.includes('pendant') || cat.includes('necklace') || cat.includes('ring') || cat.includes('earring')) {
-    return 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=1000';
-  }
-  if (cat.includes('denim') || cat.includes('jean')) {
-    return 'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&q=80&w=1000';
-  }
-  if (cat.includes('bottom') || cat.includes('pant') || cat.includes('skirt') || cat.includes('trouser')) {
-    return 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=1000';
-  }
-  if (cat.includes('top') || cat.includes('shirt') || cat.includes('t-shirt') || cat.includes('sweatshirt') || cat.includes('jacket')) {
-    return 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=1000';
-  }
-  if (cat.includes('rental') || cat.includes('dress')) {
-    return 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&q=80&w=1000';
-  }
-  return 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1000';
+  return '';
 }
 
 /**

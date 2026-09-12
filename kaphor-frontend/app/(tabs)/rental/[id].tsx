@@ -124,11 +124,8 @@ export default function RentalDetailScreen() {
     ? garment.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0)
     : [];
 
-  const imagesList: string[] = rawImages.length > 0
-    ? rawImages
-    : [getCategoryFallbackImage(garment.category)];
-
-  const currentImage = imagesList[activeImageIndex] || imagesList[0];
+  const imagesList: string[] = rawImages.length > 0 ? rawImages : [''];
+  const currentImage = imagesList[activeImageIndex] || imagesList[0] || '';
 
   const cleanColors = Array.isArray(garment.color)
     ? garment.color.filter((c: string) => typeof c === 'string' && c.trim().length > 0).join(', ')
