@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Dimensions, Platform, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
+import { messageService } from '../../../src/services/messageService';
 import { api } from '../../../src/services/api';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
@@ -24,6 +25,7 @@ export default function RentalDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [zoomVisible, setZoomVisible] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   useBackHandler('/(tabs)/shop');
 
@@ -57,6 +59,30 @@ export default function RentalDetailScreen() {
       setLoading(false);
     })();
   }, [id]);
+
+  const handleStartChat = async () => {
+    const sellerId = garment?.seller?.id || garment?.sellerId;
+    if (!sellerId) {
+      Alert.alert('Chat Notice', 'Lender information is not available for this item.');
+      return;
+    }
+    if (sellerId === currentUserId) {
+      Alert.alert('Notice', 'You are the owner of this rental listing.');
+      return;
+    }
+    if (startingChat) return;
+
+    hapticFeedback.light();
+    setStartingChat(true);
+    try {
+      const conv = await messageService.getOrCreateConversation(sellerId, garment.id);
+      router.push(`/messages/${conv.id}` as any);
+    } catch (e: any) {
+      Alert.alert('Chat Error', e?.response?.data?.message || 'Could not start conversation with lender.');
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   if (loading) {
     return <DossierLoading variant="rental" />;
@@ -107,6 +133,8 @@ export default function RentalDetailScreen() {
   const cleanColors = Array.isArray(garment.color)
     ? garment.color.filter((c: string) => typeof c === 'string' && c.trim().length > 0).join(', ')
     : typeof garment.color === 'string' && garment.color.trim() ? garment.color : '';
+
+  const isOwner = Boolean(currentUserId && (garment.sellerId === currentUserId || garment.seller?.id === currentUserId));
 
   return (
     <View style={styles.container}>
@@ -178,6 +206,25 @@ export default function RentalDetailScreen() {
           <Text style={styles.brand}>{garment.brand || 'HERITAGE ARCHIVE'}</Text>
           <Text style={styles.title}>{garment.title}</Text>
           <Text style={styles.desc}>{garment.description || 'Curated rental asset from the Kaphor physical archive.'}</Text>
+
+          {/* CHAT WITH LENDER BUTTON */}
+          {!isOwner && (
+            <TouchableOpacity 
+              style={styles.messageLenderBtn} 
+              onPress={handleStartChat}
+              disabled={startingChat}
+              activeOpacity={0.8}
+            >
+              {startingChat ? (
+                <ActivityIndicator size="small" color={colors.charcoal} />
+              ) : (
+                <>
+                  <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.charcoal} />
+                  <Text style={styles.messageLenderText}>CHAT WITH LENDER ABOUT RENTAL</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
 
           {/* AI Doubt & Style Assistant Button */}
           <TouchableOpacity 
@@ -297,39 +344,59 @@ export default function RentalDetailScreen() {
         </View>
       </Modal>
 
-      {/* Fixed Reserve Footer with Safe Insets */}
-      {(() => {
-        const isOwner = currentUserId && (garment.sellerId === currentUserId || garment.seller?.id === currentUserId);
-        return (
-          <View style={[
-            styles.footer,
-            {
-              paddingBottom: Math.max(
-                insets.bottom + 12,
-                Platform.OS === 'android' ? 24 : 16
-              )
-            }
-          ]}>
+      {/* Fixed Reserve & Chat Footer with Safe Insets */}
+      <View style={[
+        styles.footer,
+        {
+          paddingBottom: Math.max(
+            insets.bottom + 12,
+            Platform.OS === 'android' ? 24 : 16
+          )
+        }
+      ]}>
+        {isOwner ? (
+          <TouchableOpacity
+            style={[styles.reserveButton, { backgroundColor: colors.cream, borderColor: colors.charcoal, opacity: 0.7 }]}
+            disabled={true}
+          >
+            <Text style={[styles.reserveButtonText, { color: colors.charcoal }]}>
+              YOUR LISTED ASSET
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.footerRow}>
             <TouchableOpacity
-              style={[styles.reserveButton, isOwner && { backgroundColor: colors.cream, borderColor: colors.charcoal, opacity: 0.7 }]}
-              disabled={Boolean(isOwner)}
+              style={styles.chatIconButton}
+              onPress={handleStartChat}
+              disabled={startingChat}
+              activeOpacity={0.8}
+            >
+              {startingChat ? (
+                <ActivityIndicator size="small" color={colors.charcoal} />
+              ) : (
+                <>
+                  <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.charcoal} />
+                  <Text style={styles.chatIconLabel}>CHAT</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.reserveButton, { flex: 1 }]}
               onPress={() => {
-                if (isOwner) return;
                 hapticFeedback.heavy();
                 router.push({ 
                   pathname: '/(tabs)/rental/reserve', 
                   params: { garmentId: garment.id, dayRate: String(dayRate) } 
                 });
               }}
-              activeOpacity={isOwner ? 1 : 0.88}
+              activeOpacity={0.88}
             >
-              <Text style={[styles.reserveButtonText, isOwner && { color: colors.charcoal }]}>
-                {isOwner ? 'YOUR LISTED ASSET' : 'RESERVE NOW'}
-              </Text>
+              <Text style={styles.reserveButtonText}>RESERVE NOW</Text>
             </TouchableOpacity>
           </View>
-        );
-      })()}
+        )}
+      </View>
     </View>
   );
 }
@@ -471,6 +538,50 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   reserveButtonText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
+  messageLenderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F5F3ED',
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  messageLenderText: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 1.2,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    width: '100%',
+  },
+  chatIconButton: {
+    width: 60,
+    height: 56,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  chatIconLabel: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
   zoomModalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.95)',

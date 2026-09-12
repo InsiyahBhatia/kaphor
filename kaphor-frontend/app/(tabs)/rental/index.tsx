@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { rentalService } from '../../../src/services/rentalService';
+import { messageService } from '../../../src/services/messageService';
 import { cachedGet } from '../../../src/services/api';
 import { PlayingCard } from '../../../src/components/PlayingCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
@@ -100,19 +101,41 @@ export default function RentalScreen() {
         <Text style={styles.myRentalPrice}>
           ₹{Math.round(rental.totalPrice || 0).toLocaleString('en-IN')} total
         </Text>
-        {rental.status === 'RESERVED' && (
+        <View style={styles.myRentalActionRow}>
           <TouchableOpacity
-            style={styles.myRentalReturnBtn}
+            style={styles.myRentalChatBtn}
             onPress={async () => {
-              try {
-                await rentalService.returnRental(rental.id);
-                fetchMyRentals();
-              } catch {}
+              const otherId = rental.garment?.sellerId || rental.garment?.seller?.id || rental.sellerId;
+              if (otherId) {
+                try {
+                  const conv = await messageService.getOrCreateConversation(otherId, rental.garmentId);
+                  router.push(`/messages/${conv.id}` as any);
+                } catch {
+                  router.push('/messages');
+                }
+              } else {
+                router.push('/messages');
+              }
             }}
           >
-            <Text style={styles.myRentalReturnText}>MARK AS RETURNED</Text>
+            <Ionicons name="chatbubble-ellipses-outline" size={15} color={colors.charcoal} />
+            <Text style={styles.myRentalChatText}>CHAT WITH LENDER</Text>
           </TouchableOpacity>
-        )}
+
+          {rental.status === 'RESERVED' && (
+            <TouchableOpacity
+              style={styles.myRentalReturnBtn}
+              onPress={async () => {
+                try {
+                  await rentalService.returnRental(rental.id);
+                  fetchMyRentals();
+                } catch {}
+              }}
+            >
+              <Text style={styles.myRentalReturnText}>MARK AS RETURNED</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     ));
   };
@@ -251,7 +274,38 @@ const styles = StyleSheet.create({
   myRentalDateLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700', marginBottom: 2 },
   myRentalDateValue: { fontFamily: typography.mono, fontSize: 12, color: colors.charcoal, fontWeight: '700' },
   myRentalPrice: { fontFamily: typography.mono, fontSize: 15, color: colors.red, fontWeight: '800' },
-  myRentalReturnBtn: { backgroundColor: colors.charcoal, height: 40, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.charcoal },
+  myRentalActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  myRentalChatBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F5F3ED',
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    height: 40,
+  },
+  myRentalChatText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.8,
+  },
+  myRentalReturnBtn: {
+    flex: 1,
+    backgroundColor: colors.charcoal,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+  },
   myRentalReturnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', flex: 1, padding: 20, paddingTop: 60 },
