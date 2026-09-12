@@ -187,6 +187,16 @@ export default function SellScreen() {
         setCategory('Bags');
         setSize('FREE SIZE');
       }
+    } else if (type === 'RENTAL') {
+      if (!rentalDay && price) {
+        const estDay = String(Math.max(199, Math.round(Number(price) * 0.12)));
+        setRentalDay(estDay);
+        setRentalWeek(String(Math.round(Number(estDay) * 5)));
+      }
+    } else if (type === 'SALE') {
+      if (!price && rentalDay) {
+        setPrice(String(Math.round(Number(rentalDay) * 8)));
+      }
     }
   };
 
@@ -440,6 +450,64 @@ export default function SellScreen() {
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
 
+  const renderListingTypeSelector = () => {
+    const types = [
+      { id: 'SALE', label: 'SALE', sub: 'Resale', icon: 'pricetag-outline' },
+      { id: 'RENTAL', label: 'RENTAL', sub: 'Hire', icon: 'calendar-outline' },
+      { id: 'ACCESSORY_SWAP', label: 'SWAP', sub: 'Exchange', icon: 'repeat-outline' },
+    ];
+
+    const currentInfo = {
+      SALE: 'List for outright purchase. Set your resale price below.',
+      RENTAL: 'List for peer rental. Set your daily and weekly rental rates below.',
+      ACCESSORY_SWAP: 'Direct peer exchange for accessories & footwear. No cash required.',
+    }[listingType] || '';
+
+    return (
+      <View style={styles.listingTypeTopContainer}>
+        <View style={styles.listingTypeTopHeader}>
+          <Text style={styles.listingTypeTopLabel}>LISTING TYPE</Text>
+          <View style={[styles.listingTypeBadge, listingType === 'ACCESSORY_SWAP' && styles.listingTypeBadgeSwap]}>
+            <Text style={styles.listingTypeBadgeText}>
+              {listingType === 'ACCESSORY_SWAP' ? 'ACCESSORIES ONLY' : listingType}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.segmentedRow}>
+          {types.map((t) => {
+            const isActive = listingType === t.id;
+            return (
+              <TouchableOpacity
+                key={t.id}
+                style={[styles.segmentedBtn, isActive && styles.segmentedBtnActive]}
+                onPress={() => handleListingTypeChange(t.id)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={t.icon as any}
+                  size={16}
+                  color={isActive ? colors.white : colors.charcoal}
+                />
+                <Text style={[styles.segmentedBtnLabel, isActive && styles.segmentedBtnLabelActive]}>
+                  {t.label}
+                </Text>
+                <Text style={[styles.segmentedBtnSub, isActive && styles.segmentedBtnSubActive]}>
+                  {t.sub}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View style={styles.listingTypeDescRow}>
+          <Ionicons name="information-circle-outline" size={14} color={colors.textSecond} />
+          <Text style={styles.listingTypeDescText}>{currentInfo}</Text>
+        </View>
+      </View>
+    );
+  };
+
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -447,6 +515,9 @@ export default function SellScreen() {
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>UPLOAD IMAGES</Text>
             <Text style={styles.stepSubtitle}>Showcase the craftsmanship (up to 5 photos)</Text>
+
+            {renderListingTypeSelector()}
+
             <View style={styles.imageGrid}>
               {images.map((uri, i) => (
                 <View key={i} style={styles.imageThumb}>
@@ -498,26 +569,29 @@ export default function SellScreen() {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>GARMENT DETAILS</Text>
+
+            {/* Listing Type Prominently at Top */}
+            {renderListingTypeSelector()}
+
+            {/* Category filtered according to Listing Type */}
+            <DropdownPicker
+              label="CATEGORY"
+              options={
+                listingType === 'ACCESSORY_SWAP'
+                  ? MARKET_CATEGORIES.filter(g => g.group === 'ACCESSORIES' || g.group === 'FOOTWEAR').flatMap(g => g.items.map(i => ({ id: i, label: i, group: g.group })))
+                  : MARKET_CATEGORIES.flatMap(g => g.items.map(i => ({ id: i, label: i, group: g.group })))
+              }
+              selectedValue={category}
+              onSelect={handleCategoryChange}
+              isGrouped={true}
+              placeholder="SELECT CATEGORY"
+            />
+
             <TextInput style={styles.input} placeholder="TITLE" placeholderTextColor={colors.textMuted} value={title} onChangeText={setTitle} />
             <TextInput style={[styles.input, { height: 80 }]} placeholder="DESCRIPTION" placeholderTextColor={colors.textMuted} value={description} onChangeText={setDescription} multiline />
             <TextInput style={styles.input} placeholder="BRAND" placeholderTextColor={colors.textMuted} value={brand} onChangeText={setBrand} />
-            <DropdownPicker
-              label="SIZE"
-              options={MARKET_SIZES.map(s => ({ id: s, label: s }))}
-              selectedValue={size}
-              onSelect={setSize}
-              placeholder="SELECT SIZE"
-            />
-            {/* Fallback for custom sizes if needed, but the user wants clean dropdowns */}
-            {size === 'CUSTOM' && (
-              <TextInput 
-                style={styles.input} 
-                placeholder="ENTER CUSTOM SIZE" 
-                placeholderTextColor={colors.textMuted} 
-                value={description} // Reuse a temporary state or just keep it simple
-                onChangeText={setSize} 
-              />
-            )}
+
+            {/* Dynamic Rates / Pricing according to Listing Type */}
             {listingType === 'RENTAL' ? (
               <>
                 <TextInput
@@ -550,31 +624,27 @@ export default function SellScreen() {
               <View style={styles.swapNoticeBox}>
                 <Ionicons name="repeat" size={18} color={colors.crimson} />
                 <Text style={styles.swapNoticeText}>
-                  SWAP ASSET: Direct peer exchange. No price is required for swap listings.
+                  SWAP ASSET: Direct peer exchange. No cash price is required for swap listings.
                 </Text>
               </View>
             )}
 
-            <TextInput style={styles.input} placeholder="FABRIC" placeholderTextColor={colors.textMuted} value={fabric} onChangeText={setFabric} />
-            <TextInput style={styles.input} placeholder="COLOR" placeholderTextColor={colors.textMuted} value={color} onChangeText={setColor} />
-            <TextInput style={styles.input} placeholder="STYLE" placeholderTextColor={colors.textMuted} value={styleAttr} onChangeText={setStyleAttr} />
-            <TextInput style={styles.input} placeholder="SLEEVE" placeholderTextColor={colors.textMuted} value={sleeve} onChangeText={setSleeve} />
-            <TextInput style={styles.input} placeholder="SHAPE" placeholderTextColor={colors.textMuted} value={shape} onChangeText={setShape} />
-            <TextInput style={styles.input} placeholder="PATTERN" placeholderTextColor={colors.textMuted} value={pattern} onChangeText={setPattern} />
-            <TextInput style={styles.input} placeholder="WEIGHT" placeholderTextColor={colors.textMuted} value={weight} onChangeText={setWeight} />
-
             <DropdownPicker
-              label="CATEGORY"
-              options={
-                listingType === 'ACCESSORY_SWAP'
-                  ? MARKET_CATEGORIES.filter(g => g.group === 'ACCESSORIES' || g.group === 'FOOTWEAR').flatMap(g => g.items.map(i => ({ id: i, label: i, group: g.group })))
-                  : MARKET_CATEGORIES.flatMap(g => g.items.map(i => ({ id: i, label: i, group: g.group })))
-              }
-              selectedValue={category}
-              onSelect={handleCategoryChange}
-              isGrouped={true}
-              placeholder="SELECT CATEGORY"
+              label="SIZE"
+              options={MARKET_SIZES.map(s => ({ id: s, label: s }))}
+              selectedValue={size}
+              onSelect={setSize}
+              placeholder="SELECT SIZE"
             />
+            {size === 'CUSTOM' && (
+              <TextInput 
+                style={styles.input} 
+                placeholder="ENTER CUSTOM SIZE" 
+                placeholderTextColor={colors.textMuted} 
+                value={size} 
+                onChangeText={setSize} 
+              />
+            )}
 
             <DropdownPicker
               label="CONDITION"
@@ -591,22 +661,13 @@ export default function SellScreen() {
               </Text>
             </View>
 
-            <DropdownPicker
-              label="LISTING TYPE"
-              options={LISTING_TYPES}
-              selectedValue={listingType}
-              onSelect={handleListingTypeChange}
-              placeholder="SELECT LISTING TYPE"
-            />
-
-            {listingType === 'ACCESSORY_SWAP' && (
-              <View style={[styles.swapNoticeBox, { marginTop: -6, marginBottom: 12 }]}>
-                <Ionicons name="shield-checkmark-outline" size={16} color={colors.forest} />
-                <Text style={styles.swapNoticeText}>
-                  Note: Swapping on KaPhor is exclusively for accessories & footwear.
-                </Text>
-              </View>
-            )}
+            <TextInput style={styles.input} placeholder="FABRIC" placeholderTextColor={colors.textMuted} value={fabric} onChangeText={setFabric} />
+            <TextInput style={styles.input} placeholder="COLOR" placeholderTextColor={colors.textMuted} value={color} onChangeText={setColor} />
+            <TextInput style={styles.input} placeholder="STYLE" placeholderTextColor={colors.textMuted} value={styleAttr} onChangeText={setStyleAttr} />
+            <TextInput style={styles.input} placeholder="SLEEVE" placeholderTextColor={colors.textMuted} value={sleeve} onChangeText={setSleeve} />
+            <TextInput style={styles.input} placeholder="SHAPE" placeholderTextColor={colors.textMuted} value={shape} onChangeText={setShape} />
+            <TextInput style={styles.input} placeholder="PATTERN" placeholderTextColor={colors.textMuted} value={pattern} onChangeText={setPattern} />
+            <TextInput style={styles.input} placeholder="WEIGHT" placeholderTextColor={colors.textMuted} value={weight} onChangeText={setWeight} />
 
             <View style={styles.row}>
               <TouchableOpacity style={styles.secondaryButton} onPress={prevStep}>
@@ -628,9 +689,9 @@ export default function SellScreen() {
               <Text style={styles.summaryLabel}>CATEGORY: <Text style={styles.summaryValue}>{category}</Text></Text>
               <Text style={styles.summaryLabel}>CONDITION: <Text style={styles.summaryValue}>{condition.replace('_', ' ')}</Text></Text>
               <Text style={styles.summaryLabel}>
-                {listingType === 'RENTAL' ? 'RENT PER DAY: ' : 'PRICE: '}
+                {listingType === 'RENTAL' ? 'RENT PER DAY: ' : listingType === 'ACCESSORY_SWAP' ? 'LISTING: ' : 'PRICE: '}
                 <Text style={styles.summaryValue}>
-                  {listingType === 'RENTAL' ? `₹${rentalDay}` : `₹${price}`}
+                  {listingType === 'RENTAL' ? `₹${rentalDay}` : listingType === 'ACCESSORY_SWAP' ? 'SWAP ASSET (EXCHANGE)' : `₹${price}`}
                 </Text>
               </Text>
               {fabric ? <Text style={styles.summaryLabel}>FABRIC: <Text style={styles.summaryValue}>{fabric}</Text></Text> : null}
@@ -856,5 +917,100 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     fontWeight: '600',
     fontFamily: typography.mono,
+  },
+  listingTypeTopContainer: {
+    marginBottom: 20,
+    backgroundColor: colors.white,
+    padding: 14,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    borderRadius: 4,
+  },
+  listingTypeTopHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  listingTypeTopLabel: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    color: colors.charcoal,
+  },
+  listingTypeBadge: {
+    backgroundColor: 'rgba(26,26,26,0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  listingTypeBadgeSwap: {
+    backgroundColor: 'rgba(158, 42, 43, 0.08)',
+    borderColor: colors.crimson,
+  },
+  listingTypeBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.charcoal,
+  },
+  segmentedRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  segmentedBtn: {
+    flex: 1,
+    backgroundColor: '#F5F3ED',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 2,
+    gap: 3,
+  },
+  segmentedBtnActive: {
+    backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
+  },
+  segmentedBtnLabel: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: colors.charcoal,
+  },
+  segmentedBtnLabelActive: {
+    color: colors.white,
+  },
+  segmentedBtnSub: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  segmentedBtnSubActive: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+  listingTypeDescRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+  listingTypeDescText: {
+    fontSize: 11,
+    color: colors.textSecond,
+    fontFamily: typography.body,
+    flex: 1,
+    lineHeight: 15,
   },
 });
