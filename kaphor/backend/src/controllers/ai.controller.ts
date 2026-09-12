@@ -742,8 +742,19 @@ Taxonomy Guidelines:
 - "estimatedPrice": Realistic pre-loved resale valuation in INR (number, e.g. 1500).
 - "suggestedRentalPriceDay": Daily rental rate in INR (typically 10-15% of estimatedPrice, minimum 199).
 - "suggestedRentalPriceWeek": Weekly rental rate in INR (typically 4-5x daily rate).
-
-${listingType ? `Target listing intent is "${listingType}". Tailor recommendations accordingly.` : ''}
+${listingType === 'RENTAL' ? `IMPORTANT LISTING CONTEXT: The seller has selected "RENTAL" mode.
+- Calculate suggested rental pricing: "suggestedRentalPriceDay" (peer hire daily rate in INR, 10-15% of garment retail value, min 199), and "suggestedRentalPriceWeek" (4-5x daily rate).
+- Emphasize rental hire appeal, occasion suitability (weddings, galas, shoots, festivals), and styling adaptability in the "description".
+- Set "recommendedListingType" to "RENTAL".` : ''}
+${listingType === 'ACCESSORY_SWAP' ? `IMPORTANT LISTING CONTEXT: The seller has selected "ACCESSORY_SWAP" mode (peer-to-peer exchange).
+- Swapping on KaPhor is exclusively for accessories and footwear.
+- If the item is an accessory or footwear, classify "category" to ACCESSORIES or FOOTWEAR, set "size" to "FREE SIZE", and highlight craftsmanship, hardware, and exchange appeal in the "description".
+- If the item is clearly apparel (e.g. shirt, dress, jacket), accurately identify its apparel category so the application can guide the user accordingly.
+- Set "recommendedListingType" to "ACCESSORY_SWAP".` : ''}
+${listingType === 'SALE' ? `IMPORTANT LISTING CONTEXT: The seller has selected outright resale ("SALE") mode.
+- Calculate an authentic, realistic pre-loved resale "estimatedPrice" in INR based on brand, silhouette, and textile quality.
+- Highlight archival value, craftsmanship, and silhouette in the "description".
+- Set "recommendedListingType" to "SALE".` : ''}
 
 Return ONLY valid JSON with this exact structure:
 {

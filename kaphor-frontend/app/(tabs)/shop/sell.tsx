@@ -200,14 +200,16 @@ export default function SellScreen() {
     }
   };
 
-  const handleAiFill = async () => {
-    if (images.length === 0) {
-      Alert.alert('Image Required', 'Upload at least one photo first.');
+  const executeAiFill = async (targetUri?: string) => {
+    const imgUri = targetUri || (images.length > 0 ? images[0] : null);
+    if (!imgUri) {
+      await pickAndRunAiFill();
       return;
     }
+
     setAiLoading(true);
     try {
-      const base64 = await FileSystem.readAsStringAsync(images[0], { encoding: 'base64' });
+      const base64 = await FileSystem.readAsStringAsync(imgUri, { encoding: 'base64' });
       const { data } = await api.post(
         '/ai/analyze-listing',
         { image: `data:image/jpeg;base64,${base64}`, listingType },
@@ -252,10 +254,10 @@ export default function SellScreen() {
           : String(Math.round(Number(dayRate) * 5));
 
         if (listingType === 'ACCESSORY_SWAP') {
+          setPrice('');
+          setRentalDay('');
+          setRentalWeek('');
           if (isAccessory) {
-            setPrice('');
-            setRentalDay('');
-            setRentalWeek('');
             Alert.alert(
               'AI Magic Fill: Swap Asset',
               `Identified as "${matchedCat}". Your accessory swap listing has been filled! Swap listings require no cash price.`
@@ -272,6 +274,7 @@ export default function SellScreen() {
         } else if (listingType === 'RENTAL') {
           setRentalDay(dayRate);
           setRentalWeek(weekRate);
+          setPrice('');
           Alert.alert(
             'AI Magic Fill: Rental Listing',
             `Identified as "${matchedCat}". Auto-filled suggested rental rate of ₹${dayRate}/day (₹${weekRate}/week) based on archival market valuation.`
@@ -279,6 +282,8 @@ export default function SellScreen() {
         } else {
           // SALE
           setPrice(estPrice);
+          setRentalDay('');
+          setRentalWeek('');
           if (isAccessory) {
             Alert.alert(
               'AI Magic Fill: Sale Listing',
@@ -302,6 +307,26 @@ export default function SellScreen() {
       setAiLoading(false);
     }
   };
+
+  const pickAndRunAiFill = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Grant photo access to use AI Magic Fill.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]?.uri) {
+      const uri = result.assets[0].uri;
+      setImages((prev) => [uri, ...prev.filter(u => u !== uri)].slice(0, 5));
+      await executeAiFill(uri);
+    }
+  };
+
+  const handleAiFill = () => executeAiFill();
 
   const pickImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -513,10 +538,17 @@ export default function SellScreen() {
       case 1:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>UPLOAD IMAGES</Text>
-            <Text style={styles.stepSubtitle}>Showcase the craftsmanship (up to 5 photos)</Text>
+            <Text style={styles.stepTitle}>SELECT LISTING TYPE</Text>
+            <Text style={styles.stepSubtitle}>Choose your listing type, then let AI auto-fill or enter manually</Text>
 
+            {/* 1. Segmented Listing Type Selector prominently at the top */}
             {renderListingTypeSelector()}
+
+            {/* 2. Photo Upload Box */}
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeading}>GARMENT PHOTOS</Text>
+              <Text style={styles.sectionHeadingSub}>{images.length}/5 ADDED</Text>
+            </View>
 
             <View style={styles.imageGrid}>
               {images.map((uri, i) => (
@@ -539,30 +571,37 @@ export default function SellScreen() {
                 </TouchableOpacity>
               )}
             </View>
+
+            {/* 3. AI Magic Fill Button (dynamic text and action based on selected listingType) */}
+            <TouchableOpacity
+              style={[styles.aiButton, aiLoading && { opacity: 0.7 }]}
+              onPress={images.length > 0 ? () => executeAiFill(images[0]) : pickAndRunAiFill}
+              disabled={aiLoading}
+            >
+              {aiLoading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <>
+                  <Ionicons name="sparkles" size={20} color={colors.white} />
+                  <Text style={styles.aiButtonText}>
+                    {listingType === 'RENTAL' 
+                      ? 'AI MAGIC FILL (RENTAL RATES & SPECS)' 
+                      : listingType === 'ACCESSORY_SWAP' 
+                      ? 'AI MAGIC FILL (SWAP ASSET SPECS)' 
+                      : 'AI MAGIC FILL (SALE PRICING & DETAILS)'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* 4. Continue manually */}
             <TouchableOpacity
               style={[styles.mainButton, images.length === 0 && { opacity: 0.5 }]}
               onPress={nextStep}
               disabled={images.length === 0}
             >
-              <Text style={styles.mainButtonText}>CONTINUE</Text>
+              <Text style={styles.mainButtonText}>MANUAL ENTRY / CONTINUE</Text>
             </TouchableOpacity>
-
-            {images.length > 0 && (
-              <TouchableOpacity
-                style={[styles.aiButton, aiLoading && { opacity: 0.7 }]}
-                onPress={handleAiFill}
-                disabled={aiLoading}
-              >
-                {aiLoading ? (
-                  <ActivityIndicator color={colors.white} />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles" size={20} color={colors.white} />
-                    <Text style={styles.aiButtonText}>AI MAGIC FILL</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
           </View>
         );
       case 2:
@@ -1012,5 +1051,25 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     flex: 1,
     lineHeight: 15,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginTop: 4,
+    marginBottom: -4,
+  },
+  sectionHeading: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    color: colors.charcoal,
+  },
+  sectionHeadingSub: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textMuted,
   },
 });
