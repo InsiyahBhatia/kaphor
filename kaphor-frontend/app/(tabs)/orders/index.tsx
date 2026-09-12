@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { OrderTrackerStepper } from '../../../src/components/orders/OrderTrackerStepper';
+import { EstTradeValueBadge } from '../../../src/components/orders/EstTradeValueBadge';
+import { FairValueMatcher } from '../../../src/components/orders/FairValueMatcher';
 import { trackingService, OrdersSummaryData, RentalItem } from '../../../src/services/trackingService';
 import { TransactionOrder } from '../../../src/services/orderService';
 import { messageService } from '../../../src/services/messageService';
@@ -823,9 +825,12 @@ export default function OrdersManagementScreen() {
                         <Text style={styles.swapItemTitle} numberOfLines={1}>
                           {myGarment?.title || 'Offered Item'}
                         </Text>
-                        <View style={styles.estValueBadge}>
-                          <Text style={styles.estValueText}>EST. VAL: ₹{myValuation.toLocaleString('en-IN')}</Text>
-                        </View>
+                        <EstTradeValueBadge
+                          value={myValuation}
+                          size="sm"
+                          variant="dark"
+                          style={{ marginTop: 4 }}
+                        />
                       </View>
 
                       <View style={styles.swapArrowCol}>
@@ -839,11 +844,24 @@ export default function OrdersManagementScreen() {
                         <Text style={styles.swapItemTitle} numberOfLines={1}>
                           {theirGarment?.title || 'Wanted Item'}
                         </Text>
-                        <View style={styles.estValueBadge}>
-                          <Text style={styles.estValueText}>EST. VAL: ₹{theirValuation.toLocaleString('en-IN')}</Text>
-                        </View>
+                        <EstTradeValueBadge
+                          value={theirValuation}
+                          size="sm"
+                          variant="copper"
+                          style={{ marginTop: 4 }}
+                        />
                       </View>
                     </View>
+
+                    {/* FAIR VALUE MATCHER */}
+                    <FairValueMatcher
+                      myGarment={myGarment}
+                      theirGarment={theirGarment}
+                      myValuation={myValuation}
+                      theirValuation={theirValuation}
+                      compact={true}
+                      style={{ marginTop: 10 }}
+                    />
 
                     {/* STEPPER */}
                     <View style={styles.stepperContainer}>

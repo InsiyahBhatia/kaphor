@@ -22,6 +22,8 @@ import api from '../../../src/services/api';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { EstTradeValueBadge } from '../../../src/components/orders/EstTradeValueBadge';
+import { FairValueMatcher } from '../../../src/components/orders/FairValueMatcher';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useAuth } from '../../../src/context/AuthContext';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -466,9 +468,12 @@ export default function SwapDetailsScreen() {
                   </Text>
                 )}
               </View>
-              <Text style={styles.garmentValue}>
-                {getDisplayGarmentValue(itemYouGive)}
-              </Text>
+              <EstTradeValueBadge
+                value={(itemYouGive as any)?.price || (itemYouGive as any)?.estimatedValue}
+                size="sm"
+                variant="dark"
+                style={{ marginTop: 4 }}
+              />
             </TouchableOpacity>
           </View>
 
@@ -527,12 +532,25 @@ export default function SwapDetailsScreen() {
                   </Text>
                 )}
               </View>
-              <Text style={styles.garmentValue}>
-                {getDisplayGarmentValue(itemYouReceive)}
-              </Text>
+              <EstTradeValueBadge
+                value={(itemYouReceive as any)?.price || (itemYouReceive as any)?.estimatedValue}
+                size="sm"
+                variant="copper"
+                style={{ marginTop: 4 }}
+              />
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* FAIR VALUE MATCHER SECTION */}
+        <FairValueMatcher
+          myGarment={itemYouGive as any}
+          theirGarment={itemYouReceive as any}
+          myValuation={(itemYouGive as any)?.price || (itemYouGive as any)?.estimatedValue}
+          theirValuation={(itemYouReceive as any)?.price || (itemYouReceive as any)?.estimatedValue}
+          compact={false}
+          style={{ marginHorizontal: 16, marginTop: 12, marginBottom: 4 }}
+        />
 
         {/* Proposal Note */}
         {swap.message && (
