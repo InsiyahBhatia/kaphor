@@ -398,6 +398,42 @@ export default function OrderThreadScreen() {
         </View>
       )}
 
+      {/* ── Next Steps Instructions (Seller / Buyer Specific) ───────────────── */}
+      {order.status === 'CONFIRMED' && (
+        <View style={styles.nextStepsBanner}>
+          <View style={styles.nextStepsHeader}>
+            <Ionicons
+              name={isSeller ? 'cube' : 'time'}
+              size={18}
+              color={isSeller ? '#1C2B4A' : colors.forest}
+            />
+            <Text style={styles.nextStepsTitle}>
+              {isSeller ? 'NEXT STEPS: DISPATCH ITEM' : 'NEXT STEPS: AWAITING DISPATCH'}
+            </Text>
+          </View>
+          <Text style={styles.nextStepsBody}>
+            {isSeller
+              ? 'Payment is secured in escrow. 1) Check the buyer delivery address below. 2) Pack and courier the item. 3) Tap "MARK SHIPPED" above when dispatched.'
+              : 'Payment confirmed! The seller has been notified to pack and ship your item. You can track progress or message the seller below.'}
+          </Text>
+        </View>
+      )}
+      {order.status === 'SHIPPED' && (
+        <View style={styles.nextStepsBanner}>
+          <View style={styles.nextStepsHeader}>
+            <Ionicons name="airplane" size={18} color="#1C2B4A" />
+            <Text style={styles.nextStepsTitle}>
+              {isBuyer ? 'ITEM IN TRANSIT' : 'ITEM DISPATCHED'}
+            </Text>
+          </View>
+          <Text style={styles.nextStepsBody}>
+            {isBuyer
+              ? 'Your package is on its way! Once delivered to your door, inspect the garment condition and tap "CONFIRM DELIVERED" to release escrow funds.'
+              : 'Package marked as shipped. Once the buyer receives and verifies the garment, the order will complete and funds will settle.'}
+          </Text>
+        </View>
+      )}
+
       <FlatList
         style={styles.msgList}
         data={messages}
@@ -411,7 +447,7 @@ export default function OrderThreadScreen() {
                 <Ionicons name="bag-outline" size={16} color={colors.charcoal} />
                 <Text style={styles.summaryLabel}>ORDER TOTAL</Text>
                 <Text style={styles.summaryValue}>
-                  ₹{(order.totalAmount / 100).toLocaleString('en-IN')}
+                  ₹{Math.round(order.totalAmount).toLocaleString('en-IN')}
                 </Text>
               </View>
               <View style={styles.summaryRow}>
@@ -1133,4 +1169,32 @@ const styles = StyleSheet.create({
   },
   reviewSubmitText: { color: colors.cream, fontFamily: typography.mono, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   disabled: { opacity: 0.6 },
+
+  // Next Steps Guidance Banner
+  nextStepsBanner: {
+    backgroundColor: '#F7F4EB',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,31,34,0.12)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  nextStepsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  nextStepsTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+    color: colors.charcoal,
+  },
+  nextStepsBody: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.charcoal,
+  },
 });

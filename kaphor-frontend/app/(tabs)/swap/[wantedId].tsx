@@ -87,10 +87,13 @@ export default function SwapWithWantedScreen() {
           <View style={styles.wantedCard}>
             <TouchableOpacity 
               activeOpacity={0.9} 
-              onPress={() => garment.images?.[0] && setZoomImageUri(garment.images[0])}
+              onPress={() => {
+                const uri = (garment as any)?.primaryImage || garment.images?.[0];
+                if (uri) setZoomImageUri(uri);
+              }}
               style={{ position: 'relative' }}
             >
-              <KaphorImage uri={garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
+              <KaphorImage uri={(garment as any)?.primaryImage || garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
               <View style={styles.zoomPillSmall}>
                 <Ionicons name="scan-outline" size={10} color="#FFFFFF" />
                 <Text style={styles.zoomPillSmallText}>ZOOM</Text>
@@ -99,7 +102,15 @@ export default function SwapWithWantedScreen() {
             <View style={styles.wantedInfo}>
               <Text style={styles.label}>YOU WANT</Text>
               <Text style={styles.wantedTitle}>{garment.title}</Text>
-              <Text style={styles.wantedBrand}>{garment.brand}</Text>
+              <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Archive').toUpperCase()}</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' }}>
+                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.textMuted }}>
+                  SIZE: {garment.size || 'OS'}
+                </Text>
+                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.crimson, fontWeight: '700' }}>
+                  {(garment.condition || 'PRISTINE').replace('_', ' ')}
+                </Text>
+              </View>
             </View>
           </View>
         )}

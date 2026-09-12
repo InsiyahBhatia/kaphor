@@ -152,56 +152,99 @@ export async function uploadToS3(
 export async function getDownloadUrl(originalUrlOrKey: string): Promise<string> {
   if (!originalUrlOrKey) return '';
 
-  // Local Fallback handle
+  const trimmed = originalUrlOrKey.trim();
+
+  // Normalize key from URL or relative path
+  let s3CandidateKey: string | null = null;
+  if (trimmed.includes('.amazonaws.com/')) {
+    try {
+      const urlParts = new URL(trimmed);
+      s3CandidateKey = urlParts.pathname.startsWith('/') ? urlParts.pathname.substring(1) : urlParts.pathname;
+    } catch {
+      s3CandidateKey = null;
+    }
+  } else if (trimmed.startsWith('local://')) {
+    const raw = trimmed.replace('local://', '');
+    s3CandidateKey = raw.startsWith('/') ? raw.substring(1) : raw;
+  } else if (trimmed.startsWith('/uploads/')) {
+    s3CandidateKey = trimmed.substring(1); // 'uploads/...'
+  } else if (trimmed.startsWith('uploads/')) {
+    s3CandidateKey = trimmed;
+  } else if (
+    trimmed.startsWith('garments/') ||
+    trimmed.startsWith('profiles/') ||
+    trimmed.startsWith('chat/') ||
+    trimmed.startsWith('swaps/') ||
+    trimmed.startsWith('swap/') ||
+    trimmed.startsWith('rentals/') ||
+    trimmed.startsWith('thrift/') ||
+    trimmed.startsWith('sectors/') ||
+    trimmed.startsWith('upcycle/')
+  ) {
+    s3CandidateKey = trimmed;
+  } else if (trimmed.includes('/uploads/')) {
+    const idx = trimmed.indexOf('/uploads/');
+    s3CandidateKey = trimmed.substring(idx + 1); // 'uploads/...'
+  }
+
+  // If S3 is configured and we have a candidate key, try S3 first
+  if (s3CandidateKey && accessKeyId && secretAccessKey && bucketName) {
+    const candidateKeys = [s3CandidateKey];
+    if (s3CandidateKey.startsWith('uploads/')) {
+      candidateKeys.push(s3CandidateKey.replace(/^uploads\//, ''));
+    } else {
+      candidateKeys.push(`uploads/${s3CandidateKey}`);
+    }
+
+    for (const keyToTry of candidateKeys) {
+      const cached = getCachedPresign(keyToTry);
+      if (cached) return cached;
+
+      try {
+        const command = new GetObjectCommand({
+          Bucket: bucketName,
+          Key: keyToTry,
+        });
+        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        setCachedPresign(keyToTry, signedUrl);
+        return signedUrl;
+      } catch {
+        // Continue to next key candidate
+      }
+    }
+  }
+
+  // Local fallback / server URL resolution
   if (
-    originalUrlOrKey.startsWith('local://') || 
-    originalUrlOrKey.includes('/uploads/') ||
-    originalUrlOrKey.includes('localhost:4000') || 
-    originalUrlOrKey.includes(':4000') ||
-    originalUrlOrKey.includes(':10000')
+    trimmed.startsWith('local://') || 
+    trimmed.includes('/uploads/') ||
+    trimmed.startsWith('uploads/') ||
+    trimmed.includes('localhost:4000') || 
+    trimmed.includes(':4000') ||
+    trimmed.includes(':10000')
   ) {
     const isProd = process.env.NODE_ENV === 'production' || !!process.env.BACKEND_URL;
     const baseUrl = isProd
       ? (process.env.BACKEND_URL || 'https://kaphor-backend.onrender.com')
       : `http://${getLocalIp()}:${process.env.PORT || 4000}`;
 
-    if (originalUrlOrKey.startsWith('local://')) {
-      return `${baseUrl}/uploads/${originalUrlOrKey.replace('local://', '')}`;
+    if (trimmed.startsWith('local://')) {
+      const clean = trimmed.replace('local://', '').replace(/^\//, '');
+      const path = clean.startsWith('uploads/') ? clean : `uploads/${clean}`;
+      return `${baseUrl}/${path}`;
     }
-    if (originalUrlOrKey.includes('/uploads/')) {
-      const relativePath = originalUrlOrKey.substring(originalUrlOrKey.indexOf('/uploads/'));
+    if (trimmed.startsWith('/uploads/')) {
+      return `${baseUrl}${trimmed}`;
+    }
+    if (trimmed.startsWith('uploads/')) {
+      return `${baseUrl}/${trimmed}`;
+    }
+    if (trimmed.includes('/uploads/')) {
+      const relativePath = trimmed.substring(trimmed.indexOf('/uploads/'));
       return `${baseUrl}${relativePath}`;
     }
-    return originalUrlOrKey
-      .replace(/^(http:\/\/)(localhost|[\d\.]+)(:(?:4000|10000)\/uploads\/)/, `${baseUrl}/uploads/`);
+    return trimmed.replace(/^(http:\/\/)(localhost|[\d\.]+)(:(?:4000|10000)\/uploads\/)/, `${baseUrl}/uploads/`);
   }
 
-  // S3 Presigned URL handle
-  if (originalUrlOrKey.startsWith('http') && originalUrlOrKey.includes('.amazonaws.com/')) {
-    if (!accessKeyId || !secretAccessKey || !bucketName) return originalUrlOrKey;
-
-    try {
-      // Extract key from URL: https://bucket.s3.region.amazonaws.com/folder/file.jpg
-      const urlParts = new URL(originalUrlOrKey);
-      const key = urlParts.pathname.startsWith('/') ? urlParts.pathname.substring(1) : urlParts.pathname;
-
-      // Check cache first
-      const cached = getCachedPresign(key);
-      if (cached) return cached;
-
-      const command = new GetObjectCommand({
-        Bucket: bucketName,
-        Key: key,
-      });
-
-      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-      setCachedPresign(key, signedUrl);
-      return signedUrl;
-    } catch (err: any) {
-      logger.error('Failed to generate presigned URL', { error: err.message, url: originalUrlOrKey });
-      return originalUrlOrKey; // Fallback to original
-    }
-  }
-
-  return originalUrlOrKey;
+  return trimmed;
 }

@@ -60,7 +60,7 @@ export interface SwapMetadataRecord {
     wantedPhotos: string[];
   };
 
-  securityDepositAmount: number; // in paise (e.g. 50000 = ₹500)
+  securityDepositAmount: number; // in Rupees (e.g. 500 = ₹500)
   securityDepositPaidBy?: string;
   securityDepositPaidAt?: string;
   initiatorDepositPaid?: boolean;
@@ -69,7 +69,7 @@ export interface SwapMetadataRecord {
   receiverDepositPaymentId?: string;
   depositEscrowId?: string;
   depositReleasedAt?: string;
-  swapFee: number; // in paise (e.g. 25000 = ₹250)
+  swapFee: number; // in Rupees (e.g. 250 = ₹250)
 
   dispute?: SwapDisputeData;
   disputedAt?: string;
@@ -83,8 +83,8 @@ export interface SwapMetadataRecord {
   updatedAt: string;
 }
 
-const DEFAULT_DEPOSIT = 50000;
-const DEFAULT_SWAP_FEE = 25000;
+const DEFAULT_DEPOSIT = 500;
+const DEFAULT_SWAP_FEE = 250;
 
 function defaultRecord(swapId: string): SwapMetadataRecord {
   return {
@@ -111,7 +111,7 @@ async function importLegacyRecordIfNeeded(swapId: string): Promise<void> {
     if (!fs.existsSync(DATA_FILE)) return;
 
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    const all = JSON.parse(raw) as Record<string, SwapMetadataRecord>;
+    const all = JSON.parse(raw);
     const legacy = all[swapId];
     if (!legacy) return;
 
@@ -122,8 +122,8 @@ async function importLegacyRecordIfNeeded(swapId: string): Promise<void> {
         metadata: {
           ...(legacy as any),
           swapId,
-          securityDepositAmount: legacy.securityDepositAmount || DEFAULT_DEPOSIT,
-          swapFee: legacy.swapFee || DEFAULT_SWAP_FEE,
+          securityDepositAmount: (legacy.securityDepositAmount && legacy.securityDepositAmount >= 1000) ? Math.round(legacy.securityDepositAmount / 100) : (legacy.securityDepositAmount || DEFAULT_DEPOSIT),
+          swapFee: (legacy.swapFee && legacy.swapFee >= 1000) ? Math.round(legacy.swapFee / 100) : (legacy.swapFee || DEFAULT_SWAP_FEE),
           updatedAt: new Date().toISOString(),
         } as Prisma.InputJsonValue,
       },
@@ -149,7 +149,14 @@ export async function getSwapMetadata(swapId: string): Promise<SwapMetadataRecor
   }
 
   if (swap.metadata && typeof swap.metadata === 'object') {
-    return swap.metadata as unknown as SwapMetadataRecord;
+    const meta = swap.metadata as any;
+    if (meta.securityDepositAmount && meta.securityDepositAmount >= 1000) {
+      meta.securityDepositAmount = Math.round(meta.securityDepositAmount / 100);
+    }
+    if (meta.swapFee && meta.swapFee >= 1000) {
+      meta.swapFee = Math.round(meta.swapFee / 100);
+    }
+    return meta as SwapMetadataRecord;
   }
 
   // First access with no metadata — check legacy file, else seed defaults.
@@ -159,7 +166,14 @@ export async function getSwapMetadata(swapId: string): Promise<SwapMetadataRecor
     select: { metadata: true },
   });
   if (fresh?.metadata && typeof fresh.metadata === 'object') {
-    return fresh.metadata as unknown as SwapMetadataRecord;
+    const meta = fresh.metadata as any;
+    if (meta.securityDepositAmount && meta.securityDepositAmount >= 1000) {
+      meta.securityDepositAmount = Math.round(meta.securityDepositAmount / 100);
+    }
+    if (meta.swapFee && meta.swapFee >= 1000) {
+      meta.swapFee = Math.round(meta.swapFee / 100);
+    }
+    return meta as SwapMetadataRecord;
   }
 
   const seed = defaultRecord(swapId);

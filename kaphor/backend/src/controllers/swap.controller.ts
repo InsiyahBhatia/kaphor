@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
-import { emitToUser } from '../lib/socket';
+import { emitToUser, emitToConversation } from '../lib/socket';
 import { getDownloadUrl } from '../lib/s3';
 import { createNotification } from '../services/notification.service';
 import Razorpay from 'razorpay';
@@ -56,16 +56,18 @@ function isAccessoryGarment(garment: any): boolean {
 /** Format garment into clean snapshot for swap UI */
 function toGarmentSnapshot(g: any, resolvedFirstImage?: string): any {
   if (!g) return undefined;
-  const img = resolvedFirstImage || (g.images && g.images[0]) || '';
+  const img = resolvedFirstImage || (g.images && g.images[0]) || g.primaryImage || g.image || '';
   return {
     id: g.id,
     title: g.title,
     brand: g.brand || 'Unknown',
-    images: img ? [img] : [],
+    primaryImage: img,
+    image: img,
+    images: img ? [img, ...(g.images || []).slice(1)] : (g.images || []),
     category: g.category,
     size: g.size,
     condition: g.condition,
-    estimatedValue: g.price || 0, // in paise
+    estimatedValue: g.price || 0, // in Rupees
   };
 }
 
@@ -108,8 +110,27 @@ async function formatSwapTransaction(swap: any, currentUserId?: string, resolved
   const isReceiver = currentUserId === swap.receiverId;
   const bothSigned = !!(meta.initiatorAcceptedTerms && meta.receiverAcceptedTerms);
 
-  const offeredImg = resolvedImages?.[swap.offeredGarment?.images?.[0]];
-  const wantedImg = resolvedImages?.[swap.wantedGarment?.images?.[0]];
+  let offeredImg = resolvedImages?.[swap.offeredGarment?.images?.[0]];
+  if (!offeredImg && swap.offeredGarment?.images?.[0]) {
+    offeredImg = await getDownloadUrl(swap.offeredGarment.images[0]);
+  }
+
+  let wantedImg = resolvedImages?.[swap.wantedGarment?.images?.[0]];
+  if (!wantedImg && swap.wantedGarment?.images?.[0]) {
+    wantedImg = await getDownloadUrl(swap.wantedGarment.images[0]);
+  }
+
+  const offeredSnapshot = toGarmentSnapshot(swap.offeredGarment, offeredImg);
+  const wantedSnapshot = toGarmentSnapshot(swap.wantedGarment, wantedImg);
+
+  let initiatorAvatar = swap.initiator?.avatar;
+  if (initiatorAvatar) {
+    initiatorAvatar = await getDownloadUrl(initiatorAvatar);
+  }
+  let receiverAvatar = swap.receiver?.avatar;
+  if (receiverAvatar) {
+    receiverAvatar = await getDownloadUrl(receiverAvatar);
+  }
 
   return {
     id: swap.id,
@@ -119,8 +140,10 @@ async function formatSwapTransaction(swap: any, currentUserId?: string, resolved
 
     garmentOfferedId: swap.garmentOffered,
     garmentWantedId: swap.garmentWanted,
-    garmentOffered: toGarmentSnapshot(swap.offeredGarment, offeredImg),
-    garmentWanted: toGarmentSnapshot(swap.wantedGarment, wantedImg),
+    garmentOffered: offeredSnapshot,
+    garmentWanted: wantedSnapshot,
+    offeredGarment: offeredSnapshot,
+    wantedGarment: wantedSnapshot,
 
     agreementSignedAt: meta.termsAcceptedAt,
     initiatorAcceptedTerms: !!meta.initiatorAcceptedTerms,
@@ -138,11 +161,11 @@ async function formatSwapTransaction(swap: any, currentUserId?: string, resolved
     initiatorReceived: !!meta.initiatorReceived,
     receiverReceived: !!meta.receiverReceived,
 
-    securityDepositAmount: meta.securityDepositAmount || 50000,
+    securityDepositAmount: meta.securityDepositAmount || 500,
     securityDepositPaidBy: meta.securityDepositPaidBy,
     depositEscrowId: meta.depositEscrowId,
     depositReleasedAt: meta.depositReleasedAt,
-    swapFee: meta.swapFee || 25000,
+    swapFee: meta.swapFee || 250,
 
     conditionPhotos: meta.conditionPhotos,
 
@@ -154,8 +177,8 @@ async function formatSwapTransaction(swap: any, currentUserId?: string, resolved
     message: swap.message,
     reviews: meta.reviews,
 
-    initiator: swap.initiator,
-    receiver: swap.receiver,
+    initiator: swap.initiator ? { ...swap.initiator, avatar: initiatorAvatar } : swap.initiator,
+    receiver: swap.receiver ? { ...swap.receiver, avatar: receiverAvatar } : swap.receiver,
   };
 }
 
@@ -410,8 +433,82 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
       logger.warn('Failed to send swap request notification', { error: notifErr });
     }
 
+    // ── Create or link conversation in direct chat so swap message is immediately visible ──
+    let conversationId: string | undefined;
+    try {
+      let conv = await db.conversation.findFirst({
+        where: {
+          OR: [
+            { participant1Id: initiatorId, participant2Id: wantedGarment.sellerId, garmentId: wantedGarment.id },
+            { participant1Id: wantedGarment.sellerId, participant2Id: initiatorId, garmentId: wantedGarment.id },
+            { participant1Id: initiatorId, participant2Id: wantedGarment.sellerId },
+            { participant1Id: wantedGarment.sellerId, participant2Id: initiatorId },
+          ],
+        },
+      });
+
+      if (!conv) {
+        conv = await db.conversation.create({
+          data: {
+            participant1Id: initiatorId,
+            participant2Id: wantedGarment.sellerId,
+            garmentId: wantedGarment.id,
+          },
+        });
+      }
+
+      conversationId = conv.id;
+
+      // Construct proposal message text
+      const cleanCustomMessage = typeof message === 'string' && message.trim().length > 0 ? message.trim() : null;
+      const proposalText = cleanCustomMessage
+        ? `🤝 [SWAP PROPOSAL] ${cleanCustomMessage}\n\n• Offered: ${offeredGarment.title}\n• Requested: ${wantedGarment.title}`
+        : `🤝 [SWAP PROPOSAL] Proposed swapping "${offeredGarment.title}" for your "${wantedGarment.title}".`;
+
+      const directMsg = await db.directMessage.create({
+        data: {
+          conversationId: conv.id,
+          senderId: initiatorId,
+          recipientId: wantedGarment.sellerId,
+          content: proposalText,
+        },
+        include: {
+          sender: {
+            select: { id: true, displayName: true, username: true, avatar: true, isVerified: true },
+          },
+        },
+      });
+
+      await db.conversation.update({
+        where: { id: conv.id },
+        data: {
+          lastMessageText: proposalText.slice(0, 100),
+          lastMessageAt: new Date(),
+          garmentId: conv.garmentId || wantedGarment.id,
+        },
+      });
+
+      // Emit live socket event to conversation room & both users
+      emitToConversation(conv.id, 'direct_message', directMsg);
+      emitToUser(wantedGarment.sellerId, 'new_direct_message', {
+        conversationId: conv.id,
+        message: directMsg,
+      });
+      emitToUser(initiatorId, 'new_direct_message', {
+        conversationId: conv.id,
+        message: directMsg,
+      });
+    } catch (chatErr) {
+      logger.warn('Failed to link swap request to direct conversation', { error: chatErr });
+    }
+
     const formatted = await formatSwapTransaction(swap, initiatorId);
-    res.status(201).json({ data: formatted });
+    res.status(201).json({
+      data: {
+        ...formatted,
+        conversationId,
+      },
+    });
   } catch (error) {
     logger.error('Failed to create swap request', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to process swap request' });
@@ -493,6 +590,48 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
       } catch (notifErr) {
         logger.warn('Failed to send swap accepted notification', { error: notifErr });
       }
+
+      // Post acceptance notification message to direct conversation thread
+      try {
+        const conv = await db.conversation.findFirst({
+          where: {
+            OR: [
+              { participant1Id: swap.initiatorId, participant2Id: swap.receiverId },
+              { participant1Id: swap.receiverId, participant2Id: swap.initiatorId },
+            ],
+          },
+        });
+        if (conv) {
+          const acceptText = `🎉 [SWAP ACCEPTED] I accepted your swap proposal! Next step: review & sign the swap agreement.`;
+          const acceptMsg = await db.directMessage.create({
+            data: {
+              conversationId: conv.id,
+              senderId: req.user.id,
+              recipientId: swap.initiatorId,
+              content: acceptText,
+            },
+            include: {
+              sender: {
+                select: { id: true, displayName: true, username: true, avatar: true, isVerified: true },
+              },
+            },
+          });
+          await db.conversation.update({
+            where: { id: conv.id },
+            data: {
+              lastMessageText: acceptText.slice(0, 100),
+              lastMessageAt: new Date(),
+            },
+          });
+          emitToConversation(conv.id, 'direct_message', acceptMsg);
+          emitToUser(swap.initiatorId, 'new_direct_message', {
+            conversationId: conv.id,
+            message: acceptMsg,
+          });
+        }
+      } catch (err) {
+        logger.warn('Failed to post accept message to conversation', { error: err });
+      }
     } else {
       await db.swap.update({
         where: { id },
@@ -511,6 +650,48 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
         });
       } catch (notifErr) {
         logger.warn('Failed to send swap rejected notification', { error: notifErr });
+      }
+
+      // Post decline notification message to direct conversation thread
+      try {
+        const conv = await db.conversation.findFirst({
+          where: {
+            OR: [
+              { participant1Id: swap.initiatorId, participant2Id: swap.receiverId },
+              { participant1Id: swap.receiverId, participant2Id: swap.initiatorId },
+            ],
+          },
+        });
+        if (conv) {
+          const declineText = `❌ [SWAP DECLINED] I have declined this swap proposal.`;
+          const declineMsg = await db.directMessage.create({
+            data: {
+              conversationId: conv.id,
+              senderId: req.user.id,
+              recipientId: swap.initiatorId,
+              content: declineText,
+            },
+            include: {
+              sender: {
+                select: { id: true, displayName: true, username: true, avatar: true, isVerified: true },
+              },
+            },
+          });
+          await db.conversation.update({
+            where: { id: conv.id },
+            data: {
+              lastMessageText: declineText.slice(0, 100),
+              lastMessageAt: new Date(),
+            },
+          });
+          emitToConversation(conv.id, 'direct_message', declineMsg);
+          emitToUser(swap.initiatorId, 'new_direct_message', {
+            conversationId: conv.id,
+            message: declineMsg,
+          });
+        }
+      } catch (err) {
+        logger.warn('Failed to post decline message to conversation', { error: err });
       }
     }
 
@@ -1120,7 +1301,7 @@ export async function paySecurityDeposit(req: Request, res: Response): Promise<v
     }
 
     const meta = await getSwapMetadata(id);
-    const amount = meta.securityDepositAmount || 50000;
+    const amountInRupees = meta.securityDepositAmount || 500;
 
     // Server-side guard: deposits only make sense on an accepted swap.
     if (swap.status !== 'ACCEPTED') {
@@ -1135,7 +1316,7 @@ export async function paySecurityDeposit(req: Request, res: Response): Promise<v
       try {
         const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
         const order = await rzp.orders.create({
-          amount,
+          amount: Math.round(amountInRupees * 100), // convert to paise only for Razorpay API
           currency: 'INR',
           receipt: `swap_dep_${id.slice(0, 10)}`,
           notes: { swapId: id, userId, type: 'SWAP_DEPOSIT' },
@@ -1154,7 +1335,7 @@ export async function paySecurityDeposit(req: Request, res: Response): Promise<v
     res.json({
       data: {
         razorpayOrderId,
-        amount,
+        amount: amountInRupees,
       },
     });
   } catch (error) {
@@ -1190,7 +1371,7 @@ export async function getDepositStatus(req: Request, res: Response): Promise<voi
     const myDepositPaid = isInitiator ? !!meta.initiatorDepositPaid : !!meta.receiverDepositPaid;
     res.json({
       data: {
-        amount: meta.securityDepositAmount || 50000,
+        amount: meta.securityDepositAmount || 500,
         paid: myDepositPaid || !!meta.securityDepositPaidBy,
         paidBy: meta.securityDepositPaidBy || null,
         releasedAt: meta.depositReleasedAt || null,
@@ -1282,7 +1463,7 @@ export async function verifySecurityDeposit(req: Request, res: Response): Promis
       data: {
         swapId: id,
         depositPaid: true,
-        amount: updatedMeta.securityDepositAmount || 50000,
+        amount: updatedMeta.securityDepositAmount || 500,
         paidAt: updatedMeta.securityDepositPaidAt,
       },
     });

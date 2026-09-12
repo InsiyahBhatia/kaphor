@@ -130,7 +130,7 @@ export default function CartScreen() {
                                 <View style={styles.itemInfo}>
                                     <Text style={styles.brand}>{item.garment.brand}</Text>
                                     <Text style={styles.title} numberOfLines={1}>{item.garment.title}</Text>
-                                    <Text style={styles.price}>₹{(item.garment.price / 100).toLocaleString()}</Text>
+                                    <Text style={styles.price}>₹{Math.round(item.garment.price || 0).toLocaleString('en-IN')}</Text>
                                 </View>
                                 <TouchableOpacity onPress={() => removeItem(item.garmentId)} style={styles.removeBtn}>
                                     <Ionicons name="trash-sharp" size={20} color={colors.red} />
@@ -145,7 +145,7 @@ export default function CartScreen() {
                 <View style={styles.footer}>
                     <View style={styles.totalRow}>
                         <Text style={styles.totalLabel}>TOTAL</Text>
-                        <Text style={styles.totalValue}>₹{(total / 100).toLocaleString()}</Text>
+                        <Text style={styles.totalValue}>₹{Math.round(total).toLocaleString('en-IN')}</Text>
                     </View>
                     <TouchableOpacity 
                         style={styles.checkoutBtn}

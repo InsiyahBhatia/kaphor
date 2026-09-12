@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Activi
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../../src/theme';
+import { colors, typography } from '../../../src/theme';
 import { useAuth } from '../../../src/context/AuthContext';
 import api from '../../../src/services/api';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
@@ -20,6 +20,7 @@ export default function AIChatScreen() {
     const [loading, setLoading] = useState(false);
     const [conversationId, setConversationId] = useState<string | null>(null);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [isInputFocused, setIsInputFocused] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
 
     useEffect(() => {
@@ -83,7 +84,7 @@ export default function AIChatScreen() {
         <KeyboardAvoidingView 
             style={styles.container} 
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            keyboardVerticalOffset={100}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         >
             <View style={styles.header}>
                 <TouchableOpacity 
@@ -123,30 +124,49 @@ export default function AIChatScreen() {
                 )}
             </ScrollView>
 
+            {/* Proper Luxury Input Box */}
             <View
                 style={[
                     styles.inputArea,
                     {
                         paddingBottom: isKeyboardVisible
-                            ? (Platform.OS === 'ios' ? 12 : 10)
-                            : Math.max(insets.bottom + (Platform.OS === 'ios' ? 6 : 8), Platform.OS === 'android' ? 28 : 16),
+                            ? 8
+                            : Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 8),
                     },
                 ]}
             >
-                <TextInput
-                    style={styles.input}
-                    placeholder="Type your doubt here..."
-                    placeholderTextColor={colors.textMuted}
-                    value={inputText}
-                    onChangeText={setInputText}
-                    onSubmitEditing={() => handleSendMessage(inputText)}
-                    multiline
-                />
+                <View style={[styles.inputWrapper, isInputFocused && styles.inputWrapperFocused]}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Ask about sizing, styling, fabric care..."
+                        placeholderTextColor="rgba(30,31,34,0.4)"
+                        value={inputText}
+                        onChangeText={setInputText}
+                        onFocus={() => setIsInputFocused(true)}
+                        onBlur={() => setIsInputFocused(false)}
+                        onSubmitEditing={() => handleSendMessage(inputText)}
+                        multiline
+                        maxLength={1000}
+                    />
+                </View>
                 <TouchableOpacity 
-                    style={[styles.sendButton, !inputText.trim() && { opacity: 0.5 }]} 
+                    style={[
+                        styles.sendButton, 
+                        !inputText.trim() || loading ? styles.sendButtonDisabled : styles.sendButtonActive
+                    ]} 
                     onPress={() => handleSendMessage(inputText)}
+                    disabled={!inputText.trim() || loading}
+                    activeOpacity={0.85}
                 >
-                    <Ionicons name="arrow-up" size={24} color={colors.white} />
+                    {loading ? (
+                        <ActivityIndicator color={colors.white} size="small" />
+                    ) : (
+                        <Ionicons 
+                            name="arrow-up" 
+                            size={20} 
+                            color={!inputText.trim() ? colors.textMuted : colors.white} 
+                        />
+                    )}
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
@@ -164,9 +184,67 @@ const styles = StyleSheet.create({
     messageText: { fontSize: 15, lineHeight: 22 },
     userText: { color: colors.white, fontWeight: '500' },
     aiText: { color: colors.textPrimary },
-    inputArea: { flexDirection: 'row', padding: 16, paddingBottom: 32, gap: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bgCard },
-    input: { flex: 1, backgroundColor: colors.bg, borderRadius: 24, paddingHorizontal: 16, color: colors.textPrimary, fontSize: 15, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
-    sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.crimson, justifyContent: 'center', alignItems: 'center' },
+    inputArea: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        paddingHorizontal: 12,
+        paddingTop: 8,
+        backgroundColor: '#FAF9F6',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(30,31,34,0.08)',
+        gap: 8,
+    },
+    inputWrapper: {
+        flex: 1,
+        backgroundColor: colors.white,
+        borderWidth: 1.5,
+        borderColor: 'rgba(30,31,34,0.14)',
+        borderRadius: 22,
+        paddingHorizontal: 16,
+        minHeight: 44,
+        maxHeight: 120,
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    inputWrapperFocused: {
+        borderColor: colors.charcoal,
+        shadowColor: colors.charcoal,
+        shadowOpacity: 0.1,
+    },
+    input: {
+        fontFamily: typography.mono,
+        fontSize: 13,
+        color: colors.charcoal,
+        lineHeight: 18,
+        maxHeight: 110,
+        paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+        textAlignVertical: 'center',
+    },
+    sendButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 2,
+    },
+    sendButtonActive: {
+        backgroundColor: colors.charcoal,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    sendButtonDisabled: {
+        backgroundColor: '#EBE8DF',
+        shadowOpacity: 0,
+        elevation: 0,
+    },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 100 },
     emptyTitle: { color: colors.textPrimary, fontSize: 20, fontFamily: 'BebasNeue_400Regular', marginBottom: 8 },
     emptySub: { color: colors.textMuted, fontSize: 14, textAlign: 'center', paddingHorizontal: 40 },

@@ -89,12 +89,12 @@ export default function RentalPaymentScreen() {
       const bd = await paymentService.getRentalBreakdown(garmentId!, days);
       setBreakdown(bd);
     } catch {
-      // Fallback calculation if backend is unavailable (minimal thrift rates)
-      const dailyRateInRupees = dayRate > 2000 ? Math.round(dayRate / 100) : (dayRate || 149);
-      const rentalFee = dailyRateInRupees * days * 100;
-      const securityDeposit = 29900; // Flat ₹299 minimal refundable deposit
-      const insuranceFee = 4900; // Flat ₹49
-      const deliveryFee = 19900; // ₹199 standard insured delivery
+      // Fallback calculation if backend is unavailable (minimal thrift rates in pure Rupees)
+      const dailyRateInRupees = dayRate || 149;
+      const rentalFee = dailyRateInRupees * days;
+      const securityDeposit = 299; // Flat ₹299 minimal refundable deposit
+      const insuranceFee = 49; // Flat ₹49
+      const deliveryFee = 199; // ₹199 standard insured delivery
       setBreakdown({
         rentalDays: days,
         dailyRate: dailyRateInRupees,
@@ -135,9 +135,10 @@ export default function RentalPaymentScreen() {
       const rp = await paymentService.createRentalPayment(rentalOrderId);
       setRazorpayOrderId(rp.razorpayOrderId);
 
+      const amountRupees = (rp as any).amount || totalAmount;
       const options = {
         key: keyId,
-        amount: rp.amount || totalAmount,
+        amount: Math.round(amountRupees * 100), // convert to paise for Razorpay checkout
         currency: rp.currency || 'INR',
         order_id: rp.razorpayOrderId,
         name: 'Kaphor Luxury Circular Fashion',
@@ -199,7 +200,7 @@ export default function RentalPaymentScreen() {
     );
   }
 
-  const fmt = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
+  const fmt = (rupees: number) => `₹${Math.round(rupees).toLocaleString('en-IN')}`;
 
   return (
     <View style={styles.container}>

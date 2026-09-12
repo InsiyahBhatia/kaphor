@@ -12,16 +12,24 @@ import { KaphorImage } from '../../../src/components/KaphorImage';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
-
+import { useAuth } from '../../../src/context/AuthContext';
+import { useAuthStore } from '../../../src/store/authStore';
 import { isAccessoryCategory } from '../../../src/constants/market';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function SwapDetailScreen() {
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const targetGarmentId = (params.id || params.wantedId) as string;
   const router = useRouter();
   useBackHandler('/(tabs)/circular');
+
+  const { user } = useAuth();
+  const authStoreUserId = useAuthStore((s) => s.user?.id);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(user?.id || authStoreUserId || null);
+  const effectiveUserId = user?.id || currentUserId || authStoreUserId;
+
   const [garment, setGarment] = useState<any>(null);
   const [myGarments, setMyGarments] = useState<any[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<string | null>(null);
@@ -34,19 +42,34 @@ export default function SwapDetailScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const [gData, myData] = await Promise.all([
-          garmentService.getGarmentById(id as string),
+        const [gData, myData, meRes] = await Promise.all([
+          garmentService.getGarmentById(targetGarmentId),
           api.get('/garments/me').then((r) => r.data.data).catch(() => []),
+          api.get('/users/me').catch(() => ({ data: { data: null } })),
         ]);
         setGarment(gData);
+
+        const resolvedUid = meRes.data?.data?.id || user?.id || authStoreUserId || null;
+        if (resolvedUid) {
+          setCurrentUserId(resolvedUid);
+        }
+
+        // Accessories only, strictly excluding the target garment itself
         const accessoriesOnly = (Array.isArray(myData) ? myData : []).filter((item: any) =>
-          isAccessoryCategory(item.category, item.subCategory) || item.listingType === 'ACCESSORY_SWAP'
+          item.id !== targetGarmentId &&
+          (isAccessoryCategory(item.category, item.subCategory) || item.listingType === 'ACCESSORY_SWAP')
         );
         setMyGarments(accessoriesOnly);
       } catch {}
       finally { setLoading(false); }
     })();
-  }, [id]);
+  }, [targetGarmentId]);
+
+  const isOwnGarment = Boolean(
+    effectiveUserId &&
+    garment &&
+    (garment.sellerId === effectiveUserId || garment.seller?.id === effectiveUserId)
+  );
 
   const pickConditionPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -77,8 +100,16 @@ export default function SwapDetailScreen() {
   };
 
   const handleSwap = async () => {
+    if (isOwnGarment) {
+      Alert.alert('Cannot Swap With Yourself', 'This accessory is already in your archive. Browse community listings to trade.');
+      return;
+    }
     if (!selectedOffer) {
-      Alert.alert('Select a garment', 'Choose one of your garments to offer.');
+      Alert.alert('Select an accessory', 'Choose one of your accessories to offer.');
+      return;
+    }
+    if (selectedOffer === targetGarmentId) {
+      Alert.alert('Invalid Selection', 'You cannot offer the same item you are requesting.');
       return;
     }
     setSubmitting(true);
@@ -88,15 +119,21 @@ export default function SwapDetailScreen() {
         ? await Promise.all(conditionPhotos.map(uploadPhoto))
         : undefined;
 
-      await swapService.createSwapRequest({
+      const res: any = await swapService.createSwapRequest({
         garmentOfferedId: selectedOffer,
-        garmentWantedId: id as string,
+        garmentWantedId: targetGarmentId,
         message: message.trim() || undefined,
         conditionPhotos: photoData,
       });
-      Alert.alert('Swap Requested!', 'The owner has been notified. Next step: both parties review and sign the swap agreement.', [
-        { text: 'OK', onPress: () => safeBack('/(tabs)/circular') },
-      ]);
+      const convId = res?.conversationId || res?.data?.conversationId;
+      Alert.alert(
+        'Swap Requested!',
+        'The owner has been notified. Your proposal message has been sent to your chat thread.',
+        [
+          ...(convId ? [{ text: 'VIEW IN CHAT', onPress: () => router.push(`/messages/${convId}` as any) }] : []),
+          { text: 'VIEW SWAPS', onPress: () => safeBack('/(tabs)/circular') },
+        ]
+      );
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || 'Swap request failed.');
     } finally {
@@ -123,127 +160,179 @@ export default function SwapDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {garment && (
-          <View style={styles.wantedCard}>
+          <View style={[styles.wantedCard, isOwnGarment && styles.wantedCardOwn]}>
             <TouchableOpacity 
               activeOpacity={0.9} 
-              onPress={() => garment.images?.[0] && setZoomImageUri(garment.images[0])}
+              onPress={() => {
+                const uri = (garment as any)?.primaryImage || garment.images?.[0];
+                if (uri) setZoomImageUri(uri);
+              }}
               style={{ position: 'relative' }}
             >
-              <KaphorImage uri={garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
+              <KaphorImage uri={(garment as any)?.primaryImage || garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
               <View style={styles.zoomPillSmall}>
                 <Ionicons name="scan-outline" size={10} color="#FFFFFF" />
                 <Text style={styles.zoomPillSmallText}>ZOOM</Text>
               </View>
             </TouchableOpacity>
             <View style={styles.wantedInfo}>
-              <Text style={styles.label}>YOU WANT</Text>
+              <Text style={[styles.label, isOwnGarment && { color: colors.crimson }]}>
+                {isOwnGarment ? 'YOUR ARCHIVE ASSET' : 'YOU WANT'}
+              </Text>
               <Text style={styles.wantedTitle}>{garment.title}</Text>
-              <Text style={styles.wantedBrand}>{garment.brand}</Text>
+              <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Archive').toUpperCase()}</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' }}>
+                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.textMuted }}>
+                  SIZE: {garment.size || 'OS'}
+                </Text>
+                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.crimson, fontWeight: '700' }}>
+                  {(garment.condition || 'PRISTINE').replace('_', ' ')}
+                </Text>
+              </View>
             </View>
           </View>
         )}
 
-        {/* Secure Swap Steps Indicator */}
-        <View style={styles.stepsIndicator}>
-          {['Request', 'Agree', 'Ship', 'Track', 'Complete'].map((step, i) => (
-            <View key={step} style={styles.stepItem}>
-              <View style={[styles.stepDot, i === 0 && styles.stepDotActive]}>
-                <Text style={[styles.stepDotText, i === 0 && styles.stepDotTextActive]}>{i + 1}</Text>
+        {/* If user owns this item, show prominent self-swap block banner */}
+        {isOwnGarment ? (
+          <View style={styles.ownGarmentContainer}>
+            <View style={styles.ownGarmentHeader}>
+              <Ionicons name="information-circle" size={24} color={colors.crimson} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ownGarmentBadgeText}>OWNED BY YOU · SELF-SWAP RESTRICTED</Text>
+                <Text style={styles.ownGarmentTitle}>This is your listed accessory</Text>
               </View>
-              <Text style={[styles.stepLabel, i === 0 && styles.stepLabelActive]}>{step}</Text>
             </View>
-          ))}
-        </View>
-
-        {/* Security Notice */}
-        <View style={styles.securityNotice}>
-          <Ionicons name="shield-checkmark" size={16} color={colors.navy} />
-          <Text style={styles.securityNoticeText}>
-            Secure escrow swap: Both parties protected. Refundable ₹500 deposit required before shipping.
-          </Text>
-        </View>
-
-        <View style={styles.arrowContainer}>
-          <Ionicons name="swap-vertical" size={32} color={colors.charcoal} />
-        </View>
-
-        <Text style={styles.sectionTitle}>SELECT AN ACCESSORY TO OFFER</Text>
-        {myGarments.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>You don't have any accessories listed for swap yet.</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/shop/sell')}>
-              <Text style={styles.linkText}>LIST AN ACCESSORY</Text>
-            </TouchableOpacity>
+            <Text style={styles.ownGarmentDesc}>
+              You cannot send a swap request for an accessory you already own. Swapping is reserved for trading your pieces with other archive members.
+            </Text>
+            <View style={styles.ownGarmentBtnRow}>
+              <TouchableOpacity
+                style={styles.browseCommunityBtn}
+                onPress={() => router.push('/(tabs)/swap')}
+              >
+                <Ionicons name="swap-horizontal" size={16} color={colors.cream} />
+                <Text style={styles.browseCommunityBtnText}>BROWSE COMMUNITY SWAPS</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.viewClosetBtn}
+                onPress={() => router.push('/(tabs)/profile')}
+              >
+                <Text style={styles.viewClosetBtnText}>VIEW IN MY ARCHIVE</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
-          <View style={styles.offerGrid}>
-            {myGarments.map((g) => (
-              <TouchableOpacity
-                key={g.id}
-                style={[styles.offerCard, selectedOffer === g.id && styles.offerCardSelected]}
-                onPress={() => setSelectedOffer(g.id)}
-              >
-                <KaphorImage uri={g.images?.[0]} style={styles.offerImage} contentFit="cover" />
-                <Text style={styles.offerTitle} numberOfLines={1}>{g.title}</Text>
-                {selectedOffer === g.id && (
-                  <View style={styles.checkmark}><Ionicons name="checkmark-circle" size={24} color={colors.crimson} /></View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+          <>
+            {/* Secure Swap Steps Indicator */}
+            <View style={styles.stepsIndicator}>
+              {['Request', 'Agree', 'Ship', 'Track', 'Complete'].map((step, i) => (
+                <View key={step} style={styles.stepItem}>
+                  <View style={[styles.stepDot, i === 0 && styles.stepDotActive]}>
+                    <Text style={[styles.stepDotText, i === 0 && styles.stepDotTextActive]}>{i + 1}</Text>
+                  </View>
+                  <Text style={[styles.stepLabel, i === 0 && styles.stepLabelActive]}>{step}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Security Notice */}
+            <View style={styles.securityNotice}>
+              <Ionicons name="shield-checkmark" size={16} color={colors.navy} />
+              <Text style={styles.securityNoticeText}>
+                Secure escrow swap: Both parties protected. Refundable ₹500 deposit required before shipping.
+              </Text>
+            </View>
+
+            <View style={styles.arrowContainer}>
+              <Ionicons name="swap-vertical" size={32} color={colors.charcoal} />
+            </View>
+
+            <Text style={styles.sectionTitle}>SELECT AN ACCESSORY TO OFFER</Text>
+            {myGarments.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>You don't have any accessories listed for swap yet.</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/shop/sell')}>
+                  <Text style={styles.linkText}>LIST AN ACCESSORY</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.offerGrid}>
+                {myGarments.map((g) => (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={[styles.offerCard, selectedOffer === g.id && styles.offerCardSelected]}
+                    onPress={() => setSelectedOffer(g.id)}
+                  >
+                    <KaphorImage uri={g.images?.[0]} style={styles.offerImage} contentFit="cover" />
+                    <Text style={styles.offerTitle} numberOfLines={1}>{g.title}</Text>
+                    {selectedOffer === g.id && (
+                      <View style={styles.checkmark}><Ionicons name="checkmark-circle" size={24} color={colors.crimson} /></View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Condition Photos */}
+            <Text style={styles.sectionTitle}>CONDITION EVIDENCE (RECOMMENDED)</Text>
+            <Text style={styles.sectionSubtext}>
+              Add close-up photos of your garment's condition. Tap any photo to zoom.
+            </Text>
+            <View style={styles.photoRow}>
+              {conditionPhotos.map((uri, idx) => (
+                <TouchableOpacity 
+                  key={idx} 
+                  style={styles.photoThumb}
+                  activeOpacity={0.9}
+                  onPress={() => setZoomImageUri(uri)}
+                >
+                  <Image source={{ uri }} style={styles.photoThumbImg} />
+                  <TouchableOpacity
+                    style={styles.photoRemove}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setConditionPhotos((prev) => prev.filter((_, i) => i !== idx));
+                    }}
+                  >
+                    <Ionicons name="close-circle" size={20} color={colors.red} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+              {conditionPhotos.length < 3 && (
+                <TouchableOpacity style={styles.photoAddBtn} onPress={pickConditionPhoto}>
+                  <Ionicons name="camera-outline" size={24} color={colors.textMuted} />
+                  <Text style={styles.photoAddText}>ADD PHOTO</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Text style={styles.sectionTitle}>MESSAGE THE OWNER (OPTIONAL)</Text>
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Add a note about condition, timing, or delivery…"
+              placeholderTextColor={colors.textMuted}
+              value={message}
+              onChangeText={setMessage}
+              multiline
+            />
+          </>
         )}
-
-        {/* Condition Photos */}
-        <Text style={styles.sectionTitle}>CONDITION EVIDENCE (RECOMMENDED)</Text>
-        <Text style={styles.sectionSubtext}>
-          Add close-up photos of your garment's condition. Tap any photo to zoom.
-        </Text>
-        <View style={styles.photoRow}>
-          {conditionPhotos.map((uri, idx) => (
-            <TouchableOpacity 
-              key={idx} 
-              style={styles.photoThumb}
-              activeOpacity={0.9}
-              onPress={() => setZoomImageUri(uri)}
-            >
-              <Image source={{ uri }} style={styles.photoThumbImg} />
-              <TouchableOpacity
-                style={styles.photoRemove}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  setConditionPhotos((prev) => prev.filter((_, i) => i !== idx));
-                }}
-              >
-                <Ionicons name="close-circle" size={20} color={colors.red} />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          ))}
-          {conditionPhotos.length < 3 && (
-            <TouchableOpacity style={styles.photoAddBtn} onPress={pickConditionPhoto}>
-              <Ionicons name="camera-outline" size={24} color={colors.textMuted} />
-              <Text style={styles.photoAddText}>ADD PHOTO</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>MESSAGE THE OWNER (OPTIONAL)</Text>
-        <TextInput
-          style={styles.messageInput}
-          placeholder="Add a note about condition, timing, or delivery…"
-          placeholderTextColor={colors.textMuted}
-          value={message}
-          onChangeText={setMessage}
-          multiline
-        />
       </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.swapBtn, !selectedOffer && { opacity: 0.5 }]}
+          style={[styles.swapBtn, (isOwnGarment || !selectedOffer) && { opacity: 0.5 }]}
           onPress={handleSwap}
-          disabled={!selectedOffer || submitting}
+          disabled={isOwnGarment || !selectedOffer || submitting}
         >
-          {submitting ? <ActivityIndicator color={colors.cream} /> : <Text style={styles.swapBtnText}>SEND SECURE SWAP REQUEST</Text>}
+          {submitting ? (
+            <ActivityIndicator color={colors.cream} />
+          ) : (
+            <Text style={styles.swapBtnText}>
+              {isOwnGarment ? 'CANNOT SWAP WITH YOURSELF' : 'SEND SECURE SWAP REQUEST'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -341,11 +430,87 @@ const styles = StyleSheet.create({
   },
 
   wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', marginBottom: 8 },
+  wantedCardOwn: { borderColor: colors.crimson, backgroundColor: '#FFFDF9' },
   wantedImage: { width: 100, height: 120 },
   wantedInfo: { flex: 1, padding: 16, justifyContent: 'center' },
   label: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 9, letterSpacing: 1.5, marginBottom: 4, fontWeight: '800' },
   wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 20 },
   wantedBrand: { color: colors.red, fontFamily: typography.mono, fontSize: 11, marginTop: 4, fontWeight: '700' },
+
+  ownGarmentContainer: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.crimson,
+    padding: 16,
+    marginVertical: 14,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  ownGarmentHeader: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  ownGarmentBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.crimson,
+    letterSpacing: 1.2,
+  },
+  ownGarmentTitle: {
+    fontFamily: typography.headings,
+    fontSize: 16,
+    color: colors.charcoal,
+    marginTop: 2,
+  },
+  ownGarmentDesc: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.textSecond,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  ownGarmentBtnRow: {
+    gap: 10,
+  },
+  browseCommunityBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.charcoal,
+    paddingVertical: 13,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+  },
+  browseCommunityBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 1.5,
+  },
+  viewClosetBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.cream,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+  },
+  viewClosetBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+
   arrowContainer: { alignItems: 'center', marginVertical: 16 },
   sectionTitle: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 16, marginTop: 8 },
   sectionSubtext: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, lineHeight: 14, marginBottom: 12, marginTop: -12 },

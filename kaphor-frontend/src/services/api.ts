@@ -91,8 +91,7 @@ async function attemptTokenRefresh(): Promise<boolean> {
       data: { accessToken: string; refreshToken: string };
     }>(`${API_URL}/auth/refresh`, { refreshToken: refreshTokenVal }, {
       headers: { 'Content-Type': 'application/json' },
-      // Use shorter timeout for refresh to fail fast
-      timeout: 10000,
+      timeout: 30000,
     });
 
     const accessToken = data.data?.accessToken;
@@ -102,19 +101,40 @@ async function attemptTokenRefresh(): Promise<boolean> {
       throw new Error('No access token in refresh response');
     }
 
-    // ALWAYS update both tokens — even if newRefresh is somehow missing,
-    // save at least the access token so subsequent requests can retry.
+    // Update tokens in persistent storage & Zustand store
     await safeStorage.setItem(TOKEN_KEY, accessToken);
     if (newRefresh) {
       await safeStorage.setItem(REFRESH_KEY, newRefresh);
     }
     useAuthStore.getState().setTokens(accessToken);
+
+    // CRITICAL: Synchronize auth_data so AuthContext doesn't read stale/revoked tokens on next app launch
+    try {
+      const rawAuthData = await safeStorage.getItem('auth_data');
+      if (rawAuthData) {
+        const parsed = JSON.parse(rawAuthData);
+        parsed.accessToken = accessToken;
+        if (newRefresh) parsed.refreshToken = newRefresh;
+        await safeStorage.setItem('auth_data', JSON.stringify(parsed));
+      }
+    } catch {}
+
     return true;
-  } catch {
-    // Refresh failed — clear tokens
-    useAuthStore.getState().logout();
-    await safeStorage.deleteItem(TOKEN_KEY);
-    await safeStorage.deleteItem(REFRESH_KEY);
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const isExplicitAuthFailure = status === 401 || status === 403;
+
+    if (isExplicitAuthFailure) {
+      // Refresh token was genuinely revoked or expired by the server — clear tokens
+      console.log('Refresh token revoked or expired (401/403), clearing session');
+      useAuthStore.getState().logout();
+      await safeStorage.deleteItem(TOKEN_KEY);
+      await safeStorage.deleteItem(REFRESH_KEY);
+      await safeStorage.deleteItem('auth_data');
+    } else {
+      // Network timeout / Render cold start / 5xx error: DO NOT wipe tokens!
+      console.warn('Token refresh temporary failure (network/timeout), preserving session:', err?.message || err);
+    }
     return false;
   }
 }

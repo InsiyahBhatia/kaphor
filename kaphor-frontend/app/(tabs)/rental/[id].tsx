@@ -6,10 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
-import { KaphorImage } from '../../../src/components/KaphorImage';
+import { KaphorImage, getCategoryFallbackImage } from '../../../src/components/KaphorImage';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import { useAuthStore } from '../../../src/store/authStore';
+import { getFormattedGarmentPrice, normalizeRupees } from '../../../src/utils/priceFormatter';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -53,14 +54,24 @@ export default function RentalDetailScreen() {
     );
   }
 
-  const imagesList = garment.images && garment.images.length > 0
-    ? garment.images
-    : ['https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=1000'];
+  const priceData = getFormattedGarmentPrice({ ...garment, listingType: 'RENTAL' });
+  const dayRate = priceData.numericRupees;
+  const weekRate = garment.rentalPriceWeek ? normalizeRupees(garment.rentalPriceWeek) : Math.round(dayRate * 5);
+  const topInset = Math.max(insets.top + 8, 48);
+
+  const rawImages: string[] = Array.isArray(garment.images)
+    ? garment.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0)
+    : [];
+
+  const imagesList: string[] = rawImages.length > 0
+    ? rawImages
+    : [getCategoryFallbackImage(garment.category)];
+
   const currentImage = imagesList[activeImageIndex] || imagesList[0];
 
-  const dayRate = (garment.rentalPriceDay || 0) / 100;
-  const weekRate = (garment.rentalPriceWeek || 0) / 100;
-  const topInset = Math.max(insets.top + 8, 48);
+  const cleanColors = Array.isArray(garment.color)
+    ? garment.color.filter((c: string) => typeof c === 'string' && c.trim().length > 0).join(', ')
+    : typeof garment.color === 'string' && garment.color.trim() ? garment.color : '';
 
   return (
     <View style={styles.container}>
@@ -74,7 +85,13 @@ export default function RentalDetailScreen() {
               setZoomVisible(true);
             }}
           >
-            <KaphorImage uri={currentImage} style={styles.image} contentFit="cover" />
+            <KaphorImage 
+              uri={currentImage} 
+              category={garment.category}
+              brand={garment.brand}
+              style={styles.image} 
+              contentFit="cover" 
+            />
             <View style={styles.zoomPill}>
               <Ionicons name="scan-outline" size={13} color="#FFFFFF" />
               <Text style={styles.zoomPillText}>TAP TO ZOOM</Text>
@@ -110,7 +127,13 @@ export default function RentalDetailScreen() {
                   activeImageIndex === idx && styles.thumbButtonActive,
                 ]}
               >
-                <KaphorImage uri={imgUri} style={styles.thumbImg} contentFit="cover" />
+                <KaphorImage 
+                  uri={imgUri} 
+                  category={garment.category}
+                  brand={garment.brand}
+                  style={styles.thumbImg} 
+                  contentFit="cover" 
+                />
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -143,11 +166,15 @@ export default function RentalDetailScreen() {
             <Text style={styles.rateTitle}>RENTAL RATES</Text>
             <View style={styles.rateRow}>
               <Text style={styles.rateLabel}>PER DAY</Text>
-              <Text style={styles.rateValue}>₹{dayRate.toLocaleString()}</Text>
+              <Text style={styles.rateValue}>₹{dayRate.toLocaleString('en-IN')}</Text>
             </View>
             <View style={styles.rateRow}>
               <Text style={styles.rateLabel}>PER WEEK</Text>
-              <Text style={styles.rateValue}>₹{weekRate.toLocaleString()}</Text>
+              <Text style={styles.rateValue}>₹{weekRate.toLocaleString('en-IN')}</Text>
+            </View>
+            <View style={styles.rateRow}>
+              <Text style={styles.rateLabel}>SECURITY DEPOSIT</Text>
+              <Text style={[styles.rateValue, { color: '#2E7D32' }]}>₹500 (100% Refundable)</Text>
             </View>
           </View>
 
@@ -158,18 +185,32 @@ export default function RentalDetailScreen() {
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>CONDITION</Text>
-              <Text style={styles.detailValue}>{garment.condition || 'PRISTINE'}</Text>
+              <Text style={styles.detailValue}>{(garment.condition || 'PRISTINE').replace('_', ' ')}</Text>
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>CATEGORY</Text>
               <Text style={styles.detailValue}>{garment.category || 'RENTAL'}</Text>
             </View>
-            {garment.fabric && (
+            {garment.subCategory && (
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>FABRIC</Text>
-                <Text style={styles.detailValue}>{garment.fabric}</Text>
+                <Text style={styles.detailLabel}>SUB-CATEGORY</Text>
+                <Text style={styles.detailValue}>{garment.subCategory}</Text>
               </View>
             )}
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>FABRIC</Text>
+              <Text style={styles.detailValue}>{garment.fabric || 'Curated Textile Blend'}</Text>
+            </View>
+            {cleanColors ? (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>COLOR</Text>
+                <Text style={styles.detailValue}>{cleanColors}</Text>
+              </View>
+            ) : null}
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>HYGIENE STANDARD</Text>
+              <Text style={styles.detailValue}>Ozone Sanitized & Sealed</Text>
+            </View>
           </View>
 
           <View style={styles.impactCard}>

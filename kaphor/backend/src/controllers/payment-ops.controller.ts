@@ -145,7 +145,7 @@ export async function getPaymentHistory(req: Request, res: Response): Promise<vo
       transactions.push({
         id: `tx_ord_${order.id}`,
         type: isBuyer ? 'PURCHASE' : 'SELLER_PAYOUT',
-        amount: order.totalAmount, // in paise
+        amount: order.totalAmount, // in pure Rupees (₹)
         currency: order.currency || 'INR',
         status: statusMap[order.status] || order.status,
         description: isBuyer ? `Purchased "${title}"` : `Sold "${title}"`,
@@ -164,13 +164,12 @@ export async function getPaymentHistory(req: Request, res: Response): Promise<vo
         OVERDUE: 'PAID',
       };
 
-      // 100 paise = 1 INR
-      const amountInPaise = rental.totalPrice * 100;
+      const amountInRupees = rental.totalPrice;
 
       transactions.push({
         id: `tx_rent_${rental.id}`,
         type: 'RENTAL_FEE',
-        amount: amountInPaise,
+        amount: amountInRupees,
         currency: 'INR',
         status: statusMap[rental.status] || rental.status,
         description: `Rental reservation for "${title}"`,
@@ -302,7 +301,7 @@ export async function requestRefund(req: Request, res: Response): Promise<void> 
         userId: order.buyerId,
         type: 'ORDER_PAID', // or generic notification
         title: 'Refund Processed',
-        body: `A refund of ₹${(refundAmount / 100).toLocaleString('en-IN')} has been initiated for your order.`,
+        body: `A refund of ₹${refundAmount.toLocaleString('en-IN')} has been initiated for your order.`,
         data: { orderId: order.id },
       });
       await createNotification({

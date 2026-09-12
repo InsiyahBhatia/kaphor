@@ -197,7 +197,7 @@ export default function SavedAssetsScreen() {
           rank={['A', 'K', 'Q', 'J'][index % 4]}
           suit={(['♠', '♥', '♦', '♣'] as const)[index % 4]}
           productName={item.title}
-          price={item.price ? item.price / 100 : 0}
+          price={item.price ? Math.round(item.price) : 0}
           size={item.size || 'OS'}
           imageUrl={item.images[0]}
           matchPercent={Math.floor(Math.random() * 20) + 80}

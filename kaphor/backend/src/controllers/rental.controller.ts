@@ -19,7 +19,7 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
         }
 
         if (priceMax) {
-            query.rentalPriceDay = { lte: Math.round(Number(priceMax) * 100) };
+            query.rentalPriceDay = { lte: Math.round(Number(priceMax)) };
         }
 
         // Exclude garments listed by the requesting user themselves
@@ -155,9 +155,8 @@ export async function createRental(req: Request, res: Response): Promise<void> {
         const rawDayRate = garment.rentalPriceDay || 0;
         const rawWeekRate = garment.rentalPriceWeek || 0;
 
-        // Normalize rates to Rupees if stored in paise (e.g. 15000 paise -> 150 INR)
-        const dailyRateInRupees = rawDayRate > 2000 ? Math.round(rawDayRate / 100) : (rawDayRate || 149);
-        const weekRateInRupees = rawWeekRate > 5000 ? Math.round(rawWeekRate / 100) : (rawWeekRate || dailyRateInRupees * 5);
+        const dailyRateInRupees = rawDayRate || 149;
+        const weekRateInRupees = rawWeekRate || dailyRateInRupees * 5;
 
         let rentalFeeInRupees: number;
         if (days >= 7 && weekRateInRupees > 0) {
@@ -168,7 +167,7 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             rentalFeeInRupees = dailyRateInRupees * days;
         }
 
-        const amount = rentalFeeInRupees * 100; // stored in paise
+        const amount = rentalFeeInRupees; // stored in pure whole Rupees (₹)
 
         if (amount <= 0) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid rental pricing' });
@@ -257,9 +256,8 @@ export async function calculateRentalBreakdown(req: Request, res: Response): Pro
         const rawDayRate = garment.rentalPriceDay || 0;
         const rawWeekRate = garment.rentalPriceWeek || 0;
 
-        // Normalize rates to Rupees if stored in paise (e.g. 15000 paise -> 150 INR)
-        const dailyRateInRupees = rawDayRate > 2000 ? Math.round(rawDayRate / 100) : (rawDayRate || 149);
-        const weekRateInRupees = rawWeekRate > 5000 ? Math.round(rawWeekRate / 100) : (rawWeekRate || dailyRateInRupees * 5);
+        const dailyRateInRupees = rawDayRate || 149;
+        const weekRateInRupees = rawWeekRate || dailyRateInRupees * 5;
 
         let rentalFeeInRupees: number;
         if (days >= 7 && weekRateInRupees > 0) {
@@ -270,11 +268,11 @@ export async function calculateRentalBreakdown(req: Request, res: Response): Pro
             rentalFeeInRupees = dailyRateInRupees * days;
         }
 
-        // Amount in paise (1 INR = 100 paise)
-        const rentalFee = rentalFeeInRupees * 100;
-        const securityDeposit = 29900; // Flat minimal refundable deposit of ₹299 for thrifting
-        const insuranceFee = 4900; // Flat ₹49 optional damage waiver
-        const deliveryFee = 19900; // ₹199 standard insured delivery
+        // All amounts in pure whole Rupees (₹)
+        const rentalFee = rentalFeeInRupees;
+        const securityDeposit = 299; // Flat minimal refundable deposit of ₹299 for thrifting
+        const insuranceFee = 49; // Flat ₹49 optional damage waiver
+        const deliveryFee = 199; // ₹199 standard insured delivery
         const totalAmount = rentalFee + securityDeposit + insuranceFee + deliveryFee;
 
         res.json({
@@ -382,7 +380,7 @@ export async function releaseRentalDeposit(req: Request, res: Response): Promise
             logger.warn('Failed to send deposit release notification', { error: notifErr });
         }
 
-        const depositAmount = rental.totalPrice * 2 * 100;
+        const depositAmount = 299; // Flat refundable security deposit in pure Rupees
 
         res.json({
             data: {

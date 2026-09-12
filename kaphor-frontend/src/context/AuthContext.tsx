@@ -83,49 +83,69 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   async function loadStorageData() {
     try {
-      const authDataSerialized = await safeStorage.getItem(AUTH_DATA_KEY);
-      if (!authDataSerialized) {
-        return;
-      }
-      const parsed = JSON.parse(authDataSerialized) as {
+      // 1. Concurrently read cached tokens and session data
+      const [storedAccess, storedRefresh, authDataSerialized] = await Promise.all([
+        safeStorage.getItem('kaphor_access_token'),
+        safeStorage.getItem('kaphor_refresh_token'),
+        safeStorage.getItem(AUTH_DATA_KEY),
+      ]);
+
+      let parsed: {
         user?: Record<string, unknown>;
         token?: string;
         accessToken?: string;
         refreshToken?: string;
-      };
-      const accessToken = parsed.accessToken ?? parsed.token;
-      const refreshToken = parsed.refreshToken ?? '';
-      const rawUser = parsed.user;
+      } | null = null;
+
+      if (authDataSerialized) {
+        try {
+          parsed = JSON.parse(authDataSerialized);
+        } catch {
+          console.warn('Failed to parse cached auth_data JSON');
+        }
+      }
+
+      // Prioritize freshest tokens stored by attemptTokenRefresh
+      const accessToken = storedAccess || parsed?.accessToken || parsed?.token;
+      const refreshToken = storedRefresh || parsed?.refreshToken || '';
+      const rawUser = parsed?.user;
+
       if (!accessToken || !rawUser?.id) {
-        await clearLocalSession();
+        // No saved session found
         return;
       }
+
       const normalized = normalizeUser(rawUser);
       await persistTokens(accessToken, refreshToken);
       useAuthStore.getState().setAuth(toAuthStoreUser(normalized), accessToken);
       setToken(accessToken);
       setUser(normalized);
 
+      // 2. Fetch fresh user in background without blowing away offline session on cold start/timeouts
       const { userService } = await import('../services/userService');
       try {
         const updatedUser = await userService.getMe();
         if (updatedUser) {
           const freshNormalized = normalizeUser(updatedUser);
           setUser(freshNormalized);
-          // Also update Storage so next boot is faster
+          const currentAccess = (await safeStorage.getItem('kaphor_access_token')) || accessToken;
+          const currentRefresh = (await safeStorage.getItem('kaphor_refresh_token')) || refreshToken;
           await safeStorage.setItem(
             AUTH_DATA_KEY,
-            JSON.stringify({ accessToken, refreshToken, user: freshNormalized })
+            JSON.stringify({ accessToken: currentAccess, refreshToken: currentRefresh, user: freshNormalized })
           );
         }
       } catch (err: any) {
-        // Only clear if the token was explicitly revoked or invalid (401)
-        if (err?.response?.status === 401) {
-          console.log('Session expired or revoked (401), clearing session');
-          await clearLocalSession();
-          return;
+        const status = err?.response?.status;
+        if (status === 401 || status === 403) {
+          // If refresh token was genuinely rejected, api interceptor cleared it
+          const remainingRefresh = await safeStorage.getItem('kaphor_refresh_token');
+          if (!remainingRefresh) {
+            console.log('Session expired or revoked (401/403), clearing session');
+            await clearLocalSession();
+            return;
+          }
         }
-        // Network timeout / Render cold start: preserve offline/cached session!
         console.log('Backend cold start / slow response, keeping cached session');
       }
 
@@ -137,8 +157,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Socket connect warning on boot:', sockErr);
       }
     } catch (e) {
-      console.log('Error loading auth data', e);
-      await clearLocalSession();
+      console.warn('Error loading auth data', e);
+      // Do not wipe credentials on transient errors
     } finally {
       setIsLoading(false);
     }

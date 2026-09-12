@@ -235,7 +235,7 @@ export default function ShopScreen() {
                           suit={suit}
                           productName={item.title}
                           size={item.size || 'OS'}
-                          price={item.price ? item.price / 100 : 0}
+                          price={item.price ? Math.round(item.price) : 0}
                           imageUrl={item.images?.[0] || undefined}
                           category={item.category || undefined}
                           subCategory={item.subCategory || undefined}

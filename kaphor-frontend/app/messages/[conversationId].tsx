@@ -185,6 +185,7 @@ export default function DirectChatScreen() {
   const [sending, setSending] = useState(false);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [isInputFocused, setInputFocused] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadWhileScrolled, setUnreadWhileScrolled] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -689,7 +690,7 @@ export default function DirectChatScreen() {
               </View>
             </View>
             <Text style={styles.orderCoordinationSub} numberOfLines={1}>
-              ₹{(order.totalAmount / 100).toLocaleString('en-IN')} · Tap to view tracking & details
+              ₹{Math.round(order.totalAmount).toLocaleString('en-IN')} · Tap to view tracking & details
             </Text>
           </View>
           <View style={styles.viewOrderBtn}>
@@ -720,7 +721,7 @@ export default function DirectChatScreen() {
             </Text>
             {garment.price != null && (
               <Text style={styles.garmentBarPrice}>
-                ₹{(garment.price / 100).toLocaleString('en-IN')}
+                ₹{Math.round(garment.price).toLocaleString('en-IN')}
                 {garment.listingType === 'RENTAL' ? ' / day' : ''}
               </Text>
             )}
@@ -1081,7 +1082,7 @@ export default function DirectChatScreen() {
           <View style={styles.replyBarAccent} />
           <View style={styles.replyBarContent}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="arrow-undo" size={11} color={colors.forest || '#2D5A27'} />
+              <Ionicons name="arrow-undo" size={12} color={colors.forest || '#2D5A27'} />
               <Text style={styles.replyBarSender}>Replying to {replyingTo.senderName}</Text>
             </View>
             <Text style={styles.replyBarText} numberOfLines={1}>
@@ -1098,28 +1099,35 @@ export default function DirectChatScreen() {
         </View>
       )}
 
-      {/* WhatsApp-Style Modern Pill Input Bar */}
+      {/* Proper Modern Pill Input Bar */}
       <View
         style={[
           styles.inputContainer,
           {
             paddingBottom: isKeyboardVisible
-              ? (Platform.OS === 'ios' ? 8 : 10)
-              : Math.max(insets.bottom + 8, Platform.OS === 'android' ? 24 : 14),
+              ? (Platform.OS === 'ios' ? 8 : 8)
+              : Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 8),
           },
         ]}
       >
-        <TouchableOpacity style={styles.attachBtn} onPress={pickImage} activeOpacity={0.75}>
+        <TouchableOpacity
+          style={styles.attachBtn}
+          onPress={pickImage}
+          activeOpacity={0.75}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
           <Ionicons name="add" size={24} color={colors.charcoal} />
         </TouchableOpacity>
 
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, isInputFocused && styles.inputWrapperFocused]}>
           <TextInput
             style={styles.input}
             placeholder={replyingTo ? `Replying to ${replyingTo.senderName}...` : "Message..."}
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor="rgba(30,31,34,0.4)"
             value={inputText}
             onChangeText={handleInputChange}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             multiline
             maxLength={4000}
           />
@@ -1127,15 +1135,16 @@ export default function DirectChatScreen() {
             style={styles.cameraQuickBtn}
             onPress={openCameraDirectly}
             activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
-            <Ionicons name="camera-outline" size={20} color={colors.textMuted} />
+            <Ionicons name="camera" size={20} color={isInputFocused ? colors.charcoal : colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
           style={[
             styles.sendBtn,
-            (!inputText.trim() && !selectedImage) || sending ? styles.sendBtnDisabled : undefined,
+            (!inputText.trim() && !selectedImage) || sending ? styles.sendBtnDisabled : styles.sendBtnActive,
           ]}
           onPress={handleSend}
           disabled={(!inputText.trim() && !selectedImage) || sending}
@@ -1144,7 +1153,11 @@ export default function DirectChatScreen() {
           {sending ? (
             <ActivityIndicator color={colors.cream} size="small" />
           ) : (
-            <Ionicons name="arrow-up" size={20} color={colors.cream} />
+            <Ionicons
+              name="arrow-up"
+              size={20}
+              color={(!inputText.trim() && !selectedImage) ? colors.textMuted : colors.cream}
+            />
           )}
         </TouchableOpacity>
       </View>
@@ -1699,59 +1712,90 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: colors.white,
-    borderTopWidth: 1.5,
-    borderTopColor: colors.charcoal,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    backgroundColor: '#FAF9F6',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(30,31,34,0.08)',
     gap: 8,
   },
   attachBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F0E8',
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: 'rgba(30,31,34,0.12)',
     marginBottom: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inputWrapper: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAF9F6',
-    borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: 'rgba(30,31,34,0.14)',
     borderRadius: 22,
-    paddingHorizontal: 12,
-    minHeight: 42,
+    paddingLeft: 14,
+    paddingRight: 6,
+    minHeight: 44,
     maxHeight: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  inputWrapperFocused: {
+    borderColor: colors.charcoal,
+    shadowColor: colors.charcoal,
+    shadowOpacity: 0.1,
   },
   input: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 12.5,
+    fontSize: 13,
     color: colors.charcoal,
+    lineHeight: 18,
     maxHeight: 110,
-    paddingVertical: Platform.OS === 'ios' ? 8 : 6,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     paddingRight: 6,
+    textAlignVertical: 'center',
   },
   cameraQuickBtn: {
-    padding: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.charcoal,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 2,
   },
+  sendBtnActive: {
+    backgroundColor: colors.charcoal,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 3,
+  },
   sendBtnDisabled: {
-    opacity: 0.35,
+    backgroundColor: '#EBE8DF',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   fullImageModal: {
     flex: 1,
@@ -1871,10 +1915,17 @@ const styles = StyleSheet.create({
   replyPreviewBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAF9F6',
+    backgroundColor: '#F3F0E6',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
-    paddingHorizontal: 14,
+    borderTopColor: 'rgba(30,31,34,0.12)',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderLeftColor: 'rgba(30,31,34,0.08)',
+    borderRightColor: 'rgba(30,31,34,0.08)',
+    marginHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
   },

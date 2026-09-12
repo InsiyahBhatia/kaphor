@@ -191,9 +191,9 @@ const paymentService = {
 
   // ─── HELPERS ─────────────────────────────────────────────────
 
-  /** Format paise to INR display string */
-  formatAmount(paise: number): string {
-    return `₹${(paise / 100).toLocaleString('en-IN')}`;
+  /** Format pure Rupees to INR display string */
+  formatAmount(rupees: number): string {
+    return `₹${Math.round(rupees).toLocaleString('en-IN')}`;
   },
 
   /** Get the Razorpay key ID (or empty string if not configured) */

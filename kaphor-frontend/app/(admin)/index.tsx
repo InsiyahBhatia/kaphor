@@ -282,7 +282,7 @@ export default function AdminDashboardScreen() {
                     </View>
                     <View style={[styles.miniBadge, { backgroundColor: colors.success + '10' }]}>
                       <Text style={[styles.miniBadgeText, { color: colors.success }]}>
-                        ₹{(g.price / 100).toLocaleString()}
+                        ₹{Math.round(g.price || 0).toLocaleString('en-IN')}
                       </Text>
                     </View>
                   </View>

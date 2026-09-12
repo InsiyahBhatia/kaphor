@@ -23,6 +23,8 @@ import { KaphorImage } from '../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { useAuth } from '../../../src/context/AuthContext';
+import { useAuthStore } from '../../../src/store/authStore';
 import type { SwapTransaction } from '../../../src/types/swap';
 
 const { width } = Dimensions.get('window');
@@ -42,8 +44,12 @@ export default function SwapDetailsScreen() {
 
   useBackHandler('/(tabs)/circular');
 
+  const { user } = useAuth();
+  const authStoreUserId = useAuthStore((s) => s.user?.id);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(user?.id || authStoreUserId || null);
+  const effectiveUserId = currentUserId || user?.id || authStoreUserId;
+
   const [swap, setSwap] = useState<SwapTransaction | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
@@ -105,7 +111,10 @@ export default function SwapDetailsScreen() {
         api.get('/users/me').catch(() => ({ data: { data: null } })),
       ]);
       setSwap(swapData);
-      setCurrentUserId(meRes.data.data?.id || null);
+      const uid = meRes.data.data?.id || user?.id || authStoreUserId || null;
+      if (uid) {
+        setCurrentUserId(uid);
+      }
     } catch (err: any) {
       console.error('Failed to load swap details:', err);
       Alert.alert('Error', 'Unable to load swap request details.', [
@@ -126,15 +135,50 @@ export default function SwapDetailsScreen() {
     return <DossierLoading variant="swap" />;
   }
 
-  const isInitiator = currentUserId === swap.initiatorId;
-  const isReceiver = currentUserId === swap.receiverId;
+  const isInitiator = effectiveUserId ? effectiveUserId === swap.initiatorId : true;
+  const isReceiver = effectiveUserId ? effectiveUserId === swap.receiverId : false;
   const partner = isInitiator ? (swap as any).receiver : (swap as any).initiator;
+
+  // Safely resolve offered & wanted garments whether populated as objects or IDs or aliases
+  const offeredGarmentObj =
+    (typeof swap.garmentOffered === 'object' && swap.garmentOffered) ||
+    (typeof (swap as any).offeredGarment === 'object' && (swap as any).offeredGarment) ||
+    null;
+
+  const wantedGarmentObj =
+    (typeof swap.garmentWanted === 'object' && swap.garmentWanted) ||
+    (typeof (swap as any).wantedGarment === 'object' && (swap as any).wantedGarment) ||
+    null;
 
   // Items perspective:
   // Initiator gives offered, receives wanted
   // Receiver gives wanted, receives offered
-  const itemYouGive = isInitiator ? swap.garmentOffered : swap.garmentWanted;
-  const itemYouReceive = isInitiator ? swap.garmentWanted : swap.garmentOffered;
+  const itemYouGive = isInitiator ? offeredGarmentObj : wantedGarmentObj;
+  const itemYouReceive = isInitiator ? wantedGarmentObj : offeredGarmentObj;
+
+  const getGarmentImageUri = (item: any): string => {
+    if (!item) return '';
+    if (typeof item === 'string' && (item.startsWith('http') || item.startsWith('data:') || item.startsWith('file:'))) {
+      return item;
+    }
+    return (
+      item.primaryImage ||
+      item.image ||
+      item.images?.[0] ||
+      item.imageUrl ||
+      (Array.isArray(item.images) && item.images[0]) ||
+      ''
+    );
+  };
+
+  const getDisplayGarmentValue = (item: any): string => {
+    if (!item) return 'EST. ₹750';
+    const rawVal = item.price || item.estimatedValue || item.rentalPriceDay;
+    if (rawVal != null && !isNaN(rawVal) && rawVal > 0) {
+      return `EST. ₹${Math.round(rawVal).toLocaleString('en-IN')}`;
+    }
+    return 'EST. ₹750 (SWAP)';
+  };
 
   // Direct Message Handler
   const handleMessagePartner = async () => {
@@ -144,7 +188,7 @@ export default function SwapDetailsScreen() {
     }
     setActionLoading(true);
     try {
-      const garmentContextId = (itemYouReceive as any)?.id || (itemYouGive as any)?.id;
+      const garmentContextId = (wantedGarmentObj as any)?.id || (offeredGarmentObj as any)?.id;
       const conversation = await messageService.getOrCreateConversation(
         partner.id,
         garmentContextId
@@ -383,16 +427,12 @@ export default function SwapDetailsScreen() {
               style={styles.garmentImgWrap}
               activeOpacity={0.9}
               onPress={() => {
-                const uri = (itemYouGive as any)?.primaryImage || (itemYouGive as any)?.images?.[0];
+                const uri = getGarmentImageUri(itemYouGive);
                 if (uri) setSelectedPhoto(uri);
               }}
             >
               <KaphorImage
-                uri={
-                  (itemYouGive as any)?.primaryImage ||
-                  (itemYouGive as any)?.images?.[0] ||
-                  ''
-                }
+                uri={getGarmentImageUri(itemYouGive)}
                 style={styles.garmentImg}
                 contentFit="cover"
               />
@@ -427,7 +467,7 @@ export default function SwapDetailsScreen() {
                 )}
               </View>
               <Text style={styles.garmentValue}>
-                EST. ₹{Number((itemYouGive as any)?.estimatedValue || 0).toLocaleString('en-IN')}
+                {getDisplayGarmentValue(itemYouGive)}
               </Text>
             </TouchableOpacity>
           </View>
@@ -448,16 +488,12 @@ export default function SwapDetailsScreen() {
               style={styles.garmentImgWrap}
               activeOpacity={0.9}
               onPress={() => {
-                const uri = (itemYouReceive as any)?.primaryImage || (itemYouReceive as any)?.images?.[0];
+                const uri = getGarmentImageUri(itemYouReceive);
                 if (uri) setSelectedPhoto(uri);
               }}
             >
               <KaphorImage
-                uri={
-                  (itemYouReceive as any)?.primaryImage ||
-                  (itemYouReceive as any)?.images?.[0] ||
-                  ''
-                }
+                uri={getGarmentImageUri(itemYouReceive)}
                 style={styles.garmentImg}
                 contentFit="cover"
               />
@@ -492,7 +528,7 @@ export default function SwapDetailsScreen() {
                 )}
               </View>
               <Text style={styles.garmentValue}>
-                EST. ₹{Number((itemYouReceive as any)?.estimatedValue || 0).toLocaleString('en-IN')}
+                {getDisplayGarmentValue(itemYouReceive)}
               </Text>
             </TouchableOpacity>
           </View>
@@ -564,7 +600,7 @@ export default function SwapDetailsScreen() {
               <Text style={styles.reviewCardTitle}>SWAP PARTNER REPUTATION</Text>
             </View>
 
-            {(swap as any).reviews?.[currentUserId || ''] ? (
+            {(swap as any).reviews?.[effectiveUserId || ''] ? (
               <View style={styles.reviewSubmittedBox}>
                 <View style={styles.starsRow}>
                   {[1, 2, 3, 4, 5].map((s) => (
@@ -572,14 +608,14 @@ export default function SwapDetailsScreen() {
                       key={s}
                       name="star"
                       size={18}
-                      color={s <= (swap as any).reviews[currentUserId || ''].rating ? '#C9A84C' : colors.bgMuted}
+                      color={s <= (swap as any).reviews[effectiveUserId || ''].rating ? '#C9A84C' : colors.bgMuted}
                     />
                   ))}
                 </View>
                 <Text style={styles.reviewSubmittedLabel}>YOUR REVIEW SUBMITTED</Text>
-                {(swap as any).reviews[currentUserId || ''].comment ? (
+                {(swap as any).reviews[effectiveUserId || ''].comment ? (
                   <Text style={styles.reviewCommentText}>
-                    "{(swap as any).reviews[currentUserId || ''].comment}"
+                    "{(swap as any).reviews[effectiveUserId || ''].comment}"
                   </Text>
                 ) : null}
               </View>

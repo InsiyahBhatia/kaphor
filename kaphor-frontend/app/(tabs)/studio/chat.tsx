@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../../src/services/api';
-import { colors } from '../../../src/theme';
+import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,6 +25,7 @@ export default function AIChatScreen() {
   const [loading, setLoading] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -101,7 +102,11 @@ export default function AIChatScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+    >
       <View style={styles.header}>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/studio')}
@@ -128,16 +133,14 @@ export default function AIChatScreen() {
         )}
       </ScrollView>
 
+      {/* Proper Text Box Above Keyboard */}
       <View
         style={[
           styles.inputContainer,
           {
             paddingBottom: isKeyboardVisible
-              ? (Platform.OS === 'ios' ? 10 : 8)
-              : Math.max(
-                  insets.bottom + (Platform.OS === 'ios' ? 4 : 8),
-                  Platform.OS === 'android' ? 28 : 16
-                ),
+              ? 8
+              : Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 8),
           },
         ]}
       >
@@ -145,25 +148,54 @@ export default function AIChatScreen() {
           <View style={styles.imagePreviewContainer}>
             <Image source={{ uri: imageUri }} style={styles.imagePreview} />
             <TouchableOpacity style={styles.removeImageBtn} onPress={() => setImageUri(null)}>
-              <Ionicons name="close-circle" size={24} color={colors.charcoal} />
+              <Ionicons name="close-circle" size={22} color={colors.charcoal} />
             </TouchableOpacity>
           </View>
         )}
         <View style={styles.inputBar}>
-          <TouchableOpacity style={styles.attachBtn} onPress={pickImage}>
-            <Ionicons name="camera-outline" size={24} color={colors.textPrimary} />
+          <TouchableOpacity 
+            style={styles.attachBtn} 
+            onPress={pickImage}
+            activeOpacity={0.75}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Ionicons name="camera" size={20} color={colors.charcoal} />
           </TouchableOpacity>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Ask about styling, fabric care..."
-            placeholderTextColor={colors.textMuted}
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={sendMessage}
-            returnKeyType="send"
-          />
-          <TouchableOpacity style={[styles.sendBtn, (!input.trim() && !imageUri) && { opacity: 0.4 }]} onPress={sendMessage} disabled={(!input.trim() && !imageUri) || loading}>
-            <Ionicons name="send" size={20} color={colors.white} />
+
+          <View style={[styles.inputWrapper, isFocused && styles.inputWrapperFocused]}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ask about styling, fabric care..."
+              placeholderTextColor="rgba(30,31,34,0.4)"
+              value={input}
+              onChangeText={setInput}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              onSubmitEditing={sendMessage}
+              returnKeyType="send"
+              multiline
+              maxLength={1000}
+            />
+          </View>
+
+          <TouchableOpacity 
+            style={[
+              styles.sendBtn, 
+              (!input.trim() && !imageUri) || loading ? styles.sendBtnDisabled : styles.sendBtnActive
+            ]} 
+            onPress={sendMessage} 
+            disabled={(!input.trim() && !imageUri) || loading}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.white} size="small" />
+            ) : (
+              <Ionicons 
+                name="arrow-up" 
+                size={20} 
+                color={(!input.trim() && !imageUri) ? colors.textMuted : colors.white} 
+              />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -183,12 +215,103 @@ const styles = StyleSheet.create({
   bubbleText: { color: colors.textPrimary, fontSize: 14, lineHeight: 22 },
   userBubbleText: { color: colors.white },
   msgImage: { width: 140, height: 180, borderRadius: 8, marginBottom: 8 },
-  inputContainer: { borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bgCard },
-  imagePreviewContainer: { position: 'relative', paddingLeft: 16, paddingTop: 16 },
-  imagePreview: { width: 60, height: 60, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
-  removeImageBtn: { position: 'absolute', top: 4, left: 66 },
-  inputBar: { flexDirection: 'row', padding: 16, gap: 12, alignItems: 'center' },
-  attachBtn: { width: 40, height: 48, justifyContent: 'center', alignItems: 'center' },
-  textInput: { flex: 1, height: 48, backgroundColor: colors.bgCard, borderRadius: 24, paddingHorizontal: 20, color: colors.textPrimary, fontSize: 14, borderWidth: 1, borderColor: colors.border },
-  sendBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.crimson, justifyContent: 'center', alignItems: 'center' },
+  inputContainer: { 
+    borderTopWidth: 1, 
+    borderTopColor: 'rgba(30,31,34,0.08)', 
+    backgroundColor: '#FAF9F6' 
+  },
+  imagePreviewContainer: { 
+    position: 'relative', 
+    paddingLeft: 16, 
+    paddingTop: 12,
+    marginBottom: -4,
+  },
+  imagePreview: { 
+    width: 60, 
+    height: 60, 
+    borderRadius: 8, 
+    borderWidth: 1.5, 
+    borderColor: 'rgba(30,31,34,0.15)' 
+  },
+  removeImageBtn: { 
+    position: 'absolute', 
+    top: 4, 
+    left: 64,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+  },
+  inputBar: { 
+    flexDirection: 'row', 
+    alignItems: 'flex-end',
+    paddingHorizontal: 12, 
+    paddingTop: 8,
+    gap: 8 
+  },
+  attachBtn: { 
+    width: 42, 
+    height: 42, 
+    borderRadius: 21,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: 'rgba(30,31,34,0.12)',
+    justifyContent: 'center', 
+    alignItems: 'center',
+    marginBottom: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  inputWrapper: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: 'rgba(30,31,34,0.14)',
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    minHeight: 44,
+    maxHeight: 120,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  inputWrapperFocused: {
+    borderColor: colors.charcoal,
+    shadowColor: colors.charcoal,
+    shadowOpacity: 0.1,
+  },
+  textInput: { 
+    fontFamily: typography.mono,
+    fontSize: 13,
+    color: colors.charcoal,
+    lineHeight: 18,
+    maxHeight: 110,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+    textAlignVertical: 'center',
+  },
+  sendBtn: { 
+    width: 42, 
+    height: 42, 
+    borderRadius: 21, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  sendBtnActive: {
+    backgroundColor: colors.charcoal,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  sendBtnDisabled: {
+    backgroundColor: '#EBE8DF',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
 });

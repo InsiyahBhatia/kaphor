@@ -343,7 +343,7 @@ function NewArrivals({
               rank={ranks[index % ranks.length]}
               suit={suits[index % 4]}
               productName={item.title}
-              price={item.price ? item.price / 100 : 0}
+              price={item.price ? Math.round(item.price) : 0}
               size={item.size || 'M'}
               category={item.category}
               subCategory={item.subCategory}

@@ -90,10 +90,10 @@ export async function getFeedGarments(params: FeedParams) {
   if (params.priceMin !== undefined || params.priceMax !== undefined) {
     const priceFilter: Record<string, number> = {};
     if (params.priceMin !== undefined) {
-      priceFilter.gte = Math.round(Number(params.priceMin) * 100);
+      priceFilter.gte = Math.round(Number(params.priceMin));
     }
     if (params.priceMax !== undefined) {
-      priceFilter.lte = Math.round(Number(params.priceMax) * 100);
+      priceFilter.lte = Math.round(Number(params.priceMax));
     }
     where.price = priceFilter;
   }

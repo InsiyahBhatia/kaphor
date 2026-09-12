@@ -101,7 +101,7 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
     const razorpay = getRazorpayInstance();
 
     const rpOrder = await razorpay.orders.create({
-      amount: totalAmount, // already in paise including delivery
+      amount: Math.round(totalAmount * 100), // convert to paise only for Razorpay API
       currency: 'INR',
       receipt: order.id,
       notes: { orderId: order.id },
@@ -199,24 +199,17 @@ export async function createRazorpayOrderForRental(req: Request, res: Response):
       return;
     }
 
-    // rental.totalPrice is stored in paise (e.g., 45000 paise = ₹450)
-    const rawTotalPrice = rental.totalPrice || 0;
-    let rentalFee = rawTotalPrice > 2000 ? rawTotalPrice : rawTotalPrice * 100;
-    // Guard against double multiplication
-    if (rentalFee > 10000000) {
-      rentalFee = Math.round(rentalFee / 100);
-    }
-
-    // Standard rental fees matching breakdown (in paise)
-    const securityDeposit = 29900; // Flat ₹299 refundable security deposit
-    const insuranceFee = 4900;     // Flat ₹49 damage waiver
-    const deliveryFee = 19900;     // Flat ₹199 delivery fee
+    // rental.totalPrice is stored in pure whole Rupees (e.g. ₹450)
+    const rentalFee = rental.totalPrice || 0;
+    const securityDeposit = 299; // Flat ₹299 refundable security deposit
+    const insuranceFee = 49;     // Flat ₹49 damage waiver
+    const deliveryFee = 199;     // Flat ₹199 delivery fee
     const totalAmount = rentalFee + securityDeposit + insuranceFee + deliveryFee;
 
     const razorpay = getRazorpayInstance();
     const receipt = `rent_${rental.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20)}`;
     const rpOrder = await razorpay.orders.create({
-      amount: totalAmount,
+      amount: Math.round(totalAmount * 100), // paise only for Razorpay API
       currency: 'INR',
       receipt,
       notes: {

@@ -65,17 +65,12 @@ export function PlayingCard({
 
       {/* Product Image */}
       <View style={styles.imageWrapper}>
-        {imageUrl ? (
-          <KaphorImage
-            uri={imageUrl}
-            style={styles.image}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderText}>NO IMAGE</Text>
-          </View>
-        )}
+        <KaphorImage
+          uri={imageUrl}
+          category={category}
+          style={styles.image}
+          contentFit="cover"
+        />
       </View>
 
       {/* Product Info */}
@@ -90,7 +85,9 @@ export function PlayingCard({
         
         <View style={styles.detailsRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.priceText}>₹{price.toLocaleString()}</Text>
+            <Text style={[styles.priceText, price === 0 && { fontSize: 13, color: colors.crimson, letterSpacing: 0.5 }]}>
+              {price > 0 ? `₹${price.toLocaleString()}` : (buttonText?.toUpperCase().includes('RENT') ? 'RENT LEASE' : 'SWAP ASSET')}
+            </Text>
             <View style={styles.conditionTag}>
               <Text style={styles.conditionTagText}>{(condition || 'Excellent').toUpperCase()}</Text>
             </View>

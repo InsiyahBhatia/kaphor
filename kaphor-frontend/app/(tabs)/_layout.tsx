@@ -58,7 +58,6 @@ export default function TabLayout() {
       <Tabs.Screen name="rental/reserve" options={{ href: null }} />
       <Tabs.Screen name="rental/payment" options={{ href: null }} />
       <Tabs.Screen name="swap/[id]" options={{ href: null }} />
-      <Tabs.Screen name="swap/[wantedId]" options={{ href: null }} />
       <Tabs.Screen name="swap/details" options={{ href: null }} />
       <Tabs.Screen name="swap/agreement" options={{ href: null }} />
       <Tabs.Screen name="swap/shipping" options={{ href: null }} />

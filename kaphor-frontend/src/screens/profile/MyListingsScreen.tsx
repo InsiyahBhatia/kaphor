@@ -19,6 +19,7 @@ import { KaphorImage } from '../../components/KaphorImage';
 import { colors, typography, spacing, radius } from '../../theme';
 import { safeBack, useBackHandler } from '../../utils/navigation';
 import { hapticFeedback } from '../../utils/haptics';
+import { getFormattedGarmentPrice } from '../../utils/priceFormatter';
 
 export function MyListingsScreen() {
   const router = useRouter();
@@ -94,13 +95,14 @@ export function MyListingsScreen() {
 
           <View style={styles.metaRow}>
             <Text style={styles.metaText}>SIZE: {item.size || 'M'} · {item.category || 'Garment'}</Text>
-            <Text style={styles.price}>
-              {item.listingType === 'RENTAL'
-                ? `₹${((item.rentalPriceDay || 0) / 100).toLocaleString()}/day`
-                : item.listingType === 'ACCESSORY_SWAP'
-                ? 'SWAP ASSET'
-                : `₹${((item.price || 0) / 100).toLocaleString()}`}
-            </Text>
+            {(() => {
+              const p = getFormattedGarmentPrice(item);
+              return (
+                <Text style={[styles.price, p.isSwap && { color: colors.crimson, fontSize: 11 }]}>
+                  {p.displayPrice}{p.priceUnit || ''}
+                </Text>
+              );
+            })()}
           </View>
         </View>
       </Pressable>

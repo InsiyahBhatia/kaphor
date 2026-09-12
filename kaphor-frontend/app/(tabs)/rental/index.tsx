@@ -91,7 +91,7 @@ export default function RentalScreen() {
           </View>
         </View>
         <Text style={styles.myRentalPrice}>
-          ₹{(rental.totalPrice / 100).toLocaleString()} total
+          ₹{Math.round(rental.totalPrice || 0).toLocaleString('en-IN')} total
         </Text>
         {rental.status === 'RESERVED' && (
           <TouchableOpacity
@@ -171,7 +171,7 @@ export default function RentalScreen() {
                   size="OS"
                   category={item.category}
                   subCategory={item.subCategory}
-                  price={item.rentalPriceDay ? item.rentalPriceDay / 100 : 0}
+                  price={item.rentalPriceDay ? Math.round(item.rentalPriceDay) : 0}
                   imageUrl={item.images?.[0]}
                   condition="Pristine"
                   buttonText="RENT NOW"

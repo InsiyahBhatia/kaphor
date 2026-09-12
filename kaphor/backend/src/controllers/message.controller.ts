@@ -202,6 +202,34 @@ export async function getOrCreateConversation(req: AuthRequest, res: Response): 
     });
 
     if (!conv) {
+      conv = await db.conversation.findFirst({
+        where: {
+          OR: [
+            { participant1Id: uid, participant2Id: recipientId },
+            { participant1Id: recipientId, participant2Id: uid },
+          ],
+        },
+        include: {
+          participant1: {
+            select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+          },
+          participant2: {
+            select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+          },
+          garment: {
+            select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true },
+          },
+        },
+      });
+      if (conv && garmentId && !conv.garmentId) {
+        await db.conversation.update({
+          where: { id: conv.id },
+          data: { garmentId },
+        });
+      }
+    }
+
+    if (!conv) {
       conv = await db.conversation.create({
         data: {
           participant1Id: uid,

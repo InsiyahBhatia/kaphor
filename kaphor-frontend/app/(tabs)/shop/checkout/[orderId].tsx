@@ -185,16 +185,17 @@ export default function CheckoutScreen() {
       return;
     }
 
-    // Items subtotal and delivery charge: ₹199 (19,900 paise) if subtotal under ₹5,000 (500,000 paise)
+    // Items subtotal and delivery charge: ₹199 if subtotal under ₹5,000, free delivery otherwise
     const itemsSubtotal = order.items && order.items.length > 0
       ? order.items.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
       : order.totalAmount;
-    const deliveryCharge = itemsSubtotal < 500000 ? 19900 : 0;
-    const totalInPaise = itemsSubtotal + deliveryCharge;
+    const deliveryCharge = itemsSubtotal < 5000 ? 199 : 0;
+    const totalInRupees = itemsSubtotal + deliveryCharge;
+    const totalInPaise = Math.round(totalInRupees * 100);
 
     const options = {
       key: keyId,
-      amount: totalInPaise,
+      amount: totalInPaise, // Razorpay checkout requires integer paise
       currency: order.currency || 'INR',
       order_id: razorpayOrderId,
       name: 'Kaphor Luxury Circular Fashion',
@@ -240,7 +241,7 @@ export default function CheckoutScreen() {
           Alert.alert(
             'Payment Received',
             'Your payment of ₹' +
-              (totalInPaise / 100).toLocaleString('en-IN') +
+              totalInRupees.toLocaleString('en-IN') +
               ' was received. If confirmation takes a moment, check your orders list.',
             [
               {
@@ -299,8 +300,8 @@ export default function CheckoutScreen() {
   const itemsSubtotal = order.items && order.items.length > 0
     ? order.items.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
     : order.totalAmount;
-  // free delivery for orders ₹5,000+ (500,000 paise), ₹199 otherwise
-  const deliveryCharge = itemsSubtotal < 500000 ? 19900 : 0;
+  // free delivery for orders ₹5,000+, ₹199 otherwise
+  const deliveryCharge = itemsSubtotal < 5000 ? 199 : 0;
   const subtotal = itemsSubtotal;
   const total = itemsSubtotal + deliveryCharge;
   const itemCount = order.items?.length || 0;
@@ -405,7 +406,7 @@ export default function CheckoutScreen() {
                   {item.garment?.title}
                 </Text>
                 <Text style={styles.itemPrice}>
-                  ₹{(item.price / 100).toLocaleString('en-IN')}
+                  ₹{Math.round(item.price).toLocaleString('en-IN')}
                 </Text>
               </View>
             </View>
@@ -427,7 +428,7 @@ export default function CheckoutScreen() {
                 <Text style={[styles.deliveryProgressTitle, deliveryCharge === 0 && { color: colors.forest }]}>
                   {deliveryCharge === 0
                     ? 'FREE INSURED DELIVERY UNLOCKED!'
-                    : `ADD ₹${((500000 - itemsSubtotal) / 100).toLocaleString('en-IN')} FOR FREE DELIVERY`}
+                    : `ADD ₹${(5000 - itemsSubtotal).toLocaleString('en-IN')} FOR FREE DELIVERY`}
                 </Text>
               </View>
               <View style={styles.progressBarTrack}>
@@ -435,7 +436,7 @@ export default function CheckoutScreen() {
                   style={[
                     styles.progressBarFill,
                     {
-                      width: `${Math.min(100, Math.round((itemsSubtotal / 500000) * 100))}%`,
+                      width: `${Math.min(100, Math.round((itemsSubtotal / 5000) * 100))}%`,
                       backgroundColor: deliveryCharge === 0 ? colors.forest : colors.red,
                     },
                   ]}
@@ -446,13 +447,13 @@ export default function CheckoutScreen() {
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Subtotal ({itemCount} item{itemCount !== 1 ? 's' : ''})</Text>
               <Text style={styles.priceValue}>
-                ₹{(subtotal / 100).toLocaleString('en-IN')}
+                ₹{Math.round(subtotal).toLocaleString('en-IN')}
               </Text>
             </View>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Carbon-Neutral Express Delivery</Text>
               <Text style={[styles.priceValue, deliveryCharge === 0 && styles.priceFree]}>
-                {deliveryCharge === 0 ? 'FREE' : `₹${(deliveryCharge / 100).toLocaleString('en-IN')}`}
+                {deliveryCharge === 0 ? 'FREE' : `₹${Math.round(deliveryCharge).toLocaleString('en-IN')}`}
               </Text>
             </View>
             <View style={styles.priceRow}>
@@ -463,7 +464,7 @@ export default function CheckoutScreen() {
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>TOTAL</Text>
               <Text style={styles.totalValue}>
-                ₹{(total / 100).toLocaleString('en-IN')}
+                ₹{Math.round(total).toLocaleString('en-IN')}
               </Text>
             </View>
           </View>
@@ -615,7 +616,7 @@ export default function CheckoutScreen() {
         <View style={styles.bottomTotal}>
           <Text style={styles.bottomTotalLabel}>Total</Text>
           <Text style={styles.bottomTotalValue}>
-            ₹{(total / 100).toLocaleString('en-IN')}
+            ₹{Math.round(total).toLocaleString('en-IN')}
           </Text>
         </View>
         <TouchableOpacity

@@ -71,9 +71,9 @@ export default function EditListingScreen() {
         setSize(g.size || '');
         setCondition(g.condition || 'PRISTINE');
         setListingType(g.listingType || 'SALE');
-        setPrice(g.price ? String(g.price / 100) : '');
-        setRentalDay(g.rentalPriceDay ? String(g.rentalPriceDay / 100) : '');
-        setRentalWeek(g.rentalPriceWeek ? String(g.rentalPriceWeek / 100) : '');
+        setPrice(g.price != null ? String(Math.round(g.price)) : '');
+        setRentalDay(g.rentalPriceDay != null ? String(Math.round(g.rentalPriceDay)) : '');
+        setRentalWeek(g.rentalPriceWeek != null ? String(Math.round(g.rentalPriceWeek)) : '');
         setFabric(g.fabric || '');
         setStyleAttr(g.style || '');
         setColor(Array.isArray(g.color) ? g.color.join(', ') : g.color || '');

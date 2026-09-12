@@ -12,15 +12,17 @@ function getRazorpayInstance(): Razorpay {
 }
 
 export async function createRazorpayOrder(
-  amount: number,
+  amountInRupees: number,
   currency: string,
   receipt: string,
   notes?: Record<string, string>
 ): Promise<any> {
   try {
     const razorpay = getRazorpayInstance();
+    // Razorpay requires amount in smallest currency unit (paise for INR)
+    const amountInPaise = Math.round(amountInRupees * 100);
     const order = await razorpay.orders.create({
-      amount,
+      amount: amountInPaise,
       currency,
       receipt,
       notes,
@@ -34,7 +36,7 @@ export async function createRazorpayOrder(
         : String(error);
     logger.error('Failed to create Razorpay order', {
       error: errMsg,
-      amount,
+      amountInRupees,
       currency,
       receipt,
     });
@@ -42,8 +44,8 @@ export async function createRazorpayOrder(
   }
 }
 
-export function calculateDeliveryFee(subtotalPaise: number): number {
-  return subtotalPaise < 500000 ? 19900 : 0; // ₹199 if under ₹5,000 (500,000 paise)
+export function calculateDeliveryFee(subtotalRupees: number): number {
+  return subtotalRupees < 5000 ? 199 : 0; // ₹199 if under ₹5,000, free delivery otherwise
 }
 
 export async function createRazorpayOrderForOrder(orderId: string) {

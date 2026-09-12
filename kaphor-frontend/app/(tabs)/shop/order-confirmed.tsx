@@ -36,7 +36,7 @@ export default function OrderConfirmedScreen() {
     );
   }
 
-  const amount = order ? order.totalAmount / 100 : 0;
+  const amount = order ? order.totalAmount : 0;
 
   return (
     <View style={styles.container}>

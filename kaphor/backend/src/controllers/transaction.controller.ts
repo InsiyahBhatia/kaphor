@@ -41,7 +41,7 @@ export async function listTransactionOrders(req: AuthRequest, res: Response): Pr
       return;
     }
     const uid = req.user.id;
-    const orders = await withPrismaRetry(() =>
+    const orders: any[] = (await withPrismaRetry(() =>
       db.order.findMany({
         where: {
           OR: [{ buyerId: uid }, { sellerId: uid }],
@@ -56,8 +56,39 @@ export async function listTransactionOrders(req: AuthRequest, res: Response): Pr
           },
         },
       })
+    )) as any[];
+
+    const { getDownloadUrl } = await import('../lib/s3');
+    const resolvedOrders = await Promise.all(
+      orders.map(async (order: any) => {
+        const orderCopy = { ...order };
+        if (orderCopy.items) {
+          orderCopy.items = await Promise.all(
+            orderCopy.items.map(async (item: any) => {
+              if (item.garment && item.garment.images) {
+                const resolvedImages = await Promise.all(
+                  item.garment.images.map((img: string) => getDownloadUrl(img))
+                );
+                return {
+                  ...item,
+                  garment: { ...item.garment, images: resolvedImages },
+                };
+              }
+              return item;
+            })
+          );
+        }
+        if (orderCopy.buyer?.avatar) {
+          orderCopy.buyer.avatar = await getDownloadUrl(orderCopy.buyer.avatar);
+        }
+        if (orderCopy.seller?.avatar) {
+          orderCopy.seller.avatar = await getDownloadUrl(orderCopy.seller.avatar);
+        }
+        return orderCopy;
+      })
     );
-    res.json({ data: orders });
+
+    res.json({ data: resolvedOrders });
   } catch (e) {
     logger.error('listTransactionOrders failed', { error: e instanceof Error ? e.message : String(e) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to load orders' });

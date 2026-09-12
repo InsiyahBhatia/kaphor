@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
@@ -19,6 +19,7 @@ import { safeBack } from '../../../src/utils/navigation';
 import { useAuth } from '../../../src/context/AuthContext';
 import { swapService } from '../../../src/services/swapService';
 import { messageService } from '../../../src/services/messageService';
+import { addressService, Address } from '../../../src/services/addressService';
 import { useRazorpay } from '@codearcade/expo-razorpay';
 import type { SwapTransaction, SwapAddress, SwapTracking } from '../../../src/types/swap';
 
@@ -43,6 +44,11 @@ export default function SwapShippingScreen() {
   const [payingDeposit, setPayingDeposit] = useState(false);
   const [confirmingReceived, setConfirmingReceived] = useState(false);
 
+  // Address Book state
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
+  const [sharingAddress, setSharingAddress] = useState(false);
+
   const { openCheckout } = useRazorpay();
 
   // Form state
@@ -54,6 +60,50 @@ export default function SwapShippingScreen() {
   const myTracking = isInitiator ? swap?.initiatorTracking : swap?.receiverTracking;
   const theirTracking = isInitiator ? swap?.receiverTracking : swap?.initiatorTracking;
   const isShipped = Boolean(myTracking);
+
+  const myAddress: SwapAddress | undefined = isInitiator ? swap?.initiatorAddress : swap?.receiverAddress;
+  const partnerAddress = address || (isInitiator ? swap?.receiverAddress : swap?.initiatorAddress);
+
+  const loadAddresses = useCallback(async () => {
+    try {
+      const list = await addressService.list();
+      setAddresses(list || []);
+    } catch (e) {
+      console.warn('Failed to load address book for swap shipping', e);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAddresses();
+    }, [loadAddresses])
+  );
+
+  const handleSelectAddress = async (selectedAddr: Address) => {
+    setSharingAddress(true);
+    try {
+      const swapAddrPayload: SwapAddress = {
+        fullName: selectedAddr.fullName,
+        phone: selectedAddr.phone,
+        line1: selectedAddr.line1,
+        line2: selectedAddr.line2 || undefined,
+        city: selectedAddr.city,
+        state: selectedAddr.state,
+        pincode: selectedAddr.pincode,
+      };
+      const updatedSwap = await swapService.shareAddress(swapId!, swapAddrPayload);
+      setSwap(updatedSwap);
+      setShowAddressPicker(false);
+      Alert.alert(
+        'Delivery Address Updated',
+        'Your delivery address has been updated and shared with your swap partner.'
+      );
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message || 'Failed to update delivery address.');
+    } finally {
+      setSharingAddress(false);
+    }
+  };
 
   const handleConfirmReceived = () => {
     Alert.alert(
@@ -296,32 +346,87 @@ export default function SwapShippingScreen() {
           <Ionicons name="chevron-forward" size={14} color={colors.charcoal} />
         </TouchableOpacity>
 
-        {/* Shipping Address */}
-        <Text style={styles.sectionTitle}>SHIP TO</Text>
-        {address ? (
+        {/* 1. SHIP TO (PARTNER'S ADDRESS) */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitleNoMargin}>SHIP TO (PARTNER'S ADDRESS)</Text>
+          <View style={styles.addressRoleBadge}>
+            <Text style={styles.addressRoleBadgeText}>DISPATCH DESTINATION</Text>
+          </View>
+        </View>
+
+        {partnerAddress ? (
           <View style={styles.addressCard}>
             <View style={styles.addressHeader}>
               <Ionicons name="location" size={14} color={colors.cream} />
-              <Text style={styles.addressHeaderText}>DELIVERY ADDRESS</Text>
+              <Text style={styles.addressHeaderText}>SEND YOUR PACKAGE TO:</Text>
             </View>
             <View style={styles.addressBody}>
-              <Text style={styles.addressName}>{address.fullName}</Text>
-              <Text style={styles.addressLine}>{address.phone}</Text>
+              <Text style={styles.addressName}>{partnerAddress.fullName}</Text>
+              <Text style={styles.addressLine}>{partnerAddress.phone}</Text>
               <View style={styles.addrDivider} />
-              <Text style={styles.addressLine}>{address.line1}</Text>
-              {address.line2 ? <Text style={styles.addressLine}>{address.line2}</Text> : null}
+              <Text style={styles.addressLine}>{partnerAddress.line1}</Text>
+              {partnerAddress.line2 ? <Text style={styles.addressLine}>{partnerAddress.line2}</Text> : null}
               <Text style={styles.addressLine}>
-                {address.city}, {address.state} — {address.pincode}
+                {partnerAddress.city}, {partnerAddress.state} — {partnerAddress.pincode}
               </Text>
             </View>
           </View>
         ) : (
           <View style={styles.noAddressCard}>
-            <Ionicons name="location-outline" size={24} color={colors.textMuted} />
+            <Ionicons name="hourglass-outline" size={24} color={colors.textMuted} />
             <Text style={styles.noAddressText}>
-              Address not yet shared. Wait for the other party to share their address.
+              Partner hasn't shared their delivery address yet. You will be able to dispatch as soon as they provide coordinates.
             </Text>
           </View>
+        )}
+
+        {/* 2. YOUR DELIVERY ADDRESS (WHERE PARTNER SENDS TO YOU) */}
+        <View style={[styles.sectionHeaderRow, { marginTop: 18 }]}>
+          <Text style={styles.sectionTitleNoMargin}>YOUR DELIVERY ADDRESS</Text>
+          <TouchableOpacity
+            onPress={() => setShowAddressPicker(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.changeAddressLink}>
+              {myAddress ? 'CHANGE' : 'SELECT FROM BOOK'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {myAddress ? (
+          <View style={styles.addressCard}>
+            <View style={[styles.addressHeader, { backgroundColor: colors.charcoal }]}>
+              <Ionicons name="home" size={14} color={colors.cream} />
+              <Text style={styles.addressHeaderText}>PARTNER WILL SHIP TO YOU AT:</Text>
+            </View>
+            <View style={styles.addressBody}>
+              <Text style={styles.addressName}>{myAddress.fullName}</Text>
+              <Text style={styles.addressLine}>{myAddress.phone}</Text>
+              <View style={styles.addrDivider} />
+              <Text style={styles.addressLine}>{myAddress.line1}</Text>
+              {myAddress.line2 ? <Text style={styles.addressLine}>{myAddress.line2}</Text> : null}
+              <Text style={styles.addressLine}>
+                {myAddress.city}, {myAddress.state} — {myAddress.pincode}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.noAddressCardDashed}
+            onPress={() => setShowAddressPicker(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="location-outline" size={24} color={colors.red} />
+            <Text style={[styles.noAddressText, { color: colors.charcoal, fontWeight: '700' }]}>
+              No delivery address shared with partner.
+            </Text>
+            <Text style={[styles.noAddressText, { fontSize: 9 }]}>
+              Tap to choose a saved delivery address from your Address Book.
+            </Text>
+            <View style={styles.pickAddressBtn}>
+              <Text style={styles.pickAddressBtnText}>+ SELECT DELIVERY ADDRESS</Text>
+            </View>
+          </TouchableOpacity>
         )}
 
         {/* Interactive Security Deposit Escrow Card */}
@@ -503,6 +608,120 @@ export default function SwapShippingScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Address Picker Modal */}
+      {showAddressPicker && (
+        <View style={styles.addressModalOverlay}>
+          <View style={styles.addressModalContent}>
+            <View style={styles.addressModalHeader}>
+              <Text style={styles.addressModalTitle}>SELECT YOUR DELIVERY ADDRESS</Text>
+              <TouchableOpacity
+                onPress={() => setShowAddressPicker(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close" size={22} color={colors.charcoal} />
+              </TouchableOpacity>
+            </View>
+
+            {sharingAddress ? (
+              <View style={{ padding: 30, alignItems: 'center', gap: 12 }}>
+                <ActivityIndicator size="large" color={colors.charcoal} />
+                <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.textMuted }}>
+                  Updating delivery coordinates...
+                </Text>
+              </View>
+            ) : (
+              <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
+                {addresses.length === 0 ? (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <Text
+                      style={{
+                        fontFamily: typography.mono,
+                        fontSize: 12,
+                        color: colors.textMuted,
+                        textAlign: 'center',
+                        marginBottom: 12,
+                      }}
+                    >
+                      No saved addresses found in your address book.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.modalAddBtn}
+                      onPress={() => {
+                        setShowAddressPicker(false);
+                        router.push('/profile/addresses' as any);
+                      }}
+                    >
+                      <Text style={styles.modalAddBtnText}>+ ADD NEW ADDRESS</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    {addresses.map((addr) => {
+                      const isCurrent =
+                        myAddress?.fullName === addr.fullName &&
+                        myAddress?.pincode === addr.pincode &&
+                        myAddress?.line1 === addr.line1;
+                      return (
+                        <TouchableOpacity
+                          key={addr.id}
+                          style={[
+                            styles.addressOptionCard,
+                            isCurrent && styles.addressOptionCardActive,
+                          ]}
+                          onPress={() => handleSelectAddress(addr)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.addressOptionHeader}>
+                            <Text style={styles.addressOptionName}>{addr.fullName}</Text>
+                            <View style={styles.defaultBadge}>
+                              <Text style={styles.defaultBadgeText}>
+                                {addr.label?.toUpperCase() ||
+                                  (addr.isDefault ? 'DEFAULT' : 'SAVED')}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={styles.addressOptionPhone}>{addr.phone}</Text>
+                          <Text style={styles.addressOptionText}>
+                            {[
+                              addr.line1,
+                              addr.line2,
+                              addr.city,
+                              addr.state,
+                              addr.pincode,
+                            ]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                    <TouchableOpacity
+                      style={[
+                        styles.modalAddBtn,
+                        {
+                          marginTop: 8,
+                          backgroundColor: colors.white,
+                          borderWidth: 1.5,
+                          borderColor: colors.charcoal,
+                        },
+                      ]}
+                      onPress={() => {
+                        setShowAddressPicker(false);
+                        router.push('/profile/addresses' as any);
+                      }}
+                    >
+                      <Text style={[styles.modalAddBtnText, { color: colors.charcoal }]}>
+                        + MANAGE / ADD NEW ADDRESS
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      )}
     </View>
   );
 
@@ -962,5 +1181,166 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.8,
+  },
+
+  // 2-tier Address Coordinates Styles
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sectionTitleNoMargin: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.textMuted,
+    letterSpacing: 1.2,
+  },
+  addressRoleBadge: {
+    backgroundColor: '#1C2B4A',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  addressRoleBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 0.8,
+  },
+  changeAddressLink: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.charcoal,
+    textDecorationLine: 'underline',
+    letterSpacing: 0.8,
+  },
+  noAddressCardDashed: {
+    alignItems: 'center',
+    gap: 8,
+    padding: 20,
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.charcoal,
+    marginBottom: 16,
+  },
+  pickAddressBtn: {
+    backgroundColor: colors.charcoal,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 4,
+  },
+  pickAddressBtnText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+
+  // Modal Styles
+  addressModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end',
+    zIndex: 999,
+  },
+  addressModalContent: {
+    backgroundColor: colors.cream,
+    borderTopWidth: 2,
+    borderTopColor: colors.charcoal,
+    padding: 20,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  addressModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.charcoal,
+  },
+  addressModalTitle: {
+    fontFamily: typography.headings,
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  modalAddBtn: {
+    backgroundColor: colors.charcoal,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  modalAddBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.cream,
+    letterSpacing: 0.8,
+  },
+  addressOptionCard: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    padding: 14,
+    marginBottom: 10,
+  },
+  addressOptionCardActive: {
+    borderWidth: 2.5,
+    borderColor: colors.charcoal,
+    backgroundColor: '#fffdf5',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  addressOptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  addressOptionName: {
+    fontFamily: typography.headings,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.charcoal,
+  },
+  addressOptionPhone: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.textMuted,
+    marginBottom: 4,
+  },
+  addressOptionText: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.charcoal,
+    lineHeight: 16,
+  },
+  defaultBadge: {
+    backgroundColor: colors.cream,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  defaultBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.charcoal,
   },
 });

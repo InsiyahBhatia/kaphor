@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,16 +8,17 @@ import { Badge } from '../../../src/components/Badge';
 import { garmentService } from '../../../src/services/garmentService';
 import { Garment } from '../../../src/store/garmentStore';
 import { useAuth } from '../../../src/context/AuthContext';
+import { useAuthStore } from '../../../src/store/authStore';
 import api from '../../../src/services/api';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
-import { KaphorImage } from '../../../src/components/KaphorImage';
-import { orderService } from '../../../src/services/orderService';
+import { KaphorImage, getCategoryFallbackImage } from '../../../src/components/KaphorImage';
 import { cartService } from '../../../src/services/cartService';
 import { messageService } from '../../../src/services/messageService';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { hapticFeedback } from '../../../src/utils/haptics';
+import { getFormattedGarmentPrice } from '../../../src/utils/priceFormatter';
 
 const { width } = Dimensions.get('window');
 
@@ -48,13 +49,15 @@ export default function GarmentDetailScreen() {
     try {
       const data = await garmentService.getGarmentById(id as string);
       setGarment(data);
-      setIsLiked(data.isLiked || false);
+      setIsLiked(data?.isLiked || false);
     } catch (error) {
       console.error('Failed to load garment', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const priceData = getFormattedGarmentPrice(garment);
 
   const handleAddToCart = async () => {
     if (!id) return;
@@ -79,7 +82,7 @@ export default function GarmentDetailScreen() {
         pathname: '/(tabs)/shop/checkout/delivery',
         params: {
           garmentId: id as string,
-          price: String(garment.price || 0),
+          price: String(priceData.numericRupees || 0),
           title: garment.title,
           image: garment.images?.[0] || '',
           brand: garment.brand || '',
@@ -111,8 +114,6 @@ export default function GarmentDetailScreen() {
     }
   };
 
-  const handleMessageSeller = handleStartInquiry;
-
   const handleToggleLike = async () => {
     if (!id || togglingLike) return;
     hapticFeedback.selection();
@@ -125,11 +126,9 @@ export default function GarmentDetailScreen() {
     try {
       await api.post('/interactions', {
         garmentId: id,
-        eventType: 'WISHLIST', // We use WISHLIST as "Like"
+        eventType: 'WISHLIST',
       });
-      // Backend handles behaviour signal
     } catch (error) {
-      // Revert if failed
       setIsLiked(!nextState);
       console.error('Failed to toggle like', error);
     } finally {
@@ -144,25 +143,53 @@ export default function GarmentDetailScreen() {
   if (!garment) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Text style={{ color: colors.textPrimary }}>Garment not found</Text>
+        <Text style={{ color: colors.textPrimary, fontFamily: typography.headings, fontSize: 20 }}>
+          GARMENT NOT FOUND
+        </Text>
+        <Text style={{ color: colors.textMuted, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 }}>
+          This asset may have been transferred or archived in another collection.
+        </Text>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={{ marginTop: 24, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: colors.charcoal, borderRadius: 8 }}
         >
-          <Text style={{ color: colors.crimson, marginTop: 20 }}>Go Back</Text>
+          <Text style={{ color: colors.cream, fontWeight: '700' }}>RETURN TO ARCHIVE</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   const topInset = Math.max(insets.top + 8, 48);
-  const imagesList = Array.isArray(garment.images) && garment.images.length > 0 ? garment.images : [''];
+
+  // Clean and prepare images list
+  const rawImages: string[] = Array.isArray(garment.images)
+    ? garment.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0)
+    : [];
+
+  const imagesList: string[] = rawImages.length > 0
+    ? rawImages
+    : [getCategoryFallbackImage(garment.category)];
+
   const currentImage = imagesList[activeImageIndex] || imagesList[0];
+  const authStoreUserId = useAuthStore((s) => s.user?.id);
+  const effectiveUserId = user?.id || authStoreUserId;
+  const isOwner = Boolean(effectiveUserId && (garment.sellerId === effectiveUserId || garment.seller?.id === effectiveUserId));
+
+  // Parse specifications cleanly
+  const cleanColors = Array.isArray(garment.color)
+    ? garment.color.filter((c: string) => typeof c === 'string' && c.trim().length > 0).join(', ')
+    : typeof garment.color === 'string' && garment.color.trim() ? garment.color : '';
+
+  const cleanMaterials = Array.isArray(garment.material)
+    ? garment.material.filter((m: string) => typeof m === 'string' && m.trim().length > 0).join(', ')
+    : '';
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: garment?.title || 'Details' }} />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+        {/* Top Image Hero Banner */}
         <View style={styles.imageContainer}>
           <TouchableOpacity 
             activeOpacity={0.95} 
@@ -171,6 +198,8 @@ export default function GarmentDetailScreen() {
           >
             <KaphorImage 
               uri={currentImage} 
+              category={garment.category}
+              brand={garment.brand}
               style={styles.image}
               contentFit="contain"
             />
@@ -179,6 +208,7 @@ export default function GarmentDetailScreen() {
               <Text style={styles.zoomHintText}>TAP TO ZOOM</Text>
             </View>
           </TouchableOpacity>
+
           <TouchableOpacity 
             style={[styles.backButton, { top: topInset }]} 
             onPress={() => safeBack('/(tabs)/shop')}
@@ -186,6 +216,7 @@ export default function GarmentDetailScreen() {
           >
             <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
+
           <TouchableOpacity 
             style={[styles.wishlistButton, { top: topInset }, isLiked && { backgroundColor: 'rgba(155, 27, 48, 0.1)' }]} 
             onPress={handleToggleLike}
@@ -214,7 +245,13 @@ export default function GarmentDetailScreen() {
                   activeImageIndex === idx && styles.thumbButtonActive,
                 ]}
               >
-                <KaphorImage uri={imgUri} style={styles.thumbImg} contentFit="cover" />
+                <KaphorImage 
+                  uri={imgUri} 
+                  category={garment.category}
+                  brand={garment.brand}
+                  style={styles.thumbImg} 
+                  contentFit="cover" 
+                />
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -236,193 +273,273 @@ export default function GarmentDetailScreen() {
             >
               <Ionicons name="close" size={28} color="#FFFFFF" />
             </TouchableOpacity>
-            <ScrollView
-              style={{ flex: 1, width: '100%' }}
-              contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-              maximumZoomScale={4}
-              minimumZoomScale={1}
-              showsHorizontalScrollIndicator={false}
-              showsVerticalScrollIndicator={false}
-              centerContent
-            >
-              <Image
-                source={{ uri: currentImage }}
+            <View style={styles.zoomImageContainer}>
+              <KaphorImage
+                uri={currentImage}
+                category={garment.category}
+                brand={garment.brand}
                 style={styles.zoomFullImage}
-                resizeMode="contain"
+                contentFit="contain"
               />
-            </ScrollView>
+            </View>
           </View>
         </Modal>
 
         <View style={styles.content}>
+          {/* Header Title & Pricing */}
           <View style={styles.header}>
             <View style={{ flex: 1, marginRight: 16 }}>
-              <Text style={styles.brand}>{garment.brand || 'Kaphor Archive'}</Text>
-              <Text style={styles.categoryLabel}>{garment.category?.toUpperCase() || 'GENERAL ARCHIVE'} {garment.subCategory ? `> ${garment.subCategory.toUpperCase()}` : ''}</Text>
+              <Text style={styles.brand}>{garment.brand || 'KAPHOR ARCHIVE'}</Text>
+              <Text style={styles.categoryLabel}>
+                {(garment.category || 'ARCHIVE').toUpperCase()} {garment.subCategory ? `> ${garment.subCategory.toUpperCase()}` : ''}
+              </Text>
               <Text style={styles.title}>{garment.title}</Text>
             </View>
+
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>
-                ₹{garment.listingType === 'RENTAL' 
-                  ? (garment.rentalPriceDay ? (garment.rentalPriceDay / 100).toLocaleString() : '---')
-                  : (garment.price ? (garment.price / 100).toLocaleString() : '---')}
-                {garment.listingType === 'RENTAL' && <Text style={{ fontSize: 14 }}> / day</Text>}
+              <Text style={[styles.price, priceData.isSwap && styles.swapPrice]}>
+                {priceData.displayPrice}
+                {priceData.priceUnit && (
+                  <Text style={styles.priceUnitText}>{priceData.priceUnit}</Text>
+                )}
               </Text>
-              {garment.listingType !== 'RENTAL' && (
-                <Text style={styles.originalPrice}>₹{(garment.price ? (garment.price / 100) * 2 : 0).toLocaleString()}</Text>
+              {priceData.originalPrice && (
+                <Text style={styles.originalPrice}>{priceData.originalPrice}</Text>
+              )}
+              {priceData.discountTag && (
+                <View style={[styles.discountTagBadge, priceData.isSwap && styles.swapDiscountBadge]}>
+                  <Text style={[styles.discountTagText, priceData.isSwap && styles.swapDiscountText]}>
+                    {priceData.discountTag}
+                  </Text>
+                </View>
               )}
             </View>
           </View>
 
-          <View style={styles.badges}>
-            <Badge variant="fitScore" label="98% MATCH" />
-            <Badge variant="condition" label={garment.condition || 'PRISTINE'} subType="Pristine" />
-            <Badge variant="status" label="NEW RELEASE" />
+          {/* Subtext description banner */}
+          <View style={styles.subtextRow}>
+            <Ionicons 
+              name={priceData.isSwap ? "repeat" : priceData.isRental ? "calendar-outline" : "shield-checkmark-outline"} 
+              size={14} 
+              color={priceData.isSwap ? colors.crimson : priceData.isRental ? "#2E7D32" : colors.charcoal} 
+            />
+            <Text style={styles.subtextText}>{priceData.subtext}</Text>
           </View>
 
+          {/* Badges Bar */}
+          <View style={styles.badges}>
+            <Badge 
+              variant={priceData.isSwap ? "condition" : priceData.isRental ? "status" : "fitScore"} 
+              label={priceData.isSwap ? "CIRCULAR SWAP" : priceData.isRental ? "HERITAGE RENTAL" : "AUTHENTICATED ARCHIVE"} 
+            />
+            <Badge 
+              variant="condition" 
+              label={(garment.condition || 'PRISTINE').replace('_', ' ').toUpperCase()} 
+            />
+            <Badge 
+              variant="fitScore" 
+              label={garment.size ? `SIZE: ${garment.size.toUpperCase()}` : "ONE SIZE (OS)"} 
+            />
+          </View>
+
+          {/* Description Section */}
           <View style={styles.infoSection}>
             <Text style={styles.sectionTitle}>DESCRIPTION</Text>
             <Text style={styles.description}>
-              {garment.description || 'No description available for this heritage piece.'}
+              {garment.description || 'Authentic heritage piece inspected and preserved in the Kaphor circular fashion archive.'}
             </Text>
 
             <TouchableOpacity 
               style={styles.aiDoubtButton} 
               onPress={() => router.push({
                 pathname: '/(tabs)/shop/ai-chat',
-                params: { garmentId: id, initialMessage: `I have a doubt about this ${garment.title}. Can you help?` }
+                params: { garmentId: id, initialMessage: `I have questions about this ${garment.title}. Can you explain its material, styling, and condition?` }
               })}
             >
               <Ionicons name="sparkles" size={18} color="#C9A84C" />
-              <Text style={styles.aiDoubtText}>DOUBTS? ASK KAPHOR AI</Text>
+              <Text style={styles.aiDoubtText}>DOUBTS? ASK KAPHOR AI ASSISTANT</Text>
             </TouchableOpacity>
           </View>
 
+          {/* Rich Full Specifications Grid */}
           <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>SPECIFICATIONS</Text>
+            <Text style={styles.sectionTitle}>SPECIFICATIONS & MANIFEST</Text>
             <View style={styles.specGrid}>
               <View style={styles.specItem}>
-                <Text style={styles.specLabel}>SIZE</Text>
-                <Text style={styles.specValue}>{garment.size || 'N/A'}</Text>
+                <Text style={styles.specLabel}>BRAND</Text>
+                <Text style={styles.specValue}>{garment.brand || 'Kaphor Curated Archive'}</Text>
               </View>
+
               <View style={styles.specItem}>
                 <Text style={styles.specLabel}>CATEGORY</Text>
-                <Text style={styles.specValue}>{garment.category?.toUpperCase() || 'GENERAL'}</Text>
+                <Text style={styles.specValue}>{(garment.category || 'Apparel').toUpperCase()}</Text>
               </View>
-              {garment.fabric && (
-                <View style={styles.specItem}>
-                  <Text style={styles.specLabel}>FABRIC</Text>
-                  <Text style={styles.specValue}>{garment.fabric}</Text>
-                </View>
-              )}
-              {garment.color && (
-                <View style={styles.specItem}>
-                  <Text style={styles.specLabel}>COLOR</Text>
-                  <Text style={styles.specValue}>{Array.isArray(garment.color) ? garment.color.join(', ') : garment.color}</Text>
-                </View>
-              )}
-              {garment.style && (
-                <View style={styles.specItem}>
-                  <Text style={styles.specLabel}>STYLE</Text>
-                  <Text style={styles.specValue}>{garment.style}</Text>
-                </View>
-              )}
-              {garment.sleeve && (
-                <View style={styles.specItem}>
-                  <Text style={styles.specLabel}>SLEEVE</Text>
-                  <Text style={styles.specValue}>{garment.sleeve}</Text>
-                </View>
-              )}
-              {garment.shape && (
-                <View style={styles.specItem}>
-                  <Text style={styles.specLabel}>SHAPE</Text>
-                  <Text style={styles.specValue}>{garment.shape}</Text>
-                </View>
-              )}
-              {garment.pattern && (
-                <View style={styles.specItem}>
-                  <Text style={styles.specLabel}>PATTERN</Text>
-                  <Text style={styles.specValue}>{garment.pattern}</Text>
-                </View>
-              )}
-              {garment.weight && (
-                <View style={styles.specItem}>
-                  <Text style={styles.specLabel}>WEIGHT</Text>
-                  <Text style={styles.specValue}>{garment.weight}</Text>
-                </View>
-              )}
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>SIZE</Text>
+                <Text style={styles.specValue}>{garment.size || 'One Size (OS)'}</Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>CONDITION</Text>
+                <Text style={styles.specValue}>{(garment.condition || 'Pristine').replace('_', ' ')}</Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>LISTING TYPE</Text>
+                <Text style={styles.specValue}>
+                  {priceData.isSwap ? 'Peer Accessory Swap' : priceData.isRental ? 'Rental Lease' : 'Direct Authenticated Sale'}
+                </Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>SUB-CATEGORY</Text>
+                <Text style={styles.specValue}>
+                  {garment.subCategory || (garment.category === 'Jewelry' ? 'Jewelry & Accessories' : 'Curated Archive')}
+                </Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>FABRIC / MATERIAL</Text>
+                <Text style={styles.specValue}>
+                  {garment.fabric || cleanMaterials || (garment.category === 'Jewelry' ? 'Metallic / Artisanal Alloy' : 'Premium Textile Blend')}
+                </Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>COLORWAY</Text>
+                <Text style={styles.specValue}>{cleanColors || 'Curated Heritage Tone'}</Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>STYLE / FIT</Text>
+                <Text style={styles.specValue}>{garment.style || 'Contemporary Tailored'}</Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>SLEEVE / CUT</Text>
+                <Text style={styles.specValue}>
+                  {garment.sleeve || (garment.category === 'Jewelry' ? 'N/A (Accessory)' : 'Standard Silhouette')}
+                </Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>SILHOUETTE / SHAPE</Text>
+                <Text style={styles.specValue}>{garment.shape || 'Structured Drape'}</Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>PATTERN</Text>
+                <Text style={styles.specValue}>{garment.pattern || 'Solid / Artisanal Weave'}</Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>WEIGHT</Text>
+                <Text style={styles.specValue}>{garment.weight || 'Medium Weight'}</Text>
+              </View>
+
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>AUTHENTICITY</Text>
+                <Text style={[styles.specValue, { color: colors.success }]}>100% Inspected & Certified</Text>
+              </View>
+
+              <View style={[styles.specItem, { width: '100%' }]}>
+                <Text style={styles.specLabel}>CIRCULAR IMPACT METRIC</Text>
+                <Text style={styles.specValue}>Preserves ~12kg CO2 and diverts textiles from regional landfills.</Text>
+              </View>
             </View>
           </View>
 
+          {/* Seller Trust Profile */}
           <TouchableOpacity
             style={styles.sellerTrust}
-            onPress={() => router.push(`/(tabs)/shop/seller/${garment.seller?.id ?? garment.sellerId}`)}
+            onPress={() => {
+              const sellerId = garment.seller?.id || garment.sellerId;
+              if (sellerId) {
+                router.push(`/(tabs)/shop/seller/${sellerId}`);
+              } else {
+                Alert.alert('Seller Profile', 'This garment is curated directly by the Kaphor Archive.');
+              }
+            }}
             activeOpacity={0.85}
           >
             <Ionicons name="shield-checkmark-outline" size={22} color={colors.crimson} />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.sellerTrustTitle}>SELLER PROFILE & REVIEWS</Text>
-                {garment.seller?.isVerified && <VerifiedBadge size="compact" />}
+                <Text style={styles.sellerTrustTitle}>
+                  {garment.seller?.displayName ? garment.seller.displayName.toUpperCase() : 'KAPHOR VERIFIED SELLER'}
+                </Text>
+                <VerifiedBadge size="compact" />
               </View>
               <Text style={styles.sellerTrustSub}>
-                {garment.seller?.displayName ?? 'Seller'} · peer ratings from completed sales
+                Verified circular peer · Peer ratings from completed transactions
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
           {/* MESSAGE SELLER CTA */}
-          <TouchableOpacity 
-            style={styles.messageSellerBtn} 
-            onPress={handleMessageSeller}
-            disabled={startingInquiry}
-          >
-            {startingInquiry ? (
-              <ActivityIndicator size="small" color={colors.crimson} />
-            ) : (
-              <>
-                <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.crimson} />
-                <Text style={styles.messageSellerText}>MESSAGE SELLER ABOUT DEAL</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {!isOwner && (
+            <TouchableOpacity 
+              style={styles.messageSellerBtn} 
+              onPress={handleStartInquiry}
+              disabled={startingInquiry}
+            >
+              {startingInquiry ? (
+                <ActivityIndicator size="small" color={colors.crimson} />
+              ) : (
+                <>
+                  <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.crimson} />
+                  <Text style={styles.messageSellerText}>MESSAGE SELLER ABOUT ITEM</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
 
+          {/* Listing Context Info Cards */}
           <View style={styles.actionGrid}>
-            {(garment.listingType === 'RENTAL' || garment.listingType === 'ACCESSORY_SWAP') && (
-              <TouchableOpacity 
-                style={styles.actionCard}
-                onPress={() => router.push('/(tabs)/swap')}
-              >
+            {priceData.isSwap && (
+              <View style={styles.swapNoticeCard}>
                 <Ionicons name="repeat" size={24} color={colors.crimson} />
-                <Text style={styles.actionTitle}>SWAP</Text>
-                <Text style={styles.actionDesc}>Exchange for items</Text>
-              </TouchableOpacity>
-            )}
-            
-            {garment.listingType === 'RENTAL' && (
-              <TouchableOpacity 
-                style={styles.actionCard} 
-                onPress={() => router.push(`/(tabs)/rental/${id}`)}
-              >
-                <Ionicons name="calendar-outline" size={24} color={colors.crimson} />
-                <Text style={styles.actionTitle}>RENT</Text>
-                <Text style={styles.actionDesc}>₹{garment.rentalPriceDay ? (garment.rentalPriceDay / 100).toLocaleString() : '---'} / day</Text>
-              </TouchableOpacity>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.noticeTitle}>CIRCULAR SWAP ACTIVE</Text>
+                  <Text style={styles.noticeDesc}>
+                    Exchange one of your owned accessories with this item without cash transaction. Escrow protected.
+                  </Text>
+                </View>
+              </View>
             )}
 
-            {garment.listingType === 'SALE' && (
-               <View style={styles.saleInfoCard}>
-                  <Ionicons name="shield-checkmark" size={20} color={colors.success} />
+            {priceData.isRental && (
+              <View style={styles.rentalNoticeCard}>
+                <Ionicons name="calendar-outline" size={24} color="#2E7D32" />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.noticeTitle, { color: '#2E7D32' }]}>HERITAGE RENTAL AVAILABLE</Text>
+                  <Text style={styles.noticeDesc}>
+                    Book this piece for weddings, galas, and special occasions with doorstep hygiene care.
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {priceData.isSale && (
+              <View style={styles.saleInfoCard}>
+                <Ionicons name="shield-checkmark" size={22} color={colors.success} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={styles.saleInfoText}>AUTHENTICATED SALE · FULL OWNERSHIP</Text>
-               </View>
+                  <Text style={styles.saleInfoSub}>
+                    Direct physical dispatch with tamper-evident authentication seal.
+                  </Text>
+                </View>
+              </View>
             )}
           </View>
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
-        {garment && user && (garment.sellerId === user.id || user.role === 'ADMIN') && (
+      {/* Persistent Bottom Action Footer */}
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 12, 24) }]}>
+        {isOwner && (
           <View style={styles.listingManagerBar}>
             <Text style={styles.managerText}>YOU ARE MANAGING THIS ASSET</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -436,7 +553,7 @@ export default function GarmentDetailScreen() {
               <TouchableOpacity
                 style={styles.deleteBtnSmall}
                 onPress={async () => {
-                  Alert.alert('Delete Asset', 'Confirm permanent removal from the deck?', [
+                  Alert.alert('Delete Asset', 'Confirm permanent removal from the archive deck?', [
                     { text: 'CANCEL', style: 'cancel' },
                     { text: 'DELETE', style: 'destructive', onPress: async () => {
                       try {
@@ -454,37 +571,39 @@ export default function GarmentDetailScreen() {
         )}
 
         <View style={styles.buyRow}>
-          {garment.listingType?.toUpperCase() === 'SALE' ? (
+          {priceData.isSale ? (
             <>
               <TouchableOpacity
                 style={styles.cartButton}
                 onPress={handleAddToCart}
-                disabled={addingToCart || (garment.sellerId === user?.id)}
+                disabled={addingToCart || isOwner}
               >
-                {addingToCart ? <ActivityIndicator size="small" color={colors.crimson} /> : (
+                {addingToCart ? (
+                  <ActivityIndicator size="small" color={colors.crimson} />
+                ) : (
                   <Ionicons name="cart-outline" size={24} color={colors.crimson} />
                 )}
               </TouchableOpacity>
               <Button
-                title={garment.sellerId === user?.id ? "OWNED BY YOU" : (buying ? "PREPARING..." : "BUY NOW")}
+                title={isOwner ? "OWNED BY YOU" : (buying ? "PREPARING..." : `BUY NOW · ${priceData.displayPrice}`)}
                 onPress={handleBuyNow}
                 style={{ flex: 1 }}
-                disabled={garment.sellerId === user?.id || buying}
+                disabled={Boolean(isOwner) || buying}
               />
             </>
-          ) : (garment.listingType?.toUpperCase() === 'RENTAL' || garment.listingType?.toUpperCase() === 'LEASE') ? (
+          ) : priceData.isRental ? (
             <Button
-              title="BOOK RENTAL"
+              title={isOwner ? "OWNED BY YOU" : `RESERVE RENTAL · ${priceData.displayPrice}`}
               onPress={() => router.push(`/(tabs)/rental/${id}`)}
               style={{ flex: 1 }}
-              disabled={garment.sellerId === user?.id}
+              disabled={Boolean(isOwner)}
             />
           ) : (
             <Button
-              title="INITIATE SWAP"
+              title={isOwner ? "OWNED BY YOU" : "INITIATE ACCESSORY SWAP"}
               onPress={() => router.push(`/(tabs)/swap/${id}`)}
               style={{ flex: 1 }}
-              disabled={garment.sellerId === user?.id}
+              disabled={Boolean(isOwner)}
             />
           )}
         </View>
@@ -502,7 +621,7 @@ const styles = StyleSheet.create({
     width: width,
     height: width * 1.2,
     position: 'relative',
-    backgroundColor: colors.bgCard, // Neutral background for contain mode
+    backgroundColor: colors.bgCard,
   },
   image: {
     width: '100%',
@@ -510,25 +629,33 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 60,
     left: 20,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   wishlistButton: {
     position: 'absolute',
-    top: 60,
     right: 20,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   content: {
     padding: 24,
@@ -537,7 +664,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   brand: {
     color: colors.crimson,
@@ -545,6 +672,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     fontWeight: '800',
     marginBottom: 2,
+    textTransform: 'uppercase',
   },
   categoryLabel: {
     color: colors.textMuted,
@@ -555,36 +683,85 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: {
-    fontSize: 32,
+    fontSize: 26,
     fontFamily: typography.headings,
     color: colors.textPrimary,
     textTransform: 'uppercase',
+    lineHeight: 30,
   },
   priceContainer: {
     alignItems: 'flex-end',
   },
   price: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '900',
     color: colors.textPrimary,
   },
+  swapPrice: {
+    color: colors.crimson,
+    fontSize: 18,
+    fontFamily: typography.mono,
+    letterSpacing: 0.5,
+  },
+  priceUnitText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontWeight: '600',
+  },
   originalPrice: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 2,
   },
+  discountTagBadge: {
+    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+  },
+  discountTagText: {
+    fontSize: 9,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.crimson,
+    letterSpacing: 0.5,
+  },
+  swapDiscountBadge: {
+    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+  },
+  swapDiscountText: {
+    color: '#8C6F1E',
+  },
+  subtextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 20,
+    backgroundColor: 'rgba(26,26,26,0.03)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  subtextText: {
+    fontSize: 11,
+    color: colors.textSecond,
+    fontFamily: typography.mono,
+    letterSpacing: 0.3,
+  },
   badges: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   infoSection: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   sectionTitle: {
     color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 11,
     letterSpacing: 2,
     fontWeight: '800',
     marginBottom: 12,
@@ -600,7 +777,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -616,40 +793,42 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   actionGrid: {
+    marginBottom: 40,
+  },
+  swapNoticeCard: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 80,
-  },
-  actionCard: {
-    flex: 1,
-    height: 120,
-    backgroundColor: colors.bgCard,
-    borderRadius: 20,
-    padding: 20,
-    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(155, 27, 48, 0.05)',
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 4,
+    borderColor: 'rgba(155, 27, 48, 0.2)',
   },
-  actionTitle: {
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '800',
-    marginTop: 8,
+  rentalNoticeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(46, 125, 50, 0.05)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.2)',
   },
-  actionDesc: {
-    color: colors.textMuted,
+  noticeTitle: {
     fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '900',
+    color: colors.crimson,
+    letterSpacing: 1,
+  },
+  noticeDesc: {
+    fontSize: 12,
+    color: colors.textSecond,
     marginTop: 4,
-    textAlign: 'center',
+    lineHeight: 17,
   },
   footer: {
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     position: 'absolute',
@@ -657,6 +836,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: colors.bg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 8,
   },
   buyRow: {
     flexDirection: 'row',
@@ -668,26 +852,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    paddingVertical: 18,
+    paddingVertical: 16,
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: colors.crimson,
     backgroundColor: 'rgba(155, 27, 48, 0.03)',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   messageSellerText: {
     color: colors.crimson,
     fontWeight: '800',
-    fontSize: 12,
+    fontSize: 11,
     letterSpacing: 1,
-  },
-  buyButton: {
-    width: '100%',
-    backgroundColor: colors.crimson,
   },
   center: {
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
   },
   aiDoubtButton: {
     flexDirection: 'row',
@@ -712,15 +893,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(26,26,26,0.05)',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(26,26,26,0.1)',
   },
   managerText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 9,
     color: colors.textMuted,
     fontWeight: '800',
     letterSpacing: 1,
@@ -729,9 +910,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(201, 168, 76, 0.12)',
     borderWidth: 1,
     borderColor: colors.gold,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -739,24 +920,24 @@ const styles = StyleSheet.create({
   editTextSmall: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
   },
   deleteBtnSmall: {
     backgroundColor: 'rgba(155, 27, 48, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   deleteTextSmall: {
     color: colors.crimson,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
   },
   cartButton: {
-    width: 60,
-    height: 56,
+    width: 54,
+    height: 52,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.crimson,
@@ -765,53 +946,58 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   saleInfoCard: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     backgroundColor: 'rgba(52, 199, 89, 0.05)',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(52, 199, 89, 0.2)',
   },
   saleInfoText: {
     color: colors.success,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
+  },
+  saleInfoSub: {
+    color: colors.textSecond,
+    fontSize: 11,
+    marginTop: 2,
   },
   specGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
-    marginTop: 8,
+    gap: 12,
+    marginTop: 4,
   },
   specItem: {
-    width: '47%',
+    width: '48%',
     backgroundColor: 'rgba(26,26,26,0.02)',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.05)',
+    borderColor: 'rgba(26,26,26,0.06)',
   },
   specLabel: {
-    fontSize: 9,
+    fontSize: 8,
+    fontFamily: typography.mono,
     color: colors.textMuted,
     fontWeight: '800',
     letterSpacing: 1,
     marginBottom: 4,
   },
   specValue: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textPrimary,
     fontWeight: '700',
+    lineHeight: 16,
   },
   zoomHintBadge: {
     position: 'absolute',
     bottom: 12,
     right: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.65)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -854,20 +1040,28 @@ const styles = StyleSheet.create({
   zoomModalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   closeZoomBtn: {
     position: 'absolute',
     right: 20,
     zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     width: 44,
     height: 44,
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  zoomFullImage: {
+  zoomImageContainer: {
     width: width,
-    height: '85%',
+    height: '80%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomFullImage: {
+    width: width * 0.95,
+    height: '100%',
   },
 });

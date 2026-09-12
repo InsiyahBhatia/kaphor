@@ -4,23 +4,50 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
+import { useAuth } from '../../../src/context/AuthContext';
 import { PlayingCard } from '../../../src/components/PlayingCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { messageService } from '../../../src/services/messageService';
 import { colors, typography } from '../../../src/theme';
 import { isAccessoryCategory } from '../../../src/constants/market';
-import api, { cachedGet, invalidateCache } from '../../../src/services/api';
+import api from '../../../src/services/api';
 import { hapticFeedback } from '../../../src/utils/haptics';
 
 export default function SwapFeedScreen() {
   const router = useRouter();
   const { garments, isLoading, fetchFeed } = useGarmentStore();
-  const currentUserId = useAuthStore((s) => s.user?.id);
+  const { user } = useAuth();
+  const authStoreUserId = useAuthStore((s) => s.user?.id);
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [mySwaps, setMySwaps] = useState<any[]>([]);
+  const [browseItems, setBrowseItems] = useState<any[]>([]);
   const [swapsLoading, setSwapsLoading] = useState(false);
+  const [browseLoading, setBrowseLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'browse' | 'requests'>('browse');
+
+  const effectiveUserId = user?.id || resolvedUserId || authStoreUserId;
+
+  // Fetch available swappable accessories directly from backend
+  const fetchBrowseItems = async () => {
+    setBrowseLoading(true);
+    try {
+      const [feedRes, meRes] = await Promise.all([
+        api.get('/swaps/feed').catch(() => ({ data: { data: [] } })),
+        api.get('/users/me').catch(() => ({ data: { data: null } })),
+      ]);
+      const list = Array.isArray(feedRes.data?.data) ? feedRes.data.data : [];
+      setBrowseItems(list);
+      if (meRes.data?.data?.id) {
+        setResolvedUserId(meRes.data.data.id);
+      }
+    } catch {
+      setBrowseItems([]);
+    } finally {
+      setBrowseLoading(false);
+    }
+  };
 
   // Fetch user's swap requests (fresh live data)
   const fetchMySwaps = async () => {
@@ -40,6 +67,7 @@ export default function SwapFeedScreen() {
     setRefreshing(true);
     hapticFeedback.light();
     await Promise.all([
+      fetchBrowseItems(),
       fetchFeed({ listingType: 'ACCESSORY_SWAP' }),
       fetchMySwaps(),
     ]);
@@ -48,22 +76,39 @@ export default function SwapFeedScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      fetchBrowseItems();
       fetchFeed({ listingType: 'ACCESSORY_SWAP' });
       fetchMySwaps();
     }, [])
   );
 
-  const swappableItems = garments.filter(
-    (g) =>
-      g.listingType === 'ACCESSORY_SWAP' &&
-      isAccessoryCategory(g.category, g.subCategory) &&
-      g.sellerId !== currentUserId &&
-      (g as any).seller?.id !== currentUserId
-  );
+  // Use items from /swaps/feed first; fallback to store garments.
+  // ALWAYS strictly filter out any item that belongs to the current user!
+  const rawCandidateItems = browseItems.length > 0 ? browseItems : (browseLoading ? [] : garments);
+  const swappableItems = rawCandidateItems.filter((g) => {
+    const isAcc = isAccessoryCategory(g.category, g.subCategory) || g.listingType === 'ACCESSORY_SWAP';
+    if (!isAcc) return false;
+    if (effectiveUserId) {
+      if (g.sellerId === effectiveUserId || (g as any).seller?.id === effectiveUserId) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const handleCardPress = (item: any) => {
+    if (effectiveUserId && (item.sellerId === effectiveUserId || item.seller?.id === effectiveUserId)) {
+      Alert.alert('Your Archive Item', 'You own this accessory and cannot swap with yourself. Browse items listed by other members.', [
+        { text: 'OK' }
+      ]);
+      return;
+    }
+    router.push(`/(tabs)/swap/${item.id}` as any);
+  };
 
   // ── Message Partner handler ───────────────────────────────────
   const handleMessagePartner = async (swap: any) => {
-    const isIncoming = swap.receiverId === currentUserId;
+    const isIncoming = swap.receiverId === effectiveUserId;
     const partner = isIncoming ? swap.initiator : swap.receiver;
     if (!partner?.id) {
       Alert.alert('Notice', 'Partner profile information is currently unavailable.');
@@ -141,10 +186,48 @@ export default function SwapFeedScreen() {
       );
     }
     return mySwaps.map((swap: any) => {
-      const isIncoming = swap.receiverId === currentUserId;
+      const isIncoming = swap.receiverId === effectiveUserId;
       const partner = isIncoming ? swap.initiator : swap.receiver;
-      const wantedImg = swap.garmentWanted?.primaryImage || swap.garmentWanted?.images?.[0];
-      const offeredImg = swap.garmentOffered?.primaryImage || swap.garmentOffered?.images?.[0];
+
+      const extractGarmentImage = (obj: any): string => {
+        if (!obj) return '';
+        if (typeof obj === 'string' && (obj.startsWith('http') || obj.startsWith('data:') || obj.startsWith('file:'))) {
+          return obj;
+        }
+        return (
+          obj.primaryImage ||
+          obj.image ||
+          obj.images?.[0] ||
+          obj.imageUrl ||
+          (Array.isArray(obj.images) && obj.images[0]) ||
+          ''
+        );
+      };
+
+      const wantedGarmentObj =
+        (typeof swap.garmentWanted === 'object' && swap.garmentWanted) ||
+        (typeof swap.wantedGarment === 'object' && swap.wantedGarment) ||
+        null;
+
+      const offeredGarmentObj =
+        (typeof swap.garmentOffered === 'object' && swap.garmentOffered) ||
+        (typeof swap.offeredGarment === 'object' && swap.offeredGarment) ||
+        null;
+
+      const wantedImg = extractGarmentImage(wantedGarmentObj);
+      const offeredImg = extractGarmentImage(offeredGarmentObj);
+
+      const wantedTitle =
+        wantedGarmentObj?.title ||
+        swap.garmentWanted?.title ||
+        swap.wantedGarment?.title ||
+        (typeof swap.garmentWanted === 'string' ? swap.garmentWanted : 'Wanted Item');
+
+      const offeredTitle =
+        offeredGarmentObj?.title ||
+        swap.garmentOffered?.title ||
+        swap.offeredGarment?.title ||
+        (typeof swap.garmentOffered === 'string' ? swap.garmentOffered : 'Offered Item');
 
       return (
         <TouchableOpacity
@@ -156,7 +239,7 @@ export default function SwapFeedScreen() {
           <View style={styles.swapRequestHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               {partner?.avatar ? (
-                <KaphorImage uri={partner.avatar} style={styles.partnerAvatar} contentFit="cover" />
+                <KaphorImage uri={partner.avatar} style={styles.partnerAvatar} contentFit="cover" fallbackIcon="person" />
               ) : (
                 <View style={styles.partnerAvatarPlaceholder}>
                   <Ionicons name="person" size={14} color={colors.textMuted} />
@@ -180,24 +263,24 @@ export default function SwapFeedScreen() {
           <View style={styles.swapItemsRow}>
             <View style={styles.swapItem}>
               <View style={styles.itemThumbWrap}>
-                <KaphorImage uri={wantedImg || ''} style={styles.itemThumb} contentFit="cover" />
+                <KaphorImage uri={wantedImg} style={styles.itemThumb} contentFit="cover" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.swapItemLabel}>YOU {isIncoming ? 'RECEIVE' : 'GIVE'}</Text>
                 <Text style={styles.swapItemName} numberOfLines={1}>
-                  {swap.garmentWanted?.title || swap.wantedGarment?.title || (typeof swap.garmentWanted === 'string' ? swap.garmentWanted : 'Wanted Item')}
+                  {wantedTitle}
                 </Text>
               </View>
             </View>
             <Ionicons name="repeat" size={18} color={colors.charcoal} />
             <View style={styles.swapItem}>
               <View style={styles.itemThumbWrap}>
-                <KaphorImage uri={offeredImg || ''} style={styles.itemThumb} contentFit="cover" />
+                <KaphorImage uri={offeredImg} style={styles.itemThumb} contentFit="cover" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.swapItemLabel}>YOU {isIncoming ? 'GIVE' : 'RECEIVE'}</Text>
                 <Text style={styles.swapItemName} numberOfLines={1}>
-                  {swap.garmentOffered?.title || swap.offeredGarment?.title || (typeof swap.garmentOffered === 'string' ? swap.garmentOffered : 'Offered Item')}
+                  {offeredTitle}
                 </Text>
               </View>
             </View>
@@ -363,7 +446,7 @@ export default function SwapFeedScreen() {
                       <TouchableOpacity
                         key={item.id}
                         style={styles.cardWrapper}
-                        onPress={() => router.push(`/(tabs)/swap/${item.id}` as any)}
+                        onPress={() => handleCardPress(item)}
                       >
                         <PlayingCard
                           rank={ranks[index % ranks.length]}
@@ -372,11 +455,11 @@ export default function SwapFeedScreen() {
                           size="M"
                           category={item.category}
                           subCategory={item.subCategory}
-                          price={item.price ? item.price / 100 : 0}
+                          price={item.price ? Math.round(item.price) : 0}
                           imageUrl={itemImage}
                           condition="Like New"
                           buttonText="SWAP REQUEST"
-                          onSwapRequest={() => router.push(`/(tabs)/swap/${item.id}` as any)}
+                          onSwapRequest={() => handleCardPress(item)}
                           style={{ width: '100%' }}
                         />
                       </TouchableOpacity>
