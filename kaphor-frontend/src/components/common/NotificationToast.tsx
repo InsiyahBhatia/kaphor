@@ -128,15 +128,15 @@ export function NotificationToast() {
       }),
       Animated.timing(progressAnim, {
         toValue: 0,
-        duration: 4500,
+        duration: 2200,
         useNativeDriver: false,
       }),
     ]).start();
 
-    // Auto dismiss after 4.5 seconds
+    // Auto dismiss after 2.2 seconds to prevent screen chaos
     timerRef.current = setTimeout(() => {
       dismiss();
-    }, 4500);
+    }, 2200);
   };
 
   useEffect(() => {
@@ -169,13 +169,26 @@ export function NotificationToast() {
 
     const handleNewDirectMessage = (data: any) => {
       if (data && data.message) {
+        const activeConvId = useNotificationStore.getState().activeConversationId;
+        const msgConvId = data.conversationId || data.message.conversationId;
+
+        // Suppress toast if user is actively in this conversation thread
+        if (activeConvId && activeConvId === msgConvId) {
+          return;
+        }
+
+        // Suppress toast for emoji reactions
+        if (data.message.content?.startsWith('[[REACTION:')) {
+          return;
+        }
+
         const senderName = data.message.sender?.displayName || 'Direct Message';
         const payload: ToastPayload = {
           id: data.message.id || `msg_${Date.now()}`,
           type: 'DIRECT_MESSAGE',
           title: `💬 ${senderName}`,
           body: data.message.content || 'Sent you an image',
-          data: { conversationId: data.conversationId },
+          data: { conversationId: msgConvId },
         };
 
         showToast(payload);

@@ -203,7 +203,6 @@ export default function CheckoutScreen() {
       prefill: {
         contact: (user as any)?.phone || '',
         email: user?.email || '',
-        method: selectedMethod,
       },
       theme: {
         color: colors.red,

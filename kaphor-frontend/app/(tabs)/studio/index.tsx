@@ -35,25 +35,6 @@ export default function StudioScreen() {
 
       <TouchableOpacity
         style={styles.bespokeCard}
-        onPress={() => router.push('/(tabs)/studio/chat')}
-      >
-        <View style={[styles.bespokeIconBox, { backgroundColor: '#B8860B' }]}>
-          <Ionicons name="sparkles" size={24} color={colors.white} />
-        </View>
-        <View style={{ flex: 1, marginLeft: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={styles.bespokeTitle}>AI STYLE & CARE ADVISOR</Text>
-            <View style={{ backgroundColor: '#B8860B', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3 }}>
-              <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '900', fontFamily: typography.mono }}>AI</Text>
-            </View>
-          </View>
-          <Text style={styles.bespokeSubtitle}>Chat with AI on styling, fabric care & bespoke ideas</Text>
-        </View>
-        <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.bespokeCard, { marginTop: 0 }]}
         onPress={() => router.push('/(tabs)/studio/repair-refresh')}
       >
         <View style={[styles.bespokeIconBox, { backgroundColor: colors.forest }]}>

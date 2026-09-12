@@ -38,6 +38,7 @@ interface NotificationState {
   notifications: NotificationItem[];
   loading: boolean;
   preferences: NotificationPreferences;
+  activeConversationId: string | null;
 
   // Actions
   fetchUnreadCount: () => Promise<void>;
@@ -50,6 +51,7 @@ interface NotificationState {
   setPreference: (key: keyof NotificationPreferences, value: boolean) => Promise<void>;
   loadPreferences: () => Promise<void>;
   setUnreadMessageCount: (count: number) => void;
+  setActiveConversationId: (id: string | null) => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -58,6 +60,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: [],
   loading: false,
   preferences: DEFAULT_PREFS,
+  activeConversationId: null,
+
+  setActiveConversationId: (id: string | null) => set({ activeConversationId: id }),
 
   fetchUnreadCount: async () => {
     try {

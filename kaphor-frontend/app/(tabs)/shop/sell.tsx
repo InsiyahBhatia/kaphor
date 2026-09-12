@@ -21,6 +21,75 @@ import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 
+export function matchMarketCategory(raw?: string): string {
+  if (!raw) return 'Tops';
+  const r = raw.trim().toLowerCase();
+
+  const exact = ALL_CATEGORY_ITEMS.find((item) => item.toLowerCase() === r);
+  if (exact) return exact;
+
+  // Ethnic
+  if (r.includes('saree') || r.includes('sari')) return 'Sarees';
+  if (r.includes('lehenga') || r.includes('choli')) return 'Lehengas';
+  if (r.includes('anarkali')) return 'Anarkalis';
+  if (r.includes('sherwani')) return 'Sherwanis';
+  if (r.includes('kurta') || r.includes('kurti')) return 'Kurtas';
+  if (r.includes('dupatta') || r.includes('chunni')) return 'Dupattas';
+  if (r.includes('kaftan') || r.includes('caftan')) return 'Kaftans';
+  if (r.includes('pashmina')) return 'Pashminas';
+  if (r.includes('shawl')) return 'Shawls';
+  if (r.includes('indo-western') || r.includes('indowestern')) return 'Indo-Western';
+
+  // Apparel
+  if (r.includes('gown')) return 'Gowns';
+  if (r.includes('dress') || r.includes('frock')) return 'Dresses';
+  if (r.includes('skirt')) return 'Skirts';
+  if (r.includes('co-ord') || r.includes('coord') || r.includes('set')) return 'Co-ords';
+  if (r.includes('jumpsuit') || r.includes('romper')) return 'Jumpsuits';
+  if (r.includes('shirt') || r.includes('button')) return 'Shirts';
+  if (r.includes('blazer') || r.includes('tuxedo')) return 'Blazers';
+  if (r.includes('coat') || r.includes('overcoat')) return 'Coats';
+  if (r.includes('jacket') || r.includes('bomber') || r.includes('windbreaker')) return 'Jackets';
+  if (r.includes('knitwear') || r.includes('sweater') || r.includes('cardigan') || r.includes('pullover')) return 'Knitwear';
+  if (r.includes('jeans') || r.includes('denim')) return 'Denims';
+  if (r.includes('pant') || r.includes('trouser') || r.includes('chino') || r.includes('cargo')) return 'Pants';
+  if (r.includes('top') || r.includes('t-shirt') || r.includes('tshirt') || r.includes('tee') || r.includes('blouse') || r.includes('hoodie')) return 'Tops';
+
+  // Accessories
+  if (r.includes('bag') || r.includes('purse') || r.includes('clutch') || r.includes('tote') || r.includes('backpack')) return 'Bags';
+  if (r.includes('jewelry') || r.includes('jewellery') || r.includes('necklace') || r.includes('ring') || r.includes('earring') || r.includes('bracelet') || r.includes('pendant')) return 'Jewelry';
+  if (r.includes('watch') || r.includes('timepiece')) return 'Watches';
+  if (r.includes('eyewear') || r.includes('sunglass') || r.includes('glasses') || r.includes('shades')) return 'Eyewear';
+  if (r.includes('belt')) return 'Belts';
+  if (r.includes('hat') || r.includes('cap') || r.includes('beanie')) return 'Hats';
+  if (r.includes('scarf') || r.includes('scarves') || r.includes('stole') || r.includes('muffler')) return 'Scarves';
+  if (r.includes('wallet') || r.includes('cardholder') || r.includes('card holder')) return 'Wallets';
+  if (r.includes('tie') || r.includes('bowtie') || r.includes('necktie')) return 'Ties';
+  if (r.includes('hair') || r.includes('scrunchie') || r.includes('headband') || r.includes('clip')) return 'Hair Accessories';
+
+  // Footwear
+  if (r.includes('sneaker') || r.includes('trainer')) return 'Sneakers';
+  if (r.includes('heel') || r.includes('stiletto') || r.includes('pump')) return 'Heels';
+  if (r.includes('boot')) return 'Boots';
+  if (r.includes('sandal')) return 'Sandals';
+  if (r.includes('flat') || r.includes('loafer') || r.includes('mule')) return 'Flats';
+  if (r.includes('jutti') || r.includes('mojari')) return 'Juttis';
+  if (r.includes('shoe') || r.includes('oxford') || r.includes('derby') || r.includes('brogue')) return 'Dress Shoes';
+
+  return 'Tops';
+}
+
+export function matchMarketCondition(raw?: string): string {
+  if (!raw) return 'PRISTINE';
+  const c = raw.toUpperCase().trim();
+  if (c === 'PRISTINE' || c === 'MINOR_WEAR' || c === 'UPCYCLE' || c === 'RECYCLE_ONLY') return c;
+  if (c.includes('EXCELLENT') || c.includes('NEW') || c.includes('PERFECT') || c.includes('MINT')) return 'PRISTINE';
+  if (c.includes('GOOD') || c.includes('GENTLY') || c.includes('FAINT') || c.includes('USED')) return 'MINOR_WEAR';
+  if (c.includes('UPCYCLE') || c.includes('REWORK') || c.includes('CUSTOM')) return 'UPCYCLE';
+  if (c.includes('FAIR') || c.includes('POOR') || c.includes('RECYCLE')) return 'RECYCLE_ONLY';
+  return 'PRISTINE';
+}
+
 export default function SellScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -44,8 +113,7 @@ export default function SellScreen() {
       setStep((s) => s - 1);
       return true;
     }
-    safeBack('/(tabs)/shop');
-    return true;
+    return false;
   };
 
   useBackHandler('/(tabs)/shop', handleBackNavigation);
@@ -82,39 +150,26 @@ export default function SellScreen() {
       setStep(2); // Photo already captured, jump straight to details
     }
     if (params.prefillCategory) {
-      const rawCat = params.prefillCategory.toLowerCase();
-      let matchedCat = ALL_CATEGORY_ITEMS.find((item) => item.toLowerCase() === rawCat);
-      if (!matchedCat) {
-        if (rawCat.includes('saree')) matchedCat = 'Sarees';
-        else if (rawCat.includes('lehenga')) matchedCat = 'Lehengas';
-        else if (rawCat.includes('anarkali')) matchedCat = 'Anarkalis';
-        else if (rawCat.includes('kurta') || rawCat.includes('kurti')) matchedCat = 'Kurtas';
-        else if (rawCat.includes('dupatta')) matchedCat = 'Dupattas';
-        else if (rawCat.includes('jacket')) matchedCat = 'Jackets';
-        else if (rawCat.includes('blazer')) matchedCat = 'Blazers';
-        else if (rawCat.includes('dress')) matchedCat = 'Dresses';
-        else if (rawCat.includes('bag')) matchedCat = 'Bags';
-        else if (rawCat.includes('jewelry') || rawCat.includes('jewellery')) matchedCat = 'Jewelry';
-        else if (rawCat.includes('watch')) matchedCat = 'Watches';
-        else if (rawCat.includes('eyewear') || rawCat.includes('glasses')) matchedCat = 'Eyewear';
-        else if (rawCat.includes('top') || rawCat.includes('tshirt')) matchedCat = 'Tops';
-        else if (rawCat.includes('jeans') || rawCat.includes('denim')) matchedCat = 'Denims';
-        else if (rawCat.includes('pant') || rawCat.includes('trouser')) matchedCat = 'Bottoms';
-        else matchedCat = 'Tops';
-      }
+      const matchedCat = matchMarketCategory(params.prefillCategory);
       setCategory(matchedCat);
-      if (FREE_SIZE_CATEGORIES.includes(matchedCat)) {
+      if (FREE_SIZE_CATEGORIES.includes(matchedCat) || isAccessoryCategory(matchedCat)) {
         setSize('FREE SIZE');
       }
     }
     if (params.prefillTitle) setTitle(params.prefillTitle);
     if (params.prefillDescription) setDescription(params.prefillDescription);
     if (params.prefillBrand) setBrand(params.prefillBrand);
-    if (params.prefillCondition) setCondition(params.prefillCondition);
+    if (params.prefillCondition) setCondition(matchMarketCondition(params.prefillCondition));
     if (params.prefillFabric) setFabric(params.prefillFabric);
     if (params.prefillColor) setColor(params.prefillColor);
     if (params.prefillStyle) setStyleAttr(params.prefillStyle);
-    if (params.prefillListingType) setListingType(params.prefillListingType);
+    if (params.prefillListingType) {
+      setListingType(params.prefillListingType);
+      if (params.prefillListingType === 'ACCESSORY_SWAP' && !isAccessoryCategory(category)) {
+        setCategory('Bags');
+        setSize('FREE SIZE');
+      }
+    }
     // Intentionally leave price blank for manual user entry
   }, [params.prefillImage, params.prefillCategory, params.prefillTitle]);
 
@@ -145,7 +200,7 @@ export default function SellScreen() {
       const base64 = await FileSystem.readAsStringAsync(images[0], { encoding: 'base64' });
       const { data } = await api.post(
         '/ai/analyze-listing',
-        { image: `data:image/jpeg;base64,${base64}` },
+        { image: `data:image/jpeg;base64,${base64}`, listingType },
         { timeout: 60000 }
       );
       const res = data.data;
@@ -156,40 +211,77 @@ export default function SellScreen() {
         setBrand(res.brand || '');
 
         // Map AI predicted category string to exact dropdown item in ALL_CATEGORY_ITEMS
-        const rawCat = (res.category || '').toLowerCase();
-        let matchedCat = ALL_CATEGORY_ITEMS.find((item) => item.toLowerCase() === rawCat);
-        if (!matchedCat) {
-          if (rawCat.includes('saree')) matchedCat = 'Sarees';
-          else if (rawCat.includes('lehenga')) matchedCat = 'Lehengas';
-          else if (rawCat.includes('anarkali')) matchedCat = 'Anarkalis';
-          else if (rawCat.includes('kurta') || rawCat.includes('kurti')) matchedCat = 'Kurtas';
-          else if (rawCat.includes('dupatta')) matchedCat = 'Dupattas';
-          else if (rawCat.includes('jacket')) matchedCat = 'Jackets';
-          else if (rawCat.includes('blazer')) matchedCat = 'Blazers';
-          else if (rawCat.includes('dress')) matchedCat = 'Dresses';
-          else if (rawCat.includes('top') || rawCat.includes('tshirt')) matchedCat = 'Tops';
-          else if (rawCat.includes('jeans') || rawCat.includes('denim')) matchedCat = 'Denims';
-          else if (rawCat.includes('pant') || rawCat.includes('trouser')) matchedCat = 'Bottoms';
-          else matchedCat = 'Tops';
-        }
+        const matchedCat = matchMarketCategory(res.category || res.subCategory);
+        const isAccessory = isAccessoryCategory(matchedCat);
         setCategory(matchedCat);
-        if (FREE_SIZE_CATEGORIES.includes(matchedCat)) {
+
+        if (FREE_SIZE_CATEGORIES.includes(matchedCat) || isAccessory) {
           setSize('FREE SIZE');
-        } else if (res.size) {
+        } else if (res.size && MARKET_SIZES.includes(res.size)) {
           setSize(res.size);
+        } else {
+          setSize('M');
         }
 
-        // Intentionally do NOT autofill price - let user enter their desired price manually
-        setFabric(res.styleAttributes?.fabric || '');
-        setColor(res.color?.[0] || '');
+        setFabric(res.styleAttributes?.fabric || (Array.isArray(res.material) ? res.material.join(', ') : ''));
+        setColor(Array.isArray(res.color) ? res.color[0] : (res.color || ''));
         setStyleAttr(res.styleAttributes?.style || '');
         setSleeve(res.styleAttributes?.sleeve || '');
         setShape(res.styleAttributes?.shape || '');
         setPattern(res.styleAttributes?.pattern || '');
         setWeight(res.styleAttributes?.weight || '');
-        setCondition(res.condition || 'PRISTINE');
-        
-        Alert.alert('AI Success', 'Garment details have been auto-filled from your photo. Please set your desired price.');
+        setCondition(matchMarketCondition(res.condition));
+
+        // Intelligent listing type & pricing autofill
+        const estPrice = res.estimatedPrice ? String(res.estimatedPrice) : '999';
+        const dayRate = res.suggestedRentalPriceDay 
+          ? String(res.suggestedRentalPriceDay) 
+          : String(Math.max(199, Math.round(Number(estPrice) * 0.12)));
+        const weekRate = res.suggestedRentalPriceWeek 
+          ? String(res.suggestedRentalPriceWeek) 
+          : String(Math.round(Number(dayRate) * 5));
+
+        if (listingType === 'ACCESSORY_SWAP') {
+          if (isAccessory) {
+            setPrice('');
+            setRentalDay('');
+            setRentalWeek('');
+            Alert.alert(
+              'AI Magic Fill: Swap Asset',
+              `Identified as "${matchedCat}". Your accessory swap listing has been filled! Swap listings require no cash price.`
+            );
+          } else {
+            // Swap is strictly for accessories!
+            setListingType('SALE');
+            setPrice(estPrice);
+            Alert.alert(
+              'Category Notice',
+              `Identified as "${matchedCat}". Swapping on KaPhor is exclusively for accessories & footwear. We switched this listing to SALE (₹${estPrice}). You can edit details or switch category.`
+            );
+          }
+        } else if (listingType === 'RENTAL') {
+          setRentalDay(dayRate);
+          setRentalWeek(weekRate);
+          Alert.alert(
+            'AI Magic Fill: Rental Listing',
+            `Identified as "${matchedCat}". Auto-filled suggested rental rate of ₹${dayRate}/day (₹${weekRate}/week) based on archival market valuation.`
+          );
+        } else {
+          // SALE
+          setPrice(estPrice);
+          if (isAccessory) {
+            Alert.alert(
+              'AI Magic Fill: Sale Listing',
+              `Identified as "${matchedCat}". Auto-filled estimated resale price of ₹${estPrice}. Note: This accessory is also eligible for SWAP if you prefer exchanging!`
+            );
+          } else {
+            Alert.alert(
+              'AI Magic Fill: Sale Listing',
+              `Identified as "${matchedCat}". Auto-filled details and estimated market price of ₹${estPrice}. Review and adjust anytime before publishing.`
+            );
+          }
+        }
+
         setStep(2);
       }
     } catch (err) {

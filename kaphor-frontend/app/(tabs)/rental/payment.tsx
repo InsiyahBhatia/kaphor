@@ -143,7 +143,7 @@ export default function RentalPaymentScreen() {
         order_id: rp.razorpayOrderId,
         name: 'Kaphor Luxury Circular Fashion',
         description: `Rental (${days} days) + Security Deposit`,
-        prefill: { contact: '', email: '', method: selectedMethod },
+        prefill: { contact: '', email: '' },
         theme: { color: colors.charcoal },
       };
 

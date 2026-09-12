@@ -467,13 +467,107 @@ export async function getFitScore(req: Request, res: Response): Promise<void> {
     }
 }
 
-// ── 4. Chat (SSE streaming) ───────────────────────────────────────────────────
+// ── 4. Chat (AI Shopping Agent & Stylist) ──────────────────────────────────
 export async function chat(req: Request, res: Response): Promise<void> {
     try {
         if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
-        const { message, garmentId, conversationId, stream = true } = req.body;
-        if (!message) { res.status(400).json({ error: 'message required' }); return; }
+        const { message, garmentId, conversationId, image, stream = false } = req.body;
+        if (!message && !image) { res.status(400).json({ error: 'message or image required' }); return; }
+
+        let userPromptText = (message || '').trim();
+        let visualAnalysisSummary = '';
+
+        if (image) {
+            let base64Data = image;
+            let mimeType = 'image/jpeg';
+            if (image.startsWith('data:')) {
+                const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
+                if (match) {
+                    mimeType = match[1];
+                    base64Data = match[2];
+                }
+            }
+
+            try {
+                const visionAnalysis = await generateVisionWithFallback([
+                    { inlineData: { mimeType, data: base64Data } },
+                    { text: 'Analyze this fashion item image. Identify: 1. Category (e.g. Saree, Bag, Denim, Blazer) 2. Main color & pattern 3. Style aesthetic 4. Materials. Provide a concise 2-sentence summary.' }
+                ], { temperature: 0.2 });
+                visualAnalysisSummary = visionAnalysis;
+                userPromptText = userPromptText 
+                    ? `${userPromptText}\n[User uploaded image analysis: ${visualAnalysisSummary}]`
+                    : `Please recommend matching pieces for this item: ${visualAnalysisSummary}`;
+            } catch (vErr) {
+                logger.warn('Chat vision analysis fallback', { error: vErr });
+                if (!userPromptText) userPromptText = 'Can you find matching pieces for this uploaded outfit?';
+            }
+        }
+
+        // Query relevant items from database to recommend
+        let products: any[] = [];
+        try {
+            const queryWords = (message || visualAnalysisSummary || '')
+                .toLowerCase()
+                .replace(/[^a-z0-9 ]/g, ' ')
+                .split(' ')
+                .filter((w: string) => w.length > 3 && !['find', 'show', 'want', 'need', 'like', 'with', 'this', 'that', 'have', 'from', 'look', 'looking'].includes(w));
+
+            const orConditions: any[] = [];
+            for (const word of queryWords.slice(0, 4)) {
+                orConditions.push({ title: { contains: word, mode: 'insensitive' } });
+                orConditions.push({ category: { contains: word, mode: 'insensitive' } });
+                orConditions.push({ brand: { contains: word, mode: 'insensitive' } });
+            }
+
+            if (orConditions.length > 0) {
+                products = await db.garment.findMany({
+                    where: {
+                        isActive: true,
+                        lifecycleState: 'LISTED',
+                        OR: orConditions
+                    },
+                    select: {
+                        id: true,
+                        title: true,
+                        brand: true,
+                        price: true,
+                        rentalPriceDay: true,
+                        images: true,
+                        category: true,
+                        listingType: true,
+                        condition: true,
+                        size: true
+                    },
+                    take: 3
+                });
+            }
+
+            if (products.length === 0) {
+                products = await db.garment.findMany({
+                    where: {
+                        isActive: true,
+                        lifecycleState: 'LISTED'
+                    },
+                    orderBy: { popularityScore: 'desc' },
+                    select: {
+                        id: true,
+                        title: true,
+                        brand: true,
+                        price: true,
+                        rentalPriceDay: true,
+                        images: true,
+                        category: true,
+                        listingType: true,
+                        condition: true,
+                        size: true
+                    },
+                    take: 3
+                });
+            }
+        } catch (dbErr) {
+            logger.warn('Failed to query catalog recommendations', { error: dbErr });
+        }
 
         // Find or create conversation
         let conversation;
@@ -489,7 +583,7 @@ export async function chat(req: Request, res: Response): Promise<void> {
                 data: {
                     userId: req.user.id,
                     garmentId: garmentId ? String(garmentId) : null,
-                    title: message.substring(0, 40)
+                    title: (message || 'Stylist Assistant').substring(0, 40)
                 },
                 include: { messages: true }
             });
@@ -501,14 +595,17 @@ export async function chat(req: Request, res: Response): Promise<void> {
             select: { styleAesthetic: true, displayName: true }
         });
 
-        const systemPrompt = `You are KaPhor AI, a luxury sustainable fashion consultant.
-Help users discover garments, understand sustainability impact, and receive style advice.
-Always align with circular fashion principles — re-sell, rent, upcycle, recycle.
-The user's name is ${user?.displayName ?? 'Valued Guest'} and their style aesthetic is ${user?.styleAesthetic ?? 'LUXURY'}.
-Be warm, knowledgeable, and concise. Never suggest fast fashion.`;
+        const catalogListingSummary = products.length > 0
+            ? `\nActive catalog items in KaPhor database right now that you can reference:\n` +
+              products.map(p => `- "${p.title}" by ${p.brand || 'Designer'} (${p.listingType === 'RENTAL' ? `Rental ₹${p.rentalPriceDay}/day` : `₹${p.price}`}) [ID: ${p.id}]`).join('\n')
+            : '';
+
+        const systemPrompt = `You are KaPhor AI Shopping Agent & Luxury Stylist.
+Help users discover garments, find outfit pairings, understand circular fashion (resale, rental, swap), and recommend pieces available in the app.
+The user's name is ${user?.displayName ?? 'Valued Guest'} and their aesthetic is ${user?.styleAesthetic ?? 'LUXURY'}.${catalogListingSummary}
+Be concise (2-4 sentences), elegant, and direct. When relevant, reference the matching piece from the catalog.`;
 
         // Build conversation history from DB
-
         const historyParts = conversation.messages.map((m: any) => ({
             role: m.role === 'user' ? 'user' : 'model',
             parts: [{ text: m.content }]
@@ -516,7 +613,7 @@ Be warm, knowledgeable, and concise. Never suggest fast fashion.`;
 
         // Save user message
         await db.chatMessage.create({
-            data: { conversationId: conversation.id, role: 'user', content: message }
+            data: { conversationId: conversation.id, role: 'user', content: message || '📷 Uploaded photo for styling advice' }
         });
 
         // Set headers based on streaming mode
@@ -525,12 +622,14 @@ Be warm, knowledgeable, and concise. Never suggest fast fashion.`;
             res.setHeader('Cache-Control', 'no-cache');
             res.setHeader('Connection', 'keep-alive');
             res.flushHeaders();
-        }
 
-        let fullResponse = '';
-        let chatAttempts = 0;
-        const chatMaxAttempts = 3;
-        if (stream) {
+            if (products.length > 0) {
+                res.write(`data: ${JSON.stringify({ products, conversationId: conversation.id })}\n\n`);
+            }
+
+            let fullResponse = '';
+            let chatAttempts = 0;
+            const chatMaxAttempts = 3;
             let streamSuccess = false;
             while (chatAttempts < chatMaxAttempts && !streamSuccess) {
                 try {
@@ -539,7 +638,7 @@ Be warm, knowledgeable, and concise. Never suggest fast fashion.`;
                         systemInstruction: { role: "system", parts: [{ text: systemPrompt }] }
                     });
 
-                    const result = await chatSession.sendMessageStream(message);
+                    const result = await chatSession.sendMessageStream(userPromptText);
 
                     for await (const chunk of result.stream) {
                         const chunkText = chunk.text();
@@ -578,8 +677,8 @@ Be warm, knowledgeable, and concise. Never suggest fast fashion.`;
                 systemInstruction: { role: "system", parts: [{ text: systemPrompt }] }
             });
 
-            const result = await chatSession.sendMessage(message);
-            fullResponse = result.response.text();
+            const result = await chatSession.sendMessage(userPromptText);
+            const fullResponse = result.response.text();
 
             // Save assistant response
             await db.chatMessage.create({
@@ -590,7 +689,7 @@ Be warm, knowledgeable, and concise. Never suggest fast fashion.`;
                 }
             });
 
-            res.json({ text: fullResponse, conversationId: conversation.id });
+            res.json({ text: fullResponse, conversationId: conversation.id, products });
         }
     } catch (error) {
         logger.error('Chat failed', { error });
@@ -608,36 +707,70 @@ export async function analyzeListingImage(req: Request, res: Response): Promise<
     try {
         if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
-        const { image } = req.body;
+        const { image, listingType } = req.body;
         if (!image) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Provide an image (base64)' });
             return;
         }
 
-        const prompt = `You are a professional fashion archivist for KaPhor. 
-Analyze the provided garment image and extract all relevant details for a marketplace listing.
+        const prompt = `You are an expert luxury circular fashion archivist and valuation specialist for KaPhor.
+Analyze the provided item image and extract all relevant details for a marketplace listing.
+
+Taxonomy Guidelines:
+1. "category" MUST be matched to one of these exact values:
+- ETHNIC: Sarees, Lehengas, Anarkalis, Sherwanis, Suits, Kurtas, Dupattas, Kaftans, Pashminas, Shawls, Indo-Western
+- APPAREL: Skirts, Dresses, Gowns, Co-ords, Jumpsuits, Tops, Shirts, Bottoms, Pants, Denims, Jackets, Coats, Blazers, Knitwear
+- ACCESSORIES: Bags, Jewelry, Watches, Eyewear, Belts, Hats, Scarves, Wallets, Ties, Hair Accessories
+- FOOTWEAR: Sneakers, Heels, Boots, Dress Shoes, Sandals, Flats, Traditionals, Juttis
+
+2. "condition" MUST be one of:
+- "PRISTINE" (Brand new / unworn heritage piece, perfect condition)
+- "MINOR_WEAR" (Gently loved with faint signs of life, high quality)
+- "UPCYCLE" (Reconstructed artistry or modified archival garment)
+- "RECYCLE_ONLY" (Heavily worn or damaged, fiber recovery only)
+
+3. "size" MUST be one of:
+- "FREE SIZE" (Always use "FREE SIZE" for all Accessories, Footwear, Sarees, Shawls, Dupattas, Scarves, Hats, Bags, Eyewear, Jewelry, Watches, Belts)
+- Otherwise: "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"
+
+4. Circular Listing Guidance:
+- "isAccessory": boolean (true if the item is in ACCESSORIES or FOOTWEAR, false for APPAREL or ETHNIC)
+- "recommendedListingType":
+  * "ACCESSORY_SWAP" if isAccessory is true
+  * "RENTAL" if it is high-end bridal ethnic wear (Lehenga, Sherwani, Anarkali), luxury evening gown, or heavy designer couture
+  * "SALE" for general garments, denim, tops, skirts, etc.
+- "estimatedPrice": Realistic pre-loved resale valuation in INR (number, e.g. 1500).
+- "suggestedRentalPriceDay": Daily rental rate in INR (typically 10-15% of estimatedPrice, minimum 199).
+- "suggestedRentalPriceWeek": Weekly rental rate in INR (typically 4-5x daily rate).
+
+${listingType ? `Target listing intent is "${listingType}". Tailor recommendations accordingly.` : ''}
+
 Return ONLY valid JSON with this exact structure:
 {
   "title": "Short descriptive title (3-5 words)",
-  "brand": "Detected brand or 'Unknown'",
-  "category": "One of: APPAREL, FOOTWEAR, ACCESSORIES",
-  "subCategory": "Specific type (e.g. Vintage Denim, Silk Saree, Leather Boots)",
-  "description": "Professional 2-3 sentence description emphasizing craftsmanship and style",
-  "size": "Estimated size (S/M/L/XL or OS)",
-  "condition": "EXCELLENT|GOOD|FAIR|POOR",
+  "brand": "Detected brand or 'Unknown Brand'",
+  "category": "Exact category from above list",
+  "subCategory": "Specific type (e.g. Vintage Leather Tote, Embroidered Silk Lehenga, Distressed Denim)",
+  "description": "Professional 2-3 sentence description emphasizing craftsmanship, fabric, and styling",
+  "size": "FREE SIZE or clothing size",
+  "condition": "PRISTINE|MINOR_WEAR|UPCYCLE|RECYCLE_ONLY",
   "color": ["Main colors"],
   "material": ["Main fabrics"],
-  "estimatedPrice": 1000, // Suggest a reasonable price in INR
+  "isAccessory": false,
+  "recommendedListingType": "SALE|RENTAL|ACCESSORY_SWAP",
+  "estimatedPrice": 1500,
+  "suggestedRentalPriceDay": 299,
+  "suggestedRentalPriceWeek": 1199,
   "styleAttributes": {
     "fabric": "Specific fabric detail",
-    "style": "Aesthetic style (e.g. Minimalist, Streetwear, Ethnic)",
+    "style": "Aesthetic style (e.g. Minimalist, Streetwear, Ethnic, Luxury)",
     "sleeve": "Sleeve type or null",
     "shape": "Fit/Shape type",
     "pattern": "Pattern type",
     "weight": "Light/Medium/Heavy"
   }
 }
-Be precise. If the brand is visible, identify it. If it looks vintage, mention it.`;
+Be precise. If the brand or hardware logo is visible, identify it.`;
 
         let base64Data = image;
         let mimeType = 'image/jpeg';
@@ -666,18 +799,25 @@ Be precise. If the brand is visible, identify it. If it looks vintage, mention i
             data = null;
         }
 
+        const isSwapMode = listingType === 'ACCESSORY_SWAP';
+        const isRentalMode = listingType === 'RENTAL';
+
         if (!data || !data.title) {
             data = {
-                title: 'Curated Designer Item',
+                title: isSwapMode ? 'Archival Leather Bag' : isRentalMode ? 'Curated Designer Evening Piece' : 'Curated Designer Item',
                 brand: 'Unknown Brand',
-                category: 'APPAREL',
-                subCategory: 'Tops',
-                description: 'Pre-loved authentic garment curated for KaPhor circular fashion.',
-                size: 'M',
-                condition: 'GOOD',
+                category: isSwapMode ? 'Bags' : isRentalMode ? 'Dresses' : 'Tops',
+                subCategory: isSwapMode ? 'Leather Accessory' : isRentalMode ? 'Evening Wear' : 'Contemporary Top',
+                description: 'Pre-loved authentic piece curated for KaPhor circular fashion and conscious style.',
+                size: isSwapMode ? 'FREE SIZE' : 'M',
+                condition: 'PRISTINE',
                 color: ['Black'],
                 material: ['Cotton'],
-                estimatedPrice: 999,
+                isAccessory: isSwapMode,
+                recommendedListingType: isSwapMode ? 'ACCESSORY_SWAP' : isRentalMode ? 'RENTAL' : 'SALE',
+                estimatedPrice: isRentalMode ? 4500 : 1299,
+                suggestedRentalPriceDay: isRentalMode ? 499 : 249,
+                suggestedRentalPriceWeek: isRentalMode ? 1999 : 999,
                 styleAttributes: {
                     fabric: 'Cotton Blend',
                     style: 'Contemporary',
@@ -687,6 +827,29 @@ Be precise. If the brand is visible, identify it. If it looks vintage, mention i
                     weight: 'Medium'
                 }
             };
+        } else {
+            // Normalize conditions
+            const validConditions = ['PRISTINE', 'MINOR_WEAR', 'UPCYCLE', 'RECYCLE_ONLY'];
+            if (!validConditions.includes(data.condition)) {
+                const c = String(data.condition || '').toUpperCase();
+                if (c.includes('EXCELLENT') || c.includes('NEW') || c.includes('MINT')) data.condition = 'PRISTINE';
+                else if (c.includes('GOOD') || c.includes('GENTLE')) data.condition = 'MINOR_WEAR';
+                else if (c.includes('UPCYCLE') || c.includes('REWORK')) data.condition = 'UPCYCLE';
+                else data.condition = 'MINOR_WEAR';
+            }
+
+            // Ensure numeric rates
+            data.estimatedPrice = Math.round(Number(data.estimatedPrice) || 1200);
+            if (!data.suggestedRentalPriceDay) {
+                data.suggestedRentalPriceDay = Math.max(199, Math.round(data.estimatedPrice * 0.12));
+            } else {
+                data.suggestedRentalPriceDay = Math.round(Number(data.suggestedRentalPriceDay));
+            }
+            if (!data.suggestedRentalPriceWeek) {
+                data.suggestedRentalPriceWeek = Math.round(data.suggestedRentalPriceDay * 4.5);
+            } else {
+                data.suggestedRentalPriceWeek = Math.round(Number(data.suggestedRentalPriceWeek));
+            }
         }
         res.json({ data });
     } catch (error) {
@@ -695,14 +858,18 @@ Be precise. If the brand is visible, identify it. If it looks vintage, mention i
             data: {
                 title: 'Curated Garment',
                 brand: 'Unknown',
-                category: 'APPAREL',
+                category: 'Tops',
                 subCategory: 'Tops',
                 description: 'Ready to list on KaPhor.',
                 size: 'M',
-                condition: 'GOOD',
+                condition: 'PRISTINE',
                 color: [],
                 material: [],
+                isAccessory: false,
+                recommendedListingType: 'SALE',
                 estimatedPrice: 999,
+                suggestedRentalPriceDay: 199,
+                suggestedRentalPriceWeek: 799,
                 styleAttributes: {
                     fabric: '',
                     style: '',

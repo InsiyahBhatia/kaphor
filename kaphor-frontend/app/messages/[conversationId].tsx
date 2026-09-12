@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -38,6 +38,7 @@ import { safeBack, useBackHandler } from '../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { hapticFeedback } from '../../src/utils/haptics';
+import { useNotificationStore } from '../../src/store/notificationStore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -176,6 +177,52 @@ export default function DirectChatScreen() {
 
   const [detail, setDetail] = useState<ConversationDetailResponse | null>(null);
   const [messages, setMessages] = useState<DirectMessageItem[]>([]);
+  const setActiveConversationId = useNotificationStore((s) => s.setActiveConversationId);
+
+  useEffect(() => {
+    if (conversationId) {
+      setActiveConversationId(conversationId);
+    }
+    return () => {
+      setActiveConversationId(null);
+    };
+  }, [conversationId, setActiveConversationId]);
+
+  // Separate reactions from normal message bubbles and map by messageId
+  const { displayMessages, reactionsByMessageId } = useMemo(() => {
+    const reactionsMap: Record<string, { emoji: string; count: number; userReacted: boolean }[]> = {};
+    const visibleMsgs: DirectMessageItem[] = [];
+
+    for (const msg of messages) {
+      if (msg.content && msg.content.startsWith('[[REACTION:')) {
+        const match = msg.content.match(/^\[\[REACTION:([^|]+)\|(.+)\]\]$/);
+        if (match) {
+          const targetId = match[1];
+          const emoji = match[2];
+          const isFromMe = msg.senderId === user?.id;
+
+          if (!reactionsMap[targetId]) {
+            reactionsMap[targetId] = [];
+          }
+          const existing = reactionsMap[targetId].find((r) => r.emoji === emoji);
+          if (existing) {
+            existing.count += 1;
+            if (isFromMe) existing.userReacted = true;
+          } else {
+            reactionsMap[targetId].push({
+              emoji,
+              count: 1,
+              userReacted: isFromMe,
+            });
+          }
+        }
+      } else {
+        visibleMsgs.push(msg);
+      }
+    }
+
+    return { displayMessages: visibleMsgs, reactionsByMessageId: reactionsMap };
+  }, [messages, user?.id]);
   const [inputText, setInputText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
@@ -474,7 +521,9 @@ export default function DirectChatScreen() {
     };
 
     setMessages((prev) => [...prev, tempMsg]);
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    if (!content.startsWith('[[REACTION:')) {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    }
 
     try {
       let finalImgUrl: string | undefined = undefined;
@@ -494,14 +543,16 @@ export default function DirectChatScreen() {
   const handleSendReaction = (emoji: string) => {
     if (!actionMessage) return;
     hapticFeedback.medium();
-    const quoted = parseReplyContent(actionMessage.content);
-    const isMine = actionMessage.senderId === user?.id;
-    const senderName = isMine ? 'You' : (actionMessage.sender?.displayName || detail?.conversation.otherUser.displayName || 'Partner');
-    const replySnippet = quoted.text || (actionMessage.imageUrl ? '📷 Photo' : 'message');
-    const reactionText = `${emoji}`;
+    const targetId = actionMessage.id;
     setActionMessage(null);
-    const finalContent = `[[REPLY:${actionMessage.id}|${senderName}|${replySnippet}]]${reactionText}`;
-    sendCustomMessage(finalContent);
+    const reactionToken = `[[REACTION:${targetId}|${emoji}]]`;
+    sendCustomMessage(reactionToken);
+  };
+
+  const handleToggleReaction = (targetId: string, emoji: string) => {
+    hapticFeedback.light();
+    const reactionToken = `[[REACTION:${targetId}|${emoji}]]`;
+    sendCustomMessage(reactionToken);
   };
 
   const handleSend = async () => {
@@ -819,7 +870,7 @@ export default function DirectChatScreen() {
       {/* Message List */}
       <FlatList
         ref={flatListRef}
-        data={messages}
+        data={displayMessages}
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
         contentContainerStyle={styles.messagesList}
@@ -837,13 +888,13 @@ export default function DirectChatScreen() {
           const isMine = item.senderId === user?.id;
           const parsed = parseReplyContent(item.content || '');
 
-          const prevMsg = index > 0 ? messages[index - 1] : null;
-          const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
+          const prevMsg = index > 0 ? displayMessages[index - 1] : null;
+          const nextMsg = index < displayMessages.length - 1 ? displayMessages[index + 1] : null;
 
           const showDateDivider =
             index === 0 ||
             new Date(item.createdAt).toDateString() !==
-              new Date(messages[index - 1]?.createdAt).toDateString();
+              new Date(displayMessages[index - 1]?.createdAt).toDateString();
 
           const isSameSenderAsPrev =
             !showDateDivider &&
@@ -1017,6 +1068,30 @@ export default function DirectChatScreen() {
                         />
                       )}
                     </View>
+
+                    {/* Instagram/WhatsApp-Style Anchored Reaction Badges */}
+                    {reactionsByMessageId[item.id] && reactionsByMessageId[item.id].length > 0 && (
+                      <View style={[styles.reactionBadgeContainer, isMine ? styles.reactionBadgeMine : styles.reactionBadgeTheir]}>
+                        {reactionsByMessageId[item.id].map((r: { emoji: string; count: number; userReacted: boolean }, rIdx: number) => (
+                          <TouchableOpacity
+                            key={rIdx}
+                            style={[
+                              styles.reactionBadgePill,
+                              r.userReacted && styles.reactionBadgePillActive,
+                            ]}
+                            onPress={() => handleToggleReaction(item.id, r.emoji)}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={styles.reactionBadgeEmoji}>{r.emoji}</Text>
+                            {r.count > 1 && (
+                              <Text style={[styles.reactionBadgeCount, r.userReacted && styles.reactionBadgeCountActive]}>
+                                {r.count}
+                              </Text>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
                   </TouchableOpacity>
                 </View>
               </SwipeableMessageBubble>
@@ -2120,6 +2195,55 @@ const styles = StyleSheet.create({
   },
   reactionEmojiText: {
     fontSize: 22,
+  },
+  // Instagram / WhatsApp Reaction Badges
+  reactionBadgeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: -8,
+    marginBottom: 4,
+    zIndex: 10,
+  },
+  reactionBadgeMine: {
+    alignSelf: 'flex-end',
+    marginRight: 6,
+  },
+  reactionBadgeTheir: {
+    alignSelf: 'flex-start',
+    marginLeft: 6,
+  },
+  reactionBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(30,31,34,0.14)',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  reactionBadgePillActive: {
+    backgroundColor: '#FAF5EA',
+    borderColor: colors.charcoal,
+  },
+  reactionBadgeEmoji: {
+    fontSize: 12,
+  },
+  reactionBadgeCount: {
+    fontSize: 9.5,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.textMuted,
+    marginLeft: 3,
+  },
+  reactionBadgeCountActive: {
+    color: colors.charcoal,
   },
   // Toast
   toastContainer: {

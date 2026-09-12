@@ -256,16 +256,6 @@ export default function ShopScreen() {
             })()}
           </ScrollView>
 
-          {/* Floating AI Stylist Action Button */}
-          <TouchableOpacity
-            style={styles.floatingAiBtn}
-            onPress={() => router.push('/(tabs)/shop/ai-chat')}
-            activeOpacity={0.88}
-          >
-            <Ionicons name="sparkles" size={18} color="#C9A84C" />
-            <Text style={styles.floatingAiText}>ASK AI</Text>
-          </TouchableOpacity>
-
           {/* FILTER MODAL OVERLAY */}
           {showFilters && (
             <View style={styles.modalOverlay}>
