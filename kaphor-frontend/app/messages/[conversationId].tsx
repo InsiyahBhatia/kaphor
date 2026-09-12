@@ -625,8 +625,8 @@ export default function DirectChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       {/* Top Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
@@ -1126,7 +1126,10 @@ export default function DirectChatScreen() {
             placeholderTextColor="rgba(30,31,34,0.4)"
             value={inputText}
             onChangeText={handleInputChange}
-            onFocus={() => setInputFocused(true)}
+            onFocus={() => {
+              setInputFocused(true);
+              setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
+            }}
             onBlur={() => setInputFocused(false)}
             multiline
             maxLength={4000}

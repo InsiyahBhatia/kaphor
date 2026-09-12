@@ -83,8 +83,8 @@ export default function AIChatScreen() {
     return (
         <KeyboardAvoidingView 
             style={styles.container} 
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
             <View style={styles.header}>
                 <TouchableOpacity 
@@ -142,7 +142,10 @@ export default function AIChatScreen() {
                         placeholderTextColor="rgba(30,31,34,0.4)"
                         value={inputText}
                         onChangeText={setInputText}
-                        onFocus={() => setIsInputFocused(true)}
+                        onFocus={() => {
+                            setIsInputFocused(true);
+                            setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
+                        }}
                         onBlur={() => setIsInputFocused(false)}
                         onSubmitEditing={() => handleSendMessage(inputText)}
                         multiline

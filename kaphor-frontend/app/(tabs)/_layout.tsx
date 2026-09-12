@@ -66,7 +66,7 @@ export default function TabLayout() {
       <Tabs.Screen name="impact/report" options={{ href: null }} />
       <Tabs.Screen name="studio/index" options={{ href: null }} />
       <Tabs.Screen name="studio/bespoke" options={{ href: null }} />
-      <Tabs.Screen name="studio/chat" options={{ href: null }} />
+      <Tabs.Screen name="studio/chat" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="studio/upcycle" options={{ href: null }} />
       <Tabs.Screen name="studio/upcycle-request" options={{ href: null }} />
       <Tabs.Screen name="studio/repair-refresh" options={{ href: null }} />
@@ -75,7 +75,7 @@ export default function TabLayout() {
       <Tabs.Screen name="shop/sell" options={{ href: null }} />
       <Tabs.Screen name="shop/cart" options={{ href: null }} />
       <Tabs.Screen name="shop/payment-history" options={{ href: null }} />
-      <Tabs.Screen name="shop/ai-chat" options={{ href: null }} />
+      <Tabs.Screen name="shop/ai-chat" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="shop/order-confirmed" options={{ href: null }} />
       <Tabs.Screen name="shop/checkout/delivery" options={{ href: null }} />
       <Tabs.Screen name="shop/checkout/[orderId]" options={{ href: null }} />
