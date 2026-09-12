@@ -157,19 +157,14 @@ export function KaphorImage({
     if (fallbackUri && !list.includes(fallbackUri)) {
       list.push(fallbackUri);
     }
-    // High-resolution category editorial fallback
-    const catFallback = getCategoryFallbackImage(category);
-    if (!list.includes(catFallback)) {
-      list.push(catFallback);
-    }
     return list;
-  }, [initialUri, fallbackUri, category]);
+  }, [initialUri, fallbackUri]);
 
   useEffect(() => {
     setCandidateIndex(0);
     setHasFailedAll(false);
-    setCurrentUri(candidates[0] || getCategoryFallbackImage(category));
-  }, [candidates, category]);
+    setCurrentUri(candidates[0] || '');
+  }, [candidates]);
 
   const handleError = () => {
     const nextIdx = candidateIndex + 1;
@@ -223,8 +218,7 @@ const styles = StyleSheet.create({
   fallbackBrand: {
     fontFamily: typography.mono,
     fontSize: 9,
-    fontWeight: '900',
-    color: 'rgba(30,31,34,0.6)',
+    color: 'rgba(30,31,34,0.7)',
     letterSpacing: 1.5,
     marginTop: 6,
     textTransform: 'uppercase',
@@ -232,8 +226,7 @@ const styles = StyleSheet.create({
   fallbackArchive: {
     fontFamily: typography.mono,
     fontSize: 7,
-    fontWeight: '700',
-    color: 'rgba(30,31,34,0.35)',
+    color: 'rgba(30,31,34,0.4)',
     letterSpacing: 1,
     marginTop: 2,
   },

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Modal } from 'react-native';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../../src/components/common/Button';
@@ -27,6 +27,7 @@ export default function GarmentDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const authStoreUserId = useAuthStore((s) => s.user?.id);
   useBackHandler('/(tabs)/shop');
   const [garment, setGarment] = useState<Garment | any>(null);
   const [loading, setLoading] = useState(true);
@@ -172,7 +173,6 @@ export default function GarmentDetailScreen() {
     : [getCategoryFallbackImage(garment.category)];
 
   const currentImage = imagesList[activeImageIndex] || imagesList[0];
-  const authStoreUserId = useAuthStore((s) => s.user?.id);
   const effectiveUserId = user?.id || authStoreUserId;
   const isOwner = Boolean(effectiveUserId && (garment.sellerId === effectiveUserId || garment.seller?.id === effectiveUserId));
 
@@ -187,7 +187,6 @@ export default function GarmentDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: garment?.title || 'Details' }} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
         {/* Top Image Hero Banner */}
         <View style={styles.imageContainer}>
@@ -297,22 +296,22 @@ export default function GarmentDetailScreen() {
             </View>
 
             <View style={styles.priceContainer}>
-              <Text style={[styles.price, priceData.isSwap && styles.swapPrice]}>
+              <Text style={[styles.price, priceData.isSwap ? styles.swapPrice : null]}>
                 {priceData.displayPrice}
-                {priceData.priceUnit && (
+                {priceData.priceUnit ? (
                   <Text style={styles.priceUnitText}>{priceData.priceUnit}</Text>
-                )}
+                ) : null}
               </Text>
-              {priceData.originalPrice && (
+              {priceData.originalPrice ? (
                 <Text style={styles.originalPrice}>{priceData.originalPrice}</Text>
-              )}
-              {priceData.discountTag && (
-                <View style={[styles.discountTagBadge, priceData.isSwap && styles.swapDiscountBadge]}>
-                  <Text style={[styles.discountTagText, priceData.isSwap && styles.swapDiscountText]}>
+              ) : null}
+              {priceData.discountTag ? (
+                <View style={[styles.discountTagBadge, priceData.isSwap ? styles.swapDiscountBadge : null]}>
+                  <Text style={[styles.discountTagText, priceData.isSwap ? styles.swapDiscountText : null]}>
                     {priceData.discountTag}
                   </Text>
                 </View>
-              )}
+              ) : null}
             </View>
           </View>
 
