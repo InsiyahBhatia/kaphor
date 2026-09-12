@@ -153,11 +153,11 @@ export default function NotificationsScreen() {
     }
 
     if (type.startsWith('RENTAL_')) {
-      if (data.rentalId) {
-        router.push(`/rental/${data.rentalId}` as any);
+      if (data.garmentId) {
+        router.push(`/(tabs)/rental/${data.garmentId}` as any);
         return;
       }
-      router.push('/(tabs)/rental' as any);
+      router.push('/(tabs)/rental?tab=my' as any);
       return;
     }
 

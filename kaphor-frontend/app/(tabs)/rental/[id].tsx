@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
+import { api } from '../../../src/services/api';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage, getCategoryFallbackImage } from '../../../src/components/KaphorImage';
@@ -30,9 +31,30 @@ export default function RentalDetailScreen() {
     (async () => {
       try {
         const data = await garmentService.getGarmentById(id as string);
-        setGarment(data);
+        if (data) {
+          setGarment(data);
+          return;
+        }
       } catch {}
-      finally { setLoading(false); }
+
+      // If id was actually a rentalId from a notification, resolve the garment from my rentals
+      try {
+        const myRentalsRes = await api.get('/rentals/me');
+        const myRentals = myRentalsRes?.data?.data || myRentalsRes?.data || [];
+        const match = myRentals.find((r: any) => r.id === id || r.garmentId === id);
+        if (match?.garment) {
+          setGarment(match.garment);
+          return;
+        } else if (match?.garmentId) {
+          const g = await garmentService.getGarmentById(match.garmentId);
+          if (g) {
+            setGarment(g);
+            return;
+          }
+        }
+      } catch {}
+
+      setLoading(false);
     })();
   }, [id]);
 
@@ -42,13 +64,26 @@ export default function RentalDetailScreen() {
 
   if (!garment) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <Text style={{ color: colors.textPrimary }}>Item not found</Text>
+      <View style={[styles.container, styles.center, { paddingHorizontal: 24 }]}>
+        <Ionicons name="calendar-outline" size={48} color={colors.textMuted} style={{ marginBottom: 16 }} />
+        <Text style={{ color: colors.charcoal, fontFamily: typography.mono, fontSize: 14, fontWeight: '700', textAlign: 'center' }}>
+          RENTAL LEASE DETAILS
+        </Text>
+        <Text style={{ color: colors.textMuted, fontFamily: typography.mono, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+          This rental agreement is registered. You can view its full timeline and return status in My Rentals.
+        </Text>
+        <TouchableOpacity 
+          onPress={() => router.replace('/(tabs)/rental?tab=my' as any)}
+          style={{ marginTop: 24, backgroundColor: colors.charcoal, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 2 }}
+        >
+          <Text style={{ color: colors.cream, fontFamily: typography.mono, fontSize: 12, fontWeight: '800' }}>VIEW MY RENTALS</Text>
+        </TouchableOpacity>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={{ marginTop: 16 }}
         >
-          <Text style={{ color: colors.crimson, marginTop: 16 }}>Go Back</Text>
+          <Text style={{ color: colors.crimson, fontFamily: typography.mono, fontSize: 12 }}>GO BACK</Text>
         </TouchableOpacity>
       </View>
     );

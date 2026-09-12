@@ -205,7 +205,7 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                 type: 'RENTAL_RESERVED',
                 title: 'New Rental Reservation',
                 body: `${garment.title} has been reserved for ${days} days.`,
-                data: { rentalId: rental.id },
+                data: { rentalId: rental.id, garmentId: garment.id },
             });
         } catch (notifErr) {
             logger.warn('Failed to send rental reserved notification', { error: notifErr });
@@ -374,7 +374,7 @@ export async function releaseRentalDeposit(req: Request, res: Response): Promise
                 type: 'RENTAL_RETURNED',
                 title: 'Security Deposit Refunded',
                 body: `Your security deposit for "${rental.garment.title}" has been released back to your account.`,
-                data: { rentalId: rental.id },
+                data: { rentalId: rental.id, garmentId: rental.garmentId },
             });
         } catch (notifErr) {
             logger.warn('Failed to send deposit release notification', { error: notifErr });

@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { rentalService } from '../../../src/services/rentalService';
 import { cachedGet } from '../../../src/services/api';
@@ -11,12 +11,19 @@ import { useAuthStore } from '../../../src/store/authStore';
 
 export default function RentalScreen() {
   const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const [rentals, setRentals] = useState<any[]>([]);
   const [myRentals, setMyRentals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [myRentalsLoading, setMyRentalsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'browse' | 'my'>('browse');
+  const [activeTab, setActiveTab] = useState<'browse' | 'my'>(tab === 'my' ? 'my' : 'browse');
+
+  useEffect(() => {
+    if (tab === 'my') {
+      setActiveTab('my');
+    }
+  }, [tab]);
 
   useEffect(() => {
     (async () => {
