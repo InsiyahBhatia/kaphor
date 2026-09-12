@@ -82,6 +82,7 @@ export default function TabLayout() {
       <Tabs.Screen name="shop/orders/index" options={{ href: null }} />
       <Tabs.Screen name="shop/orders/[orderId]" options={{ href: null }} />
       <Tabs.Screen name="shop/seller/[userId]" options={{ href: null }} />
+      <Tabs.Screen name="orders/index" options={{ href: null }} />
       <Tabs.Screen name="notifications/index" options={{ href: null }} />
       <Tabs.Screen name="messages" options={{ href: null }} />
 

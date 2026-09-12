@@ -389,6 +389,14 @@ export default function SwapFeedScreen() {
           MY SWAPS {mySwaps.length > 0 ? `(${mySwaps.length})` : ''}
         </Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.tab}
+        onPress={() => router.push('/(tabs)/orders?tab=swaps' as any)}
+      >
+        <Text style={[styles.tabText, { color: colors.copper, fontWeight: '800' }]}>
+          TRACK SWAPS ➔
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 

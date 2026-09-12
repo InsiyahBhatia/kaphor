@@ -4,6 +4,7 @@ import { createPaymentIntent, createInquiryOrder, createCartOrder, getOrderPayme
 import {
   listTransactionOrders,
   getOrderDetail,
+  getOrdersSummary,
   markOrderShipped,
   markOrderDelivered,
   getOrderMessages,
@@ -17,6 +18,7 @@ const router = Router();
 router.post('/inquiry', authenticate, createInquiryOrder);
 router.post('/cart', authenticate, createCartOrder);
 router.post('/', authenticate, createPaymentIntent);
+router.get('/summary', authenticate, getOrdersSummary);
 router.get('/transactions', authenticate, listTransactionOrders);
 router.get('/:orderId', authenticate, getOrderDetail);
 router.get('/:orderId/payment', authenticate, getOrderPaymentDetails);

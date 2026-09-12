@@ -156,6 +156,14 @@ export default function RentalScreen() {
           MY RENTALS{myRentals.length > 0 ? ` (${myRentals.length})` : ''}
         </Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.tab}
+        onPress={() => router.push('/(tabs)/orders?tab=rentals' as any)}
+      >
+        <Text style={[styles.tabText, { color: colors.copper, fontWeight: '800' }]}>
+          TRACK LEASES ➔
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 

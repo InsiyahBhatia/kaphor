@@ -84,6 +84,13 @@ export async function listTransactionOrders(req: AuthRequest, res: Response): Pr
         if (orderCopy.seller?.avatar) {
           orderCopy.seller.avatar = await getDownloadUrl(orderCopy.seller.avatar);
         }
+
+        const isBuyer = orderCopy.buyerId === uid;
+        orderCopy.userRole = isBuyer ? 'BUYER' : 'SELLER';
+        orderCopy.needsShipping = !isBuyer && orderCopy.status === 'CONFIRMED';
+        orderCopy.inTransit = orderCopy.status === 'SHIPPED';
+        orderCopy.isCompleted = orderCopy.status === 'DELIVERED';
+
         return orderCopy;
       })
     );
@@ -147,6 +154,12 @@ export async function getOrderDetail(req: AuthRequest, res: Response): Promise<v
       select: { id: true },
     });
     orderData.conversationId = conv?.id || null;
+
+    const isBuyer = orderData.buyerId === req.user.id;
+    orderData.userRole = isBuyer ? 'BUYER' : 'SELLER';
+    orderData.needsShipping = !isBuyer && orderData.status === 'CONFIRMED';
+    orderData.inTransit = orderData.status === 'SHIPPED';
+    orderData.isCompleted = orderData.status === 'DELIVERED';
 
     res.json({ data: orderData });
   } catch (e) {
@@ -378,5 +391,109 @@ export async function postPeerReview(req: AuthRequest, res: Response): Promise<v
   } catch (e) {
     logger.error('postPeerReview failed', { error: e instanceof Error ? e.message : String(e) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to save review' });
+  }
+}
+
+export async function getOrdersSummary(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+    const uid = req.user.id;
+
+    const [orders, rentals, swaps] = await Promise.all([
+      db.order.findMany({
+        where: { OR: [{ buyerId: uid }, { sellerId: uid }] },
+        select: { id: true, buyerId: true, sellerId: true, status: true },
+      }),
+      db.rental.findMany({
+        where: {
+          OR: [
+            { renterId: uid },
+            { garment: { sellerId: uid } },
+          ],
+        },
+        select: { id: true, renterId: true, status: true, garment: { select: { sellerId: true } } },
+      }),
+      db.swap.findMany({
+        where: { OR: [{ initiatorId: uid }, { receiverId: uid }] },
+        select: { id: true, initiatorId: true, receiverId: true, status: true },
+      }),
+    ]);
+
+    // Calculate Orders
+    let buyingActive = 0;
+    let sellingActive = 0;
+    let sellingNeedsShip = 0;
+    let ordersCompleted = 0;
+
+    for (const o of orders) {
+      if (o.buyerId === uid) {
+        if (o.status === 'CONFIRMED' || o.status === 'SHIPPED') buyingActive++;
+        if (o.status === 'DELIVERED') ordersCompleted++;
+      }
+      if (o.sellerId === uid) {
+        if (o.status === 'CONFIRMED') {
+          sellingActive++;
+          sellingNeedsShip++;
+        } else if (o.status === 'SHIPPED') {
+          sellingActive++;
+        }
+      }
+    }
+
+    // Calculate Rentals
+    let borrowingActive = 0;
+    let lendingActive = 0;
+    let rentalsCompleted = 0;
+
+    for (const r of rentals) {
+      if (r.renterId === uid) {
+        if (r.status === 'RESERVED' || r.status === 'ACTIVE') borrowingActive++;
+        if (r.status === 'RETURNED') rentalsCompleted++;
+      }
+      if (r.garment?.sellerId === uid) {
+        if (r.status === 'RESERVED' || r.status === 'ACTIVE') lendingActive++;
+      }
+    }
+
+    // Calculate Swaps
+    let swapsActive = 0;
+    let swapsCompleted = 0;
+
+    for (const s of swaps) {
+      if (s.status === 'REQUESTED' || s.status === 'ACCEPTED') swapsActive++;
+      if (s.status === 'COMPLETED') swapsCompleted++;
+    }
+
+    const totalActive = buyingActive + sellingActive + borrowingActive + lendingActive + swapsActive;
+
+    res.json({
+      data: {
+        totalActive,
+        orders: {
+          buyingActive,
+          sellingActive,
+          sellingNeedsShip,
+          completed: ordersCompleted,
+          total: orders.length,
+        },
+        rentals: {
+          borrowingActive,
+          lendingActive,
+          completed: rentalsCompleted,
+          total: rentals.length,
+        },
+        swaps: {
+          active: swapsActive,
+          completed: swapsCompleted,
+          total: swaps.length,
+        },
+      },
+    });
+  } catch (e) {
+    logger.error('getOrdersSummary failed', { error: e instanceof Error ? e.message : String(e) });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to generate orders summary' });
   }
 }

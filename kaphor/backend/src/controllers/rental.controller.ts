@@ -405,25 +405,130 @@ export async function getMyRentals(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const rentals = await db.rental.findMany({
-            where: { renterId: req.user.id },
+        const role = (req.query.role as string || 'all').toLowerCase();
+        const uid = req.user.id;
+
+        let whereClause: any;
+        if (role === 'renter') {
+            whereClause = { renterId: uid };
+        } else if (role === 'lender') {
+            whereClause = { garment: { sellerId: uid } };
+        } else {
+            whereClause = {
+                OR: [
+                    { renterId: uid },
+                    { garment: { sellerId: uid } }
+                ]
+            };
+        }
+
+        const rawRentals = await db.rental.findMany({
+            where: whereClause,
             include: {
                 garment: {
                     select: {
                         id: true, title: true, brand: true, images: true,
                         category: true, price: true, rentalPriceDay: true,
                         rentalPriceWeek: true, condition: true, listingType: true,
+                        sellerId: true,
+                        seller: {
+                            select: { id: true, displayName: true, username: true, avatar: true }
+                        }
                     }
+                },
+                renter: {
+                    select: { id: true, displayName: true, username: true, avatar: true }
                 }
             },
             orderBy: { createdAt: 'desc' },
             take: 50
         });
 
+        const { getDownloadUrl } = await import('../lib/s3');
+        const rentals = await Promise.all(
+            rawRentals.map(async (rental: any) => {
+                const userRole = rental.renterId === uid ? 'RENTER' : 'LENDER';
+                let resolvedImages = rental.garment?.images || [];
+                if (Array.isArray(resolvedImages) && resolvedImages.length > 0) {
+                    resolvedImages = await Promise.all(resolvedImages.map((img: string) => getDownloadUrl(img)));
+                }
+                let renterAvatar = rental.renter?.avatar;
+                if (renterAvatar) renterAvatar = await getDownloadUrl(renterAvatar);
+                let lenderAvatar = rental.garment?.seller?.avatar;
+                if (lenderAvatar) lenderAvatar = await getDownloadUrl(lenderAvatar);
+
+                return {
+                    ...rental,
+                    userRole,
+                    garment: rental.garment ? {
+                        ...rental.garment,
+                        images: resolvedImages,
+                        seller: rental.garment.seller ? { ...rental.garment.seller, avatar: lenderAvatar } : undefined,
+                    } : null,
+                    renter: rental.renter ? { ...rental.renter, avatar: renterAvatar } : null,
+                };
+            })
+        );
+
         res.json({ data: rentals });
     } catch (error) {
         logger.error('Failed to fetch rentals', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+export async function dispatchRental(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const { id } = req.params;
+        const { trackingNumber, carrier } = req.body || {};
+
+        const rental = await db.rental.findUnique({
+            where: { id },
+            include: { garment: true }
+        });
+
+        if (!rental) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
+            return;
+        }
+
+        if (rental.garment.sellerId !== req.user.id && (req.user as any).role !== 'ADMIN') {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Only the garment lender can mark rental as dispatched' });
+            return;
+        }
+
+        if (rental.status !== 'RESERVED') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot dispatch rental in status: ${rental.status}` });
+            return;
+        }
+
+        const updated = await db.rental.update({
+            where: { id },
+            data: { status: 'ACTIVE' },
+            include: { garment: true, renter: true }
+        });
+
+        try {
+            await createNotification({
+                userId: rental.renterId,
+                type: 'RENTAL_ACTIVE',
+                title: '🚚 Rental Dispatched / Active',
+                body: `"${rental.garment.title}" has been marked as dispatched by the lender. Your rental period is active!`,
+                data: { rentalId: id, trackingNumber, carrier },
+            });
+        } catch (notifErr) {
+            logger.warn('Failed to send rental dispatched notification', { error: notifErr });
+        }
+
+        res.json({ data: updated });
+    } catch (error) {
+        logger.error('Failed to dispatch rental', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to dispatch rental' });
     }
 }
 

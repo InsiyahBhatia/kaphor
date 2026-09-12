@@ -14,6 +14,7 @@ import { PlayingCard } from '../../src/components/PlayingCard';
 
 import { Header } from '../../src/components/common/Header';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
+import { trackingService } from '../../src/services/trackingService';
 
 export default function ProfileScreen() {
   const { user, signOut, setUser } = useAuth();
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
+  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
   const handlePickAvatar = async () => {
     try {
@@ -100,6 +102,9 @@ export default function ProfileScreen() {
       const list = res.data?.data || [];
       const unread = list.filter((n: any) => !n.isRead).length;
       setUnreadNotifs(unread);
+    }).catch(() => {});
+    trackingService.getSummary().then((sum) => {
+      setActiveOrdersCount(sum.totalActive);
     }).catch(() => {});
   }, [fetchProfile, fetchSavedAssets, fetchStyleProfile]);
 
@@ -261,6 +266,31 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </View>
+        {/* ORDERS & TRANSACTIONS MANAGEMENT CARD */}
+        <TouchableOpacity
+          style={styles.manageOrdersCard}
+          onPress={() => router.push('/(tabs)/orders' as any)}
+          activeOpacity={0.88}
+        >
+          <View style={styles.manageOrdersLeft}>
+            <View style={styles.manageOrdersIconWrap}>
+              <Ionicons name="cube-sharp" size={22} color={colors.cream} />
+            </View>
+            <View>
+              <Text style={styles.manageOrdersTitle}>MANAGE ALL ORDERS</Text>
+              <Text style={styles.manageOrdersSub}>SALES · RENTALS · SWAPS · TRACKING</Text>
+            </View>
+          </View>
+          <View style={styles.manageOrdersRight}>
+            {activeOrdersCount > 0 ? (
+              <View style={styles.activeOrdersBadge}>
+                <Text style={styles.activeOrdersBadgeText}>{activeOrdersCount} ACTIVE</Text>
+              </View>
+            ) : null}
+            <Ionicons name="chevron-forward" size={18} color={colors.charcoal} />
+          </View>
+        </TouchableOpacity>
+
         {/* SYSTEM OPERATIONS (Existing Menus) */}
         <View style={styles.menuContainer}>
           <Text style={styles.menuSectionTitle}>COLLECTIONS</Text>
@@ -295,6 +325,7 @@ export default function ProfileScreen() {
           <Text style={[styles.menuSectionTitle, { marginTop: 16 }]}>SYSTEM OPS</Text>
 
           {[
+            { icon: 'cube-outline', title: 'MANAGE ORDERS & SHIPMENTS', route: '/(tabs)/orders' },
             { icon: 'notifications', title: 'NOTIFICATIONS', route: '/(tabs)/notifications' },
             { icon: 'shield-checkmark', title: 'IDENTITY VERIFICATION', route: '/profile/verify-identity' },
             { icon: 'chatbubbles', title: 'MESSAGES & INBOX', route: '/(tabs)/messages' },
@@ -873,5 +904,67 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     lineHeight: 12,
     textAlign: 'center',
+  },
+  manageOrdersCard: {
+    backgroundColor: '#FAF8F3',
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  manageOrdersLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flex: 1,
+  },
+  manageOrdersIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: colors.charcoal,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  manageOrdersTitle: {
+    fontFamily: typography.headings,
+    fontSize: 18,
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  manageOrdersSub: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '800',
+    color: colors.red,
+    letterSpacing: 0.8,
+    marginTop: 2,
+  },
+  manageOrdersRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activeOrdersBadge: {
+    backgroundColor: colors.copper,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  activeOrdersBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 0.5,
   },
 });

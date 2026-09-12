@@ -8,6 +8,7 @@ import {
   calculateRentalBreakdown,
   getRentalEscrow,
   releaseRentalDeposit,
+  dispatchRental,
 } from '../controllers/rental.controller';
 
 const router = Router();
@@ -22,6 +23,7 @@ router.post('/', createRental);
 router.get('/me', getMyRentals);
 router.get('/:id/escrow', getRentalEscrow);
 router.post('/:id/release-deposit', releaseRentalDeposit);
+router.patch('/:id/dispatch', dispatchRental);
 router.patch('/:id/return', returnRental);
 
 export { router as rentalRoutes };
