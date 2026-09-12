@@ -15,7 +15,7 @@ interface KaphorImageProps {
   fallbackUri?: string | null;
 }
 
-const AWS_S3_BASE = 'https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com';
+
 
 /**
  * Returns empty string for category fallback so mock Unsplash photos are NEVER shown.
@@ -43,7 +43,7 @@ export function normalizeImageUri(uri: string | string[] | null | undefined): st
   const trimmed = rawStr.trim();
   if (!trimmed) return '';
 
-  // 1. Direct raw data / local device filesystem URI
+  // 1. Direct raw data / local device filesystem URI — pass through
   if (
     trimmed.startsWith('data:') ||
     trimmed.startsWith('file://') ||
@@ -54,26 +54,30 @@ export function normalizeImageUri(uri: string | string[] | null | undefined): st
     return trimmed;
   }
 
+  // 2. S3 presigned or direct URL — pass through (presigned URLs contain ?X-Amz-... params)
+  if (trimmed.includes('amazonaws.com')) {
+    return trimmed;
+  }
+
   const apiBase = (api.defaults.baseURL || 'https://kaphor-backend.onrender.com/api/v1')
     .replace(/\/api\/v1\/?$/, '')
     .replace(/\/$/, '');
 
-  // 2. Placeholder local:// prefix
+  // 3. Placeholder local:// prefix → resolve against backend
   if (trimmed.startsWith('local://')) {
-    const rel = trimmed.replace('local://', '');
-    const cleanRel = rel.startsWith('/') ? rel.slice(1) : rel;
-    const finalRel = cleanRel.startsWith('uploads/') ? cleanRel : `uploads/${cleanRel}`;
+    const rel = trimmed.replace('local://', '').replace(/^\//, '');
+    const finalRel = rel.startsWith('uploads/') ? rel : `uploads/${rel}`;
     return `${apiBase}/${finalRel}`;
   }
 
-  // 3. Relative paths (e.g. "/uploads/messages/..." or "uploads/garments/...")
+  // 4. Relative paths — resolve against backend
   if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
     const cleanRel = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
     const finalRel = cleanRel.startsWith('uploads/') ? cleanRel : `uploads/${cleanRel}`;
     return `${apiBase}/${finalRel}`;
   }
 
-  // 4. If it's a loopback/localhost/local LAN IP (e.g. http://localhost:4000/uploads/... or http://127.0.0.1:4000/...)
+  // 5. If it's a loopback/localhost/local LAN IP → redirect to S3
   const isLoopbackOrLocalIp =
     trimmed.includes('://localhost') ||
     trimmed.includes('://127.0.0.1') ||
@@ -82,31 +86,16 @@ export function normalizeImageUri(uri: string | string[] | null | undefined): st
     /:\/\/172\.(1[6-9]|2\d|3[01])\.\d+\.\d+/.test(trimmed);
 
   if (isLoopbackOrLocalIp && trimmed.includes('/uploads/')) {
-    const uploadIndex = trimmed.indexOf('/uploads/');
-    const relativePath = trimmed.substring(uploadIndex);
+    const relativePath = trimmed.substring(trimmed.indexOf('/uploads/'));
     return `${apiBase}${relativePath}`;
   }
 
+  // 6. Old Render backend URL with /uploads/ — return as-is (backend presigns)
+  // These should already be presigned by backend; pass through unchanged.
   return trimmed;
+
 }
 
-/**
- * Builds secondary candidate S3 URLs for any `/uploads/...` resource
- */
-function getS3CandidateUrls(uri: string): string[] {
-  if (!uri) return [];
-  const candidates: string[] = [];
-
-  if (uri.includes('/uploads/')) {
-    const afterUploads = uri.substring(uri.indexOf('/uploads/') + 9); // e.g. 'garments/abc.jpeg'
-    if (afterUploads) {
-      candidates.push(`${AWS_S3_BASE}/${afterUploads}`);
-      candidates.push(`${AWS_S3_BASE}/uploads/${afterUploads}`);
-    }
-  }
-
-  return candidates;
-}
 
 export function KaphorImage({
   uri,
@@ -122,18 +111,11 @@ export function KaphorImage({
   const [candidateIndex, setCandidateIndex] = useState<number>(0);
   const [hasFailedAll, setHasFailedAll] = useState<boolean>(false);
 
-  // Build candidate chain whenever primary URI changes
+  // Build candidate chain: primary URI, then optional explicit fallbackUri
   const candidates: string[] = React.useMemo(() => {
     const list: string[] = [];
     if (initialUri) {
       list.push(initialUri);
-      // Add S3 variations if applicable
-      const s3Variants = getS3CandidateUrls(initialUri);
-      for (const s3Url of s3Variants) {
-        if (!list.includes(s3Url)) {
-          list.push(s3Url);
-        }
-      }
     }
     if (fallbackUri && !list.includes(fallbackUri)) {
       list.push(fallbackUri);

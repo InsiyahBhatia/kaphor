@@ -76,6 +76,22 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
             garments = garments.map((g: any) => ({ ...g, isLastPiece: true }));
         }
 
+        // Presign images + seller avatar (bucket is private; raw URLs would 403)
+        const { getDownloadUrl } = await import('../lib/s3');
+        garments = await Promise.all(
+            garments.map(async (g: any) => {
+                const images = Array.isArray(g.images) && g.images.length > 0
+                    ? await Promise.all(g.images.map((img: string) => getDownloadUrl(img)))
+                    : g.images;
+                const avatar = g.seller?.avatar ? await getDownloadUrl(g.seller.avatar) : g.seller?.avatar;
+                return {
+                    ...g,
+                    images,
+                    seller: g.seller ? { ...g.seller, avatar } : g.seller,
+                };
+            })
+        );
+
         res.json({ data: garments });
     } catch (error) {
         logger.error('Failed to fetch available rentals', { error });

@@ -4,50 +4,56 @@ import { logger } from '../lib/logger';
 import { createNotification } from '../services/notification.service';
 import { sendEmail } from '../services/email.service';
 
-// ── MOCK DATA (real impl would be a DB seed / CMS) ───────────────────────────
+// ── STUDIO CONTENT (text only — no mock images per Kaphor image policy) ─────
+// Thumbnails are intentionally empty strings; clients render the Kaphor
+// placeholder card instead of third-party stock photos.
 const MOCK_TUTORIALS = [
     {
         id: 't1',
         title: 'Reconstructing the Classic Silk Blazer',
-        thumbnail: 'https://picsum.photos/seed/tut1/600/340',
+        description: 'Deconstruct a tailored silk blazer and rebuild it as a relaxed, boxy layer with raw-edge lapels. Covers seam-ripping, pattern mapping and finishing.',
+        thumbnail: '',
         duration: '18:42',
         difficulty: 'Intermediate',
         isNewRelease: true,
         isFeatured: true,
-        videoUrl: 'https://example.com/videos/silk-blazer',
+        videoUrl: '',
         type: 'Tutorials'
     },
     {
         id: 't2',
         title: 'Dyeing Techniques for Heritage Sarees',
-        thumbnail: 'https://picsum.photos/seed/tut2/600/340',
+        description: 'Natural and fiber-reactive dye methods for silk and cotton sarees — including shibori folding, gradient dips and colour-fast setting.',
+        thumbnail: '',
         duration: '12:05',
         difficulty: 'Beginner',
         isNewRelease: false,
         isFeatured: false,
-        videoUrl: 'https://example.com/videos/saree-dye',
+        videoUrl: '',
         type: 'Tutorials'
     },
     {
         id: 't3',
         title: 'Zardosi Embroidery Restoration',
-        thumbnail: 'https://picsum.photos/seed/tut3/600/340',
+        description: 'How to re-secure tarnished zardosi metalwork, replace missing dabka coils and match historic gold thread on ceremonial garments.',
+        thumbnail: '',
         duration: '24:17',
         difficulty: 'Advanced',
         isNewRelease: false,
         isFeatured: false,
-        videoUrl: 'https://example.com/videos/zardosi',
+        videoUrl: '',
         type: 'Tutorials'
     },
     {
         id: 't4',
         title: 'Upcycling Vintage Lehengas',
-        thumbnail: 'https://picsum.photos/seed/tut4/600/340',
+        description: 'Turn a heavy vintage lehenga skirt into a contemporary co-ord set — panel reuse, waistband reconstruction and weight redistribution.',
+        thumbnail: '',
         duration: '09:33',
         difficulty: 'Beginner',
         isNewRelease: true,
         isFeatured: false,
-        videoUrl: 'https://example.com/videos/lehenga-upcycle',
+        videoUrl: '',
         type: 'Services'
     }
 ];
@@ -55,22 +61,22 @@ const MOCK_TUTORIALS = [
 const MOCK_TRANSFORMATIONS = [
     {
         id: 'tr1',
-        beforeImage: 'https://picsum.photos/seed/bef1/400/500',
-        afterImage: 'https://picsum.photos/seed/aft1/400/500',
+        beforeImage: '',
+        afterImage: '',
         description: 'Deconstructed 1990s bridal lehenga → contemporary asymmetric silhouette',
         creatorUsername: '@oria'
     },
     {
         id: 'tr2',
-        beforeImage: 'https://picsum.photos/seed/bef2/400/500',
-        afterImage: 'https://picsum.photos/seed/aft2/400/500',
+        beforeImage: '',
+        afterImage: '',
         description: 'Faded silk saree → structured corset top + palazzo set',
         creatorUsername: '@nadiav'
     },
     {
         id: 'tr3',
-        beforeImage: 'https://picsum.photos/seed/bef3/400/500',
-        afterImage: 'https://picsum.photos/seed/aft3/400/500',
+        beforeImage: '',
+        afterImage: '',
         description: 'Worn sherwani → reversible quilted jacket',
         creatorUsername: '@chloeX'
     }
