@@ -35,9 +35,11 @@ export async function claimGarmentsForOrder(orderId: string, buyerId: string): P
       const result = await tx.garment.updateMany({
         where: {
           id: { in: garmentIds },
-          // Only claim garments that are actively listed or already ours.
+          // Only claim garments that are actively listed, in purchase intent, or already ours.
           OR: [
             { lifecycleState: 'LISTED', isActive: true, reservedOrderId: null },
+            { lifecycleState: 'PURCHASE_INTENT', isActive: true, reservedOrderId: null },
+            { lifecycleState: 'PURCHASE_INTENT', reservedOrderId: orderId },
             { reservedOrderId: orderId },
           ],
         },

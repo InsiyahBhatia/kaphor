@@ -76,7 +76,10 @@ export async function createInquiryOrder(req: Request, res: Response): Promise<v
 
         await db.garment.update({
             where: { id: garment.id },
-            data: { lifecycleState: 'PURCHASE_INTENT' }
+            data: { 
+                lifecycleState: 'PURCHASE_INTENT',
+                reservedOrderId: order.id,
+            }
         });
 
         res.status(201).json({ data: { orderId: order.id, existing: false } });
@@ -246,12 +249,15 @@ export async function createCartOrder(req: Request, res: Response): Promise<void
             }
         });
 
-        // Transition garments to PURCHASE_INTENT
+        // Transition garments to PURCHASE_INTENT and associate with order
         const garmentIdsToUpdate = validItems.map((item: any) => item.garmentId);
         if (garmentIdsToUpdate.length > 0) {
             await db.garment.updateMany({
                 where: { id: { in: garmentIdsToUpdate } },
-                data: { lifecycleState: 'PURCHASE_INTENT' }
+                data: { 
+                    lifecycleState: 'PURCHASE_INTENT',
+                    reservedOrderId: order.id,
+                }
             });
         }
 
