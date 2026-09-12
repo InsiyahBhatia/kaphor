@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -104,19 +104,10 @@ export default function SellScreen() {
     prefillColor?: string;
     prefillStyle?: string;
     prefillListingType?: string;
+    fresh?: string;
   }>();
 
   const [step, setStep] = useState(1);
-
-  const handleBackNavigation = () => {
-    if (step > 1) {
-      setStep((s) => s - 1);
-      return true;
-    }
-    return false;
-  };
-
-  useBackHandler('/(tabs)/shop', handleBackNavigation);
   const [images, setImages] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -137,6 +128,57 @@ export default function SellScreen() {
   const [weight, setWeight] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+
+  const hasSubmitted = useRef(false);
+  const lastFreshRef = useRef<string | undefined>(undefined);
+
+  const resetForm = useCallback(() => {
+    setStep(1);
+    setImages([]);
+    setTitle('');
+    setDescription('');
+    setBrand('');
+    setCategory('');
+    setSize('');
+    setCondition('PRISTINE');
+    setListingType('SALE');
+    setPrice('');
+    setRentalDay('');
+    setRentalWeek('');
+    setFabric('');
+    setColor('');
+    setStyleAttr('');
+    setSleeve('');
+    setShape('');
+    setPattern('');
+    setWeight('');
+    setSubmitting(false);
+    setAiLoading(false);
+  }, []);
+
+  const handleBackNavigation = () => {
+    if (step > 1) {
+      setStep((s) => s - 1);
+      return true;
+    }
+    safeBack('/(tabs)/shop');
+    return true;
+  };
+
+  useBackHandler('/(tabs)/shop', handleBackNavigation);
+
+  // Reset screen whenever navigated to fresh or when a previous listing was completed
+  useFocusEffect(
+    useCallback(() => {
+      if (hasSubmitted.current) {
+        hasSubmitted.current = false;
+        resetForm();
+      } else if (params.fresh && params.fresh !== lastFreshRef.current && !params.prefillImage) {
+        lastFreshRef.current = params.fresh;
+        resetForm();
+      }
+    }, [params.fresh, params.prefillImage, resetForm])
+  );
 
   const FREE_SIZE_CATEGORIES = [
     'Sarees', 'Dupattas', 'Shawls', 'Scarves',
@@ -444,11 +486,15 @@ export default function SellScreen() {
         timeout: 120000, // 2 minutes for multi-image uploads
       });
 
+      hasSubmitted.current = true;
+      resetForm();
+
       Alert.alert('Listed!', 'Your item is now live on KaPhor.', [
         {
           text: listingType === 'ACCESSORY_SWAP' ? 'VIEW SWAP' : 'VIEW SHOP',
           onPress: () => {
             useGarmentStore.getState().fetchFeed();
+            resetForm();
             if (listingType === 'ACCESSORY_SWAP') {
               router.replace('/(tabs)/swap');
             } else {

@@ -153,7 +153,7 @@ export function MyListingsScreen() {
         <Text style={styles.headerTitle}>MY LISTINGS</Text>
         <TouchableOpacity
           style={styles.addBtn}
-          onPress={() => router.push('/(tabs)/shop/sell' as any)}
+          onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { fresh: Date.now().toString() } } as any)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons name="add" size={24} color={colors.gold} />
@@ -174,7 +174,7 @@ export function MyListingsScreen() {
           </Text>
           <TouchableOpacity
             style={styles.listNowBtn}
-            onPress={() => router.push('/(tabs)/shop/sell' as any)}
+            onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { fresh: Date.now().toString() } } as any)}
           >
             <Ionicons name="add-circle-outline" size={18} color={colors.bg} />
             <Text style={styles.listNowText}>LIST A GARMENT</Text>

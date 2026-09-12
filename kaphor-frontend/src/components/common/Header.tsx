@@ -61,7 +61,25 @@ export function Header({
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </Pressable>
         ) : (
-          <Pressable onPress={() => router.push('/shop/sell')} style={styles.iconBtn}>
+          <Pressable 
+            onPress={() => router.push({ 
+              pathname: '/shop/sell', 
+              params: { 
+                fresh: Date.now().toString(),
+                prefillImage: '',
+                prefillCategory: '',
+                prefillTitle: '',
+                prefillDescription: '',
+                prefillBrand: '',
+                prefillCondition: '',
+                prefillFabric: '',
+                prefillColor: '',
+                prefillStyle: '',
+                prefillListingType: '',
+              } 
+            } as any)} 
+            style={styles.iconBtn}
+          >
             <Ionicons name="add-outline" size={28} color={colors.textPrimary} />
           </Pressable>
         )}
