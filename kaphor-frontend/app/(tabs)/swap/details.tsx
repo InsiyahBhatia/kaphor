@@ -11,6 +11,8 @@ import {
   Modal,
   Image,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -287,7 +289,10 @@ export default function SwapDetailsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       {/* Top Navigation Bar */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
         <TouchableOpacity
@@ -858,7 +863,7 @@ export default function SwapDetailsScreen() {
           )}
         </View>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

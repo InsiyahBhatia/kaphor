@@ -9,6 +9,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  KeyboardAvoidingView,
   Linking,
   ActivityIndicator,
 } from 'react-native';
@@ -580,7 +581,10 @@ export default function RepairRefreshScreen() {
 
   // ── Input view ────────────────────────────────────────────────
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -726,7 +730,7 @@ export default function RepairRefreshScreen() {
           Our AI will assess the damage, match repair guides, and find video tutorials.
         </Text>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

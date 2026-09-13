@@ -67,6 +67,8 @@ export interface PaymentTransaction {
   status: PaymentStatus;
   description: string;
   referenceId: string;
+  /** What referenceId points at, so the UI can navigate correctly */
+  linkType?: 'order' | 'rental';
   createdAt: string;
 }
 

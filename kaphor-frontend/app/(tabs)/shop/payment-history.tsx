@@ -129,11 +129,12 @@ export default function PaymentHistoryScreen() {
                 style={styles.card}
                 activeOpacity={0.7}
                 onPress={() => {
-                  // Navigate to the related order/rental
-                  if (tx.type === 'PURCHASE' || tx.type === 'SELLER_PAYOUT') {
-                    router.push(
-                      `/(tabs)/shop/orders/${tx.referenceId}` as any,
-                    );
+                  // Navigate to the related order/rental.
+                  // referenceId is the internal ID; linkType disambiguates order vs rental.
+                  if (tx.linkType === 'rental') {
+                    router.push(`/(tabs)/rental/${tx.referenceId}` as any);
+                  } else if (tx.type === 'PURCHASE' || tx.type === 'SELLER_PAYOUT') {
+                    router.push(`/(tabs)/shop/orders/${tx.referenceId}` as any);
                   }
                 }}
               >
@@ -170,9 +171,11 @@ export default function PaymentHistoryScreen() {
                     style={[
                       styles.cardAmount,
                       tx.type === 'RENTAL_REFUND' && styles.refundAmount,
+                      tx.type === 'SELLER_PAYOUT' && styles.earningsAmount,
+                      (tx.type === 'PURCHASE' || tx.type === 'RENTAL_FEE') && styles.spendAmount,
                     ]}
                   >
-                    {tx.type === 'RENTAL_REFUND' ? '+' : ''}
+                    {tx.type === 'SELLER_PAYOUT' || tx.type === 'RENTAL_REFUND' ? '+' : '−'}
                     {paymentService.formatAmount(tx.amount)}
                   </Text>
                 </View>
@@ -300,5 +303,11 @@ const styles = StyleSheet.create({
   },
   refundAmount: {
     color: colors.forest,
+  },
+  earningsAmount: {
+    color: colors.forest,
+  },
+  spendAmount: {
+    color: colors.charcoal,
   },
 });

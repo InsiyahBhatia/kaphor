@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "incident": "Production Supabase DB wiped by accidental seed.ts run on 2026-09-12 ~15:35 UTC",
+    "scope_lost": "68 active garments, users, orders, rentals, swaps, posts, reviews, notifications",
+    "intact": ["S3 bucket kaphor-media-uploads (all image files remain)", "schema/migrations", "these fragments"],
+    "recovered_from": "scripts/fix-broken-garments.js, scripts/inspect-broken.js, earlier live API curl response (2026-09-12 ~15:30 UTC), scripts/test-presigned.js output"
+  },
+  "full_records_from_api": [
+    {
+      "id": "05c10c5c-ad4b-486c-9a0e-f2a71152ee2a",
+      "sellerId": "59723ac8-e3ab-476d-91d1-f3c1aa54bbec",
+      "title": "Gold Chain with Green Stone Pendant",
+      "description": "Slim chain featuring a small green stone detail. Subtle pop of color.Type of Metal: Alloy (Gold-tone)",
+      "brand": "Unknown", "category": "Jewelry", "subCategory": null, "size": "OS",
+      "color": [], "material": [], "fabric": null, "style": "Archive Classic",
+      "sleeve": "N/A", "shape": null, "pattern": "Solid / Intricate", "weight": null,
+      "condition": "PRISTINE",
+      "images": ["https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com/swaps/12.jpeg"],
+      "listingType": "ACCESSORY_SWAP", "price": 799, "viewCount": 6,
+      "createdAt": "2026-05-05T15:00:25.689Z", "isActive": true
+    },
+    {
+      "id": "09b9067e-39c9-4112-a83a-47b117b8476a",
+      "sellerId": "fd277856-5032-47b1-96be-d5734da41509",
+      "title": "Elegant Pink Gold Floral Brocade",
+      "description": "This exquisite fabric features an intricate floral and damask pattern in soft pink and shimmering gold tones, set against a delicate light background. Its rich texture and elegant design suggest a luxurious garment, perfect for special occasions or a sophisticated ensemble.",
+      "brand": "Unknown", "category": "Kurtas", "subCategory": null, "size": "XS",
+      "color": ["Pink"], "material": [], "fabric": "Brocade", "style": "Elegant",
+      "sleeve": null, "shape": null, "pattern": "Floral Damask", "weight": "Medium",
+      "condition": "MINOR_WEAR",
+      "images": ["https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com/thrift/2.jpeg"],
+      "listingType": "SALE", "price": 2299, "viewCount": 6,
+      "createdAt": "2026-09-11T04:49:30.405Z", "isActive": true
+    },
+    {
+      "id": "0aaa2bbc-4bd2-4aee-99c5-2d0e8f7f2c9b",
+      "sellerId": "fd277856-5032-47b1-96be-d5734da41509",
+      "title": "Ombre Red to Pink Bandhani Saree with Zari Border & Silk Blouse",
+      "description": "Ombre Red to Pink Bandhani Saree with Zari Border & Silk Blouse",
+      "brand": "Unknown", "category": "Sarees", "size": "OS",
+      "style": "Archive Classic", "sleeve": "N/A", "pattern": "Solid / Intricate",
+      "condition": "PRISTINE",
+      "images": ["https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com/rentals/7.jpeg"],
+      "_note": "record was truncated in captured response"
+    }
+  ],
+  "known_garments_partial": [
+    { "id": "27736007-d819-4eb7-90f8-214697e1371e", "title": "Vintage Floral Platform Slides", "category": "Heels", "images": ["swaps/1.jpeg"] },
+    { "id": "dc0dc5c7-4a3e-4db0-8665-d135a39313b5", "title": "Forest Green Suede Hobo Bag", "category": "Bags", "images": ["swaps/2.jpeg"] },
+    { "id": "5d52a6b3-4ccc-4138-8a73-a72ed4fdf0e1", "title": "Varsity Half-Zip Pullover Sweatshirt", "category": "Tops", "images": ["thrift/9.jpeg"] },
+    { "id": "aee89f95-49aa-45a5-9f04-554b4a7252af", "title": "Purple Pinstripe Embroidered Skirt", "category": "Skirts", "images": ["thrift/19.jpeg"] },
+    { "id": "e114dfe7-8897-4de5-9557-22b1ee3d0376", "title": "Denim vest and skirt co-od set", "category": "Denims", "images": ["thrift/12.jpeg"] },
+    { "id": "94847c02-9e7c-41c6-82b2-5ed2a0563abc", "title": "Vintage Rumours Quartz Bangle Watch", "category": "Jewelry", "images": ["swaps/5.jpeg"] },
+    { "id": "135fb66b-dcfa-4fef-967d-89fdaef4ecb4", "title": "Black Pleated Knit Midi Skirt", "category": "Bottoms", "images": ["thrift/4.jpeg"] },
+    { "id": "a4bb3ce9-231a-4a90-953b-dc09edd8a8fa", "title": "Patterned top", "category": "Tops", "images": ["thrift/16.jpeg"] },
+    { "id": "09b9067e-39c9-4112-a83a-47b117b8476a", "title": "Elegant Pink Gold Floral Brocade", "category": "Kurtas", "images": ["thrift/2.jpeg"] },
+    { "id": "f5ed4abb-0477-4491-b33c-ed64e12b7de6", "title": "Patterned top", "category": "Tops", "images": ["thrift/18.jpeg"] },
+    { "id": "e0125826-a68a-4f7e-9ad5-cfa5075fba91", "title": "Curated Designer Item", "category": "Rental/Sarees", "images": ["rentals/1.jpeg", "rentals/2.jpeg", "rentals/3.jpeg"] },
+    { "id": "bb3f68b4-4876-44b5-8f62-6356a9db7aa7", "title": "Brown Pink Pinstripe Ribbon Skirt", "category": "Skirts", "images": ["thrift/5.jpeg"] },
+    { "id": "28487f58-3081-4d2b-9bb8-0456b7fdf0a3", "title": "Patterned top", "category": "Tops", "images": ["thrift/11.jpeg"] },
+    { "id": "d91ea2fa-28d1-40dc-b45f-140869f169e4", "title": "Denim vest and skirt co-od set", "category": "Denims", "images": ["thrift/3.jpeg"] },
+    { "id": "dfbf6d5d-b5b6-4b6c-a8ba-d439c18e7ee6", "title": "Patterned top", "category": "Tops", "images": ["thrift/7.jpeg"] }
+  ],
+  "known_titles_only": [
+    "Delicate Star Charm Bracelet",
+    "White and blue dress",
+    "Utility sag green  Cargo Pants",
+    "White Button up dress",
+    "Casual Chic Top"
+  ],
+  "known_sellers": [
+    { "id": "59723ac8-e3ab-476d-91d1-f3c1aa54bbec", "displayName": "spider " },
+    { "id": "fd277856-5032-47b1-96be-d5734da41509", "displayName": "Insi" }
+  ],
+  "recovery_steps": [
+    "1. STOP using the database / backend to avoid overwriting WAL segments",
+    "2. Supabase Dashboard -> Project Settings -> verify plan (PITR requires Pro+)",
+    "3. If Pro: Database -> Backups -> Point in Time Restore to before 2026-09-12T15:30:00Z",
+    "4. If restore impossible: S3 files are intact; rebuild garments from S3 listing + fragments above; users must re-register"
+  ]
+}

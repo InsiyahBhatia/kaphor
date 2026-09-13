@@ -117,9 +117,14 @@ export async function getPaymentHistory(req: Request, res: Response): Promise<vo
       take: 50,
     });
 
-    // 2. Fetch user rentals
+    // 2. Fetch user rentals — as renter AND as lender (garment owner earning rental income)
     const rentals = await db.rental.findMany({
-      where: { renterId: userId },
+      where: {
+        OR: [
+          { renterId: userId },
+          { garment: { is: { sellerId: userId } } },
+        ],
+      },
       include: { garment: true },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -149,33 +154,56 @@ export async function getPaymentHistory(req: Request, res: Response): Promise<vo
         currency: order.currency || 'INR',
         status: statusMap[order.status] || order.status,
         description: isBuyer ? `Purchased "${title}"` : `Sold "${title}"`,
-        referenceId: order.razorpayOrderId || order.id,
+        referenceId: order.id,
+        linkType: 'order',
         createdAt: order.createdAt.toISOString(),
       });
     }
 
-    // Map rentals
+    // Map rentals (renter = expense, lender = earnings)
     for (const rental of rentals) {
       const title = rental.garment?.title || 'Rental Item';
-      const statusMap: Record<string, string> = {
-        RESERVED: 'HELD_IN_ESCROW',
-        ACTIVE: 'PAID',
-        RETURNED: 'RELEASED_TO_SELLER',
-        OVERDUE: 'PAID',
-      };
+      const isRenter = rental.renterId === userId;
 
-      const amountInRupees = rental.totalPrice;
+      if (isRenter) {
+        const statusMap: Record<string, string> = {
+          RESERVED: 'HELD_IN_ESCROW',
+          ACTIVE: 'PAID',
+          RETURNED: 'RELEASED_TO_SELLER',
+          OVERDUE: 'PAID',
+        };
 
-      transactions.push({
-        id: `tx_rent_${rental.id}`,
-        type: 'RENTAL_FEE',
-        amount: amountInRupees,
-        currency: 'INR',
-        status: statusMap[rental.status] || rental.status,
-        description: `Rental reservation for "${title}"`,
-        referenceId: rental.stripeId || rental.id,
-        createdAt: rental.createdAt.toISOString(),
-      });
+        transactions.push({
+          id: `tx_rent_${rental.id}`,
+          type: 'RENTAL_FEE',
+          amount: rental.totalPrice, // pure Rupees (₹)
+          currency: 'INR',
+          status: statusMap[rental.status] || rental.status,
+          description: `Rental reservation for "${title}"`,
+          referenceId: rental.id,
+          linkType: 'rental',
+          createdAt: rental.createdAt.toISOString(),
+        });
+      } else if (rental.status !== 'RESERVED') {
+        // Lender earnings — only once payment is captured (not while merely reserved)
+        const statusMap: Record<string, string> = {
+          ACTIVE: 'PAID',
+          OVERDUE: 'PAID',
+          RETURNED: 'RELEASED_TO_SELLER',
+        };
+
+        transactions.push({
+          id: `tx_rentearn_${rental.id}`,
+          type: 'SELLER_PAYOUT',
+          amount: rental.totalPrice, // pure Rupees (₹)
+          currency: 'INR',
+          status: statusMap[rental.status] || 'PAID',
+          description: `Rental earnings for "${title}"`,
+          referenceId: rental.id,
+          linkType: 'rental',
+          createdAt: rental.createdAt.toISOString(),
+        });
+      }
     }
 
     // Sort by createdAt descending

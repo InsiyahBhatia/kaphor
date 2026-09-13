@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../../src/services/api';
@@ -34,7 +34,10 @@ export default function BespokeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/circular')}
@@ -93,7 +96,7 @@ export default function BespokeScreen() {
           {submitting ? <ActivityIndicator color={colors.cream} /> : <Text style={styles.submitBtnText}>INITIATE REQUEST →</Text>}
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
