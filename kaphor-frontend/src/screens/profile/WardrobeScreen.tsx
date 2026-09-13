@@ -1,8 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, AppState, AppStateStatus, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Dimensions,
+  AppState,
+  AppStateStatus,
+  RefreshControl,
+  Modal,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, typography } from '../../theme';
 import { KaphorImage } from '../../components/KaphorImage';
 import { Header } from '../../components/common/Header';
@@ -10,6 +25,10 @@ import { DossierLoading } from '../../components/common/DossierLoading';
 import { cachedGet, fetchFresh, invalidateCache } from '../../services/api';
 import api from '../../services/api';
 import { hapticFeedback } from '../../utils/haptics';
+import {
+  outfitExtractionService,
+  ExtractedGarment,
+} from '../../services/outfitExtractionService';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -185,6 +204,116 @@ export function WardrobeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // ── Google Wardrobe AI Scanner State ─────────────────────────────
+  const [scannerVisible, setScannerVisible] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanStepMessage, setScanStepMessage] = useState('Analyzing outfit composition with Gemini Vision...');
+  const [sourceImageUri, setSourceImageUri] = useState<string | null>(null);
+  const [extractedItems, setExtractedItems] = useState<ExtractedGarment[]>([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [savingToWardrobe, setSavingToWardrobe] = useState(false);
+
+  const pickAndScanOutfit = async (useCamera: boolean = false) => {
+    try {
+      const perm = useCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (perm.status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          `Please grant ${useCamera ? 'camera' : 'photo library'} access to digitize outfits.`
+        );
+        return;
+      }
+
+      const result = useCamera
+        ? await ImagePicker.launchCameraAsync({ quality: 0.85 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+
+      const uri = result.assets[0].uri;
+      setSourceImageUri(uri);
+      setScannerVisible(true);
+      setScanning(true);
+      setExtractedItems([]);
+      setSelectedItemIds(new Set());
+      setScanStepMessage('Analyzing outfit composition with Gemini Vision...');
+
+      const timer1 = setTimeout(() => {
+        setScanStepMessage('Segmenting pieces & generating studio cutouts with Photoroom API...');
+      }, 3500);
+
+      const items = await outfitExtractionService.extractFromOutfit(uri);
+      clearTimeout(timer1);
+
+      setExtractedItems(items);
+      setSelectedItemIds(new Set(items.map((i) => i.id)));
+      hapticFeedback.success();
+    } catch (err: any) {
+      console.error('Extraction failed', err);
+      Alert.alert(
+        'Scan Notice',
+        err?.response?.data?.message || err?.message || 'Unable to extract garments from this photo. Please try a clearer outfit photo.'
+      );
+      setScannerVisible(false);
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleToggleSelectItem = (id: string) => {
+    const next = new Set(selectedItemIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedItemIds(next);
+  };
+
+  const handleSaveSelectedToWardrobe = async () => {
+    const toSave = extractedItems.filter((item) => selectedItemIds.has(item.id));
+    if (toSave.length === 0) {
+      Alert.alert('Select Items', 'Please select at least one garment to add to your closet.');
+      return;
+    }
+
+    setSavingToWardrobe(true);
+    try {
+      await outfitExtractionService.addItemsToWardrobe(toSave);
+      hapticFeedback.success();
+      invalidateCache('/users/me/wardrobe');
+      invalidateCache('/impact');
+      await loadWardrobe();
+      Alert.alert(
+        '✨ Added to Digital Closet!',
+        `Successfully added ${toSave.length} ${toSave.length === 1 ? 'garment' : 'garments'} with studio cutouts to your personal digital wardrobe.`
+      );
+      setScannerVisible(false);
+    } catch (err: any) {
+      Alert.alert('Save Error', err?.response?.data?.message || 'Failed to save items to wardrobe.');
+    } finally {
+      setSavingToWardrobe(false);
+    }
+  };
+
+  const handleListExtractedPiece = (item: ExtractedGarment) => {
+    setScannerVisible(false);
+    router.push({
+      pathname: '/(tabs)/shop/sell',
+      params: {
+        prefillTitle: item.title,
+        prefillCategory: item.category,
+        prefillBrand: item.brand,
+        prefillPrice: String(item.estimatedPrice),
+        prefillRentalDay: String(item.suggestedRentalPriceDay),
+        prefillImage: item.imageUrl,
+        prefillCondition: item.condition,
+        prefillFabric: item.material?.join(', ') || '',
+        prefillColor: item.color?.[0] || '',
+      },
+    });
+  };
+
   const loadWardrobe = useCallback(async () => {
     try {
       const data = await cachedGet('/users/me/wardrobe');
@@ -305,15 +434,23 @@ export function WardrobeScreen() {
           <Ionicons name="shirt-outline" size={64} color={colors.charcoal} style={{ opacity: 0.3 }} />
           <Text style={styles.emptyTitle}>YOUR CLOSET IS EMPTY</Text>
           <Text style={styles.emptySubtext}>
-            Items you purchase will appear here.{'\n'}
-            You can then log wear, sell them again, or send them to circular end-of-life.
+            Digitize your existing wardrobe from mirror selfies using Google Wardrobe AI, or browse the circular marketplace.
           </Text>
-          <TouchableOpacity
-            style={styles.shopBtn}
-            onPress={() => router.push('/(tabs)/shop')}
-          >
-            <Text style={styles.shopBtnText}>BROWSE MARKETPLACE →</Text>
-          </TouchableOpacity>
+          <View style={styles.emptyActionButtons}>
+            <TouchableOpacity
+              style={styles.scanEmptyBtn}
+              onPress={() => pickAndScanOutfit(false)}
+            >
+              <Ionicons name="camera" size={16} color={colors.white} />
+              <Text style={styles.scanEmptyBtnText}>📸 SCAN OUTFIT WITH AI</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.shopBtn}
+              onPress={() => router.push('/(tabs)/shop')}
+            >
+              <Text style={styles.shopBtnText}>BROWSE MARKETPLACE →</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <ScrollView
@@ -328,6 +465,37 @@ export function WardrobeScreen() {
             />
           }
         >
+          {/* AI Closet Digitizer Action Banner */}
+          <View style={styles.aiBanner}>
+            <View style={styles.aiBannerHeader}>
+              <View style={styles.aiBannerIconWrap}>
+                <Ionicons name="sparkles" size={16} color={colors.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.aiBannerTitle}>GOOGLE WARDROBE AI</Text>
+                <Text style={styles.aiBannerSub}>
+                  Digitize outfits from mirror selfies • Segment pieces with Photoroom studio cutouts
+                </Text>
+              </View>
+            </View>
+            <View style={styles.aiBannerBtnRow}>
+              <TouchableOpacity
+                style={styles.aiScanBtnPrimary}
+                onPress={() => pickAndScanOutfit(true)}
+              >
+                <Ionicons name="camera" size={14} color={colors.white} />
+                <Text style={styles.aiScanBtnPrimaryText}>TAKE OUTFIT PHOTO</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.aiScanBtnSecondary}
+                onPress={() => pickAndScanOutfit(false)}
+              >
+                <Ionicons name="images-outline" size={14} color={colors.charcoal} />
+                <Text style={styles.aiScanBtnSecondaryText}>FROM LIBRARY</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Stats & Impact Multiplier */}
           <WardrobeStats garments={wardrobe} />
 
@@ -354,6 +522,136 @@ export function WardrobeScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* ── Google Wardrobe AI Scanner Modal ── */}
+      <Modal visible={scannerVisible} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
+          {/* Modal Header */}
+          <View style={styles.modalHeader}>
+            <View>
+              <View style={styles.modalBadgeRow}>
+                <View style={styles.geminiBadge}>
+                  <Ionicons name="sparkles" size={10} color={colors.white} />
+                  <Text style={styles.geminiBadgeText}>GEMINI VISION + PHOTOROOM</Text>
+                </View>
+              </View>
+              <Text style={styles.modalTitle}>AI CLOSET SCANNER</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => !scanning && setScannerVisible(false)}
+              disabled={scanning}
+              style={styles.modalCloseBtn}
+            >
+              <Ionicons name="close" size={24} color={colors.charcoal} />
+            </TouchableOpacity>
+          </View>
+
+          {scanning ? (
+            <View style={styles.scanningContainer}>
+              {sourceImageUri && (
+                <View style={styles.sourcePhotoPreview}>
+                  <Image source={{ uri: sourceImageUri }} style={styles.sourcePhoto} />
+                  <View style={styles.scanningPulseRing} />
+                </View>
+              )}
+              <ActivityIndicator size="large" color={colors.crimson} style={{ marginTop: 24 }} />
+              <Text style={styles.scanningHeading}>EXTRACTING OUTFIT PIECES</Text>
+              <Text style={styles.scanningSubtext}>{scanStepMessage}</Text>
+            </View>
+          ) : (
+            <View style={{ flex: 1 }}>
+              <View style={styles.resultsBanner}>
+                <Ionicons name="shirt" size={16} color={colors.forest} />
+                <Text style={styles.resultsBannerText}>
+                  FOUND {extractedItems.length} PIECES WITH STUDIO CUTOUTS
+                </Text>
+              </View>
+
+              <ScrollView contentContainerStyle={styles.extractedList} showsVerticalScrollIndicator={false}>
+                {extractedItems.map((item) => {
+                  const isSelected = selectedItemIds.has(item.id);
+                  return (
+                    <View key={item.id} style={[styles.extractedCard, isSelected && styles.extractedCardSelected]}>
+                      <TouchableOpacity
+                        style={styles.extractedCardTop}
+                        onPress={() => handleToggleSelectItem(item.id)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.cutoutImageWrap}>
+                          <Image source={{ uri: item.imageUrl }} style={styles.cutoutImage} resizeMode="contain" />
+                          <View style={styles.photoroomTag}>
+                            <Ionicons name="cut" size={9} color={colors.white} />
+                            <Text style={styles.photoroomTagText}>STUDIO CUTOUT</Text>
+                          </View>
+                        </View>
+
+                        <View style={styles.extractedDetails}>
+                          <View style={styles.extractedCategoryRow}>
+                            <Text style={styles.extractedCategory}>{item.category?.toUpperCase()}</Text>
+                            <View style={[styles.selectCheckbox, isSelected && styles.selectCheckboxActive]}>
+                              {isSelected && <Ionicons name="checkmark" size={14} color={colors.white} />}
+                            </View>
+                          </View>
+
+                          <Text style={styles.extractedTitle} numberOfLines={2}>
+                            {item.title}
+                          </Text>
+                          <Text style={styles.extractedBrand}>{item.brand} • {item.size || 'M'}</Text>
+                          
+                          <View style={styles.extractedValuationRow}>
+                            <Text style={styles.extractedValuationLabel}>EST. RESALE</Text>
+                            <Text style={styles.extractedPrice}>₹{item.estimatedPrice.toLocaleString()}</Text>
+                          </View>
+                          <Text style={styles.extractedRentalRate}>
+                            Rent: ₹{item.suggestedRentalPriceDay}/day
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+
+                      <View style={styles.extractedCardActions}>
+                        <TouchableOpacity
+                          style={styles.listPieceBtn}
+                          onPress={() => handleListExtractedPiece(item)}
+                        >
+                          <Ionicons name="pricetag-outline" size={12} color={colors.charcoal} />
+                          <Text style={styles.listPieceBtnText}>LIST FOR SALE / RENT →</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Bottom Action Footer */}
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={[styles.saveToWardrobeBtn, (selectedItemIds.size === 0 || savingToWardrobe) && { opacity: 0.6 }]}
+                  onPress={handleSaveSelectedToWardrobe}
+                  disabled={selectedItemIds.size === 0 || savingToWardrobe}
+                >
+                  {savingToWardrobe ? (
+                    <ActivityIndicator color={colors.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="folder-open" size={16} color={colors.white} />
+                      <Text style={styles.saveToWardrobeBtnText}>
+                        ADD {selectedItemIds.size} {selectedItemIds.size === 1 ? 'PIECE' : 'PIECES'} TO WARDROBE
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.scanAnotherBtn}
+                  onPress={() => pickAndScanOutfit(false)}
+                >
+                  <Text style={styles.scanAnotherBtnText}>SCAN ANOTHER PHOTO</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -462,4 +760,423 @@ const styles = StyleSheet.create({
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
   },
   shopBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+
+  // Empty State Actions
+  emptyActionButtons: {
+    gap: 10,
+    alignItems: 'center',
+    width: '100%',
+  },
+  scanEmptyBtn: {
+    backgroundColor: colors.crimson,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    width: '100%',
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  scanEmptyBtnText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 11.5,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  // AI Closet Digitizer Banner
+  aiBanner: {
+    backgroundColor: '#FAF5EE',
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  aiBannerHeader: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  aiBannerIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: colors.crimson,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aiBannerTitle: {
+    fontFamily: typography.headings,
+    fontSize: 16,
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  aiBannerSub: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    lineHeight: 13,
+    marginTop: 1,
+  },
+  aiBannerBtnRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  aiScanBtnPrimary: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.charcoal,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+  },
+  aiScanBtnPrimaryText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  aiScanBtnSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.white,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+  },
+  aiScanBtnSecondaryText: {
+    color: colors.charcoal,
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.cream,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.charcoal,
+    backgroundColor: colors.white,
+  },
+  modalBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  geminiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 3,
+  },
+  geminiBadgeText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  modalTitle: {
+    fontFamily: typography.headings,
+    fontSize: 22,
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  modalCloseBtn: {
+    padding: 6,
+  },
+
+  // Scanning Progress State
+  scanningContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  sourcePhotoPreview: {
+    width: 180,
+    height: 240,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+    position: 'relative',
+  },
+  sourcePhoto: {
+    width: '100%',
+    height: '100%',
+  },
+  scanningPulseRing: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 2,
+    borderColor: colors.crimson,
+  },
+  scanningHeading: {
+    fontFamily: typography.headings,
+    fontSize: 20,
+    color: colors.charcoal,
+    marginTop: 16,
+    letterSpacing: 0.5,
+  },
+  scanningSubtext: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 16,
+    maxWidth: 280,
+  },
+
+  // Results State
+  resultsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(30,59,47,0.06)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,59,47,0.15)',
+  },
+  resultsBannerText: {
+    fontFamily: typography.mono,
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: colors.forest,
+    letterSpacing: 0.8,
+  },
+  extractedList: {
+    padding: 16,
+    gap: 14,
+    paddingBottom: 30,
+  },
+  extractedCard: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: 'rgba(30,31,34,0.2)',
+    padding: 12,
+  },
+  extractedCardSelected: {
+    borderColor: colors.charcoal,
+    borderWidth: 2,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  extractedCardTop: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cutoutImageWrap: {
+    width: 100,
+    height: 120,
+    backgroundColor: '#FAF5EE',
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  cutoutImage: {
+    width: '90%',
+    height: '90%',
+  },
+  photoroomTag: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(30,31,34,0.85)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    paddingVertical: 2,
+  },
+  photoroomTagText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  extractedDetails: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  extractedCategoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  extractedCategory: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+  },
+  selectCheckbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectCheckboxActive: {
+    backgroundColor: colors.forest,
+    borderColor: colors.forest,
+  },
+  extractedTitle: {
+    fontFamily: typography.headings,
+    fontSize: 16,
+    color: colors.charcoal,
+    marginTop: 2,
+  },
+  extractedBrand: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    color: colors.crimson,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  extractedValuationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  extractedValuationLabel: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.textMuted,
+    fontWeight: '800',
+  },
+  extractedPrice: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  extractedRentalRate: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textMuted,
+  },
+  extractedCardActions: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(30,31,34,0.08)',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  listPieceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: colors.cream,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  listPieceBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+
+  // Modal Footer
+  modalFooter: {
+    padding: 16,
+    backgroundColor: colors.white,
+    borderTopWidth: 2,
+    borderTopColor: colors.charcoal,
+    gap: 8,
+  },
+  saveToWardrobeBtn: {
+    backgroundColor: colors.charcoal,
+    height: 52,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  saveToWardrobeBtnText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  scanAnotherBtn: {
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanAnotherBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+  },
 });

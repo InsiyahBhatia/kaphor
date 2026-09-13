@@ -8,6 +8,7 @@ import {
   updateAvatar,
   getMyListings,
   getMyWardrobe,
+  addWardrobeItems,
   getMyPurchases,
   getPublicUserSummary,
   getUserReviews,
@@ -45,6 +46,7 @@ router.put('/me', updateMe);
 router.put('/me/avatar', upload.single('avatar'), updateAvatar);
 router.get('/me/listings', getMyListings);
 router.get('/me/wardrobe', getMyWardrobe);
+router.post('/me/wardrobe/items', addWardrobeItems);
 router.get('/me/purchases', getMyPurchases);
 router.post('/me/verify-identity', submitIdentityVerification);
 router.get('/me/verification-status', getVerificationStatus);

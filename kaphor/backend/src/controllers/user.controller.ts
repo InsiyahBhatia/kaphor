@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
+import { redisDel } from '../lib/redis';
 import { logger } from '../lib/logger';
 import { uploadToS3, getDownloadUrl } from '../lib/s3';
 
@@ -256,6 +257,76 @@ export async function getMyWardrobe(req: Request, res: Response): Promise<void> 
     } catch (error) {
         logger.error('getMyWardrobe failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+// ── POST /users/me/wardrobe/items ─────────────────────────────────────────────
+export async function addWardrobeItems(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
+
+        const { items } = req.body;
+        if (!Array.isArray(items) || items.length === 0) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'items array is required' });
+            return;
+        }
+
+        const validConditions = ['PRISTINE', 'MINOR_WEAR', 'UPCYCLE', 'RECYCLE_ONLY'];
+        const createdGarments = [];
+
+        for (const item of items) {
+            const condition = validConditions.includes(item.condition) ? item.condition : 'PRISTINE';
+            const price = item.price != null ? Math.round(Number(item.price)) : (item.estimatedPrice != null ? Math.round(Number(item.estimatedPrice)) : null);
+            const rentalDay = item.rentalPriceDay != null ? Math.round(Number(item.rentalPriceDay)) : (item.suggestedRentalPriceDay != null ? Math.round(Number(item.suggestedRentalPriceDay)) : null);
+            const rentalWeek = item.rentalPriceWeek != null ? Math.round(Number(item.rentalPriceWeek)) : (item.suggestedRentalPriceWeek != null ? Math.round(Number(item.suggestedRentalPriceWeek)) : null);
+
+            const garment = await db.garment.create({
+                data: {
+                    sellerId: req.user.id,
+                    title: item.title || 'Digital Wardrobe Piece',
+                    description: item.description || 'Digitized into digital closet via Google Wardrobe AI.',
+                    brand: item.brand || 'Contemporary',
+                    category: item.category || 'Tops',
+                    subCategory: item.subCategory || null,
+                    size: item.size || 'M',
+                    color: Array.isArray(item.color) ? item.color : [item.color || 'Neutral'],
+                    material: Array.isArray(item.material) ? item.material : [item.material || 'Cotton'],
+                    condition,
+                    images: Array.isArray(item.images) ? item.images : [item.imageUrl || item.image].filter(Boolean),
+                    tags: ['digital-wardrobe', 'digitized'],
+                    styleTags: [item.category || 'wardrobe'],
+                    garmentVector: Array.from({ length: 16 }, () => Number((Math.random() * 0.4 - 0.2).toFixed(4))),
+                    lifecycleState: 'OWNERSHIP',
+                    listingType: item.listingType || 'SALE',
+                    price,
+                    rentalPriceDay: rentalDay,
+                    rentalPriceWeek: rentalWeek,
+                    isActive: false, // Private in user's digital wardrobe until listed
+                },
+            });
+
+            // Log wear/circular ownership event
+            await db.behaviourEvent.create({
+                data: {
+                    userId: req.user.id,
+                    garmentId: garment.id,
+                    eventType: 'LOG_WEAR',
+                },
+            }).catch(() => {});
+
+            createdGarments.push(garment);
+        }
+
+        await redisDel(`user:${req.user.id}:wardrobe`).catch(() => {});
+
+        res.json({
+            success: true,
+            count: createdGarments.length,
+            data: createdGarments,
+        });
+    } catch (error: any) {
+        logger.error('addWardrobeItems failed', { error: error.message });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
     }
 }
 

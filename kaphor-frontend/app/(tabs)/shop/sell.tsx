@@ -212,8 +212,9 @@ export default function SellScreen() {
         setSize('FREE SIZE');
       }
     }
-    // Intentionally leave price blank for manual user entry
-  }, [params.prefillImage, params.prefillCategory, params.prefillTitle]);
+    if (params.prefillPrice) setPrice(params.prefillPrice);
+    if (params.prefillRentalDay) setRentalDay(params.prefillRentalDay);
+  }, [params.prefillImage, params.prefillCategory, params.prefillTitle, params.prefillPrice]);
 
   const handleCategoryChange = (cat: string) => {
     setCategory(cat);
@@ -617,6 +618,23 @@ export default function SellScreen() {
                 </TouchableOpacity>
               )}
             </View>
+
+            {/* AI Outfit Extractor Quick Link */}
+            <TouchableOpacity
+              style={styles.extractOutfitBanner}
+              onPress={() => router.push('/(tabs)/profile/wardrobe')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.extractOutfitBannerLeft}>
+                <Ionicons name="scan-outline" size={20} color={colors.crimson} />
+                <View style={{ marginLeft: 10, flex: 1 }}>
+                  <Text style={styles.extractOutfitBannerTitle}>HAVE A FULL OUTFIT PHOTO?</Text>
+                  <Text style={styles.extractOutfitBannerSub}>
+                    Extract individual pieces & studio cutouts via AI Outfit Digitizer →
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
 
             {/* 3. AI Magic Fill Button (dynamic text and action based on selected listingType) */}
             <TouchableOpacity
@@ -1119,5 +1137,37 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: colors.textMuted,
+  },
+  extractOutfitBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FAF8F5',
+    borderWidth: 1,
+    borderColor: 'rgba(217, 38, 38, 0.25)',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.crimson,
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 4,
+    borderRadius: 2,
+  },
+  extractOutfitBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  extractOutfitBannerTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.charcoal,
+  },
+  extractOutfitBannerSub: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.textSecond,
+    marginTop: 2,
   },
 });
