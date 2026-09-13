@@ -1,19 +1,10 @@
 /**
- * Gemini API Client with 5-model fallback chain
- * Uses the existing @google/generative-ai SDK
+ * Gemini API Client for GLIE vision scoring
+ * Uses the shared multi-key + multi-model rotation client
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logger } from '../../lib/logger';
-
-// Model fallback chain — ordered by performance/availability
-const MODEL_CHAIN = [
-  'gemini-3.1-flash-lite',
-  'gemini-3.5-flash-lite',
-  'gemini-2.5-flash',
-  'gemini-2.0-flash-lite',
-  'gemini-1.5-flash',
-];
+import { generateWithGemini } from '../gemini.service';
 
 export interface GeminiSubScores {
   condition_score: number;
@@ -34,22 +25,8 @@ export interface GeminiResult {
   error?: string;
 }
 
-let genAIInstance: GoogleGenerativeAI | null = null;
-
-function getGenAI(): GoogleGenerativeAI {
-  if (!genAIInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is not configured');
-    }
-    genAIInstance = new GoogleGenerativeAI(apiKey);
-  }
-  return genAIInstance;
-}
-
 /**
  * Call Gemini Vision API with the RAG-augmented prompt
- * Tries each model in the fallback chain until one succeeds
  */
 export async function callGeminiVision(
   systemPrompt: string,
@@ -83,8 +60,6 @@ export async function callGeminiVision(
     }
   }
 
-  const genAI = getGenAI();
-
   // Strip data: prefix if present
   let base64Data = imageBase64;
   let mimeType = 'image/jpeg';
@@ -96,59 +71,39 @@ export async function callGeminiVision(
     }
   }
 
-  for (const modelName of MODEL_CHAIN) {
-    try {
-      const model = genAI.getGenerativeModel({ model: modelName });
+  try {
+    const text = await generateWithGemini(
+      [
+        { inlineData: { mimeType, data: base64Data } },
+        { text: `${systemPrompt}\n\n${userPrompt}` },
+      ],
+      { temperature: 0.1, maxOutputTokens: 1000 },
+    );
 
-      const result = await model.generateContent({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { inlineData: { mimeType, data: base64Data } },
-              { text: `${systemPrompt}\n\n${userPrompt}` },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1000,
-        },
-      });
-
-      const text = result.response.text();
-
-      if (!text || text.trim().length === 0) {
-        logger.warn(`[GLIE/Gemini] Model ${modelName} returned empty response`);
-        continue;
-      }
-
-      const parsed = parseGeminiResponse(text);
-      if (!parsed) {
-        logger.warn(`[GLIE/Gemini] Model ${modelName} returned unparseable JSON`);
-        continue;
-      }
-
-      logger.info(`[GLIE/Gemini] Model ${modelName} succeeded`);
-      return {
-        success: true,
-        data: parsed,
-        model: modelName,
-      };
-    } catch (err: any) {
-      const status = err?.status || err?.response?.status;
-      logger.warn(`[GLIE/Gemini] Model ${modelName} failed: status=${status} error=${err.message}`);
-      // Continue to next model
+    if (!text || text.trim().length === 0) {
+      throw new Error('Gemini returned empty response');
     }
-  }
 
-  logger.error('[GLIE/Gemini] All models in fallback chain failed');
-  return {
-    success: false,
-    data: null,
-    model: 'none',
-    error: 'All Gemini models failed',
-  };
+    const parsed = parseGeminiResponse(text);
+    if (!parsed) {
+      throw new Error('Gemini returned unparseable JSON');
+    }
+
+    logger.info('[GLIE/Gemini] Assessment succeeded');
+    return {
+      success: true,
+      data: parsed,
+      model: 'gemini',
+    };
+  } catch (err: any) {
+    logger.error(`[GLIE/Gemini] Failed: ${err.message}`);
+    return {
+      success: false,
+      data: null,
+      model: 'none',
+      error: err.message,
+    };
+  }
 }
 
 /**

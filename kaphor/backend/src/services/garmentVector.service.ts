@@ -17,23 +17,10 @@
  *   d9:  ORGANIC/BOHEMIAN     d19: SOPHISTICATED/CLASSIC
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logger } from '../lib/logger';
+import { generateWithGemini } from './gemini.service';
 
 // ── Gemini Vision Client ─────────────────────────────────────────────────────
-
-let genAIInstance: GoogleGenerativeAI | null = null;
-
-function getGenAI(): GoogleGenerativeAI {
-  if (!genAIInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
-    genAIInstance = new GoogleGenerativeAI(apiKey);
-  }
-  return genAIInstance;
-}
-
-const GEMINI_MODEL = 'gemini-2.5-flash';
 
 const VECTOR_PROMPT = `Analyze this garment image and generate a 20-dimensional style vector.
 
@@ -78,9 +65,6 @@ interface GeminiVectorResult {
 
 async function generateVectorWithGemini(imageBase64: string, mimeType: string): Promise<GeminiVectorResult> {
   try {
-    const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-
     const imagePart = {
       inlineData: {
         data: imageBase64,
@@ -88,30 +72,34 @@ async function generateVectorWithGemini(imageBase64: string, mimeType: string): 
       },
     };
 
-    const result = await model.generateContent([VECTOR_PROMPT, imagePart]);
-    const text = result.response.text().trim();
+    const text = await generateWithGemini([VECTOR_PROMPT, imagePart], {
+      temperature: 0.2,
+      maxOutputTokens: 1024,
+      responseMimeType: 'application/json',
+    });
+    const trimmed = text.trim();
 
     // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return { success: false, vector: [], model: GEMINI_MODEL, error: 'No JSON in response' };
+      return { success: false, vector: [], model: 'gemini', error: 'No JSON in response' };
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
     const vector = parsed.vector;
 
     if (!Array.isArray(vector) || vector.length !== 20) {
-      return { success: false, vector: [], model: GEMINI_MODEL, error: `Invalid vector length: ${vector?.length}` };
+      return { success: false, vector: [], model: 'gemini', error: `Invalid vector length: ${vector?.length}` };
     }
 
     // Clamp all values to [0, 1]
     const clamped = vector.map((v: number) => Math.max(0, Math.min(1, Math.round(v * 100) / 100)));
 
     logger.info('[GarmentVector] Gemini Vision generated 20-dim vector');
-    return { success: true, vector: clamped, model: GEMINI_MODEL };
+    return { success: true, vector: clamped, model: 'gemini' };
   } catch (error: any) {
     logger.warn(`[GarmentVector] Gemini Vision failed: ${error.message}`);
-    return { success: false, vector: [], model: GEMINI_MODEL, error: error.message };
+    return { success: false, vector: [], model: 'gemini', error: error.message };
   }
 }
 

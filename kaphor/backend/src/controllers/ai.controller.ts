@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import db from '../lib/prisma';
 import { redisGet, redisSet, redisDel } from '../lib/redis';
 import { logger } from '../lib/logger';
@@ -7,96 +6,28 @@ import axios from 'axios';
 import sharp from 'sharp';
 import { removeBackgroundWithPhotoroom } from '../services/photoroom.service';
 import { uploadToS3 } from '../lib/s3';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const models = {
-  primary: genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }),
-  secondary: genAI.getGenerativeModel({ model: 'gemini-2.0-flash' }),
-  tertiary: genAI.getGenerativeModel({ model: 'gemini-2.0-flash-001' }),
-};
+import { runFashionAgent } from '../services/fashionAgent.service';
+import { generateWithGroq } from '../services/groq.service';
+import { generateWithGemini } from '../services/gemini.service';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Helper to try multiple models in case of quota or service errors, with exponential backoff */
+/** Helper: Gemini text generation with multi-key + multi-model rotation */
 async function generateWithFallback(prompt: string, config: any = { responseMimeType: 'application/json' }) {
-    const sequence: (keyof typeof models)[] = ['primary', 'secondary', 'tertiary'];
-    let lastError: any = null;
-
-    for (const key of sequence) {
-        let attempts = 0;
-        const maxAttempts = 3;
-        while (attempts < maxAttempts) {
-            try {
-                const model = models[key];
-                const result = await model.generateContent({
-                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                    generationConfig: config
-                });
-                return result.response.text();
-            } catch (err: any) {
-                lastError = err;
-                const status = err.status || (err as any).response?.status;
-                // 429 = Quota, 503 = Overloaded → wait and retry
-                if (status === 429 || status === 503) {
-                    attempts++;
-                    if (attempts < maxAttempts) {
-                        const delay = Math.pow(2, attempts) * 1000; // 2s, 4s
-                        logger.warn(`AI Model ${key} returned ${status}, retrying in ${delay}ms (attempt ${attempts}/${maxAttempts})`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        continue;
-                    }
-                    logger.warn(`AI Model ${key} exhausted retries (Status: ${status}), trying next fallback...`);
-                    break; // Move to next model
-                }
-                if (status === 404) {
-                    logger.warn(`AI Model ${key} not found, trying next fallback...`);
-                    break; // Move to next model
-                }
-                throw err; // Re-throw other errors immediately
-            }
-        }
-    }
-    throw lastError;
+    return generateWithGemini(prompt, {
+        temperature: config.temperature,
+        maxOutputTokens: config.maxOutputTokens,
+        responseMimeType: config.responseMimeType,
+    });
 }
 
-/** Helper to run Gemini Vision with fallback models and retry */
+/** Helper: Gemini Vision with multi-key + multi-model rotation */
 async function generateVisionWithFallback(parts: any[], config: any = { responseMimeType: 'application/json', temperature: 0.2 }) {
-    const sequence: (keyof typeof models)[] = ['primary', 'secondary', 'tertiary'];
-    let lastError: any = null;
-
-    for (const key of sequence) {
-        let attempts = 0;
-        const maxAttempts = 2;
-        while (attempts < maxAttempts) {
-            try {
-                const model = models[key];
-                const result = await model.generateContent({
-                    contents: [{ role: 'user', parts }],
-                    generationConfig: config
-                });
-                return result.response.text();
-            } catch (err: any) {
-                lastError = err;
-                const status = err.status || (err as any).response?.status;
-                if (status === 429 || status === 503) {
-                    attempts++;
-                    if (attempts < maxAttempts) {
-                        const delay = 1500 * attempts;
-                        logger.warn(`AI Vision ${key} returned ${status}, retrying in ${delay}ms`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        continue;
-                    }
-                    break;
-                }
-                if (status === 404) {
-                    break;
-                }
-                logger.warn(`AI Vision ${key} error: ${err.message}, trying next fallback`);
-                break;
-            }
-        }
-    }
-    throw lastError;
+    return generateWithGemini(parts, {
+        temperature: config.temperature,
+        maxOutputTokens: config.maxOutputTokens,
+        responseMimeType: config.responseMimeType,
+    });
 }
 
 
@@ -113,7 +44,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
     return denom === 0 ? 0 : dot / denom;
 }
 
-const AESTHETIC_VECTORS: Record<string, number[]> = {
+export const AESTHETIC_VECTORS: Record<string, number[]> = {
     MINIMALIST:   [0.1, 0.1, 0.1, 0.9, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.8],
     STREETWEAR:   [0.9, 0.8, 0.1, 0.1, 0.2, 0.9, 0.1, 0.1, 0.7, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.8, 0.1, 0.2, 0.1],
     VINTAGE:      [0.2, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.8, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.1, 0.1],
@@ -126,7 +57,7 @@ const AESTHETIC_VECTORS: Record<string, number[]> = {
     PREPPY:       [0.1, 0.2, 0.3, 0.7, 0.4, 0.1, 0.1, 0.1, 0.4, 0.2, 0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.6, 0.5],
 };
 
-const AESTHETIC_SUMMARIES: Record<string, string> = {
+export const AESTHETIC_SUMMARIES: Record<string, string> = {
     MINIMALIST:  "Your archive is built on restraint and precision. You believe in 'less but better'—investing in architectural silhouettes, high-quality neutral basics, and impeccably made essentials that endure beyond trend cycles. Your wardrobe is a master equation: every piece is intentional, every combination effortlessly calibrated. The quality of a single well-made shirt matters more to you than a closet full of novelty.",
     STREETWEAR:  "Your style is a living document of urban culture. Rooted in subculture, movement, and community, you gravitate toward oversized silhouettes, bold graphics, and limited-edition archival pieces that tell the story of city life. Technical fabrics, functional hardware, and loud branding are your language—you dress like you belong to the future.",
     VINTAGE:     "You are an archivist of fashion history. Every piece you own is a curated find—a story told through aged silk, perfectly faded denim, and silhouettes that outlived their era. You favor the soul of 'one-of-a-kind' over the algorithm of new arrivals, and you know the thrill of finding a forgotten gem that nobody else has.",
@@ -369,15 +300,35 @@ export async function getStyleProfile(req: Request, res: Response): Promise<void
 
         const user = await db.user.findUnique({
             where: { id: req.user.id },
-            select: { styleAesthetic: true, onboardingDone: true }
+            select: { styleAesthetic: true, onboardingDone: true, preferenceProfile: true }
         });
 
-        if (!user || !user.styleAesthetic || !user.onboardingDone) {
+        const profile = (user?.preferenceProfile as any) || {};
+        const aesthetic = user?.styleAesthetic || profile.dominantAesthetic || (user?.onboardingDone ? 'LUXURY' : null);
+
+        if (!aesthetic && !user?.onboardingDone && !profile.totalInteractions) {
             res.status(404).json({ error: 'NOT_FOUND', message: 'No style profile generated yet' });
             return;
         }
 
-        const details = getAestheticDetails(user.styleAesthetic);
+        const details = getAestheticDetails(aesthetic || 'LUXURY');
+
+        // Blend in user's dynamically learned top categories and brands
+        if (profile.topCategories && Object.keys(profile.topCategories).length > 0) {
+            const learnedCats = Object.entries(profile.topCategories)
+                .sort(([, a]: any, [, b]: any) => b - a)
+                .slice(0, 4)
+                .map(([name]) => name);
+            if (learnedCats.length > 0) details.topCategories = learnedCats;
+        }
+        if (profile.topBrands && Object.keys(profile.topBrands).length > 0) {
+            const learnedBrands = Object.entries(profile.topBrands)
+                .sort(([, a]: any, [, b]: any) => b - a)
+                .slice(0, 4)
+                .map(([name]) => name);
+            if (learnedBrands.length > 0) details.recommendedBrands = learnedBrands;
+        }
+
         res.status(200).json({ data: details });
     } catch (error) {
         logger.error('Fetch style profile failed', { error });
@@ -508,71 +459,6 @@ export async function chat(req: Request, res: Response): Promise<void> {
             }
         }
 
-        // Query relevant items from database to recommend
-        let products: any[] = [];
-        try {
-            const queryWords = (message || visualAnalysisSummary || '')
-                .toLowerCase()
-                .replace(/[^a-z0-9 ]/g, ' ')
-                .split(' ')
-                .filter((w: string) => w.length > 3 && !['find', 'show', 'want', 'need', 'like', 'with', 'this', 'that', 'have', 'from', 'look', 'looking'].includes(w));
-
-            const orConditions: any[] = [];
-            for (const word of queryWords.slice(0, 4)) {
-                orConditions.push({ title: { contains: word, mode: 'insensitive' } });
-                orConditions.push({ category: { contains: word, mode: 'insensitive' } });
-                orConditions.push({ brand: { contains: word, mode: 'insensitive' } });
-            }
-
-            if (orConditions.length > 0) {
-                products = await db.garment.findMany({
-                    where: {
-                        isActive: true,
-                        lifecycleState: 'LISTED',
-                        OR: orConditions
-                    },
-                    select: {
-                        id: true,
-                        title: true,
-                        brand: true,
-                        price: true,
-                        rentalPriceDay: true,
-                        images: true,
-                        category: true,
-                        listingType: true,
-                        condition: true,
-                        size: true
-                    },
-                    take: 3
-                });
-            }
-
-            if (products.length === 0) {
-                products = await db.garment.findMany({
-                    where: {
-                        isActive: true,
-                        lifecycleState: 'LISTED'
-                    },
-                    orderBy: { popularityScore: 'desc' },
-                    select: {
-                        id: true,
-                        title: true,
-                        brand: true,
-                        price: true,
-                        rentalPriceDay: true,
-                        images: true,
-                        category: true,
-                        listingType: true,
-                        condition: true,
-                        size: true
-                    },
-                    take: 3
-                });
-            }
-        } catch (dbErr) {
-            logger.warn('Failed to query catalog recommendations', { error: dbErr });
-        }
-
         // Find or create conversation
         let conversation;
         if (conversationId) {
@@ -587,118 +473,61 @@ export async function chat(req: Request, res: Response): Promise<void> {
                 data: {
                     userId: req.user.id,
                     garmentId: garmentId ? String(garmentId) : null,
-                    title: (message || 'Stylist Assistant').substring(0, 40)
+                    title: (message || 'Stylist Agent').substring(0, 40)
                 },
                 include: { messages: true }
             });
         }
 
-        // Fetch user context
-        const user = await db.user.findUnique({
-            where: { id: req.user.id },
-            select: { styleAesthetic: true, displayName: true }
-        });
-
-        const catalogListingSummary = products.length > 0
-            ? `\nActive catalog items in KaPhor database right now that you can reference:\n` +
-              products.map(p => `- "${p.title}" by ${p.brand || 'Designer'} (${p.listingType === 'RENTAL' ? `Rental ₹${p.rentalPriceDay}/day` : `₹${p.price}`}) [ID: ${p.id}]`).join('\n')
-            : '';
-
-        const systemPrompt = `You are KaPhor AI Shopping Agent & Luxury Stylist.
-Help users discover garments, find outfit pairings, understand circular fashion (resale, rental, swap), and recommend pieces available in the app.
-The user's name is ${user?.displayName ?? 'Valued Guest'} and their aesthetic is ${user?.styleAesthetic ?? 'LUXURY'}.${catalogListingSummary}
-Be concise (2-4 sentences), elegant, and direct. When relevant, reference the matching piece from the catalog.`;
-
-        // Build conversation history from DB
-        const historyParts = conversation.messages.map((m: any) => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: m.content }]
-        }));
-
-        // Save user message
+        // Save incoming user message to DB
         await db.chatMessage.create({
             data: { conversationId: conversation.id, role: 'user', content: message || '📷 Uploaded photo for styling advice' }
         });
 
-        // Set headers based on streaming mode
+        // Execute Autonomous Fashion Stylist Agent Pipeline
+        const agentResult = await runFashionAgent({
+            userId: req.user.id,
+            message: userPromptText || message,
+            imageUrl: image,
+            visualAnalysisSummary,
+        });
+
+        // Save assistant response to DB
+        await db.chatMessage.create({
+            data: { conversationId: conversation.id, role: 'assistant', content: agentResult.reply }
+        });
+
+        const responsePayload = {
+            reply: agentResult.reply,
+            text: agentResult.reply,
+            message: agentResult.reply,
+            actionsExecuted: agentResult.actionsExecuted,
+            cards: agentResult.cards,
+            products: agentResult.cards,
+            outfitLook: agentResult.outfitLook,
+            suggestedFollowUps: agentResult.suggestedFollowUps,
+            conversationId: conversation.id,
+        };
+
         if (stream) {
             res.setHeader('Content-Type', 'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
             res.setHeader('Connection', 'keep-alive');
             res.flushHeaders();
 
-            if (products.length > 0) {
-                res.write(`data: ${JSON.stringify({ products, conversationId: conversation.id })}\n\n`);
-            }
-
-            let fullResponse = '';
-            let chatAttempts = 0;
-            const chatMaxAttempts = 3;
-            let streamSuccess = false;
-            while (chatAttempts < chatMaxAttempts && !streamSuccess) {
-                try {
-                    const chatSession = models.primary.startChat({
-                        history: historyParts as any,
-                        systemInstruction: { role: "system", parts: [{ text: systemPrompt }] }
-                    });
-
-                    const result = await chatSession.sendMessageStream(userPromptText);
-
-                    for await (const chunk of result.stream) {
-                        const chunkText = chunk.text();
-                        fullResponse += chunkText;
-                        res.write(`data: ${JSON.stringify({ text: chunkText, conversationId: conversation.id })}\n\n`);
-                    }
-                    streamSuccess = true;
-                } catch (streamErr: any) {
-                    const status = streamErr.status;
-                    if ((status === 503 || status === 429) && chatAttempts < chatMaxAttempts - 1) {
-                        chatAttempts++;
-                        const delay = Math.pow(2, chatAttempts) * 1000;
-                        logger.warn(`Chat stream failed (${status}), retrying in ${delay}ms...`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        fullResponse = ''; // Reset
-                    } else {
-                        throw streamErr;
-                    }
-                }
-            }
-
-            // Save assistant response
-            await db.chatMessage.create({
-                data: {
-                    conversationId: conversation.id,
-                    role: 'assistant',
-                    content: fullResponse
-                }
-            });
-
+            res.write(`data: ${JSON.stringify(responsePayload)}\n\n`);
             res.write('data: [DONE]\n\n');
             res.end();
         } else {
-            const chatSession = models.primary.startChat({
-                history: historyParts as any,
-                systemInstruction: { role: "system", parts: [{ text: systemPrompt }] }
+            res.json({
+                data: responsePayload,
+                ...responsePayload,
             });
-
-            const result = await chatSession.sendMessage(userPromptText);
-            const fullResponse = result.response.text();
-
-            // Save assistant response
-            await db.chatMessage.create({
-                data: {
-                    conversationId: conversation.id,
-                    role: 'assistant',
-                    content: fullResponse
-                }
-            });
-
-            res.json({ text: fullResponse, conversationId: conversation.id, products });
         }
-    } catch (error) {
-        logger.error('Chat failed', { error });
+    } catch (error: any) {
+        logger.error('Chat failed with fatal error', { error: error.message });
         if (!res.headersSent) {
-            res.status(500).json({ error: 'INTERNAL_ERROR' });
+            res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
         } else {
             res.write('data: [ERROR]\n\n');
             res.end();
@@ -978,12 +807,7 @@ Analyze the garment carefully. Be specific about visible defects or quality indi
 
         parts.push({ text: prompt });
 
-        const result = await models.primary.generateContent({
-            contents: [{ role: 'user', parts }],
-            generationConfig: { responseMimeType: 'application/json' }
-        });
-
-        const rawResult = result.response.text();
+        const rawResult = await generateWithGemini(parts, { responseMimeType: 'application/json' });
         const assessment = safeJson(rawResult);
 
         res.json({ data: assessment });
@@ -1023,7 +847,13 @@ Garment details:
 
 Return: { "suggestions": [ ...3 ideas... ] }`;
 
-        const raw = await generateWithFallback(prompt);
+        let raw: string;
+        try {
+            raw = await generateWithGroq(prompt, { responseFormat: 'json' });
+        } catch (groqErr) {
+            logger.warn('Groq upcycle suggestions failed, falling back to Gemini', { error: (groqErr as Error).message });
+            raw = await generateWithFallback(prompt);
+        }
         const resJson = safeJson(raw);
 
         res.json({ data: resJson.suggestions });
