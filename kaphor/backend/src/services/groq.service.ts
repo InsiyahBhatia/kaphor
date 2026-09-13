@@ -50,8 +50,8 @@ export async function generateWithGroq(
         });
 
         if (res.ok) {
-          const json = await res.json();
-          const content = json.choices?.[0]?.message?.content;
+          const json: any = await res.json();
+          const content = json?.choices?.[0]?.message?.content;
           if (content && content.trim().length > 0) return content;
           throw new Error('Groq returned empty content');
         }
