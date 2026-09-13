@@ -117,9 +117,20 @@ export interface SwapTracking {
   deliveredAt?: string;
 }
 
+export interface SwapAgreementDisclaimer {
+  title: string;
+  statutoryReference: string;
+  summary: string;
+  clauses: Array<{
+    heading: string;
+    content: string;
+  }>;
+}
+
 export interface SwapAgreementTerms {
   swapId: string;
   terms: string[];
+  disclaimer?: SwapAgreementDisclaimer;
   acceptedByInitiator: boolean;
   acceptedByReceiver: boolean;
   signedAt?: string;
@@ -136,13 +147,42 @@ export interface SwapDispute {
   resolution?: string;
 }
 
+export const PLATFORM_LEGAL_DISCLAIMER: SwapAgreementDisclaimer = {
+  title: 'INTERMEDIARY SAFE HARBOUR & PLATFORM NON-LIABILITY (INDIAN LAW)',
+  statutoryReference: 'Information Technology Act, 2000 (Section 79) • Consumer Protection (E-Commerce) Rules, 2020 • Indian Contract Act, 1872',
+  summary: 'Kaphor operates strictly as a peer-to-peer technology facilitator and electronic intermediary under Section 79 of the Information Technology Act, 2000. Kaphor is not a party to any contract, sale, exchange, rental, or purchase between users, and does not manufacture, inspect, warrant, or hold title to any listed goods.',
+  clauses: [
+    {
+      heading: '1. Intermediary Status & Exemption from Liability (IT Act, Sec 79)',
+      content: 'Kaphor is an electronic intermediary facilitating communication and exchange between independent users. Under Section 79 of the Information Technology Act, 2000, Kaphor assumes no liability or responsibility for any third-party listings, representations, condition disclosures, or user actions.',
+    },
+    {
+      heading: '2. All Transactions are Direct Bipartite Contracts (Sale, Rent, Swap, Buy)',
+      content: 'All swapping, rental, purchase, and selling transactions are direct, private bipartite contracts entered into exclusively between the transacting users under the Indian Contract Act, 1872 and Sale of Goods Act, 1930. Kaphor is not an auctioneer, merchant, lessor, lessee, buyer, or seller, and is NOT RESPONSIBLE for any breach, non-performance, or dispute arising between users.',
+    },
+    {
+      heading: '3. Complete Disclaimer of Warranties & Authenticity ("As Is / Where Is")',
+      content: 'All items are offered strictly on an "AS IS, WHERE IS" basis without any express or implied warranties by Kaphor regarding authenticity, brand lineage, market valuation, title, condition, hygienic fitness, or merchantability. Users are required to exercise independent due diligence ("caveat emptor") prior to transacting.',
+    },
+    {
+      heading: '4. Absolute Limitation of Platform Liability & User Indemnity',
+      content: 'Kaphor, its founders, directors, affiliates, and agents shall in no event be liable for any direct, indirect, incidental, punitive, or consequential loss, transit loss, courier delays, counterfeit items, personal injury, non-return of rental garments, or financial damages. Users expressly agree to indemnify and hold harmless Kaphor against all third-party claims or proceedings resulting from their listings or transactions.',
+    },
+    {
+      heading: '5. Governing Law & Dispute Jurisdiction',
+      content: 'This agreement and all transactions facilitated on Kaphor are governed by and construed in accordance with the substantive laws of the Republic of India. The courts of competent jurisdiction in India shall have exclusive jurisdiction over any legal disputes.',
+    },
+  ],
+};
+
 export const SWAP_AGREEMENT_TERMS: string[] = [
-  'I confirm the garment I am offering matches the photos and description in my listing.',
-  'I agree to ship the garment within 3 business days of the agreement being signed.',
-  'I understand that a security deposit of ₹500 will be held until both parties confirm receipt.',
-  'I will use the provided shipping label with tracking for safe delivery.',
-  'I agree that if the garment I receive does not match the listing, I may open a dispute within 48 hours of delivery.',
-  'I understand that the swap fee (5% of estimated value) is non-refundable after shipping.',
+  'Item Authenticity & Condition: I warrant that the item I am offering strictly matches the photos, condition, brand, and description in my listing.',
+  'Platform Non-Liability (All Transactions): I acknowledge that Kaphor operates solely as an electronic intermediary under Section 79 of the Information Technology Act, 2000 and is NOT RESPONSIBLE or liable for any transaction in swapping, rental, buying, or selling.',
+  'Direct User Contract: I understand that all transactions (swaps, rentals, purchases, and sales) are direct bipartite contracts between users, and Kaphor is not a party, guarantor, or merchant of the goods.',
+  'Dispatch & Tracking: I agree to securely package and dispatch the item with valid courier tracking within 3 business days of signing.',
+  'Escrow & Security Deposit: I acknowledge that a security deposit of ₹500 is held in automated escrow and released after mutual delivery confirmation.',
+  'Dispute Window & Evidence: I agree that any claim regarding damaged or materially different goods must be opened with unboxing evidence within 48 hours of delivery.',
+  'Indemnification & Indian Law: I agree to indemnify and hold harmless Kaphor from any claims arising from my listing or transaction, and agree that Indian law and Indian courts govern this agreement.',
 ];
 
 export const SWAP_STATUS_LABELS: Record<SwapStatus, string> = {

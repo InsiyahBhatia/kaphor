@@ -493,6 +493,12 @@ export default function RentalReserveScreen() {
           )
         }
       ]}>
+        <View style={styles.legalNoticeContainer}>
+          <Ionicons name="shield-checkmark" size={11} color={colors.textMuted} />
+          <Text style={styles.legalNoticeText}>
+            Direct P2P Rental: Kaphor acts strictly as an intermediary under Sec. 79 of IT Act, 2000 and is not liable for item condition or transactions.
+          </Text>
+        </View>
         <TouchableOpacity 
           style={styles.reserveBtn} 
           onPress={handleReserve} 
@@ -733,6 +739,20 @@ const styles = StyleSheet.create({
     bottom: 0, 
     left: 0, 
     right: 0 
+  },
+  legalNoticeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 8,
+    paddingHorizontal: 2,
+  },
+  legalNoticeText: {
+    flex: 1,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textMuted,
+    lineHeight: 12,
   },
   reserveBtn: { 
     backgroundColor: colors.crimson, 

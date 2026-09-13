@@ -788,11 +788,19 @@ export async function getSwapAgreement(req: Request, res: Response): Promise<voi
       data: {
         swapId: id,
         terms: [
-          'I confirm the accessory I am offering matches the photos and description.',
-          'I agree to dispatch the accessory within 3 business days of the agreement.',
-          'I will use secure shipping with tracking for safe delivery.',
-          'If the item received is materially different, a dispute may be initiated within 48 hours.',
+          'Item Authenticity & Condition: I warrant that the item I am offering strictly matches the photos, condition, brand, and description in my listing.',
+          'Platform Non-Liability (All Transactions): I acknowledge that Kaphor operates solely as an electronic intermediary under Section 79 of the Information Technology Act, 2000 and is NOT RESPONSIBLE or liable for any transaction in swapping, rental, buying, or selling.',
+          'Direct User Contract: I understand that all transactions (swaps, rentals, purchases, and sales) are direct bipartite contracts between users, and Kaphor is not a party, guarantor, or merchant of the goods.',
+          'Dispatch & Tracking: I agree to securely package and dispatch the item with valid courier tracking within 3 business days of signing.',
+          'Escrow & Security Deposit: I acknowledge that a security deposit of ₹500 is held in automated escrow and released after mutual delivery confirmation.',
+          'Dispute Window & Evidence: I agree that any claim regarding damaged or materially different goods must be opened with unboxing evidence within 48 hours of delivery.',
+          'Indemnification & Indian Law: I agree to indemnify and hold harmless Kaphor from any claims arising from my listing or transaction, and agree that Indian law and Indian courts govern this agreement.',
         ],
+        disclaimer: {
+          title: 'INTERMEDIARY SAFE HARBOUR & PLATFORM NON-LIABILITY (INDIAN LAW)',
+          statutoryReference: 'Information Technology Act, 2000 (Section 79) • Consumer Protection (E-Commerce) Rules, 2020 • Indian Contract Act, 1872',
+          summary: 'Kaphor operates strictly as a peer-to-peer technology facilitator and electronic intermediary under Section 79 of the Information Technology Act, 2000. Kaphor is not a party to any contract, sale, exchange, rental, or purchase between users, and does not manufacture, inspect, warrant, or hold title to any listed goods.',
+        },
         acceptedByInitiator: !!meta.initiatorAcceptedTerms,
         acceptedByReceiver: !!meta.receiverAcceptedTerms,
         signedAt: meta.termsAcceptedAt,

@@ -612,6 +612,12 @@ export default function CheckoutScreen() {
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
+        <View style={styles.disclaimerBar}>
+          <Ionicons name="shield-checkmark" size={12} color={colors.textMuted} />
+          <Text style={styles.disclaimerBarText}>
+            Direct P2P Purchase: Kaphor acts strictly as an electronic intermediary under Sec. 79 of IT Act, 2000 and is not responsible for seller representations, authenticity, or peer transactions.
+          </Text>
+        </View>
         <View style={styles.bottomTotal}>
           <Text style={styles.bottomTotalLabel}>Total</Text>
           <Text style={styles.bottomTotalValue}>
@@ -1056,6 +1062,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderTopColor: colors.charcoal,
     gap: 14,
+  },
+  disclaimerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 2,
+  },
+  disclaimerBarText: {
+    flex: 1,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textMuted,
+    lineHeight: 12,
   },
   bottomTotal: {
     flexDirection: 'row',

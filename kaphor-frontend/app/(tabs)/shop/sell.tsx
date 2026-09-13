@@ -803,7 +803,9 @@ export default function SellScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.policyText}>By listing, you agree to our Circular Economy standards and Luxury Authentication process.</Text>
+            <Text style={styles.policyText}>
+              By listing, you warrant lawful ownership and agree to direct peer-to-peer sale terms. Kaphor acts strictly as an electronic intermediary under Sec. 79 of the IT Act, 2000 and is NOT RESPONSIBLE for seller representations, garment authenticity, or peer transactions.
+            </Text>
             <TouchableOpacity style={styles.mainButton} onPress={handleSubmit} disabled={submitting}>
               {submitting ? <ActivityIndicator color={colors.white} /> : <Text style={styles.mainButtonText}>LIST GARMENT</Text>}
             </TouchableOpacity>

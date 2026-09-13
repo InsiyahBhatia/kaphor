@@ -17,7 +17,11 @@ import { useAuth } from '../../../src/context/AuthContext';
 import { swapService } from '../../../src/services/swapService';
 import { messageService } from '../../../src/services/messageService';
 import { addressService, Address } from '../../../src/services/addressService';
-import { SWAP_AGREEMENT_TERMS, SWAP_STATUS_LABELS } from '../../../src/types/swap';
+import {
+  SWAP_AGREEMENT_TERMS,
+  SWAP_STATUS_LABELS,
+  PLATFORM_LEGAL_DISCLAIMER,
+} from '../../../src/types/swap';
 import type { SwapTransaction, SwapAddress } from '../../../src/types/swap';
 
 export default function SwapAgreementScreen() {
@@ -30,6 +34,7 @@ export default function SwapAgreementScreen() {
   const [saving, setSaving] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState<Set<number>>(new Set());
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showLegalClauses, setShowLegalClauses] = useState(false);
 
   // Address Book Integration
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -207,37 +212,120 @@ export default function SwapAgreementScreen() {
           </Text>
         </View>
 
-        {/* Agreement Terms */}
-        <View style={styles.termsCard}>
-          <Text style={styles.sectionTitle}>SWAP TERMS</Text>
-          <Text style={styles.sectionDesc}>
-            Please read each term carefully. Both parties must accept all terms
-            before proceeding to address exchange and shipping.
+        {/* Intermediary Safe Harbour & Legal Disclaimer (Indian Law) */}
+        <View style={styles.disclaimerCard}>
+          <View style={styles.disclaimerBadgeRow}>
+            <View style={styles.disclaimerBadge}>
+              <Ionicons name="shield-checkmark" size={12} color={colors.white} />
+              <Text style={styles.disclaimerBadgeText}>INDIAN LAW • SAFE HARBOUR</Text>
+            </View>
+            <Text style={styles.disclaimerStatuteRef}>IT ACT 2000 § 79</Text>
+          </View>
+
+          <Text style={styles.disclaimerMainTitle}>
+            PLATFORM NON-LIABILITY DISCLAIMER
           </Text>
 
-          {SWAP_AGREEMENT_TERMS.map((term, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[
-                styles.termRow,
-                acceptedTerms.has(idx) && styles.termRowAccepted,
-              ]}
-              onPress={() => toggleTerm(idx)}
-              activeOpacity={0.7}
-            >
-              <View
+          <Text style={styles.disclaimerNoticeText}>
+            Kaphor operates strictly as a peer-to-peer technology facilitator and electronic intermediary under Section 79 of the Information Technology Act, 2000.
+          </Text>
+
+          <View style={styles.nonLiabilityCallout}>
+            <Ionicons name="alert-circle" size={16} color={colors.red} style={{ marginTop: 1 }} />
+            <Text style={styles.nonLiabilityCalloutText}>
+              <Text style={{ fontWeight: '900', color: colors.red }}>PLATFORM IS NOT RESPONSIBLE: </Text>
+              Kaphor bears NO responsibility or liability for any transaction in Swapping, Rental, Buying, or Selling. All transactions constitute private bipartite contracts directly between users.
+            </Text>
+          </View>
+
+          {/* Key Legal Pillars */}
+          <View style={styles.legalPillarsRow}>
+            <View style={styles.legalPillarChip}>
+              <Ionicons name="people-outline" size={12} color={colors.charcoal} />
+              <Text style={styles.legalPillarText}>Direct P2P Contract</Text>
+            </View>
+            <View style={styles.legalPillarChip}>
+              <Ionicons name="eye-off-outline" size={12} color={colors.charcoal} />
+              <Text style={styles.legalPillarText}>No Item Warranty</Text>
+            </View>
+            <View style={styles.legalPillarChip}>
+              <Ionicons name="scale-outline" size={12} color={colors.charcoal} />
+              <Text style={styles.legalPillarText}>Caveat Emptor</Text>
+            </View>
+            <View style={styles.legalPillarChip}>
+              <Ionicons name="business-outline" size={12} color={colors.charcoal} />
+              <Text style={styles.legalPillarText}>India Jurisdiction</Text>
+            </View>
+          </View>
+
+          {/* Expandable Statutory Clauses Toggle */}
+          <TouchableOpacity
+            style={styles.expandClausesBtn}
+            onPress={() => setShowLegalClauses(!showLegalClauses)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.expandClausesBtnText}>
+              {showLegalClauses
+                ? 'HIDE STATUTORY CLAUSES ▲'
+                : 'READ STATUTORY DISCLAIMER (5 CLAUSES) ▼'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Expanded Statutory Clauses */}
+          {showLegalClauses && (
+            <View style={styles.clausesContainer}>
+              {PLATFORM_LEGAL_DISCLAIMER.clauses.map((clause, cIdx) => (
+                <View key={cIdx} style={styles.clauseItem}>
+                  <Text style={styles.clauseHeading}>{clause.heading}</Text>
+                  <Text style={styles.clauseContent}>{clause.content}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Agreement Terms */}
+        <View style={styles.termsCard}>
+          <Text style={styles.sectionTitle}>MUTUAL AGREEMENT & TRANSACTION CONDITIONS</Text>
+          <Text style={styles.sectionDesc}>
+            Please review each term carefully. Both parties must accept all conditions,
+            including the Indian Law non-liability disclaimer, to execute this agreement.
+          </Text>
+
+          {SWAP_AGREEMENT_TERMS.map((term, idx) => {
+            const splitIdx = term.indexOf(':');
+            const prefix = splitIdx !== -1 ? term.slice(0, splitIdx) : null;
+            const body = splitIdx !== -1 ? term.slice(splitIdx + 1).trim() : term;
+
+            return (
+              <TouchableOpacity
+                key={idx}
                 style={[
-                  styles.termCheckbox,
-                  acceptedTerms.has(idx) && styles.termCheckboxActive,
+                  styles.termRow,
+                  acceptedTerms.has(idx) && styles.termRowAccepted,
                 ]}
+                onPress={() => toggleTerm(idx)}
+                activeOpacity={0.7}
               >
-                {acceptedTerms.has(idx) && (
-                  <Ionicons name="checkmark" size={14} color={colors.cream} />
-                )}
-              </View>
-              <Text style={styles.termText}>{term}</Text>
-            </TouchableOpacity>
-          ))}
+                <View
+                  style={[
+                    styles.termCheckbox,
+                    acceptedTerms.has(idx) && styles.termCheckboxActive,
+                  ]}
+                >
+                  {acceptedTerms.has(idx) && (
+                    <Ionicons name="checkmark" size={14} color={colors.cream} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  {prefix && (
+                    <Text style={styles.termPrefix}>{prefix.toUpperCase()}</Text>
+                  )}
+                  <Text style={styles.termText}>{body}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
 
           {/* Accept All Button */}
           <TouchableOpacity
@@ -246,7 +334,7 @@ export default function SwapAgreementScreen() {
             activeOpacity={0.7}
           >
             <Text style={styles.acceptAllText}>
-              {termsAccepted ? 'ALL TERMS ACCEPTED ✓' : 'ACCEPT ALL TERMS'}
+              {termsAccepted ? 'ALL 7 CONDITIONS ACCEPTED ✓' : 'ACCEPT ALL CONDITIONS'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -453,6 +541,12 @@ export default function SwapAgreementScreen() {
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
+        <View style={styles.bottomBarNoticeRow}>
+          <Ionicons name="shield-checkmark" size={13} color={colors.charcoal} />
+          <Text style={styles.bottomDisclaimerNotice}>
+            Intermediary Safe Harbour: Kaphor is not liable for transactions across swapping, rental, buying, or selling (IT Act §79).
+          </Text>
+        </View>
         <TouchableOpacity
           style={[
             styles.signBtn,
@@ -470,7 +564,7 @@ export default function SwapAgreementScreen() {
               <Text style={styles.signBtnText}>
                 {termsAccepted
                   ? 'SIGN AGREEMENT'
-                  : 'ACCEPT ALL TERMS FIRST'}
+                  : 'ACCEPT ALL 7 CONDITIONS'}
               </Text>
             </>
           )}
@@ -927,5 +1021,158 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     color: colors.charcoal,
+  },
+
+  // Intermediary Disclaimer Styles
+  disclaimerCard: {
+    backgroundColor: '#FAF5EE',
+    padding: 18,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    marginBottom: 20,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  disclaimerBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  disclaimerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  disclaimerBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.white,
+    letterSpacing: 0.8,
+  },
+  disclaimerStatuteRef: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  disclaimerMainTitle: {
+    fontFamily: typography.headings,
+    fontSize: 18,
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  disclaimerNoticeText: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  nonLiabilityCallout: {
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: 'rgba(217,4,41,0.06)',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.red,
+    padding: 10,
+    marginBottom: 14,
+  },
+  nonLiabilityCalloutText: {
+    flex: 1,
+    fontFamily: typography.body,
+    fontSize: 11.5,
+    color: colors.charcoal,
+    lineHeight: 16.5,
+  },
+  legalPillarsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 12,
+  },
+  legalPillarChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.18)',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  legalPillarText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.charcoal,
+  },
+  expandClausesBtn: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    paddingVertical: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expandClausesBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.8,
+  },
+  clausesContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(30,31,34,0.12)',
+    gap: 12,
+  },
+  clauseItem: {
+    gap: 3,
+  },
+  clauseHeading: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  clauseContent: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.charcoal,
+    lineHeight: 16,
+  },
+  termPrefix: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  bottomBarNoticeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  bottomDisclaimerNotice: {
+    flex: 1,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textMuted,
+    lineHeight: 12,
   },
 });
