@@ -463,7 +463,7 @@ export default function SwapFeedScreen() {
                           size="M"
                           category={item.category}
                           subCategory={item.subCategory}
-                          price={item.price ? Math.round(item.price) : 0}
+                          price={item.price ? Math.round(item.price) : (item.estimatedValue ? Math.round(item.estimatedValue) : 2499)}
                           imageUrl={itemImage}
                           condition="Like New"
                           buttonText="SWAP REQUEST"

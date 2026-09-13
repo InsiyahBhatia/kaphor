@@ -7,7 +7,7 @@ import { Header } from '../../src/components/common/Header';
 
 export default function TabLayout() {
   return (
-    <Tabs 
+    <Tabs
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
         headerShown: false,
@@ -85,8 +85,8 @@ export default function TabLayout() {
       <Tabs.Screen name="orders/index" options={{ href: null }} />
       <Tabs.Screen name="notifications/index" options={{ href: null }} />
       <Tabs.Screen name="messages" options={{ href: null }} />
-
-
+      <Tabs.Screen name="profile/wardrobe" options={{ href: null }} />
+      <Tabs.Screen name="rental/lease/[id]" options={{ href: null }} />
 
     </Tabs>
   );

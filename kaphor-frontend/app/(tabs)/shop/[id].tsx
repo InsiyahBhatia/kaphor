@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Modal, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,9 @@ import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import { getFormattedGarmentPrice } from '../../../src/utils/priceFormatter';
+import { telemetryService } from '../../../src/services/telemetryService';
+import { recommendationService, RecommendedGarment } from '../../../src/services/recommendationService';
+import { ListingInsightsModal } from '../../../src/components/ListingInsightsModal';
 
 const { width } = Dimensions.get('window');
 
@@ -38,11 +41,16 @@ export default function GarmentDetailScreen() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [zoomVisible, setZoomVisible] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [similarGarments, setSimilarGarments] = useState<RecommendedGarment[]>([]);
+  const [insightsModalVisible, setInsightsModalVisible] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadGarment();
     }
+    return () => {
+      if (id) telemetryService.cancelPendingView(id as string);
+    };
   }, [id]);
 
   const loadGarment = async () => {
@@ -51,6 +59,12 @@ export default function GarmentDetailScreen() {
       const data = await garmentService.getGarmentById(id as string);
       setGarment(data);
       setIsLiked(data?.isLiked || false);
+      if (data) {
+        telemetryService.trackView(id as string, { category: data.category, brand: data.brand });
+        recommendationService.getSimilarGarments(id as string, 6).then((similar) => {
+          setSimilarGarments(similar || []);
+        });
+      }
     } catch (error) {
       console.error('Failed to load garment', error);
     } finally {
@@ -66,6 +80,7 @@ export default function GarmentDetailScreen() {
     setAddingToCart(true);
     try {
       await cartService.addToCart(id as string);
+      telemetryService.trackAddToCart(id as string);
       Alert.alert('Success', 'Item added to your cart.');
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Failed to add to cart');
@@ -78,6 +93,7 @@ export default function GarmentDetailScreen() {
     if (!id || !garment) return;
     hapticFeedback.medium();
     setBuying(true);
+    telemetryService.trackIntent(id as string, 'PURCHASE');
     try {
       router.push({
         pathname: '/(tabs)/shop/checkout/delivery',
@@ -123,6 +139,7 @@ export default function GarmentDetailScreen() {
     // Optimistic UI
     const nextState = !isLiked;
     setIsLiked(nextState);
+    telemetryService.trackWishlist(id as string, nextState);
 
     try {
       await api.post('/interactions', {
@@ -131,6 +148,7 @@ export default function GarmentDetailScreen() {
       });
     } catch (error) {
       setIsLiked(!nextState);
+      telemetryService.trackWishlist(id as string, !nextState);
       console.error('Failed to toggle like', error);
     } finally {
       setTogglingLike(false);
@@ -311,6 +329,33 @@ export default function GarmentDetailScreen() {
               ) : null}
             </View>
           </View>
+
+          {/* Seller Telemetry & Insights Quick Action Banner */}
+          {isOwner && (
+            <TouchableOpacity
+              style={styles.sellerTelemetryBanner}
+              onPress={() => {
+                hapticFeedback.light();
+                setInsightsModalVisible(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={styles.sellerBannerLeft}>
+                <View style={styles.sellerCrownBadge}>
+                  <Ionicons name="stats-chart" size={13} color={colors.gold} />
+                </View>
+                <View>
+                  <Text style={styles.sellerBannerTitle}>YOUR LISTING TELEMETRY</Text>
+                  <Text style={styles.sellerBannerSub}>
+                    {garment.viewCount || 0} Total Views · Tap to inspect shopper funnel & metrics
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.sellerBannerAction}>
+                <Text style={styles.sellerBannerActionText}>INSIGHTS ›</Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* Subtext description banner */}
           <View style={styles.subtextRow}>
@@ -529,6 +574,67 @@ export default function GarmentDetailScreen() {
                 </View>
               </View>
             )}
+
+            {/* YOU MIGHT ALSO COVET (Similar Items) */}
+            {similarGarments.length > 0 && (
+              <View style={{ marginTop: 24, marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+                  <View style={{ width: 4, height: 16, backgroundColor: colors.gold }} />
+                  <Text style={{ fontFamily: typography.headings, fontSize: 13, color: colors.charcoal, letterSpacing: 1.5 }}>
+                    YOU MIGHT ALSO COVET
+                  </Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                  {similarGarments.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={{
+                        width: 145,
+                        backgroundColor: colors.white,
+                        borderWidth: 1.5,
+                        borderColor: colors.charcoal,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                      }}
+                      onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
+                      activeOpacity={0.85}
+                    >
+                      <View style={{ height: 155, width: '100%', position: 'relative' }}>
+                        {item.images?.[0] ? (
+                          <Image source={{ uri: item.images[0] }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                        ) : (
+                          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgMuted }]} />
+                        )}
+                        <View style={{
+                          position: 'absolute',
+                          top: 6,
+                          left: 6,
+                          backgroundColor: 'rgba(26,26,26,0.92)',
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 2,
+                        }}>
+                          <Text style={{ color: colors.gold, fontFamily: typography.mono, fontSize: 8.5, fontWeight: '800' }}>
+                            {item.fitScore}% SIMILAR
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={{ padding: 8 }}>
+                        <Text style={{ fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted }} numberOfLines={1}>
+                          {item.brand.toUpperCase()}
+                        </Text>
+                        <Text style={{ fontFamily: typography.body, fontSize: 12, fontWeight: '700', color: colors.charcoal, marginTop: 2 }} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={{ fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.charcoal, marginTop: 4 }}>
+                          ₹{item.price.toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -539,6 +645,16 @@ export default function GarmentDetailScreen() {
           <View style={styles.listingManagerBar}>
             <Text style={styles.managerText}>YOU ARE MANAGING THIS ASSET</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                style={styles.insightsBtnSmall}
+                onPress={() => {
+                  hapticFeedback.light();
+                  setInsightsModalVisible(true);
+                }}
+              >
+                <Ionicons name="stats-chart-outline" size={12} color={colors.gold} />
+                <Text style={styles.insightsTextSmall}>INSIGHTS</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.editBtnSmall}
                 onPress={() => router.push(`/(tabs)/shop/edit/${id}` as any)}
@@ -604,6 +720,13 @@ export default function GarmentDetailScreen() {
           )}
         </View>
       </View>
+
+      {/* Seller Listing Telemetry & Insights Modal */}
+      <ListingInsightsModal
+        visible={insightsModalVisible}
+        garmentId={id as string}
+        onClose={() => setInsightsModalVisible(false)}
+      />
     </View>
   );
 }
@@ -1059,5 +1182,70 @@ const styles = StyleSheet.create({
   zoomFullImage: {
     width: width * 0.95,
     height: '100%',
+  },
+  sellerTelemetryBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(201, 168, 76, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 168, 76, 0.3)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  sellerBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  sellerCrownBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sellerBannerTitle: {
+    color: colors.gold,
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  sellerBannerSub: {
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 11,
+    marginTop: 1,
+  },
+  sellerBannerAction: {
+    paddingLeft: 8,
+  },
+  sellerBannerActionText: {
+    color: colors.gold,
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  insightsBtnSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 168, 76, 0.3)',
+  },
+  insightsTextSmall: {
+    color: colors.gold,
+    fontSize: 10,
+    fontWeight: '800',
+    fontFamily: typography.mono,
   },
 });

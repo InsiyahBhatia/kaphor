@@ -30,34 +30,49 @@ export default function RentalDetailScreen() {
   useBackHandler('/(tabs)/shop');
 
   useEffect(() => {
+    let isMounted = true;
     (async () => {
+      setLoading(true);
       try {
         const data = await garmentService.getGarmentById(id as string);
-        if (data) {
+        if (data && isMounted) {
           setGarment(data);
+          setLoading(false);
           return;
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to fetch garment by id in rental detail:', err);
+      }
 
       // If id was actually a rentalId from a notification, resolve the garment from my rentals
       try {
         const myRentalsRes = await api.get('/rentals/me');
         const myRentals = myRentalsRes?.data?.data || myRentalsRes?.data || [];
         const match = myRentals.find((r: any) => r.id === id || r.garmentId === id);
-        if (match?.garment) {
+        if (match?.garment && isMounted) {
           setGarment(match.garment);
+          setLoading(false);
           return;
-        } else if (match?.garmentId) {
+        } else if (match?.garmentId && isMounted) {
           const g = await garmentService.getGarmentById(match.garmentId);
-          if (g) {
+          if (g && isMounted) {
             setGarment(g);
+            setLoading(false);
             return;
           }
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to resolve garment from my rentals:', err);
+      }
 
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     })();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const handleStartChat = async () => {

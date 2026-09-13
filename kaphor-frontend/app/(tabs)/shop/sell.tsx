@@ -7,14 +7,14 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
-import { 
-  MARKET_CATEGORIES, 
+import {
+  MARKET_CATEGORIES,
   ALL_CATEGORY_ITEMS,
   ACCESSORY_CATEGORY_ITEMS,
   isAccessoryCategory,
-  MARKET_CONDITIONS, 
-  LISTING_TYPES, 
-  MARKET_SIZES 
+  MARKET_CONDITIONS,
+  LISTING_TYPES,
+  MARKET_SIZES
 } from '../../../src/constants/market';
 import { DropdownPicker } from '../../../src/components/DropdownPicker';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
@@ -104,6 +104,8 @@ export default function SellScreen() {
     prefillColor?: string;
     prefillStyle?: string;
     prefillListingType?: string;
+    prefillPrice?: string;
+    prefillRentalDay?: string;
     fresh?: string;
   }>();
 
@@ -289,21 +291,21 @@ export default function SellScreen() {
 
         // Intelligent listing type & pricing autofill
         const estPrice = res.estimatedPrice ? String(res.estimatedPrice) : '999';
-        const dayRate = res.suggestedRentalPriceDay 
-          ? String(res.suggestedRentalPriceDay) 
+        const dayRate = res.suggestedRentalPriceDay
+          ? String(res.suggestedRentalPriceDay)
           : String(Math.max(199, Math.round(Number(estPrice) * 0.12)));
-        const weekRate = res.suggestedRentalPriceWeek 
-          ? String(res.suggestedRentalPriceWeek) 
+        const weekRate = res.suggestedRentalPriceWeek
+          ? String(res.suggestedRentalPriceWeek)
           : String(Math.round(Number(dayRate) * 5));
 
         if (listingType === 'ACCESSORY_SWAP') {
-          setPrice('');
+          setPrice(estPrice);
           setRentalDay('');
           setRentalWeek('');
           if (isAccessory) {
             Alert.alert(
               'AI Magic Fill: Swap Asset',
-              `Identified as "${matchedCat}". Your accessory swap listing has been filled! Swap listings require no cash price.`
+              `Identified as "${matchedCat}". Your accessory swap listing has been filled with an estimated trade valuation of ₹${estPrice} for fair swap matching.`
             );
           } else {
             // Swap is strictly for accessories!
@@ -461,10 +463,9 @@ export default function SellScreen() {
       if (listingType === 'RENTAL') {
         formData.append('rentalPriceDay', rentalDay || '199');
         if (rentalWeek) formData.append('rentalPriceWeek', rentalWeek);
-      } else if (listingType === 'SALE') {
+      } else {
         formData.append('price', finalPrice);
       }
-      // ACCESSORY_SWAP does not require price
 
       formData.append('fabric', fabric);
       formData.append('color', color);
@@ -622,7 +623,7 @@ export default function SellScreen() {
             {/* AI Outfit Extractor Quick Link */}
             <TouchableOpacity
               style={styles.extractOutfitBanner}
-              onPress={() => router.push('/(tabs)/profile/wardrobe')}
+              onPress={() => router.push({ pathname: '/profile/wardrobe', params: { autoScan: 'true' } } as any)}
               activeOpacity={0.85}
             >
               <View style={styles.extractOutfitBannerLeft}>
@@ -648,11 +649,11 @@ export default function SellScreen() {
                 <>
                   <Ionicons name="sparkles" size={20} color={colors.white} />
                   <Text style={styles.aiButtonText}>
-                    {listingType === 'RENTAL' 
-                      ? 'AI MAGIC FILL (RENTAL RATES & SPECS)' 
-                      : listingType === 'ACCESSORY_SWAP' 
-                      ? 'AI MAGIC FILL (SWAP ASSET SPECS)' 
-                      : 'AI MAGIC FILL (SALE PRICING & DETAILS)'}
+                    {listingType === 'RENTAL'
+                      ? 'AI MAGIC FILL (RENTAL RATES & SPECS)'
+                      : listingType === 'ACCESSORY_SWAP'
+                        ? 'AI MAGIC FILL (SWAP ASSET SPECS)'
+                        : 'AI MAGIC FILL (SALE PRICING & DETAILS)'}
                   </Text>
                 </>
               )}
@@ -724,12 +725,22 @@ export default function SellScreen() {
                 keyboardType="numeric"
               />
             ) : (
-              <View style={styles.swapNoticeBox}>
-                <Ionicons name="repeat" size={18} color={colors.crimson} />
-                <Text style={styles.swapNoticeText}>
-                  SWAP ASSET: Direct peer exchange. No cash price is required for swap listings.
-                </Text>
-              </View>
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="ESTIMATED TRADE VALUE (₹) (e.g. 2499)"
+                  placeholderTextColor={colors.textMuted}
+                  value={price}
+                  onChangeText={setPrice}
+                  keyboardType="numeric"
+                />
+                <View style={styles.swapNoticeBox}>
+                  <Ionicons name="scale-outline" size={16} color={colors.crimson} />
+                  <Text style={styles.swapNoticeText}>
+                    FAIR SWAP VALUATION: Not a cash sale price. Used by Kaphor's Fair Value Matcher to calculate balance parity and recommend equitable 1:1 trades.
+                  </Text>
+                </View>
+              </>
             )}
 
             <DropdownPicker
@@ -740,12 +751,12 @@ export default function SellScreen() {
               placeholder="SELECT SIZE"
             />
             {size === 'CUSTOM' && (
-              <TextInput 
-                style={styles.input} 
-                placeholder="ENTER CUSTOM SIZE" 
-                placeholderTextColor={colors.textMuted} 
-                value={size} 
-                onChangeText={setSize} 
+              <TextInput
+                style={styles.input}
+                placeholder="ENTER CUSTOM SIZE"
+                placeholderTextColor={colors.textMuted}
+                value={size}
+                onChangeText={setSize}
               />
             )}
 
@@ -756,7 +767,7 @@ export default function SellScreen() {
               onSelect={setCondition}
               placeholder="SELECT CONDITION"
             />
-            
+
             <View style={styles.conditionDescBox}>
               <Ionicons name="information-circle-outline" size={16} color={colors.textSecond} />
               <Text style={styles.conditionDescText}>
@@ -792,9 +803,9 @@ export default function SellScreen() {
               <Text style={styles.summaryLabel}>CATEGORY: <Text style={styles.summaryValue}>{category}</Text></Text>
               <Text style={styles.summaryLabel}>CONDITION: <Text style={styles.summaryValue}>{condition.replace('_', ' ')}</Text></Text>
               <Text style={styles.summaryLabel}>
-                {listingType === 'RENTAL' ? 'RENT PER DAY: ' : listingType === 'ACCESSORY_SWAP' ? 'LISTING: ' : 'PRICE: '}
+                {listingType === 'RENTAL' ? 'RENT PER DAY: ' : listingType === 'ACCESSORY_SWAP' ? 'ESTIMATED TRADE VALUE: ' : 'PRICE: '}
                 <Text style={styles.summaryValue}>
-                  {listingType === 'RENTAL' ? `₹${rentalDay}` : listingType === 'ACCESSORY_SWAP' ? 'SWAP ASSET (EXCHANGE)' : `₹${price}`}
+                  {listingType === 'RENTAL' ? `₹${rentalDay}` : `₹${price || '2,499'}`}
                 </Text>
               </Text>
               {fabric ? <Text style={styles.summaryLabel}>FABRIC: <Text style={styles.summaryValue}>{fabric}</Text></Text> : null}
@@ -843,7 +854,7 @@ export default function SellScreen() {
       </Modal>
 
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleBackNavigation}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
@@ -857,8 +868,8 @@ export default function SellScreen() {
           <View key={s} style={[styles.progressDot, step >= s && styles.activeDot]} />
         ))}
       </View>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
@@ -884,28 +895,28 @@ const styles = StyleSheet.create({
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   imageThumb: { width: 100, height: 133, borderRadius: 12, position: 'relative', overflow: 'hidden' }, // 3:4 ratio for thumb
   thumbImg: { width: '100%', height: '100%' },
-  thumbActions: { 
-    position: 'absolute', 
-    top: 4, 
-    right: 4, 
-    flexDirection: 'row', 
-    gap: 4 
+  thumbActions: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    flexDirection: 'row',
+    gap: 4
   },
-  editBtn: { 
-    width: 24, 
-    height: 24, 
-    borderRadius: 12, 
-    backgroundColor: 'rgba(26,26,26,0.6)', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  editBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(26,26,26,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  removeBtn: { 
-    width: 24, 
-    height: 24, 
-    borderRadius: 12, 
-    backgroundColor: colors.crimson, 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  removeBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.crimson,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   uploadBox: { width: 100, height: 100, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
   uploadText: { color: colors.textMuted, fontSize: 10, marginTop: 4, letterSpacing: 2, fontWeight: '700' },
@@ -916,11 +927,11 @@ const styles = StyleSheet.create({
   chipActive: { borderColor: colors.crimson, backgroundColor: 'rgba(155, 27, 48, 0.05)' },
   chipText: { color: colors.textSecond, fontSize: 13, fontWeight: '600' },
   chipTextActive: { color: colors.crimson, fontWeight: '800' },
-  mainButton: { 
-    backgroundColor: colors.crimson, 
-    height: 60, 
-    borderRadius: 16, 
-    justifyContent: 'center', 
+  mainButton: {
+    backgroundColor: colors.crimson,
+    height: 60,
+    borderRadius: 16,
+    justifyContent: 'center',
     alignItems: 'center',
     shadowColor: colors.crimson,
     shadowOffset: { width: 0, height: 4 },

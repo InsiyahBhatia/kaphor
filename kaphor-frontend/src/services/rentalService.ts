@@ -1,5 +1,27 @@
 import api from './api';
 
+export interface RentalShippingAddress {
+  id?: string;
+  fullName?: string;
+  phone?: string;
+  line1?: string;
+  line2?: string | null;
+  landmark?: string | null;
+  city?: string;
+  state?: string;
+  pincode?: string;
+}
+
+export interface CreateRentalParams {
+  garmentId: string;
+  days?: number;
+  startDate?: string;
+  endDate?: string;
+  message?: string;
+  shippingAddress?: RentalShippingAddress | null;
+  metadata?: any;
+}
+
 export const rentalService = {
   getAvailableRentals: async () => {
     const { data } = await api.get('/rentals/available');
@@ -12,8 +34,13 @@ export const rentalService = {
     return data.data;
   },
 
-  createRental: async (garmentId: string, days: number) => {
-    const { data } = await api.post('/rentals', { garmentId, days });
+  getRentalById: async (id: string) => {
+    const { data } = await api.get(`/rentals/${id}`);
+    return data.data;
+  },
+
+  createRental: async (params: CreateRentalParams) => {
+    const { data } = await api.post('/rentals', params);
     return data.data;
   },
 
@@ -22,8 +49,8 @@ export const rentalService = {
     return data.data;
   },
 
-  returnRental: async (id: string) => {
-    const { data } = await api.patch(`/rentals/${id}/return`);
+  returnRental: async (id: string, details?: { returnTracking?: string; returnCarrier?: string }) => {
+    const { data } = await api.patch(`/rentals/${id}/return`, details || {});
     return data.data;
   },
 
@@ -31,4 +58,14 @@ export const rentalService = {
     const { data } = await api.post(`/rentals/${id}/release-deposit`);
     return data.data;
   },
+
+  getEscrow: async (id: string) => {
+    const { data } = await api.get(`/rentals/${id}/escrow`);
+    return data.data;
+  },
+
+  postReview: async (id: string, review: { rating: number; comment?: string }) => {
+    const { data } = await api.post(`/rentals/${id}/review`, review);
+    return data;
+  }
 };

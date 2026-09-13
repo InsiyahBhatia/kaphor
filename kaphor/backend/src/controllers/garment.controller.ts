@@ -8,6 +8,8 @@ import { evaluateLifecycle } from '../services/lifecycle.service';
 import { ImpactService } from '../services/impact.service';
 import { getFeedGarments } from '../services/garment.service';
 import { generateGarmentVectorHybrid } from '../services/garmentVector.service';
+import { getEstimatedGarmentValue } from '../utils/pricing';
+import { InsightService } from '../services/insight.service';
 
 /**
  * Helper to resolve all image URLs for a garment (handles S3 presigning and local fallback)
@@ -17,20 +19,22 @@ async function resolveGarmentImages(garment: any) {
   const resolvedImages = await Promise.all(
     garment.images.map((img: string) => getDownloadUrl(img))
   );
-  return { ...garment, images: resolvedImages };
+  const price = garment.price && garment.price > 0 ? garment.price : getEstimatedGarmentValue(garment.category, garment.brand);
+  return { ...garment, price, images: resolvedImages };
 }
 
 async function resolveGarmentsImages(garments: any[], onlyFirst = false) {
   return Promise.all(garments.map(async (g) => {
     if (!g || !g.images) return g;
+    const price = g.price && g.price > 0 ? g.price : getEstimatedGarmentValue(g.category, g.brand);
     if (onlyFirst && g.images.length > 0) {
       const resolved = await getDownloadUrl(g.images[0]);
-      return { ...g, images: [resolved] };
+      return { ...g, price, images: [resolved] };
     }
     const resolvedImages = await Promise.all(
       g.images.map((img: string) => getDownloadUrl(img))
     );
-    return { ...g, images: resolvedImages };
+    return { ...g, price, images: resolvedImages };
   }));
 }
 
@@ -342,7 +346,9 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
           garmentVector,
           lifecycleState: 'LISTED',
           listingType: (body.listingType as ListingType) || 'SALE',
-          price: body.price != null ? Math.round(Number(body.price)) : null,
+          price: body.price != null && Number(body.price) > 0
+            ? Math.round(Number(body.price))
+            : getEstimatedGarmentValue(String(body.category), String(body.brand || '')),
           rentalPriceDay: body.rentalPriceDay != null ? Math.round(Number(body.rentalPriceDay)) : null,
           rentalPriceWeek: body.rentalPriceWeek != null ? Math.round(Number(body.rentalPriceWeek)) : null,
         },
@@ -559,3 +565,39 @@ export async function getCompatibilityScore(req: Request, res: Response): Promis
     throw err;
   }
 }
+
+/**
+ * GET /garments/:id/insights
+ * Returns deep telemetry insights, funnels, 7-day trend, and AI advice for the seller.
+ */
+export async function getGarmentInsights(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required', statusCode: 401 });
+      return;
+    }
+
+    const { id } = req.params;
+    const insights = await InsightService.getGarmentDetailedInsights(id, req.user.id);
+
+    if (!insights) {
+      res.status(404).json({
+        error: 'NOT_FOUND',
+        message: 'Garment not found or you do not have permission to view seller insights for this asset.',
+        statusCode: 404,
+      });
+      return;
+    }
+
+    // Resolve thumbnail if present
+    if (insights.thumbnail) {
+      insights.thumbnail = await getDownloadUrl(insights.thumbnail);
+    }
+
+    res.status(200).json({ data: insights });
+  } catch (err) {
+    logger.error('getGarmentInsights failed', { error: err instanceof Error ? err.message : String(err) });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to retrieve garment insights' });
+  }
+}
+

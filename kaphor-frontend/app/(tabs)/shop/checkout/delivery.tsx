@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../../../src/theme';
 import { Header } from '../../../../src/components/common/Header';
 import {
@@ -41,6 +42,7 @@ const LABEL_OPTIONS = ['Home', 'Work', 'Other'];
 export default function DeliveryScreen() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [mode, setMode] = useState<ScreenMode>('select');
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -56,10 +58,17 @@ export default function DeliveryScreen() {
   const loadAddresses = useCallback(async () => {
     try {
       const data = await addressService.list();
-      setAddresses(data);
-      // Auto-select default or first address
-      const defaultAddr = data.find((a) => a.isDefault) || data[0];
-      if (defaultAddr) setSelectedId(defaultAddr.id);
+      setAddresses(data || []);
+      const activeAddr = addressService.getActiveDeliveryAddress();
+      if (activeAddr && data.some((a) => a.id === activeAddr.id)) {
+        setSelectedId(activeAddr.id);
+      } else {
+        const defaultAddr = data.find((a) => a.isDefault) || data[0];
+        if (defaultAddr) {
+          setSelectedId(defaultAddr.id);
+          addressService.setActiveDeliveryAddress(defaultAddr);
+        }
+      }
     } catch (e) {
       console.error('Failed to load addresses', e);
     } finally {
@@ -73,29 +82,60 @@ export default function DeliveryScreen() {
     }, [loadAddresses])
   );
 
+  const validateField = (field: keyof CreateAddressInput, value: string): string => {
+    const val = (value || '').trim();
+    switch (field) {
+      case 'fullName':
+        if (!val) return 'Full recipient name is required';
+        if (val.length < 2) return 'Name must be at least 2 characters';
+        if (!/^[a-zA-Z\s.'-]+$/.test(val)) return 'Letters and spaces only';
+        return '';
+      case 'phone': {
+        if (!val) return 'Mobile number is required';
+        const digits = val.replace(/[\s-+]/g, '').replace(/^91/, '').replace(/^0/, '');
+        if (digits.length !== 10) return 'Must be exactly 10 digits';
+        if (!/^[6-9]\d{9}$/.test(digits)) return 'Must be a valid 10-digit Indian number (starts 6-9)';
+        return '';
+      }
+      case 'line1':
+        if (!val) return 'Street address is required';
+        if (val.length < 5) return 'Complete address required (min 5 chars)';
+        return '';
+      case 'city':
+        if (!val) return 'City is required';
+        if (val.length < 2) return 'City must be at least 2 characters';
+        if (!/^[a-zA-Z\s.'-]+$/.test(val)) return 'Letters only';
+        return '';
+      case 'state':
+        if (!val) return 'State is required';
+        if (val.length < 2) return 'State must be at least 2 characters';
+        if (!/^[a-zA-Z\s.'-]+$/.test(val)) return 'Letters only';
+        return '';
+      case 'pincode': {
+        if (!val) return 'PIN code is required';
+        if (val.length !== 6) return 'Must be 6 digits';
+        if (!/^[1-9][0-9]{5}$/.test(val)) return 'Enter valid 6-digit Indian PIN code';
+        return '';
+      }
+      case 'label':
+        if (!val) return 'Label is required';
+        return '';
+      default:
+        return '';
+    }
+  };
+
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-
-    if (!form.fullName.trim()) errs.fullName = 'Required';
-    else if (form.fullName.trim().length < 2) errs.fullName = 'Too short';
-
-    if (!form.phone.trim()) errs.phone = 'Required';
-    else if (!/^(\+91[\s-]?)?[6-9]\d{9}$/.test(form.phone.trim()))
-      errs.phone = 'Invalid Indian mobile number';
-
-    if (!form.line1.trim()) errs.line1 = 'Required';
-    else if (form.line1.trim().length < 5) errs.line1 = 'Too short';
-
-    if (!form.city.trim()) errs.city = 'Required';
-    if (!form.state.trim()) errs.state = 'Required';
-
-    if (!form.pincode.trim()) errs.pincode = 'Required';
-    else if (!/^[1-9][0-9]{5}$/.test(form.pincode.trim()))
-      errs.pincode = 'Invalid pincode (6 digits)';
-
-    if (!form.label.trim()) errs.label = 'Required';
-
+    const reqs: (keyof CreateAddressInput)[] = ['fullName', 'phone', 'line1', 'city', 'state', 'pincode', 'label'];
+    for (const f of reqs) {
+      const err = validateField(f, String(form[f] || ''));
+      if (err) errs[f] = err;
+    }
     setErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      Alert.alert('Incomplete Address', 'Please correct the highlighted fields before saving.');
+    }
     return Object.keys(errs).length === 0;
   };
 
@@ -103,12 +143,14 @@ export default function DeliveryScreen() {
     if (!validate()) return;
     setSaving(true);
     try {
+      let saved: Address;
       if (editId) {
-        await addressService.update(editId, form);
+        saved = await addressService.update(editId, form);
       } else {
-        const addr = await addressService.create(form);
-        setSelectedId(addr.id);
+        saved = await addressService.create(form);
       }
+      setSelectedId(saved.id);
+      addressService.setActiveDeliveryAddress(saved);
       setMode('select');
       setForm({ ...EMPTY_FORM });
       setEditId(null);
@@ -178,10 +220,18 @@ export default function DeliveryScreen() {
     return (
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: colors.cream }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <Header title={title} showBack onBack={() => { setMode('select'); setErrors({}); setEditId(null); setForm({...EMPTY_FORM}); }} />
-        <ScrollView contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.formContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={true}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Label selector */}
           <Text style={styles.label}>ADDRESS LABEL</Text>
           <View style={styles.labelRow}>
@@ -284,10 +334,10 @@ export default function DeliveryScreen() {
           />
           {errors.state ? <Text style={styles.errorText}>{errors.state}</Text> : null}
 
-          <View style={{ height: 120 }} />
+          <View style={{ height: 24 }} />
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.formFooter, { paddingBottom: Math.max(insets.bottom + 12, 16) }]}>
           <TouchableOpacity style={styles.primaryBtn} onPress={handleSave} disabled={saving}>
             {saving ? (
               <ActivityIndicator color={colors.cream} />
@@ -302,10 +352,7 @@ export default function DeliveryScreen() {
 
   // ── Select Address View ────────────────────────────────────────
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.cream }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.cream }}>
       <Header title="DELIVERY" showBack fallbackPath="/(tabs)/cart" />
 
       {/* Progress */}
@@ -420,7 +467,7 @@ export default function DeliveryScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 12, Platform.OS === 'ios' ? 36 : 20) }]}>
         <TouchableOpacity
           style={[styles.primaryBtn, (!selectedId || saving) && styles.primaryBtnDisabled]}
           onPress={handleContinue}
@@ -433,13 +480,20 @@ export default function DeliveryScreen() {
           )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 140 },
-  formContent: { padding: 20, paddingBottom: 140 },
+  formContent: { padding: 20, paddingBottom: 24 },
+  formFooter: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    backgroundColor: colors.cream,
+    borderTopWidth: 2,
+    borderTopColor: colors.charcoal,
+  },
 
   // Progress Bar
   progressBar: {

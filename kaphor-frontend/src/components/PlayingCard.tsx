@@ -85,8 +85,12 @@ export function PlayingCard({
         
         <View style={styles.detailsRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.priceText, price === 0 && { fontSize: 13, color: colors.crimson, letterSpacing: 0.5 }]}>
-              {price > 0 ? `₹${price.toLocaleString()}` : (buttonText?.toUpperCase().includes('RENT') ? 'RENT LEASE' : 'SWAP ASSET')}
+            <Text style={[styles.priceText, price === 0 && !buttonText?.toUpperCase().includes('SWAP') && { fontSize: 13, color: colors.crimson, letterSpacing: 0.5 }]}>
+              {buttonText?.toUpperCase().includes('SWAP')
+                ? `EST. ₹${(price > 0 ? price : 2499).toLocaleString()}`
+                : price > 0 
+                  ? `₹${price.toLocaleString()}` 
+                  : (buttonText?.toUpperCase().includes('RENT') ? 'RENT LEASE' : 'SWAP ASSET')}
             </Text>
             <View style={styles.conditionTag}>
               <Text style={styles.conditionTagText}>{(condition || 'Excellent').toUpperCase()}</Text>

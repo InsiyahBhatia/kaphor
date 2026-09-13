@@ -88,8 +88,14 @@ enum EventType {
   SAVE
   WISHLIST
   ADD_TO_CART
+  SEARCH
+  FILTER_APPLY
   PURCHASE_INTENT
   PURCHASE
+  RENTAL_INTENT
+  RENTAL_CONFIRMED
+  SWAP_INTENT
+  SWAP_CONFIRMED
   SELL_INTENT
   RELIST
   REPOST
@@ -146,6 +152,7 @@ model User {
   isActive          Boolean         @default(true)
   styleVector       Float[]
   styleAesthetic    StyleAesthetic?
+  preferenceProfile Json?
   onboardingDone    Boolean         @default(false)
   failedLoginAttempts Int           @default(0)
   lockUntil         DateTime?
@@ -299,16 +306,17 @@ model Garment {
 model BehaviourEvent {
   id         String     @id @default(uuid())
   userId     String
-  garmentId  String
+  garmentId  String?
   eventType  EventType
   sessionId  String?
   metadata   Json?
   createdAt  DateTime   @default(now())
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  garment    Garment    @relation(fields: [garmentId], references: [id], onDelete: Cascade)
+  garment    Garment?   @relation(fields: [garmentId], references: [id], onDelete: Cascade)
 
   @@index([userId, garmentId])
+  @@index([userId, createdAt])
   @@map("behaviour_events")
 }
 
@@ -430,20 +438,26 @@ model Swap {
 // ═══════════════════════════════════════════════
 
 model Rental {
-  id            String       @id @default(uuid())
-  garmentId     String
-  renterId      String
-  startDate     DateTime
-  endDate       DateTime
-  totalPrice    Int
-  status        RentalStatus @default(RESERVED)
-  stripeId      String?
-  message       String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id              String       @id @default(uuid())
+  garmentId       String
+  renterId        String
+  startDate       DateTime
+  endDate         DateTime
+  totalPrice      Int
+  status          RentalStatus @default(RESERVED)
+  stripeId        String?
+  message         String?
+  shippingAddress Json?
+  trackingNumber  String?
+  carrier         String?
+  returnTracking  String?
+  returnCarrier   String?
+  metadata        Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  garment       Garment      @relation(fields: [garmentId], references: [id])
-  renter        User         @relation(fields: [renterId],  references: [id])
+  garment         Garment      @relation(fields: [garmentId], references: [id])
+  renter          User         @relation(fields: [renterId],  references: [id])
 
   @@map("rentals")
 }

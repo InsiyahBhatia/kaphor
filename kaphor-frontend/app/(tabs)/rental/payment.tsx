@@ -157,14 +157,14 @@ export default function RentalPaymentScreen() {
               razorpay_signature: success.razorpay_signature,
             });
             router.replace(
-              `/(tabs)/rental?paid=${rentalOrderId}` as any,
+              `/(tabs)/rental/lease/${rentalOrderId}` as any,
             );
           } catch {
             Alert.alert(
               'Payment Received',
-              'Your rental payment was received. We are confirming it now.',
+              'Your rental payment was received. We are confirming your lease dossier now.',
             );
-            router.replace('/(tabs)/rental');
+            router.replace(`/(tabs)/rental/lease/${rentalOrderId}` as any);
           } finally {
             setProcessing(false);
           }

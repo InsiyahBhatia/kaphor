@@ -572,7 +572,12 @@ export default function OrdersManagementScreen() {
                 });
 
                 return (
-                  <View key={rental.id} style={styles.card}>
+                  <TouchableOpacity
+                    key={rental.id}
+                    style={styles.card}
+                    onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
+                    activeOpacity={0.92}
+                  >
                     {/* TOP STATUS */}
                     <View style={styles.cardHeader}>
                       <View style={{ flex: 1 }}>
@@ -621,7 +626,7 @@ export default function OrdersManagementScreen() {
                     <View style={styles.escrowNotice}>
                       <Ionicons name="shield-checkmark" size={14} color="#2E7D32" />
                       <Text style={styles.escrowNoticeText}>
-                        ₹500 Security Deposit Protected in Escrow
+                        ₹299 Refundable Deposit Protected in Escrow
                       </Text>
                     </View>
 
@@ -642,9 +647,9 @@ export default function OrdersManagementScreen() {
 
                       <TouchableOpacity
                         style={styles.detailActionBtn}
-                        onPress={() => router.push(`/(tabs)/rental/${rental.garmentId || rental.id}` as any)}
+                        onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                       >
-                        <Text style={styles.detailActionText}>GARMENT</Text>
+                        <Text style={styles.detailActionText}>LEASE DOSSIER</Text>
                       </TouchableOpacity>
 
                       {/* LENDER: Mark Dispatched */}
@@ -692,7 +697,7 @@ export default function OrdersManagementScreen() {
                         </TouchableOpacity>
                       )}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })
             )}

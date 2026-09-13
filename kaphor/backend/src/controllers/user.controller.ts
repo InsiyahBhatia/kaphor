@@ -3,6 +3,7 @@ import db from '../lib/prisma';
 import { redisDel } from '../lib/redis';
 import { logger } from '../lib/logger';
 import { uploadToS3, getDownloadUrl } from '../lib/s3';
+import { InsightService } from '../services/insight.service';
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 async function resolveAvatar(avatar: string | null): Promise<string | null> {
@@ -221,12 +222,20 @@ export async function getMyListings(req: Request, res: Response): Promise<void> 
                 id: true, title: true, brand: true, images: true,
                 price: true, rentalPriceDay: true, rentalPriceWeek: true,
                 listingType: true, condition: true, lifecycleState: true,
-                isActive: true, createdAt: true
+                isActive: true, viewCount: true, createdAt: true
             }
         });
 
+        const garmentIds = garments.map((g: any) => g.id);
+        const insightsMap = await InsightService.getBatchListingsSummary(garmentIds);
         const resolvedGarments = await resolveGarmentsMedia(garments);
-        res.json({ data: resolvedGarments });
+
+        const garmentsWithInsights = resolvedGarments.map((g: any) => ({
+            ...g,
+            insights: insightsMap[g.id] || { views: g.viewCount || 0, inCart: 0, saves: 0, inquiries: 0 },
+        }));
+
+        res.json({ data: garmentsWithInsights });
     } catch (error) {
         logger.error('getMyListings failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });

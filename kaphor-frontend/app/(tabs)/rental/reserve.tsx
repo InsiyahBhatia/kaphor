@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../../src/services/api';
+import { addressService, Address } from '../../../src/services/addressService';
 import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { hapticFeedback } from '../../../src/utils/haptics';
+import { telemetryService } from '../../../src/services/telemetryService';
 
 const DURATION_PRESETS = [
   { days: 3, label: '3 DAYS', subtitle: 'Weekend Soirée', badge: 'POPULAR' },
@@ -36,6 +38,12 @@ export default function RentalReserveScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
+  // Address state
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+
   // Date picker modal state
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerMode, setPickerMode] = useState<'start' | 'end'>('start');
@@ -43,6 +51,45 @@ export default function RentalReserveScreen() {
 
   const fallback = garmentId ? `/(tabs)/rental/${garmentId}` : '/(tabs)/shop';
   useBackHandler(fallback);
+
+  // Load addresses on focus
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      (async () => {
+        try {
+          setLoadingAddresses(true);
+          const list = await addressService.list();
+          if (isMounted) {
+            setAddresses(list || []);
+            const activeFromService = addressService.getActiveDeliveryAddress();
+            if (activeFromService && list.some((a) => a.id === activeFromService.id)) {
+              setSelectedAddress(activeFromService);
+            } else if (!selectedAddress || !list.some((a) => a.id === selectedAddress.id)) {
+              const def = list.find((a) => a.isDefault) || list[0] || null;
+              setSelectedAddress(def);
+              if (def) addressService.setActiveDeliveryAddress(def);
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to load addresses', err);
+        } finally {
+          if (isMounted) setLoadingAddresses(false);
+        }
+      })();
+      return () => { isMounted = false; };
+    }, [])
+  );
+
+  useEffect(() => {
+    const unsub = addressService.onSelectedAddressChange((addr) => {
+      if (addr) setSelectedAddress(addr);
+    });
+    if (garmentId) {
+      telemetryService.trackIntent(String(garmentId), 'RENTAL');
+    }
+    return unsub;
+  }, [garmentId]);
 
   const rate = Number(dayRate) || 0;
   const rentalFee = rate * days;
@@ -130,6 +177,18 @@ export default function RentalReserveScreen() {
   };
 
   const handleReserve = async () => {
+    if (!selectedAddress) {
+      Alert.alert(
+        'Delivery Address Required',
+        'Please select or add a delivery address for your insured rental courier.',
+        [
+          { text: 'Add Address', onPress: () => router.push('/profile/addresses?selectMode=true' as any) },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+      return;
+    }
+
     hapticFeedback.medium();
     setSubmitting(true);
     try {
@@ -138,8 +197,31 @@ export default function RentalReserveScreen() {
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         message: message.trim() || undefined,
+        shippingAddress: {
+          id: selectedAddress.id,
+          fullName: selectedAddress.fullName,
+          phone: selectedAddress.phone,
+          line1: selectedAddress.line1,
+          line2: selectedAddress.line2,
+          landmark: selectedAddress.landmark,
+          city: selectedAddress.city,
+          state: selectedAddress.state,
+          pincode: selectedAddress.pincode,
+        },
+        metadata: {
+          days,
+          dayRate: rate,
+          rentalFee,
+          refundableDeposit,
+          damageInsurance,
+          deliveryReturnFee,
+          grandTotal,
+        },
       });
       const rentalOrderId = data.data?.id || data.data?.rentalOrderId;
+      if (garmentId) {
+        telemetryService.trackConversion(String(garmentId), 'RENTAL');
+      }
       
       router.replace({
         pathname: '/(tabs)/rental/payment',
@@ -335,6 +417,58 @@ export default function RentalReserveScreen() {
           </Text>
         </View>
 
+        {/* Delivery Address Section */}
+        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>DELIVERY ADDRESS (INSURED COURIER)</Text>
+        <View style={styles.addressCard}>
+          {loadingAddresses ? (
+            <ActivityIndicator size="small" color={colors.crimson} style={{ paddingVertical: 12 }} />
+          ) : selectedAddress ? (
+            <View>
+              <View style={styles.addressHeaderRow}>
+                <View style={styles.addressLabelBadge}>
+                  <Ionicons name="location-sharp" size={11} color={colors.crimson} />
+                  <Text style={styles.addressLabelBadgeText}>{selectedAddress.label.toUpperCase()}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    setAddressModalVisible(true);
+                  }}
+                  style={styles.changeAddressBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.changeAddressBtnText}>CHANGE</Text>
+                  <Ionicons name="chevron-forward" size={12} color={colors.crimson} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.addressRecipientText}>{selectedAddress.fullName} • {selectedAddress.phone}</Text>
+              <Text style={styles.addressLinesText}>
+                {selectedAddress.line1}
+                {selectedAddress.line2 ? `, ${selectedAddress.line2}` : ''}
+                {selectedAddress.landmark ? ` (Near ${selectedAddress.landmark})` : ''}
+              </Text>
+              <Text style={styles.addressCityStateText}>
+                {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.emptyAddressBox}>
+              <Ionicons name="location-outline" size={26} color={colors.crimson} />
+              <Text style={styles.emptyAddressTitle}>NO DELIVERY ADDRESS SELECTED</Text>
+              <Text style={styles.emptyAddressSub}>Please add the delivery destination for this rental</Text>
+              <TouchableOpacity
+                style={styles.addAddressCta}
+                onPress={() => router.push('/profile/addresses?selectMode=true' as any)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add" size={16} color={colors.white} />
+                <Text style={styles.addAddressCtaText}>ADD DELIVERY ADDRESS</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         {/* Protection & Trust Policy */}
         <View style={styles.policyCard}>
           <Ionicons name="shield-checkmark" size={22} color={colors.crimson} />
@@ -479,6 +613,86 @@ export default function RentalReserveScreen() {
                 );
               })}
             </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Address Picker Modal */}
+      <Modal
+        visible={addressModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAddressModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setAddressModalVisible(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalPre}>SELECT DELIVERY DESTINATION</Text>
+                <Text style={styles.modalTitle}>SAVED ADDRESSES</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.closeBtn}
+                onPress={() => setAddressModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={22} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+              {addresses.map((addr) => {
+                const isSelected = selectedAddress?.id === addr.id;
+                return (
+                  <TouchableOpacity
+                    key={addr.id}
+                    style={[styles.addressItemRow, isSelected && styles.addressItemRowSelected]}
+                    onPress={() => {
+                      hapticFeedback.selection();
+                      setSelectedAddress(addr);
+                      addressService.setActiveDeliveryAddress(addr);
+                      setAddressModalVisible(false);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <Text style={styles.addressItemLabel}>{addr.label.toUpperCase()}</Text>
+                        {addr.isDefault && <Text style={styles.defaultBadge}>DEFAULT</Text>}
+                      </View>
+                      <Text style={styles.addressItemName}>{addr.fullName} • {addr.phone}</Text>
+                      <Text style={styles.addressItemDetails} numberOfLines={2}>
+                        {addr.line1}, {addr.city}, {addr.state} - {addr.pincode}
+                      </Text>
+                    </View>
+                    <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
+                      {isSelected && <View style={styles.radioInner} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+              {addresses.length === 0 && (
+                <Text style={{ textAlign: 'center', color: colors.textMuted, marginVertical: 20 }}>
+                  No saved addresses found
+                </Text>
+              )}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.manageAddressBtn}
+              onPress={() => {
+                setAddressModalVisible(false);
+                router.push('/profile/addresses?selectMode=true' as any);
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add-circle-outline" size={16} color={colors.crimson} />
+              <Text style={styles.manageAddressBtnText}>ADD / MANAGE ADDRESSES</Text>
+            </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -904,5 +1118,183 @@ const styles = StyleSheet.create({
   },
   calendarDayTextDisabled: {
     color: colors.textMuted,
+  },
+
+  // Delivery Address Card
+  addressCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    padding: 16,
+    marginBottom: 16,
+  },
+  addressHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addressLabelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  addressLabelBadgeText: {
+    fontSize: 9,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.crimson,
+    letterSpacing: 0.5,
+  },
+  changeAddressBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  changeAddressBtnText: {
+    fontSize: 10,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.crimson,
+    letterSpacing: 0.5,
+  },
+  addressRecipientText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  addressLinesText: {
+    fontSize: 12,
+    color: colors.textSecond,
+    lineHeight: 17,
+  },
+  addressCityStateText: {
+    fontSize: 12,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  emptyAddressBox: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  emptyAddressTitle: {
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginTop: 6,
+    letterSpacing: 1,
+  },
+  emptyAddressSub: {
+    fontSize: 11,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  addAddressCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.crimson,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  addAddressCtaText: {
+    color: colors.white,
+    fontSize: 10,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+
+  // Address Picker Modal Items
+  addressItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 10,
+    backgroundColor: colors.bg,
+  },
+  addressItemRowSelected: {
+    borderColor: colors.crimson,
+    backgroundColor: 'rgba(155, 27, 48, 0.04)',
+  },
+  addressItemLabel: {
+    fontSize: 9,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.crimson,
+  },
+  defaultBadge: {
+    fontSize: 8,
+    fontFamily: typography.mono,
+    fontWeight: '700',
+    color: colors.forest || '#2A7B4C',
+    backgroundColor: 'rgba(42, 123, 76, 0.1)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  addressItemName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  addressItemDetails: {
+    fontSize: 11,
+    color: colors.textMuted,
+    lineHeight: 15,
+  },
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+  radioCircleActive: {
+    borderColor: colors.crimson,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.crimson,
+  },
+  manageAddressBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.crimson,
+    borderRadius: 10,
+    paddingVertical: 12,
+    marginTop: 12,
+  },
+  manageAddressBtnText: {
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.crimson,
+    letterSpacing: 1,
   },
 });

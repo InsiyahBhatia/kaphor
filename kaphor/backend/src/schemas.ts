@@ -246,7 +246,7 @@ export const updateGarmentSchema = z
 
 /** POST /interactions — record a behaviour event */
 export const createInteractionSchema = z.object({
-  garmentId: z.string().uuid('garmentId must be a valid UUID'),
+  garmentId: z.string().uuid('garmentId must be a valid UUID').optional().nullable(),
   eventType: z.string().min(1),
   metadata: z.record(z.unknown()).optional(),
 }).passthrough();

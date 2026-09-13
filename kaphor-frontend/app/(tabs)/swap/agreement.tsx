@@ -17,6 +17,7 @@ import { useAuth } from '../../../src/context/AuthContext';
 import { swapService } from '../../../src/services/swapService';
 import { messageService } from '../../../src/services/messageService';
 import { addressService, Address } from '../../../src/services/addressService';
+import { telemetryService } from '../../../src/services/telemetryService';
 import {
   SWAP_AGREEMENT_TERMS,
   SWAP_STATUS_LABELS,
@@ -45,11 +46,17 @@ export default function SwapAgreementScreen() {
     try {
       const list = await addressService.list();
       setAddresses(list || []);
+      const activeFromService = addressService.getActiveDeliveryAddress();
       setSelectedAddress((prev) => {
+        if (activeFromService && list.some((a) => a.id === activeFromService.id)) {
+          return list.find((a) => a.id === activeFromService.id) || activeFromService;
+        }
         if (prev && list.some((a) => a.id === prev.id)) {
           return list.find((a) => a.id === prev.id) || prev;
         }
-        return list.find((a) => a.isDefault) || list[0] || null;
+        const def = list.find((a) => a.isDefault) || list[0] || null;
+        if (def) addressService.setActiveDeliveryAddress(def);
+        return def;
       });
     } catch (e) {
       console.warn('Failed to load address book for swap agreement', e);
@@ -63,6 +70,13 @@ export default function SwapAgreementScreen() {
   );
 
   useEffect(() => {
+    const unsub = addressService.onSelectedAddressChange((addr) => {
+      if (addr) setSelectedAddress(addr);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
     loadSwap();
   }, [swapId]);
 
@@ -70,6 +84,10 @@ export default function SwapAgreementScreen() {
     try {
       const data = await swapService.getSwapById(swapId!);
       setSwap(data);
+      const wantedId = (data as any)?.wantedGarment?.id || (data as any)?.garmentWanted;
+      if (wantedId) {
+        telemetryService.trackIntent(wantedId, 'SWAP');
+      }
     } catch {
       Alert.alert('Error', 'Failed to load swap details');
     } finally {
@@ -105,7 +123,7 @@ export default function SwapAgreementScreen() {
         'Please select or add a delivery address from your address book where your swap item will be delivered.',
         [
           { text: 'Choose Address', onPress: () => setShowAddressPicker(true) },
-          { text: 'Add New Address', onPress: () => router.push('/profile/addresses' as any) },
+          { text: 'Add New Address', onPress: () => router.push('/profile/addresses?selectMode=true' as any) },
         ]
       );
       return;
@@ -115,6 +133,10 @@ export default function SwapAgreementScreen() {
     try {
       // 1. Sign agreement
       await swapService.signAgreement(swapId!);
+      const wantedId = (swap as any)?.wantedGarment?.id || (swap as any)?.garmentWanted;
+      if (wantedId) {
+        telemetryService.trackConversion(wantedId, 'SWAP');
+      }
 
       // 2. Automatically share selected address with the partner
       const swapAddrPayload: SwapAddress = {
@@ -484,13 +506,13 @@ export default function SwapAgreementScreen() {
                   <Text style={{ fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, textAlign: 'center', marginBottom: 12 }}>
                     No addresses found in your address book.
                   </Text>
-                  <TouchableOpacity
-                    style={styles.addNewAddressBtn}
-                    onPress={() => {
-                      setShowAddressPicker(false);
-                      router.push('/profile/addresses' as any);
-                    }}
-                  >
+                    <TouchableOpacity
+                      style={styles.addNewAddressBtn}
+                      onPress={() => {
+                        setShowAddressPicker(false);
+                        router.push('/profile/addresses?selectMode=true' as any);
+                      }}
+                    >
                     <Text style={styles.addNewAddressBtnText}>+ ADD NEW ADDRESS</Text>
                   </TouchableOpacity>
                 </View>
@@ -504,6 +526,7 @@ export default function SwapAgreementScreen() {
                         style={[styles.addressOptionCard, isCurrent && styles.addressOptionCardActive]}
                         onPress={() => {
                           setSelectedAddress(addr);
+                          addressService.setActiveDeliveryAddress(addr);
                           setShowAddressPicker(false);
                         }}
                         activeOpacity={0.8}
@@ -523,13 +546,13 @@ export default function SwapAgreementScreen() {
                       </TouchableOpacity>
                     );
                   })}
-                  <TouchableOpacity
-                    style={[styles.addNewAddressBtn, { marginTop: 6, backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal }]}
-                    onPress={() => {
-                      setShowAddressPicker(false);
-                      router.push('/profile/addresses' as any);
-                    }}
-                  >
+                    <TouchableOpacity
+                      style={[styles.addNewAddressBtn, { marginTop: 6, backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal }]}
+                      onPress={() => {
+                        setShowAddressPicker(false);
+                        router.push('/profile/addresses?selectMode=true' as any);
+                      }}
+                    >
                     <Text style={[styles.addNewAddressBtnText, { color: colors.charcoal }]}>+ MANAGE / ADD NEW ADDRESS</Text>
                   </TouchableOpacity>
                 </>

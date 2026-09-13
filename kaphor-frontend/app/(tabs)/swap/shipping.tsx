@@ -80,7 +80,17 @@ export default function SwapShippingScreen() {
     }, [loadAddresses])
   );
 
+  useEffect(() => {
+    const unsub = addressService.onSelectedAddressChange((addr) => {
+      if (addr && swapId && !myAddress) {
+        handleSelectAddress(addr);
+      }
+    });
+    return unsub;
+  }, [swapId, myAddress]);
+
   const handleSelectAddress = async (selectedAddr: Address) => {
+    addressService.setActiveDeliveryAddress(selectedAddr);
     setSharingAddress(true);
     try {
       const swapAddrPayload: SwapAddress = {
@@ -336,11 +346,18 @@ export default function SwapShippingScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <Header title="SHIPPING" showBack fallbackPath={fallback} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets={true}
+      >
         {/* Quick Chat With Partner Bar */}
         <TouchableOpacity style={styles.chatWithPartnerBar} onPress={handleChatWithPartner} activeOpacity={0.8}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -653,7 +670,7 @@ export default function SwapShippingScreen() {
                       style={styles.modalAddBtn}
                       onPress={() => {
                         setShowAddressPicker(false);
-                        router.push('/profile/addresses' as any);
+                        router.push('/profile/addresses?selectMode=true' as any);
                       }}
                     >
                       <Text style={styles.modalAddBtnText}>+ ADD NEW ADDRESS</Text>
@@ -712,7 +729,7 @@ export default function SwapShippingScreen() {
                       ]}
                       onPress={() => {
                         setShowAddressPicker(false);
-                        router.push('/profile/addresses' as any);
+                        router.push('/profile/addresses?selectMode=true' as any);
                       }}
                     >
                       <Text style={[styles.modalAddBtnText, { color: colors.charcoal }]}>

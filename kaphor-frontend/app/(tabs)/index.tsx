@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -6,6 +6,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useGarmentStore } from '../../src/store/garmentStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { cartService } from '../../src/services/cartService';
+import { recommendationService, RecommendedGarment, FairSwapRecommendation } from '../../src/services/recommendationService';
 import { PlayingCard } from '../../src/components/PlayingCard';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
 import { colors, typography } from '../../src/theme';
@@ -358,6 +359,213 @@ function NewArrivals({
   );
 }
 
+// ── Curated For You Shelf ───────────────────────────────────────────────────
+function CuratedForYouShelf({
+  items,
+  onNavigateToItem,
+  onAddToCart,
+}: {
+  items: RecommendedGarment[];
+  onNavigateToItem: (id: string) => void;
+  onAddToCart: (item: any) => void;
+}) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <View style={[styles.sectionLine, { backgroundColor: colors.gold }]} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={[styles.sectionTitle, { color: colors.charcoal }]}>CURATED FOR YOU</Text>
+          <View style={{ backgroundColor: colors.charcoal, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 }}>
+            <Text style={{ color: colors.gold, fontFamily: typography.mono, fontSize: 9, fontWeight: '800' }}>AI EDIT</Text>
+          </View>
+        </View>
+        <View style={[styles.sectionLine, { flex: 1, backgroundColor: colors.gold }]} />
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.arrivalsScroll}>
+        {items.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.recsCard}
+            onPress={() => onNavigateToItem(item.id)}
+            activeOpacity={0.88}
+          >
+            <View style={styles.recsImageWrap}>
+              {item.images?.[0] ? (
+                <Image source={{ uri: item.images[0] }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+              ) : (
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgMuted }]} />
+              )}
+              <View style={styles.fitScoreBadge}>
+                <Ionicons name="sparkles" size={10} color={colors.gold} />
+                <Text style={styles.fitScoreText}>{item.fitScore}% MATCH</Text>
+              </View>
+            </View>
+
+            <View style={styles.recsContent}>
+              <Text style={styles.recsBrand} numberOfLines={1}>{item.brand.toUpperCase()}</Text>
+              <Text style={styles.recsTitle} numberOfLines={1}>{item.title}</Text>
+              <View style={styles.recsPriceRow}>
+                <Text style={styles.recsPrice}>₹{item.price.toLocaleString('en-IN')}</Text>
+                <TouchableOpacity
+                  style={styles.recsAddBtn}
+                  onPress={() => onAddToCart(item)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="bag-add-outline" size={15} color={colors.charcoal} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.recsReasonBanner}>
+              <Text style={styles.recsReasonText} numberOfLines={1}>{item.matchReason}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+// ── Exclusive Rentals Shelf ─────────────────────────────────────────────────
+function RentalPicksShelf({
+  items,
+  onNavigateToItem,
+}: {
+  items: RecommendedGarment[];
+  onNavigateToItem: (id: string) => void;
+}) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <View style={[styles.sectionLine, { backgroundColor: colors.copper }]} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={[styles.sectionTitle, { color: colors.charcoal }]}>OCCASION LEASES</Text>
+          <View style={{ backgroundColor: colors.copper, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 }}>
+            <Text style={{ color: colors.white, fontFamily: typography.mono, fontSize: 9, fontWeight: '800' }}>RENTAL</Text>
+          </View>
+        </View>
+        <View style={[styles.sectionLine, { flex: 1, backgroundColor: colors.copper }]} />
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.arrivalsScroll}>
+        {items.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.recsCard}
+            onPress={() => onNavigateToItem(item.id)}
+            activeOpacity={0.88}
+          >
+            <View style={styles.recsImageWrap}>
+              {item.images?.[0] ? (
+                <Image source={{ uri: item.images[0] }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+              ) : (
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgMuted }]} />
+              )}
+              <View style={[styles.fitScoreBadge, { backgroundColor: 'rgba(26,26,26,0.92)' }]}>
+                <Ionicons name="calendar-outline" size={10} color={colors.gold} />
+                <Text style={styles.fitScoreText}>{item.fitScore}% STYLE FIT</Text>
+              </View>
+            </View>
+
+            <View style={styles.recsContent}>
+              <Text style={styles.recsBrand} numberOfLines={1}>{item.brand.toUpperCase()}</Text>
+              <Text style={styles.recsTitle} numberOfLines={1}>{item.title}</Text>
+              <View style={styles.recsPriceRow}>
+                <View>
+                  <Text style={styles.recsPrice}>₹{item.price.toLocaleString('en-IN')}</Text>
+                  <Text style={{ fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted }}>PER DAY</Text>
+                </View>
+                <View style={{ backgroundColor: colors.charcoal, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 2 }}>
+                  <Text style={{ color: colors.white, fontFamily: typography.mono, fontSize: 9, fontWeight: '800' }}>LEASE →</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.recsReasonBanner, { backgroundColor: '#F9F5F0' }]}>
+              <Text style={[styles.recsReasonText, { color: colors.copper }]} numberOfLines={1}>
+                {item.matchReason}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+// ── Fair Accessory Swaps Shelf ───────────────────────────────────────────────
+function FairSwapsShelf({
+  swaps,
+  onNavigateToSwap,
+}: {
+  swaps: FairSwapRecommendation[];
+  onNavigateToSwap: (id: string) => void;
+}) {
+  if (!swaps || swaps.length === 0) return null;
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <View style={[styles.sectionLine, { backgroundColor: colors.forest }]} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={[styles.sectionTitle, { color: colors.charcoal }]}>FAIR ACCESSORY SWAPS</Text>
+          <View style={{ backgroundColor: colors.forest, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 }}>
+            <Text style={{ color: colors.white, fontFamily: typography.mono, fontSize: 9, fontWeight: '800' }}>VALUATION PARITY</Text>
+          </View>
+        </View>
+        <View style={[styles.sectionLine, { flex: 1, backgroundColor: colors.forest }]} />
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.arrivalsScroll}>
+        {swaps.map((item, idx) => (
+          <TouchableOpacity
+            key={item.recommendedSwap.id || idx}
+            style={styles.recsCard}
+            onPress={() => onNavigateToSwap(item.recommendedSwap.id)}
+            activeOpacity={0.88}
+          >
+            <View style={styles.recsImageWrap}>
+              {item.recommendedSwap.images?.[0] ? (
+                <Image source={{ uri: item.recommendedSwap.images[0] }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+              ) : (
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgMuted }]} />
+              )}
+              <View style={[styles.fitScoreBadge, { backgroundColor: colors.forest }]}>
+                <Ionicons name="swap-horizontal-outline" size={10} color={colors.white} />
+                <Text style={[styles.fitScoreText, { color: colors.white }]}>
+                  {item.isFairSwap ? 'FAIR SWAP' : `±${item.variancePercent}% PARITY`}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.recsContent}>
+              <Text style={styles.recsBrand} numberOfLines={1}>{item.recommendedSwap.brand.toUpperCase()}</Text>
+              <Text style={styles.recsTitle} numberOfLines={1}>{item.recommendedSwap.title}</Text>
+              <View style={styles.recsPriceRow}>
+                <Text style={styles.recsPrice}>₹{item.recommendedSwap.price.toLocaleString('en-IN')}</Text>
+                <View style={{ backgroundColor: colors.cream, borderWidth: 1, borderColor: colors.forest, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 }}>
+                  <Text style={{ color: colors.forest, fontFamily: typography.mono, fontSize: 8.5, fontWeight: '800' }}>TRADE</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.recsReasonBanner, { backgroundColor: '#F0F7F2' }]}>
+              <Text style={[styles.recsReasonText, { color: colors.forest }]} numberOfLines={1}>
+                {item.myGarment ? `Fair trade for your "${item.myGarment.title}"` : 'Curated circular trade piece'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
@@ -367,9 +575,29 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { garments, isLoading, fetchFeed } = useGarmentStore();
 
+  const [forYouItems, setForYouItems] = useState<RecommendedGarment[]>([]);
+  const [rentalPicks, setRentalPicks] = useState<RecommendedGarment[]>([]);
+  const [fairSwaps, setFairSwaps] = useState<FairSwapRecommendation[]>([]);
+
   useEffect(() => {
     fetchFeed({ listingType: 'SALE' });
+    loadRecommendations();
   }, []);
+
+  const loadRecommendations = async () => {
+    try {
+      const [forYou, rentals, swaps] = await Promise.all([
+        recommendationService.getPersonalizedFeed(8),
+        recommendationService.getRentalPicks(6),
+        recommendationService.getFairSwaps(6),
+      ]);
+      setForYouItems(forYou || []);
+      setRentalPicks(rentals || []);
+      setFairSwaps(swaps || []);
+    } catch (e) {
+      console.warn('Failed to load recommendations', e);
+    }
+  };
 
   const handleAddToCart = useCallback(async (item: any) => {
     try {
@@ -385,6 +613,9 @@ export default function HomeScreen() {
   }, []);
   const navigateToItem = useCallback((id: string) => {
     router.push(`/(tabs)/shop/${id}` as any);
+  }, []);
+  const navigateToSwap = useCallback((id: string) => {
+    router.push(`/(tabs)/swap/${id}` as any);
   }, []);
 
   return (
@@ -408,14 +639,33 @@ export default function HomeScreen() {
         {/* HERO */}
         <HeroBanner onShop={() => navigate('/(tabs)/shop')} />
 
+        {/* 1. CURATED FOR YOU (AI EDIT) */}
+        <CuratedForYouShelf
+          items={forYouItems}
+          onNavigateToItem={navigateToItem}
+          onAddToCart={handleAddToCart}
+        />
+
         {/* IMPACT DASHBOARD */}
         <ImpactDashboard />
 
         {/* QUICK ACTIONS */}
         <QuickActionGrid onNavigate={(r) => navigate(r)} />
 
+        {/* 2. OCCASION LEASES (RENTAL) */}
+        <RentalPicksShelf
+          items={rentalPicks}
+          onNavigateToItem={navigateToItem}
+        />
+
         {/* CATEGORY SECTORS */}
         <CategorySectors onNavigate={(r, p) => navigate(r, p)} />
+
+        {/* 3. FAIR ACCESSORY SWAPS */}
+        <FairSwapsShelf
+          swaps={fairSwaps}
+          onNavigateToSwap={navigateToSwap}
+        />
 
         {/* NEW ARRIVALS */}
         <NewArrivals 
@@ -892,6 +1142,98 @@ const styles = StyleSheet.create({
   cardWrapper: { 
     width: CARD_W, 
     marginRight: 14,
+  },
+
+  // ── Recommendation Shelves ─────────────────────────────────────
+  recsCard: {
+    width: 190,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    marginRight: 14,
+    borderRadius: 2,
+    overflow: 'hidden',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  recsImageWrap: {
+    height: 200,
+    width: '100%',
+    position: 'relative',
+  },
+  fitScoreBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(26,26,26,0.92)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  fitScoreText: {
+    color: colors.gold,
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  recsContent: {
+    padding: 10,
+  },
+  recsBrand: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    letterSpacing: 1,
+    fontWeight: '700',
+  },
+  recsTitle: {
+    fontFamily: typography.body,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.charcoal,
+    marginTop: 2,
+  },
+  recsPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  recsPrice: {
+    fontFamily: typography.mono,
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.charcoal,
+  },
+  recsAddBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.cream,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#EAE6DF',
+  },
+  recsReasonBanner: {
+    backgroundColor: colors.cream,
+    borderTopWidth: 1,
+    borderTopColor: '#EAE6DF',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  recsReasonText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.forest,
+    fontWeight: '700',
   },
 });
 

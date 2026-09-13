@@ -26,7 +26,7 @@ import { colors, typography } from '../../src/theme';
 import { KaphorImage, normalizeImageUri } from '../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
   messageService,
   ConversationDetailResponse,

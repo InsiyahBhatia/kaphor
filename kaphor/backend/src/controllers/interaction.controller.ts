@@ -4,6 +4,7 @@ import { EventType } from '@prisma/client';
 import { logger } from '../lib/logger';
 import { evaluateLifecycle, initiateResell } from '../services/lifecycle.service';
 import { ImpactService } from '../services/impact.service';
+import { PreferenceService } from '../services/preference.service';
 
 export async function createInteraction(req: Request, res: Response): Promise<void> {
     try {
@@ -14,8 +15,14 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
 
         const { garmentId, eventType, metadata } = req.body;
 
-        if (!garmentId || !eventType || !(eventType in EventType)) {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid garmentId or eventType' });
+        if (!eventType || !(eventType in EventType)) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid or missing eventType' });
+            return;
+        }
+
+        const isNonGarmentEvent = eventType === 'SEARCH' || eventType === 'FILTER_APPLY';
+        if (!garmentId && !isNonGarmentEvent) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'garmentId is required for this eventType' });
             return;
         }
 
@@ -23,11 +30,24 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
         await db.behaviourEvent.create({
             data: {
                 userId: req.user.id,
-                garmentId: String(garmentId),
+                garmentId: garmentId ? String(garmentId) : null,
                 eventType: eventType as EventType,
                 metadata: metadata ? (metadata as any) : undefined,
             }
         });
+
+        // Asynchronously process event in PreferenceService to evolve vector & profile
+        PreferenceService.processEvent(
+            req.user.id,
+            eventType as EventType,
+            garmentId ? String(garmentId) : null,
+            metadata
+        ).catch((e) => logger.warn('[PreferenceService] background error', e));
+
+        if (!garmentId) {
+            res.status(201).json({ data: { success: true, eventType } });
+            return;
+        }
 
         // 2. Upsert BehaviourSignal
         // We update interestScore based on event type heuristics

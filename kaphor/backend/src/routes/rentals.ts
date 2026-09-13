@@ -4,11 +4,13 @@ import {
   getAvailableRentals,
   createRental,
   getMyRentals,
+  getRentalById,
   returnRental,
   calculateRentalBreakdown,
   getRentalEscrow,
   releaseRentalDeposit,
   dispatchRental,
+  postRentalReview,
 } from '../controllers/rental.controller';
 
 const router = Router();
@@ -21,9 +23,11 @@ router.post('/calculate', calculateRentalBreakdown);
 router.use(authenticate);
 router.post('/', createRental);
 router.get('/me', getMyRentals);
+router.get('/:id', getRentalById);
 router.get('/:id/escrow', getRentalEscrow);
 router.post('/:id/release-deposit', releaseRentalDeposit);
 router.patch('/:id/dispatch', dispatchRental);
 router.patch('/:id/return', returnRental);
+router.post('/:id/review', postRentalReview);
 
 export { router as rentalRoutes };

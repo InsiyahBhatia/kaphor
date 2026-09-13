@@ -10,11 +10,13 @@ import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useAuth } from '../../../src/context/AuthContext';
 import { useAuthStore } from '../../../src/store/authStore';
 import { isAccessoryCategory } from '../../../src/constants/market';
+import { EstTradeValueBadge, formatTradeValuation } from '../../../src/components/orders/EstTradeValueBadge';
+import { FairValueMatcher } from '../../../src/components/orders/FairValueMatcher';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -33,6 +35,7 @@ export default function SwapDetailScreen() {
   const [garment, setGarment] = useState<any>(null);
   const [myGarments, setMyGarments] = useState<any[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<string | null>(null);
+  const [filterFairOnly, setFilterFairOnly] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -141,6 +144,30 @@ export default function SwapDetailScreen() {
     }
   };
 
+  const targetVal = formatTradeValuation(garment?.price || garment?.estimatedValue);
+
+  const fairMatchesCount = myGarments.filter((g) => {
+    const v = formatTradeValuation(g.price || g.estimatedValue);
+    return Math.abs(v - targetVal) / Math.max(v, targetVal, 1) <= 0.15;
+  }).length;
+
+  const sortedGarments = [...myGarments].sort((a, b) => {
+    const valA = formatTradeValuation(a.price || a.estimatedValue);
+    const valB = formatTradeValuation(b.price || b.estimatedValue);
+    const diffA = Math.abs(valA - targetVal);
+    const diffB = Math.abs(valB - targetVal);
+    return diffA - diffB;
+  });
+
+  const displayedGarments = filterFairOnly
+    ? sortedGarments.filter((g) => {
+        const v = formatTradeValuation(g.price || g.estimatedValue);
+        return Math.abs(v - targetVal) / Math.max(v, targetVal, 1) <= 0.15;
+      })
+    : sortedGarments;
+
+  const selectedGarment = myGarments.find((g) => g.id === selectedOffer);
+
   if (loading) {
     return <DossierLoading variant="swap" />;
   }
@@ -179,9 +206,12 @@ export default function SwapDetailScreen() {
               </View>
             </TouchableOpacity>
             <View style={styles.wantedInfo}>
-              <Text style={[styles.label, isOwnGarment && { color: colors.crimson }]}>
-                {isOwnGarment ? 'YOUR ARCHIVE ASSET' : 'YOU WANT'}
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
+                <Text style={[styles.label, isOwnGarment && { color: colors.crimson }]}>
+                  {isOwnGarment ? 'YOUR ARCHIVE ASSET' : 'YOU WANT'}
+                </Text>
+                <EstTradeValueBadge value={garment.price || garment.estimatedValue} size="sm" variant="copper" />
+              </View>
               <Text style={styles.wantedTitle}>{garment.title}</Text>
               <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Archive').toUpperCase()}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' }}>
@@ -251,30 +281,130 @@ export default function SwapDetailScreen() {
               <Ionicons name="swap-vertical" size={32} color={colors.charcoal} />
             </View>
 
-            <Text style={styles.sectionTitle}>SELECT AN ACCESSORY TO OFFER</Text>
-            {myGarments.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>You don't have any accessories listed for swap yet.</Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/shop/sell')}>
-                  <Text style={styles.linkText}>LIST AN ACCESSORY</Text>
+            <View style={styles.sectionTitleRow}>
+              <Text style={styles.sectionTitle}>SELECT AN ACCESSORY TO OFFER</Text>
+              {fairMatchesCount > 0 && (
+                <View style={styles.fairCountPill}>
+                  <Text style={styles.fairCountPillText}>
+                    {fairMatchesCount} FAIR MATCH{fairMatchesCount > 1 ? 'ES' : ''}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {myGarments.length > 0 && (
+              <View style={styles.filterChipRow}>
+                <TouchableOpacity
+                  style={[styles.filterChip, !filterFairOnly && styles.filterChipActive]}
+                  onPress={() => setFilterFairOnly(false)}
+                >
+                  <Text style={[styles.filterChipText, !filterFairOnly && styles.filterChipTextActive]}>
+                    ALL PIECES ({myGarments.length})
+                  </Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.filterChip, filterFairOnly && styles.filterChipActive]}
+                  onPress={() => setFilterFairOnly(true)}
+                >
+                  <Ionicons 
+                    name="scale-outline" 
+                    size={12} 
+                    color={filterFairOnly ? colors.cream : '#1E3B2F'} 
+                    style={{ marginRight: 4 }} 
+                  />
+                  <Text style={[styles.filterChipText, filterFairOnly && styles.filterChipTextActive, !filterFairOnly && { color: '#1E3B2F' }]}>
+                    FAIR VALUE ({fairMatchesCount})
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {displayedGarments.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>
+                  {filterFairOnly
+                    ? 'No items in your closet currently fall within the ±15% fair value range.'
+                    : "You don't have any accessories listed for swap yet."}
+                </Text>
+                {filterFairOnly ? (
+                  <TouchableOpacity onPress={() => setFilterFairOnly(false)} style={{ marginTop: 10 }}>
+                    <Text style={styles.linkText}>VIEW ALL ACCESSORIES</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity onPress={() => router.push('/(tabs)/shop/sell')}>
+                    <Text style={styles.linkText}>LIST AN ACCESSORY</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
               <View style={styles.offerGrid}>
-                {myGarments.map((g) => (
-                  <TouchableOpacity
-                    key={g.id}
-                    style={[styles.offerCard, selectedOffer === g.id && styles.offerCardSelected]}
-                    onPress={() => setSelectedOffer(g.id)}
-                  >
-                    <KaphorImage uri={g.images?.[0]} style={styles.offerImage} contentFit="cover" />
-                    <Text style={styles.offerTitle} numberOfLines={1}>{g.title}</Text>
-                    {selectedOffer === g.id && (
-                      <View style={styles.checkmark}><Ionicons name="checkmark-circle" size={24} color={colors.crimson} /></View>
-                    )}
-                  </TouchableOpacity>
-                ))}
+                {displayedGarments.map((g) => {
+                  const myVal = formatTradeValuation(g.price || g.estimatedValue);
+                  const delta = Math.abs(myVal - targetVal);
+                  const maxV = Math.max(myVal, targetVal, 1);
+                  const diffPct = Math.round((delta / maxV) * 100);
+                  const isFair = diffPct <= 15;
+                  const isSurplus = myVal > targetVal && !isFair;
+
+                  return (
+                    <TouchableOpacity
+                      key={g.id}
+                      style={[
+                        styles.offerCard,
+                        selectedOffer === g.id && styles.offerCardSelected,
+                        isFair && styles.offerCardFair,
+                      ]}
+                      onPress={() => setSelectedOffer(g.id)}
+                    >
+                      <View style={{ position: 'relative' }}>
+                        <KaphorImage uri={g.images?.[0]} style={styles.offerImage} contentFit="cover" />
+                        
+                        {/* Trade Value Badge */}
+                        <View style={styles.cardValuationBadge}>
+                          <Text style={styles.cardValuationText}>EST. ₹{myVal.toLocaleString('en-IN')}</Text>
+                        </View>
+
+                        {/* Parity Status Tag */}
+                        <View style={[
+                          styles.parityTag,
+                          isFair ? styles.parityFair : isSurplus ? styles.paritySurplus : styles.paritySpread
+                        ]}>
+                          <Text style={styles.parityTagText}>
+                            {isFair 
+                              ? `⚖️ FAIR (±${diffPct}%)` 
+                              : isSurplus 
+                                ? `+₹${delta.toLocaleString()} SURPLUS` 
+                                : `+₹${delta.toLocaleString()} SPREAD`}
+                          </Text>
+                        </View>
+
+                        {selectedOffer === g.id && (
+                          <View style={styles.checkmark}>
+                            <Ionicons name="checkmark-circle" size={24} color={colors.crimson} />
+                          </View>
+                        )}
+                      </View>
+
+                      <View style={styles.offerCardInfo}>
+                        <Text style={styles.offerTitle} numberOfLines={1}>{g.title}</Text>
+                        <Text style={styles.offerCategory} numberOfLines={1}>
+                          {(g.subCategory || g.category || 'ACCESSORY').toUpperCase()}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
+            )}
+
+            {/* Fair Value Matcher Live Balance Meter */}
+            {selectedOffer && selectedGarment && (
+              <FairValueMatcher
+                myGarment={selectedGarment}
+                theirGarment={garment}
+                style={{ marginTop: 18, marginBottom: 8 }}
+              />
             )}
 
             {/* Condition Photos */}
@@ -515,7 +645,56 @@ const styles = StyleSheet.create({
   },
 
   arrowContainer: { alignItems: 'center', marginVertical: 16 },
-  sectionTitle: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 16, marginTop: 8 },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  fairCountPill: {
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: '#2E7D32',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  fairCountPillText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#1B5E20',
+    letterSpacing: 0.5,
+  },
+  filterChipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.white,
+  },
+  filterChipActive: {
+    backgroundColor: colors.charcoal,
+  },
+  filterChipText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  filterChipTextActive: {
+    color: colors.cream,
+  },
+  sectionTitle: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 2 },
   sectionSubtext: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, lineHeight: 14, marginBottom: 12, marginTop: -12 },
   messageInput: {
     backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal,
@@ -529,9 +708,63 @@ const styles = StyleSheet.create({
   offerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   offerCard: { width: '47%', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', position: 'relative' },
   offerCardSelected: { borderColor: colors.charcoal, borderWidth: 2, backgroundColor: 'rgba(30,31,34,0.02)' },
+  offerCardFair: { borderColor: '#2E7D32', borderWidth: 2 },
+  cardValuationBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: 'rgba(30,31,34,0.85)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 2,
+    zIndex: 2,
+  },
+  cardValuationText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  parityTag: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 2,
+    zIndex: 2,
+  },
+  parityFair: {
+    backgroundColor: '#1B5E20',
+  },
+  paritySurplus: {
+    backgroundColor: colors.copper,
+  },
+  paritySpread: {
+    backgroundColor: '#1C2B4A',
+  },
+  parityTagText: {
+    color: '#FFFFFF',
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  offerCardInfo: {
+    padding: 8,
+    backgroundColor: colors.white,
+  },
+  offerCategory: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.textMuted,
+    fontWeight: '700',
+    marginTop: 2,
+  },
   offerImage: { width: '100%', height: 150 },
-  offerTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 14, padding: 10 },
-  checkmark: { position: 'absolute', top: 8, right: 8 },
+  offerTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 13 },
+  checkmark: { position: 'absolute', top: 8, right: 8, zIndex: 3 },
 
   photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   photoThumb: { width: 90, height: 90, position: 'relative', borderWidth: 2, borderColor: colors.charcoal },

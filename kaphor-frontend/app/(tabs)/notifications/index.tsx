@@ -21,7 +21,7 @@ import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
-type NotificationCategory = 'ALL' | 'UNREAD' | 'ORDERS' | 'SWAPS' | 'MESSAGES' | 'SYSTEM';
+type NotificationCategory = 'ALL' | 'UNREAD' | 'ORDERS' | 'SWAPS' | 'MESSAGES' | 'REVIEWS' | 'SYSTEM';
 
 function formatRelativeTime(dateString: string): string {
   try {
@@ -162,6 +162,10 @@ export default function NotificationsScreen() {
     }
 
     if (type === 'PEER_REVIEW') {
+      if (data.userId) {
+        router.push(`/reviews?userId=${data.userId}` as any);
+        return;
+      }
       router.push('/reviews' as any);
       return;
     }
@@ -204,6 +208,15 @@ export default function NotificationsScreen() {
         bg: 'rgba(107,70,193,0.1)',
       };
     }
+    if (type === 'PEER_REVIEW') {
+      return {
+        icon: 'star',
+        label: 'REVIEW',
+        cta: 'VIEW REVIEWS →',
+        color: '#D97706',
+        bg: 'rgba(217,119,6,0.12)',
+      };
+    }
     return {
       icon: 'notifications',
       label: 'SYSTEM',
@@ -221,8 +234,9 @@ export default function NotificationsScreen() {
     if (category === 'MESSAGES') return t === 'DIRECT_MESSAGE' || t === 'NEW_MESSAGE';
     if (category === 'SWAPS') return t.startsWith('SWAP_');
     if (category === 'ORDERS') return t.startsWith('ORDER_') || t.startsWith('RENTAL_');
+    if (category === 'REVIEWS') return t === 'PEER_REVIEW';
     if (category === 'SYSTEM') {
-      return !t.startsWith('SWAP_') && !t.startsWith('ORDER_') && !t.startsWith('RENTAL_') && t !== 'DIRECT_MESSAGE' && t !== 'NEW_MESSAGE';
+      return !t.startsWith('SWAP_') && !t.startsWith('ORDER_') && !t.startsWith('RENTAL_') && t !== 'DIRECT_MESSAGE' && t !== 'NEW_MESSAGE' && t !== 'PEER_REVIEW';
     }
     return true;
   });
@@ -233,7 +247,8 @@ export default function NotificationsScreen() {
     ORDERS: notifications.filter((n) => n.type?.startsWith('ORDER_') || n.type?.startsWith('RENTAL_')).length,
     SWAPS: notifications.filter((n) => n.type?.startsWith('SWAP_')).length,
     MESSAGES: notifications.filter((n) => n.type === 'DIRECT_MESSAGE' || n.type === 'NEW_MESSAGE').length,
-    SYSTEM: notifications.filter((n) => !n.type?.startsWith('SWAP_') && !n.type?.startsWith('ORDER_') && !n.type?.startsWith('RENTAL_') && n.type !== 'DIRECT_MESSAGE' && n.type !== 'NEW_MESSAGE').length,
+    REVIEWS: notifications.filter((n) => n.type === 'PEER_REVIEW').length,
+    SYSTEM: notifications.filter((n) => !n.type?.startsWith('SWAP_') && !n.type?.startsWith('ORDER_') && !n.type?.startsWith('RENTAL_') && n.type !== 'DIRECT_MESSAGE' && n.type !== 'NEW_MESSAGE' && n.type !== 'PEER_REVIEW').length,
   };
 
   return (
@@ -293,7 +308,7 @@ export default function NotificationsScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryRow}
         >
-          {(['ALL', 'UNREAD', 'ORDERS', 'SWAPS', 'MESSAGES', 'SYSTEM'] as NotificationCategory[]).map((cat) => {
+          {(['ALL', 'UNREAD', 'ORDERS', 'SWAPS', 'MESSAGES', 'REVIEWS', 'SYSTEM'] as NotificationCategory[]).map((cat) => {
             const count = categoryCounts[cat] || 0;
             const isActive = category === cat;
 

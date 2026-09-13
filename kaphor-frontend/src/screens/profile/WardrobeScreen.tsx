@@ -15,7 +15,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography } from '../../theme';
@@ -42,14 +42,14 @@ interface StateConfig {
 }
 
 const STATE_CONFIG: Record<string, StateConfig> = {
-  OWNERSHIP:              { label: 'OWNED',      color: colors.forest,  icon: 'checkmark-circle', description: 'In your possession' },
-  SELL_INTENT:            { label: 'SELL READY', color: colors.orange, icon: 'pricetag',          description: 'Ready to be relisted' },
-  DECLINE:                { label: 'DECLINED',   color: colors.copper, icon: 'trending-down',     description: 'Showing low interest' },
-  CIRCULATION:            { label: 'COOLDOWN',   color: colors.navy,   icon: 'refresh',           description: 'In circulation cooldown' },
-  REUSE_UPCYCLE_RECYCLE:  { label: 'END OF LIFE',color: colors.textMuted, icon: 'leaf',          description: 'Routed to circular end' },
-  PURCHASE_INTENT:        { label: 'IN TRANSIT', color: colors.orange, icon: 'cart',             description: 'Checkout in progress' },
-  LISTED:                 { label: 'LISTED',     color: colors.forest, icon: 'checkmark',         description: 'Active on marketplace' },
-  INTEREST:               { label: 'POPULAR',    color: colors.gold,   icon: 'flame',             description: 'High interest' },
+  OWNERSHIP: { label: 'OWNED', color: colors.forest, icon: 'checkmark-circle', description: 'In your possession' },
+  SELL_INTENT: { label: 'SELL READY', color: colors.orange, icon: 'pricetag', description: 'Ready to be relisted' },
+  DECLINE: { label: 'DECLINED', color: colors.copper, icon: 'trending-down', description: 'Showing low interest' },
+  CIRCULATION: { label: 'COOLDOWN', color: colors.navy, icon: 'refresh', description: 'In circulation cooldown' },
+  REUSE_UPCYCLE_RECYCLE: { label: 'END OF LIFE', color: colors.textMuted, icon: 'leaf', description: 'Routed to circular end' },
+  PURCHASE_INTENT: { label: 'IN TRANSIT', color: colors.orange, icon: 'cart', description: 'Checkout in progress' },
+  LISTED: { label: 'LISTED', color: colors.forest, icon: 'checkmark', description: 'Active on marketplace' },
+  INTEREST: { label: 'POPULAR', color: colors.gold, icon: 'flame', description: 'High interest' },
 };
 
 function getStateConfig(state: string): StateConfig {
@@ -263,6 +263,25 @@ export function WardrobeScreen() {
     }
   };
 
+  const params = useLocalSearchParams<{ autoScan?: string }>();
+
+  useEffect(() => {
+    if (params?.autoScan === 'true') {
+      const timer = setTimeout(() => {
+        Alert.alert(
+          '📸 Digitize Full Outfit',
+          'Select an outfit photo or mirror selfie to extract individual pieces and studio cutouts:',
+          [
+            { text: 'Take Photo', onPress: () => pickAndScanOutfit(true) },
+            { text: 'Choose from Library', onPress: () => pickAndScanOutfit(false) },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [params?.autoScan]);
+
   const handleToggleSelectItem = (id: string) => {
     const next = new Set(selectedItemIds);
     if (next.has(id)) next.delete(id);
@@ -349,7 +368,7 @@ export function WardrobeScreen() {
       if (next === 'active') {
         fetchFresh('/users/me/wardrobe').then((data) => {
           setWardrobe(Array.isArray(data) ? data : []);
-        }).catch(() => {});
+        }).catch(() => { });
       }
     });
     return () => sub.remove();
@@ -364,7 +383,7 @@ export function WardrobeScreen() {
           const co2 = wearImpact?.carbonSavedKg || 0.35;
           const water = wearImpact?.waterSavedL || 120;
           const wearCountText = wearImpact?.totalWears ? ` (Worn ${wearImpact.totalWears}x)` : '';
-          
+
           Alert.alert(
             '🌱 Impact Saved!',
             `+${co2} kg CO₂ & +${water}L Water saved by wearing what you own${wearCountText}!\n\nYour wardrobe utilization increased and decay was reset.`
@@ -434,7 +453,7 @@ export function WardrobeScreen() {
           <Ionicons name="shirt-outline" size={64} color={colors.charcoal} style={{ opacity: 0.3 }} />
           <Text style={styles.emptyTitle}>YOUR CLOSET IS EMPTY</Text>
           <Text style={styles.emptySubtext}>
-            Digitize your existing wardrobe from mirror selfies using Google Wardrobe AI, or browse the circular marketplace.
+            Digitize your existing wardrobe from mirror selfies using AI Outfit Scanner, or browse the circular marketplace.
           </Text>
           <View style={styles.emptyActionButtons}>
             <TouchableOpacity
@@ -472,7 +491,7 @@ export function WardrobeScreen() {
                 <Ionicons name="sparkles" size={16} color={colors.white} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.aiBannerTitle}>GOOGLE WARDROBE AI</Text>
+                <Text style={styles.aiBannerTitle}>AI CLOSET SCANNER</Text>
                 <Text style={styles.aiBannerSub}>
                   Digitize outfits from mirror selfies • Segment pieces with Photoroom studio cutouts
                 </Text>
@@ -597,7 +616,7 @@ export function WardrobeScreen() {
                             {item.title}
                           </Text>
                           <Text style={styles.extractedBrand}>{item.brand} • {item.size || 'M'}</Text>
-                          
+
                           <View style={styles.extractedValuationRow}>
                             <Text style={styles.extractedValuationLabel}>EST. RESALE</Text>
                             <Text style={styles.extractedPrice}>₹{item.estimatedPrice.toLocaleString()}</Text>

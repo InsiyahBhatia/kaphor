@@ -20,6 +20,7 @@ import { colors, typography, spacing, radius } from '../../theme';
 import { safeBack, useBackHandler } from '../../utils/navigation';
 import { hapticFeedback } from '../../utils/haptics';
 import { getFormattedGarmentPrice } from '../../utils/priceFormatter';
+import { ListingInsightsModal } from '../../components/ListingInsightsModal';
 
 export function MyListingsScreen() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export function MyListingsScreen() {
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedInsightsGarmentId, setSelectedInsightsGarmentId] = useState<string | null>(null);
 
   const fetchListings = useCallback(async () => {
     try {
@@ -107,13 +109,67 @@ export function MyListingsScreen() {
         </View>
       </Pressable>
 
+      {/* Live Telemetry Ticker Bar */}
+      <TouchableOpacity
+        style={styles.telemetryBar}
+        onPress={() => {
+          hapticFeedback.light();
+          setSelectedInsightsGarmentId(item.id);
+        }}
+        activeOpacity={0.7}
+      >
+        <View style={styles.telemetryItem}>
+          <Ionicons name="eye-outline" size={12} color={colors.gold} />
+          <Text style={styles.telemetryText}>{item.insights?.views ?? item.viewCount ?? 0} views</Text>
+        </View>
+        <View style={styles.telemetryDivider} />
+        <View style={styles.telemetryItem}>
+          <Ionicons
+            name="cart-outline"
+            size={12}
+            color={item.insights?.inCart > 0 ? '#00E5FF' : colors.textMuted}
+          />
+          <Text
+            style={[
+              styles.telemetryText,
+              item.insights?.inCart > 0 && { color: '#00E5FF', fontWeight: 'bold' },
+            ]}
+          >
+            {item.insights?.inCart ?? 0} in cart
+          </Text>
+        </View>
+        <View style={styles.telemetryDivider} />
+        <View style={styles.telemetryItem}>
+          <Ionicons name="heart-outline" size={12} color={colors.crimson} />
+          <Text style={styles.telemetryText}>{item.insights?.saves ?? 0} saves</Text>
+        </View>
+        <View style={styles.telemetryDivider} />
+        <View style={styles.telemetryAction}>
+          <Ionicons name="analytics-outline" size={12} color={colors.gold} />
+          <Text style={styles.telemetryActionText}>INSIGHTS ›</Text>
+        </View>
+      </TouchableOpacity>
+
       {/* Quick Action Toolbar */}
       <View style={styles.actionBar}>
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.insightsBtn]}
+          onPress={() => {
+            hapticFeedback.light();
+            setSelectedInsightsGarmentId(item.id);
+          }}
+        >
+          <Ionicons name="stats-chart-outline" size={14} color={colors.gold} />
+          <Text style={[styles.actionBtnText, { color: colors.gold }]}>INSIGHTS</Text>
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
         >
-          <Ionicons name="eye-outline" size={15} color={colors.textSecond} />
+          <Ionicons name="eye-outline" size={14} color={colors.textSecond} />
           <Text style={styles.actionBtnText}>VIEW</Text>
         </TouchableOpacity>
 
@@ -123,8 +179,8 @@ export function MyListingsScreen() {
           style={[styles.actionBtn, styles.editBtn]}
           onPress={() => router.push(`/(tabs)/shop/edit/${item.id}` as any)}
         >
-          <Ionicons name="create-outline" size={15} color={colors.gold} />
-          <Text style={[styles.actionBtnText, { color: colors.gold }]}>EDIT LISTING</Text>
+          <Ionicons name="create-outline" size={14} color={colors.textSecond} />
+          <Text style={styles.actionBtnText}>EDIT</Text>
         </TouchableOpacity>
 
         <View style={styles.divider} />
@@ -133,7 +189,7 @@ export function MyListingsScreen() {
           style={styles.actionBtn}
           onPress={() => handleDeList(item)}
         >
-          <Ionicons name="trash-outline" size={15} color={colors.crimson} />
+          <Ionicons name="trash-outline" size={14} color={colors.crimson} />
           <Text style={[styles.actionBtnText, { color: colors.crimson }]}>DE-LIST</Text>
         </TouchableOpacity>
       </View>
@@ -197,6 +253,13 @@ export function MyListingsScreen() {
           }
         />
       )}
+
+      {/* Seller Listing Performance Telemetry Modal */}
+      <ListingInsightsModal
+        visible={!!selectedInsightsGarmentId}
+        garmentId={selectedInsightsGarmentId}
+        onClose={() => setSelectedInsightsGarmentId(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -356,6 +419,43 @@ const styles = StyleSheet.create({
   inactiveStatusText: {
     color: colors.textMuted,
   },
+  telemetryBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+  },
+  telemetryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  telemetryText: {
+    color: colors.textMuted,
+    fontFamily: typography.mono,
+    fontSize: 10,
+  },
+  telemetryDivider: {
+    width: 1,
+    height: 10,
+    backgroundColor: colors.border,
+  },
+  telemetryAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  telemetryActionText: {
+    color: colors.gold,
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
   actionBar: {
     flexDirection: 'row',
     borderTopWidth: 1,
@@ -367,11 +467,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: 4,
     paddingVertical: 10,
   },
+  insightsBtn: {
+    backgroundColor: 'rgba(201, 168, 76, 0.08)',
+  },
   editBtn: {
-    backgroundColor: 'rgba(201, 168, 76, 0.06)',
+    backgroundColor: 'transparent',
   },
   actionBtnText: {
     fontFamily: typography.mono,

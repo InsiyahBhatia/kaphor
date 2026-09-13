@@ -5,7 +5,7 @@ import { createNotification } from '../services/notification.service';
 
 export async function getAvailableRentals(req: Request, res: Response): Promise<void> {
     try {
-        const { category, startDate, endDate, priceMax } = req.query;
+        const { category, startDate, endDate, priceMax, excludeMine } = req.query;
 
         // Basic query for garments
         const query: any = {
@@ -22,9 +22,9 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
             query.rentalPriceDay = { lte: Math.round(Number(priceMax)) };
         }
 
-        // Exclude garments listed by the requesting user themselves
+        // Exclude garments listed by the requesting user only if explicitly requested
         const currentUserId = (req as any).user?.id;
-        if (currentUserId) {
+        if (currentUserId && excludeMine === 'true') {
             query.sellerId = { not: currentUserId };
         }
 
@@ -106,10 +106,10 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const { garmentId, startDate, endDate, message } = req.body;
+        const { garmentId, startDate, endDate, days: inputDays, message, shippingAddress, metadata } = req.body;
 
-        if (!garmentId || !startDate || !endDate) {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing required rental parameters' });
+        if (!garmentId) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Garment ID is required' });
             return;
         }
 
@@ -118,8 +118,24 @@ export async function createRental(req: Request, res: Response): Promise<void> {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        const reqStart = new Date(startDate);
-        const reqEnd = new Date(endDate);
+        let reqStart: Date;
+        let reqEnd: Date;
+
+        if (startDate && endDate) {
+            reqStart = new Date(startDate);
+            reqEnd = new Date(endDate);
+        } else if (startDate && inputDays) {
+            reqStart = new Date(startDate);
+            reqEnd = new Date(reqStart);
+            reqEnd.setDate(reqEnd.getDate() + Number(inputDays));
+        } else if (inputDays) {
+            reqStart = new Date(tomorrow);
+            reqEnd = new Date(tomorrow);
+            reqEnd.setDate(reqEnd.getDate() + Number(inputDays));
+        } else {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Valid dates or rental duration required' });
+            return;
+        }
 
         if (reqStart < tomorrow) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Start date must be at least tomorrow' });
@@ -199,6 +215,8 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                 totalPrice: amount,
                 status: 'RESERVED',
                 message: typeof message === 'string' && message.trim().length > 0 ? message.trim().slice(0, 2000) : null,
+                shippingAddress: shippingAddress ? (typeof shippingAddress === 'string' ? JSON.parse(shippingAddress) : shippingAddress) : null,
+                metadata: metadata ? (typeof metadata === 'string' ? JSON.parse(metadata) : metadata) : null,
             },
             include: {
                 garment: {
@@ -236,6 +254,7 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                 days,
                 startDate: rental.startDate,
                 endDate: rental.endDate,
+                shippingAddress: rental.shippingAddress,
                 garment: rental.garment,
             }
         });
@@ -493,6 +512,87 @@ export async function getMyRentals(req: Request, res: Response): Promise<void> {
     }
 }
 
+export async function getRentalById(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const { id } = req.params;
+        const uid = req.user.id;
+
+        const rental = await db.rental.findUnique({
+            where: { id },
+            include: {
+                garment: {
+                    select: {
+                        id: true,
+                        title: true,
+                        brand: true,
+                        images: true,
+                        category: true,
+                        price: true,
+                        rentalPriceDay: true,
+                        rentalPriceWeek: true,
+                        condition: true,
+                        listingType: true,
+                        sellerId: true,
+                        seller: {
+                            select: { id: true, displayName: true, username: true, avatar: true, phone: true, email: true }
+                        }
+                    }
+                },
+                renter: {
+                    select: { id: true, displayName: true, username: true, avatar: true, phone: true, email: true }
+                }
+            }
+        });
+
+        if (!rental) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
+            return;
+        }
+
+        const isRenter = rental.renterId === uid;
+        const isLender = rental.garment?.sellerId === uid;
+        const isAdmin = (req.user as any).role === 'ADMIN';
+
+        if (!isRenter && !isLender && !isAdmin) {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to view this rental dossier' });
+            return;
+        }
+
+        const userRole = isRenter ? 'RENTER' : 'LENDER';
+
+        const { getDownloadUrl } = await import('../lib/s3');
+        let resolvedImages = rental.garment?.images || [];
+        if (Array.isArray(resolvedImages) && resolvedImages.length > 0) {
+            resolvedImages = await Promise.all(resolvedImages.map((img: string) => getDownloadUrl(img)));
+        }
+        let renterAvatar = rental.renter?.avatar;
+        if (renterAvatar) renterAvatar = await getDownloadUrl(renterAvatar);
+        let lenderAvatar = rental.garment?.seller?.avatar;
+        if (lenderAvatar) lenderAvatar = await getDownloadUrl(lenderAvatar);
+
+        res.json({
+            data: {
+                ...rental,
+                userRole,
+                garment: rental.garment ? {
+                    ...rental.garment,
+                    images: resolvedImages,
+                    seller: rental.garment.seller ? { ...rental.garment.seller, avatar: lenderAvatar } : undefined,
+                } : null,
+                renter: rental.renter ? { ...rental.renter, avatar: renterAvatar } : null,
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to get rental by id', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to fetch rental details' });
+    }
+}
+
 export async function dispatchRental(req: Request, res: Response): Promise<void> {
     try {
         if (!req.user) {
@@ -525,7 +625,11 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
 
         const updated = await db.rental.update({
             where: { id },
-            data: { status: 'ACTIVE' },
+            data: {
+                status: 'ACTIVE',
+                trackingNumber: trackingNumber || null,
+                carrier: carrier || 'BlueDart',
+            },
             include: { garment: true, renter: true }
         });
 
@@ -534,7 +638,7 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
                 userId: rental.renterId,
                 type: 'RENTAL_ACTIVE',
                 title: '🚚 Rental Dispatched / Active',
-                body: `"${rental.garment.title}" has been marked as dispatched by the lender. Your rental period is active!`,
+                body: `"${rental.garment.title}" has been marked as dispatched by the lender (${carrier || 'BlueDart'}). Your rental period is active!`,
                 data: { rentalId: id, trackingNumber, carrier },
             });
         } catch (notifErr) {
@@ -556,6 +660,7 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
         }
 
         const { id } = req.params;
+        const { returnTracking, returnCarrier } = req.body || {};
 
         const rental = await db.rental.findUnique({
             where: { id },
@@ -574,7 +679,11 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
 
         const updated = await db.rental.update({
             where: { id },
-            data: { status: 'RETURNED' },
+            data: {
+                status: 'RETURNED',
+                returnTracking: returnTracking || null,
+                returnCarrier: returnCarrier || 'Delhivery',
+            },
             include: { garment: true }
         });
 
@@ -584,8 +693,8 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
                     userId: updated.garment.sellerId,
                     type: 'RENTAL_RETURNED',
                     title: 'Rental Item Returned',
-                    body: `"${updated.garment.title}" has been marked as returned by renter. Please inspect and release deposit.`,
-                    data: { rentalId: id },
+                    body: `"${updated.garment.title}" has been dispatched back by renter (${returnCarrier || 'Delhivery'}). Please inspect upon delivery to release deposit.`,
+                    data: { rentalId: id, returnTracking, returnCarrier },
                 });
             } catch (notifErr) {
                 logger.warn('Failed to send rental return notification', { error: notifErr });
@@ -598,3 +707,71 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
         res.status(500).json({ error: 'INTERNAL_ERROR' });
     }
 }
+
+export async function postRentalReview(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const { id } = req.params;
+        const { rating, comment } = req.body;
+        const numRating = Number(rating);
+
+        if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Rating must be an integer 1–5' });
+            return;
+        }
+
+        const rental = await db.rental.findUnique({
+            where: { id },
+            include: { garment: true, renter: true }
+        });
+
+        if (!rental) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
+            return;
+        }
+
+        if (rental.renterId !== req.user.id && rental.garment?.sellerId !== req.user.id) {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to review this rental' });
+            return;
+        }
+
+        const isRenter = rental.renterId === req.user.id;
+        const targetUserId = isRenter ? rental.garment.sellerId : rental.renterId;
+
+        // Save peer review record if renter is reviewing lender/seller
+        let review = null;
+        if (isRenter) {
+            review = await db.peerReview.create({
+                data: {
+                    reviewerId: req.user.id,
+                    sellerId: targetUserId,
+                    rating: numRating,
+                    comment: typeof comment === 'string' ? comment.trim().slice(0, 2000) : null,
+                }
+            }).catch(() => null);
+        }
+
+        // Send Notification to reviewed party
+        try {
+            await createNotification({
+                userId: targetUserId,
+                type: 'PEER_REVIEW',
+                title: '⭐️ New Rental Review!',
+                body: `${req.user.displayName || 'Your rental partner'} left you a ${numRating}-star review for "${rental.garment?.title || 'the rental asset'}".`,
+                data: { rentalId: id, rating: numRating, userId: targetUserId }
+            });
+        } catch (notifErr) {
+            logger.warn('Failed to send rental review notification', { error: notifErr });
+        }
+
+        res.status(201).json({ success: true, data: review || { rating: numRating, comment } });
+    } catch (error: any) {
+        logger.error('postRentalReview failed', { error: error.message });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to submit review' });
+    }
+}
+

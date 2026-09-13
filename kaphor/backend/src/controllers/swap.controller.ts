@@ -12,6 +12,7 @@ import {
   SwapAddressData,
   SwapTrackingData,
 } from '../services/swap-metadata.service';
+import { getEstimatedGarmentValue } from '../utils/pricing';
 
 const ALLOWED_SWAP_CATEGORIES = new Set([
   'accessory',
@@ -67,7 +68,8 @@ function toGarmentSnapshot(g: any, resolvedFirstImage?: string): any {
     category: g.category,
     size: g.size,
     condition: g.condition,
-    estimatedValue: g.price || 0, // in Rupees
+    price: g.price && g.price > 0 ? g.price : getEstimatedGarmentValue(g.category, g.brand),
+    estimatedValue: g.price && g.price > 0 ? g.price : getEstimatedGarmentValue(g.category, g.brand), // in Rupees
   };
 }
 
@@ -234,8 +236,11 @@ export async function getSwapFeed(req: Request, res: Response): Promise<void> {
     const resolved = await Promise.all(
       accessoryGarments.map(async (g: any) => {
         const img = g.images?.length ? await getDownloadUrl(g.images[0]) : null;
+        const price = g.price && g.price > 0 ? g.price : getEstimatedGarmentValue(g.category, g.brand);
         return {
           ...g,
+          price,
+          estimatedValue: price,
           images: img ? [img, ...g.images.slice(1)] : g.images,
         };
       })

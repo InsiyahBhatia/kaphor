@@ -65,6 +65,7 @@ import { cartRouter } from './routes/cart.routes';
 import { adminRouter } from './routes/admin.routes';
 import { repairRouter } from './routes/repair.routes';
 import { messageRoutes } from './routes/messages';
+import { recommendationRouter } from './routes/recommendation.routes';
 import { assessGarment, initGLIE } from './services/glie';
 import { upload } from './middleware/upload.middleware';
 import { uploadToS3 } from './lib/s3';
@@ -151,6 +152,7 @@ app.use(`${baseApiUrl}/cart`, cartRouter);
 app.use(`${baseApiUrl}/admin`, adminRouter);
 app.use(`${baseApiUrl}/repair`, repairRouter);
 app.use(`${baseApiUrl}/messages`, messageRoutes);
+app.use(`${baseApiUrl}/recommendations`, recommendationRouter);
 
 // ── GLIE Temp Image Upload (fast, no auth required) ────────────────────────
 app.post(`${baseApiUrl}/glie/upload-temp`, upload.single('image'), async (req: Request, res: Response) => {
