@@ -462,7 +462,7 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
             ],
           },
           ...(conv.garmentId
-            ? [{ OR: [{ offeredItemId: conv.garmentId }, { requestedItemId: conv.garmentId }] }]
+            ? [{ OR: [{ garmentOffered: conv.garmentId }, { garmentWanted: conv.garmentId }] }]
             : []),
         ],
       },
