@@ -134,11 +134,15 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
         // Find associated active order if any exists between these participants
         const activeOrder = await db.order.findFirst({
           where: {
-            OR: [
-              { buyerId: c.participant1Id, sellerId: c.participant2Id },
-              { buyerId: c.participant2Id, sellerId: c.participant1Id },
+            AND: [
+              {
+                OR: [
+                  { buyerId: c.participant1Id, sellerId: c.participant2Id },
+                  { buyerId: c.participant2Id, sellerId: c.participant1Id },
+                ],
+              },
+              ...(c.garmentId ? [{ items: { some: { garmentId: c.garmentId } } }] : []),
             ],
-            ...(c.garmentId ? { items: { some: { garmentId: c.garmentId } } } : {}),
             status: { in: ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED'] },
           },
           orderBy: { createdAt: 'desc' },
