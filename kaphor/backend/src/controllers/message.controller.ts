@@ -417,11 +417,15 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
     // Find associated order between these users
     const associatedOrder = await db.order.findFirst({
       where: {
-        OR: [
-          { buyerId: conv.participant1Id, sellerId: conv.participant2Id },
-          { buyerId: conv.participant2Id, sellerId: conv.participant1Id },
+        AND: [
+          {
+            OR: [
+              { buyerId: conv.participant1Id, sellerId: conv.participant2Id },
+              { buyerId: conv.participant2Id, sellerId: conv.participant1Id },
+            ],
+          },
+          ...(conv.garmentId ? [{ items: { some: { garmentId: conv.garmentId } } }] : []),
         ],
-        ...(conv.garmentId ? { items: { some: { garmentId: conv.garmentId } } } : {}),
       },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -450,11 +454,17 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
     // Find associated swap between these users
     const associatedSwap = await db.swap.findFirst({
       where: {
-        OR: [
-          { initiatorId: conv.participant1Id, receiverId: conv.participant2Id },
-          { initiatorId: conv.participant2Id, receiverId: conv.participant1Id },
+        AND: [
+          {
+            OR: [
+              { initiatorId: conv.participant1Id, receiverId: conv.participant2Id },
+              { initiatorId: conv.participant2Id, receiverId: conv.participant1Id },
+            ],
+          },
+          ...(conv.garmentId
+            ? [{ OR: [{ offeredItemId: conv.garmentId }, { requestedItemId: conv.garmentId }] }]
+            : []),
         ],
-        ...(conv.garmentId ? { OR: [{ offeredItemId: conv.garmentId }, { requestedItemId: conv.garmentId }] } : {}),
       },
       orderBy: { updatedAt: 'desc' },
       select: {
