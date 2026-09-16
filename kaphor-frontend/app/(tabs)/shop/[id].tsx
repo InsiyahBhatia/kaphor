@@ -95,8 +95,10 @@ export default function GarmentDetailScreen() {
     setBuying(true);
     telemetryService.trackIntent(id as string, 'PURCHASE');
     try {
-      const { data } = await api.post('/orders/cart', { garmentIds: [id as string] });
-      const orderId = data?.data?.id || data?.data?.orderId;
+      // POST /orders/ (createPaymentIntent) creates order directly from garmentId
+      // without requiring the item to be in the cart first
+      const { data } = await api.post('/orders', { garmentId: id as string });
+      const orderId = data?.data?.orderId || data?.data?.id;
       if (!orderId) {
         throw new Error('Could not initiate order session');
       }
