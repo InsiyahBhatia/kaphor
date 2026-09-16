@@ -392,11 +392,17 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         return;
       }
 
+      const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
       const updatedRental = await db.rental.update({
         where: { id: orderId },
         data: {
-          status: 'ACTIVE',
+          status: 'RESERVED',
+          paidAt: new Date(),
           stripeId: razorpay_order_id,
+          trackingHistory: [
+            ...currentHistory,
+            { status: 'RESERVED', timestamp: new Date().toISOString(), note: 'Payment verified and held safely in escrow. Ready for packaging and dispatch.' }
+          ],
         },
         include: { garment: true },
       });

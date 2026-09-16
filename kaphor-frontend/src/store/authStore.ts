@@ -5,6 +5,10 @@ export interface AuthUser {
   email: string;
   username?: string;
   displayName?: string;
+  avatar?: string | null;
+  avatarUrl?: string | null;
+  bio?: string | null;
+  isVerified?: boolean;
   role: string;
 }
 

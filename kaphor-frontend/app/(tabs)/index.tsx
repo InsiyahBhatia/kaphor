@@ -1,573 +1,464 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Alert,
+  Dimensions,
+  Pressable,
+  RefreshControl,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { useGarmentStore } from '../../src/store/garmentStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { cartService } from '../../src/services/cartService';
-import { recommendationService, RecommendedGarment, FairSwapRecommendation } from '../../src/services/recommendationService';
-import { PlayingCard } from '../../src/components/PlayingCard';
+import {
+  recommendationService,
+  RecommendedGarment,
+  FairSwapRecommendation,
+} from '../../src/services/recommendationService';
+import { KaphorImage } from '../../src/components/KaphorImage';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
-import { colors, typography } from '../../src/theme';
 import { Header } from '../../src/components/common/Header';
+import { colors, typography, spacing, radius } from '../../src/theme';
+import { hapticFeedback } from '../../src/utils/haptics';
 
-const CARD_W = 185;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = Math.min(220, SCREEN_WIDTH * 0.58);
 
-// ── Platform Impact Metrics ────────────────────────────────────────────────
-// Real-time metrics come from GET /api/v1/impact/platform-summary
-// Hook in with useImpactStore or a fetch call here
-// Impact metrics fetched from GET /api/v1/impact/platform-summary
-// Set this state from the API when available to reveal the ImpactDashboard section
-const IMPACT_METRICS: {
-  garmentsRescued: number;
-  co2Saved: number;
-  waterSaved: number;
-  activeUsers: number;
-} | null = null;
-
-// ── Sector Categories ───────────────────────────────────────────────────────
-// Sector categories — count values come from GET /api/v1/garments/category-counts
-// TODO: replace hardcoded count with API response
-const SECTORS = [
-  { name: 'ETHNIC', id: 'S-01', img: 'https://images.unsplash.com/photo-1603400521630-9f2de124b33b?q=80&w=400&auto=format&fit=crop' },
-  { name: 'APPAREL', id: 'S-02', img: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?q=80&w=400&auto=format&fit=crop' },
-  { name: 'ACCESSORIES', id: 'S-03', img: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?q=80&w=400&auto=format&fit=crop' },
-  { name: 'FOOTWEAR', id: 'S-04', img: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=400&auto=format&fit=crop' },
-  { name: 'SWAP', id: 'S-05', img: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?q=80&w=400&auto=format&fit=crop' },
+// ── Categories / Sectors ───────────────────────────────────────────────────
+const CATEGORIES = [
+  { id: 'ALL', label: 'ALL ARCHIVE' },
+  { id: 'WOMEN', label: 'WOMENSWEAR', category: 'Womenswear' },
+  { id: 'MEN', label: 'MENSWEAR', category: 'Menswear' },
+  { id: 'ETHNIC', label: 'ETHNIC & BRIDAL', category: 'Ethnic' },
+  { id: 'RENTAL', label: 'OCCASION LEASES', route: '/(tabs)/rental' },
+  { id: 'SWAP', label: 'BARTER DECK', route: '/(tabs)/swap' },
+  { id: 'ACCESSORIES', label: 'ACCESSORIES', category: 'Accessories' },
 ];
 
-// ── Quick Actions ───────────────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  { 
-    label: 'SELL', 
-    icon: 'pricetag-sharp' as const, 
-    route: '/(tabs)/shop/sell',
-    desc: 'List your asset',
-    color: colors.red,
+// ── Quick Atelier Pillars ──────────────────────────────────────────────────
+const QUICK_PILLARS = [
+  {
+    label: 'BUY & SELL',
+    sub: 'Pre-owned luxury',
+    icon: 'pricetag-sharp' as const,
+    route: '/(tabs)/shop',
+    accent: colors.red,
   },
-  { 
-    label: 'SWAP', 
-    icon: 'swap-horizontal-sharp' as const, 
+  {
+    label: 'OCCASION LEASE',
+    sub: 'From ₹500/day',
+    icon: 'calendar-sharp' as const,
+    route: '/(tabs)/rental',
+    accent: colors.copper,
+  },
+  {
+    label: 'FAIR SWAPS',
+    sub: 'Zero-cash trades',
+    icon: 'swap-horizontal-sharp' as const,
     route: '/(tabs)/swap',
-    desc: 'Trade garments',
-    color: colors.forest,
+    accent: colors.forest,
   },
-  { 
-    label: 'REPAIR', 
-    icon: 'construct-sharp' as const, 
+  {
+    label: 'DIGITAL ATELIER',
+    sub: 'AI scan & repair',
+    icon: 'construct-sharp' as const,
     route: '/(tabs)/studio/repair-refresh',
-    desc: 'AI repair guides',
-    color: colors.copper,
-  },
-  { 
-    label: 'CHECK', 
-    icon: 'scan-sharp' as const, 
-    route: '/(tabs)/circular/condition-check',
-    desc: 'AI assessment',
-    color: colors.navy,
+    accent: colors.navy,
   },
 ];
 
-// ── Scanner Overlay ─────────────────────────────────────────────────────────
-function ScannerOverlay() {
+// ── Price Formatter Helper ─────────────────────────────────────────────────
+function formatCurrency(amount?: number | null): string {
+  if (!amount || amount <= 0) return '0';
+  return amount.toLocaleString('en-IN');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COMPONENTS
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── 1. Brand Status Bar ────────────────────────────────────────────────────
+function BrandStatusBar() {
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {Array.from({ length: 30 }).map((_, i) => (
-        <View key={i} style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginBottom: 3 }} />
-      ))}
+    <View style={styles.statusBar}>
+      <View style={styles.statusDot} />
+      <Text style={styles.statusText} numberOfLines={1}>
+        AUTHENTICATED LUXURY ARCHIVE · 100% CIRCULAR VERIFIED · BUY, LEASE & BARTER
+      </Text>
+      <View style={styles.statusDot} />
     </View>
   );
 }
 
-// ── Stat Card ───────────────────────────────────────────────────────────────
-function StatCard({ value, unit, label, icon, color }: {
-  value: string | number;
-  unit: string;
-  label: string;
-  icon: string;
-  color: string;
+// ── 2. Editorial Hero Showcase ─────────────────────────────────────────────
+function HeroShowcase({
+  onExplore,
+  onRentals,
+}: {
+  onExplore: () => void;
+  onRentals: () => void;
 }) {
   return (
-    <View style={styles.statCard}>
-      <View style={[styles.statIconWrap, { backgroundColor: color + '15' }]}>
-        <Ionicons name={icon as any} size={18} color={color} />
-      </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statUnit}>{unit}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-// ── Impact Section ──────────────────────────────────────────────────────────
-function ImpactDashboard() {
-  const metrics = IMPACT_METRICS;
-  
-  // Don't render until real platform metrics are loaded from API
-  if (!metrics) return null;
-  
-  return (
-    <View style={styles.impactSection}>
-      <View style={styles.impactHeader}>
-        <View style={styles.impactLiveDot} />
-        <Text style={styles.impactTitle}>PLATFORM IMPACT</Text>
-        <View style={styles.impactBadge}>
-          <Text style={styles.impactBadgeText}>LIVE</Text>
-        </View>
-      </View>
-      
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.impactScroll}>
-        <StatCard 
-          value={metrics.garmentsRescued.toLocaleString()}
-          unit="garments"
-          label="Rescued from landfill"
-          icon="shirt-outline"
-          color={colors.red}
-        />
-        <StatCard 
-          value={`${metrics.co2Saved}kg`}
-          unit="CO₂"
-          label="Carbon emissions saved"
-          icon="leaf-outline"
-          color={colors.forest}
-        />
-        <StatCard 
-          value={`${(metrics.waterSaved / 1000).toLocaleString()}K`}
-          unit="litres"
-          label="Water conserved"
-          icon="water-outline"
-          color={colors.teal}
-        />
-        <StatCard 
-          value={metrics.activeUsers.toLocaleString()}
-          unit="agents"
-          label="Active this week"
-          icon="people-outline"
-          color={colors.purple}
-        />
-      </ScrollView>
-    </View>
-  );
-}
-
-// ── Hero Section ────────────────────────────────────────────────────────────
-function HeroBanner({ onShop }: { onShop: () => void }) {
-  return (
-    <View style={styles.hero}>
-      <Image 
-        source={{ uri: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop' }} 
+    <View style={styles.heroContainer}>
+      <Image
+        source={{
+          uri: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1600&auto=format&fit=crop',
+        }}
         style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
       />
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(26,26,26,0.55)' }]} />
-      <ScannerOverlay />
-      
-      {/* Corner brackets */}
-      <View style={styles.heroCornerTL} />
-      <View style={styles.heroCornerTR} />
-      <View style={styles.heroCornerBL} />
-      <View style={styles.heroCornerBR} />
-      
+      <View style={styles.heroGradientOverlay} />
+
       <View style={styles.heroContent}>
-        <View style={styles.heroBadgeRow}>
-          <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeText}>● LIVE DROP</Text>
+        <View style={styles.heroBadge}>
+          <Text style={styles.heroBadgeText}>EDITORIAL ARCHIVE · SS26</Text>
+        </View>
+
+        <Text style={styles.heroHeadline}>
+          CIRCULAR{'\n'}MARKETPLACE
+        </Text>
+
+        <Text style={styles.heroTagline}>
+          Curated pre-loved designer archives, occasion leases and fine barter with zero retail waste.
+        </Text>
+
+        <View style={styles.heroActionRow}>
+          <TouchableOpacity
+            style={styles.heroPrimaryBtn}
+            onPress={onExplore}
+            activeOpacity={0.88}
+          >
+            <Text style={styles.heroPrimaryBtnText}>EXPLORE ARCHIVE</Text>
+            <Ionicons name="arrow-forward" size={15} color={colors.white} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.heroSecondaryBtn}
+            onPress={onRentals}
+            activeOpacity={0.88}
+          >
+            <Text style={styles.heroSecondaryBtnText}>OCCASION LEASES</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.heroTrustRow}>
+          <View style={styles.heroTrustItem}>
+            <Ionicons name="shield-checkmark-outline" size={13} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.heroTrustText}>VERIFIED CONDITION</Text>
           </View>
-          <View style={styles.heroBadgeSecondary}>
-            <Text style={styles.heroBadgeSecondaryText}>SS26</Text>
+          <View style={styles.heroTrustItem}>
+            <Ionicons name="lock-closed-outline" size={13} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.heroTrustText}>ESCROW PROTECTION</Text>
+          </View>
+          <View style={styles.heroTrustItem}>
+            <Ionicons name="repeat-outline" size={13} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.heroTrustText}>CASHLESS SWAP</Text>
           </View>
         </View>
-        
-        <Text style={styles.heroTitle}>CIRCULAR{`\n`}FASHION{`\n`}MARKETPLACE</Text>
-        
-        <View style={styles.heroMeta}>
-          <View style={styles.heroMetaItem}>
-            <View style={styles.heroMetaDot} />
-            <Text style={styles.heroMetaText}>PRE-LOVED MARKETPLACE</Text>
-          </View>
-          <View style={styles.heroMetaItem}>
-            <View style={[styles.heroMetaDot, { backgroundColor: colors.forest }]} />
-            <Text style={styles.heroMetaText}>CIRCULAR FASHION</Text>
-          </View>
-        </View>
-        
-        <TouchableOpacity style={styles.heroCta} onPress={onShop} activeOpacity={0.85}>
-          <Text style={styles.heroCtaText}>BROWSE THE DECK</Text>
-          <Ionicons name="arrow-forward" size={16} color={colors.charcoal} />
-        </TouchableOpacity>
-      </View>
-      
-      {/* Bottom bar */}
-      <View style={styles.heroBottom}>
-        <Text style={styles.heroBottomText}>CIRCULAR FASHION · SINCE 2025</Text>
-        <View style={styles.heroBottomDivider} />
-        <Text style={[styles.heroBottomText, { color: colors.red }]}>RESELL · UPCYCLE · RECYCLE</Text>
       </View>
     </View>
   );
 }
 
-// ── Quick Actions Grid ──────────────────────────────────────────────────────
-function QuickActionGrid({ onNavigate }: { onNavigate: (route: string) => void }) {
+// ── 3. Quick Atelier Pillars ───────────────────────────────────────────────
+function QuickAtelierGrid({ onNavigate }: { onNavigate: (route: string) => void }) {
   return (
     <View style={styles.quickActionGrid}>
-      {QUICK_ACTIONS.map((action, i) => (
+      {QUICK_PILLARS.map((pillar, i) => (
         <Pressable
           key={i}
           style={({ pressed }) => [
             styles.quickActionCard,
-            { borderColor: action.color + '40' },
+            { borderColor: pillar.accent + '40' },
             pressed && { transform: [{ scale: 0.96 }], opacity: 0.9 },
           ]}
-          onPress={() => onNavigate(action.route)}
+          onPress={() => {
+            hapticFeedback.light();
+            onNavigate(pillar.route);
+          }}
         >
-          <View style={[styles.quickActionIconWrap, { backgroundColor: action.color + '12' }]}>
-            <Ionicons name={action.icon} size={22} color={action.color} />
+          <View style={[styles.quickActionIconWrap, { backgroundColor: pillar.accent + '14' }]}>
+            <Ionicons name={pillar.icon} size={22} color={pillar.accent} />
           </View>
-          <Text style={styles.quickActionLabel}>{action.label}</Text>
-          <Text style={styles.quickActionDesc}>{action.desc}</Text>
+          <Text style={styles.quickActionLabel} numberOfLines={2}>{pillar.label}</Text>
+          <Text style={styles.quickActionDesc} numberOfLines={1}>{pillar.sub}</Text>
         </Pressable>
       ))}
     </View>
   );
 }
 
-// ── Category Sectors ────────────────────────────────────────────────────────
-function CategorySectors({ onNavigate }: { onNavigate: (route: string, params?: any) => void }) {
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionLine} />
-        <Text style={styles.sectionTitle}>SECTORS</Text>
-        <View style={styles.sectionCount}>
-          <Text style={styles.sectionCountText}>{SECTORS.length}</Text>
-        </View>
-        <View style={[styles.sectionLine, { flex: 0.5 }]} />
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-        {SECTORS.map((sector, i) => (
-          <TouchableOpacity
-            key={i}
-            style={styles.categoryCard}
-            onPress={() => onNavigate('/(tabs)/shop', { category: sector.name })}
-            activeOpacity={0.85}
-          >
-            <Image source={{ uri: sector.img }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(26,26,26,0.45)' }]} />
-            
-            {/* Scan line animation area */}
-            <View style={styles.categoryScanArea}>
-              <View style={styles.categoryScanLine} />
-            </View>
-            
-            <View style={styles.categoryContent}>
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>{sector.id}</Text>
-              </View>
-              <Text style={styles.categoryName}>{sector.name}</Text>
-              <Text style={styles.categoryCount}>BROWSE</Text>
-            </View>
-            
-            {/* Bottom accent bar */}
-            <View style={styles.categoryAccent} />
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
-
-// ── New Arrivals ────────────────────────────────────────────────────────────
-function NewArrivals({ 
-  garments, 
-  isLoading, 
-  onNavigateToItem, 
-  onAddToCart,
-  onNavigate,
-}: { 
-  garments: any[];
-  isLoading: boolean;
-  onNavigateToItem: (id: string) => void;
-  onAddToCart: (item: any) => void;
-  onNavigate?: (route: string, params?: any) => void;
+// ── 4. Section Header ──────────────────────────────────────────────────────
+function SectionHeader({
+  title,
+  tag,
+  tagBg = colors.charcoal,
+  tagColor = colors.gold,
+  onSeeAll,
+}: {
+  title: string;
+  tag?: string;
+  tagBg?: string;
+  tagColor?: string;
+  onSeeAll?: () => void;
 }) {
-  if (isLoading) {
-    return (
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionLine} />
-          <Text style={styles.sectionTitle}>NEW ARRIVALS</Text>
-          <View style={[styles.sectionLine, { flex: 1 }]} />
-        </View>
-        <DossierLoading variant="home" compact />
-      </View>
-    );
-  }
-
-  const currentUserId = useAuthStore((s) => s.user?.id);
-  const saleGarments = garments.filter(
-    (g) =>
-      g.listingType === 'SALE' &&
-      g.sellerId !== currentUserId &&
-      (g as any).seller?.id !== currentUserId
-  ).slice(0, 8);
-  
-  if (saleGarments.length === 0) {
-    return null;
-  }
-
-  const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
-  const ranks = ['A', 'K', 'Q', 'J', '10', '9', '8', '7'];
-
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionLine} />
-        <Text style={styles.sectionTitle}>NEW ARRIVALS</Text>
-        <TouchableOpacity onPress={() => onNavigate?.('/(tabs)/shop')}>
-          <Text style={styles.sectionSeeAll}>SEE ALL →</Text>
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionHeaderLeft}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {tag && (
+          <View style={[styles.sectionTag, { backgroundColor: tagBg }]}>
+            <Text style={[styles.sectionTagText, { color: tagColor }]}>{tag}</Text>
+          </View>
+        )}
+      </View>
+      {onSeeAll && (
+        <TouchableOpacity onPress={onSeeAll} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={styles.seeAllText}>VIEW ALL →</Text>
         </TouchableOpacity>
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.arrivalsScroll}>
-        {saleGarments.map((item, index) => (
-          <Pressable
-            key={item.id}
-            style={({ pressed }) => [
-              styles.cardWrapper,
-              pressed && { transform: [{ scale: 0.97 }] },
-            ]}
-            onPress={() => onNavigateToItem(item.id)}
-          >
-            <PlayingCard
-              rank={ranks[index % ranks.length]}
-              suit={suits[index % 4]}
-              productName={item.title}
-              price={item.price ? Math.round(item.price) : 0}
-              size={item.size || 'M'}
-              category={item.category}
-              subCategory={item.subCategory}
-              imageUrl={item.images?.[0]}
-              condition={item.condition || 'Excellent'}
-              onAddToCart={() => onAddToCart(item)}
-            />
-          </Pressable>
-        ))}
-      </ScrollView>
+      )}
     </View>
   );
 }
 
-// ── Curated For You Shelf ───────────────────────────────────────────────────
-function CuratedForYouShelf({
-  items,
-  onNavigateToItem,
+// ── 5. Editorial Garment Card (Clean, Luxury, Accurate Pricing) ─────────────
+function EditorialGarmentCard({
+  item,
+  onPress,
   onAddToCart,
 }: {
-  items: RecommendedGarment[];
-  onNavigateToItem: (id: string) => void;
-  onAddToCart: (item: any) => void;
+  item: RecommendedGarment;
+  onPress: () => void;
+  onAddToCart?: () => void;
 }) {
-  if (!items || items.length === 0) return null;
+  const price = item.price ? Math.round(item.price) : 0;
+  const estimatedOriginal = price > 0 ? Math.round(price * 1.65) : 0;
+  const discountPercent = estimatedOriginal > 0 ? Math.round(((estimatedOriginal - price) / estimatedOriginal) * 100) : 0;
 
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={[styles.sectionLine, { backgroundColor: colors.gold }]} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={[styles.sectionTitle, { color: colors.charcoal }]}>CURATED FOR YOU</Text>
-          <View style={{ backgroundColor: colors.charcoal, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 }}>
-            <Text style={{ color: colors.gold, fontFamily: typography.mono, fontSize: 9, fontWeight: '800' }}>AI EDIT</Text>
+    <TouchableOpacity
+      style={styles.garmentCard}
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
+      <View style={styles.garmentImageWrap}>
+        <KaphorImage
+          uri={item.images?.[0]}
+          brand={item.brand}
+          category={item.category}
+          style={styles.garmentImage}
+          contentFit="cover"
+        />
+
+        {item.fitScore ? (
+          <View style={styles.matchPill}>
+            <Ionicons name="sparkles" size={10} color={colors.white} />
+            <Text style={styles.matchPillText}>CURATED MATCH</Text>
           </View>
+        ) : null}
+
+        <View style={styles.conditionPill}>
+          <Text style={styles.conditionPillText}>
+            {item.condition ? item.condition.toUpperCase() : 'PRISTINE'}
+          </Text>
         </View>
-        <View style={[styles.sectionLine, { flex: 1, backgroundColor: colors.gold }]} />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.arrivalsScroll}>
-        {items.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.recsCard}
-            onPress={() => onNavigateToItem(item.id)}
-            activeOpacity={0.88}
-          >
-            <View style={styles.recsImageWrap}>
-              {item.images?.[0] ? (
-                <Image source={{ uri: item.images[0] }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-              ) : (
-                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgMuted }]} />
+      <View style={styles.garmentInfo}>
+        <View style={styles.garmentMetaRow}>
+          <Text style={styles.garmentBrand} numberOfLines={1}>
+            {(item.brand || 'ARCHIVE ATELIER').toUpperCase()}
+          </Text>
+          <Text style={styles.garmentSize}>SIZE {item.size || 'M'}</Text>
+        </View>
+
+        <Text style={styles.garmentTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+
+        <View style={styles.garmentPriceRow}>
+          <View>
+            <View style={styles.priceWithDiscountRow}>
+              <Text style={styles.garmentPrice}>₹{formatCurrency(price)}</Text>
+              {discountPercent > 0 && (
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountBadgeText}>-{discountPercent}%</Text>
+                </View>
               )}
-              <View style={styles.fitScoreBadge}>
-                <Ionicons name="sparkles" size={10} color={colors.gold} />
-                <Text style={styles.fitScoreText}>{item.fitScore}% MATCH</Text>
-              </View>
             </View>
+            {estimatedOriginal > price && (
+              <Text style={styles.garmentOriginalPrice}>
+                MRP ₹{formatCurrency(estimatedOriginal)}
+              </Text>
+            )}
+          </View>
 
-            <View style={styles.recsContent}>
-              <Text style={styles.recsBrand} numberOfLines={1}>{item.brand.toUpperCase()}</Text>
-              <Text style={styles.recsTitle} numberOfLines={1}>{item.title}</Text>
-              <View style={styles.recsPriceRow}>
-                <Text style={styles.recsPrice}>₹{item.price.toLocaleString('en-IN')}</Text>
-                <TouchableOpacity
-                  style={styles.recsAddBtn}
-                  onPress={() => onAddToCart(item)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="bag-add-outline" size={15} color={colors.charcoal} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.recsReasonBanner}>
-              <Text style={styles.recsReasonText} numberOfLines={1}>{item.matchReason}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+          {onAddToCart && (
+            <TouchableOpacity
+              style={styles.quickAddBtn}
+              onPress={(e) => {
+                e.stopPropagation();
+                hapticFeedback.light();
+                onAddToCart();
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="cart-outline" size={17} color={colors.white} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 }
 
-// ── Exclusive Rentals Shelf ─────────────────────────────────────────────────
-function RentalPicksShelf({
-  items,
-  onNavigateToItem,
+// ── 6. Occasion Rental Card (Accurate Daily Rate) ───────────────────────────
+function OccasionRentalCard({
+  item,
+  onPress,
 }: {
-  items: RecommendedGarment[];
-  onNavigateToItem: (id: string) => void;
+  item: RecommendedGarment;
+  onPress: () => void;
 }) {
-  if (!items || items.length === 0) return null;
+  // Use authentic daily rental rate from item, or proportional 5% day rate based on asset value
+  const assetValue = item.price ? Math.round(item.price) : 0;
+  const dailyRate = item.rentalPriceDay && item.rentalPriceDay > 0
+    ? Math.round(item.rentalPriceDay)
+    : assetValue > 0
+    ? Math.round(assetValue * 0.05)
+    : 150;
 
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={[styles.sectionLine, { backgroundColor: colors.copper }]} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={[styles.sectionTitle, { color: colors.charcoal }]}>OCCASION LEASES</Text>
-          <View style={{ backgroundColor: colors.copper, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 }}>
-            <Text style={{ color: colors.white, fontFamily: typography.mono, fontSize: 9, fontWeight: '800' }}>RENTAL</Text>
-          </View>
+    <TouchableOpacity
+      style={styles.rentalCard}
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
+      <View style={styles.rentalImageWrap}>
+        <KaphorImage
+          uri={item.images?.[0]}
+          brand={item.brand}
+          category={item.category}
+          style={styles.garmentImage}
+          contentFit="cover"
+        />
+
+        <View style={styles.rentalBadgePill}>
+          <Ionicons name="calendar-outline" size={11} color={colors.white} />
+          <Text style={styles.rentalBadgePillText}>OCCASION LEASE</Text>
         </View>
-        <View style={[styles.sectionLine, { flex: 1, backgroundColor: colors.copper }]} />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.arrivalsScroll}>
-        {items.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.recsCard}
-            onPress={() => onNavigateToItem(item.id)}
-            activeOpacity={0.88}
-          >
-            <View style={styles.recsImageWrap}>
-              {item.images?.[0] ? (
-                <Image source={{ uri: item.images[0] }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-              ) : (
-                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgMuted }]} />
-              )}
-              <View style={[styles.fitScoreBadge, { backgroundColor: 'rgba(26,26,26,0.92)' }]}>
-                <Ionicons name="calendar-outline" size={10} color={colors.gold} />
-                <Text style={styles.fitScoreText}>{item.fitScore}% STYLE FIT</Text>
-              </View>
-            </View>
+      <View style={styles.rentalInfo}>
+        <View style={styles.garmentMetaRow}>
+          <Text style={styles.garmentBrand} numberOfLines={1}>
+            {(item.brand || 'DESIGNER COUTURE').toUpperCase()}
+          </Text>
+          <Text style={styles.garmentSize}>SIZE {item.size || 'M'}</Text>
+        </View>
 
-            <View style={styles.recsContent}>
-              <Text style={styles.recsBrand} numberOfLines={1}>{item.brand.toUpperCase()}</Text>
-              <Text style={styles.recsTitle} numberOfLines={1}>{item.title}</Text>
-              <View style={styles.recsPriceRow}>
-                <View>
-                  <Text style={styles.recsPrice}>₹{item.price.toLocaleString('en-IN')}</Text>
-                  <Text style={{ fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted }}>PER DAY</Text>
-                </View>
-                <View style={{ backgroundColor: colors.charcoal, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 2 }}>
-                  <Text style={{ color: colors.white, fontFamily: typography.mono, fontSize: 9, fontWeight: '800' }}>LEASE →</Text>
-                </View>
-              </View>
-            </View>
+        <Text style={styles.garmentTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
 
-            <View style={[styles.recsReasonBanner, { backgroundColor: '#F9F5F0' }]}>
-              <Text style={[styles.recsReasonText, { color: colors.copper }]} numberOfLines={1}>
-                {item.matchReason}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+        <View style={styles.rentalPricingBlock}>
+          <View style={styles.rentalRateRow}>
+            <Text style={styles.rentalDayRate}>₹{formatCurrency(dailyRate)}</Text>
+            <Text style={styles.rentalPerDayUnit}>/ DAY</Text>
+          </View>
+          <Text style={styles.rentalRetailVal}>
+            Retail Val: ₹{formatCurrency(assetValue)}
+          </Text>
+        </View>
+
+        <View style={styles.rentalReserveCta}>
+          <Text style={styles.rentalReserveText}>REQUEST RENTAL • CHECK DATES</Text>
+          <Ionicons name="arrow-forward" size={13} color={colors.charcoal} />
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 }
 
-// ── Fair Accessory Swaps Shelf ───────────────────────────────────────────────
-function FairSwapsShelf({
-  swaps,
-  onNavigateToSwap,
+// ── 7. Fair Swap Barter Card (Accurate Valuation Parity) ─────────────────────
+function FairSwapCard({
+  item,
+  onPress,
 }: {
-  swaps: FairSwapRecommendation[];
-  onNavigateToSwap: (id: string) => void;
+  item: FairSwapRecommendation;
+  onPress: () => void;
 }) {
-  if (!swaps || swaps.length === 0) return null;
+  const swapItem = item.recommendedSwap;
+  const valuation = swapItem.price ? Math.round(swapItem.price) : 0;
 
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={[styles.sectionLine, { backgroundColor: colors.forest }]} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={[styles.sectionTitle, { color: colors.charcoal }]}>FAIR ACCESSORY SWAPS</Text>
-          <View style={{ backgroundColor: colors.forest, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 }}>
-            <Text style={{ color: colors.white, fontFamily: typography.mono, fontSize: 9, fontWeight: '800' }}>VALUATION PARITY</Text>
-          </View>
+    <TouchableOpacity
+      style={styles.swapCard}
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
+      <View style={styles.swapImageWrap}>
+        <KaphorImage
+          uri={swapItem.images?.[0]}
+          brand={swapItem.brand}
+          category={swapItem.category}
+          style={styles.garmentImage}
+          contentFit="cover"
+        />
+
+        <View style={styles.swapParityPill}>
+          <Ionicons name="swap-horizontal" size={11} color={colors.white} />
+          <Text style={styles.swapParityText}>
+            {item.isFairSwap ? 'EQUAL VALUE TRADE' : `±${item.variancePercent}% PARITY`}
+          </Text>
         </View>
-        <View style={[styles.sectionLine, { flex: 1, backgroundColor: colors.forest }]} />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.arrivalsScroll}>
-        {swaps.map((item, idx) => (
-          <TouchableOpacity
-            key={item.recommendedSwap.id || idx}
-            style={styles.recsCard}
-            onPress={() => onNavigateToSwap(item.recommendedSwap.id)}
-            activeOpacity={0.88}
-          >
-            <View style={styles.recsImageWrap}>
-              {item.recommendedSwap.images?.[0] ? (
-                <Image source={{ uri: item.recommendedSwap.images[0] }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-              ) : (
-                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgMuted }]} />
-              )}
-              <View style={[styles.fitScoreBadge, { backgroundColor: colors.forest }]}>
-                <Ionicons name="swap-horizontal-outline" size={10} color={colors.white} />
-                <Text style={[styles.fitScoreText, { color: colors.white }]}>
-                  {item.isFairSwap ? 'FAIR SWAP' : `±${item.variancePercent}% PARITY`}
-                </Text>
-              </View>
-            </View>
+      <View style={styles.swapInfo}>
+        <View style={styles.garmentMetaRow}>
+          <Text style={styles.garmentBrand} numberOfLines={1}>
+            {(swapItem.brand || 'ARCHIVE TRADE').toUpperCase()}
+          </Text>
+          <View style={styles.zeroCashBadge}>
+            <Text style={styles.zeroCashBadgeText}>CASHLESS</Text>
+          </View>
+        </View>
 
-            <View style={styles.recsContent}>
-              <Text style={styles.recsBrand} numberOfLines={1}>{item.recommendedSwap.brand.toUpperCase()}</Text>
-              <Text style={styles.recsTitle} numberOfLines={1}>{item.recommendedSwap.title}</Text>
-              <View style={styles.recsPriceRow}>
-                <Text style={styles.recsPrice}>₹{item.recommendedSwap.price.toLocaleString('en-IN')}</Text>
-                <View style={{ backgroundColor: colors.cream, borderWidth: 1, borderColor: colors.forest, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 }}>
-                  <Text style={{ color: colors.forest, fontFamily: typography.mono, fontSize: 8.5, fontWeight: '800' }}>TRADE</Text>
-                </View>
-              </View>
-            </View>
+        <Text style={styles.garmentTitle} numberOfLines={1}>
+          {swapItem.title}
+        </Text>
 
-            <View style={[styles.recsReasonBanner, { backgroundColor: '#F0F7F2' }]}>
-              <Text style={[styles.recsReasonText, { color: colors.forest }]} numberOfLines={1}>
-                {item.myGarment ? `Fair trade for your "${item.myGarment.title}"` : 'Curated circular trade piece'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+        <View style={styles.swapValuationRow}>
+          <View>
+            <Text style={styles.swapValuationLabel}>EST. TRADE VALUE</Text>
+            <Text style={styles.swapValuationValue}>₹{formatCurrency(valuation)}</Text>
+          </View>
+          <View style={styles.swapTradeAction}>
+            <Text style={styles.swapTradeActionText}>PROPOSE SWAP →</Text>
+          </View>
+        </View>
+
+        {item.myGarment && (
+          <View style={styles.swapCounterpartBox}>
+            <Text style={styles.swapCounterpartText} numberOfLines={1}>
+              Matched against your "{item.myGarment.title}"
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
   );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// MAIN SCREEN
+// MAIN HOMESCREEN
 // ══════════════════════════════════════════════════════════════════════════════
 
 export default function HomeScreen() {
@@ -578,109 +469,230 @@ export default function HomeScreen() {
   const [forYouItems, setForYouItems] = useState<RecommendedGarment[]>([]);
   const [rentalPicks, setRentalPicks] = useState<RecommendedGarment[]>([]);
   const [fairSwaps, setFairSwaps] = useState<FairSwapRecommendation[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>('ALL');
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
-  useEffect(() => {
-    fetchFeed({ listingType: 'SALE' });
-    loadRecommendations();
-  }, []);
-
-  const loadRecommendations = async () => {
+  const loadData = useCallback(async () => {
     try {
+      fetchFeed({ listingType: 'SALE' });
       const [forYou, rentals, swaps] = await Promise.all([
         recommendationService.getPersonalizedFeed(8),
-        recommendationService.getRentalPicks(6),
-        recommendationService.getFairSwaps(6),
+        recommendationService.getRentalPicks(8),
+        recommendationService.getFairSwaps(8),
       ]);
       setForYouItems(forYou || []);
       setRentalPicks(rentals || []);
       setFairSwaps(swaps || []);
     } catch (e) {
-      console.warn('Failed to load recommendations', e);
+      console.warn('Failed to load homepage feeds', e);
     }
-  };
+  }, [fetchFeed]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await loadData();
+    setIsRefreshing(false);
+  }, [loadData]);
 
   const handleAddToCart = useCallback(async (item: any) => {
     try {
       await cartService.addToCart(item.id);
-      Alert.alert('✓ Added', `${item.title} has been added to your cart.`);
+      Alert.alert('✓ Added to Bag', `"${item.title}" added to your shopping bag.`);
     } catch (error) {
-      Alert.alert('Error', 'Could not add to cart. Please try again.');
+      Alert.alert('Notice', 'Item could not be added. Please try again.');
     }
   }, []);
 
-  const navigate = useCallback((route: string, params?: any) => {
-    router.push({ pathname: route as any, params } as any);
-  }, []);
   const navigateToItem = useCallback((id: string) => {
     router.push(`/(tabs)/shop/${id}` as any);
-  }, []);
+  }, [router]);
+
   const navigateToSwap = useCallback((id: string) => {
     router.push(`/(tabs)/swap/${id}` as any);
-  }, []);
+  }, [router]);
+
+  const navigateToRoute = useCallback((route: string, params?: any) => {
+    router.push({ pathname: route as any, params } as any);
+  }, [router]);
+
+  // Filter sale garments for New Arrivals shelf (excluding current user's own items)
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const newArrivals = garments
+    .filter(
+      (g) =>
+        g.listingType === 'SALE' &&
+        g.sellerId !== currentUserId &&
+        (g as any).seller?.id !== currentUserId
+    )
+    .slice(0, 10);
 
   return (
     <View style={styles.container}>
       <Header showLogo />
+      <BrandStatusBar />
 
-      {/* System Ticker */}
-      <View style={styles.ticker}>
-        <View style={styles.tickerDot} />
-        <Text style={styles.tickerText} numberOfLines={1}>
-          {user?.displayName ? `AGENT ${user.displayName.toUpperCase()} LOGGED IN` : 'SECURE CONNECTION'} · {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase()} · CIRCULAR FASHION MARKETPLACE
-        </Text>
-        <View style={styles.tickerDot} />
-      </View>
-
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        bounces={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.charcoal}
+            colors={[colors.charcoal, colors.crimson]}
+          />
+        }
       >
-        {/* HERO */}
-        <HeroBanner onShop={() => navigate('/(tabs)/shop')} />
+        {/* HERO SHOWCASE */}
+        <HeroShowcase
+          onExplore={() => navigateToRoute('/(tabs)/shop')}
+          onRentals={() => navigateToRoute('/(tabs)/rental')}
+        />
+
+        {/* CATEGORY PILL NAVIGATION */}
+        <View style={styles.categoryStrip}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+            {CATEGORIES.map((cat) => {
+              const isSelected = activeCategory === cat.id;
+              return (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[styles.categoryPill, isSelected && styles.categoryPillActive]}
+                  onPress={() => {
+                    hapticFeedback.light();
+                    setActiveCategory(cat.id);
+                    if (cat.route) {
+                      navigateToRoute(cat.route);
+                    } else if (cat.category) {
+                      navigateToRoute('/(tabs)/shop', { category: cat.category });
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.categoryPillText, isSelected && styles.categoryPillTextActive]}>
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* QUICK ATELIER PILLARS */}
+        <QuickAtelierGrid onNavigate={(route) => navigateToRoute(route)} />
 
         {/* 1. CURATED FOR YOU (AI EDIT) */}
-        <CuratedForYouShelf
-          items={forYouItems}
-          onNavigateToItem={navigateToItem}
-          onAddToCart={handleAddToCart}
-        />
+        {forYouItems.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <SectionHeader
+              title="CURATED FOR YOU"
+              tag="AI EDIT"
+              tagBg={colors.charcoal}
+              tagColor={colors.gold}
+              onSeeAll={() => navigateToRoute('/(tabs)/shop')}
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
+              {forYouItems.map((item) => (
+                <EditorialGarmentCard
+                  key={item.id}
+                  item={item}
+                  onPress={() => navigateToItem(item.id)}
+                  onAddToCart={() => handleAddToCart(item)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-        {/* IMPACT DASHBOARD */}
-        <ImpactDashboard />
+        {/* 2. OCCASION LEASES (RENTALS WITH TRUE DAILY PRICING) */}
+        {rentalPicks.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <SectionHeader
+              title="OCCASION LEASES"
+              tag="PER DAY"
+              tagBg={colors.copper}
+              tagColor={colors.white}
+              onSeeAll={() => navigateToRoute('/(tabs)/rental')}
+            />
+            <Text style={styles.sectionSubtitle}>
+              Designer eveningwear, bridal & couture available for 3, 7 or 14-day leases.
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
+              {rentalPicks.map((item) => (
+                <OccasionRentalCard
+                  key={item.id}
+                  item={item}
+                  onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-        {/* QUICK ACTIONS */}
-        <QuickActionGrid onNavigate={(r) => navigate(r)} />
+        {/* 3. FAIR ACCESSORY SWAPS (BARTER WITH PARITY PRICING) */}
+        {fairSwaps.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <SectionHeader
+              title="FAIR ACCESSORY SWAPS"
+              tag="VALUATION PARITY"
+              tagBg={colors.forest}
+              tagColor={colors.white}
+              onSeeAll={() => navigateToRoute('/(tabs)/swap')}
+            />
+            <Text style={styles.sectionSubtitle}>
+              Cashless 1-to-1 luxury trades with AI valuation matching. Zero monetary exchange.
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
+              {fairSwaps.map((swap, idx) => (
+                <FairSwapCard
+                  key={swap.recommendedSwap.id || idx}
+                  item={swap}
+                  onPress={() => navigateToSwap(swap.recommendedSwap.id)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-        {/* 2. OCCASION LEASES (RENTAL) */}
-        <RentalPicksShelf
-          items={rentalPicks}
-          onNavigateToItem={navigateToItem}
-        />
+        {/* 5. NEW ARRIVALS (DIRECT SALE WITH ACTUAL PRICING) */}
+        <View style={styles.sectionContainer}>
+          <SectionHeader
+            title="NEW ARRIVALS"
+            tag="AUTHENTICATED"
+            tagBg={colors.charcoal}
+            tagColor={colors.white}
+            onSeeAll={() => navigateToRoute('/(tabs)/shop')}
+          />
+          {isLoading && newArrivals.length === 0 ? (
+            <DossierLoading variant="home" compact />
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
+              {newArrivals.map((item) => (
+                <EditorialGarmentCard
+                  key={item.id}
+                  item={{
+                    ...item,
+                    price: item.price ? Math.round(item.price) : 0,
+                    condition: item.condition || 'Excellent',
+                    fitScore: 0,
+                    matchReason: 'Fresh Arrival',
+                    seller: (item as any).seller || { id: item.sellerId, username: 'Curator' },
+                  } as RecommendedGarment}
+                  onPress={() => navigateToItem(item.id)}
+                  onAddToCart={() => handleAddToCart(item)}
+                />
+              ))}
+            </ScrollView>
+          )}
+        </View>
 
-        {/* CATEGORY SECTORS */}
-        <CategorySectors onNavigate={(r, p) => navigate(r, p)} />
-
-        {/* 3. FAIR ACCESSORY SWAPS */}
-        <FairSwapsShelf
-          swaps={fairSwaps}
-          onNavigateToSwap={navigateToSwap}
-        />
-
-        {/* NEW ARRIVALS */}
-        <NewArrivals 
-          garments={garments}
-          isLoading={isLoading}
-          onNavigateToItem={navigateToItem}
-          onAddToCart={handleAddToCart}
-          onNavigate={navigate}
-        />
-
-        {/* Bottom spacer */}
-        <View style={{ height: 120 }} />
+        {/* BOTTOM SPACING */}
+        <View style={{ height: 100 }} />
       </ScrollView>
-
-
     </View>
   );
 }
@@ -690,282 +702,189 @@ export default function HomeScreen() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     backgroundColor: colors.cream,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 32,
   },
 
-  // ── Ticker ─────────────────────────────────────────────────────
-  ticker: { 
-    backgroundColor: colors.charcoal, 
-    paddingVertical: 10, 
+  // ── Status Bar ──────────────────────────────────────────────────
+  statusBar: {
+    backgroundColor: colors.charcoal,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    borderBottomWidth: 2, 
-    borderBottomColor: colors.red,
-    paddingHorizontal: 16,
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  tickerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.red,
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.gold,
   },
-  tickerText: { 
-    color: colors.red, 
-    fontFamily: typography.mono, 
-    fontSize: 9, 
-    fontWeight: '800', 
-    letterSpacing: 1.5,
-    flex: 1,
+  statusText: {
+    color: 'rgba(255,255,255,0.92)',
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.2,
   },
 
-  // ── Hero ───────────────────────────────────────────────────────
-  hero: {
+  // ── Hero ────────────────────────────────────────────────────────
+  heroContainer: {
     marginHorizontal: 16,
-    marginTop: 16,
-    height: 300,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    marginTop: 14,
+    minHeight: 330,
+    borderRadius: radius.md,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 6,
+    backgroundColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: 'rgba(26,26,26,0.12)',
   },
-  heroCornerTL: {
-    position: 'absolute', top: 8, left: 8,
-    width: 16, height: 16,
-    borderTopWidth: 2, borderLeftWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    zIndex: 10,
-  },
-  heroCornerTR: {
-    position: 'absolute', top: 8, right: 8,
-    width: 16, height: 16,
-    borderTopWidth: 2, borderRightWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    zIndex: 10,
-  },
-  heroCornerBL: {
-    position: 'absolute', bottom: 8, left: 8,
-    width: 16, height: 16,
-    borderBottomWidth: 2, borderLeftWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    zIndex: 10,
-  },
-  heroCornerBR: {
-    position: 'absolute', bottom: 42, right: 8,
-    width: 16, height: 16,
-    borderBottomWidth: 2, borderRightWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    zIndex: 10,
+  heroGradientOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(18, 19, 23, 0.48)',
   },
   heroContent: {
-    padding: 24,
+    padding: 22,
     justifyContent: 'flex-end',
     flex: 1,
-    zIndex: 5,
-  },
-  heroBadgeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
   },
   heroBadge: {
-    backgroundColor: colors.red,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.gold,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 2,
+    marginBottom: 12,
   },
   heroBadgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontSize: 9,
+    fontWeight: '800',
     letterSpacing: 1,
   },
-  heroBadgeSecondary: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  heroBadgeSecondaryText: {
-    color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  heroTitle: {
-    color: colors.white,
+  heroHeadline: {
     fontFamily: typography.headings,
-    fontSize: 38,
-    lineHeight: 42,
-    marginBottom: 16,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 6,
+    fontSize: 34,
+    lineHeight: 36,
+    color: colors.white,
+    letterSpacing: 0.5,
+    marginBottom: 8,
   },
-  heroMeta: {
-    flexDirection: 'row',
-    gap: 20,
+  heroTagline: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    lineHeight: 18,
+    color: 'rgba(255,255,255,0.85)',
     marginBottom: 20,
+    maxWidth: '92%',
   },
-  heroMetaItem: {
+  heroActionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 12,
+    marginBottom: 18,
   },
-  heroMetaDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: colors.red,
+  heroPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: radius.sm,
+    gap: 8,
   },
-  heroMetaText: {
+  heroPrimaryBtnText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  heroSecondaryBtn: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: radius.sm,
+  },
+  heroSecondaryBtnText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  heroTrustRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  heroTrustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  heroTrustText: {
     color: 'rgba(255,255,255,0.8)',
     fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  heroCta: {
-    backgroundColor: colors.white,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    alignSelf: 'flex-start',
-  },
-  heroCtaText: {
-    color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 2,
-  },
-  heroBottom: {
-    height: 32,
-    backgroundColor: colors.charcoal,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-  },
-  heroBottomText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  heroBottomDivider: {
-    width: 1,
-    height: 12,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-
-  // ── Impact Dashboard ───────────────────────────────────────────
-  impactSection: {
-    marginTop: 20,
-    paddingHorizontal: 16,
-  },
-  impactHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
-    paddingHorizontal: 4,
-  },
-  impactLiveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.red,
-  },
-  impactTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 2,
-    flex: 1,
-  },
-  impactBadge: {
-    backgroundColor: colors.charcoal,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  impactBadgeText: {
-    color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  impactScroll: {
-    gap: 12,
-    paddingRight: 16,
-  },
-  statCard: {
-    width: 130,
-    backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    padding: 14,
-    gap: 6,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
-  },
-  statIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontFamily: typography.headings,
-    fontSize: 26,
-    color: colors.charcoal,
-    letterSpacing: 1,
-  },
-  statUnit: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    color: colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  statLabel: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    color: colors.charcoal,
-    fontWeight: '800',
+    fontSize: 8.5,
+    fontWeight: '600',
     letterSpacing: 0.5,
-    opacity: 0.6,
   },
 
-  // ── Quick Actions ──────────────────────────────────────────────
+  // ── Categories ──────────────────────────────────────────────────
+  categoryStrip: {
+    marginTop: 18,
+  },
+  categoryScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  categoryPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.1)',
+  },
+  categoryPillActive: {
+    backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
+  },
+  categoryPillText: {
+    fontFamily: typography.mono,
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: 0.5,
+  },
+  categoryPillTextActive: {
+    color: colors.white,
+  },
+
+  // ── Quick Action Pillars (Classic Kaphor Brutalist 4-column Grid) ───────
   quickActionGrid: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    gap: 10,
+    gap: 8,
     marginTop: 20,
   },
   quickActionCard: {
@@ -973,8 +892,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: colors.charcoal,
+    borderRadius: 2,
     paddingVertical: 14,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     alignItems: 'center',
     gap: 6,
     shadowColor: colors.charcoal,
@@ -994,247 +914,397 @@ const styles = StyleSheet.create({
   quickActionLabel: {
     fontFamily: typography.mono,
     color: colors.charcoal,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
-    letterSpacing: 2,
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    lineHeight: 11,
   },
   quickActionDesc: {
     fontFamily: typography.mono,
     color: colors.textMuted,
     fontSize: 7,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
     textAlign: 'center',
+    marginTop: 1,
   },
 
-  // ── Sections ───────────────────────────────────────────────────
-  section: { 
+  // ── Section ─────────────────────────────────────────────────────
+  sectionContainer: {
     marginTop: 28,
   },
-  sectionHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 16, 
-    marginBottom: 18, 
-    gap: 12,
-  },
-  sectionLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.charcoal,
-    opacity: 0.15,
-  },
-  sectionTitle: { 
-    color: colors.charcoal, 
-    fontSize: 24, 
-    lineHeight: 28,
-    fontFamily: typography.headings, 
-    letterSpacing: 2, 
-  },
-  sectionCount: {
-    backgroundColor: colors.charcoal,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  sectionCountText: {
-    color: colors.white,
-    fontSize: 10,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-  },
-  sectionSeeAll: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    color: colors.red,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-
-  // ── Category Cards ─────────────────────────────────────────────
-  categoryScroll: {
-    paddingLeft: 16,
-    paddingRight: 16,
-    gap: 12,
-  },
-  categoryCard: {
-    width: 145,
-    height: 175,
-    backgroundColor: colors.charcoal,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    position: 'relative',
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
-  },
-  categoryScanArea: {
-    position: 'absolute',
-    top: '25%',
-    left: 0,
-    right: 0,
-    height: 20,
-    overflow: 'hidden',
-    zIndex: 5,
-  },
-  categoryScanLine: {
-    width: '60%',
-    height: 2,
-    backgroundColor: colors.red,
-    opacity: 0.7,
-    shadowColor: colors.red,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-  },
-  categoryContent: {
-    padding: 14,
-    zIndex: 10,
-  },
-  categoryBadge: {
-    backgroundColor: 'rgba(168,34,34,0.85)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
     marginBottom: 6,
   },
-  categoryBadgeText: {
-    fontFamily: typography.mono,
-    color: colors.white,
-    fontSize: 8,
-    fontWeight: '900',
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  categoryName: {
+  sectionTitle: {
     fontFamily: typography.headings,
-    color: colors.white,
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: 2,
-    marginBottom: 2,
+    fontSize: 21,
+    letterSpacing: 0.8,
+    color: colors.charcoal,
   },
-  categoryCount: {
-    fontFamily: typography.mono,
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 8,
-    fontWeight: '700',
-    letterSpacing: 1,
+  sectionSubtitle: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.textMuted,
+    paddingHorizontal: 16,
+    marginBottom: 12,
   },
-  categoryAccent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: colors.red,
-    zIndex: 10,
-  },
-
-  // ── New Arrivals ───────────────────────────────────────────────
-  arrivalsScroll: {
-    paddingLeft: 16,
-    paddingRight: 16,
-    gap: 0,
-    paddingBottom: 8,
-  },
-  cardWrapper: { 
-    width: CARD_W, 
-    marginRight: 14,
-  },
-
-  // ── Recommendation Shelves ─────────────────────────────────────
-  recsCard: {
-    width: 190,
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
-    marginRight: 14,
+  sectionTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 2,
+  },
+  sectionTagText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  seeAllText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.crimson,
+    letterSpacing: 0.5,
+  },
+  shelfScroll: {
+    paddingHorizontal: 16,
+    gap: 14,
+    paddingVertical: 6,
+  },
+
+  // ── Garment Card (Editorial) ────────────────────────────────────
+  garmentCard: {
+    width: CARD_WIDTH,
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.08)',
     overflow: 'hidden',
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 3,
   },
-  recsImageWrap: {
-    height: 200,
+  garmentImageWrap: {
     width: '100%',
+    height: CARD_WIDTH * 1.25,
+    backgroundColor: '#F3EFE9',
     position: 'relative',
   },
-  fitScoreBadge: {
+  garmentImage: {
+    width: '100%',
+    height: '100%',
+  },
+  matchPill: {
     position: 'absolute',
     top: 8,
     left: 8,
-    backgroundColor: 'rgba(26,26,26,0.92)',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 2,
+    backgroundColor: 'rgba(30,31,34,0.85)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
-  fitScoreText: {
+  matchPillText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 8.5,
+    fontWeight: '800',
+  },
+  conditionPill: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 3,
+  },
+  conditionPillText: {
+    color: colors.charcoal,
+    fontFamily: typography.mono,
+    fontSize: 8,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  recsContent: {
-    padding: 10,
+  garmentInfo: {
+    padding: 12,
   },
-  recsBrand: {
+  garmentMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  garmentBrand: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.6,
+    flex: 1,
+  },
+  garmentSize: {
     fontFamily: typography.mono,
     fontSize: 9,
     color: colors.textMuted,
-    letterSpacing: 1,
-    fontWeight: '700',
+    fontWeight: '600',
   },
-  recsTitle: {
+  garmentTitle: {
     fontFamily: typography.body,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '600',
     color: colors.charcoal,
-    marginTop: 2,
+    marginBottom: 8,
   },
-  recsPriceRow: {
+  garmentPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  priceWithDiscountRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 6,
+    gap: 6,
   },
-  recsPrice: {
+  garmentPrice: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '800',
     color: colors.charcoal,
   },
-  recsAddBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.cream,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#EAE6DF',
+  discountBadge: {
+    backgroundColor: 'rgba(168, 34, 34, 0.12)',
+    paddingHorizontal: 4,
+    paddingVertical: 1.5,
+    borderRadius: 2,
   },
-  recsReasonBanner: {
-    backgroundColor: colors.cream,
-    borderTopWidth: 1,
-    borderTopColor: '#EAE6DF',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-  },
-  recsReasonText: {
+  discountBadgeText: {
+    color: colors.crimson,
     fontFamily: typography.mono,
     fontSize: 8.5,
+    fontWeight: '800',
+  },
+  garmentOriginalPrice: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    color: colors.textMuted,
+    textDecorationLine: 'line-through',
+    marginTop: 1,
+  },
+  quickAddBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.charcoal,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  // ── Rental Card ─────────────────────────────────────────────────
+  rentalCard: {
+    width: CARD_WIDTH,
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(74, 46, 26, 0.15)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  rentalImageWrap: {
+    width: '100%',
+    height: CARD_WIDTH * 1.22,
+    backgroundColor: '#F3EFE9',
+    position: 'relative',
+  },
+  rentalBadgePill: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: colors.copper,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 3,
+  },
+  rentalBadgePillText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  rentalInfo: {
+    padding: 12,
+  },
+  rentalPricingBlock: {
+    backgroundColor: '#FAF6F0',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  rentalRateRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  rentalDayRate: {
+    fontFamily: typography.mono,
+    fontSize: 16,
+    fontWeight: '900',
+    color: colors.copper,
+  },
+  rentalPerDayUnit: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.textMuted,
+  },
+  rentalRetailVal: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  rentalReserveCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.cream,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.12)',
+    paddingVertical: 7,
+    borderRadius: 3,
+  },
+  rentalReserveText: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.6,
+  },
+
+  // ── Swap Card ───────────────────────────────────────────────────
+  swapCard: {
+    width: CARD_WIDTH,
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(30, 59, 47, 0.15)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  swapImageWrap: {
+    width: '100%',
+    height: CARD_WIDTH * 1.22,
+    backgroundColor: '#F0F4F2',
+    position: 'relative',
+  },
+  swapParityPill: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: colors.forest,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 3,
+  },
+  swapParityText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  swapInfo: {
+    padding: 12,
+  },
+  zeroCashBadge: {
+    backgroundColor: 'rgba(30, 59, 47, 0.12)',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 2,
+  },
+  zeroCashBadgeText: {
     color: colors.forest,
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '800',
+  },
+  swapValuationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    backgroundColor: '#F2F7F4',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 6,
+  },
+  swapValuationLabel: {
+    fontFamily: typography.mono,
+    fontSize: 7.5,
     fontWeight: '700',
+    color: colors.forest,
+    letterSpacing: 0.5,
+  },
+  swapValuationValue: {
+    fontFamily: typography.mono,
+    fontSize: 14,
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  swapTradeAction: {
+    backgroundColor: colors.forest,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 2,
+  },
+  swapTradeActionText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '800',
+  },
+  swapCounterpartBox: {
+    paddingTop: 4,
+  },
+  swapCounterpartText: {
+    fontFamily: typography.body,
+    fontSize: 9.5,
+    color: colors.textMuted,
+    fontStyle: 'italic',
   },
 });
-
-

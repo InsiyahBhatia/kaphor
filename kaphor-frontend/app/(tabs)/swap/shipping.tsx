@@ -22,6 +22,8 @@ import { swapService } from '../../../src/services/swapService';
 import { messageService } from '../../../src/services/messageService';
 import { addressService, Address } from '../../../src/services/addressService';
 import { useRazorpay } from '@codearcade/expo-razorpay';
+import { invalidateCache } from '../../../src/services/api';
+import { hapticFeedback } from '../../../src/utils/haptics';
 import type { SwapTransaction, SwapAddress, SwapTracking } from '../../../src/types/swap';
 
 const COURIER_OPTIONS = [
@@ -52,18 +54,41 @@ export default function SwapShippingScreen() {
 
   const { openCheckout } = useRazorpay();
 
-  // Form state
   const [courier, setCourier] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [showForm, setShowForm] = useState(false);
 
+  // Review states
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   const isInitiator = user?.id ? user.id === swap?.initiatorId : true;
+  const otherUserId = isInitiator ? swap?.receiverId : swap?.initiatorId;
+  const myReview = swap?.reviews && user?.id ? swap.reviews[user.id] : null;
+  const partnerReview = swap?.reviews && otherUserId ? swap.reviews[otherUserId] : null;
+
   const myTracking = isInitiator ? swap?.initiatorTracking : swap?.receiverTracking;
   const theirTracking = isInitiator ? swap?.receiverTracking : swap?.initiatorTracking;
   const isShipped = Boolean(myTracking);
 
   const myAddress: SwapAddress | undefined = isInitiator ? swap?.initiatorAddress : swap?.receiverAddress;
   const partnerAddress = address || (isInitiator ? swap?.receiverAddress : swap?.initiatorAddress);
+
+  const handleSubmitReview = async () => {
+    if (!swapId) return;
+    setSubmittingReview(true);
+    try {
+      await swapService.submitSwapReview(swapId, reviewRating, reviewComment.trim());
+      hapticFeedback.success();
+      Alert.alert('Review Submitted! ⭐️', 'Thank you for your verified peer review.');
+      await loadData();
+    } catch (e: any) {
+      Alert.alert('Notice', e?.response?.data?.message || 'Could not submit review.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const loadAddresses = useCallback(async () => {
     try {
@@ -130,13 +155,14 @@ export default function SwapShippingScreen() {
               const updated = await swapService.confirmReceived(swapId!, true);
               setSwap(updated);
               if (updated.status === 'COMPLETED') {
+                invalidateCache(['/swaps', '/users/me/wardrobe', '/impact']);
                 Alert.alert(
-                  '🎉 Swap Complete!',
+                  'Swap Complete',
                   'Both parties have confirmed receipt. The ownership transfer has been executed, your ₹500 security deposit is released, and your sustainability impact has been updated!',
                   [
                     {
                       text: 'Leave Partner Review',
-                      onPress: () => router.push(`/(tabs)/swap/details?swapId=${swapId}` as any),
+                      onPress: () => router.push(`/(tabs)/swap/details?swapId=${swapId}&review=1` as any),
                     },
                     {
                       text: 'View My Swaps',
@@ -612,21 +638,157 @@ export default function SwapShippingScreen() {
         )}
 
         {swap?.status === 'COMPLETED' && (
-          <View style={styles.completedBanner}>
-            <Ionicons name="checkmark-circle" size={24} color={colors.forest} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.completedBannerTitle}>SWAP TRANSACTION COMPLETED</Text>
-              <Text style={styles.completedBannerSub}>
-                Both items received & verified. Security deposits released to your account.
-              </Text>
+          <>
+            <View style={styles.completedBanner}>
+              <Ionicons name="checkmark-circle" size={24} color={colors.forest} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.completedBannerTitle}>SWAP TRANSACTION COMPLETED</Text>
+                <Text style={styles.completedBannerSub}>
+                  Both items received & verified. Security deposits released to your account.
+                </Text>
+              </View>
             </View>
-            <TouchableOpacity
-              style={styles.reviewPartnerBtn}
-              onPress={() => router.push(`/(tabs)/swap/details?swapId=${swapId}` as any)}
-            >
-              <Text style={styles.reviewPartnerBtnText}>REVIEW</Text>
-            </TouchableOpacity>
-          </View>
+
+            {/* MUTUAL REVIEWS SECTION */}
+            <View style={styles.reviewSectionContainer}>
+              <View style={styles.reviewSectionHeader}>
+                <Ionicons name="star" size={16} color="#C9A84C" />
+                <Text style={styles.reviewSectionTitle}>MUTUAL PEER REVIEWS</Text>
+              </View>
+
+              {/* 1. CURRENT USER REVIEW */}
+              {myReview ? (
+                <View style={styles.reviewedCard}>
+                  <View style={styles.reviewedCardHeader}>
+                    <Text style={styles.reviewedCardRole}>YOUR REVIEW OF PARTNER</Text>
+                    <View style={styles.starsRow}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Ionicons
+                          key={star}
+                          name={star <= myReview.rating ? 'star' : 'star-outline'}
+                          size={14}
+                          color="#C9A84C"
+                        />
+                      ))}
+                    </View>
+                  </View>
+                  {myReview.comment ? (
+                    <Text style={styles.reviewedCardComment}>"{myReview.comment}"</Text>
+                  ) : (
+                    <Text style={styles.reviewedCardNoComment}>No written comment provided.</Text>
+                  )}
+                  <View style={styles.reviewedCardFooter}>
+                    <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
+                    <Text style={styles.reviewedCardVerified}>VERIFIED PEER EXCHANGE</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.writeReviewCard}>
+                  <Text style={styles.writeReviewHeading}>RATE YOUR SWAP PARTNER</Text>
+                  <Text style={styles.writeReviewSub}>
+                    How was the accessory condition, prompt dispatch, and trade experience?
+                  </Text>
+
+                  {/* Star Rating Selector */}
+                  <View style={styles.starPickerRow}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <TouchableOpacity
+                        key={star}
+                        onPress={() => {
+                          hapticFeedback.selection();
+                          setReviewRating(star);
+                        }}
+                        style={styles.starTouch}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name={star <= reviewRating ? 'star' : 'star-outline'}
+                          size={28}
+                          color="#C9A84C"
+                        />
+                      </TouchableOpacity>
+                    ))}
+                    <Text style={styles.starRatingNumber}>{reviewRating} / 5</Text>
+                  </View>
+
+                  {/* Comment Input */}
+                  <TextInput
+                    style={styles.reviewInput}
+                    placeholder="Share feedback on accessory condition, packaging, and trade experience..."
+                    placeholderTextColor={colors.textMuted}
+                    value={reviewComment}
+                    onChangeText={setReviewComment}
+                    multiline
+                    numberOfLines={3}
+                  />
+
+                  {/* Submit Review Button */}
+                  <TouchableOpacity
+                    style={[styles.submitReviewBtn, submittingReview && { opacity: 0.6 }]}
+                    onPress={handleSubmitReview}
+                    disabled={submittingReview}
+                    activeOpacity={0.85}
+                  >
+                    {submittingReview ? (
+                      <ActivityIndicator color={colors.cream} />
+                    ) : (
+                      <>
+                        <Ionicons name="star" size={16} color={colors.cream} />
+                        <Text style={styles.submitReviewBtnText}>SUBMIT VERIFIED REVIEW</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* 2. PARTNER'S REVIEW */}
+              {partnerReview ? (
+                <View style={[styles.reviewedCard, { marginTop: 12 }]}>
+                  <View style={styles.reviewedCardHeader}>
+                    <Text style={styles.reviewedCardRole}>
+                      {partnerReview.reviewerName || 'PARTNER'}'S REVIEW OF YOU
+                    </Text>
+                    <View style={styles.starsRow}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Ionicons
+                          key={star}
+                          name={star <= partnerReview.rating ? 'star' : 'star-outline'}
+                          size={14}
+                          color="#C9A84C"
+                        />
+                      ))}
+                    </View>
+                  </View>
+                  {partnerReview.comment ? (
+                    <Text style={styles.reviewedCardComment}>"{partnerReview.comment}"</Text>
+                  ) : (
+                    <Text style={styles.reviewedCardNoComment}>No written comment provided.</Text>
+                  )}
+                  <View style={styles.reviewedCardFooter}>
+                    <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
+                    <Text style={styles.reviewedCardVerified}>VERIFIED PEER EXCHANGE</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.awaitingPartnerCard}>
+                  <Ionicons name="time-outline" size={16} color={colors.textMuted} />
+                  <Text style={styles.awaitingPartnerText}>
+                    Awaiting partner's review. Once submitted, it will appear here and update your trust score.
+                  </Text>
+                </View>
+              )}
+
+              {/* Digital Wardrobe Navigation */}
+              <TouchableOpacity
+                style={styles.wardrobeLinkBtn}
+                onPress={() => router.push('/(tabs)/profile' as any)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="shirt-outline" size={16} color={colors.charcoal} />
+                <Text style={styles.wardrobeLinkBtnText}>VIEW RECEIVED ITEM IN WARDROBE →</Text>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
       </ScrollView>
 
@@ -1363,5 +1525,178 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     color: colors.charcoal,
+  },
+  reviewSectionContainer: {
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  reviewSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  reviewSectionTitle: {
+    fontFamily: typography.headings,
+    fontSize: 16,
+    letterSpacing: 0.5,
+    color: colors.charcoal,
+  },
+  reviewedCard: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: '#C9A84C',
+    padding: 14,
+    borderRadius: 4,
+  },
+  reviewedCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  reviewedCardRole: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  reviewedCardComment: {
+    fontFamily: typography.body,
+    fontSize: 12.5,
+    color: colors.charcoal,
+    lineHeight: 18,
+    fontStyle: 'italic',
+    marginBottom: 10,
+  },
+  reviewedCardNoComment: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  reviewedCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#F0EAE1',
+    paddingTop: 8,
+  },
+  reviewedCardVerified: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.forest,
+    letterSpacing: 0.5,
+  },
+  writeReviewCard: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    padding: 16,
+    borderRadius: 4,
+  },
+  writeReviewHeading: {
+    fontFamily: typography.headings,
+    fontSize: 14,
+    color: colors.charcoal,
+    marginBottom: 4,
+  },
+  writeReviewSub: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginBottom: 14,
+    lineHeight: 16,
+  },
+  starPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  starTouch: {
+    padding: 2,
+  },
+  starRatingNumber: {
+    fontFamily: typography.mono,
+    fontSize: 13,
+    fontWeight: '900',
+    color: colors.charcoal,
+    marginLeft: 6,
+  },
+  reviewInput: {
+    backgroundColor: '#FAF7EE',
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+    borderRadius: 4,
+    padding: 10,
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.charcoal,
+    minHeight: 70,
+    textAlignVertical: 'top',
+    marginBottom: 14,
+  },
+  submitReviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.charcoal,
+    paddingVertical: 12,
+    borderRadius: 4,
+  },
+  submitReviewBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 0.8,
+  },
+  awaitingPartnerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F5F2EB',
+    borderWidth: 1,
+    borderColor: '#E2DEC9',
+    padding: 12,
+    marginTop: 12,
+    borderRadius: 4,
+  },
+  awaitingPartnerText: {
+    flex: 1,
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    color: colors.textMuted,
+    lineHeight: 14,
+  },
+  wardrobeLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FAF7EE',
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    paddingVertical: 11,
+    marginTop: 16,
+    borderRadius: 4,
+  },
+  wardrobeLinkBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.6,
   },
 });

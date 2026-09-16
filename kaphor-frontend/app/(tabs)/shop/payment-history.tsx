@@ -132,7 +132,7 @@ export default function PaymentHistoryScreen() {
                   // Navigate to the related order/rental.
                   // referenceId is the internal ID; linkType disambiguates order vs rental.
                   if (tx.linkType === 'rental') {
-                    router.push(`/(tabs)/rental/${tx.referenceId}` as any);
+                    router.push(`/(tabs)/rental/lease/${tx.referenceId}` as any);
                   } else if (tx.type === 'PURCHASE' || tx.type === 'SELLER_PAYOUT') {
                     router.push(`/(tabs)/shop/orders/${tx.referenceId}` as any);
                   }

@@ -9,7 +9,11 @@ export async function getUnreadCount(req: Request, res: Response): Promise<void>
     if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
     const unreadCount = await db.notification.count({
-      where: { userId: req.user.id, isRead: false },
+      where: {
+        userId: req.user.id,
+        isRead: false,
+        type: { notIn: ['DIRECT_MESSAGE', 'NEW_MESSAGE'] },
+      },
     });
 
     res.json({ unreadCount });
@@ -29,7 +33,10 @@ export async function getNotifications(req: Request, res: Response): Promise<voi
     const cursorObj = cursor ? { id: cursor as string } : undefined;
 
     const notifications = await db.notification.findMany({
-      where: { userId: req.user.id },
+      where: {
+        userId: req.user.id,
+        type: { notIn: ['DIRECT_MESSAGE', 'NEW_MESSAGE'] },
+      },
       take: Number(limit),
       skip,
       cursor: cursorObj,
@@ -67,7 +74,11 @@ export async function markAsRead(req: Request, res: Response): Promise<void> {
     }
 
     const unreadCount = await db.notification.count({
-      where: { userId: req.user.id, isRead: false },
+      where: {
+        userId: req.user.id,
+        isRead: false,
+        type: { notIn: ['DIRECT_MESSAGE', 'NEW_MESSAGE'] },
+      },
     });
     emitToUser(req.user.id, 'unread_count_updated', { unreadCount });
 

@@ -13,3 +13,15 @@ export function cacheGet<T>(key: string): T | undefined {
 export function cacheSet(key: string, data: unknown, ttlMs = 30_000): void {
   store.set(key, { data, expiry: Date.now() + ttlMs });
 }
+
+export function cacheClear(prefix?: string): void {
+  if (!prefix) {
+    store.clear();
+    return;
+  }
+  for (const key of store.keys()) {
+    if (key.startsWith(prefix)) {
+      store.delete(key);
+    }
+  }
+}

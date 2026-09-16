@@ -55,11 +55,17 @@ export const userService = {
       peerReviewAvg: number | null;
       ratingBreakdown?: { 5: number; 4: number; 3: number; 2: number; 1: number };
       trustedSeller: boolean;
+      listings?: any[];
     };
   },
 
   getUserReviews: async (userId: string) => {
     const { data } = await api.get(`/users/profile/${userId}/reviews`);
     return data.data;
+  },
+
+  savePushToken: async (pushToken: string) => {
+    const { data } = await api.post('/users/me/push-token', { pushToken });
+    return data;
   },
 };

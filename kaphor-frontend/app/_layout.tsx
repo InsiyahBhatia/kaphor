@@ -15,8 +15,14 @@ import { NotificationToast } from '../src/components/common/NotificationToast';
 import { LoadingScreen } from '../src/components/common/LoadingScreen';
 import { useAuth } from '../src/context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
+import { usePushNotifications } from '../src/hooks/usePushNotifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+function PushNotificationManager() {
+  usePushNotifications();
+  return null;
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -72,6 +78,7 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
+      <PushNotificationManager />
       <ThemeProvider>
         <ProtectedRoute>
           <StatusBar style="dark" />

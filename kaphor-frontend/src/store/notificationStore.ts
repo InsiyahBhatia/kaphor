@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notificationService } from '../services/notificationService';
+import { messageService } from '../services/messageService';
 import { cachedGet, fetchFresh } from '../services/api';
 
 export interface NotificationItem {
@@ -42,6 +43,7 @@ interface NotificationState {
 
   // Actions
   fetchUnreadCount: () => Promise<void>;
+  fetchUnreadMessageCount: () => Promise<void>;
   fetchNotifications: (forceFresh?: boolean) => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
@@ -73,13 +75,23 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
   },
 
+  fetchUnreadMessageCount: async () => {
+    try {
+      const count = await messageService.getUnreadCount();
+      set({ unreadMessageCount: count });
+    } catch {
+      // Fallback
+    }
+  },
+
   fetchNotifications: async (forceFresh = false) => {
     set({ loading: true });
     try {
       const data = forceFresh
         ? await fetchFresh('/notifications')
         : await cachedGet('/notifications');
-      const list = Array.isArray(data) ? data : [];
+      const rawList = Array.isArray(data) ? data : [];
+      const list = rawList.filter((n: NotificationItem) => n.type !== 'DIRECT_MESSAGE' && n.type !== 'NEW_MESSAGE');
       const unread = list.filter((n: NotificationItem) => !n.isRead).length;
       set({ notifications: list, unreadCount: unread, loading: false });
     } catch {
@@ -143,6 +155,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   addRealtimeNotification: (notif: NotificationItem) => {
+    // Alerts bell is only for swap, rental, sell, and reviews - never direct messages
+    if (notif.type === 'DIRECT_MESSAGE' || notif.type === 'NEW_MESSAGE') return;
     set((state) => {
       const exists = state.notifications.some((n) => n.id === notif.id);
       if (exists) return state;

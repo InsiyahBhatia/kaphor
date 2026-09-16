@@ -1,6 +1,7 @@
 import db from '../lib/prisma';
 import { emitToUser } from '../lib/socket';
 import { logger } from '../lib/logger';
+import { sendPushNotificationToUser } from './pushNotification.service';
 
 export type NotificationType =
   | 'ORDER_PAID' | 'ORDER_SHIPPED' | 'ORDER_DELIVERED'
@@ -21,6 +22,7 @@ export interface NotificationPayload {
 
 /**
  * Creates a notification in the DB and attempts to emit it via Socket.io.
+ * Also dispatches a background push notification to the user's mobile device.
  */
 export async function createNotification(payload: NotificationPayload) {
   try {
@@ -37,6 +39,20 @@ export async function createNotification(payload: NotificationPayload) {
 
     // Emit live to the user if they are online
     await emitToUser(payload.userId, 'new_notification', notification);
+
+    // Push notification to user's phone (works when app is in background / closed)
+    sendPushNotificationToUser(
+      payload.userId,
+      payload.title,
+      payload.body,
+      {
+        notificationId: notification.id,
+        type: payload.type,
+        ...payload.data,
+      }
+    ).catch(err => {
+      logger.warn('Background push notification error', { error: err });
+    });
 
     logger.info('Notification created and emitted', {
       userId: payload.userId,

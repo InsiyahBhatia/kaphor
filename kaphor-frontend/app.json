@@ -20,7 +20,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "icon": "./assets/icon.png",
@@ -52,6 +53,13 @@
         {
           "photosPermission": "The app accesses your photos to let you list garments and upload condition evidence.",
           "cameraPermission": "The app accesses your camera to take photos of garments for verification."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1A1A1A"
         }
       ]
     ],

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { redisDel } from '../lib/redis';
 import { logger } from '../lib/logger';
-import { uploadToS3, getDownloadUrl } from '../lib/s3';
+import { uploadToCloudinary, getDownloadUrl } from '../lib/cloudinary';
 import { InsightService } from '../services/insight.service';
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -31,8 +31,15 @@ async function resolveGarmentsMedia(garments: any[]) {
 export async function getPublicUserSummary(req: Request, res: Response): Promise<void> {
   try {
     const { userId } = req.params;
+    const cleanParam = (userId || '').trim();
     const user = await db.user.findFirst({
-      where: { id: userId, isActive: true },
+      where: {
+        OR: [
+          { id: cleanParam },
+          { username: cleanParam.replace(/^@/, '') },
+        ],
+        isActive: true,
+      },
       select: {
         id: true,
         displayName: true,
@@ -50,10 +57,17 @@ export async function getPublicUserSummary(req: Request, res: Response): Promise
       res.status(404).json({ error: 'NOT_FOUND', message: 'User not found' });
       return;
     }
-    const allReviews = await db.peerReview.findMany({
-      where: { sellerId: userId },
-      select: { rating: true },
-    });
+    const [peerReviews, garmentReviews] = await Promise.all([
+      db.peerReview.findMany({
+        where: { sellerId: user.id },
+        select: { rating: true },
+      }),
+      db.review.findMany({
+        where: { garment: { sellerId: user.id } },
+        select: { rating: true },
+      }),
+    ]);
+    const allReviews = [...peerReviews, ...garmentReviews];
     const peerReviewCount = allReviews.length;
     const peerReviewAvg =
       peerReviewCount > 0
@@ -68,9 +82,21 @@ export async function getPublicUserSummary(req: Request, res: Response): Promise
     };
     const trustedSeller = (peerReviewCount >= 3 && (peerReviewAvg ?? 0) >= 4) || user.isVerified;
     const resolvedUser = await resolveUserMedia(user);
+
+    const listings = await db.garment.findMany({
+      where: {
+        sellerId: user.id,
+        isActive: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    const resolvedListings = await resolveGarmentsMedia(listings);
+
     res.json({
       data: {
         ...resolvedUser,
+        listings: resolvedListings,
         peerReviewCount,
         peerReviewAvg,
         ratingBreakdown,
@@ -150,7 +176,17 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
 
         const { displayName, bio, location, styleAesthetic } = req.body;
 
-        const validAesthetics = ['MINIMALIST', 'VINTAGE', 'BOLD', 'ETHNIC', 'STREETWEAR', 'LUXURY'];
+        const all16Aesthetics = [
+            'Y2K', 'Office Siren', 'Rockstar Girlfriend', 'Sade Girl', 'Vintage',
+            'Acubi', 'Business Comfort', 'Cottagecore', 'Dark Academia', 'Dark Coquette',
+            'Fleur Noire', 'Grunge', 'Mermaid Core', 'Minimal Desi', 'Maximal Desi', 'Soft Girl'
+        ];
+
+        let finalAesthetic: string | undefined = undefined;
+        if (styleAesthetic) {
+            const matched16 = all16Aesthetics.find(a => a.toLowerCase() === String(styleAesthetic).trim().toLowerCase());
+            finalAesthetic = matched16 || styleAesthetic;
+        }
 
         const updated = await db.user.update({
             where: { id: req.user.id },
@@ -158,7 +194,7 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
                 ...(displayName && { displayName }),
                 ...(bio !== undefined && { bio }),
                 ...(location !== undefined && { location }),
-                ...(styleAesthetic && validAesthetics.includes(styleAesthetic) && { styleAesthetic })
+                ...(finalAesthetic && { styleAesthetic: finalAesthetic })
             },
             select: {
                 id: true, email: true, username: true,
@@ -184,7 +220,7 @@ export async function updateAvatar(req: Request, res: Response): Promise<void> {
 
         // Handle multipart upload from frontend
         if (req.file) {
-            const uploaded = await uploadToS3(req.file.buffer, 'avatars', req.file.mimetype);
+            const uploaded = await uploadToCloudinary(req.file.buffer, 'avatars', req.file.mimetype);
             avatarUrl = uploaded.url;
         }
 
@@ -215,6 +251,7 @@ export async function getMyListings(req: Request, res: Response): Promise<void> 
         const garments = await db.garment.findMany({
             where: { 
                 sellerId: req.user.id,
+                isActive: true,
                 lifecycleState: { in: ['LISTED', 'INTEREST'] }
             },
             orderBy: { createdAt: 'desc' },
@@ -247,10 +284,13 @@ export async function getMyWardrobe(req: Request, res: Response): Promise<void> 
     try {
         if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
-        const garments = await db.garment.findMany({
+        const uid = req.user.id;
+
+        // 1. Directly owned garments
+        const ownedGarments = await db.garment.findMany({
             where: { 
-                sellerId: req.user.id,
-                lifecycleState: { in: ['OWNERSHIP', 'DECLINE', 'CIRCULATION', 'REUSE_UPCYCLE_RECYCLE', 'SELL_INTENT', 'PURCHASE_INTENT'] }
+                sellerId: uid,
+                lifecycleState: { in: ['OWNERSHIP', 'INTEREST', 'LISTED', 'DECLINE', 'CIRCULATION', 'REUSE_UPCYCLE_RECYCLE', 'SELL_INTENT', 'PURCHASE_INTENT'] }
             },
             orderBy: { createdAt: 'desc' },
             select: {
@@ -261,7 +301,77 @@ export async function getMyWardrobe(req: Request, res: Response): Promise<void> 
             }
         });
 
-        const resolvedGarments = await resolveGarmentsMedia(garments);
+        // 2. Garments from confirmed, shipped, or delivered buyer orders
+        const buyerOrders = await db.order.findMany({
+            where: {
+                buyerId: uid,
+                status: { in: ['CONFIRMED', 'SHIPPED', 'DELIVERED'] }
+            },
+            include: {
+                orderItems: {
+                    include: {
+                        garment: {
+                            select: {
+                                id: true, title: true, brand: true, images: true,
+                                price: true, rentalPriceDay: true, rentalPriceWeek: true,
+                                listingType: true, condition: true, lifecycleState: true,
+                                isActive: true, createdAt: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50
+        });
+
+        // 3. Garments currently on active rental lease to this user
+        const activeRentals = await db.rental.findMany({
+            where: {
+                renterId: uid,
+                status: { in: ['RESERVED', 'ACTIVE'] }
+            },
+            include: {
+                garment: {
+                    select: {
+                        id: true, title: true, brand: true, images: true,
+                        price: true, rentalPriceDay: true, rentalPriceWeek: true,
+                        listingType: true, condition: true, lifecycleState: true,
+                        isActive: true, createdAt: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50
+        });
+
+        const seenGarmentIds = new Set(ownedGarments.map((g: any) => g.id));
+        const combined = [...ownedGarments];
+
+        for (const order of buyerOrders) {
+            for (const item of order.orderItems) {
+                if (item.garment && !seenGarmentIds.has(item.garment.id)) {
+                    seenGarmentIds.add(item.garment.id);
+                    const state = order.status === 'DELIVERED' ? 'OWNERSHIP' : 'PURCHASE_INTENT';
+                    combined.push({
+                        ...item.garment,
+                        lifecycleState: state,
+                    });
+                }
+            }
+        }
+
+        for (const rental of activeRentals) {
+            if (rental.garment && !seenGarmentIds.has(rental.garment.id)) {
+                seenGarmentIds.add(rental.garment.id);
+                combined.push({
+                    ...rental.garment,
+                    lifecycleState: 'CIRCULATION',
+                });
+            }
+        }
+
+        const resolvedGarments = await resolveGarmentsMedia(combined);
         res.json({ data: resolvedGarments });
     } catch (error) {
         logger.error('getMyWardrobe failed', { error });
@@ -376,31 +486,45 @@ export async function getMyPurchases(req: Request, res: Response): Promise<void>
 export async function getUserReviews(req: Request, res: Response): Promise<void> {
     try {
         const { userId } = req.params;
-        const reviews = await db.peerReview.findMany({
-            where: { sellerId: userId },
-            orderBy: { createdAt: 'desc' },
-            include: {
-                reviewer: {
-                    select: { id: true, displayName: true, avatar: true, username: true, isVerified: true }
-                },
-                order: {
-                    select: {
-                        id: true,
-                        createdAt: true,
-                        items: {
-                            take: 1,
-                            include: {
-                                garment: {
-                                    select: { id: true, title: true, brand: true, images: true }
+        const [peerReviews, garmentReviews] = await Promise.all([
+            db.peerReview.findMany({
+                where: { sellerId: userId },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    reviewer: {
+                        select: { id: true, displayName: true, avatar: true, username: true, isVerified: true }
+                    },
+                    order: {
+                        select: {
+                            id: true,
+                            createdAt: true,
+                            items: {
+                                take: 1,
+                                include: {
+                                    garment: {
+                                        select: { id: true, title: true, brand: true, images: true }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-        });
+            }),
+            db.review.findMany({
+                where: { garment: { sellerId: userId } },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    user: {
+                        select: { id: true, displayName: true, avatar: true, username: true, isVerified: true }
+                    },
+                    garment: {
+                        select: { id: true, title: true, brand: true, images: true }
+                    }
+                }
+            })
+        ]);
 
-        const resolvedReviews = await Promise.all(reviews.map(async (r: any) => {
+        const resolvedPeerReviews = await Promise.all(peerReviews.map(async (r: any) => {
             const reviewer = await resolveUserMedia(r.reviewer);
             let garment = null;
             if (r.order?.items?.[0]?.garment) {
@@ -413,9 +537,32 @@ export async function getUserReviews(req: Request, res: Response): Promise<void>
                 createdAt: r.createdAt,
                 reviewer,
                 garment,
+                source: 'ORDER',
             };
         }));
-        res.json({ data: resolvedReviews });
+
+        const resolvedGarmentReviews = await Promise.all(garmentReviews.map(async (r: any) => {
+            const reviewer = await resolveUserMedia(r.user);
+            let garment = null;
+            if (r.garment) {
+                garment = await resolveGarmentMedia(r.garment);
+            }
+            return {
+                id: r.id,
+                rating: r.rating,
+                comment: r.comment,
+                createdAt: r.createdAt,
+                reviewer,
+                garment,
+                source: 'TRANSACTION',
+            };
+        }));
+
+        const allCombined = [...resolvedPeerReviews, ...resolvedGarmentReviews].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        res.json({ data: allCombined });
     } catch (error) {
         logger.error('getUserReviews failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -489,3 +636,30 @@ export async function getVerificationStatus(req: Request, res: Response): Promis
         res.status(500).json({ error: 'INTERNAL_ERROR' });
     }
 }
+
+// ── POST /users/me/push-token ───────────────────────────────────────────────
+export async function savePushToken(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+        const { pushToken } = req.body;
+        if (!pushToken || typeof pushToken !== 'string') {
+            res.status(400).json({ error: 'INVALID_TOKEN', message: 'Valid pushToken string is required' });
+            return;
+        }
+
+        await db.user.update({
+            where: { id: req.user.id },
+            data: { pushToken: pushToken.trim() },
+        });
+
+        logger.info('User registered push token', { userId: req.user.id });
+        res.json({ success: true, message: 'Push token registered successfully' });
+    } catch (error) {
+        logger.error('savePushToken failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+

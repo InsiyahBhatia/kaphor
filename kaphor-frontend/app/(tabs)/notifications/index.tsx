@@ -17,11 +17,12 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useNotificationStore, NotificationItem } from '../../../src/store/notificationStore';
+import { swapService } from '../../../src/services/swapService';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 
-type NotificationCategory = 'ALL' | 'UNREAD' | 'ORDERS' | 'SWAPS' | 'MESSAGES' | 'REVIEWS' | 'SYSTEM';
+type NotificationCategory = 'UNREAD' | 'SWAP' | 'SELLING' | 'RENTAL' | 'REVIEWS';
 
 function formatRelativeTime(dateString: string): string {
   try {
@@ -56,7 +57,7 @@ export default function NotificationsScreen() {
   const setPreference = useNotificationStore((s) => s.setPreference);
   const loadPreferences = useNotificationStore((s) => s.loadPreferences);
 
-  const [category, setCategory] = useState<NotificationCategory>('ALL');
+  const [category, setCategory] = useState<NotificationCategory>('UNREAD');
   const [refreshing, setRefreshing] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
@@ -130,14 +131,57 @@ export default function NotificationsScreen() {
 
     if (type.startsWith('SWAP_')) {
       if (data.swapId) {
-        if (type === 'SWAP_SHIPPED' || type === 'SWAP_DELIVERED') {
-          router.push(`/(tabs)/swap/shipping?swapId=${data.swapId}` as any);
-        } else if (type === 'SWAP_AGREEMENT') {
-          router.push(`/(tabs)/swap/agreement?swapId=${data.swapId}` as any);
-        } else {
+        try {
+          // Dynamic Latest-Stage Resolver: query the current live state of this swap
+          const liveSwap = await swapService.getSwapById(data.swapId);
+          const status = (liveSwap?.status as string) || '';
+
+          if (status === 'REQUESTED') {
+            // Balance Page (shows both users' trade values + Fair Value Matcher)
+            router.push(`/(tabs)/swap/details?swapId=${data.swapId}` as any);
+            return;
+          }
+
+          if (status === 'ACCEPTED' || status === 'AGREEMENT_PENDING') {
+            const isFullySigned = (liveSwap as any).initiatorSigned && (liveSwap as any).receiverSigned;
+            if (!isFullySigned) {
+              router.push(`/(tabs)/swap/agreement?swapId=${data.swapId}` as any);
+              return;
+            }
+            router.push(`/(tabs)/swap/details?swapId=${data.swapId}` as any);
+            return;
+          }
+
+          if (
+            status === 'AGREEMENT_SIGNED' ||
+            status === 'ADDRESS_SHARED' ||
+            status === 'SHIPPED' ||
+            status === 'BOTH_SHIPPED' ||
+            status === 'DELIVERED'
+          ) {
+            router.push(`/(tabs)/swap/shipping?swapId=${data.swapId}` as any);
+            return;
+          }
+
+          if (status === 'COMPLETED') {
+            router.push(`/(tabs)/swap/details?swapId=${data.swapId}&review=1` as any);
+            return;
+          }
+
+          // Default fallback for any other active state: Balance Page
           router.push(`/(tabs)/swap/details?swapId=${data.swapId}` as any);
+          return;
+        } catch {
+          // Fallback if network lookup fails
+          if (type === 'SWAP_SHIPPED' || type === 'SWAP_DELIVERED') {
+            router.push(`/(tabs)/swap/shipping?swapId=${data.swapId}` as any);
+          } else if (type === 'SWAP_AGREEMENT') {
+            router.push(`/(tabs)/swap/agreement?swapId=${data.swapId}` as any);
+          } else {
+            router.push(`/(tabs)/swap/details?swapId=${data.swapId}` as any);
+          }
+          return;
         }
-        return;
       }
       router.push('/(tabs)/swap' as any);
       return;
@@ -153,6 +197,10 @@ export default function NotificationsScreen() {
     }
 
     if (type.startsWith('RENTAL_')) {
+      if (data.rentalId) {
+        router.push(`/(tabs)/rental/lease/${data.rentalId}` as any);
+        return;
+      }
       if (data.garmentId) {
         router.push(`/(tabs)/rental/${data.garmentId}` as any);
         return;
@@ -162,11 +210,32 @@ export default function NotificationsScreen() {
     }
 
     if (type === 'PEER_REVIEW') {
+      if (data.targetRoute) {
+        router.push(data.targetRoute as any);
+        return;
+      }
+      if (data.orderId) {
+        router.push(`/(tabs)/shop/orders/${data.orderId}?review=true` as any);
+        return;
+      }
+      if (data.rentalId) {
+        router.push(`/(tabs)/rental/lease/${data.rentalId}?review=true` as any);
+        return;
+      }
+      if (data.swapId) {
+        router.push(`/(tabs)/swap/details?swapId=${data.swapId}&review=1` as any);
+        return;
+      }
       if (data.userId) {
         router.push(`/reviews?userId=${data.userId}` as any);
         return;
       }
       router.push('/reviews' as any);
+      return;
+    }
+
+    if (data.targetRoute) {
+      router.push(data.targetRoute as any);
       return;
     }
   };
@@ -185,7 +254,7 @@ export default function NotificationsScreen() {
       return {
         icon: 'swap-horizontal',
         label: 'SWAP',
-        cta: 'VIEW DOSSIER →',
+        cta: 'VIEW ACTIVE STAGE →',
         color: '#8C6D3B',
         bg: 'rgba(140,109,59,0.12)',
       };
@@ -193,7 +262,7 @@ export default function NotificationsScreen() {
     if (type.startsWith('ORDER_')) {
       return {
         icon: 'bag-check',
-        label: 'ORDER',
+        label: 'SELLING',
         cta: 'TRACK ORDER →',
         color: '#1E3A8A',
         bg: 'rgba(30,58,138,0.1)',
@@ -212,43 +281,43 @@ export default function NotificationsScreen() {
       return {
         icon: 'star',
         label: 'REVIEW',
-        cta: 'VIEW REVIEWS →',
+        cta: 'LEAVE REVIEW →',
         color: '#D97706',
         bg: 'rgba(217,119,6,0.12)',
       };
     }
     return {
       icon: 'notifications',
-      label: 'SYSTEM',
+      label: 'ALERT',
       cta: 'VIEW DETAILS →',
       color: colors.charcoal,
       bg: 'rgba(30,31,34,0.08)',
     };
   };
 
+  // Bell notifications strictly exclude direct messages (only swap, rental, sell, reviews)
+  const bellNotifications = notifications.filter(
+    (n) => n.type !== 'DIRECT_MESSAGE' && n.type !== 'NEW_MESSAGE'
+  );
+  const bellUnreadCount = bellNotifications.filter((n) => !n.isRead).length;
+
   // Filtered items
-  const filteredNotifications = notifications.filter((n) => {
-    if (category === 'ALL') return true;
+  const filteredNotifications = bellNotifications.filter((n) => {
     if (category === 'UNREAD') return !n.isRead;
     const t = n.type || '';
-    if (category === 'MESSAGES') return t === 'DIRECT_MESSAGE' || t === 'NEW_MESSAGE';
-    if (category === 'SWAPS') return t.startsWith('SWAP_');
-    if (category === 'ORDERS') return t.startsWith('ORDER_') || t.startsWith('RENTAL_');
+    if (category === 'SWAP') return t.startsWith('SWAP_');
+    if (category === 'SELLING') return t.startsWith('ORDER_');
+    if (category === 'RENTAL') return t.startsWith('RENTAL_');
     if (category === 'REVIEWS') return t === 'PEER_REVIEW';
-    if (category === 'SYSTEM') {
-      return !t.startsWith('SWAP_') && !t.startsWith('ORDER_') && !t.startsWith('RENTAL_') && t !== 'DIRECT_MESSAGE' && t !== 'NEW_MESSAGE' && t !== 'PEER_REVIEW';
-    }
     return true;
   });
 
   const categoryCounts: Record<NotificationCategory, number> = {
-    ALL: notifications.length,
-    UNREAD: unreadCount,
-    ORDERS: notifications.filter((n) => n.type?.startsWith('ORDER_') || n.type?.startsWith('RENTAL_')).length,
-    SWAPS: notifications.filter((n) => n.type?.startsWith('SWAP_')).length,
-    MESSAGES: notifications.filter((n) => n.type === 'DIRECT_MESSAGE' || n.type === 'NEW_MESSAGE').length,
-    REVIEWS: notifications.filter((n) => n.type === 'PEER_REVIEW').length,
-    SYSTEM: notifications.filter((n) => !n.type?.startsWith('SWAP_') && !n.type?.startsWith('ORDER_') && !n.type?.startsWith('RENTAL_') && n.type !== 'DIRECT_MESSAGE' && n.type !== 'NEW_MESSAGE' && n.type !== 'PEER_REVIEW').length,
+    UNREAD: bellUnreadCount,
+    SWAP: bellNotifications.filter((n) => n.type?.startsWith('SWAP_')).length,
+    SELLING: bellNotifications.filter((n) => n.type?.startsWith('ORDER_')).length,
+    RENTAL: bellNotifications.filter((n) => n.type?.startsWith('RENTAL_')).length,
+    REVIEWS: bellNotifications.filter((n) => n.type === 'PEER_REVIEW').length,
   };
 
   return (
@@ -267,12 +336,12 @@ export default function NotificationsScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>ACTIVITY & ALERTS</Text>
             <Text style={styles.subtitle}>
-              {unreadCount > 0 ? `${unreadCount} UNREAD NOTIFICATIONS` : 'ALL ALERTS UP TO DATE'}
+              {bellUnreadCount > 0 ? `${bellUnreadCount} UNREAD ALERTS` : 'ALL ALERTS UP TO DATE'}
             </Text>
           </View>
 
           <View style={styles.headerActions}>
-            {unreadCount > 0 && (
+            {bellUnreadCount > 0 && (
               <TouchableOpacity
                 onPress={handleMarkAllRead}
                 style={styles.actionBtn}
@@ -290,7 +359,7 @@ export default function NotificationsScreen() {
               <Ionicons name="options-outline" size={16} color={colors.charcoal} />
             </TouchableOpacity>
 
-            {notifications.length > 0 && (
+            {bellNotifications.length > 0 && (
               <TouchableOpacity
                 onPress={handleClearAll}
                 style={styles.actionBtn}
@@ -308,7 +377,7 @@ export default function NotificationsScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryRow}
         >
-          {(['ALL', 'UNREAD', 'ORDERS', 'SWAPS', 'MESSAGES', 'REVIEWS', 'SYSTEM'] as NotificationCategory[]).map((cat) => {
+          {(['UNREAD', 'SWAP', 'SELLING', 'RENTAL', 'REVIEWS'] as NotificationCategory[]).map((cat) => {
             const count = categoryCounts[cat] || 0;
             const isActive = category === cat;
 
@@ -371,8 +440,8 @@ export default function NotificationsScreen() {
             </Text>
             <Text style={styles.emptySubtext}>
               {category === 'UNREAD'
-                ? 'You have addressed all active notifications and messages.'
-                : 'Real-time updates about your swaps, orders, rentals, and peer messages will appear here.'}
+                ? 'You have addressed all active transaction alerts.'
+                : 'Real-time updates about your swaps, orders, rentals, and reviews will appear here.'}
             </Text>
           </View>
         ) : (

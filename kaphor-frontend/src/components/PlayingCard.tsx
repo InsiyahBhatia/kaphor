@@ -59,7 +59,7 @@ export function PlayingCard({
       {/* Match Badge */}
       {matchPercent !== undefined && (
         <View style={styles.matchBadge}>
-          <Text style={styles.matchBadgeText}>{matchPercent}% MATCH</Text>
+          <Text style={styles.matchBadgeText}>CURATED MATCH</Text>
         </View>
       )}
 
@@ -85,12 +85,12 @@ export function PlayingCard({
         
         <View style={styles.detailsRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.priceText, price === 0 && !buttonText?.toUpperCase().includes('SWAP') && { fontSize: 13, color: colors.crimson, letterSpacing: 0.5 }]}>
+            <Text style={[styles.priceText, price === 0 && { fontSize: 12, color: colors.charcoal, letterSpacing: 0.5 }]}>
               {buttonText?.toUpperCase().includes('SWAP')
-                ? `EST. ₹${(price > 0 ? price : 2499).toLocaleString()}`
-                : price > 0 
-                  ? `₹${price.toLocaleString()}` 
-                  : (buttonText?.toUpperCase().includes('RENT') ? 'RENT LEASE' : 'SWAP ASSET')}
+                ? (price > 0 ? `EST. ₹${price.toLocaleString('en-IN')}` : 'CASHLESS SWAP')
+                : buttonText?.toUpperCase().includes('RENT')
+                  ? (price > 0 ? `₹${price.toLocaleString('en-IN')} / DAY` : 'RENTAL LEASE')
+                  : (price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'PRICE ON REQUEST')}
             </Text>
             <View style={styles.conditionTag}>
               <Text style={styles.conditionTagText}>{(condition || 'Excellent').toUpperCase()}</Text>

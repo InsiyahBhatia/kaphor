@@ -36,6 +36,8 @@ export interface SwapTransaction {
   garmentWantedId: string;       // What initiator receives
   garmentOffered?: SwapGarmentSnapshot;
   garmentWanted?: SwapGarmentSnapshot;
+  offeredGarment?: SwapGarmentSnapshot;
+  wantedGarment?: SwapGarmentSnapshot;
 
   // Agreement
   agreementSignedAt?: string;
@@ -82,6 +84,9 @@ export interface SwapTransaction {
   // Message
   message?: string;
 
+  // Peer reviews
+  reviews?: Record<string, { rating: number; comment?: string; reviewerId?: string; reviewerName?: string; createdAt?: string }>;
+
   // Users
   initiator?: { id: string; displayName: string; username: string; avatar: string | null };
   receiver?: { id: string; displayName: string; username: string; avatar: string | null };
@@ -96,6 +101,7 @@ export interface SwapGarmentSnapshot {
   size: string;
   condition: string;
   estimatedValue: number;  // in paise, for fairness check
+  price?: number;
 }
 
 export interface SwapAddress {

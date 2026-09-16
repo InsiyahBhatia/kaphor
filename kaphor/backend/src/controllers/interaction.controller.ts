@@ -62,12 +62,44 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
 
         const impact = scoreImpact[eventType as string] || 0.05;
 
-        // If it's a LOG_WEAR event, reset decay and credit avoided manufacturing impact.
-        let wearImpactData: any = null;
+        // If it's a LOG_WEAR event, reset decay, credit avoided manufacturing impact,
+        // and ALWAYS maintain the garment in OWNERSHIP state in the user's digital wardrobe.
         if (eventType === 'LOG_WEAR') {
-            wearImpactData = await ImpactService.recordWearImpact(String(garmentId), req.user.id);
+            const wearImpactData = await ImpactService.recordWearImpact(String(garmentId), req.user.id);
+            await db.behaviourSignal.upsert({
+                where: {
+                    userId_garmentId: { userId: req.user.id, garmentId: String(garmentId) }
+                },
+                update: {
+                    recentEventCount: { increment: 1 },
+                    interestScore: { increment: 0.50 },
+                    interactionDecay: 0,
+                },
+                create: {
+                    userId: req.user.id,
+                    garmentId: String(garmentId),
+                    recentEventCount: 1,
+                    interestScore: 0.50,
+                    interactionDecay: 0,
+                }
+            });
+
+            // Re-affirm that the garment remains in OWNERSHIP in user's digital closet
+            await db.garment.updateMany({
+                where: { id: String(garmentId), sellerId: req.user.id },
+                data: { lifecycleState: 'OWNERSHIP' }
+            });
+
+            res.status(201).json({
+                data: {
+                    action: 'SUPPRESS',
+                    newState: 'OWNERSHIP',
+                    score: 1.0,
+                    wearImpact: wearImpactData
+                }
+            });
+            return;
         }
-        const decayUpdate = eventType === 'LOG_WEAR' ? { interactionDecay: 0 } : {};
 
         // If it's a SELL_INTENT event, transition via lifecycle service (validates OWNERSHIP state)
         // Then return early — initiateResell handles the complete transition including socket emit.
@@ -104,7 +136,6 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
             update: {
                 recentEventCount: { increment: 1 },
                 interestScore: { increment: impact },
-                ...decayUpdate,
             },
             create: {
                 userId: req.user.id,
@@ -118,7 +149,7 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
         const loeResult = await evaluateLifecycle(String(garmentId), req.user.id, String(eventType));
 
         // 4. Return action
-        res.status(201).json({ data: { ...loeResult, wearImpact: wearImpactData } });
+        res.status(201).json({ data: loeResult });
     } catch (err) {
         logger.error('createInteraction failed', { error: err instanceof Error ? err.message : String(err) });
         res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Internal server error' });

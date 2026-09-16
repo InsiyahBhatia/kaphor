@@ -54,9 +54,9 @@ export function FairValueMatcher({
   };
 
   const getStatusBadgeText = () => {
-    if (isEquitable) return '⚖️ EQUITABLE MATCH (PARITY OK)';
-    if (userHasSurplus) return `⭐ +₹${delta.toLocaleString('en-IN')} YOUR TRADE EQUITY`;
-    return `💎 +₹${delta.toLocaleString('en-IN')} COUNTERPART VALUE`;
+    if (isEquitable) return 'EQUITABLE MATCH (PARITY OK)';
+    if (userHasSurplus) return `+₹${delta.toLocaleString('en-IN')} YOUR TRADE EQUITY`;
+    return `+₹${delta.toLocaleString('en-IN')} COUNTERPART VALUE`;
   };
 
   return (

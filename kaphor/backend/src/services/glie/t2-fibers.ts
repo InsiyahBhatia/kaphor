@@ -156,8 +156,62 @@ export function lookupT2(fiberName: string): T2FiberProps | null {
     }
   }
 
+  // Blend / multi-word resolution (e.g. "cotton-poly", "silk cashmere blend")
+  // Split the input into words and try each component as a fiber
+  const components = key.split(/\s+/).filter(c => c.length > 0 && c !== 'blend' && c !== 'mix');
+  for (const component of components) {
+    const resolved = lookupComponent(component);
+    if (resolved) return resolved;
+  }
+
   logger.warn(`[GLIE/T2] No match for fiber: "${fiberName}"`);
   return null;
+}
+
+/**
+ * Resolve a single normalized component via direct/alias/fabric maps.
+ */
+function lookupComponent(key: string): T2FiberProps | null {
+  if (!fiberMap || !aliasMap) return null;
+
+  if (fiberMap.has(key)) return fiberMap.get(key)!;
+
+  const canonical = aliasMap.get(key);
+  if (canonical && fiberMap.has(canonical)) return fiberMap.get(canonical)!;
+
+  if (FABRIC_ALIAS_MAP[key]) {
+    const targetFiber = normalize(FABRIC_ALIAS_MAP[key]);
+    if (fiberMap.has(targetFiber)) return fiberMap.get(targetFiber)!;
+  }
+  return null;
+}
+
+/**
+ * Resolve a user-typed fiber string to a canonical fiber name (or null).
+ * Uses the same deterministic logic as lookupT2 — useful for diagnostics
+ * and for re-lookup of downstream tables (T4/T5/T1) with a clean name.
+ */
+export function resolveFiber(input: string): string | null {
+  if (!input || !input.trim()) return null;
+  const found = lookupT2(input);
+  return found?.fiber_name || null;
+}
+
+/**
+ * Quiet fiber existence check — same normalization as resolveFiber but never
+ * logs warnings. Used by batch loaders (e.g. T5) to avoid log spam.
+ */
+export function isKnownFiber(input: string): boolean {
+  if (!input || !input.trim()) return false;
+  if (!fiberMap || !aliasMap) loadT2();
+  if (!fiberMap || !aliasMap) return false;
+
+  const key = normalize(input);
+  if (lookupComponent(key)) return true;
+
+  // Blend / multi-word check (cotton-poly, silk cashmere blend)
+  const components = key.split(/\s+/).filter(c => c.length > 0 && c !== 'blend' && c !== 'mix');
+  return components.some(c => lookupComponent(c) !== null);
 }
 
 export function getT2FiberMap(): Map<string, T2FiberProps> {

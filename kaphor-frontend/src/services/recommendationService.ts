@@ -8,6 +8,8 @@ export interface RecommendedGarment {
   subCategory?: string | null;
   size: string;
   price: number;
+  rentalPriceDay?: number | null;
+  rentalPriceWeek?: number | null;
   condition: string;
   listingType: string;
   images: string[];

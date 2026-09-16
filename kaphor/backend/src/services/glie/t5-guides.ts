@@ -6,6 +6,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../../lib/logger';
+import { isKnownFiber } from './t2-fibers';
+
+export interface T5Step {
+  step?: number;
+  instruction: string;
+  tip?: string;
+}
 
 export interface T5Guide {
   doc_id: string;
@@ -18,9 +25,14 @@ export interface T5Guide {
   garment_categories: string[];
   damage_location: string;
   tools_required: string[];
-  steps: Array<{ instruction: string; tip: string }>;
+  steps: T5Step[];
   technique_style?: string;
+  pro_tip?: string;
+  care_instructions?: string;
+  upcycle_alternative?: string;
   quality_score?: number;
+  /** true when the doc is garment repair/upcycling (skipped for garment queries) */
+  is_garment?: boolean;
 }
 
 export interface T5GuideCondensed {
@@ -30,7 +42,11 @@ export interface T5GuideCondensed {
   time_minutes: number;
   technique_style: string;
   tools_required: string[];
-  steps: string[];         // First 3 steps (instruction only)
+  steps: string[];         // Full instructions for quick view
+  detailed_steps?: T5Step[];
+  pro_tip?: string;
+  care_instructions?: string;
+  upcycle_alternative?: string;
   quality_score: number;
 }
 
@@ -53,10 +69,13 @@ export function loadT5(): void {
   guideDocs = [];
   qualityMap = new Map();
 
-  // T5.json keys are numeric strings "0".."61"
+  // T5.json keys are numeric strings "0".."61" or array elements
   for (const key of Object.keys(data)) {
     const doc = data[key];
     if (!doc || !doc.doc_id) continue;
+
+    const rawTech = Array.isArray(doc.technique_style) ? doc.technique_style[0] : (doc.technique_style || '');
+    const cleanTech = cleanTechniqueName(rawTech);
 
     const guide: T5Guide = {
       doc_id: doc.doc_id || '',
@@ -70,6 +89,15 @@ export function loadT5(): void {
       damage_location: doc.damage_location || '',
       tools_required: doc.tools_required || [],
       steps: doc.steps || [],
+      technique_style: cleanTech,
+      pro_tip: doc.pro_tip || '',
+      care_instructions: doc.care_instructions || '',
+      upcycle_alternative: doc.upcycle_alternative || '',
+      // Non-garment upcycling docs (furniture, bottles, pallets) carry no
+      // real fiber — mark them so they never surface for garment assessments.
+      is_garment: (doc.fiber_types || doc.fiber_type || []).some((f: string) =>
+        typeof f === 'string' && isKnownFiber(f)
+      ),
     };
     // Estimate quality score based on number of steps + specificity
     const stepsScore = Math.min(1, (guide.steps?.length || 0) / 10);
@@ -99,8 +127,10 @@ export function queryT5(
   const categoryKey = normalize(category);
   const damageKeys = damageTypes.map(d => normalize(d));
 
-  // Score each guide by relevance
-  const scored = guideDocs.map(guide => {
+  // Score each guide by relevance (skipping non-garment upcycling docs)
+  const scored = guideDocs
+    .filter(g => g.is_garment !== false)
+    .map(guide => {
     let score = 0;
 
     // Fiber match (weight: 40%)
@@ -143,11 +173,28 @@ export function queryT5(
     time_minutes: guide.time_minutes,
     technique_style: guide.technique_style || mapDocType(guide.doc_type),
     tools_required: guide.tools_required || [],
-    steps: (guide.steps || []).slice(0, 3).map(s =>
+    steps: (guide.steps || []).map(s =>
       typeof s === 'string' ? s : (s.instruction || s.tip || '')
     ),
+    detailed_steps: guide.steps || [],
+    pro_tip: guide.pro_tip || '',
+    care_instructions: guide.care_instructions || '',
+    upcycle_alternative: guide.upcycle_alternative || '',
     quality_score: guide.quality_score || 0,
   }));
+}
+
+function cleanTechniqueName(tech: string): string {
+  const map: Record<string, string> = {
+    plain_repair: 'Invisible Hand Mending',
+    embroidery: 'Embroidery Thread Restoration',
+    block_print: 'Artisan Block Printing',
+    zari: 'Zari Metallic Couching',
+    patchwork: 'Sashiko & Fabric Patchwork',
+    kantha: 'Traditional Kantha Reinforcement',
+    upcycling: 'Circular Haute Upcycling',
+  };
+  return map[tech] || (tech ? tech.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Artisan Technique');
 }
 
 function mapDocType(docType: string): string {

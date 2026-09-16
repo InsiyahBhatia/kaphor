@@ -79,6 +79,16 @@ export function loadT3(): void {
       const num = Number(value);
       record[headers[j]] = isNaN(num) ? value : num;
     }
+
+    // Normalize boolean-ish columns (CSV exports vary: TRUE/FALSE, 1/0, true/false)
+    const wasSold = String(record.was_sold || '').trim().toLowerCase();
+    record.was_sold = ['1', 'true', 'yes'].includes(wasSold) ? '1' : '0';
+
+    // Backfill missing condition_score_at_listing from the seller's label
+    if (!record.condition_score_at_listing) {
+      record.condition_score_at_listing = labelToCondition(String(record.seller_condition_label || ''));
+    }
+
     marketRecords.push(record as unknown as T3Raw);
   }
 
@@ -121,9 +131,9 @@ export function queryT3(
 
   // Aggregate
   const prices = matched.map(r => r.listed_price_inr);
-  const soldPrices = matched.filter(r => r.was_sold === '1' || r.was_sold === 'true').map(r => r.sold_price_inr);
-  const daysToSell = matched.filter(r => r.was_sold === '1' || r.was_sold === 'true').map(r => r.days_to_sell);
-  const ratios = matched.filter(r => r.was_sold === '1' || r.was_sold === 'true').map(r => r.resale_value_ratio);
+  const soldPrices = matched.filter(r => r.was_sold === '1').map(r => r.sold_price_inr);
+  const daysToSell = matched.filter(r => r.was_sold === '1').map(r => r.days_to_sell);
+  const ratios = matched.filter(r => r.was_sold === '1').map(r => r.resale_value_ratio);
   const demandScores = matched.map(r => r.platform_demand_score);
   const trendScores = matched.map(r => r.trend_score_at_listing);
 
@@ -155,4 +165,21 @@ function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * Map a seller_condition_label to a numeric condition score.
+ * Used to backfill rows where condition_score_at_listing is missing.
+ * Unknown labels default to 0.5 so the listing still participates in queries.
+ */
+function labelToCondition(label: string): number {
+  const key = label.trim().toLowerCase();
+  if (key.includes('new_with_tags')) return 1.0;
+  if (key.includes('new')) return 0.95;
+  if (key.includes('like_new')) return 0.92;
+  if (key.includes('excellent')) return 0.88;
+  if (key.includes('good')) return 0.80;
+  if (key.includes('fair')) return 0.60;
+  if (key.includes('poor')) return 0.40;
+  return 0.5;
 }

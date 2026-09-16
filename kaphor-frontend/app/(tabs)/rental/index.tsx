@@ -84,9 +84,14 @@ export default function RentalScreen() {
 
   const statusColor = (status: string) => {
     switch (status) {
+      case 'REQUESTED': return colors.gold || '#D4AF37';
+      case 'APPROVED': return colors.forest || '#2A7B4C';
       case 'RESERVED': return colors.copper;
       case 'ACTIVE': return colors.forest;
+      case 'RETURN_DISPATCHED': return colors.forest;
       case 'RETURNED': return colors.navy;
+      case 'COMPLETED': return colors.forest;
+      case 'DECLINED': return colors.red;
       case 'OVERDUE': return colors.red;
       default: return colors.textMuted;
     }
@@ -199,12 +204,38 @@ export default function RentalScreen() {
 
                 {/* Card Action Row */}
                 <View style={styles.myRentalActionRow}>
-                  <TouchableOpacity
-                    style={styles.myRentalDossierBtn}
-                    onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
-                  >
-                    <Text style={styles.myRentalDossierText}>VIEW LEASE DOSSIER ➔</Text>
-                  </TouchableOpacity>
+                  {rental.status === 'REQUESTED' && isLender ? (
+                    <TouchableOpacity
+                      style={[styles.myRentalDossierBtn, { backgroundColor: '#B45309', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
+                      onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
+                    >
+                      <Ionicons name="time" size={13} color={colors.white} />
+                      <Text style={styles.myRentalDossierText}>REVIEW & APPROVE DATES ➔</Text>
+                    </TouchableOpacity>
+                  ) : rental.status === 'APPROVED' && !isLender ? (
+                    <TouchableOpacity
+                      style={[styles.myRentalDossierBtn, { backgroundColor: colors.forest || '#2A7B4C', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
+                      onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
+                    >
+                      <Ionicons name="card" size={13} color={colors.white} />
+                      <Text style={styles.myRentalDossierText}>PAY ESCROW DEPOSIT ➔</Text>
+                    </TouchableOpacity>
+                  ) : (rental.status === 'RETURNED' || rental.status === 'COMPLETED') && (!currentUserId || !rental?.metadata?.reviews?.[currentUserId]) ? (
+                    <TouchableOpacity
+                      style={[styles.myRentalDossierBtn, { backgroundColor: '#D97706', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
+                      onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}?review=true` as any)}
+                    >
+                      <Ionicons name="star" size={13} color={colors.white} />
+                      <Text style={styles.myRentalDossierText}>RATE & REVIEW LEASE ➔</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.myRentalDossierBtn}
+                      onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
+                    >
+                      <Text style={styles.myRentalDossierText}>VIEW LEASE DOSSIER ➔</Text>
+                    </TouchableOpacity>
+                  )}
 
                   <TouchableOpacity
                     style={styles.myRentalChatBtn}
@@ -325,7 +356,7 @@ export default function RentalScreen() {
                   price={item.rentalPriceDay ? Math.round(item.rentalPriceDay) : 0}
                   imageUrl={item.images?.[0]}
                   condition={item.condition || 'Pristine'}
-                  buttonText={isMyAsset ? 'OWNED BY YOU' : 'RENT NOW'}
+                  buttonText={isMyAsset ? 'OWNED BY YOU' : 'REQUEST RENTAL'}
                   onSwapRequest={() => router.push(`/(tabs)/rental/${item.id}` as any)}
                   style={{ width: '100%' }}
                 />

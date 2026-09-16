@@ -276,12 +276,13 @@ export async function fetchFresh<T = any>(url: string, params?: Record<string, a
 }
 
 /**
- * Invalidate all cached GET responses for URLs matching a prefix.
+ * Invalidate all cached GET responses for URLs matching a prefix or list of prefixes.
  * Useful after a mutation (POST/PUT/PATCH/DELETE) to force a fresh fetch.
  */
-export function invalidateCache(prefix: string): void {
+export function invalidateCache(prefixOrPrefixes: string | string[]): void {
+  const prefixes = Array.isArray(prefixOrPrefixes) ? prefixOrPrefixes : [prefixOrPrefixes];
   for (const key of GET_CACHE.keys()) {
-    if (key.startsWith(prefix)) {
+    if (prefixes.some((p) => key.startsWith(p))) {
       GET_CACHE.delete(key);
       AsyncStorage.removeItem(`${OFFLINE_PREFIX}${key}`).catch(() => {});
     }

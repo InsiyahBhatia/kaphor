@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { emitToUser, emitToConversation } from '../lib/socket';
-import { getDownloadUrl } from '../lib/s3';
+import { getDownloadUrl } from '../lib/cloudinary';
 import { createNotification } from '../services/notification.service';
 import Razorpay from 'razorpay';
 import {
@@ -28,8 +28,13 @@ const ALLOWED_SWAP_CATEGORIES = new Set([
   'scarf',
   'scarves',
   'eyewear',
+  'sunglasses',
   'hat',
   'hats',
+  'cap',
+  'caps',
+  'headwear',
+  'hair accessories',
   'wallet',
   'wallets',
   'tie',
@@ -39,7 +44,11 @@ const ALLOWED_SWAP_CATEGORIES = new Set([
   'sneakers',
   'heels',
   'boots',
+  'dress shoes',
   'sandals',
+  'flats',
+  'traditionals',
+  'juttis',
 ]);
 
 function normalizeCategory(category: string | null | undefined): string {
@@ -49,9 +58,14 @@ function normalizeCategory(category: string | null | undefined): string {
 function isAccessoryGarment(garment: any): boolean {
   if (!garment) return false;
   if ((garment as any).isAccessory === true) return true;
+  if (garment.listingType === 'ACCESSORY_SWAP') return true;
   const cat = normalizeCategory(garment.category);
   const sub = normalizeCategory(garment.subCategory);
-  return ALLOWED_SWAP_CATEGORIES.has(cat) || ALLOWED_SWAP_CATEGORIES.has(sub);
+  return (
+    ALLOWED_SWAP_CATEGORIES.has(cat) ||
+    ALLOWED_SWAP_CATEGORIES.has(sub) ||
+    Array.from(ALLOWED_SWAP_CATEGORIES).some((t) => cat.includes(t) || sub.includes(t))
+  );
 }
 
 /** Format garment into clean snapshot for swap UI */
@@ -430,9 +444,9 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
       await createNotification({
         userId: wantedGarment.sellerId,
         type: 'SWAP_REQUEST',
-        title: 'New Swap Proposal!',
-        body: `${(req.user as any)?.displayName || req.user.email || 'A collector'} proposed swapping for your "${wantedGarment.title}".`,
-        data: { swapId: swap.id },
+        title: 'New Swap Proposal! ⚖️',
+        body: `${(req.user as any)?.displayName || req.user.email || 'A collector'} proposed swapping for your "${wantedGarment.title}". Review valuations and chat.`,
+        data: { swapId: swap.id, targetRoute: `/(tabs)/swap/details?swapId=${swap.id}` },
       });
     } catch (notifErr) {
       logger.warn('Failed to send swap request notification', { error: notifErr });
@@ -588,9 +602,9 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
         await createNotification({
           userId: swap.initiatorId,
           type: 'SWAP_ACCEPTED',
-          title: 'Swap Accepted!',
-          body: `Your swap proposal for "${swap.wantedGarment?.title || 'item'}" was accepted! Please review and sign agreement.`,
-          data: { swapId: swap.id },
+          title: 'Swap Accepted! 🎉',
+          body: `Your swap proposal for "${swap.wantedGarment?.title || 'item'}" was accepted! Review trade values and chat with partner.`,
+          data: { swapId: swap.id, targetRoute: `/(tabs)/swap/details?swapId=${swap.id}` },
         });
       } catch (notifErr) {
         logger.warn('Failed to send swap accepted notification', { error: notifErr });
@@ -988,6 +1002,26 @@ export async function markSwapShipped(req: Request, res: Response): Promise<void
       },
     });
 
+    // Notify swap partner that package has been shipped
+    const partnerId = isInitiator ? swap.receiverId : swap.initiatorId;
+    const shippedItemTitle = isInitiator ? fullSwap?.offeredGarment?.title : fullSwap?.wantedGarment?.title;
+    try {
+      await createNotification({
+        userId: partnerId,
+        type: 'SWAP_SHIPPED',
+        title: 'Swap Package Shipped! 📦',
+        body: `Your swap partner shipped "${shippedItemTitle || 'their accessory'}" via ${tracking.courierPartner} (Tracking #${tracking.trackingNumber}).`,
+        data: {
+          swapId: id,
+          trackingNumber: tracking.trackingNumber,
+          courierPartner: tracking.courierPartner,
+          targetRoute: `/(tabs)/swap/shipping?swapId=${id}`,
+        },
+      });
+    } catch (notifErr) {
+      logger.warn('Failed to send swap shipped notification', { error: notifErr });
+    }
+
     res.json({ data: await formatSwapTransaction(fullSwap, req.user.id) });
   } catch (error) {
     logger.error('markSwapShipped failed', { error });
@@ -1106,14 +1140,29 @@ export async function confirmSwapReceived(req: Request, res: Response): Promise<
           type: 'SWAP_COMPLETED',
           title: '🎉 Swap Completed!',
           body: `Your accessory exchange is complete. Ownership of "${swap.wantedGarment?.title || 'accessory'}" is now yours!`,
-          data: { swapId: id },
+          data: { swapId: id, targetRoute: `/(tabs)/swap/details?swapId=${id}&review=1` },
         });
         await createNotification({
           userId: swap.receiverId,
           type: 'SWAP_COMPLETED',
           title: '🎉 Swap Completed!',
           body: `Your accessory exchange is complete. Ownership of "${swap.offeredGarment?.title || 'accessory'}" is now yours!`,
-          data: { swapId: id },
+          data: { swapId: id, targetRoute: `/(tabs)/swap/details?swapId=${id}&review=1` },
+        });
+        // Prompt mutual peer reviews
+        await createNotification({
+          userId: swap.initiatorId,
+          type: 'PEER_REVIEW',
+          title: '⭐ Rate Your Swap Experience',
+          body: `How was your exchange experience with ${swap.receiver?.displayName || 'your partner'}? Tap to leave a quick rating.`,
+          data: { swapId: id, partnerId: swap.receiverId, targetRoute: `/(tabs)/swap/details?swapId=${id}&review=1` },
+        });
+        await createNotification({
+          userId: swap.receiverId,
+          type: 'PEER_REVIEW',
+          title: '⭐ Rate Your Swap Experience',
+          body: `How was your exchange experience with ${swap.initiator?.displayName || 'your partner'}? Tap to leave a quick rating.`,
+          data: { swapId: id, partnerId: swap.initiatorId, targetRoute: `/(tabs)/swap/details?swapId=${id}&review=1` },
         });
       } catch (notifErr) {
         logger.warn('Failed to send swap completed notification', { error: notifErr });
@@ -1260,14 +1309,14 @@ export async function completeSwap(req: Request, res: Response): Promise<void> {
         type: 'SWAP_COMPLETED',
         title: '🎉 Swap Completed!',
         body: `Your accessory exchange is complete. Ownership of "${swap.wantedGarment?.title || 'accessory'}" is now yours!`,
-        data: { swapId: id },
+        data: { swapId: id, targetRoute: `/(tabs)/swap/shipping?swapId=${id}` },
       });
       await createNotification({
         userId: swap.receiverId,
         type: 'SWAP_COMPLETED',
         title: '🎉 Swap Completed!',
         body: `Your accessory exchange is complete. Ownership of "${swap.offeredGarment?.title || 'accessory'}" is now yours!`,
-        data: { swapId: id },
+        data: { swapId: id, targetRoute: `/(tabs)/swap/shipping?swapId=${id}` },
       });
     } catch (notifErr) {
       logger.warn('Failed to send swap completed notification', { error: notifErr });
@@ -1696,6 +1745,10 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
 
     const swap = await db.swap.findUnique({
       where: { id },
+      include: {
+        offeredGarment: true,
+        wantedGarment: true,
+      },
     });
 
     if (!swap) {
@@ -1708,7 +1761,9 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
       return;
     }
 
-    const otherUserId = swap.initiatorId === req.user.id ? swap.receiverId : swap.initiatorId;
+    const isInitiator = swap.initiatorId === req.user.id;
+    const otherUserId = isInitiator ? swap.receiverId : swap.initiatorId;
+    const receivedGarmentId = isInitiator ? swap.garmentWanted : swap.garmentOffered;
 
     const meta = await getSwapMetadata(id);
     const reviews = meta.reviews || {};
@@ -1719,6 +1774,8 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
     }
 
     const newReview = {
+      reviewerId: req.user.id,
+      reviewerName: req.user.displayName || 'Swap Partner',
       rating: numRating,
       comment: typeof comment === 'string' ? comment.trim().slice(0, 1000) : undefined,
       createdAt: new Date().toISOString(),
@@ -1729,20 +1786,48 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
       m.reviews = reviews;
     });
 
-    // Send notification to the partner
+    // Persist in relational db.review for the received garment
+    if (receivedGarmentId) {
+      try {
+        await db.review.upsert({
+          where: {
+            userId_garmentId: {
+              userId: req.user.id,
+              garmentId: receivedGarmentId,
+            },
+          },
+          create: {
+            userId: req.user.id,
+            garmentId: receivedGarmentId,
+            rating: numRating,
+            comment: typeof comment === 'string' ? comment.trim().slice(0, 1000) : null,
+          },
+          update: {
+            rating: numRating,
+            comment: typeof comment === 'string' ? comment.trim().slice(0, 1000) : null,
+          },
+        });
+      } catch (dbErr) {
+        logger.warn('Failed to upsert db.review for swap garment', { error: dbErr });
+      }
+    }
+
+    // Realtime notification & socket emit to partner
+    emitToUser(otherUserId, 'swap:reviewed', { swapId: id, review: newReview, reviews });
+
     try {
       await createNotification({
         userId: otherUserId,
         type: 'PEER_REVIEW',
         title: '⭐️ Swap Review Received!',
         body: `${req.user?.displayName || 'Your swap partner'} left you a ${numRating}-star review for swap #${id.slice(0, 8).toUpperCase()}.`,
-        data: { swapId: id },
+        data: { swapId: id, targetRoute: `/(tabs)/swap/shipping?swapId=${id}` },
       });
     } catch (notifErr) {
       logger.warn('Failed to send swap review notification', { error: notifErr });
     }
 
-    res.status(201).json({ success: true, data: newReview });
+    res.status(201).json({ success: true, data: newReview, reviews });
   } catch (error) {
     logger.error('postSwapReview failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });

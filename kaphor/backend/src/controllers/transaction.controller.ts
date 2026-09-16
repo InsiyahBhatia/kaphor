@@ -58,7 +58,7 @@ export async function listTransactionOrders(req: AuthRequest, res: Response): Pr
       })
     )) as any[];
 
-    const { getDownloadUrl } = await import('../lib/s3');
+    const { getDownloadUrl } = await import('../lib/cloudinary');
     const resolvedOrders = await Promise.all(
       orders.map(async (order: any) => {
         const orderCopy = { ...order };
@@ -123,7 +123,7 @@ export async function getOrderDetail(req: AuthRequest, res: Response): Promise<v
 
     const orderData: any = { ...order };
     if (orderData.items) {
-      const { getDownloadUrl } = await import('../lib/s3');
+      const { getDownloadUrl } = await import('../lib/cloudinary');
       orderData.items = await Promise.all(
         orderData.items.map(async (item: any) => {
           if (item.garment && item.garment.images) {
@@ -194,9 +194,9 @@ export async function markOrderShipped(req: AuthRequest, res: Response): Promise
     await createNotification({
       userId: order.buyerId,
       type: 'ORDER_SHIPPED',
-      title: '📦 Item Shipped!',
-      body: `Your order for "${updated.items[0]?.garment?.title}" has been shipped.`,
-      data: { orderId: updated.id }
+      title: '📦 Order Shipped!',
+      body: `Your order for "${updated.items[0]?.garment?.title || 'item'}" has been shipped.`,
+      data: { orderId: updated.id, targetRoute: `/(tabs)/shop/orders/${updated.id}` }
     });
 
     res.json({ data: updated });
@@ -238,8 +238,17 @@ export async function markOrderDelivered(req: AuthRequest, res: Response): Promi
       userId: order.sellerId,
       type: 'ORDER_DELIVERED',
       title: '✅ Delivery Confirmed',
-      body: `The buyer confirmed receipt of "${updated.items[0]?.garment?.title}".`,
-      data: { orderId: updated.id }
+      body: `The buyer confirmed receipt of "${updated.items[0]?.garment?.title || 'item'}".`,
+      data: { orderId: updated.id, targetRoute: `/(tabs)/shop/orders/${updated.id}` }
+    });
+
+    // Notify Buyer to leave a review
+    await createNotification({
+      userId: order.buyerId,
+      type: 'PEER_REVIEW',
+      title: '⭐ Rate Your Purchase',
+      body: `How was your purchase of "${updated.items[0]?.garment?.title || 'item'}"? Leave a review for the seller!`,
+      data: { orderId: updated.id, userId: order.sellerId, targetRoute: `/(tabs)/shop/orders/${updated.id}?review=true` }
     });
 
     // Dynamic Impact Update

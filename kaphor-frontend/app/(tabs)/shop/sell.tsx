@@ -12,6 +12,7 @@ import {
   ALL_CATEGORY_ITEMS,
   ACCESSORY_CATEGORY_ITEMS,
   isAccessoryCategory,
+  matchMarketCategory,
   MARKET_CONDITIONS,
   LISTING_TYPES,
   MARKET_SIZES
@@ -21,63 +22,7 @@ import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 
-export function matchMarketCategory(raw?: string): string {
-  if (!raw) return 'Tops';
-  const r = raw.trim().toLowerCase();
-
-  const exact = ALL_CATEGORY_ITEMS.find((item) => item.toLowerCase() === r);
-  if (exact) return exact;
-
-  // Ethnic
-  if (r.includes('saree') || r.includes('sari')) return 'Sarees';
-  if (r.includes('lehenga') || r.includes('choli')) return 'Lehengas';
-  if (r.includes('anarkali')) return 'Anarkalis';
-  if (r.includes('sherwani')) return 'Sherwanis';
-  if (r.includes('kurta') || r.includes('kurti')) return 'Kurtas';
-  if (r.includes('dupatta') || r.includes('chunni')) return 'Dupattas';
-  if (r.includes('kaftan') || r.includes('caftan')) return 'Kaftans';
-  if (r.includes('pashmina')) return 'Pashminas';
-  if (r.includes('shawl')) return 'Shawls';
-  if (r.includes('indo-western') || r.includes('indowestern')) return 'Indo-Western';
-
-  // Apparel
-  if (r.includes('gown')) return 'Gowns';
-  if (r.includes('dress') || r.includes('frock')) return 'Dresses';
-  if (r.includes('skirt')) return 'Skirts';
-  if (r.includes('co-ord') || r.includes('coord') || r.includes('set')) return 'Co-ords';
-  if (r.includes('jumpsuit') || r.includes('romper')) return 'Jumpsuits';
-  if (r.includes('shirt') || r.includes('button')) return 'Shirts';
-  if (r.includes('blazer') || r.includes('tuxedo')) return 'Blazers';
-  if (r.includes('coat') || r.includes('overcoat')) return 'Coats';
-  if (r.includes('jacket') || r.includes('bomber') || r.includes('windbreaker')) return 'Jackets';
-  if (r.includes('knitwear') || r.includes('sweater') || r.includes('cardigan') || r.includes('pullover')) return 'Knitwear';
-  if (r.includes('jeans') || r.includes('denim')) return 'Denims';
-  if (r.includes('pant') || r.includes('trouser') || r.includes('chino') || r.includes('cargo')) return 'Pants';
-  if (r.includes('top') || r.includes('t-shirt') || r.includes('tshirt') || r.includes('tee') || r.includes('blouse') || r.includes('hoodie')) return 'Tops';
-
-  // Accessories
-  if (r.includes('bag') || r.includes('purse') || r.includes('clutch') || r.includes('tote') || r.includes('backpack')) return 'Bags';
-  if (r.includes('jewelry') || r.includes('jewellery') || r.includes('necklace') || r.includes('ring') || r.includes('earring') || r.includes('bracelet') || r.includes('pendant')) return 'Jewelry';
-  if (r.includes('watch') || r.includes('timepiece')) return 'Watches';
-  if (r.includes('eyewear') || r.includes('sunglass') || r.includes('glasses') || r.includes('shades')) return 'Eyewear';
-  if (r.includes('belt')) return 'Belts';
-  if (r.includes('hat') || r.includes('cap') || r.includes('beanie')) return 'Hats';
-  if (r.includes('scarf') || r.includes('scarves') || r.includes('stole') || r.includes('muffler')) return 'Scarves';
-  if (r.includes('wallet') || r.includes('cardholder') || r.includes('card holder')) return 'Wallets';
-  if (r.includes('tie') || r.includes('bowtie') || r.includes('necktie')) return 'Ties';
-  if (r.includes('hair') || r.includes('scrunchie') || r.includes('headband') || r.includes('clip')) return 'Hair Accessories';
-
-  // Footwear
-  if (r.includes('sneaker') || r.includes('trainer')) return 'Sneakers';
-  if (r.includes('heel') || r.includes('stiletto') || r.includes('pump')) return 'Heels';
-  if (r.includes('boot')) return 'Boots';
-  if (r.includes('sandal')) return 'Sandals';
-  if (r.includes('flat') || r.includes('loafer') || r.includes('mule')) return 'Flats';
-  if (r.includes('jutti') || r.includes('mojari')) return 'Juttis';
-  if (r.includes('shoe') || r.includes('oxford') || r.includes('derby') || r.includes('brogue')) return 'Dress Shoes';
-
-  return 'Tops';
-}
+export { matchMarketCategory };
 
 export function matchMarketCondition(raw?: string): string {
   if (!raw) return 'PRISTINE';
@@ -104,10 +49,20 @@ export default function SellScreen() {
     prefillColor?: string;
     prefillStyle?: string;
     prefillListingType?: string;
+    listingType?: string;
+    mode?: string;
     prefillPrice?: string;
     prefillRentalDay?: string;
     fresh?: string;
   }>();
+
+  const getParamListingType = () => {
+    const raw = params.prefillListingType || params.listingType || (params.mode === 'SWAP' ? 'ACCESSORY_SWAP' : undefined);
+    if (raw === 'SWAP' || raw === 'ACCESSORY_SWAP') return 'ACCESSORY_SWAP';
+    if (raw === 'RENTAL') return 'RENTAL';
+    if (raw === 'SALE') return 'SALE';
+    return undefined;
+  };
 
   const [step, setStep] = useState(1);
   const [images, setImages] = useState<string[]>([]);
@@ -117,7 +72,7 @@ export default function SellScreen() {
   const [category, setCategory] = useState('');
   const [size, setSize] = useState('');
   const [condition, setCondition] = useState('PRISTINE');
-  const [listingType, setListingType] = useState('SALE');
+  const [listingType, setListingType] = useState(() => getParamListingType() || 'SALE');
   const [price, setPrice] = useState('');
   const [rentalDay, setRentalDay] = useState('');
   const [rentalWeek, setRentalWeek] = useState('');
@@ -143,7 +98,12 @@ export default function SellScreen() {
     setCategory('');
     setSize('');
     setCondition('PRISTINE');
-    setListingType('SALE');
+    const defaultType = getParamListingType() || 'SALE';
+    setListingType(defaultType);
+    if (defaultType === 'ACCESSORY_SWAP') {
+      setCategory('Bags');
+      setSize('FREE SIZE');
+    }
     setPrice('');
     setRentalDay('');
     setRentalWeek('');
@@ -156,7 +116,7 @@ export default function SellScreen() {
     setWeight('');
     setSubmitting(false);
     setAiLoading(false);
-  }, []);
+  }, [params.prefillListingType, params.listingType, params.mode]);
 
   const handleBackNavigation = () => {
     if (step > 1) {
@@ -207,16 +167,27 @@ export default function SellScreen() {
     if (params.prefillFabric) setFabric(params.prefillFabric);
     if (params.prefillColor) setColor(params.prefillColor);
     if (params.prefillStyle) setStyleAttr(params.prefillStyle);
-    if (params.prefillListingType) {
-      setListingType(params.prefillListingType);
-      if (params.prefillListingType === 'ACCESSORY_SWAP' && !isAccessoryCategory(category)) {
-        setCategory('Bags');
+    const incomingType = getParamListingType();
+    if (incomingType) {
+      setListingType(incomingType);
+      if (incomingType === 'ACCESSORY_SWAP' && !isAccessoryCategory(category)) {
+        setCategory((prev) => (isAccessoryCategory(prev) ? prev : 'Bags'));
         setSize('FREE SIZE');
       }
     }
     if (params.prefillPrice) setPrice(params.prefillPrice);
     if (params.prefillRentalDay) setRentalDay(params.prefillRentalDay);
-  }, [params.prefillImage, params.prefillCategory, params.prefillTitle, params.prefillPrice]);
+  }, [
+    params.prefillImage,
+    params.prefillCategory,
+    params.prefillTitle,
+    params.prefillPrice,
+    params.prefillRentalDay,
+    params.prefillListingType,
+    params.listingType,
+    params.mode,
+    params.fresh,
+  ]);
 
   const handleCategoryChange = (cat: string) => {
     setCategory(cat);
@@ -268,7 +239,7 @@ export default function SellScreen() {
         setBrand(res.brand || '');
 
         // Map AI predicted category string to exact dropdown item in ALL_CATEGORY_ITEMS
-        const matchedCat = matchMarketCategory(res.category || res.subCategory);
+        const matchedCat = matchMarketCategory(res.category, res.subCategory, res.title);
         const isAccessory = isAccessoryCategory(matchedCat);
         setCategory(matchedCat);
 
@@ -289,55 +260,35 @@ export default function SellScreen() {
         setWeight(res.styleAttributes?.weight || '');
         setCondition(matchMarketCondition(res.condition));
 
-        // Intelligent listing type & pricing autofill
-        const estPrice = res.estimatedPrice ? String(res.estimatedPrice) : '999';
-        const dayRate = res.suggestedRentalPriceDay
-          ? String(res.suggestedRentalPriceDay)
-          : String(Math.max(199, Math.round(Number(estPrice) * 0.12)));
-        const weekRate = res.suggestedRentalPriceWeek
-          ? String(res.suggestedRentalPriceWeek)
-          : String(Math.round(Number(dayRate) * 5));
-
+        // Note: AI setting price is disabled per requirements; seller sets their own price
         if (listingType === 'ACCESSORY_SWAP') {
-          setPrice(estPrice);
-          setRentalDay('');
-          setRentalWeek('');
           if (isAccessory) {
             Alert.alert(
-              'AI Magic Fill: Swap Asset',
-              `Identified as "${matchedCat}". Your accessory swap listing has been filled with an estimated trade valuation of ₹${estPrice} for fair swap matching.`
+              'AI Magic Fill',
+              `Identified as "${matchedCat}". Item details filled from photo. Set your desired trade valuation and review details before publishing.`
             );
           } else {
-            // Swap is strictly for accessories!
-            setListingType('SALE');
-            setPrice(estPrice);
             Alert.alert(
-              'Category Notice',
-              `Identified as "${matchedCat}". Swapping on KaPhor is exclusively for accessories & footwear. We switched this listing to SALE (₹${estPrice}). You can edit details or switch category.`
+              'Swap Notice',
+              `Identified as "${matchedCat}". Swapping on KaPhor is reserved for accessories & footwear. Please select an accessory category or switch to SALE if you wish to sell this item instead.`
             );
           }
         } else if (listingType === 'RENTAL') {
-          setRentalDay(dayRate);
-          setRentalWeek(weekRate);
-          setPrice('');
           Alert.alert(
-            'AI Magic Fill: Rental Listing',
-            `Identified as "${matchedCat}". Auto-filled suggested rental rate of ₹${dayRate}/day (₹${weekRate}/week) based on archival market valuation.`
+            'AI Magic Fill',
+            `Identified as "${matchedCat}". Garment details filled from photo. Enter your daily and weekly rental rates below.`
           );
         } else {
           // SALE
-          setPrice(estPrice);
-          setRentalDay('');
-          setRentalWeek('');
           if (isAccessory) {
             Alert.alert(
-              'AI Magic Fill: Sale Listing',
-              `Identified as "${matchedCat}". Auto-filled estimated resale price of ₹${estPrice}. Note: This accessory is also eligible for SWAP if you prefer exchanging!`
+              'AI Magic Fill',
+              `Identified as "${matchedCat}". Item details filled from photo. Enter your desired price below (this accessory is also eligible for SWAP if you prefer exchanging).`
             );
           } else {
             Alert.alert(
-              'AI Magic Fill: Sale Listing',
-              `Identified as "${matchedCat}". Auto-filled details and estimated market price of ₹${estPrice}. Review and adjust anytime before publishing.`
+              'AI Magic Fill',
+              `Identified as "${matchedCat}". Garment details filled from photo. Enter your desired price below and review before publishing.`
             );
           }
         }
@@ -495,7 +446,7 @@ export default function SellScreen() {
         {
           text: listingType === 'ACCESSORY_SWAP' ? 'VIEW SWAP' : 'VIEW SHOP',
           onPress: () => {
-            useGarmentStore.getState().fetchFeed();
+            useGarmentStore.getState().fetchFeed({ listingType: 'SALE' });
             resetForm();
             if (listingType === 'ACCESSORY_SWAP') {
               router.replace('/(tabs)/swap');
@@ -620,22 +571,6 @@ export default function SellScreen() {
               )}
             </View>
 
-            {/* AI Outfit Extractor Quick Link */}
-            <TouchableOpacity
-              style={styles.extractOutfitBanner}
-              onPress={() => router.push({ pathname: '/profile/wardrobe', params: { autoScan: 'true' } } as any)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.extractOutfitBannerLeft}>
-                <Ionicons name="scan-outline" size={20} color={colors.crimson} />
-                <View style={{ marginLeft: 10, flex: 1 }}>
-                  <Text style={styles.extractOutfitBannerTitle}>HAVE A FULL OUTFIT PHOTO?</Text>
-                  <Text style={styles.extractOutfitBannerSub}>
-                    Extract individual pieces & studio cutouts via AI Outfit Digitizer →
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
 
             {/* 3. AI Magic Fill Button (dynamic text and action based on selected listingType) */}
             <TouchableOpacity
@@ -650,10 +585,10 @@ export default function SellScreen() {
                   <Ionicons name="sparkles" size={20} color={colors.white} />
                   <Text style={styles.aiButtonText}>
                     {listingType === 'RENTAL'
-                      ? 'AI MAGIC FILL (RENTAL RATES & SPECS)'
+                      ? 'AI MAGIC FILL (RENTAL SPECS)'
                       : listingType === 'ACCESSORY_SWAP'
-                        ? 'AI MAGIC FILL (SWAP ASSET SPECS)'
-                        : 'AI MAGIC FILL (SALE PRICING & DETAILS)'}
+                        ? 'AI MAGIC FILL (SWAP SPECS)'
+                        : 'AI MAGIC FILL (GARMENT SPECS)'}
                   </Text>
                 </>
               )}
@@ -798,6 +733,16 @@ export default function SellScreen() {
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>REVIEW & LIST</Text>
             <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>
+                DESTINATION:{' '}
+                <Text style={[styles.summaryValue, listingType === 'ACCESSORY_SWAP' && { color: colors.crimson, fontWeight: '700' }]}>
+                  {listingType === 'ACCESSORY_SWAP'
+                    ? 'SWAP MARKETPLACE (ACCESSORY EXCHANGE)'
+                    : listingType === 'RENTAL'
+                      ? 'RENTAL ARCHIVE'
+                      : 'SHOP MARKETPLACE (BUY & SELL)'}
+                </Text>
+              </Text>
               <Text style={styles.summaryLabel}>TITLE: <Text style={styles.summaryValue}>{title}</Text></Text>
               <Text style={styles.summaryLabel}>BRAND: <Text style={styles.summaryValue}>{brand || 'Unknown'}</Text></Text>
               <Text style={styles.summaryLabel}>CATEGORY: <Text style={styles.summaryValue}>{category}</Text></Text>
@@ -817,26 +762,46 @@ export default function SellScreen() {
               {weight ? <Text style={styles.summaryLabel}>WEIGHT: <Text style={styles.summaryValue}>{weight}</Text></Text> : null}
               <Text style={styles.summaryLabel}>PHOTOS: <Text style={styles.summaryValue}>{images.length}</Text></Text>
             </View>
-            {/* Payout Account Setup */}
-            <View style={styles.payoutSection}>
-              <Text style={styles.payoutSectionTitle}>PAYOUT ACCOUNT</Text>
-              <Text style={styles.payoutSectionDesc}>
-                When your item sells, funds will be transferred to your linked bank account or UPI.
-              </Text>
-              <TouchableOpacity
-                style={styles.payoutSetupBtn}
-                onPress={() => router.push('/profile/payout' as any)}
-              >
-                <Ionicons name="wallet-outline" size={18} color={colors.charcoal} />
-                <Text style={styles.payoutSetupText}>SET UP PAYOUT</Text>
-              </TouchableOpacity>
-            </View>
+
+            {/* Payout Account Setup or Swap Destination Notice */}
+            {listingType === 'ACCESSORY_SWAP' ? (
+              <View style={[styles.payoutSection, { borderColor: colors.crimson }]}>
+                <Text style={[styles.payoutSectionTitle, { color: colors.crimson }]}>SWAP VAULT DESTINATION CONFIRMED</Text>
+                <Text style={styles.payoutSectionDesc}>
+                  This item will be published exclusively to the KaPhor Swap feed for peer-to-peer exchange of accessories & footwear.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.payoutSection}>
+                <Text style={styles.payoutSectionTitle}>PAYOUT ACCOUNT</Text>
+                <Text style={styles.payoutSectionDesc}>
+                  When your item sells, funds will be transferred to your linked bank account or UPI.
+                </Text>
+                <TouchableOpacity
+                  style={styles.payoutSetupBtn}
+                  onPress={() => router.push('/profile/payout' as any)}
+                >
+                  <Ionicons name="wallet-outline" size={18} color={colors.charcoal} />
+                  <Text style={styles.payoutSetupText}>SET UP PAYOUT</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             <Text style={styles.policyText}>
               By listing, you warrant lawful ownership and agree to direct peer-to-peer sale terms. Kaphor acts strictly as an electronic intermediary under Sec. 79 of the IT Act, 2000 and is NOT RESPONSIBLE for seller representations, garment authenticity, or peer transactions.
             </Text>
             <TouchableOpacity style={styles.mainButton} onPress={handleSubmit} disabled={submitting}>
-              {submitting ? <ActivityIndicator color={colors.white} /> : <Text style={styles.mainButtonText}>LIST GARMENT</Text>}
+              {submitting ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.mainButtonText}>
+                  {listingType === 'ACCESSORY_SWAP'
+                    ? 'PUBLISH TO SWAP'
+                    : listingType === 'RENTAL'
+                      ? 'PUBLISH TO RENTAL'
+                      : 'PUBLISH FOR SALE'}
+                </Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity onPress={prevStep} style={{ alignItems: 'center', paddingVertical: 12 }}>
               <Text style={{ color: colors.textMuted, fontWeight: '700', letterSpacing: 1 }}>BACK</Text>
@@ -1148,37 +1113,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: colors.textMuted,
-  },
-  extractOutfitBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FAF8F5',
-    borderWidth: 1,
-    borderColor: 'rgba(217, 38, 38, 0.25)',
-    borderLeftWidth: 3,
-    borderLeftColor: colors.crimson,
-    padding: 12,
-    marginTop: 10,
-    marginBottom: 4,
-    borderRadius: 2,
-  },
-  extractOutfitBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  extractOutfitBannerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    color: colors.charcoal,
-  },
-  extractOutfitBannerSub: {
-    fontFamily: typography.body,
-    fontSize: 11,
-    color: colors.textSecond,
-    marginTop: 2,
   },
 });

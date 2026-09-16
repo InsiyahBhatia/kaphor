@@ -1,12 +1,15 @@
 /**
  * T1 — Calibration Examples
- * 324 rows (filtered subset of 10k+ full dataset), loaded at startup
- * Used for few-shot calibration in the Gemini prompt
+ * 560 balanced rows (generated, see scripts/generate-t1-balanced.ts),
+ * loaded at startup. Used for few-shot calibration in the Gemini prompt.
+ * Every condition band (0.10–1.00) is equally represented so damaged
+ * garments retrieve realistic low-condition examples.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../../lib/logger';
+import { resolveFiber } from './t2-fibers';
 
 export interface T1Example {
   garment_category: string;
@@ -52,7 +55,7 @@ function parseCSVLine(line: string): string[] {
 export function loadT1(): void {
   if (examples) return;
 
-  const filePath = path.resolve(__dirname, '../../../data/T1.csv');
+  const filePath = path.resolve(__dirname, '../../../data/T1_balanced.csv');
   logger.info(`[GLIE/T1] Loading calibration examples from ${filePath}`);
 
   const raw = fs.readFileSync(filePath, 'utf-8');
@@ -78,12 +81,17 @@ export function loadT1(): void {
       record[headers[j]] = isNaN(num) ? value : num;
     }
 
-    // Fiber column might be named differently; try to find fiber info
-    // T1 has no explicit fiber column — infer from garment_subcategory if available
+    // Fiber column might be named differently; if missing, derive from
+    // garment_subcategory ("Merino Wool", "Silk", ...) via the T2 fiber map
+    const rawFiber = String(record.fiber || record.material || record.fiber_type || '').trim();
+    const fiberName = rawFiber
+      ? rawFiber
+      : (resolveFiber(String(record.garment_subcategory || '')) || '');
+
     const example: T1Example = {
       garment_category: record.garment_category || '',
       garment_subcategory: record.garment_subcategory || '',
-      fiber: record.fiber || record.material || record.fiber_type || '',
+      fiber: fiberName,
       damage_ratio: Number(record.damage_ratio) || 0,
       stain_ratio: Number(record.stain_ratio) || 0,
       wear_zone_ratio: Number(record.wear_zone_ratio) || 0,

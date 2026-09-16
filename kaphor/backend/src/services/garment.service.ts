@@ -37,14 +37,15 @@ export async function getFeedGarments(params: FeedParams) {
     'Bags', 'bag', 'bags',
     'Jewelry', 'jewelry', 'jewellery',
     'Watches', 'watch', 'watches',
-    'Eyewear', 'eyewear',
+    'Eyewear', 'eyewear', 'Sunglasses', 'sunglasses',
     'Belts', 'belt', 'belts',
-    'Hats', 'hat', 'hats',
+    'Hats', 'hat', 'hats', 'Cap', 'Caps', 'caps', 'Headwear',
     'Scarves', 'scarf', 'scarves',
     'Wallets', 'wallet', 'wallets',
     'Ties', 'tie', 'ties',
+    'Hair Accessories', 'hair accessories',
     'Footwear', 'footwear', 'shoes',
-    'Sneakers', 'Heels', 'Boots', 'Sandals',
+    'Sneakers', 'Heels', 'Boots', 'Dress Shoes', 'Sandals', 'Flats', 'Traditionals', 'Juttis',
   ];
 
   if (params.categories && params.categories.length > 0) {

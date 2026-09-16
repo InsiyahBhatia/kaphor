@@ -5,7 +5,7 @@
 
 import { logger } from '../../lib/logger';
 
-import { lookupT2, loadT2 } from './t2-fibers';
+import { lookupT2, loadT2, resolveFiber } from './t2-fibers';
 import { lookupT4, loadT4 } from './t4-sustainability';
 import { queryT3, loadT3 } from './t3-market';
 import { queryT5, loadT5 } from './t5-guides';
@@ -59,12 +59,29 @@ export interface AssessGarmentResult {
   suggested_repair_technique: string;
   suggested_price_inr?: number;
   description: string;
+  /** Honest signal of how much of the pipeline had real data (defaults are used otherwise) */
+  confidence_flags?: {
+    /** true when fiber text resolved to a known fiber */
+    fiber: boolean;
+    /** true when enough market listings matched (>= MIN_MARKET_LISTINGS) */
+    market: boolean;
+    /** true when the vision model answered successfully */
+    model_ok: boolean;
+    /** machine-readable reasons for any false flag, e.g. 'fiber_unknown', 'market_data_too_small' */
+    reasons: string[];
+  };
+  /** Canonical fiber name that the input resolved to, if any (e.g. "denim" -> "Standard Cotton") */
+  fiber_resolved?: string;
   rag_context: {
     examples_used: number;
     guides_matched: number;
     market_listings_matched: number;
     prompt_tokens_estimated: number;
     gemini_model: string;
+    /** true when Gemini + Groq agreed on condition within ±0.1 */
+    model_agreement?: boolean;
+    /** Groq's independent condition score (background validator) */
+    validator_condition_score?: number;
   };
 }
 
@@ -86,6 +103,8 @@ export function initGLIE(): void {
 
 // ── Main assessGarment function ──────────────────────────────────────────────
 
+const MIN_MARKET_LISTINGS = 10;
+
 export async function assessGarment(input: AssessGarmentInput): Promise<AssessGarmentResult> {
   // Ensure data is loaded (safe to call multiple times)
   initGLIE();
@@ -101,24 +120,29 @@ export async function assessGarment(input: AssessGarmentInput): Promise<AssessGa
 
   // ── Step 1: RAG Retrieval ──────────────────────────────────────────────
 
-  const fiberProps = lookupT2(input.fiber_type);
-  const sustainData = lookupT4(input.fiber_type);
+  // Resolve fiber name (denim → Standard Cotton, silk → Mulberry Silk, etc.)
+  const fiberResolved = resolveFiber(input.fiber_type);
+  const fiberLookupKey = fiberResolved || input.fiber_type;
+
+  const fiberProps = lookupT2(fiberLookupKey);
+  const sustainData = lookupT4(fiberLookupKey);
 
   // We need a preliminary condition estimate for T3/T1 queries
   // Use override if provided, otherwise default to 0.5 (will be replaced by Gemini)
   const preliminaryCS = input.condition_override ?? 0.5;
-  const marketStats = queryT3(input.garment_category, preliminaryCS);
-  const guides = queryT5(input.fiber_type, input.damage_types || ['tear', 'stain', 'fading'], input.garment_category);
-  const examples = queryT1(input.fiber_type, input.garment_category, preliminaryCS);
+  // Phase 1: market data at the preliminary CS — goes into the prompt
+  const marketStatsPreliminary = queryT3(input.garment_category, preliminaryCS);
+  const guides = queryT5(fiberLookupKey, input.damage_types || ['tear', 'stain', 'fading'], input.garment_category);
+  const examples = queryT1(fiberLookupKey, input.garment_category, preliminaryCS);
 
-  logger.info(`[GLIE] RAG retrieved: ${examples.length} examples, ${guides.length} guides, ${marketStats?.total_listings_matched || 0} market listings`);
+  logger.info(`[GLIE] RAG retrieved: ${examples.length} examples, ${guides.length} guides, ${marketStatsPreliminary?.total_listings_matched || 0} market listings`);
 
   // ── Step 2: Build RAG Prompt ───────────────────────────────────────────
 
   const prompts = buildPrompts(garment, {
     fiberProps,
     sustainData,
-    marketStats,
+    marketStats: marketStatsPreliminary,
     guides,
     examples,
   });
@@ -157,6 +181,15 @@ export async function assessGarment(input: AssessGarmentInput): Promise<AssessGa
       damage_types: ['none'],
     };
     logger.warn(`[GLIE] Gemini failed, using fallback condition_score=${cs}`);
+  }
+
+  // ── Step 3b: Phase-2 Market Re-Query ───────────────────────────────────
+  // Now that Gemini returned the real condition score, re-query T3 at that
+  // score instead of relying on the preliminary 0.5 estimate baked into the
+  // prompt. Falls back to the preliminary stats when nothing matches.
+  const marketStats = queryT3(input.garment_category, cs) ?? marketStatsPreliminary;
+  if (marketStats && marketStats !== marketStatsPreliminary) {
+    logger.info(`[GLIE] Phase-2 market re-query @cs=${Math.round(cs * 100) / 100}: ${marketStats.total_listings_matched} listings, ratio=${marketStats.avg_resale_ratio}`);
   }
 
   // ── Step 4: Compute Sub-Scores ─────────────────────────────────────────
@@ -219,12 +252,27 @@ export async function assessGarment(input: AssessGarmentInput): Promise<AssessGa
   );
 
   const suggestedRepair = guides.length > 0
-    ? guides[0].title
+    ? guides[0].technique_style || guides[0].title
     : 'Professional dry cleaning / gentle wash assessment';
 
   const suggestedPrice = routing === 'RESELL' && cs > 0
-    ? Math.round(input.original_price_inr * cs * 0.6)
+    ? Math.round(input.original_price_inr * (
+      marketStats && marketStats.avg_resale_ratio > 0
+        ? marketStats.avg_resale_ratio
+        : cs * 0.6
+    ))
     : undefined;
+
+  // ── Confidence Flags (never hide what went wrong) ──────────────────────
+
+  const confidenceReasons: string[] = [];
+  if (!fiberProps) confidenceReasons.push('fiber_unknown');
+  if (marketStats && (marketStats.total_listings_matched ?? 0) < MIN_MARKET_LISTINGS) {
+    confidenceReasons.push('market_data_too_small');
+  } else if (!marketStats) {
+    confidenceReasons.push('market_data_too_small');
+  }
+  if (!geminiResult.success) confidenceReasons.push('all_models_failed');
 
   return {
     glie_score: Math.round(glieScore * 10000) / 10000,
@@ -241,12 +289,21 @@ export async function assessGarment(input: AssessGarmentInput): Promise<AssessGa
     suggested_repair_technique: suggestedRepair,
     suggested_price_inr: suggestedPrice,
     description: geminiResult.data?.description || 'Garment condition assessed by GLIE engine.',
+    fiber_resolved: fiberResolved || undefined,
+    confidence_flags: {
+      fiber: !!fiberProps,
+      market: (marketStats?.total_listings_matched ?? 0) >= MIN_MARKET_LISTINGS,
+      model_ok: geminiResult.success,
+      reasons: confidenceReasons,
+    },
     rag_context: {
       examples_used: examples.length,
       guides_matched: guides.length,
       market_listings_matched: marketStats?.total_listings_matched || 0,
       prompt_tokens_estimated: promptTokens,
       gemini_model: geminiResult.model,
+      model_agreement: geminiResult.model_agreement,
+      validator_condition_score: geminiResult.validator_condition_score,
     },
   };
 }

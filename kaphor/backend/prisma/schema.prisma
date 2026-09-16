@@ -77,9 +77,16 @@ enum SwapStatus {
 }
 
 enum RentalStatus {
+  REQUESTED
+  APPROVED
+  DECLINED
   RESERVED
+  DISPATCHED
   ACTIVE
+  RETURN_DISPATCHED
   RETURNED
+  COMPLETED
+  CANCELLED
   OVERDUE
 }
 
@@ -158,6 +165,7 @@ model User {
   lockUntil         DateTime?
   verificationToken String?
   verificationExpires DateTime?
+  pushToken         String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -197,6 +205,7 @@ model User {
   reportsSubmitted    UserReport[]    @relation("ReportsSubmitted")
   reportsReceived     UserReport[]    @relation("ReportsReceived")
   upcycleRequests     UpcycleRequest[]
+  glieCorrections     GLIECorrection[]
 
   @@map("users")
 }
@@ -438,26 +447,35 @@ model Swap {
 // ═══════════════════════════════════════════════
 
 model Rental {
-  id              String       @id @default(uuid())
-  garmentId       String
-  renterId        String
-  startDate       DateTime
-  endDate         DateTime
-  totalPrice      Int
-  status          RentalStatus @default(RESERVED)
-  stripeId        String?
-  message         String?
-  shippingAddress Json?
-  trackingNumber  String?
-  carrier         String?
-  returnTracking  String?
-  returnCarrier   String?
-  metadata        Json?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                 String       @id @default(uuid())
+  garmentId          String
+  renterId           String
+  startDate          DateTime
+  endDate            DateTime
+  totalPrice         Int
+  status             RentalStatus @default(REQUESTED)
+  stripeId           String?
+  message            String?
+  shippingAddress    Json?
+  trackingNumber     String?
+  carrier            String?
+  returnTracking     String?
+  returnCarrier      String?
+  approvedAt         DateTime?
+  paidAt             DateTime?
+  dispatchedAt       DateTime?
+  deliveredAt        DateTime?
+  returnDispatchedAt DateTime?
+  returnDeliveredAt  DateTime?
+  depositRefundedAt  DateTime?
+  declineReason      String?
+  trackingHistory    Json?
+  metadata           Json?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
-  garment         Garment      @relation(fields: [garmentId], references: [id])
-  renter          User         @relation(fields: [renterId],  references: [id])
+  garment            Garment      @relation(fields: [garmentId], references: [id])
+  renter             User         @relation(fields: [renterId],  references: [id])
 
   @@map("rentals")
 }
@@ -844,4 +862,29 @@ model UserReport {
 
   @@index([reportedUserId])
   @@map("user_reports")
+}
+
+// ═══════════════════════════════════════════════
+// GLIE — CONDITION ASSESSMENT CORRECTIONS
+// ═══════════════════════════════════════════════
+
+model GLIECorrection {
+  id                      String   @id @default(uuid())
+  assessmentId            String?  // optional: links to the frontend-generated assessment UUID
+  userId                  String?  // null if not logged in
+  garmentCategory         String
+  fiberType               String
+  originalConditionScore  Float
+  correctedConditionScore Float
+  originalRouting         String   // RESELL / UPCYCLE / RECYCLE
+  correctedRouting        String
+  originalPriceInr        Int?
+  notes                   String?
+  createdAt               DateTime @default(now())
+
+  user                    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([garmentCategory, fiberType])
+  @@map("glie_corrections")
 }

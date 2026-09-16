@@ -17,6 +17,7 @@ export interface ExtractedGarment {
   suggestedRentalPriceWeek: number;
   imageUrl: string;
   isCutout: boolean;
+  bundledPieces?: ExtractedGarment[];
 }
 
 export const outfitExtractionService = {

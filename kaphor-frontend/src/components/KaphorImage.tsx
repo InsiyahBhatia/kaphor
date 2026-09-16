@@ -54,8 +54,8 @@ export function normalizeImageUri(uri: string | string[] | null | undefined): st
     return trimmed;
   }
 
-  // 2. S3 presigned or direct URL — pass through (presigned URLs contain ?X-Amz-... params)
-  if (trimmed.includes('amazonaws.com')) {
+  // 2. Cloudinary or S3 direct/presigned URL — pass through
+  if (trimmed.includes('res.cloudinary.com') || trimmed.includes('amazonaws.com')) {
     return trimmed;
   }
 

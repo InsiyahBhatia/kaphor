@@ -5,7 +5,7 @@ import { logger } from '../lib/logger';
 import axios from 'axios';
 import sharp from 'sharp';
 import { removeBackgroundWithPhotoroom } from '../services/photoroom.service';
-import { uploadToS3 } from '../lib/s3';
+import { uploadToCloudinary } from '../lib/cloudinary';
 import { runFashionAgent } from '../services/fashionAgent.service';
 import { generateWithGroq } from '../services/groq.service';
 import { generateWithGemini } from '../services/gemini.service';
@@ -71,87 +71,161 @@ export const AESTHETIC_SUMMARIES: Record<string, string> = {
 };
 
 function getAestheticDetails(aesthetic: string) {
-    const allAesthetics = Object.keys(AESTHETIC_VECTORS);
-    const safeAesthetic = allAesthetics.includes(aesthetic) ? aesthetic : 'LUXURY';
-
+    const rawKey = (aesthetic || '').toUpperCase().trim();
     const metadata: Record<string, any> = {
-        MINIMALIST: {
-            recommendedBrands: ["The Row", "Jil Sander", "Lemaire", "Auralee", "COS Archive"],
-            topCategories: ["Structured Blazers", "Fine Knitwear", "Wide-leg Trousers", "Tonal Coats"],
-            dnaTags: ["ARCHITECTURAL", "MONOCHROME", "TIMELESS", "PRECISE"],
-            colorPalette: ["#1A1A1A", "#FFFFFF", "#E8E8E4", "#C8C4BB"],
-            aestheticVibe: "The Editor"
+        'Y2K': {
+            recommendedBrands: ["Blumarine", "Diesel", "Von Dutch", "Juicy Couture", "Coperni"],
+            topCategories: ["Low-rise Jeans", "Baby Tees", "Cargo Pants", "Velour Tracksuits", "Platform Sneakers"],
+            dnaTags: ["Y2K", "NOSTALGIA", "FUTURISTIC", "PLAYFUL"],
+            colorPalette: ["#FF69B4", "#00FFFF", "#C0C0C0", "#FF1493"],
+            aestheticVibe: "The 2000s Visionary",
+            tagline: "Futuristic pop maximalism inspired by the late 90s & early 2000s"
         },
-        STREETWEAR: {
-            recommendedBrands: ["Off-White", "Stone Island", "Stüssy", "Fear of God", "Palace"],
-            topCategories: ["Graphic Tees", "Technical Outerwear", "Vintage Denim", "Statement Sneakers"],
-            dnaTags: ["URBAN", "GRAPHIC", "CULTURAL", "FUNCTIONAL"],
-            colorPalette: ["#000000", "#FFFFFF", "#FF0000", "#4A4AFF"],
-            aestheticVibe: "The Archivist"
+        'OFFICE SIREN': {
+            recommendedBrands: ["Prada", "Saint Laurent", "The Row", "Miu Miu", "Alexander McQueen"],
+            topCategories: ["Fitted Blazers", "Pencil Skirts", "Tailored Trousers", "Pointed Heels"],
+            dnaTags: ["OFFICE SIREN", "TAILORED", "SULTRY", "CONFIDENT"],
+            colorPalette: ["#1A1A1A", "#FFFFFF", "#8B0000", "#708090"],
+            aestheticVibe: "The Powerhouse",
+            tagline: "Sleek, confident tailoring with bold and sultry details"
         },
-        VINTAGE: {
+        'ROCKSTAR GIRLFRIEND': {
+            recommendedBrands: ["Saint Laurent", "Zadig & Voltaire", "R13", "The Kooples", "Balenciaga"],
+            topCategories: ["Leather Jackets", "Moto Vests", "Ripped Denim", "Knee-High Boots"],
+            dnaTags: ["ROCKSTAR", "EDGY", "GLAMOUR", "RAW"],
+            colorPalette: ["#0D0D0D", "#8B0000", "#4A0E17", "#D4AF37"],
+            aestheticVibe: "The Rock Muse",
+            tagline: "Bold, edgy glamour inspired by rock-and-roll culture"
+        },
+        'SADE GIRL': {
+            recommendedBrands: ["Khaite", "Toteme", "Lemaire", "Alaïa", "Bottega Veneta"],
+            topCategories: ["Biker Coats", "Sleek Basics", "Relaxed Trousers", "Chunky Belts"],
+            dnaTags: ["SADE GIRL", "SULTRY", "MINIMAL", "MOODY"],
+            colorPalette: ["#1A1A1A", "#8B4513", "#D2B48C", "#4A3B32"],
+            aestheticVibe: "The Minimalist Icon",
+            tagline: "Moody, understated streetwear meets sultry minimalism"
+        },
+        'DARK ACADEMIA': {
+            recommendedBrands: ["Ralph Lauren", "Burberry", "Margaret Howell", "Brooks Brothers", "Dries Van Noten"],
+            topCategories: ["Tweed Blazers", "Plaid Skirts", "Wool Sweaters", "Oxford Shoes"],
+            dnaTags: ["SCHOLARLY", "TWEED", "INTELLECTUAL", "GOTHIC"],
+            colorPalette: ["#3D2314", "#2B3A28", "#1C1C1C", "#8B6508"],
+            aestheticVibe: "The Scholar",
+            tagline: "Moody, scholarly tailoring inspired by classical literature & tweed"
+        },
+        'DARK COQUETTE': {
+            recommendedBrands: ["Simone Rocha", "Vivienne Westwood", "Shushu/Tong", "Miu Miu", "Alexander McQueen"],
+            topCategories: ["Lace Dresses", "Corset Tops", "Fitted Skirts", "Heeled Boots"],
+            dnaTags: ["DARK COQUETTE", "ROMANTIC", "CORSETRY", "MYSTERIOUS"],
+            colorPalette: ["#1A1A1A", "#5B0E2D", "#3B1828", "#E6D7D2"],
+            aestheticVibe: "The Dark Romantic",
+            tagline: "Sultry, romantic elegance with a mysterious, edgy mood"
+        },
+        'FLEUR NOIRE': {
+            recommendedBrands: ["Ann Demeulemeester", "Erdem", "Rodarte", "Yohji Yamamoto", "Alexander McQueen"],
+            topCategories: ["Moody Floral Gowns", "Puff-Sleeve Blouses", "Flowing Skirts", "Chokers"],
+            dnaTags: ["FLEUR NOIRE", "DRAMATIC", "DARK FLORAL", "GOTHIC CHIC"],
+            colorPalette: ["#121212", "#4A154B", "#6B2D5C", "#2D3748"],
+            aestheticVibe: "The Midnight Bloom",
+            tagline: "Dark romantic gothic elegance with moody dramatic florals"
+        },
+        'GRUNGE': {
+            recommendedBrands: ["R13", "Maison Margiela", "Acne Studios", "Undercover", "Rick Owens"],
+            topCategories: ["Flannel Shirts", "Oversized Sweaters", "Distressed Denim", "Combat Boots"],
+            dnaTags: ["GRUNGE", "REBELLIOUS", "OVERSIZED", "DISTRESSED"],
+            colorPalette: ["#242424", "#4A3B32", "#6B1D2F", "#556B2F"],
+            aestheticVibe: "The Alt Rebel",
+            tagline: "Rebellious 90s alternative rock culture with distressed finishes"
+        },
+        'MERMAID CORE': {
+            recommendedBrands: ["Coperni", "Area", "Blumarine", "Paco Rabanne", "Cult Gaia"],
+            topCategories: ["Iridescent Tops", "Flowing Layered Skirts", "Fluid Dresses", "Pearl Jewelry"],
+            dnaTags: ["MERMAID CORE", "IRIDESCENT", "OCEANIC", "WHIMSICAL"],
+            colorPalette: ["#20B2AA", "#7FFFD4", "#E6E6FA", "#008B8B"],
+            aestheticVibe: "The Siren of the Sea",
+            tagline: "Whimsical, iridescent sea-inspired fluid drapery and sheen"
+        },
+        'MINIMAL DESI': {
+            recommendedBrands: ["Raw Mango", "Payal Khandwala", "Torani", "Anavila", "Eka"],
+            topCategories: ["Straight-cut Kurtas", "Structured Sarees", "Linen Palazzos", "Fine Mojaris"],
+            dnaTags: ["MINIMAL DESI", "REFINED HERITAGE", "HANDLOOM", "CONTEMPORARY"],
+            colorPalette: ["#F5F5DC", "#D2B48C", "#708090", "#C8AD7F"],
+            aestheticVibe: "The Modern Heritage Purist",
+            tagline: "Refined, understated Indian silhouettes with modern clean lines"
+        },
+        'MAXIMAL DESI': {
+            recommendedBrands: ["Sabyasachi", "Tarun Tahiliani", "Manish Malhotra", "Anita Dongre", "Abu Jani Sandeep Khosla"],
+            topCategories: ["Embroidered Lehengas", "Zari Anarkalis", "Brocade Kurtas", "Polki Chokers"],
+            dnaTags: ["MAXIMAL DESI", "OPULENT", "ROYAL", "EMBELLISHED"],
+            colorPalette: ["#800020", "#0047AB", "#50C878", "#FFD700"],
+            aestheticVibe: "The Royal Couturier",
+            tagline: "Opulent celebration of Indian craftsmanship, brocades & royal colors"
+        },
+        'SOFT GIRL': {
+            recommendedBrands: ["Miu Miu", "Sandy Liang", "Cecilie Bahnsen", "For Love & Lemons", "Brandy Melville"],
+            topCategories: ["Cropped Cardigans", "Fuzzy Sweaters", "Plaid Skirts", "Mary Janes"],
+            dnaTags: ["SOFT GIRL", "PASTEL", "FEMININE", "DELICATE"],
+            colorPalette: ["#FFB6C1", "#E6E6FA", "#B0E0E6", "#FFF8DC"],
+            aestheticVibe: "The Sweet Dreamer",
+            tagline: "Sweet, pastel femininity with delicate knits and playful charm"
+        },
+        'ACUBI': {
+            recommendedBrands: ["Thug Club", "ADER error", "Andersson Bell", "Post Archive Faction", "Oakley"],
+            topCategories: ["Baggy Jeans", "Baby Tees", "Layered Belts", "Chunky Sneakers"],
+            dnaTags: ["ACUBI", "SUBVERSIVE", "CYBER-MINIMAL", "KOREAN STREETWEAR"],
+            colorPalette: ["#333333", "#5C5449", "#8B8682", "#2B2B2B"],
+            aestheticVibe: "The Cyber Minimalist",
+            tagline: "Subversive Korean streetwear, muted earth tones & cyber-minimalism"
+        },
+        'BUSINESS COMFORT': {
+            recommendedBrands: ["Loro Piana", "Brunello Cucinelli", "Theory", "Vince", "Eileen Fisher"],
+            topCategories: ["Relaxed Blazers", "Elastic-waist Trousers", "Knit Tops", "Smart Loafers"],
+            dnaTags: ["BUSINESS COMFORT", "WORKLEISURE", "EFFORTLESS", "PREMIUM"],
+            colorPalette: ["#4A5568", "#718096", "#E2E8F0", "#A0AEC0"],
+            aestheticVibe: "The Relaxed Executive",
+            tagline: "Modern workleisure balancing corporate structure with ease"
+        },
+        'COTTAGECORE': {
+            recommendedBrands: ["Dôen", "Christy Dawn", "Batsheva", "Horror Vacui", "Sezane"],
+            topCategories: ["Floral Midi Dresses", "Puff-sleeve Blouses", "Tiered Skirts", "Ballet Flats"],
+            dnaTags: ["COTTAGECORE", "PASTORAL", "ROMANTIC", "ORGANIC"],
+            colorPalette: ["#8FBC8F", "#F5DEB3", "#FFDAB9", "#D8BFD8"],
+            aestheticVibe: "The Meadow Muse",
+            tagline: "Romantic, nature-inspired pastoral charm and soft femininity"
+        },
+        'VINTAGE': {
             recommendedBrands: ["Levi's Big E", "Vintage Dior", "Missoni", "European Deadstock"],
             topCategories: ["Heritage Denim", "Silk Scarves", "Leather Bombers", "Deadstock Tees"],
             dnaTags: ["SOULFUL", "HISTORIC", "CURATED", "UNIQUE"],
             colorPalette: ["#8B7355", "#C4A882", "#6B4C3B", "#D4C4A0"],
-            aestheticVibe: "The Collector"
+            aestheticVibe: "The Collector",
+            tagline: "Timeless archive elegance inspired by historic decades"
         },
-        CULTURAL: {
-            recommendedBrands: ["FabIndia", "Raw Mango", "Sabyasachi Archive", "Handloom House"],
-            topCategories: ["Hand-printed Sarees", "Linen Kurtas", "Block-print Tops", "Artisan Dupattas"],
-            dnaTags: ["HERITAGE", "VIBRANT", "HANDCRAFTED", "EARTHY"],
-            colorPalette: ["#8B2500", "#D4891A", "#2D6A4F", "#E9C46A"],
-            aestheticVibe: "The Heritage Keeper"
+        'MINIMALIST': {
+            recommendedBrands: ["The Row", "Jil Sander", "Lemaire", "Auralee", "COS Archive"],
+            topCategories: ["Structured Blazers", "Fine Knitwear", "Wide-leg Trousers", "Tonal Coats"],
+            dnaTags: ["ARCHITECTURAL", "MONOCHROME", "TIMELESS", "PRECISE"],
+            colorPalette: ["#1A1A1A", "#FFFFFF", "#E8E8E4", "#C8C4BB"],
+            aestheticVibe: "The Editor",
+            tagline: "Restraint and precision with high-quality neutral architectural basics"
         },
-        BOLD: {
-            recommendedBrands: ["Comme des Garçons", "Rick Owens", "Maison Margiela", "JW Anderson"],
-            topCategories: ["Sculptural Coats", "Experimental Knits", "Statement Boots", "Avant-garde Dresses"],
-            dnaTags: ["AVANT-GARDE", "EXPRESSIVE", "DISRUPTIVE", "FEARLESS"],
-            colorPalette: ["#FF0000", "#000000", "#FFFF00", "#7B2D8B"],
-            aestheticVibe: "The Disruptor"
-        },
-        LUXURY: {
+        'LUXURY': {
             recommendedBrands: ["Hermès", "Brunello Cucinelli", "Loro Piana", "Chanel Vintage"],
             topCategories: ["Cashmere Overcoats", "Structured Bags", "Silk Blouses", "Tailored Trousers"],
             dnaTags: ["IMPECCABLE", "INVESTMENT", "POLISHED", "ELEVATED"],
             colorPalette: ["#1A1A1A", "#F5F0E8", "#8B7E6A", "#D4AF37"],
-            aestheticVibe: "The Connoisseur"
-        },
-        DARK: {
-            recommendedBrands: ["Rick Owens", "Ann Demeulemeester", "Yohji Yamamoto", "Julius"],
-            topCategories: ["Leather Jackets", "Draped Coats", "Heavy Knitwear", "Wide-leg Black Trousers"],
-            dnaTags: ["NOCTURNAL", "DRAMATIC", "ARCHITECTURAL", "DELIBERATE"],
-            colorPalette: ["#0A0A0A", "#1C1C1C", "#2C2C2C", "#4A4040"],
-            aestheticVibe: "The Architect of Darkness"
-        },
-        BOHO: {
-            recommendedBrands: ["Isabel Marant", "Free People Archive", "Antik Batik", "Tigmi Trading"],
-            topCategories: ["Flowing Midi Dresses", "Embroidered Blouses", "Linen Trousers", "Artisan Jewelry"],
-            dnaTags: ["FREE-SPIRITED", "LAYERED", "ORGANIC", "INTUITIVE"],
-            colorPalette: ["#C8956C", "#D4A76A", "#6B8F71", "#E8D5B7"],
-            aestheticVibe: "The Free Spirit"
-        },
-        ARTISANAL: {
-            recommendedBrands: ["Studio by Bhumi", "Arjuna Natural", "The Loom Art", "Usha Silks"],
-            topCategories: ["Hand-block Prints", "Natural Indigo Textiles", "Handloom Sarees", "Craft Accessories"],
-            dnaTags: ["SLOW FASHION", "HANDMADE", "ETHICAL", "MEANINGFUL"],
-            colorPalette: ["#5C4033", "#7A9E7E", "#C9B99A", "#4A6741"],
-            aestheticVibe: "The Craft Guardian"
-        },
-        PREPPY: {
-            recommendedBrands: ["Ralph Lauren Vintage", "Brooks Brothers Archive", "Lacoste", "Barbour"],
-            topCategories: ["Blazers & Tailoring", "Oxford Shirts", "Chinos & Trousers", "Heritage Outerwear"],
-            dnaTags: ["CLASSIC", "STRUCTURED", "COLLEGIATE", "RELIABLE"],
-            colorPalette: ["#1B3A6B", "#C8102E", "#F5F0EB", "#2E5902"],
-            aestheticVibe: "The Classic"
-        },
+            aestheticVibe: "The Connoisseur",
+            tagline: "Impeccable craft and quiet authority that holds form for decades"
+        }
     };
 
-    const extra = metadata[safeAesthetic] || metadata.LUXURY;
+    const matchedKey = Object.keys(metadata).find(k => k === rawKey) || 'LUXURY';
+    const extra = metadata[matchedKey] || metadata.LUXURY;
+
     return {
-        styleVector: AESTHETIC_VECTORS[safeAesthetic],
-        styleAesthetic: safeAesthetic,
-        summary: AESTHETIC_SUMMARIES[safeAesthetic],
+        styleVector: AESTHETIC_VECTORS[matchedKey] || AESTHETIC_VECTORS.LUXURY,
+        styleAesthetic: matchedKey,
+        summary: extra.tagline || extra.aestheticVibe || 'Curated luxury archetype',
         ...extra,
     };
 }
@@ -241,22 +315,26 @@ export async function processStyleQuiz(req: Request, res: Response): Promise<voi
             return;
         }
 
-        // Logic-based generation (Determinstic)
-        logger.info('Processing style quiz via Logic Engine');
-        const profile = generateHeuristicProfile(answers);
+        // All 16 official aesthetic profiles
+        const all16Aesthetics = [
+            'Y2K', 'Office Siren', 'Rockstar Girlfriend', 'Sade Girl', 'Vintage',
+            'Acubi', 'Business Comfort', 'Cottagecore', 'Dark Academia', 'Dark Coquette',
+            'Fleur Noire', 'Grunge', 'Mermaid Core', 'Minimal Desi', 'Maximal Desi', 'Soft Girl'
+        ];
 
-        // Validate aesthetic
-        const validAesthetics = ['MINIMALIST', 'VINTAGE', 'BOLD', 'ETHNIC', 'STREETWEAR', 'LUXURY'];
-        if (!validAesthetics.includes(profile.styleAesthetic)) {
-            profile.styleAesthetic = 'LUXURY';
-        }
+        const directMatch = all16Aesthetics.find(a => a.toLowerCase() === (answers?.[0] || '').toLowerCase());
+        const selectedAesthetic = directMatch || all16Aesthetics.find(a => a.toLowerCase() === (answers?.[1] || '').toLowerCase()) || 'Sade Girl';
+
+        logger.info(`Processing style quiz -> selected archetype: ${selectedAesthetic}`);
+        const profile = getAestheticDetails(selectedAesthetic);
+        profile.styleAesthetic = selectedAesthetic;
 
         // Persist to user
         await db.user.update({
             where: { id: req.user.id },
             data: {
                 styleVector: profile.styleVector,
-                styleAesthetic: profile.styleAesthetic as any,
+                styleAesthetic: selectedAesthetic as any,
                 onboardingDone: true
             }
         });
@@ -304,14 +382,36 @@ export async function getStyleProfile(req: Request, res: Response): Promise<void
         });
 
         const profile = (user?.preferenceProfile as any) || {};
-        const aesthetic = user?.styleAesthetic || profile.dominantAesthetic || (user?.onboardingDone ? 'LUXURY' : null);
+        const rawAesthetic = user?.styleAesthetic || profile.dominantAesthetic;
 
-        if (!aesthetic && !user?.onboardingDone && !profile.totalInteractions) {
+        if (!rawAesthetic && !user?.onboardingDone && !profile.totalInteractions) {
             res.status(404).json({ error: 'NOT_FOUND', message: 'No style profile generated yet' });
             return;
         }
 
-        const details = getAestheticDetails(aesthetic || 'LUXURY');
+        const all16Aesthetics = [
+            'Y2K', 'Office Siren', 'Rockstar Girlfriend', 'Sade Girl', 'Vintage',
+            'Acubi', 'Business Comfort', 'Cottagecore', 'Dark Academia', 'Dark Coquette',
+            'Fleur Noire', 'Grunge', 'Mermaid Core', 'Minimal Desi', 'Maximal Desi', 'Soft Girl'
+        ];
+        const legacyMap: Record<string, string> = {
+            'LUXURY': 'Sade Girl',
+            'MINIMALIST': 'Business Comfort',
+            'STREETWEAR': 'Acubi',
+            'CULTURAL': 'Minimal Desi',
+            'ETHNIC': 'Maximal Desi',
+            'BOLD': 'Rockstar Girlfriend',
+            'DARK': 'Dark Academia',
+            'BOHO': 'Cottagecore',
+            'PREPPY': 'Office Siren',
+            'ARTISANAL': 'Vintage',
+        };
+
+        const resolvedAesthetic = all16Aesthetics.find(a => a.toLowerCase() === String(rawAesthetic || '').trim().toLowerCase())
+            || legacyMap[String(rawAesthetic || '').toUpperCase().trim()]
+            || 'Sade Girl';
+
+        const details = getAestheticDetails(resolvedAesthetic);
 
         // Blend in user's dynamically learned top categories and brands
         if (profile.topCategories && Object.keys(profile.topCategories).length > 0) {
@@ -535,6 +635,94 @@ export async function chat(req: Request, res: Response): Promise<void> {
     }
 }
 
+const VALID_LISTING_CATEGORIES = [
+    'Sarees', 'Lehengas', 'Anarkalis', 'Sherwanis', 'Suits', 'Kurtas', 'Dupattas', 'Kaftans', 'Pashminas', 'Shawls', 'Indo-Western',
+    'Skirts', 'Dresses', 'Gowns', 'Co-ords', 'Jumpsuits', 'Tops', 'Shirts', 'Bottoms', 'Pants', 'Denims', 'Jackets', 'Coats', 'Blazers', 'Knitwear',
+    'Bags', 'Jewelry', 'Watches', 'Eyewear', 'Belts', 'Hats', 'Scarves', 'Wallets', 'Ties', 'Hair Accessories',
+    'Sneakers', 'Heels', 'Boots', 'Dress Shoes', 'Sandals', 'Flats', 'Traditionals', 'Juttis'
+];
+
+function resolveListingCategory(rawCategory?: string, subCategory?: string, title?: string): string {
+    const genericTokens = new Set([
+        'apparel', 'clothing', 'ethnic', 'ethnicwear', 'accessory', 'accessories',
+        'footwear', 'shoes', 'fashion', 'garment', 'wear', 'outfit', 'item', 'piece',
+        'womenswear', 'menswear', 'women', 'men', "women's apparel", "men's apparel"
+    ]);
+
+    const candidates = [rawCategory, subCategory, title]
+        .filter(Boolean)
+        .map(s => String(s).trim());
+
+    for (const c of candidates) {
+        const exact = VALID_LISTING_CATEGORIES.find(item => item.toLowerCase() === c.toLowerCase());
+        if (exact) return exact;
+    }
+
+    const searchTexts: string[] = [];
+    for (const c of candidates) {
+        if (!genericTokens.has(c.toLowerCase())) {
+            searchTexts.push(c);
+        }
+    }
+    if (searchTexts.length === 0) searchTexts.push(...candidates);
+    const combined = searchTexts.join(' ').toLowerCase();
+
+    // Ethnic
+    if (/saree|sari|kanjeevaram|banarasi/i.test(combined)) return 'Sarees';
+    if (/lehenga|choli|ghagra/i.test(combined)) return 'Lehengas';
+    if (/anarkali|kalidar/i.test(combined)) return 'Anarkalis';
+    if (/sherwani|achkan|bandhgala/i.test(combined)) return 'Sherwanis';
+    if (/kurta|kurti|kurtis|pathani/i.test(combined)) return 'Kurtas';
+    if (/salwar|churidar|patiala|\bsuit\b|pant\s*suit/i.test(combined)) return 'Suits';
+    if (/dupatta|chunni|odhni/i.test(combined)) return 'Dupattas';
+    if (/kaftan|caftan/i.test(combined)) return 'Kaftans';
+    if (/pashmina/i.test(combined)) return 'Pashminas';
+    if (/shawl|stole/i.test(combined)) return 'Shawls';
+    if (/indo-western|indowestern|fusion/i.test(combined)) return 'Indo-Western';
+
+    // Footwear
+    if (/sneaker|trainer|running\s*shoe|converse|jordans/i.test(combined)) return 'Sneakers';
+    if (/heel|stiletto|pump|wedge/i.test(combined)) return 'Heels';
+    if (/boot|chelsea|combat/i.test(combined)) return 'Boots';
+    if (/sandal|slide|gladiator|flip\s*flop/i.test(combined)) return 'Sandals';
+    if (/jutti|mojari|nagra|kolhapuri/i.test(combined)) return 'Juttis';
+    if (/oxford|derby|brogue|monk\s*strap/i.test(combined)) return 'Dress Shoes';
+    if (/flat|loafer|mule|ballerina|ballet\s*flat|espadrille/i.test(combined)) return 'Flats';
+
+    // Accessories
+    if (/bag|handbag|tote|purse|clutch|crossbody|shoulder\s*bag|backpack|satchel|hobo|duffel/i.test(combined)) return 'Bags';
+    if (/wallet|cardholder|card\s*holder|coin\s*purse/i.test(combined)) return 'Wallets';
+    if (/jewelry|jewellery|necklace|choker|earring|jhumka|bracelet|bangle|\bring\b|pendant|brooch|anklet/i.test(combined)) return 'Jewelry';
+    if (/watch|timepiece|chronograph/i.test(combined)) return 'Watches';
+    if (/eyewear|sunglass|sunglasses|glasses|shades|frames|spectacles/i.test(combined)) return 'Eyewear';
+    if (/belt/i.test(combined)) return 'Belts';
+    if (/hat|cap|beanie|beret|fedora|bucket\s*hat/i.test(combined)) return 'Hats';
+    if (/scarf|scarves|muffler|bandana/i.test(combined)) return 'Scarves';
+    if (/tie|bowtie|necktie|cravat/i.test(combined)) return 'Ties';
+    if (/hair|scrunchie|headband|hair\s*clip|hairpin/i.test(combined)) return 'Hair Accessories';
+
+    // Apparel
+    if (/skirt/i.test(combined)) return 'Skirts';
+    if (/gown|ballgown|evening\s*gown/i.test(combined)) return 'Gowns';
+    if (/dress|frock|sundress|bodycon|(?:maxi|midi|mini)\s*dress/i.test(combined)) return 'Dresses';
+    if (/co-ord|coord|matching\s*set|two\s*piece/i.test(combined)) return 'Co-ords';
+    if (/jumpsuit|romper|playsuit|dungaree/i.test(combined)) return 'Jumpsuits';
+    if (/blazer|tuxedo|suit\s*jacket|sport\s*coat/i.test(combined)) return 'Blazers';
+    if (/coat|trench|overcoat|parka|peacoat/i.test(combined)) return 'Coats';
+    if (/jacket|bomber|leather\s*jacket|windbreaker|puffer/i.test(combined)) return 'Jackets';
+    if (/knitwear|sweater|cardigan|pullover|jumper|turtleneck|knit/i.test(combined)) return 'Knitwear';
+    if (/hoodie|sweatshirt|crop\s*top|tank|cami|tee|\btop\b|blouse|\btops\b|t-shirt|tshirt/i.test(combined)) return 'Tops';
+    if (/\bshirt\b|\bshirts\b|button\s*down|flannel|button-up/i.test(combined)) return 'Shirts';
+    if (/jeans|denim/i.test(combined)) return 'Denims';
+    if (/pant|trouser|chino|cargo|slacks|culottes/i.test(combined)) return 'Pants';
+    if (/shorts|leggings|joggers|sweatpants|bottoms/i.test(combined)) return 'Bottoms';
+
+    if (/shoe|footwear/i.test(combined)) return 'Flats';
+    if (/apparel|clothing/i.test(combined)) return 'Dresses';
+
+    return 'Tops';
+}
+
 // ── 6. AI Vision: Analyze Listing Image ───────────────────────────────────
 export async function analyzeListingImage(req: Request, res: Response): Promise<void> {
     try {
@@ -550,11 +738,29 @@ export async function analyzeListingImage(req: Request, res: Response): Promise<
 Analyze the provided item image and extract all relevant details for a marketplace listing.
 
 Taxonomy Guidelines:
-1. "category" MUST be matched to one of these exact values:
-- ETHNIC: Sarees, Lehengas, Anarkalis, Sherwanis, Suits, Kurtas, Dupattas, Kaftans, Pashminas, Shawls, Indo-Western
-- APPAREL: Skirts, Dresses, Gowns, Co-ords, Jumpsuits, Tops, Shirts, Bottoms, Pants, Denims, Jackets, Coats, Blazers, Knitwear
-- ACCESSORIES: Bags, Jewelry, Watches, Eyewear, Belts, Hats, Scarves, Wallets, Ties, Hair Accessories
-- FOOTWEAR: Sneakers, Heels, Boots, Dress Shoes, Sandals, Flats, Traditionals, Juttis
+1. "category" MUST be one of these exact values:
+Sarees, Lehengas, Anarkalis, Sherwanis, Suits, Kurtas, Dupattas, Kaftans, Pashminas, Shawls, Indo-Western, Skirts, Dresses, Gowns, Co-ords, Jumpsuits, Tops, Shirts, Bottoms, Pants, Denims, Jackets, Coats, Blazers, Knitwear, Bags, Jewelry, Watches, Eyewear, Belts, Hats, Scarves, Wallets, Ties, Hair Accessories, Sneakers, Heels, Boots, Dress Shoes, Sandals, Flats, Traditionals, Juttis.
+
+CRITICAL INSTRUCTION FOR CATEGORY:
+Never output a group name like "APPAREL", "ETHNIC", "ACCESSORIES", "FOOTWEAR", or "CLOTHING" as the category.
+Select the exact specific category:
+- If it is a skirt -> "Skirts"
+- If it is a dress -> "Dresses"
+- If it is a saree -> "Sarees"
+- If it is a lehenga -> "Lehengas"
+- If it is an anarkali -> "Anarkalis"
+- If it is a suit/salwar/pant suit -> "Suits"
+- If it is a kurta/kurti -> "Kurtas"
+- If it is a bag/handbag/tote -> "Bags"
+- If it is sneakers -> "Sneakers"
+- If it is heels -> "Heels"
+- If it is boots -> "Boots"
+- If it is a jacket -> "Jackets"
+- If it is a blazer -> "Blazers"
+- If it is denim/jeans -> "Denims"
+- If it is trousers/pants -> "Pants"
+- If it is a shirt -> "Shirts"
+- If it is a top/t-shirt/blouse -> "Tops"
 
 2. "condition" MUST be one of:
 - "PRISTINE" (Brand new / unworn heritage piece, perfect condition)
@@ -567,7 +773,7 @@ Taxonomy Guidelines:
 - Otherwise: "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"
 
 4. Circular Listing Guidance:
-- "isAccessory": boolean (true if the item is in ACCESSORIES or FOOTWEAR, false for APPAREL or ETHNIC)
+- "isAccessory": boolean (true if the item is in Bags, Jewelry, Watches, Eyewear, Belts, Hats, Scarves, Wallets, Ties, Hair Accessories, or any Footwear)
 - "recommendedListingType":
   * "ACCESSORY_SWAP" if isAccessory is true
   * "RENTAL" if it is high-end bridal ethnic wear (Lehenga, Sherwani, Anarkali), luxury evening gown, or heavy designer couture
@@ -581,7 +787,7 @@ ${listingType === 'RENTAL' ? `IMPORTANT LISTING CONTEXT: The seller has selected
 - Set "recommendedListingType" to "RENTAL".` : ''}
 ${listingType === 'ACCESSORY_SWAP' ? `IMPORTANT LISTING CONTEXT: The seller has selected "ACCESSORY_SWAP" mode (peer-to-peer exchange).
 - Swapping on KaPhor is exclusively for accessories and footwear.
-- If the item is an accessory or footwear, classify "category" to ACCESSORIES or FOOTWEAR, set "size" to "FREE SIZE", and highlight craftsmanship, hardware, and exchange appeal in the "description".
+- If the item is an accessory or footwear, set "size" to "FREE SIZE", and highlight craftsmanship, hardware, and exchange appeal in the "description".
 - If the item is clearly apparel (e.g. shirt, dress, jacket), accurately identify its apparel category so the application can guide the user accordingly.
 - Set "recommendedListingType" to "ACCESSORY_SWAP".` : ''}
 ${listingType === 'SALE' ? `IMPORTANT LISTING CONTEXT: The seller has selected outright resale ("SALE") mode.
@@ -593,9 +799,9 @@ Return ONLY valid JSON with this exact structure:
 {
   "title": "Short descriptive title (3-5 words)",
   "brand": "Detected brand or 'Unknown Brand'",
-  "category": "Exact category from above list",
+  "category": "Exact category from above list (e.g. Skirts, Sarees, Bags, etc.)",
   "subCategory": "Specific type (e.g. Vintage Leather Tote, Embroidered Silk Lehenga, Distressed Denim)",
-  "description": "Professional 2-3 sentence description emphasizing craftsmanship, fabric, and styling",
+  "description": "Simple, clean 2-sentence description emphasizing fabric and fit",
   "size": "FREE SIZE or clothing size",
   "condition": "PRISTINE|MINOR_WEAR|UPCYCLE|RECYCLE_ONLY",
   "color": ["Main colors"],
@@ -672,6 +878,9 @@ Be precise. If the brand or hardware logo is visible, identify it.`;
                 }
             };
         } else {
+            // Normalize category to exact valid catalog category
+            data.category = resolveListingCategory(data.category, data.subCategory, data.title);
+
             // Normalize conditions
             const validConditions = ['PRISTINE', 'MINOR_WEAR', 'UPCYCLE', 'RECYCLE_ONLY'];
             if (!validConditions.includes(data.condition)) {
@@ -924,20 +1133,25 @@ export async function extractOutfitItems(req: Request, res: Response): Promise<v
 
         const prompt = `You are an elite luxury AI fashion archivist, personal stylist, and computer vision garment detector.
 Analyze this outfit photo (which may be a full-body shot, mirror selfie, street style ensemble, or flat lay).
-Detect every distinct wearable garment, footwear item, and fashion accessory present in the outfit (e.g. Jacket, Coat, Blazer, Shirt, Knit Top, T-Shirt, Trousers, Jeans, Skirt, Dress, Handbag, Backpack, Shoes, Boots, Sneakers, Hat, Scarf, Belt).
+Detect every distinct wearable garment, footwear item, fashion accessory, and jewelry piece present in the outfit (e.g. Jacket, Coat, Blazer, Shirt, Knit Top, T-Shirt, Trousers, Jeans, Skirt, Dress, Handbag, Backpack, Shoes, Boots, Sneakers, Choker, Necklace, Pendant, Earrings, Bangles, Bracelet, Watch, Ring, Hat, Scarf, Dupatta, Belt).
+
+CRITICAL JEWELRY SEPARATION RULES:
+- Necklaces, chokers, pendants, chains, collar necklaces, earrings, bracelets, bangles, and watches MUST ALWAYS be classified under category "Jewelry" (or "Accessories"), NEVER as "Tops", "Blouse", or "Knit Top".
+- Even if a choker, necklace, or pendant is resting directly on the chest, collarbone, or neckline of a top/blouse/dress, it is a DISTINCT jewelry accessory piece. Do NOT merge it into the top. It must have its own tight bounding box [ymin, xmin, ymax, xmax] around the jewelry piece itself.
+- If an item is metallic, gold, silver, pearl, gemstone, beaded, kundan, polki, or a chain around the neck, it is 100% "Jewelry", NEVER a "Top".
 
 Return a strict JSON object with an "items" array:
 {
   "items": [
     {
-      "title": "Short descriptive title (3-5 words, e.g. 'Oversized Camel Wool Trench Coat')",
-      "category": "Tops" | "Outerwear" | "Bottoms" | "Dresses" | "Accessories" | "Footwear" | "Bags",
-      "subCategory": "Specific garment type",
-      "brand": "Likely brand, designer label, or aesthetic lineage (e.g. Totême, Zara, Vintage)",
+      "title": "Short descriptive title (3-5 words, e.g. 'Gold Kundan Choker Necklace', 'Oversized Camel Wool Trench Coat')",
+      "category": "Jewelry" | "Accessories" | "Tops" | "Outerwear" | "Bottoms" | "Dresses" | "Footwear" | "Bags",
+      "subCategory": "Specific item type (e.g. 'Choker Necklace', 'Juttis', 'Tote Bag', 'Crop Top')",
+      "brand": "Likely brand, designer label, or aesthetic lineage (e.g. Sabyasachi, Needledust, Totême, Zara, Vintage)",
       "color": ["Primary color", "Secondary color"],
-      "material": ["Primary fabric (e.g. Wool, Silk, Denim, Cotton, Leather)"],
+      "material": ["Primary material (e.g. Gold Plating, Pearls, Wool, Silk, Denim, Cotton, Leather)"],
       "condition": "PRISTINE" | "MINOR_WEAR",
-      "size": "Estimated size (XS/S/M/L/XL or FREE SIZE)",
+      "size": "Estimated size (XS/S/M/L/XL or FREE SIZE for jewelry, bags, footwear, accessories)",
       "estimatedPrice": 2500,
       "suggestedRentalPriceDay": 299,
       "suggestedRentalPriceWeek": 1199,
@@ -992,9 +1206,11 @@ Note: "box_2d" must be an array of 4 integers normalized between 0 and 1000 [ymi
 
             if (Array.isArray(item.box_2d) && item.box_2d.length === 4) {
                 const [ymin, xmin, ymax, xmax] = item.box_2d;
-                // Add 3% safety margin padding
-                const padY = (ymax - ymin) * 0.03;
-                const padX = (xmax - xmin) * 0.03;
+                // Add 12% adaptive safety margin padding so jewelry, shoes, and straps are never sliced off
+                const boxH = ymax - ymin;
+                const boxW = xmax - xmin;
+                const padY = Math.max(15, boxH * 0.12);
+                const padX = Math.max(15, boxW * 0.12);
 
                 const normTop = Math.max(0, ymin - padY);
                 const normLeft = Math.max(0, xmin - padX);
@@ -1008,9 +1224,20 @@ Note: "box_2d" must be an array of 4 integers normalized between 0 and 1000 [ymi
 
                 if (cropWidth > 30 && cropHeight > 30) {
                     try {
+                        // High-Definition Real Photo Enhancement:
+                        // Scale to minimum 600x600 using Lanczos3 super-resolution on a luxury cream canvas
+                        const targetSize = Math.max(600, cropWidth, cropHeight);
                         croppedBuffer = await sharp(buffer)
                             .extract({ left, top, width: cropWidth, height: cropHeight })
-                            .jpeg({ quality: 95 })
+                            .resize({
+                                width: targetSize,
+                                height: targetSize,
+                                fit: 'contain',
+                                background: { r: 250, g: 247, b: 238, alpha: 1 },
+                                kernel: sharp.kernel.lanczos3,
+                            })
+                            .sharpen({ sigma: 1.2, m1: 1.0, m2: 2.0 })
+                            .jpeg({ quality: 98, chromaSubsampling: '4:4:4' })
                             .toBuffer();
                     } catch (cropErr: any) {
                         logger.warn(`Failed to crop item ${i} (${item.title}): ${cropErr.message}`);
@@ -1026,24 +1253,52 @@ Note: "box_2d" must be an array of 4 integers normalized between 0 and 1000 [ymi
                 outputFormat: 'png',
             });
 
-            // Upload studio cutout to S3
+            // Upload studio cutout to Cloudinary
             let imageUrl = '';
             try {
-                const uploadResult = await uploadToS3(cutout.buffer, 'wardrobe-extracts', cutout.mimeType);
+                const uploadResult = await uploadToCloudinary(cutout.buffer, 'wardrobe-extracts', cutout.mimeType);
                 imageUrl = uploadResult.url;
             } catch (uploadErr: any) {
-                logger.warn(`Failed to upload cutout to S3: ${uploadErr.message}`);
+                logger.warn(`Failed to upload cutout to Cloudinary: ${uploadErr.message}`);
                 imageUrl = `data:${cutout.mimeType};base64,${cutout.buffer.toString('base64')}`;
+            }
+
+            let category = item.category || 'Tops';
+            let subCategory = item.subCategory || item.category || 'Garment';
+            const titleLower = (item.title || '').toLowerCase();
+            const subCatLower = (subCategory || '').toLowerCase();
+            const descLower = (item.description || '').toLowerCase();
+            const combinedText = `${titleLower} ${subCatLower} ${descLower}`;
+
+            // Automated jewelry misidentification correction
+            const isJewelry = /choker|necklace|pendant|jewel|earring|jhumka|bracelet|bangle|kundan|polki|mangalsutra|maang\s*tikka|ring\b|chain\b/.test(combinedText);
+            if (isJewelry) {
+                category = 'Jewelry';
+                if (/choker|necklace|pendant|chain/.test(combinedText)) {
+                    subCategory = 'Necklace & Choker';
+                } else if (/earring|jhumka/.test(combinedText)) {
+                    subCategory = 'Earrings';
+                } else if (/bracelet|bangle/.test(combinedText)) {
+                    subCategory = 'Bracelets & Bangles';
+                } else {
+                    subCategory = 'Fine Jewelry';
+                }
+            } else if (/bag|tote|clutch|crossbody|handbag|purse|potli/.test(combinedText)) {
+                category = 'Bags';
+            } else if (/shoe|jutti|heel|boot|sneaker|sandal|flat|loafer|mule/.test(combinedText)) {
+                category = 'Footwear';
+            } else if (/dupatta|stole|scarf|shawl|belt|sunglass|eyewear|hat|cap/.test(combinedText)) {
+                category = 'Accessories';
             }
 
             extractedGarments.push({
                 id: `extract_${Date.now()}_${i}`,
                 title: item.title || 'Curated Garment',
                 brand: item.brand || 'Contemporary',
-                category: item.category || 'Tops',
-                subCategory: item.subCategory || item.category || 'Garment',
+                category,
+                subCategory,
                 description: item.description || `Pre-loved ${item.title || 'garment'} digitized into your luxury wardrobe.`,
-                size: item.size || 'M',
+                size: isJewelry ? 'FREE SIZE' : (item.size || 'M'),
                 condition: item.condition || 'PRISTINE',
                 color: Array.isArray(item.color) ? item.color : [item.color || 'Neutral'],
                 material: Array.isArray(item.material) ? item.material : [item.material || 'Cotton'],

@@ -12,6 +12,7 @@ import {
   Alert,
   ScrollView,
   Keyboard,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,9 +22,11 @@ import { colors, typography } from '../../../../src/theme';
 import { orderService, TransactionOrder, OrderMessage, ShippingAddress } from '../../../../src/services/orderService';
 import { messageService } from '../../../../src/services/messageService';
 import paymentService from '../../../../src/services/paymentService';
-import api from '../../../../src/services/api';
+import api, { invalidateCache } from '../../../../src/services/api';
 import { useAuth } from '../../../../src/context/AuthContext';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
+import { KaphorImage } from '../../../../src/components/KaphorImage';
+import { hapticFeedback } from '../../../../src/utils/haptics';
 
 const statusConfig = {
   PENDING:    { label: 'AWAITING PAYMENT',   color: colors.red,        icon: 'time-outline' },
@@ -149,7 +152,7 @@ function StatusTimeline({ currentStatus }: { currentStatus: string }) {
 }
 
 export default function OrderThreadScreen() {
-  const { orderId } = useLocalSearchParams<{ orderId: string }>();
+  const { orderId, review } = useLocalSearchParams<{ orderId: string; review?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -162,8 +165,15 @@ export default function OrderThreadScreen() {
   const [rating, setRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewModalVisible, setReviewModalVisible] = useState(review === 'true');
   const [addressExpanded, setAddressExpanded] = useState(true);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    if (review === 'true') {
+      setReviewModalVisible(true);
+    }
+  }, [review]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setIsKeyboardVisible(true));
@@ -216,6 +226,7 @@ export default function OrderThreadScreen() {
     try {
       const o = await orderService.markShipped(orderId);
       setOrder(o);
+      invalidateCache(['/orders', '/users/me/wardrobe']);
       Alert.alert('Updated', 'Marked as shipped.');
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message ?? 'Could not update');
@@ -227,7 +238,8 @@ export default function OrderThreadScreen() {
     try {
       const o = await orderService.markDelivered(orderId);
       setOrder(o);
-      Alert.alert('Delivered', 'Thank you. You can now review the seller below.');
+      invalidateCache(['/orders', '/users/me/wardrobe', '/impact']);
+      setReviewModalVisible(true);
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message ?? 'Could not update');
     }
@@ -280,6 +292,7 @@ export default function OrderThreadScreen() {
     try {
       await orderService.submitPeerReview(orderId, rating, reviewComment.trim() || undefined);
       await loadAll();
+      setReviewModalVisible(false);
       Alert.alert('Thank you', 'Your review helps other buyers trust great sellers.');
     } catch (e: any) {
       Alert.alert('Review', e?.response?.data?.message ?? 'Could not submit review');
@@ -461,20 +474,110 @@ export default function OrderThreadScreen() {
                   })}
                 </Text>
               </View>
-              <View style={styles.itemSummaryRow}>
-                {order.items.slice(0, 3).map((item) => (
-                  <View key={item.id} style={styles.itemChip}>
-                    <Text style={styles.itemChipText} numberOfLines={1}>
-                      {item.garment?.title || 'Item'}
-                    </Text>
-                    <Text style={styles.itemChipQty}>×{item.quantity || 1}</Text>
-                  </View>
-                ))}
-                {order.items.length > 3 && (
-                  <Text style={styles.moreItems}>+{order.items.length - 3} more</Text>
-                )}
-              </View>
             </View>
+
+            {/* ── Transaction Items Dossier (Request 9: Show transaction items detail) ── */}
+            <View style={styles.itemsDossierCard}>
+              <View style={styles.itemsDossierHeader}>
+                <Ionicons name="shirt-outline" size={15} color={colors.charcoal} />
+                <Text style={styles.itemsDossierTitle}>ORDER PIECES ({order.items.length})</Text>
+              </View>
+              {order.items.map((item) => {
+                const garmentId = item.garment?.id || item.garmentId;
+                const thumb = item.garment?.images?.[0];
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.orderGarmentRow}
+                    onPress={() => garmentId && router.push(`/(tabs)/shop/${garmentId}` as any)}
+                    activeOpacity={0.85}
+                  >
+                    <KaphorImage
+                      uri={thumb}
+                      style={styles.orderGarmentThumb}
+                      contentFit="cover"
+                      fallbackIcon="shirt-outline"
+                    />
+                    <View style={styles.orderGarmentDetails}>
+                      <Text style={styles.orderGarmentBrand} numberOfLines={1}>
+                        {item.garment?.brand || 'ARCHIVE'}
+                      </Text>
+                      <Text style={styles.orderGarmentTitle} numberOfLines={2}>
+                        {item.garment?.title || 'Heritage Piece'}
+                      </Text>
+                      <View style={styles.orderGarmentMetaRow}>
+                        <Text style={styles.orderGarmentPrice}>
+                          ₹{Math.round(item.price || 0).toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={styles.orderGarmentQty}>Qty: {item.quantity || 1}</Text>
+                        {(item.garment as any)?.size && (
+                          <View style={styles.orderGarmentSizeChip}>
+                            <Text style={styles.orderGarmentSizeText}>{(item.garment as any).size}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    <View style={styles.viewItemActionCol}>
+                      <View style={styles.viewItemPill}>
+                        <Text style={styles.viewItemPillText}>VIEW →</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* ── Prompt Review Banner (Review after confirm delivery) ── */}
+            {showReview && (
+              <TouchableOpacity
+                style={styles.reviewPromptCard}
+                onPress={() => setReviewModalVisible(true)}
+                activeOpacity={0.88}
+              >
+                <View style={styles.reviewPromptHeader}>
+                  <View style={styles.reviewPromptStarBox}>
+                    <Ionicons name="star" size={20} color="#C95F12" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.reviewPromptTitle}>RATE & REVIEW SELLER</Text>
+                    <Text style={styles.reviewPromptSub}>
+                      Delivery confirmed! Tap to leave a rating and share your experience.
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.reviewPromptBtn}>
+                  <Text style={styles.reviewPromptBtnText}>RATE NOW ★</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* ── Completed Review Display (Visible to both Buyer & Seller) ── */}
+            {Boolean(order.peerReview) && (
+              <View style={styles.completedReviewCard}>
+                <View style={styles.completedReviewTop}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="star" size={18} color="#C95F12" />
+                    <Text style={styles.completedReviewTitle}>
+                      {isBuyer ? 'YOUR PEER REVIEW' : "BUYER'S PEER REVIEW"}
+                    </Text>
+                  </View>
+                  <View style={styles.reviewRatingBadge}>
+                    <Text style={styles.reviewRatingScore}>{order.peerReview?.rating || 5}.0 ★</Text>
+                  </View>
+                </View>
+
+                {order.peerReview?.comment ? (
+                  <Text style={styles.completedReviewComment}>"{order.peerReview.comment}"</Text>
+                ) : null}
+
+                <View style={styles.completedReviewFooter}>
+                  <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
+                  <Text style={styles.completedReviewMeta}>
+                    Verified Transaction Review · Order #{order.id.slice(0, 8).toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* ── Timeline (for CONFIRMED and beyond) ───────────── */}
             {order.status !== 'PENDING' && order.status !== 'CANCELLED' && order.status !== 'REFUNDED' && (
@@ -557,46 +660,6 @@ export default function OrderThreadScreen() {
         }}
       />
 
-      {/* ── Review Section ────────────────────────────────── */}
-      {showReview ? (
-        <ScrollView style={styles.reviewBox} keyboardShouldPersistTaps="handled">
-          <Text style={styles.reviewTitle}>RATE THE SELLER</Text>
-          <Text style={styles.reviewHint}>
-            Peer reviews help the community spot reliable sellers. One review per order.
-          </Text>
-          <View style={styles.stars}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <TouchableOpacity key={n} onPress={() => setRating(n)}>
-                <Ionicons
-                  name={n <= rating ? 'star' : 'star-outline'}
-                  size={32}
-                  color={n <= rating ? '#C95F12' : colors.textMuted}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
-          <TextInput
-            style={styles.reviewInput}
-            placeholder="Optional note for other buyers…"
-            placeholderTextColor={colors.textMuted}
-            value={reviewComment}
-            onChangeText={setReviewComment}
-            multiline
-          />
-          <TouchableOpacity
-            style={[styles.reviewSubmit, reviewSubmitting && styles.disabled]}
-            onPress={submitReview}
-            disabled={reviewSubmitting}
-          >
-            {reviewSubmitting ? (
-              <ActivityIndicator color={colors.cream} />
-            ) : (
-              <Text style={styles.reviewSubmitText}>SUBMIT REVIEW</Text>
-            )}
-          </TouchableOpacity>
-        </ScrollView>
-      ) : null}
-
       {/* ── Message Composer ───────────────────────────────── */}
       {canMessage ? (
         <View
@@ -631,6 +694,97 @@ export default function OrderThreadScreen() {
           </TouchableOpacity>
         </View>
       ) : null}
+
+      {/* ── Review Modal Sheet (Request 11: Review after confirm delivery) ── */}
+      <Modal
+        visible={reviewModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReviewModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.reviewModalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.reviewModalBackdrop}
+            activeOpacity={1}
+            onPress={() => setReviewModalVisible(false)}
+          />
+          <View style={styles.reviewModalSheet}>
+            <View style={styles.reviewModalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.reviewModalTitle}>RATE THE SELLER</Text>
+                <Text style={styles.reviewModalSub}>
+                  Order #{order.id.slice(0, 8).toUpperCase()} · {other.displayName}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setReviewModalVisible(false)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={styles.modalCloseBtn}
+              >
+                <Ionicons name="close" size={20} color={colors.charcoal} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.reviewRatingHelp}>SELECT STAR RATING (1–5)</Text>
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <TouchableOpacity
+                  key={n}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    setRating(n);
+                  }}
+                  style={styles.starHitTarget}
+                >
+                  <Ionicons
+                    name={n <= rating ? 'star' : 'star-outline'}
+                    size={36}
+                    color={n <= rating ? '#C95F12' : '#C8C4BA'}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.starLabel}>
+              {rating === 5 ? '★★★★★ EXCEPTIONAL' :
+               rating === 4 ? '★★★★☆ GREAT' :
+               rating === 3 ? '★★★☆☆ GOOD' :
+               rating === 2 ? '★★☆☆☆ SUBPAR' : '★☆☆☆☆ POOR'}
+            </Text>
+
+            <TextInput
+              style={styles.reviewModalInput}
+              placeholder="How was the seller's communication, garment condition, and dispatch speed?"
+              placeholderTextColor={colors.textMuted}
+              value={reviewComment}
+              onChangeText={setReviewComment}
+              multiline
+              numberOfLines={4}
+            />
+
+            <TouchableOpacity
+              style={[styles.submitReviewBtn, reviewSubmitting && styles.disabled]}
+              onPress={submitReview}
+              disabled={reviewSubmitting}
+            >
+              {reviewSubmitting ? (
+                <ActivityIndicator color={colors.cream} />
+              ) : (
+                <Text style={styles.submitReviewBtnText}>SUBMIT PEER REVIEW ★</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelReviewBtn}
+              onPress={() => setReviewModalVisible(false)}
+            >
+              <Text style={styles.cancelReviewBtnText}>MAYBE LATER</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -1196,5 +1350,363 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     color: colors.charcoal,
+  },
+
+  // Items Dossier Card
+  itemsDossierCard: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 14,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  itemsDossierHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ECE8DD',
+    marginBottom: 10,
+  },
+  itemsDossierTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  orderGarmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F3EC',
+    gap: 12,
+  },
+  orderGarmentThumb: {
+    width: 54,
+    height: 64,
+    borderRadius: 6,
+    backgroundColor: '#F0ECE1',
+    borderWidth: 1,
+    borderColor: '#D8D4C8',
+  },
+  orderGarmentDetails: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  orderGarmentBrand: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+  },
+  orderGarmentTitle: {
+    fontFamily: typography.headings,
+    fontSize: 14,
+    color: colors.charcoal,
+    marginVertical: 2,
+  },
+  orderGarmentMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  orderGarmentPrice: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '900',
+    color: colors.red,
+  },
+  orderGarmentQty: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.textMuted,
+  },
+  orderGarmentSizeChip: {
+    backgroundColor: '#EDE9DE',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  orderGarmentSizeText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.charcoal,
+  },
+  viewItemActionCol: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  viewItemPill: {
+    backgroundColor: colors.cream,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  viewItemPillText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.8,
+  },
+
+  // Prompt Review Card
+  reviewPromptCard: {
+    backgroundColor: '#FFF9E6',
+    borderWidth: 2,
+    borderColor: '#C95F12',
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 14,
+    shadowColor: '#C95F12',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  reviewPromptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  reviewPromptStarBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFE8B3',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reviewPromptTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#8A3E00',
+    letterSpacing: 1,
+  },
+  reviewPromptSub: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.charcoal,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  reviewPromptBtn: {
+    backgroundColor: '#C95F12',
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 4,
+  },
+  reviewPromptBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 1,
+  },
+
+  // Completed Review Card
+  completedReviewCard: {
+    backgroundColor: '#FAF8F2',
+    borderWidth: 1.5,
+    borderColor: '#C9A84C',
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 14,
+  },
+  completedReviewTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  completedReviewTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  reviewRatingBadge: {
+    backgroundColor: '#FFE8B3',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E6B800',
+  },
+  reviewRatingScore: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#8A3E00',
+  },
+  completedReviewComment: {
+    fontFamily: typography.body,
+    fontSize: 13,
+    color: colors.charcoal,
+    lineHeight: 18,
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  completedReviewFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#ECE8DD',
+  },
+  completedReviewMeta: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.forest,
+    letterSpacing: 0.5,
+  },
+
+  // Review Modal Sheet
+  reviewModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  reviewModalBackdrop: {
+    flex: 1,
+  },
+  reviewModalSheet: {
+    backgroundColor: colors.cream,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  reviewModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#E6E2D5',
+    marginBottom: 14,
+  },
+  reviewModalTitle: {
+    fontFamily: typography.headings,
+    fontSize: 18,
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  reviewModalSub: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EBE7DC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reviewRatingHelp: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+  },
+  starHitTarget: {
+    padding: 6,
+  },
+  starLabel: {
+    textAlign: 'center',
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#C95F12',
+    letterSpacing: 1,
+    marginBottom: 14,
+  },
+  reviewModalInput: {
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    borderRadius: 6,
+    padding: 12,
+    minHeight: 80,
+    maxHeight: 140,
+    backgroundColor: colors.white,
+    color: colors.charcoal,
+    fontFamily: typography.body,
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  submitReviewBtn: {
+    backgroundColor: colors.charcoal,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    borderRadius: 6,
+    paddingVertical: 14,
+    alignItems: 'center',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  submitReviewBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 1,
+  },
+  cancelReviewBtn: {
+    marginTop: 10,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  cancelReviewBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.8,
   },
 });

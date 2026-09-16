@@ -16,20 +16,62 @@ import { KaphorImage } from '../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 import { messageService, ConversationSummary } from '../../src/services/messageService';
 import { getSocket, connectSocket } from '../../src/services/socket';
+import { useNotificationStore } from '../../src/store/notificationStore';
 
-type FilterTab = 'ALL' | 'ORDERS' | 'INQUIRIES';
+type FilterTab = 'SELL' | 'SWAP' | 'RENT';
+
+export function getConversationCategory(c: ConversationSummary): 'SELL' | 'SWAP' | 'RENT' {
+  // 1. Explicit Active Transaction Check
+  if (c.rental) {
+    return 'RENT';
+  }
+  if (c.swap) {
+    return 'SWAP';
+  }
+  if (c.order) {
+    return 'SELL';
+  }
+
+  // 2. Garment Listing Type & Rate Specification
+  const listingType = c.garment?.listingType;
+  if (listingType === 'RENTAL' || (c.garment?.rentalPriceDay && c.garment.rentalPriceDay > 0)) {
+    return 'RENT';
+  }
+  if (listingType === 'ACCESSORY_SWAP' || listingType === 'SWAP') {
+    return 'SWAP';
+  }
+  if (listingType === 'SALE') {
+    return 'SELL';
+  }
+
+  // 3. Keyword Content Heuristics on Last Message
+  const text = (c.lastMessageText || '').toLowerCase();
+  if (/\b(rent|rents|rental|rentals|renting|rented|lease|leasing|leased|lender|deposit|borrow)\b/i.test(text)) {
+    return 'RENT';
+  }
+  if (/\b(swap|swaps|swapping|swapped|trade|trading|trades|traded|exchange)\b/i.test(text)) {
+    return 'SWAP';
+  }
+  if (/\b(buy|buyer|bought|purchase|order|sold|selling|discount)\b/i.test(text)) {
+    return 'SELL';
+  }
+
+  return 'SELL';
+}
 
 export default function MessagesScreen() {
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
+  const [activeTab, setActiveTab] = useState<FilterTab>('SELL');
 
   const loadConversations = useCallback(async () => {
     try {
       const list = await messageService.listConversations();
       setConversations(list);
+      const totalUnread = list.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+      useNotificationStore.getState().setUnreadMessageCount(totalUnread);
     } catch (e) {
       console.error('Failed to load conversations', e);
     } finally {
@@ -70,17 +112,16 @@ export default function MessagesScreen() {
   };
 
   const filteredConversations = useMemo(() => {
-    if (activeTab === 'ORDERS') {
-      return conversations.filter((c) => !!c.order);
-    }
-    if (activeTab === 'INQUIRIES') {
-      return conversations.filter((c) => !c.order);
-    }
-    return conversations;
+    return conversations.filter((c) => getConversationCategory(c) === activeTab);
   }, [conversations, activeTab]);
 
-  const ordersCount = useMemo(() => conversations.filter((c) => !!c.order).length, [conversations]);
-  const inquiriesCount = useMemo(() => conversations.filter((c) => !c.order).length, [conversations]);
+  const sellCount = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SELL').length, [conversations]);
+  const swapCount = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SWAP').length, [conversations]);
+  const rentCount = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'RENT').length, [conversations]);
+
+  const sellUnread = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SELL' && c.unreadCount > 0).length, [conversations]);
+  const swapUnread = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SWAP' && c.unreadCount > 0).length, [conversations]);
+  const rentUnread = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'RENT' && c.unreadCount > 0).length, [conversations]);
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -159,8 +200,27 @@ export default function MessagesScreen() {
             <Text style={styles.timeText}>{formatTime(item.lastMessageAt)}</Text>
           </View>
 
-          {/* Context Badges */}
+          {/* Category Pill + Context Badges */}
           <View style={styles.badgeRow}>
+            {getConversationCategory(item) === 'SWAP' && (
+              <View style={[styles.categoryPill, { backgroundColor: 'rgba(140,109,59,0.12)' }]}>
+                <Ionicons name="swap-horizontal" size={10} color="#8C6D3B" />
+                <Text style={[styles.categoryPillText, { color: '#8C6D3B' }]}>SWAP</Text>
+              </View>
+            )}
+            {getConversationCategory(item) === 'RENT' && (
+              <View style={[styles.categoryPill, { backgroundColor: 'rgba(107,70,193,0.1)' }]}>
+                <Ionicons name="calendar" size={10} color="#6B46C1" />
+                <Text style={[styles.categoryPillText, { color: '#6B46C1' }]}>RENT</Text>
+              </View>
+            )}
+            {getConversationCategory(item) === 'SELL' && (
+              <View style={[styles.categoryPill, { backgroundColor: 'rgba(30,58,138,0.1)' }]}>
+                <Ionicons name="bag-check" size={10} color="#1E3A8A" />
+                <Text style={[styles.categoryPillText, { color: '#1E3A8A' }]}>SELL</Text>
+              </View>
+            )}
+
             {hasOrder && orderStyle && (
               <View style={[styles.orderBadge, { backgroundColor: orderStyle.bg }]}>
                 <Ionicons name="bag-check" size={10} color={orderStyle.color} />
@@ -179,11 +239,11 @@ export default function MessagesScreen() {
               </View>
             )}
 
-            {!isGarmentInquiry && !hasOrder && (
+            {!isGarmentInquiry && !hasOrder && !item.swap && !item.rental && (
               <View style={styles.directBadge}>
                 <Ionicons name="person" size={10} color={colors.forest || '#2D5A27'} />
                 <Text style={styles.directBadgeText} numberOfLines={1}>
-                  Direct Seller Chat
+                  Direct Chat
                 </Text>
               </View>
             )}
@@ -219,46 +279,65 @@ export default function MessagesScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="MESSAGES" />
+      <Header title="MESSAGES" showBack={false} />
 
-      {/* Unified Secure Coordination Notice */}
-      <View style={styles.safetyBar}>
-        <Ionicons name="shield-checkmark" size={13} color="#C9A84C" />
-        <Text style={styles.safetyBarText}>
-          Kaphor Unified Threads • Pre-purchase Q&A & Shipping Coordination
-        </Text>
-      </View>
-
-      {/* Filter Tabs */}
-      <View style={styles.tabsRow}>
+      {/* 3 Categories: SELL, SWAP, RENT */}
+      <View style={styles.tabsContainer}>
         <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'ALL' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('ALL')}
+          style={[styles.tabBtn, activeTab === 'SELL' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('SELL')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, activeTab === 'ALL' && styles.tabTextActive]}>
-            ALL ({conversations.length})
-          </Text>
+          <View style={styles.tabContentRow}>
+            <Text style={[styles.tabText, activeTab === 'SELL' && styles.tabTextActive]}>
+              SELL ({sellCount})
+            </Text>
+            {sellUnread > 0 && (
+              <View style={[styles.tabUnreadBadge, activeTab === 'SELL' && styles.tabUnreadBadgeActive]}>
+                <Text style={[styles.tabUnreadBadgeText, activeTab === 'SELL' && styles.tabUnreadBadgeTextActive]}>
+                  {sellUnread}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'ORDERS' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('ORDERS')}
+          style={[styles.tabBtn, activeTab === 'SWAP' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('SWAP')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, activeTab === 'ORDERS' && styles.tabTextActive]}>
-            ACTIVE ORDERS ({ordersCount})
-          </Text>
+          <View style={styles.tabContentRow}>
+            <Text style={[styles.tabText, activeTab === 'SWAP' && styles.tabTextActive]}>
+              SWAP ({swapCount})
+            </Text>
+            {swapUnread > 0 && (
+              <View style={[styles.tabUnreadBadge, activeTab === 'SWAP' && styles.tabUnreadBadgeActive]}>
+                <Text style={[styles.tabUnreadBadgeText, activeTab === 'SWAP' && styles.tabUnreadBadgeTextActive]}>
+                  {swapUnread}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'INQUIRIES' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('INQUIRIES')}
+          style={[styles.tabBtn, activeTab === 'RENT' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('RENT')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, activeTab === 'INQUIRIES' && styles.tabTextActive]}>
-            INQUIRIES ({inquiriesCount})
-          </Text>
+          <View style={styles.tabContentRow}>
+            <Text style={[styles.tabText, activeTab === 'RENT' && styles.tabTextActive]}>
+              RENT ({rentCount})
+            </Text>
+            {rentUnread > 0 && (
+              <View style={[styles.tabUnreadBadge, activeTab === 'RENT' && styles.tabUnreadBadgeActive]}>
+                <Text style={[styles.tabUnreadBadgeText, activeTab === 'RENT' && styles.tabUnreadBadgeTextActive]}>
+                  {rentUnread}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -281,31 +360,39 @@ export default function MessagesScreen() {
             <View style={styles.emptyState}>
               <View style={styles.emptyIconCircle}>
                 <Ionicons
-                  name={activeTab === 'ORDERS' ? 'bag-check-outline' : 'chatbubbles-outline'}
+                  name={
+                    activeTab === 'SWAP'
+                      ? 'swap-horizontal-outline'
+                      : activeTab === 'RENT'
+                      ? 'calendar-outline'
+                      : 'bag-check-outline'
+                  }
                   size={42}
                   color={colors.charcoal}
                 />
               </View>
               <Text style={styles.emptyTitle}>
-                {activeTab === 'ORDERS'
-                  ? 'NO ACTIVE ORDER CHATS'
-                  : activeTab === 'INQUIRIES'
-                  ? 'NO GENERAL INQUIRIES'
-                  : 'NO CONVERSATIONS YET'}
+                {activeTab === 'SWAP'
+                  ? 'NO SWAP CHATS'
+                  : activeTab === 'RENT'
+                  ? 'NO RENT CHATS'
+                  : 'NO SELL OR ORDER CHATS'}
               </Text>
               <Text style={styles.emptyDesc}>
-                {activeTab === 'ORDERS'
-                  ? 'When you buy or sell items, your paid order dispatch & tracking threads appear here.'
-                  : activeTab === 'INQUIRIES'
-                  ? 'Pre-purchase questions and general seller chats will appear here.'
-                  : 'When you message sellers or coordinate deliveries, your unified conversation threads appear here.'}
+                {activeTab === 'SWAP'
+                  ? 'Accessory trade proposals and swap negotiations will appear here.'
+                  : activeTab === 'RENT'
+                  ? 'Garment rentals, reservations, and lease booking chats will appear here.'
+                  : 'Garment sales, purchases, and order tracking threads will appear here.'}
               </Text>
               <TouchableOpacity
                 style={styles.exploreBtn}
-                onPress={() => router.push('/(tabs)/shop')}
+                onPress={() => router.push(activeTab === 'SWAP' ? ('/(tabs)/swap' as any) : activeTab === 'RENT' ? ('/(tabs)/rental' as any) : ('/(tabs)/shop' as any))}
                 activeOpacity={0.8}
               >
-                <Text style={styles.exploreBtnText}>EXPLORE MARKETPLACE →</Text>
+                <Text style={styles.exploreBtnText}>
+                  {activeTab === 'SWAP' ? 'EXPLORE SWAPS →' : activeTab === 'RENT' ? 'EXPLORE RENTALS →' : 'EXPLORE MARKETPLACE →'}
+                </Text>
               </TouchableOpacity>
             </View>
           }
@@ -341,6 +428,15 @@ const styles = StyleSheet.create({
     color: colors.cream,
     letterSpacing: 0.5,
   },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    gap: 6,
+  },
   tabsRow: {
     flexDirection: 'row',
     backgroundColor: colors.white,
@@ -349,6 +445,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     gap: 6,
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  categoryPillText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   tabBtn: {
     flex: 1,
@@ -374,6 +484,33 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: colors.cream,
     fontWeight: '900',
+  },
+  tabContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  tabUnreadBadge: {
+    backgroundColor: colors.red,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tabUnreadBadgeActive: {
+    backgroundColor: colors.cream,
+  },
+  tabUnreadBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.white,
+  },
+  tabUnreadBadgeTextActive: {
+    color: colors.charcoal,
   },
   listContent: {
     padding: 16,

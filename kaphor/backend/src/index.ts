@@ -28,6 +28,10 @@ const envSchema = z.object({
   AWS_ACCESS_KEY_ID: z.string().optional(),
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
   AWS_S3_BUCKET_NAME: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+  CLOUDINARY_URL: z.string().optional(),
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   FIREBASE_PROJECT_ID: z.string().optional(),
@@ -68,7 +72,7 @@ import { messageRoutes } from './routes/messages';
 import { recommendationRouter } from './routes/recommendation.routes';
 import { assessGarment, initGLIE } from './services/glie';
 import { upload } from './middleware/upload.middleware';
-import { uploadToS3 } from './lib/s3';
+import { uploadToCloudinary } from './lib/cloudinary';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -162,7 +166,7 @@ app.post(`${baseApiUrl}/glie/upload-temp`, upload.single('image'), async (req: R
       res.status(400).json({ error: 'image file is required' });
       return;
     }
-    const result = await uploadToS3(file.buffer, 'glie-temp', file.mimetype);
+    const result = await uploadToCloudinary(file.buffer, 'glie-temp', file.mimetype);
     res.json({ url: result.url, key: result.key });
   } catch (e: any) {
     logger.error('GLIE temp upload failed', { error: e.message });
@@ -174,21 +178,22 @@ app.post(`${baseApiUrl}/glie/upload-temp`, upload.single('image'), async (req: R
 app.post(`${baseApiUrl}/glie/assess`, async (req: Request, res: Response) => {
   try {
     const input = req.body;
-    // Accept either image_base64 (legacy) or image_s3_url (preferred)
-    if (!input.image_base64 && !input.image_s3_url) {
-      res.status(400).json({ error: 'image_base64 or image_s3_url is required' });
+    const imageUrl = input.image_url || input.image_s3_url;
+    // Accept either image_base64 (legacy) or image_url / image_s3_url
+    if (!input.image_base64 && !imageUrl) {
+      res.status(400).json({ error: 'image_base64 or image_url is required' });
       return;
     }
-    // If image_s3_url provided, download the image and convert to base64
-    if (input.image_s3_url && !input.image_base64) {
+    // If imageUrl provided, download the image and convert to base64
+    if (imageUrl && !input.image_base64) {
       try {
-        const response = await fetch(input.image_s3_url);
+        const response = await fetch(imageUrl);
         if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         input.image_base64 = buffer.toString('base64');
       } catch (fetchErr: any) {
-        logger.error('GLIE: Failed to download image from S3', { error: fetchErr.message, url: input.image_s3_url });
+        logger.error('GLIE: Failed to download image from storage', { error: fetchErr.message, url: imageUrl });
         res.status(400).json({ error: 'Failed to fetch image from provided URL' });
         return;
       }
@@ -202,6 +207,80 @@ app.post(`${baseApiUrl}/glie/assess`, async (req: Request, res: Response) => {
   } catch (e: any) {
     logger.error('GLIE assessment failed', { error: e.message });
     res.status(500).json({ error: 'Assessment failed', message: e.message });
+  }
+});
+
+// ── GLIE Corrections — capture user feedback to improve calibration ────────
+app.post(`${baseApiUrl}/glie/corrections`, async (req: Request, res: Response) => {
+  try {
+    const body = req.body;
+    const {
+      assessmentId,
+      garmentCategory,
+      fiberType,
+      originalConditionScore,
+      correctedConditionScore,
+      originalRouting,
+      correctedRouting,
+      originalPriceInr,
+      notes,
+    } = body;
+
+    // Validate required fields
+    if (!garmentCategory || !fiberType
+      || originalConditionScore == null || correctedConditionScore == null
+      || !originalRouting || !correctedRouting) {
+      res.status(400).json({
+        error: 'Missing required fields',
+        required: [
+          'garmentCategory', 'fiberType', 'originalConditionScore',
+          'correctedConditionScore', 'originalRouting', 'correctedRouting',
+        ],
+      });
+      return;
+    }
+
+    // Validate score range
+    const cs = Number(correctedConditionScore);
+    if (isNaN(cs) || cs < 0 || cs > 1) {
+      res.status(400).json({ error: 'correctedConditionScore must be between 0 and 1' });
+      return;
+    }
+
+    const validRouting = ['RESELL', 'UPCYCLE', 'RECYCLE'];
+    if (!validRouting.includes(String(correctedRouting))) {
+      res.status(400).json({ error: 'correctedRouting must be RESELL, UPCYCLE, or RECYCLE' });
+      return;
+    }
+
+    const userId = (req as any).userId ?? null;
+
+    const correction = await db.glieCorrection.create({
+      data: {
+        assessmentId: assessmentId || null,
+        userId,
+        garmentCategory: String(garmentCategory),
+        fiberType: String(fiberType),
+        originalConditionScore: Number(originalConditionScore),
+        correctedConditionScore: cs,
+        originalRouting: String(originalRouting),
+        correctedRouting: String(correctedRouting),
+        originalPriceInr: originalPriceInr ? Number(originalPriceInr) : null,
+        notes: notes || null,
+      },
+    });
+
+    logger.info('[GLIE] Correction recorded', {
+      id: correction.id,
+      fiber: fiberType,
+      category: garmentCategory,
+      csDelta: cs - Number(originalConditionScore),
+    });
+
+    res.status(201).json({ id: correction.id, saved: true });
+  } catch (e: any) {
+    logger.error('GLIE correction failed', { error: e.message });
+    res.status(500).json({ error: 'Failed to save correction', message: e.message });
   }
 });
 

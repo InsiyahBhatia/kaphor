@@ -1,6 +1,6 @@
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
-import { getDownloadUrl } from '../lib/s3';
+import { getDownloadUrl } from '../lib/cloudinary';
 import { generateWithGroq } from './groq.service';
 import { generateWithGemini } from './gemini.service';
 
@@ -18,6 +18,8 @@ export interface AgentCard {
   rentalPriceDay?: number;
   listingType: 'BUY' | 'RENTAL' | 'ACCESSORY_SWAP';
   imageUrl: string;
+  images?: string[];
+  image?: string;
   condition: string;
   category: string;
   source: 'WARDROBE' | 'CATALOG';
@@ -61,26 +63,26 @@ async function resolveGarmentCard(
 
   const listingType = (g.listingType || 'BUY') as 'BUY' | 'RENTAL' | 'ACCESSORY_SWAP';
   let actionType: 'RENT' | 'SWAP' | 'BUY' | 'VIEW' = 'VIEW';
-  let actionUrl = `/(tabs)/shop/garment/${g.id}`;
+  let actionUrl = `/(tabs)/shop/${g.id}`;
   let actionLabel = 'VIEW PIECE';
 
   if (source === 'CATALOG') {
     if (listingType === 'RENTAL') {
       actionType = 'RENT';
-      actionUrl = `/(tabs)/rental/reserve?id=${g.id}`;
-      actionLabel = 'RENT LEASE';
+      actionUrl = `/(tabs)/rental/${g.id}`;
+      actionLabel = 'REQUEST RENTAL';
     } else if (listingType === 'ACCESSORY_SWAP') {
       actionType = 'SWAP';
       actionUrl = `/(tabs)/swap/${g.id}`;
       actionLabel = 'REQUEST SWAP';
     } else {
       actionType = 'BUY';
-      actionUrl = `/(tabs)/shop/garment/${g.id}`;
+      actionUrl = `/(tabs)/shop/${g.id}`;
       actionLabel = 'BUY PIECE';
     }
   } else {
     actionType = 'VIEW';
-    actionUrl = `/(tabs)/profile/wardrobe`;
+    actionUrl = `/(tabs)/shop/${g.id}`;
     actionLabel = 'IN YOUR CLOSET';
   }
 
@@ -92,6 +94,8 @@ async function resolveGarmentCard(
     rentalPriceDay: g.rentalPriceDay ? Math.round(g.rentalPriceDay) : undefined,
     listingType,
     imageUrl,
+    images: imageUrl ? [imageUrl] : [],
+    image: imageUrl,
     condition: (g.condition || 'EXCELLENT').replace('_', ' '),
     category: g.category || 'Garment',
     source,
@@ -125,6 +129,38 @@ export async function inspectUserWardrobe(userId: string): Promise<{ items: any[
   }
 }
 
+// Category keyword mappings for intelligent search
+const CATEGORY_MAP: Record<string, string[]> = {
+  'Indo-Western': ['indo-western', 'indowestern', 'fusion', 'concept'],
+  'Sarees': ['saree', 'sari', 'draped', 'kanjeevaram', 'banarasi', 'chanderi'],
+  'Lehengas': ['lehenga', 'choli', 'ghagra'],
+  'Kurtas': ['kurta', 'kurti', 'kurtis', 'anarkali', 'tunic'],
+  'Suits': ['suit', 'salwar', 'churidar', 'pantsuit'],
+  'Dresses': ['dress', 'gown', 'mini dress', 'maxi', 'midi', 'cocktail'],
+  'Skirts': ['skirt'],
+  'Blazers': ['blazer', 'tuxedo', 'suit jacket'],
+  'Jackets': ['jacket', 'bomber', 'coat'],
+  'Tops': ['top', 'tops', 'crop top', 'blouse', 'shirt', 't-shirt'],
+  'Sets': ['set', 'sets', 'co-ord', 'coord', 'matching set', 'two-piece'],
+  'Heels': ['heel', 'heels', 'stiletto', 'pump'],
+  'Flats': ['flat', 'flats', 'loafer', 'mule', 'slides', 'juttis', 'shoe', 'shoes', 'footwear', 'sneakers'],
+  'Bags': ['bag', 'bags', 'handbag', 'tote', 'crossbody', 'purse', 'clutch'],
+  'Jewelry': ['jewelry', 'jewellery', 'necklace', 'earring', 'earrings', 'choker', 'bracelet'],
+  'Accessories': ['accessory', 'accessories', 'scarf', 'belt', 'watch', 'sunglasses'],
+};
+
+const STOP_WORDS = new Set([
+  'the', 'a', 'an', 'and', 'or', 'for', 'in', 'with', 'to', 'from', 'of', 'on', 'at', 'by',
+  'what', 'is', 'are', 'i', 'me', 'my', 'you', 'your', 'we', 'our', 'he', 'she', 'it', 'they',
+  'can', 'please', 'give', 'show', 'tell', 'find', 'look', 'looking', 'want', 'need', 'like', 'love',
+  'piece', 'pieces', 'style', 'styles', 'outfit', 'looks', 'clothes', 'clothing', 'app', 'catalog',
+  'silhouette', 'silhouettes', 'high-end', 'luxury', 'luxurious', 'curated', 'selection', 'aligns',
+  'perfectly', 'seamless', 'fusion', 'think', 'sharp', 'structured', 'flowing', 'elevated', 'pointed',
+  'editorial-grade', 'approach', 'truly', 'circular', 'consider', 'renting', 'specific', 'events',
+  'swapping', 'peers', 'occasion', 'ensuring', 'enjoy', 'glamour', 'long-term', 'storage', 'footprint',
+  'digital', 'closet', 'mapped', 'yet', 'pulled', 'rent', 'rental', 'swap', 'buy'
+]);
+
 // ── Agent Tool 2: Search Catalog ──────────────────────────────────────────────
 export async function searchCatalog(params: {
   query?: string;
@@ -133,52 +169,130 @@ export async function searchCatalog(params: {
   maxPrice?: number;
   excludeId?: string;
   take?: number;
+  topCategories?: string[];
+  topBrands?: string[];
 }): Promise<{ items: any[]; cards: AgentCard[] }> {
   try {
-    const where: any = {
+    const baseWhere: any = {
       isActive: true,
       lifecycleState: 'LISTED',
     };
 
     if (params.excludeId) {
-      where.id = { not: params.excludeId };
+      baseWhere.id = { not: params.excludeId };
     }
 
     if (params.listingType) {
-      where.listingType = params.listingType;
-    }
-
-    if (params.category) {
-      where.category = { contains: params.category, mode: 'insensitive' };
+      baseWhere.listingType = params.listingType;
     }
 
     if (params.maxPrice && params.listingType === 'RENTAL') {
-      where.rentalPriceDay = { lte: params.maxPrice };
+      baseWhere.rentalPriceDay = { lte: params.maxPrice };
     } else if (params.maxPrice) {
-      where.price = { lte: params.maxPrice };
+      baseWhere.price = { lte: params.maxPrice };
     }
 
-    if (params.query) {
-      const q = params.query.trim().toLowerCase();
-      where.OR = [
-        { title: { contains: q, mode: 'insensitive' } },
-        { brand: { contains: q, mode: 'insensitive' } },
-        { category: { contains: q, mode: 'insensitive' } },
-        { subCategory: { contains: q, mode: 'insensitive' } },
-      ];
+    const matchedGarmentMap = new Map<string, any>();
+    const promptText = (params.query || '').toLowerCase();
+
+    // 1. Detect categories from prompt text
+    const detectedCategories: string[] = [];
+    if (params.category) {
+      detectedCategories.push(params.category);
+    }
+    for (const [cat, keywords] of Object.entries(CATEGORY_MAP)) {
+      if (keywords.some(kw => promptText.includes(kw))) {
+        detectedCategories.push(cat);
+      }
     }
 
-    const rawGarments = await db.garment.findMany({
-      where,
-      orderBy: { popularityScore: 'desc' },
-      take: params.take || 4,
-    });
+    // 2. Extract meaningful search tokens
+    const rawTokens = promptText
+      .replace(/[^a-z0-9\s-]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 3 && !STOP_WORDS.has(w));
 
+    // 3. Tier 1: Query with detected categories and/or tokens
+    const tier1OrConditions: any[] = [];
+    if (detectedCategories.length > 0) {
+      tier1OrConditions.push({
+        category: { in: detectedCategories, mode: 'insensitive' },
+      });
+    }
+    for (const token of rawTokens.slice(0, 4)) {
+      tier1OrConditions.push(
+        { title: { contains: token, mode: 'insensitive' } },
+        { brand: { contains: token, mode: 'insensitive' } },
+        { category: { contains: token, mode: 'insensitive' } },
+        { subCategory: { contains: token, mode: 'insensitive' } }
+      );
+    }
+
+    if (tier1OrConditions.length > 0) {
+      const tier1Items = await db.garment.findMany({
+        where: {
+          ...baseWhere,
+          OR: tier1OrConditions,
+        },
+        orderBy: { popularityScore: 'desc' },
+        take: params.take || 6,
+      });
+      for (const item of tier1Items) {
+        matchedGarmentMap.set(item.id, item);
+      }
+    }
+
+    // 4. Tier 2: If fewer than 4 items, search by user top categories or top brands
+    if (matchedGarmentMap.size < (params.take || 4)) {
+      const tier2OrConditions: any[] = [];
+      if (params.topCategories && params.topCategories.length > 0) {
+        tier2OrConditions.push({
+          category: { in: params.topCategories, mode: 'insensitive' },
+        });
+      }
+      if (params.topBrands && params.topBrands.length > 0) {
+        tier2OrConditions.push({
+          brand: { in: params.topBrands, mode: 'insensitive' },
+        });
+      }
+
+      if (tier2OrConditions.length > 0) {
+        const tier2Items = await db.garment.findMany({
+          where: {
+            ...baseWhere,
+            OR: tier2OrConditions,
+            id: { notIn: Array.from(matchedGarmentMap.keys()) },
+          },
+          orderBy: { popularityScore: 'desc' },
+          take: (params.take || 6) - matchedGarmentMap.size,
+        });
+        for (const item of tier2Items) {
+          matchedGarmentMap.set(item.id, item);
+        }
+      }
+    }
+
+    // 5. Tier 3: If still fewer than 4 items, pull top active catalog pieces
+    if (matchedGarmentMap.size < 4) {
+      const tier3Items = await db.garment.findMany({
+        where: {
+          ...baseWhere,
+          id: { notIn: Array.from(matchedGarmentMap.keys()) },
+        },
+        orderBy: { popularityScore: 'desc' },
+        take: 6 - matchedGarmentMap.size,
+      });
+      for (const item of tier3Items) {
+        matchedGarmentMap.set(item.id, item);
+      }
+    }
+
+    const finalItems = Array.from(matchedGarmentMap.values()).slice(0, params.take || 6);
     const cards = await Promise.all(
-      rawGarments.map((g: any) => resolveGarmentCard(g, 'CATALOG'))
+      finalItems.map((g: any) => resolveGarmentCard(g, 'CATALOG'))
     );
 
-    return { items: rawGarments, cards };
+    return { items: finalItems, cards };
   } catch (error) {
     logger.warn('searchCatalog tool error', { error });
     return { items: [], cards: [] };
@@ -253,33 +367,34 @@ export async function evaluateSwapMatches(userId: string): Promise<{ matches: Ag
 export async function createOutfitLook(
   wardrobeCards: AgentCard[],
   catalogCards: AgentCard[],
-  occasion: string = 'Sophisticated Evening'
+  occasion: string = 'Recommended Ensemble'
 ): Promise<AgentOutfitLook | undefined> {
-  const allCards = [...wardrobeCards, ...catalogCards];
+  const useWardrobe = wardrobeCards.length > 0;
+  const allCards = useWardrobe ? [...wardrobeCards, ...catalogCards] : [...catalogCards];
   if (allCards.length === 0) return undefined;
 
   // Classify available pieces
   const items: AgentOutfitItem[] = [];
 
-  // Slot 1: Hero piece
-  const heroPiece = wardrobeCards[0] || catalogCards[0];
+  // Slot 1: Main piece
+  const heroPiece = (useWardrobe ? wardrobeCards[0] : catalogCards[0]) || allCards[0];
   if (heroPiece) {
     items.push({
       slot: 'TOP',
       garment: heroPiece,
       isFromWardrobe: heroPiece.source === 'WARDROBE',
-      stylingNote: heroPiece.source === 'WARDROBE' ? 'Anchor piece from your closet' : 'Statement archival piece to rent/buy',
+      stylingNote: heroPiece.source === 'WARDROBE' ? 'From your closet' : 'Main statement piece',
     });
   }
 
-  // Slot 2: Complementary lower/bottom or outerwear
-  const secondary = catalogCards.find(c => c.id !== heroPiece?.id) || wardrobeCards.find(c => c.id !== heroPiece?.id);
+  // Slot 2: Complementary piece
+  const secondary = catalogCards.find(c => c.id !== heroPiece?.id) || allCards.find(c => c.id !== heroPiece?.id);
   if (secondary) {
     items.push({
       slot: 'BOTTOM',
       garment: secondary,
       isFromWardrobe: secondary.source === 'WARDROBE',
-      stylingNote: 'Balanced silhouette pairing',
+      stylingNote: 'Complementary match',
     });
   }
 
@@ -290,15 +405,17 @@ export async function createOutfitLook(
       slot: 'ACCESSORY',
       garment: accessory,
       isFromWardrobe: accessory.source === 'WARDROBE',
-      stylingNote: 'Curated luxury accent',
+      stylingNote: 'Finishing touch',
     });
   }
 
   return {
-    title: `${occasion} Ensemble`,
-    vibe: 'Modern Circular Elegance',
-    occasion,
-    editorialNote: `We harmonized pieces you already own with authenticated circular pieces from the KaPhor archive to maximize wear value and elevate silhouette proportions.`,
+    title: occasion,
+    vibe: 'Refined & Stylish',
+    occasion: 'Event & Evening',
+    editorialNote: useWardrobe
+      ? 'Here is an outfit combining pieces from your closet with curated pieces from the app.'
+      : 'Here is an outfit put together with pieces from the app that match your style.',
     items,
   };
 }
@@ -312,30 +429,41 @@ export async function runFashionAgent(params: {
 }): Promise<AgentResult> {
   const { userId, message, visualAnalysisSummary } = params;
   const prompt = (message || '').toLowerCase();
+
   const actionsExecuted: AgentActionLog[] = [];
   const cards: AgentCard[] = [];
   let outfitLook: AgentOutfitLook | undefined = undefined;
 
-  // 1. Determine User Intent & Tool Invocations
-  const wantsWardrobe = prompt.includes('wardrobe') || prompt.includes('closet') || prompt.includes('my clothes') || prompt.includes('pair with') || prompt.includes('match') || prompt.includes('have') || prompt.includes('own');
-  const wantsRental = prompt.includes('rent') || prompt.includes('lease') || prompt.includes('hire');
-  const wantsSwap = prompt.includes('swap') || prompt.includes('trade') || prompt.includes('exchange');
-  const wantsOutfit = prompt.includes('outfit') || prompt.includes('look') || prompt.includes('style me') || prompt.includes('wear tonight') || prompt.includes('wedding') || prompt.includes('party') || prompt.includes('brunch') || prompt.includes('cocktail');
+  // 1. User Style Profile & Preferences
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { styleAesthetic: true, preferenceProfile: true },
+  });
+  const profile = (user?.preferenceProfile as any) || {};
+  const userAesthetic = user?.styleAesthetic || profile.dominantAesthetic || 'Contemporary Luxury';
+  const topCats = Object.keys(profile.topCategories || {}).slice(0, 3);
+  const topBrands = Object.keys(profile.topBrands || {}).slice(0, 3);
 
-  // Tool Invocation 1: Inspect User Wardrobe
+  // 2. Determine User Intent: only inspect wardrobe if explicitly requested
+  const wantsWardrobe = /\b(my closet|my wardrobe|in my closet|in my wardrobe|from my closet|clothes i own|what i own|pair with my|match my)\b/i.test(prompt);
+  const wantsRental = /\b(rent|rental|lease|hire|day rate)\b/i.test(prompt);
+  const wantsSwap = /\b(swap|trade|exchange)\b/i.test(prompt);
+  const wantsOutfit = /\b(outfit|look|style me|what to wear|wear tonight|wedding|party|brunch|cocktail|dinner|date night|event|sets|silhouette)\b/i.test(prompt);
+
+  // Tool Invocation 1: Inspect User Wardrobe (ONLY when user explicitly asks about their closet)
   let wardrobeData = { items: [] as any[], cards: [] as AgentCard[] };
-  if (wantsWardrobe || wantsOutfit || wantsSwap) {
+  if (wantsWardrobe) {
     wardrobeData = await inspectUserWardrobe(userId);
     if (wardrobeData.cards.length > 0) {
       actionsExecuted.push({
         tool: 'inspect_user_wardrobe',
-        description: `Inspected ${wardrobeData.cards.length} garments in your digital closet`,
+        description: `Checked your closet (${wardrobeData.cards.length} items)`,
         count: wardrobeData.cards.length,
       });
     }
   }
 
-  // Tool Invocation 2: Search Circular Catalog
+  // Tool Invocation 2: Search App Catalog
   let catalogType: 'BUY' | 'RENTAL' | 'ACCESSORY_SWAP' | undefined = undefined;
   if (wantsRental) catalogType = 'RENTAL';
   else if (wantsSwap) catalogType = 'ACCESSORY_SWAP';
@@ -350,43 +478,45 @@ export async function runFashionAgent(params: {
   const catalogData = await searchCatalog({
     listingType: catalogType,
     maxPrice,
-    query: message.replace(/(rent|swap|outfit|style|closet|wardrobe|find|show|me)/gi, '').trim() || undefined,
-    take: 4,
+    query: message,
+    topCategories: topCats,
+    topBrands: topBrands,
+    take: 6,
   });
 
   if (catalogData.cards.length > 0) {
     actionsExecuted.push({
       tool: 'search_catalog',
-      description: `Queried KaPhor archive (${catalogType || 'All listings'}) — found ${catalogData.cards.length} curated pieces`,
+      description: `Found ${catalogData.cards.length} pieces on the app`,
       count: catalogData.cards.length,
     });
   }
 
-  // Tool Invocation 3: Evaluate Swap Matches
+  // Tool Invocation 3: Evaluate Swap Matches (if swap mode)
   if (wantsSwap) {
     const swapData = await evaluateSwapMatches(userId);
     if (swapData.matches.length > 0) {
       actionsExecuted.push({
         tool: 'evaluate_swap_parity',
-        description: `Evaluated trade valuations: found ${swapData.matches.length} equitable swap matches (±15% parity)`,
+        description: `Found ${swapData.matches.length} swap items with fair values`,
         count: swapData.matches.length,
       });
       cards.push(...swapData.matches);
     }
   }
 
-  // Tool Invocation 4: Synthesize Outfit Lookbook
-  if (wantsOutfit || (wantsWardrobe && catalogData.cards.length > 0)) {
-    outfitLook = await createOutfitLook(wardrobeData.cards, catalogData.cards, 'Curated Editorial Look');
+  // Tool Invocation 4: Synthesize Outfit Look (if outfit requested or general styling inquiry)
+  if (catalogData.cards.length > 0) {
+    outfitLook = await createOutfitLook(wantsWardrobe ? wardrobeData.cards : [], catalogData.cards, 'Recommended Ensemble');
     if (outfitLook) {
       actionsExecuted.push({
         tool: 'create_outfit_look',
-        description: `Synthesized a multi-piece outfit harmonizing closet items with archive pieces`,
+        description: 'Put together an outfit matching your style',
       });
     }
   }
 
-  // Add primary recommended cards (avoid duplicates)
+  // Add primary recommended cards from catalog (avoid duplicates)
   const existingIds = new Set(cards.map(c => c.id));
   for (const c of catalogData.cards) {
     if (!existingIds.has(c.id)) {
@@ -394,44 +524,39 @@ export async function runFashionAgent(params: {
       existingIds.add(c.id);
     }
   }
-  for (const w of wardrobeData.cards.slice(0, 2)) {
-    if (!existingIds.has(w.id)) {
-      cards.push(w);
-      existingIds.add(w.id);
+
+  // Only include wardrobe cards if user explicitly asked for them
+  if (wantsWardrobe) {
+    for (const w of wardrobeData.cards.slice(0, 2)) {
+      if (!existingIds.has(w.id)) {
+        cards.push(w);
+        existingIds.add(w.id);
+      }
     }
   }
 
-  // 2. Gemini Stylist Synthesis
-  const wardrobeSummary = wardrobeData.cards.map(c => `"${c.title}" (${c.brand}, ${c.category})`).join(', ') || 'No digitized pieces yet';
-  const catalogSummary = catalogData.cards.map(c => `"${c.title}" by ${c.brand} [${c.listingType}: ₹${c.rentalPriceDay || c.price}]`).join(', ') || 'Catalog pieces curated';
+  // 3. AI Assistant Synthesis
+  const wardrobeSummary = wardrobeData.cards.map(c => `"${c.title}" (${c.brand}, ${c.category})`).join(', ') || 'None';
+  const catalogSummary = cards.map((c, i) => `${i + 1}. "${c.title}" by ${c.brand} (Category: ${c.category}, ${c.listingType}: ₹${c.rentalPriceDay ? `${c.rentalPriceDay}/day` : c.price})`).join('\n') || 'App pieces found';
 
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { styleAesthetic: true, preferenceProfile: true },
-  });
-  const profile = (user?.preferenceProfile as any) || {};
-  const userAesthetic = user?.styleAesthetic || profile.dominantAesthetic || 'Contemporary Luxury';
-  const topCats = Object.keys(profile.topCategories || {}).slice(0, 3).join(', ');
-  const topBrands = Object.keys(profile.topBrands || {}).slice(0, 3).join(', ');
+  const agentPrompt = `You are KaPhor AI, a friendly, warm shopping and style helper.
+You speak in very simple, natural, everyday English.
+Never use complicated fashion jargon or pretentious words (strictly avoid words like "curate", "ensemble", "silhouette", "intentional layering", "circular vault", "equitable trade valuation", "proportions", "textiles", "dossier").
 
-  const agentPrompt = `You are the KaPhor Autonomous Fashion Stylist & Circular Fashion Agent.
-You do not speak like an automated bot; you sound like an elite, knowledgeable personal stylist and creative director.
+CRITICAL RULES:
+1. NEVER mention whether the user's closet or digital closet is mapped, unmapped, empty, digitized, or pending digitization. NEVER say "Since your digital closet isn't mapped..." or "Since your closet digitization is pending..." or anything similar!
+2. You MUST recommend ONLY the actual pieces from "Available pieces found on the app" below. DO NOT invent designers, brands (like Torani, Payal Khandwala, Sabyasachi, etc.) or pieces that are not listed in the "Available pieces found on the app" list. Reference 1 or 2 specific pieces from that list by exact title and brand and explain why they match what was asked for.
+3. Keep your reply short, warm, and natural: strictly 2 to 3 simple sentences.
+4. The user sees the full interactive product cards with photos, prices, and direct buttons right below your message, so do not include markdown bullet lists, links, or item IDs.
+
 The user asked: "${message}".
-${visualAnalysisSummary ? `User uploaded photo visual analysis: "${visualAnalysisSummary}".` : ''}
-User Style Signature: Aesthetic: ${userAesthetic}${topCats ? `, Preferred Categories: ${topCats}` : ''}${topBrands ? `, Favored Brands: ${topBrands}` : ''}.
+${visualAnalysisSummary ? `User uploaded photo: "${visualAnalysisSummary}".` : ''}
+User Style Profile: ${userAesthetic}${topCats.length ? `, Preferred: ${topCats.join(', ')}` : ''}${topBrands.length ? `, Brands: ${topBrands.join(', ')}` : ''}.
 
-Tools you executed:
-${actionsExecuted.map(a => `- ${a.description}`).join('\n')}
-
-Items from user's closet: ${wardrobeSummary}
-Catalog pieces found: ${catalogSummary}
-${outfitLook ? `Outfit look curated: ${outfitLook.title} (${outfitLook.items.length} pieces)` : ''}
-
-Instructions:
-1. Provide a sharp, elegant styling narrative (2-4 sentences max), tailored specifically to the user's aesthetic signature.
-2. Reference specifically how the user can wear or pair these pieces.
-3. Highlight circular benefits (wearing what they own, peer swap, or low-impact rental).
-4. Do not list raw markdown bullets of links or IDs, because interactive UI cards will be rendered underneath your response.`;
+Available pieces found on the app:
+${catalogSummary}
+${outfitLook ? `Outfit look: ${outfitLook.title}` : ''}
+${wantsWardrobe ? `User's closet items: ${wardrobeSummary}` : ''}`;
 
   let reply = '';
   try {
@@ -442,22 +567,21 @@ Instructions:
       reply = await generateWithGemini(agentPrompt);
     } catch (err) {
       logger.warn('Gemini agent synthesis fallback', { err });
-      if (outfitLook) {
-        reply = `I have assembled a balanced ensemble pairing your personal archive with selected pieces from our circular vault. The proportions highlight texture contrast while maintaining high-wear versatility.`;
-      } else if (catalogData.cards.length > 0) {
-        reply = `Here are authenticated pieces from our circular archive that match your query. Each piece is pre-vetted for condition, authenticity, and sustainable lifecycle value.`;
+      if (cards.length > 0) {
+        const topOne = cards[0];
+        reply = `I found some great pieces on the app that match your style, like the ${topOne.title} by ${topOne.brand}. You can check out all the pieces below to view details, rent, or buy!`;
       } else {
-        reply = `To create an elevated silhouette, focus on intentional layering—such as pairing structured tailoring with fluid heritage textiles or artisanal accessories.`;
+        reply = `I can help you find pieces on the app to rent, buy, or swap. What style, color, or event are you dressing up for?`;
       }
     }
   }
 
-  // 3. Suggested Follow-ups
+  // 4. Suggested Follow-ups (Simple, clean, no emojis)
   const suggestedFollowUps: string[] = [
-    '✨ Style an outfit from my wardrobe',
-    '🔍 Find a rental under ₹1,000/day',
-    '⚖️ Fair swaps for my accessories',
-    '🌿 How sustainable is my closet?',
+    'Find an outfit for an event',
+    'Rentals under ₹1,000/day',
+    'Trending party looks',
+    'Casual everyday styles',
   ];
 
   return {

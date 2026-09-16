@@ -15,6 +15,7 @@ import { useRazorpay } from '@codearcade/expo-razorpay';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import paymentService from '../../../src/services/paymentService';
+import { invalidateCache } from '../../../src/services/api';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import type { RentalPaymentBreakdown } from '../../../src/types/payment';
 
@@ -156,10 +157,12 @@ export default function RentalPaymentScreen() {
               razorpay_payment_id: success.razorpay_payment_id,
               razorpay_signature: success.razorpay_signature,
             });
+            invalidateCache(['/rentals', '/users/me/wardrobe', '/cart']);
             router.replace(
               `/(tabs)/rental/lease/${rentalOrderId}` as any,
             );
           } catch {
+            invalidateCache(['/rentals', '/users/me/wardrobe', '/cart']);
             Alert.alert(
               'Payment Received',
               'Your rental payment was received. We are confirming your lease dossier now.',

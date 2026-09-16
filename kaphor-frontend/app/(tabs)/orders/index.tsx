@@ -22,8 +22,10 @@ import { TransactionOrder } from '../../../src/services/orderService';
 import { messageService } from '../../../src/services/messageService';
 import { useAuth } from '../../../src/context/AuthContext';
 import { colors, typography } from '../../../src/theme';
+import { invalidateCache } from '../../../src/services/api';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { navigateToLiveSwapStage } from '../../../src/utils/swapNavigation';
 
 export default function OrdersManagementScreen() {
   const insets = useSafeAreaInsets();
@@ -106,6 +108,7 @@ export default function OrdersManagementScreen() {
     setActionLoadingId(orderId);
     try {
       await trackingService.markOrderShipped(orderId);
+      invalidateCache(['/orders', '/users/me/wardrobe']);
       Alert.alert('Success', 'Order marked as shipped. Buyer has been notified!');
       loadAllData();
     } catch (e: any) {
@@ -119,8 +122,19 @@ export default function OrdersManagementScreen() {
     setActionLoadingId(orderId);
     try {
       await trackingService.markOrderDelivered(orderId);
-      Alert.alert('Confirmed', 'Delivery confirmed! Ownership transferred.');
+      invalidateCache(['/orders', '/users/me/wardrobe', '/impact']);
       loadAllData();
+      Alert.alert(
+        'Delivery Confirmed',
+        'Garment delivery confirmed! Would you like to review and rate the seller now?',
+        [
+          { text: 'LATER', style: 'cancel' },
+          {
+            text: 'REVIEW SELLER',
+            onPress: () => router.push(`/(tabs)/shop/orders/${orderId}?review=true` as any),
+          },
+        ]
+      );
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Could not confirm delivery.');
     } finally {
@@ -133,6 +147,7 @@ export default function OrdersManagementScreen() {
     setActionLoadingId(rentalId);
     try {
       await trackingService.dispatchRental(rentalId);
+      invalidateCache(['/rentals', '/users/me/wardrobe']);
       Alert.alert('Dispatched', 'Rental is now active. Renter has been notified.');
       loadAllData();
     } catch (e: any) {
@@ -146,6 +161,7 @@ export default function OrdersManagementScreen() {
     setActionLoadingId(rentalId);
     try {
       await trackingService.returnRental(rentalId);
+      invalidateCache(['/rentals', '/users/me/wardrobe']);
       Alert.alert('Returned', 'Garment marked as returned. Lender will inspect and release deposit.');
       loadAllData();
     } catch (e: any) {
@@ -159,7 +175,8 @@ export default function OrdersManagementScreen() {
     setActionLoadingId(rentalId);
     try {
       await trackingService.releaseRentalDeposit(rentalId);
-      Alert.alert('Deposit Released', 'Security deposit has been refunded to renter.');
+      invalidateCache(['/rentals', '/users/me/wardrobe']);
+      Alert.alert('Released', 'Security deposit has been refunded to borrower.');
       loadAllData();
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Could not release deposit.');
@@ -401,8 +418,15 @@ export default function OrdersManagementScreen() {
                       </View>
                     </View>
 
-                    {/* ITEM ROW */}
-                    <View style={styles.cardBody}>
+                    {/* ITEM ROW (Tappable to view transaction item details) */}
+                    <TouchableOpacity
+                      style={styles.cardBody}
+                      onPress={() => {
+                        const gid = firstItem?.garment?.id || firstItem?.garmentId;
+                        if (gid) router.push(`/(tabs)/shop/${gid}` as any);
+                      }}
+                      activeOpacity={0.85}
+                    >
                       <KaphorImage uri={thumb} style={styles.garmentThumb} contentFit="cover" />
                       <View style={styles.garmentInfo}>
                         <Text style={styles.garmentBrand} numberOfLines={1}>
@@ -418,7 +442,10 @@ export default function OrdersManagementScreen() {
                           {isBuyer ? 'SELLER' : 'BUYER'}: {otherParty?.displayName || otherParty?.username}
                         </Text>
                       </View>
-                    </View>
+                      <View style={styles.viewChevronCol}>
+                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                      </View>
+                    </TouchableOpacity>
 
                     {/* TRACKER STEPPER */}
                     <View style={styles.stepperContainer}>
@@ -431,16 +458,39 @@ export default function OrdersManagementScreen() {
                         style={styles.chatActionBtn}
                         onPress={() => handleOpenChat(otherParty?.id, firstItem?.garment?.id)}
                       >
-                        <Ionicons name="chatbubble-ellipses-outline" size={15} color={colors.charcoal} />
+                        <Ionicons name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.chatActionText}>CHAT</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
                         style={styles.detailActionBtn}
+                        onPress={() => {
+                          const gid = firstItem?.garment?.id || firstItem?.garmentId;
+                          if (gid) router.push(`/(tabs)/shop/${gid}` as any);
+                        }}
+                      >
+                        <Ionicons name="eye-outline" size={13} color={colors.charcoal} />
+                        <Text style={styles.detailActionText}>VIEW</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.trackActionBtn}
                         onPress={() => router.push(`/(tabs)/shop/orders/${order.id}` as any)}
                       >
-                        <Text style={styles.detailActionText}>VIEW DETAILS</Text>
+                        <Ionicons name="navigate-outline" size={13} color={colors.cream} />
+                        <Text style={styles.trackActionText}>TRACK</Text>
                       </TouchableOpacity>
+
+                      {/* Delivered: Prompt Review if Buyer and not yet reviewed */}
+                      {isBuyer && order.status === 'DELIVERED' && !(order as any).peerReview && (
+                        <TouchableOpacity
+                          style={styles.reviewActionBtn}
+                          onPress={() => router.push(`/(tabs)/shop/orders/${order.id}?review=true` as any)}
+                        >
+                          <Ionicons name="star" size={13} color="#C95F12" />
+                          <Text style={styles.reviewActionText}>REVIEW</Text>
+                        </TouchableOpacity>
+                      )}
 
                       {/* Role Specific Fulfillment CTAs */}
                       {!isBuyer && order.status === 'CONFIRMED' && (
@@ -572,11 +622,9 @@ export default function OrdersManagementScreen() {
                 });
 
                 return (
-                  <TouchableOpacity
+                  <View
                     key={rental.id}
                     style={styles.card}
-                    onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
-                    activeOpacity={0.92}
                   >
                     {/* TOP STATUS */}
                     <View style={styles.cardHeader}>
@@ -598,8 +646,15 @@ export default function OrdersManagementScreen() {
                       </View>
                     </View>
 
-                    {/* ITEM ROW */}
-                    <View style={styles.cardBody}>
+                    {/* ITEM ROW (Tappable to view transaction item details) */}
+                    <TouchableOpacity
+                      style={styles.cardBody}
+                      onPress={() => {
+                        const gid = rental.garmentId || rental.garment?.id;
+                        if (gid) router.push(`/(tabs)/shop/${gid}` as any);
+                      }}
+                      activeOpacity={0.85}
+                    >
                       <KaphorImage uri={thumb} style={styles.garmentThumb} contentFit="cover" />
                       <View style={styles.garmentInfo}>
                         <Text style={styles.garmentBrand} numberOfLines={1}>
@@ -615,7 +670,10 @@ export default function OrdersManagementScreen() {
                           {isRenter ? 'LENDER' : 'RENTER'}: {counterpart?.displayName || counterpart?.username || 'Member'}
                         </Text>
                       </View>
-                    </View>
+                      <View style={styles.viewChevronCol}>
+                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                      </View>
+                    </TouchableOpacity>
 
                     {/* STEPPER */}
                     <View style={styles.stepperContainer}>
@@ -641,15 +699,27 @@ export default function OrdersManagementScreen() {
                           )
                         }
                       >
-                        <Ionicons name="chatbubble-ellipses-outline" size={15} color={colors.charcoal} />
+                        <Ionicons name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.chatActionText}>CHAT</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
                         style={styles.detailActionBtn}
+                        onPress={() => {
+                          const gid = rental.garmentId || rental.garment?.id;
+                          if (gid) router.push(`/(tabs)/shop/${gid}` as any);
+                        }}
+                      >
+                        <Ionicons name="eye-outline" size={13} color={colors.charcoal} />
+                        <Text style={styles.detailActionText}>VIEW</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.trackActionBtn}
                         onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                       >
-                        <Text style={styles.detailActionText}>LEASE DOSSIER</Text>
+                        <Ionicons name="navigate-outline" size={13} color={colors.cream} />
+                        <Text style={styles.trackActionText}>TRACK</Text>
                       </TouchableOpacity>
 
                       {/* LENDER: Mark Dispatched */}
@@ -697,7 +767,7 @@ export default function OrdersManagementScreen() {
                         </TouchableOpacity>
                       )}
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 );
               })
             )}
@@ -822,9 +892,13 @@ export default function OrdersManagementScreen() {
                       </View>
                     </View>
 
-                    {/* DUAL ITEM COMPARISON */}
+                    {/* DUAL ITEM COMPARISON (Interactive to view piece details) */}
                     <View style={styles.swapComparisonRow}>
-                      <View style={styles.swapItemCol}>
+                      <TouchableOpacity
+                        style={styles.swapItemCol}
+                        onPress={() => myGarment?.id && router.push(`/(tabs)/shop/${myGarment.id}` as any)}
+                        activeOpacity={0.8}
+                      >
                         <KaphorImage uri={myImg} style={styles.swapThumb} contentFit="cover" />
                         <Text style={styles.swapRoleLabel}>YOUR ITEM</Text>
                         <Text style={styles.swapItemTitle} numberOfLines={1}>
@@ -836,14 +910,19 @@ export default function OrdersManagementScreen() {
                           variant="dark"
                           style={{ marginTop: 4 }}
                         />
-                      </View>
+                        <Text style={styles.itemInspectHint}>VIEW ITEM →</Text>
+                      </TouchableOpacity>
 
                       <View style={styles.swapArrowCol}>
                         <Ionicons name="swap-horizontal" size={24} color={colors.charcoal} />
                         <Text style={styles.swapCashlessBadge}>CASHLESS</Text>
                       </View>
 
-                      <View style={styles.swapItemCol}>
+                      <TouchableOpacity
+                        style={styles.swapItemCol}
+                        onPress={() => theirGarment?.id && router.push(`/(tabs)/shop/${theirGarment.id}` as any)}
+                        activeOpacity={0.8}
+                      >
                         <KaphorImage uri={theirImg} style={styles.swapThumb} contentFit="cover" />
                         <Text style={styles.swapRoleLabel}>THEIR ITEM</Text>
                         <Text style={styles.swapItemTitle} numberOfLines={1}>
@@ -855,7 +934,8 @@ export default function OrdersManagementScreen() {
                           variant="copper"
                           style={{ marginTop: 4 }}
                         />
-                      </View>
+                        <Text style={styles.itemInspectHint}>VIEW ITEM →</Text>
+                      </TouchableOpacity>
                     </View>
 
                     {/* FAIR VALUE MATCHER */}
@@ -879,15 +959,27 @@ export default function OrdersManagementScreen() {
                         style={styles.chatActionBtn}
                         onPress={() => handleOpenChat(partner?.id, wantedGarment?.id || offeredGarment?.id)}
                       >
-                        <Ionicons name="chatbubble-ellipses-outline" size={15} color={colors.charcoal} />
+                        <Ionicons name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.chatActionText}>CHAT</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={[styles.primaryActionBtn, { flex: 2 }]}
-                        onPress={() => router.push(`/(tabs)/swap/details?swapId=${swap.id}` as any)}
+                        style={styles.detailActionBtn}
+                        onPress={() => {
+                          const targetGid = theirGarment?.id || myGarment?.id;
+                          if (targetGid) router.push(`/(tabs)/shop/${targetGid}` as any);
+                        }}
                       >
-                        <Text style={styles.primaryActionText}>MANAGE SWAP DOSSIER →</Text>
+                        <Ionicons name="eye-outline" size={13} color={colors.charcoal} />
+                        <Text style={styles.detailActionText}>VIEW</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.trackActionBtn}
+                        onPress={() => navigateToLiveSwapStage(router, swap, user?.id)}
+                      >
+                        <Ionicons name="navigate-outline" size={13} color={colors.cream} />
+                        <Text style={styles.trackActionText}>TRACK</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1197,6 +1289,56 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.8,
+  },
+  trackActionBtn: {
+    flex: 1.1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    height: 38,
+    backgroundColor: colors.charcoal,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    borderRadius: 6,
+  },
+  trackActionText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 0.8,
+  },
+  reviewActionBtn: {
+    flex: 1.1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    height: 38,
+    backgroundColor: '#FFF8E1',
+    borderWidth: 1.5,
+    borderColor: '#C95F12',
+    borderRadius: 6,
+  },
+  reviewActionText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#C95F12',
+    letterSpacing: 0.8,
+  },
+  viewChevronCol: {
+    justifyContent: 'center',
+    paddingLeft: 4,
+  },
+  itemInspectHint: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '800',
+    color: colors.red,
+    marginTop: 4,
+    letterSpacing: 0.5,
   },
 
   // Swap Comparison Styling

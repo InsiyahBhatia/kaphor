@@ -126,7 +126,7 @@ export default function SwapWithWantedScreen() {
         {myGarments.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>You don't have any accessories listed for swap yet.</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/shop/sell')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { prefillListingType: 'ACCESSORY_SWAP', listingType: 'ACCESSORY_SWAP', fresh: Date.now().toString() } } as any)}>
               <Text style={styles.linkText}>LIST AN ACCESSORY</Text>
             </TouchableOpacity>
           </View>

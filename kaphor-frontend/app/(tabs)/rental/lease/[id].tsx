@@ -23,11 +23,15 @@ import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 import { hapticFeedback } from '../../../../src/utils/haptics';
 import { useAuthStore } from '../../../../src/store/authStore';
 
+import { invalidateCache } from '../../../../src/services/api';
+
 export default function RentalLeaseDossierScreen() {
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const searchParams = useLocalSearchParams<{ id?: string; rentalId?: string; orderId?: string; rentalOrderId?: string }>();
   const router = useRouter();
   const currentUserId = useAuthStore((s) => s.user?.id);
+
+  const id = String(searchParams.id || searchParams.rentalOrderId || searchParams.rentalId || searchParams.orderId || '').trim();
 
   const [rental, setRental] = useState<any>(null);
   const [escrow, setEscrow] = useState<any>(null);
@@ -45,6 +49,10 @@ export default function RentalLeaseDossierScreen() {
   const [returnCarrier, setReturnCarrier] = useState('Delhivery');
   const [returnTracking, setReturnTracking] = useState('');
 
+  // Decline Modal (Lender)
+  const [declineModalVisible, setDeclineModalVisible] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+
   // Review Modal
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [rating, setRating] = useState(5);
@@ -54,29 +62,45 @@ export default function RentalLeaseDossierScreen() {
   useBackHandler('/(tabs)/rental');
 
   const loadData = useCallback(async () => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await rentalService.getRentalById(id);
       setRental(data);
 
+      if (data?.metadata?.reviews && currentUserId && data.metadata.reviews[currentUserId]) {
+        setReviewSubmitted(true);
+        setRating(data.metadata.reviews[currentUserId].rating || 5);
+        if (data.metadata.reviews[currentUserId].comment) {
+          setReviewComment(data.metadata.reviews[currentUserId].comment);
+        }
+      }
+
       try {
         const escrowData = await rentalService.getEscrow(id);
         setEscrow(escrowData);
       } catch (escrowErr) {
-        console.warn('Failed to load escrow details:', escrowErr);
+        console.warn('Escrow details unavailable for rental:', escrowErr);
       }
     } catch (err: any) {
       console.error('Failed to load rental lease:', err);
-      Alert.alert('Error', err?.response?.data?.message || 'Failed to load rental details');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, currentUserId]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if ((searchParams as any)?.review === 'true') {
+      setReviewModalVisible(true);
+    }
+  }, [searchParams]);
 
   const isRenter = rental?.userRole === 'RENTER' || rental?.renterId === currentUserId;
   const isLender = rental?.userRole === 'LENDER' || rental?.garment?.sellerId === currentUserId;
@@ -106,6 +130,132 @@ export default function RentalLeaseDossierScreen() {
     }
   };
 
+  // Lender approves rental request
+  const handleApprove = async () => {
+    setActionLoading(true);
+    hapticFeedback.medium();
+    try {
+      await rentalService.approveRental(id as string);
+      invalidateCache('/rentals');
+      invalidateCache('/users/me/wardrobe');
+      Alert.alert(
+        'Rental Request Approved',
+        'You have approved the rental dates! The borrower has been notified and granted 24 hours to secure payment into escrow.'
+      );
+      await loadData();
+    } catch (err: any) {
+      Alert.alert('Approval Error', err?.response?.data?.message || 'Failed to approve rental request.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Lender declines rental request
+  const handleDecline = async () => {
+    setActionLoading(true);
+    hapticFeedback.medium();
+    try {
+      await rentalService.declineRental(id as string, declineReason.trim() || undefined);
+      invalidateCache('/rentals');
+      invalidateCache('/users/me/wardrobe');
+      setDeclineModalVisible(false);
+      setDeclineReason('');
+      Alert.alert('Request Declined', 'You have declined this rental request.');
+      await loadData();
+    } catch (err: any) {
+      Alert.alert('Decline Error', err?.response?.data?.message || 'Failed to decline rental request.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Borrower proceeds to payment once approved
+  const handleProceedToPayment = () => {
+    const totalDays = Math.max(1, Math.round((new Date(rental.endDate).getTime() - new Date(rental.startDate).getTime()) / (1000 * 3600 * 24)));
+    router.push({
+      pathname: '/(tabs)/rental/payment',
+      params: {
+        rentalOrderId: id as string,
+        garmentId: rental.garmentId,
+        days: String(totalDays),
+        dayRate: String(rental.garment?.rentalPriceDay || 149),
+      },
+    } as any);
+  };
+
+  // Borrower marks garment as delivered/received
+  const handleConfirmDelivery = async () => {
+    Alert.alert(
+      'Confirm Garment Received',
+      'Have you received and verified the luxury piece? Your active lease duration officially begins now.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Received',
+          onPress: async () => {
+            setActionLoading(true);
+            hapticFeedback.medium();
+            try {
+              await rentalService.confirmDelivery(id as string);
+              invalidateCache('/rentals');
+              invalidateCache('/users/me/wardrobe');
+              Alert.alert('Delivery Confirmed', 'Enjoy your rental piece! Return instructions are available anytime on this screen.');
+              await loadData();
+            } catch (err: any) {
+              Alert.alert('Error', err?.response?.data?.message || 'Failed to confirm delivery.');
+            } finally {
+              setActionLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Lender marks return package as received
+  const handleConfirmReturnDelivery = async () => {
+    Alert.alert(
+      'Confirm Return Received',
+      'Have you received the returned package from the borrower? Your 48-hour inspection period begins now.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Return Received',
+          onPress: async () => {
+            setActionLoading(true);
+            hapticFeedback.medium();
+            try {
+              await rentalService.confirmReturnDelivery(id as string);
+              invalidateCache('/rentals');
+              invalidateCache('/users/me/wardrobe');
+              Alert.alert('Return Received', 'Inspection period active. Please inspect the garment and release the ₹299 deposit.');
+              await loadData();
+            } catch (err: any) {
+              Alert.alert('Error', err?.response?.data?.message || 'Failed to confirm return receipt.');
+            } finally {
+              setActionLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Direct courier tracking link helpers
+  const handleTrackOutbound = () => {
+    const url = rentalService.getCarrierTrackingUrl(rental?.carrier, rental?.trackingNumber);
+    if (url) {
+      Linking.openURL(url).catch(() => Alert.alert('Could Not Open', 'Unable to open courier tracking URL.'));
+    }
+  };
+
+  const handleTrackReturn = () => {
+    const url = rentalService.getCarrierTrackingUrl(rental?.returnCarrier, rental?.returnTracking);
+    if (url) {
+      Linking.openURL(url).catch(() => Alert.alert('Could Not Open', 'Unable to open courier tracking URL.'));
+    }
+  };
+
   // Lender marks as dispatched
   const handleDispatch = async () => {
     if (!trackingNumber.trim()) {
@@ -120,8 +270,10 @@ export default function RentalLeaseDossierScreen() {
         carrier: carrier.trim(),
         trackingNumber: trackingNumber.trim(),
       });
+      invalidateCache('/rentals');
+      invalidateCache('/users/me/wardrobe');
       setDispatchModalVisible(false);
-      Alert.alert('Garment Dispatched', 'Rental is now active. The borrower has been notified with tracking details.');
+      Alert.alert('Garment Dispatched', 'Outbound shipment has been marked dispatched. The borrower has been notified with tracking details.');
       await loadData();
     } catch (err: any) {
       Alert.alert('Dispatch Error', err?.response?.data?.message || 'Failed to dispatch rental.');
@@ -139,6 +291,8 @@ export default function RentalLeaseDossierScreen() {
         returnCarrier: returnCarrier.trim(),
         returnTracking: returnTracking.trim() || undefined,
       });
+      invalidateCache('/rentals');
+      invalidateCache('/users/me/wardrobe');
       setReturnModalVisible(false);
       Alert.alert('Return Confirmed', 'The lender has been notified. Your security deposit will be released upon inspection.');
       await loadData();
@@ -164,6 +318,8 @@ export default function RentalLeaseDossierScreen() {
             hapticFeedback.medium();
             try {
               await rentalService.releaseDeposit(id as string);
+              invalidateCache('/rentals');
+              invalidateCache('/users/me/wardrobe');
               Alert.alert('Deposit Released', '₹299 security deposit has been refunded to the borrower.');
               await loadData();
             } catch (err: any) {
@@ -268,32 +424,200 @@ export default function RentalLeaseDossierScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Visual 7-Step Progress Stepper */}
+        <View style={styles.stepperContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stepperScroll}>
+            {[
+              { key: 'REQUEST', label: '1. REQUEST', icon: 'document-text-outline', done: true },
+              { key: 'APPROVE', label: '2. APPROVAL', icon: 'checkmark-circle-outline', done: rental.status !== 'REQUESTED' && rental.status !== 'DECLINED' },
+              { key: 'PAY', label: '3. ESCROW PAY', icon: 'card-outline', done: ['RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
+              { key: 'DISPATCH', label: '4. DISPATCH', icon: 'airplane-outline', done: ['DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
+              { key: 'ACTIVE', label: '5. WEAR', icon: 'sparkles-outline', done: ['ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
+              { key: 'RETURN', label: '6. RETURN', icon: 'repeat-outline', done: ['RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
+              { key: 'REFUND', label: '7. REFUND', icon: 'shield-checkmark-outline', done: rental.status === 'COMPLETED' },
+            ].map((step, idx) => {
+              const isCurrent =
+                (rental.status === 'REQUESTED' && step.key === 'APPROVE') ||
+                (rental.status === 'APPROVED' && step.key === 'PAY') ||
+                (rental.status === 'RESERVED' && step.key === 'DISPATCH') ||
+                (rental.status === 'DISPATCHED' && step.key === 'ACTIVE') ||
+                (rental.status === 'ACTIVE' && step.key === 'ACTIVE') ||
+                (rental.status === 'RETURN_DISPATCHED' && step.key === 'RETURN') ||
+                (rental.status === 'RETURNED' && step.key === 'REFUND') ||
+                (rental.status === 'COMPLETED' && step.key === 'REFUND');
+
+              return (
+                <View key={step.key} style={styles.stepperItem}>
+                  <View style={[
+                    styles.stepperBadge,
+                    step.done && styles.stepperBadgeDone,
+                    isCurrent && styles.stepperBadgeCurrent,
+                  ]}>
+                    <Ionicons
+                      name={step.icon as any}
+                      size={12}
+                      color={step.done || isCurrent ? colors.white : colors.textMuted}
+                    />
+                  </View>
+                  <Text style={[
+                    styles.stepperItemText,
+                    step.done && styles.stepperItemTextDone,
+                    isCurrent && styles.stepperItemTextCurrent,
+                  ]}>
+                    {step.label}
+                  </Text>
+                  {idx < 6 && <View style={[styles.stepperLine, step.done && styles.stepperLineDone]} />}
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         {/* Status Banner */}
         <View style={[
           styles.statusBanner,
+          rental.status === 'REQUESTED' && styles.statusBannerRequested,
+          rental.status === 'APPROVED' && styles.statusBannerApproved,
+          rental.status === 'DECLINED' && styles.statusBannerDeclined,
+          rental.status === 'RESERVED' && styles.statusBannerReserved,
+          rental.status === 'DISPATCHED' && styles.statusBannerDispatched,
           rental.status === 'ACTIVE' && styles.statusBannerActive,
+          rental.status === 'RETURN_DISPATCHED' && styles.statusBannerReturnDispatched,
           rental.status === 'RETURNED' && styles.statusBannerReturned,
+          rental.status === 'COMPLETED' && styles.statusBannerCompleted,
           rental.status === 'OVERDUE' && styles.statusBannerOverdue,
         ]}>
           <View style={styles.statusRow}>
-            <View style={styles.statusBadgeDot} />
+            <View style={[
+              styles.statusBadgeDot,
+              (rental.status === 'APPROVED' || rental.status === 'ACTIVE' || rental.status === 'COMPLETED') && { backgroundColor: colors.forest || '#2A7B4C' },
+              (rental.status === 'REQUESTED' || rental.status === 'RESERVED') && { backgroundColor: colors.gold || '#D4AF37' },
+              (rental.status === 'DECLINED' || rental.status === 'OVERDUE') && { backgroundColor: colors.red || '#E53E3E' },
+            ]} />
             <Text style={styles.statusTitle}>
-              {rental.status === 'RESERVED' && (isLender ? 'READY TO DISPATCH' : 'RESERVATION CONFIRMED')}
-              {rental.status === 'ACTIVE' && `ACTIVE LEASE • ${daysLeft} ${daysLeft === 1 ? 'DAY' : 'DAYS'} LEFT`}
-              {rental.status === 'RETURNED' && (isDepositReleased ? 'RETURNED & DEPOSIT REFUNDED' : 'GARMENT RETURNED • INSPECTION PENDING')}
+              {rental.status === 'REQUESTED' && (isLender ? 'ACTION REQUIRED • NEW RENTAL REQUEST' : 'REQUEST SENT • PENDING LENDER APPROVAL')}
+              {rental.status === 'APPROVED' && (isLender ? 'REQUEST APPROVED • AWAITING PAYMENT' : 'REQUEST APPROVED! PROCEED TO PAYMENT')}
+              {rental.status === 'DECLINED' && 'RENTAL REQUEST DECLINED'}
+              {rental.status === 'RESERVED' && (isLender ? 'PAYMENT SECURED IN ESCROW • READY TO DISPATCH' : 'PAYMENT SECURED IN ESCROW')}
+              {rental.status === 'DISPATCHED' && (isLender ? 'OUTBOUND SHIPMENT IN TRANSIT' : 'PIECE ON THE WAY • DISPATCHED')}
+              {rental.status === 'ACTIVE' && `ACTIVE LEASE • ${daysLeft > 0 ? `${daysLeft} ${daysLeft === 1 ? 'DAY' : 'DAYS'} LEFT` : 'DUE TODAY'}`}
+              {rental.status === 'RETURN_DISPATCHED' && (isLender ? 'RETURN SHIPMENT IN TRANSIT' : 'RETURN DISPATCHED • IN TRANSIT')}
+              {rental.status === 'RETURNED' && (isDepositReleased ? 'RETURNED & DEPOSIT REFUNDED' : 'RETURN RECEIVED • 48H INSPECTION WINDOW')}
+              {rental.status === 'COMPLETED' && 'LEASE COMPLETED • DEPOSIT REFUNDED'}
               {rental.status === 'OVERDUE' && 'RETURN OVERDUE'}
             </Text>
           </View>
           <Text style={styles.statusDesc}>
-            {rental.status === 'RESERVED' && isLender && 'Please package and dispatch the garment. Tap below to enter tracking.'}
-            {rental.status === 'RESERVED' && isRenter && 'The garment owner is preparing your piece for insured dispatch.'}
-            {rental.status === 'ACTIVE' && isRenter && `Enjoy wearing! Please dispatch for return by ${endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}.`}
+            {rental.status === 'REQUESTED' && isLender && 'Please review the requested dates and approve or decline the lease request.'}
+            {rental.status === 'REQUESTED' && isRenter && 'The garment owner will review your dates within 24 hours. No payment is taken until approved.'}
+            {rental.status === 'APPROVED' && isLender && 'You approved this lease. The borrower has 24 hours to secure their reservation by completing payment.'}
+            {rental.status === 'APPROVED' && isRenter && 'The garment owner approved your request! Complete payment to lock your dates into escrow.'}
+            {rental.status === 'DECLINED' && (rental.declineReason ? `Owner note: "${rental.declineReason}"` : 'This rental request could not be accommodated at this time.')}
+            {rental.status === 'RESERVED' && isLender && 'Payment is locked in escrow. Please package and dispatch the garment. Tap below to enter tracking.'}
+            {rental.status === 'RESERVED' && isRenter && 'Payment is secured in escrow. The garment owner is preparing your piece for insured dispatch.'}
+            {rental.status === 'DISPATCHED' && isLender && `Dispatched via ${rental.carrier || 'courier'} (${rental.trackingNumber || 'Tracking provided'}).`}
+            {rental.status === 'DISPATCHED' && isRenter && `Dispatched via ${rental.carrier || 'courier'} (${rental.trackingNumber || 'Tracking provided'}). Please tap "Confirm Received" upon delivery.`}
+            {rental.status === 'ACTIVE' && isRenter && `Enjoy wearing! Please dispatch for return on or before ${endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}.`}
             {rental.status === 'ACTIVE' && isLender && `Garment is currently with the borrower. Scheduled return: ${endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}.`}
+            {rental.status === 'RETURN_DISPATCHED' && isLender && `Dispatched back by borrower via ${rental.returnCarrier || 'courier'} (${rental.returnTracking || 'Tracking provided'}). Please confirm upon delivery.`}
+            {rental.status === 'RETURN_DISPATCHED' && isRenter && `Return package in transit via ${rental.returnCarrier || 'courier'}. Security deposit will be refunded after owner inspection.`}
             {rental.status === 'RETURNED' && isLender && !isDepositReleased && 'Please inspect garment hygiene and fabric condition to release the ₹299 escrow deposit.'}
             {rental.status === 'RETURNED' && isDepositReleased && 'All lease obligations fulfilled. Security deposit has been successfully released.'}
+            {rental.status === 'COMPLETED' && 'All lease obligations fulfilled. Security deposit has been successfully refunded.'}
             {rental.status === 'OVERDUE' && 'The agreed rental duration has expired. Please contact support or the lender immediately.'}
           </Text>
         </View>
+
+        {/* ── Prominent Lender Approval Card ── */}
+        {isLender && rental.status === 'REQUESTED' && (
+          <View style={styles.actionPromptCard}>
+            <View style={styles.actionPromptTop}>
+              <View style={styles.actionPromptIconBadge}>
+                <Ionicons name="time" size={18} color="#B45309" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.actionPromptTitle}>ACTION REQUIRED: APPROVE RENTAL DATES</Text>
+                <Text style={styles.actionPromptSub}>
+                  {rental.renter?.displayName || 'Borrower'} requested this piece for {daysTotal} days ({new Date(rental.startDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – {new Date(rental.endDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}). Approve to open the 24-hour escrow payment window.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.actionPromptBtnRow}>
+              <TouchableOpacity
+                style={[styles.actionPromptBtn, styles.actionPromptDecline]}
+                onPress={() => setDeclineModalVisible(true)}
+              >
+                <Text style={styles.actionPromptDeclineText}>DECLINE</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionPromptBtn, styles.actionPromptAccept]}
+                onPress={handleApprove}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator color={colors.white} size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={15} color={colors.white} />
+                    <Text style={styles.actionPromptAcceptText}>ACCEPT & APPROVE DATES</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ── Prominent Borrower Payment Action Card when Approved ── */}
+        {isRenter && rental.status === 'APPROVED' && (
+          <View style={[styles.actionPromptCard, { borderColor: colors.forest, backgroundColor: '#F0FDF4' }]}>
+            <View style={styles.actionPromptTop}>
+              <View style={[styles.actionPromptIconBadge, { backgroundColor: '#DCFCE7' }]}>
+                <Ionicons name="checkmark-circle" size={18} color={colors.forest} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.actionPromptTitle, { color: colors.forest }]}>
+                  DATES APPROVED! READY FOR ESCROW PAYMENT
+                </Text>
+                <Text style={styles.actionPromptSub}>
+                  The owner has approved your reservation! Complete escrow payment within 24 hours to secure your dates.
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.actionPromptBtn, styles.actionPromptPay]}
+              onPress={handleProceedToPayment}
+            >
+              <Ionicons name="card" size={15} color={colors.white} />
+              <Text style={styles.actionPromptAcceptText}>PROCEED TO PAYMENT (₹{totalAmount.toLocaleString()}) →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Completed Review Card (If already reviewed) ── */}
+        {Boolean(reviewSubmitted || (currentUserId && rental?.metadata?.reviews?.[currentUserId])) && (
+          <View style={styles.rentalReviewCard}>
+            <View style={styles.rentalReviewHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="star" size={16} color="#C95F12" />
+                <Text style={styles.rentalReviewTitle}>YOUR RENTAL REVIEW</Text>
+              </View>
+              <View style={styles.rentalReviewBadge}>
+                <Text style={styles.rentalReviewScore}>
+                  {(currentUserId && rental?.metadata?.reviews?.[currentUserId]?.rating) || rating}.0 ★
+                </Text>
+              </View>
+            </View>
+            {Boolean((currentUserId && rental?.metadata?.reviews?.[currentUserId]?.comment) || reviewComment) && (
+              <Text style={styles.rentalReviewComment}>
+                "{(currentUserId && rental?.metadata?.reviews?.[currentUserId]?.comment) || reviewComment}"
+              </Text>
+            )}
+            <View style={styles.rentalReviewFooter}>
+              <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
+              <Text style={styles.rentalReviewMeta}>Verified Circular Lease Review · Saved</Text>
+            </View>
+          </View>
+        )}
 
         {/* Garment Details Card */}
         <View style={styles.card}>
@@ -388,18 +712,28 @@ export default function RentalLeaseDossierScreen() {
                     {rental.trackingNumber}
                   </Text>
                 </View>
+                <TouchableOpacity
+                  style={styles.trackOnlineBtn}
+                  onPress={handleTrackOutbound}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="open-outline" size={13} color={colors.crimson} />
+                  <Text style={styles.trackOnlineBtnText}>TRACK ON {rental.carrier ? rental.carrier.toUpperCase() : 'COURIER'} WEBSITE</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <Text style={styles.noTrackingText}>
                 {isLender
-                  ? 'Awaiting your dispatch. Tap "Dispatch Garment" below when ready.'
+                  ? (rental.status === 'REQUESTED' || rental.status === 'APPROVED'
+                      ? 'Shipment details will unlock once the request is approved and paid into escrow.'
+                      : 'Awaiting your dispatch. Tap "Dispatch Garment" below when ready.')
                   : 'Garment owner will input courier tracking once dispatched.'}
               </Text>
             )}
           </View>
 
           {/* Inbound / Return Tracking */}
-          {(rental.status === 'ACTIVE' || rental.status === 'RETURNED') && (
+          {(['ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) || Boolean(rental.returnTracking)) && (
             <View style={[styles.trackingSection, { marginTop: 14 }]}>
               <View style={styles.trackingHeader}>
                 <Ionicons name="repeat-outline" size={15} color={colors.forest || '#2A7B4C'} />
@@ -417,6 +751,16 @@ export default function RentalLeaseDossierScreen() {
                       {rental.returnTracking}
                     </Text>
                   </View>
+                  <TouchableOpacity
+                    style={[styles.trackOnlineBtn, { borderColor: colors.forest || '#2A7B4C' }]}
+                    onPress={handleTrackReturn}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="open-outline" size={13} color={colors.forest || '#2A7B4C'} />
+                    <Text style={[styles.trackOnlineBtnText, { color: colors.forest || '#2A7B4C' }]}>
+                      TRACK RETURN ON {rental.returnCarrier ? rental.returnCarrier.toUpperCase() : 'COURIER'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <Text style={styles.noTrackingText}>
@@ -425,6 +769,24 @@ export default function RentalLeaseDossierScreen() {
                     : 'Return shipment will appear once dispatched by the borrower.'}
                 </Text>
               )}
+            </View>
+          )}
+
+          {/* Activity Log / Milestones */}
+          {Array.isArray(rental.trackingHistory) && rental.trackingHistory.length > 0 && (
+            <View style={styles.historyContainer}>
+              <Text style={styles.historyLabel}>ACTIVITY & AUDIT LOG</Text>
+              {rental.trackingHistory.map((item: any, idx: number) => (
+                <View key={idx} style={styles.historyRow}>
+                  <View style={styles.historyDot} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.historyNote}>{item.note || item.status}</Text>
+                    <Text style={styles.historyTime}>
+                      {item.timestamp ? new Date(item.timestamp).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                    </Text>
+                  </View>
+                </View>
+              ))}
             </View>
           )}
         </View>
@@ -520,6 +882,47 @@ export default function RentalLeaseDossierScreen() {
           )
         }
       ]}>
+        {/* Lender Approve / Decline buttons */}
+        {isLender && rental.status === 'REQUESTED' && (
+          <View style={styles.dualActionRow}>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.declineBtn]}
+              onPress={() => setDeclineModalVisible(true)}
+              activeOpacity={0.88}
+            >
+              <Ionicons name="close-circle-outline" size={16} color={colors.red || '#E53E3E'} />
+              <Text style={[styles.actionBtnText, { color: colors.red || '#E53E3E' }]}>DECLINE</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.approveBtn]}
+              onPress={handleApprove}
+              disabled={actionLoading}
+              activeOpacity={0.88}
+            >
+              {actionLoading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.white} />
+                  <Text style={styles.actionBtnText}>ACCEPT REQUEST</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Borrower Proceed to Payment button */}
+        {isRenter && rental.status === 'APPROVED' && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: colors.gold || '#D4AF37' }]}
+            onPress={handleProceedToPayment}
+            activeOpacity={0.88}
+          >
+            <Ionicons name="card" size={16} color={colors.white} />
+            <Text style={styles.actionBtnText}>PROCEED TO PAYMENT (₹{totalAmount.toLocaleString()})</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Lender dispatch button */}
         {isLender && rental.status === 'RESERVED' && (
           <TouchableOpacity
@@ -532,6 +935,25 @@ export default function RentalLeaseDossierScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Borrower confirm delivery button */}
+        {isRenter && rental.status === 'DISPATCHED' && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: colors.forest || '#2A7B4C' }]}
+            onPress={handleConfirmDelivery}
+            disabled={actionLoading}
+            activeOpacity={0.88}
+          >
+            {actionLoading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <>
+                <Ionicons name="checkmark-done" size={16} color={colors.white} />
+                <Text style={styles.actionBtnText}>CONFIRM I RECEIVED GARMENT</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+
         {/* Borrower return button */}
         {isRenter && rental.status === 'ACTIVE' && (
           <TouchableOpacity
@@ -541,6 +963,25 @@ export default function RentalLeaseDossierScreen() {
           >
             <Ionicons name="return-down-back" size={16} color={colors.white} />
             <Text style={styles.actionBtnText}>INITIATE RETURN & ENTER TRACKING</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Lender confirm return delivery */}
+        {isLender && rental.status === 'RETURN_DISPATCHED' && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: colors.forest || '#2A7B4C' }]}
+            onPress={handleConfirmReturnDelivery}
+            disabled={actionLoading}
+            activeOpacity={0.88}
+          >
+            {actionLoading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <>
+                <Ionicons name="checkbox-outline" size={16} color={colors.white} />
+                <Text style={styles.actionBtnText}>CONFIRM RETURN RECEIVED</Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
 
@@ -564,7 +1005,7 @@ export default function RentalLeaseDossierScreen() {
         )}
 
         {/* Bidirectional Review Button */}
-        {rental.status === 'RETURNED' && !reviewSubmitted && (
+        {(rental.status === 'RETURNED' || rental.status === 'COMPLETED') && !reviewSubmitted && (
           <TouchableOpacity
             style={[styles.actionBtn, styles.reviewActionBtn]}
             onPress={() => setReviewModalVisible(true)}
@@ -577,6 +1018,65 @@ export default function RentalLeaseDossierScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* DECLINE MODAL (Lender) */}
+      <Modal
+        visible={declineModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeclineModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setDeclineModalVisible(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalPre}>LENDER DECISION</Text>
+                <Text style={styles.modalTitle}>DECLINE RENTAL REQUEST</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.closeBtn}
+                onPress={() => setDeclineModalVisible(false)}
+              >
+                <Ionicons name="close" size={22} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.inputLabel}>REASON FOR DECLINING (OPTIONAL)</Text>
+            <TextInput
+              style={[styles.textInput, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
+              placeholder="e.g. Garment is undergoing professional cleaning, or dates unavailable."
+              placeholderTextColor={colors.textMuted}
+              value={declineReason}
+              onChangeText={setDeclineReason}
+              multiline
+            />
+
+            <View style={styles.dualActionRow}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.declineBtn, { flex: 1 }]}
+                onPress={() => setDeclineModalVisible(false)}
+              >
+                <Text style={[styles.actionBtnText, { color: colors.textPrimary }]}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, { flex: 1, backgroundColor: colors.red || '#E53E3E' }]}
+                onPress={handleDecline}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.actionBtnText}>CONFIRM DECLINE</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* DISPATCH MODAL (Lender) */}
       <Modal
@@ -1334,5 +1834,309 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     marginVertical: 12,
+  },
+
+  // ── Stepper Styles ──
+  stepperContainer: {
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    marginBottom: 12,
+  },
+  stepperScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  stepperItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stepperBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  stepperBadgeDone: {
+    backgroundColor: colors.forest || '#2A7B4C',
+  },
+  stepperBadgeCurrent: {
+    backgroundColor: colors.gold || '#D4AF37',
+    borderWidth: 2,
+    borderColor: colors.crimson,
+  },
+  stepperItemText: {
+    fontSize: 9.5,
+    fontFamily: typography.mono,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginRight: 8,
+  },
+  stepperItemTextDone: {
+    color: colors.forest || '#2A7B4C',
+  },
+  stepperItemTextCurrent: {
+    color: colors.textPrimary,
+    fontWeight: '900',
+  },
+  stepperLine: {
+    width: 16,
+    height: 2,
+    backgroundColor: colors.border,
+    marginRight: 8,
+  },
+  stepperLineDone: {
+    backgroundColor: colors.forest || '#2A7B4C',
+  },
+
+  // ── Status Banner Variants ──
+  statusBannerRequested: {
+    borderColor: colors.gold || '#D4AF37',
+    backgroundColor: 'rgba(212, 175, 55, 0.06)',
+  },
+  statusBannerApproved: {
+    borderColor: colors.forest || '#2A7B4C',
+    backgroundColor: 'rgba(42, 123, 76, 0.08)',
+  },
+  statusBannerDeclined: {
+    borderColor: colors.red || '#E53E3E',
+    backgroundColor: 'rgba(229, 62, 62, 0.08)',
+  },
+  statusBannerReserved: {
+    borderColor: colors.gold || '#D4AF37',
+    backgroundColor: 'rgba(212, 175, 55, 0.06)',
+  },
+  statusBannerDispatched: {
+    borderColor: colors.crimson,
+    backgroundColor: 'rgba(155, 27, 48, 0.06)',
+  },
+  statusBannerReturnDispatched: {
+    borderColor: colors.forest || '#2A7B4C',
+    backgroundColor: 'rgba(42, 123, 76, 0.06)',
+  },
+  statusBannerCompleted: {
+    borderColor: colors.forest || '#2A7B4C',
+    backgroundColor: 'rgba(42, 123, 76, 0.1)',
+  },
+
+  // ── Online Tracking Button ──
+  trackOnlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.crimson,
+    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    marginTop: 10,
+    alignSelf: 'flex-start',
+  },
+  trackOnlineBtnText: {
+    fontSize: 9.5,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.crimson,
+    letterSpacing: 0.5,
+  },
+
+  // ── Activity History Log ──
+  historyContainer: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  historyLabel: {
+    fontSize: 8.5,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 8,
+  },
+  historyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.crimson,
+    marginTop: 5,
+  },
+  historyNote: {
+    fontSize: 11,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  historyTime: {
+    fontSize: 9.5,
+    fontFamily: typography.mono,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  // ── Dual Action Buttons ──
+  dualActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  declineBtn: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: colors.red || '#E53E3E',
+  },
+  approveBtn: {
+    flex: 2,
+    backgroundColor: colors.gold || '#D4AF37',
+  },
+
+  // ── Action Prompt Cards (Lender Approval & Borrower Payment) ──
+  actionPromptCard: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+  },
+  actionPromptTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 12,
+  },
+  actionPromptIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  actionPromptTitle: {
+    fontSize: 12,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+  actionPromptSub: {
+    fontSize: 11,
+    color: colors.textSecond,
+    lineHeight: 16,
+  },
+  actionPromptBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  actionPromptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    gap: 6,
+  },
+  actionPromptDecline: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: colors.red || '#E53E3E',
+  },
+  actionPromptDeclineText: {
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.red || '#E53E3E',
+    letterSpacing: 0.5,
+  },
+  actionPromptAccept: {
+    flex: 2,
+    backgroundColor: colors.crimson,
+  },
+  actionPromptAcceptText: {
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.white,
+    letterSpacing: 0.5,
+  },
+  actionPromptPay: {
+    backgroundColor: colors.forest || '#2A7B4C',
+    width: '100%',
+    marginTop: 4,
+  },
+
+  // ── Rental Review Card & Action Button ──
+  rentalReviewCard: {
+    backgroundColor: colors.bgCard,
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+  },
+  rentalReviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  rentalReviewTitle: {
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    letterSpacing: 0.8,
+  },
+  rentalReviewBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  rentalReviewScore: {
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  rentalReviewComment: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: colors.textSecond,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  rentalReviewFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 8,
+  },
+  rentalReviewMeta: {
+    fontSize: 10,
+    fontFamily: typography.mono,
+    color: colors.textMuted,
   },
 });

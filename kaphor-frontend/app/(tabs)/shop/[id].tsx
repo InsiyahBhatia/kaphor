@@ -95,9 +95,15 @@ export default function GarmentDetailScreen() {
     setBuying(true);
     telemetryService.trackIntent(id as string, 'PURCHASE');
     try {
+      const { data } = await api.post('/orders/cart', { garmentIds: [id as string] });
+      const orderId = data?.data?.id || data?.data?.orderId;
+      if (!orderId) {
+        throw new Error('Could not initiate order session');
+      }
       router.push({
         pathname: '/(tabs)/shop/checkout/delivery',
         params: {
+          orderId,
           garmentId: id as string,
           price: String(priceData.numericRupees || 0),
           title: garment.title,
@@ -106,7 +112,8 @@ export default function GarmentDetailScreen() {
         },
       });
     } catch (e: any) {
-      Alert.alert('Checkout Error', e?.message || 'Could not start checkout.');
+      const msg = e?.response?.data?.message || e?.message || 'Could not start checkout.';
+      Alert.alert('Checkout Error', msg);
     } finally {
       setBuying(false);
     }

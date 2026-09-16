@@ -3,8 +3,8 @@ import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { AuthRequest } from '../middleware/auth';
 import { emitToUser, emitToConversation } from '../lib/socket';
-import { createNotification } from '../services/notification.service';
-import { getDownloadUrl, uploadToS3 } from '../lib/s3';
+import { getDownloadUrl, uploadToCloudinary } from '../lib/cloudinary';
+import { sendPushNotificationToUser } from '../services/pushNotification.service';
 
 // Helper to resolve media
 async function resolveAvatar(avatar: string | null): Promise<string | null> {
@@ -14,8 +14,9 @@ async function resolveAvatar(avatar: string | null): Promise<string | null> {
 
 async function resolveGarmentThumbnail(garment: any) {
   if (!garment || !garment.images || !garment.images.length) return garment;
-  const firstImage = await getDownloadUrl(garment.images[0]);
-  return { ...garment, image: firstImage };
+  const resolvedImages = await Promise.all(garment.images.map((img: string) => getDownloadUrl(img)));
+  const firstImage = resolvedImages[0] || null;
+  return { ...garment, image: firstImage, images: resolvedImages };
 }
 
 // Anti-fraud/anti-phishing heuristic pattern
@@ -31,6 +32,28 @@ const OFF_PLATFORM_KEYWORDS = [
 
 function checkOffPlatformRisk(content: string): boolean {
   return OFF_PLATFORM_KEYWORDS.some((regex) => regex.test(content));
+}
+
+/**
+ * Get total unread direct messages count for authenticated user.
+ */
+export async function getUnreadMessagesCount(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+    const unreadCount = await db.directMessage.count({
+      where: {
+        recipientId: req.user.id,
+        readAt: null,
+      },
+    });
+    res.json({ unreadCount });
+  } catch (error) {
+    logger.error('getUnreadMessagesCount failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
 }
 
 /**
@@ -128,6 +151,42 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           },
         });
 
+        // Find associated active swap if any exists between these participants
+        const activeSwap = await db.swap.findFirst({
+          where: {
+            OR: [
+              { initiatorId: c.participant1Id, receiverId: c.participant2Id },
+              { initiatorId: c.participant2Id, receiverId: c.participant1Id },
+            ],
+            status: { in: ['REQUESTED', 'ACCEPTED', 'AGREEMENT_SIGNED', 'ADDRESS_SHARED', 'SHIPPED', 'BOTH_SHIPPED', 'DELIVERED', 'COMPLETED'] },
+          },
+          orderBy: { updatedAt: 'desc' },
+          select: {
+            id: true,
+            status: true,
+          },
+        });
+
+        // Find associated active rental if any exists between these participants
+        const activeRental = await db.rental.findFirst({
+          where: {
+            OR: [
+              { renterId: c.participant1Id, garment: { sellerId: c.participant2Id } },
+              { renterId: c.participant2Id, garment: { sellerId: c.participant1Id } },
+            ],
+            ...(c.garmentId ? { garmentId: c.garmentId } : {}),
+            status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'COMPLETED'] },
+          },
+          orderBy: { updatedAt: 'desc' },
+          select: {
+            id: true,
+            status: true,
+            totalPrice: true,
+            startDate: true,
+            endDate: true,
+          },
+        });
+
         return {
           id: c.id,
           otherUser: {
@@ -136,6 +195,8 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           },
           garment: garmentData,
           order: activeOrder,
+          swap: activeSwap,
+          rental: activeRental,
           lastMessageText: c.lastMessageText || c.messages[0]?.content || '',
           lastMessageAt: c.lastMessageAt || c.createdAt,
           unreadCount,
@@ -289,7 +350,23 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
       include: {
         participant1: { select: { id: true, displayName: true, username: true, avatar: true, isVerified: true } },
         participant2: { select: { id: true, displayName: true, username: true, avatar: true, isVerified: true } },
-        garment: { select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true } },
+        garment: {
+          select: {
+            id: true,
+            title: true,
+            brand: true,
+            images: true,
+            price: true,
+            rentalPriceDay: true,
+            rentalPriceWeek: true,
+            listingType: true,
+            category: true,
+            size: true,
+            condition: true,
+            description: true,
+            sellerId: true,
+          },
+        },
       },
     });
 
@@ -318,9 +395,13 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
       data: { readAt: new Date() },
     });
 
+    const myRemainingUnread = await db.directMessage.count({
+      where: { recipientId: uid, readAt: null },
+    });
+    emitToUser(uid, 'unread_messages_count_updated', { unreadCount: myRemainingUnread });
+
     const otherUser = conv.participant1Id === uid ? conv.participant2 : conv.participant1;
     const resolvedOtherAvatar = await resolveAvatar(otherUser.avatar);
-    const resolvedGarment = conv.garment ? await resolveGarmentThumbnail(conv.garment) : null;
 
     const resolvedMessages = await Promise.all(
       messages.map(async (m: any) => ({
@@ -343,14 +424,163 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
         ...(conv.garmentId ? { items: { some: { garmentId: conv.garmentId } } } : {}),
       },
       orderBy: { createdAt: 'desc' },
+      include: {
+        items: {
+          include: {
+            garment: {
+              select: {
+                id: true,
+                title: true,
+                brand: true,
+                images: true,
+                price: true,
+                listingType: true,
+                category: true,
+                size: true,
+                condition: true,
+                description: true,
+                sellerId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Find associated swap between these users
+    const associatedSwap = await db.swap.findFirst({
+      where: {
+        OR: [
+          { initiatorId: conv.participant1Id, receiverId: conv.participant2Id },
+          { initiatorId: conv.participant2Id, receiverId: conv.participant1Id },
+        ],
+        ...(conv.garmentId ? { OR: [{ offeredItemId: conv.garmentId }, { requestedItemId: conv.garmentId }] } : {}),
+      },
+      orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
         status: true,
-        totalAmount: true,
-        currency: true,
         createdAt: true,
       },
     });
+
+    // Find associated rental between these users
+    const associatedRental = await db.rental.findFirst({
+      where: {
+        OR: [
+          { renterId: conv.participant1Id, garment: { sellerId: conv.participant2Id } },
+          { renterId: conv.participant2Id, garment: { sellerId: conv.participant1Id } },
+        ],
+        ...(conv.garmentId ? { garmentId: conv.garmentId } : {}),
+        status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'OVERDUE'] },
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        garment: {
+          select: {
+            id: true,
+            title: true,
+            brand: true,
+            images: true,
+            price: true,
+            rentalPriceDay: true,
+            rentalPriceWeek: true,
+            listingType: true,
+            category: true,
+            size: true,
+            condition: true,
+            description: true,
+            sellerId: true,
+          },
+        },
+      },
+    });
+
+    let activeGarment = conv.garment;
+    if (!activeGarment && associatedRental?.garment) {
+      activeGarment = associatedRental.garment as any;
+    } else if (!activeGarment && associatedOrder?.items?.[0]?.garment) {
+      activeGarment = associatedOrder.items[0].garment as any;
+    } else if (!activeGarment) {
+      // Check if either user had a recent intent (rental, purchase, swap, view) on one of the other's garments
+      const recentIntent = await db.behaviourEvent.findFirst({
+        where: {
+          OR: [
+            { userId: conv.participant1Id, garment: { sellerId: conv.participant2Id } },
+            { userId: conv.participant2Id, garment: { sellerId: conv.participant1Id } },
+          ],
+          eventType: { in: ['RENTAL_INTENT', 'PURCHASE_INTENT', 'SWAP_INTENT', 'VIEW'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          garment: {
+            select: {
+              id: true,
+              title: true,
+              brand: true,
+              images: true,
+              price: true,
+              rentalPriceDay: true,
+              rentalPriceWeek: true,
+              listingType: true,
+              category: true,
+              size: true,
+              condition: true,
+              description: true,
+              sellerId: true,
+            },
+          },
+        },
+      });
+      if (recentIntent?.garment) {
+        activeGarment = recentIntent.garment as any;
+        await db.conversation.update({
+          where: { id: conv.id },
+          data: { garmentId: recentIntent.garment.id },
+        }).catch(() => {});
+      }
+    }
+
+    const resolvedGarment = activeGarment ? await resolveGarmentThumbnail(activeGarment) : null;
+
+    // Fetch active garments for BOTH participants so that whichever party has listings (or both),
+    // the chat can display them as selectable/attachable pieces
+    const otherUserId = conv.participant1Id === uid ? conv.participant2Id : conv.participant1Id;
+    const garmentSelectFields = {
+      id: true,
+      title: true,
+      brand: true,
+      images: true,
+      price: true,
+      rentalPriceDay: true,
+      rentalPriceWeek: true,
+      listingType: true,
+      category: true,
+      size: true,
+      condition: true,
+      description: true,
+      sellerId: true,
+    };
+
+    const [otherUserGarments, myGarments] = await Promise.all([
+      db.garment.findMany({
+        where: { sellerId: otherUserId, isActive: true },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: garmentSelectFields,
+      }),
+      db.garment.findMany({
+        where: { sellerId: uid, isActive: true },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: garmentSelectFields,
+      }),
+    ]);
+
+    const [resolvedOtherGarments, resolvedMyGarments] = await Promise.all([
+      Promise.all(otherUserGarments.map((g: any) => resolveGarmentThumbnail(g))),
+      Promise.all(myGarments.map((g: any) => resolveGarmentThumbnail(g))),
+    ]);
 
     res.json({
       data: {
@@ -359,6 +589,10 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
           otherUser: { ...otherUser, avatar: resolvedOtherAvatar },
           garment: resolvedGarment,
           order: associatedOrder,
+          swap: associatedSwap,
+          rental: associatedRental,
+          counterpartyGarments: resolvedOtherGarments,
+          sellerGarments: resolvedMyGarments,
         },
         messages: resolvedMessages,
       },
@@ -366,6 +600,60 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
   } catch (error) {
     logger.error('getConversationMessages failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to load messages' });
+  }
+}
+
+/**
+ * Link or update the active garment for a conversation thread.
+ */
+export async function linkConversationGarment(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+    const { conversationId } = req.params;
+    const { garmentId } = req.body;
+    const uid = req.user.id;
+
+    const conv = await db.conversation.findUnique({
+      where: { id: conversationId },
+    });
+
+    if (!conv || (conv.participant1Id !== uid && conv.participant2Id !== uid)) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Conversation not found' });
+      return;
+    }
+
+    const updated = await db.conversation.update({
+      where: { id: conversationId },
+      data: { garmentId: garmentId || null },
+      include: {
+        garment: {
+          select: {
+            id: true,
+            title: true,
+            brand: true,
+            images: true,
+            price: true,
+            rentalPriceDay: true,
+            rentalPriceWeek: true,
+            listingType: true,
+            category: true,
+            size: true,
+            condition: true,
+            description: true,
+            sellerId: true,
+          },
+        },
+      },
+    });
+
+    const resolvedGarment = updated.garment ? await resolveGarmentThumbnail(updated.garment) : null;
+    res.json({ data: { garment: resolvedGarment } });
+  } catch (error) {
+    logger.error('linkConversationGarment failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to link garment' });
   }
 }
 
@@ -514,7 +802,7 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
         if (matches && matches.length === 3) {
           const mimeType = matches[1];
           const buffer = Buffer.from(matches[2], 'base64');
-          const uploadRes = await uploadToS3(buffer, 'messages', mimeType);
+          const uploadRes = await uploadToCloudinary(buffer, 'messages', mimeType);
           imageUrl = uploadRes.url;
         }
       } catch (uploadErr) {
@@ -562,18 +850,28 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
       message: outgoingData,
     });
 
-    // Background push notification
-    try {
-      await createNotification({
-        userId: recipientId,
+    const recipientUnread = await db.directMessage.count({
+      where: { recipientId, readAt: null },
+    });
+    emitToUser(recipientId, 'unread_messages_count_updated', { unreadCount: recipientUnread });
+
+    // Send push notification to recipient's device (phone notification outside app)
+    const senderName = msg.sender.displayName || msg.sender.username || 'Someone';
+    const messagePreview = cleanPreview || (imageUrl ? '📷 Sent a photo' : 'Sent you a message');
+    sendPushNotificationToUser(
+      recipientId,
+      senderName,
+      messagePreview,
+      {
         type: 'DIRECT_MESSAGE',
-        title: `💬 New message from ${req.user.displayName}`,
-        body: cleanPreview.length > 80 ? cleanPreview.slice(0, 77) + '...' : cleanPreview || '📷 Photo',
-        data: { conversationId, senderId: uid },
-      });
-    } catch (notifErr) {
-      logger.warn('Failed to dispatch message notification', { error: notifErr });
-    }
+        conversationId,
+        url: `/(tabs)/studio/chat?id=${conversationId}`,
+      }
+    ).catch(err => {
+      logger.warn('Direct message push notification failed', { error: err });
+    });
+
+    // Message delivered via realtime socket to conversation & user room (alerts bell reserved for swap, rental, sell, reviews)
 
     res.status(201).json({
       data: outgoingData,

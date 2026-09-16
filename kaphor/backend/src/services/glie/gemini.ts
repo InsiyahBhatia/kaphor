@@ -1,10 +1,12 @@
 /**
  * Gemini API Client for GLIE vision scoring
  * Uses the shared multi-key + multi-model rotation client
+ * Fires Groq vision (fast, free) in background for cross-validation — never blocks user
  */
 
 import { logger } from '../../lib/logger';
 import { generateWithGemini } from '../gemini.service';
+import { generateWithGroqVision } from '../groq.service';
 
 export interface GeminiSubScores {
   condition_score: number;
@@ -23,10 +25,15 @@ export interface GeminiResult {
   model: string;
   rawText?: string;
   error?: string;
+  /** true when Gemini + Groq agreed on condition within ±0.1 */
+  model_agreement?: boolean;
+  /** Groq's independent condition score (background validator) */
+  validator_condition_score?: number;
 }
 
 /**
- * Call Gemini Vision API with the RAG-augmented prompt
+ * Call Gemini Vision API with the RAG-augmented prompt.
+ * Groq fires in background and validates — never blocks the response.
  */
 export async function callGeminiVision(
   systemPrompt: string,
@@ -60,6 +67,17 @@ export async function callGeminiVision(
     }
   }
 
+  // 2. Fire Groq vision in background — never await, never block
+  const groqPromise = generateWithGroqVision(
+    systemPrompt,
+    userPrompt,
+    imageBase64,
+    { temperature: 0.1, maxTokens: 1000 },
+  ).catch((err) => {
+    logger.warn(`[GLIE/Groq] Background call crashed: ${err.message}`);
+    return null as string | null;
+  });
+
   // Strip data: prefix if present
   let base64Data = imageBase64;
   let mimeType = 'image/jpeg';
@@ -89,13 +107,50 @@ export async function callGeminiVision(
       throw new Error('Gemini returned unparseable JSON');
     }
 
+    // 3. Resolve Groq result (already done or still pending — either way we return Gemini now)
+    const groqText = await groqPromise;
+    const groqScores = groqText ? parseGroqResponse(groqText) : null;
+
+    let modelAgreement = false;
+    let validatorCS: number | undefined;
+    if (groqScores) {
+      const gcs = groqScores.condition_score;
+      validatorCS = gcs;
+      modelAgreement = Math.abs(parsed.condition_score - gcs) <= 0.1;
+      logger.info(`[GLIE/MultiModel] Gemini CS=${parsed.condition_score}, Groq CS=${gcs}, agree=${modelAgreement}`);
+    } else {
+      logger.info(`[GLIE/MultiModel] Groq unavailable or failed — using Gemini only`);
+    }
+
     logger.info('[GLIE/Gemini] Assessment succeeded');
     return {
       success: true,
       data: parsed,
       model: 'gemini',
+      model_agreement: groqScores ? modelAgreement : undefined,
+      validator_condition_score: validatorCS,
     };
   } catch (err: any) {
+    // Gemini failed — try Groq as fallback
+    const groqText = await groqPromise;
+    const groqScores = groqText ? parseGroqResponse(groqText) : null;
+    if (groqScores) {
+      logger.warn(`[GLIE/Gemini] Failed, falling back to Groq`);
+      return {
+        success: true,
+        data: {
+          condition_score: groqScores.condition_score,
+          damage_ratio: groqScores.damage_ratio,
+          wear_zone_ratio: groqScores.wear_zone_ratio,
+          stain_ratio: groqScores.stain_ratio,
+          fiber_degradation_score: groqScores.fiber_degradation_score,
+          damage_types: groqScores.damage_types,
+          description: groqText || '',
+        },
+        model: 'groq-qwen3.8-27b',
+      };
+    }
+
     logger.error(`[GLIE/Gemini] Failed: ${err.message}`);
     return {
       success: false,
@@ -103,6 +158,35 @@ export async function callGeminiVision(
       model: 'none',
       error: err.message,
     };
+  }
+}
+
+/**
+ * Parse Groq response — same schema as Gemini but condition_score may come
+ * back on a 0–100 scale. Clamped then normalized to [0,1].
+ */
+function parseGroqResponse(text: string): Omit<GeminiSubScores, 'description'> | null {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    const clamp = (val: any, d = 0.5): number => {
+      const n = Number(val);
+      if (isNaN(n)) return d;
+      return Math.max(0, Math.min(1, n > 1 ? n / 100 : n));
+    };
+    return {
+      condition_score: clamp(parsed.condition_score, 0.5),
+      damage_ratio: clamp(parsed.damage_ratio, 0),
+      wear_zone_ratio: clamp(parsed.wear_zone_ratio, 0),
+      stain_ratio: clamp(parsed.stain_ratio, 0),
+      fiber_degradation_score: clamp(parsed.fiber_degradation_score || parsed.fiber_degradation, 0),
+      damage_types: Array.isArray(parsed.damage_types) ? parsed.damage_types.map(String) : ['none'],
+    };
+  } catch (e) {
+    logger.warn('[GLIE/Groq] JSON parse failed', { error: (e as Error).message, text: text.slice(0, 200) });
+    return null;
   }
 }
 

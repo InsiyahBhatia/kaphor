@@ -1,116 +1,268 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  Modal,
+  Dimensions,
+} from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { aiService } from '../../src/services/aiService';
+import { userService } from '../../src/services/userService';
 import { useToastStore } from '../../src/store/toastStore';
 import { colors, typography } from '../../src/theme';
 import { useAuth } from '../../src/context/AuthContext';
 import { safeBack } from '../../src/utils/navigation';
+import { hapticFeedback } from '../../src/utils/haptics';
+import {
+  AestheticId,
+  AestheticMatchResult,
+  calculateAestheticMatch,
+  AestheticAnswers,
+} from '../../src/services/aestheticRecommendationService';
 
-const QUIZ_DATA = [
-  { 
-    question: "What's your usual look?", 
-    options: ["Simple & Clean", "Sporty/Urban", "Old-school/Retro", "Traditional/Cultural", "Bold & Unique", "Fancy/Polished", "All Black/Dark", "Easy/Loose", "Handmade/Natural", "Classic/Office"],
-    sub: "Choose what feels most like you.",
-    tokens: ["MINIMALIST", "STREETWEAR", "VINTAGE", "CULTURAL", "BOLD", "LUXURY", "DARK", "BOHO", "ARTISANAL", "PREPPY"]
+export const AESTHETIC_IMAGES: Record<string, any> = {
+  'Y2K': require('../../assets/style-guide/1.png'),
+  'Acubi': require('../../assets/style-guide/2.png'),
+  'Business Comfort': require('../../assets/style-guide/3.png'),
+  'Cottagecore': require('../../assets/style-guide/4.png'),
+  'Dark Academia': require('../../assets/style-guide/5.png'),
+  'Dark Coquette': require('../../assets/style-guide/6.png'),
+  'Fleur Noire': require('../../assets/style-guide/7.png'),
+  'Grunge': require('../../assets/style-guide/8.png'),
+  'Mermaid Core': require('../../assets/style-guide/9.png'),
+  'Office Siren': require('../../assets/style-guide/10.png'),
+  'Rockstar Girlfriend': require('../../assets/style-guide/11.png'),
+  'Sade Girl': require('../../assets/style-guide/12.png'),
+  'Vintage': require('../../assets/style-guide/13.png'),
+  'Minimal Desi': require('../../assets/style-guide/14.png'),
+  'Maximal Desi': require('../../assets/style-guide/15.png'),
+  'Soft Girl': require('../../assets/style-guide/16.png'),
+};
+
+interface QuestionDef {
+  id: number;
+  question: string;
+  sub: string;
+  isMulti: boolean;
+  isRanked?: boolean;
+  options: { key: string; label: string; sub?: string }[];
+}
+
+const QUESTIONS: QuestionDef[] = [
+  {
+    id: 1,
+    question: 'Which colours do you find yourself reaching for most?',
+    sub: 'Multiple options allowed',
+    isMulti: true,
+    options: [
+      { key: 'neutrals', label: 'Neutrals', sub: 'Black, white, grey, beige' },
+      { key: 'earthy', label: 'Earthy tones', sub: 'Olive, rust, mustard, terracotta' },
+      { key: 'pastels', label: 'Pastels', sub: 'Baby pink, lavender, mint, powder blue' },
+      { key: 'jewel', label: 'Jewel tones', sub: 'Emerald, wine, sapphire, deep purple' },
+      { key: 'bold', label: 'Bold and bright', sub: 'Red, cobalt, orange, yellow' },
+      { key: 'monochrome', label: 'Monochrome looks', sub: 'All-black or all-white' },
+      { key: 'metallics', label: 'Metallics', sub: 'Gold, silver, bronze' },
+    ],
   },
-  { 
-    question: "How do your clothes fit?", 
-    options: ["Loose & Baggy", "Sharp & Tailored", "Light & Flowing", "Just Right"],
-    sub: "Think about the shape you prefer.",
-    tokens: ["OVERSIZED", "TAILORED", "FLOWING", "REGULAR"]
+  {
+    id: 2,
+    question: 'Do you lean towards lighter or darker shades?',
+    sub: 'Choose one option',
+    isMulti: false,
+    options: [
+      { key: 'light', label: 'Mostly light / pastel' },
+      { key: 'medium', label: 'Medium, muted tones' },
+      { key: 'dark', label: 'Mostly dark, deep shades' },
+      { key: 'mix', label: 'A mix of both' },
+      { key: 'depends', label: 'Depends on the season or occasion' },
+    ],
   },
-  { 
-    question: "Which colors do you wear most?", 
-    options: ["Black, White & Grey", "Browns, Greens & Tans", "Dark Blues & Reds", "Bright & Loud Colors"],
-    sub: "Your go-to color palette.",
-    tokens: ["MONOCHROME", "EARTHY", "JEWEL", "BRIGHT"]
+  {
+    id: 3,
+    question: 'What silhouettes make you feel your best?',
+    sub: 'Multiple options allowed',
+    isMulti: true,
+    options: [
+      { key: 'fitted', label: 'Fitted / body-hugging' },
+      { key: 'a_line', label: 'A-line' },
+      { key: 'straight_cut', label: 'Straight-cut / boxy' },
+      { key: 'wrap', label: 'Wrap-style' },
+      { key: 'structured', label: 'Structured / tailored' },
+      { key: 'flowy', label: 'Flowy / draped' },
+      { key: 'relaxed', label: 'Relaxed / oversized' },
+    ],
   },
-  { 
-    question: "What fabric feels best on you?", 
-    options: ["Easy Cotton & Denim", "Soft Silk & Linen", "Warm Wool & Leather", "Sporty/Technical"],
-    sub: "The material matters.",
-    tokens: ["COTTON", "SILK", "WOOL", "TECHNICAL"]
+  {
+    id: 4,
+    question: 'How would you describe your body shape?',
+    sub: 'Used strictly for fit & sizing, excluded from aesthetic score',
+    isMulti: false,
+    options: [
+      { key: 'pear', label: 'Pear', sub: 'Hips wider than bust' },
+      { key: 'apple', label: 'Apple', sub: 'Fuller midsection' },
+      { key: 'hourglass', label: 'Hourglass', sub: 'Balanced bust and hips, defined waist' },
+      { key: 'rectangle', label: 'Rectangle', sub: 'Balanced, minimal waist definition' },
+      { key: 'inverted_triangle', label: 'Inverted triangle', sub: 'Shoulders/bust wider than hips' },
+      { key: 'prefer_not_say', label: 'Prefer not to say' },
+    ],
   },
-  { 
-    question: "Do you like patterns or prints?", 
-    options: ["No patterns (Plain)", "Traditional Prints", "Big Logos & Graphics", "Simple Stripes/Checks"],
-    sub: "Keep it simple or stand out?",
-    tokens: ["PLAIN", "CULTURAL", "GRAPHIC", "CLASSIC"]
+  {
+    id: 5,
+    question: 'How do you like your clothes to fit?',
+    sub: 'Choose one option',
+    isMulti: false,
+    options: [
+      { key: 'body_con', label: 'Body-con / skin-tight' },
+      { key: 'fitted_comfortable', label: 'Fitted but comfortable' },
+      { key: 'regular', label: 'Regular / true-to-size' },
+      { key: 'relaxed', label: 'Relaxed / loose' },
+      { key: 'oversized', label: 'Oversized' },
+      { key: 'depends', label: 'Depends on the piece' },
+    ],
   },
-  { 
-    question: "How do you want people to see you?", 
-    options: ["Cool & Daring", "Polite & Proper", "Fun & Energetic", "Simple & Easy-going"],
-    sub: "The vibe you want to project.",
-    tokens: ["BOLD", "LUXURY", "STREETWEAR", "MINIMALIST"]
+  {
+    id: 6,
+    question: 'Which fabrics do you love wearing?',
+    sub: 'Multiple options allowed',
+    isMulti: true,
+    options: [
+      { key: 'cotton', label: 'Cotton' },
+      { key: 'linen', label: 'Linen' },
+      { key: 'denim', label: 'Denim' },
+      { key: 'silk', label: 'Silk' },
+      { key: 'wool', label: 'Wool / wool-blend' },
+      { key: 'knits', label: 'Knits / jersey' },
+      { key: 'rayon', label: 'Rayon / viscose' },
+      { key: 'leather', label: 'Leather — real or faux' },
+      { key: 'polyester', label: 'Polyester / synthetic blends' },
+      { key: 'no_preference', label: 'No strong preference' },
+    ],
   },
-  { 
-    question: "What's your goal when buying clothes?", 
-    options: ["Something that lasts forever", "Something rare & unique", "Something eco-friendly", "Something that turns heads"],
-    sub: "Why do you shop?",
-    tokens: ["LUXURY", "VINTAGE", "ARTISANAL", "BOLD"]
+  {
+    id: 7,
+    question: 'Which prints or patterns do you gravitate towards?',
+    sub: 'Multiple options allowed',
+    isMulti: true,
+    options: [
+      { key: 'solids', label: 'Solids — no print' },
+      { key: 'florals', label: 'Florals' },
+      { key: 'stripes', label: 'Stripes' },
+      { key: 'checks', label: 'Checks / plaid' },
+      { key: 'polka_dots', label: 'Polka dots' },
+      { key: 'animal', label: 'Animal print' },
+      { key: 'abstract', label: 'Abstract / geometric' },
+      { key: 'ethnic', label: 'Ethnic prints — block print, ikat, bandhani' },
+      { key: 'typography', label: 'Typography / graphic prints' },
+      { key: 'not_prints', label: 'Not really a prints person' },
+    ],
   },
-  { 
-    question: "Where do you usually find clothes?", 
-    options: ["Thrift/Second-hand stores", "Local makers/Artisans", "New online drops", "Shopping malls/Fancy shops"],
-    sub: "Your shopping habit.",
-    tokens: ["VINTAGE", "ARTISANAL", "STREETWEAR", "LUXURY"]
+  {
+    id: 8,
+    question: 'What do you vibe with?',
+    sub: 'Choose and rank up to 3 aesthetics (or select "I don\'t know / Nothing")',
+    isMulti: false,
+    isRanked: true,
+    options: [
+      { key: 'Y2K', label: 'Y2K nostalgia', sub: 'Playful retro-futurism, metallic sheen & 2000s energy' },
+      { key: 'Office Siren', label: 'Office Siren', sub: 'Tailored corporate chic with razor-sharp sensual edge' },
+      { key: 'Rockstar Girlfriend', label: 'Rockstar Girlfriend', sub: 'Edgy grunge-glam, vintage leather & backstage energy' },
+      { key: 'Sade Girl', label: 'Sade Girl', sub: 'Timeless quiet luxury, backless turtlenecks & gold hoops' },
+      { key: 'Vintage', label: 'Vintage', sub: 'Archival nostalgia, heritage silhouettes & thrifted treasures' },
+      { key: 'Acubi', label: 'Acubi', sub: 'Subversive minimalism, cyber-basics & muted neutral tones' },
+      { key: 'Business Comfort', label: 'Business Comfort', sub: 'Relaxed modern tailoring, breathable luxury & effortless power' },
+      { key: 'Cottagecore', label: 'Cottagecore', sub: 'Romantic rural simplicity, puff sleeves & prairie florals' },
+      { key: 'Dark Academia', label: 'Dark Academia', sub: 'Scholarly brooding elegance, tweed, oxfords & vintage literature' },
+      { key: 'Dark Coquette', label: 'Dark Coquette', sub: 'Gothic romanticism, black lace ribbons & bittersweet charm' },
+      { key: 'Fleur Noire', label: 'Fleur Noire', sub: 'Moody dark botanical elegance, nocturnal luxury & noir florals' },
+      { key: 'Grunge', label: 'Grunge', sub: 'Raw 90s anti-fashion, distressed flannel & effortless angst' },
+      { key: 'Mermaid Core', label: 'Mermaid Core', sub: 'Whimsical ocean sheen, iridescent drapery & seafoam shimmer' },
+      { key: 'Minimal Desi', label: 'Minimal Desi', sub: 'Refined modern Indian silhouettes, clean lines & understated grace' },
+      { key: 'Maximal Desi', label: 'Maximal Desi', sub: 'Opulent Indian craftsmanship, brocades, zari & royal colors' },
+      { key: 'Soft Girl', label: 'Soft Girl', sub: 'Sweet pastel femininity, cozy knits & delicate playful charm' },
+      { key: 'IDK', label: "I don't know / Nothing fits me", sub: "I'm unsure or none of these match — decide purely from my other answers" },
+    ],
   },
-  { 
-    question: "Who is your style twin?", 
-    options: ["The 'No-fuss' person", "The 'City/Urban' person", "The 'Old Hollywood' person", "The 'Arty/Gallery' person"],
-    sub: "Pick your inspiration.",
-    tokens: ["MINIMALIST", "STREETWEAR", "PREPPY", "BOLD"]
-  },
-  { 
-    question: "Do you mix heritage into your style?", 
-    options: ["Yes, all the time", "Once in a while", "I mix in textures", "Not really"],
-    sub: "Connection to your roots.",
-    tokens: ["CULTURAL", "BOHO", "ARTISANAL", "MINIMALIST"]
-  },
-  { 
-    question: "How do you feel about trends?", 
-    options: ["I ignore them completely", "I follow them closely", "I pick what I like", "I make my own rules"],
-    sub: "Are you a trend-follower?",
-    tokens: ["MINIMALIST", "STREETWEAR", "VINTAGE", "BOLD"]
-  },
-  { 
-    question: "How often do you get new clothes?", 
-    options: ["Once a month", "Once a week", "Rarely/When needed", "All the time"],
-    sub: "Your wardrobe frequency.",
-    tokens: ["MINIMALIST", "STREETWEAR", "PREPPY", "LUXURY"]
-  }
 ];
 
 export default function StyleQuizScreen() {
   const router = useRouter();
   const { user, setUser } = useAuth();
-  const [answers, setAnswers] = useState<Record<number, string[]>>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToastStore();
 
-  const currentQuestion = QUIZ_DATA[currentIndex];
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string[]>>({});
+  const [rankedVibes, setRankedVibes] = useState<AestheticId[]>([]);
+  const [isIdkSelected, setIsIdkSelected] = useState(false);
+  const [fullscreenAesthetic, setFullscreenAesthetic] = useState<string | null>(null);
+  const [matchResult, setMatchResult] = useState<AestheticMatchResult | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const currentQuestion = QUESTIONS[currentIndex];
   const currentSelections = answers[currentIndex] || [];
 
-  const toggleOption = (token: string) => {
-    const exists = currentSelections.includes(token);
-    const updated = exists
-      ? currentSelections.filter((t) => t !== token)
-      : [...currentSelections, token];
-    setAnswers({ ...answers, [currentIndex]: updated });
+  const handleToggleOption = (key: string) => {
+    hapticFeedback.light();
+    if (currentQuestion.isRanked) {
+      if (key === 'IDK') {
+        const nextIdk = !isIdkSelected;
+        setIsIdkSelected(nextIdk);
+        if (nextIdk) {
+          setRankedVibes([]);
+        }
+        return;
+      }
+
+      // If choosing an aesthetic, uncheck IDK
+      setIsIdkSelected(false);
+      const aestheticKey = key as AestheticId;
+      if (rankedVibes.includes(aestheticKey)) {
+        setRankedVibes(rankedVibes.filter((v) => v !== aestheticKey));
+      } else {
+        if (rankedVibes.length >= 3) {
+          Alert.alert('Maximum 3', 'You can pick and rank up to 3 aesthetic vibes.');
+          return;
+        }
+        setRankedVibes([...rankedVibes, aestheticKey]);
+      }
+      return;
+    }
+
+    if (currentQuestion.isMulti) {
+      const exists = currentSelections.includes(key);
+      const updated = exists
+        ? currentSelections.filter((k) => k !== key)
+        : [...currentSelections, key];
+      setAnswers({ ...answers, [currentIndex]: updated });
+    } else {
+      setAnswers({ ...answers, [currentIndex]: [key] });
+    }
   };
 
   const handleNext = () => {
-    if (currentSelections.length === 0) {
-      Alert.alert('Selection Required', 'Please pick at least one option!');
+    if (currentQuestion.isRanked) {
+      if (rankedVibes.length === 0 && !isIdkSelected) {
+        Alert.alert(
+          'Selection Required',
+          'Please select up to 3 vibes, or pick "I don\'t know / Nothing fits me" to continue.'
+        );
+        return;
+      }
+    } else if (currentSelections.length === 0) {
+      Alert.alert('Selection Required', 'Please pick an option to continue.');
       return;
     }
-    if (currentIndex < QUIZ_DATA.length - 1) {
+
+    if (currentIndex < QUESTIONS.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      handleFinish();
+      computeAndShowResult();
     }
   };
 
@@ -122,44 +274,241 @@ export default function StyleQuizScreen() {
     }
   };
 
-  const handleFinish = async () => {
+  const computeAndShowResult = async () => {
     setSubmitting(true);
+    hapticFeedback.medium();
+
+    const formattedAnswers: AestheticAnswers = {
+      q1_colours: answers[0] || [],
+      q2_shades: answers[1]?.[0] || 'medium',
+      q3_silhouettes: answers[2] || [],
+      q4_body_shape: answers[3]?.[0] || undefined,
+      q5_fitting: answers[4]?.[0] || 'fitted_comfortable',
+      q6_fabrics: answers[5] || [],
+      q7_prints: answers[6] || [],
+      q8_vibe_ranked: isIdkSelected ? [] : rankedVibes,
+    };
+
+    const result = calculateAestheticMatch(formattedAnswers);
+    setMatchResult(result);
+
     try {
-      const allTokens = Object.values(answers).flat();
-      await aiService.submitStyleQuiz(allTokens);
-      showToast('STYLE DNA READY', 'success');
-      
-      // Update the user in AuthContext so ProtectedRoute sees onboardingDone = true
-      if (user) {
-        setUser({ ...user, onboardingDone: true });
+      // Submit User Style Vector to backend AI engine
+      await aiService.submitStyleQuiz([
+        result.primary.aesthetic.name,
+        result.closeSecond ? result.closeSecond.aesthetic.name : '',
+        ...formattedAnswers.q1_colours,
+        ...formattedAnswers.q3_silhouettes,
+        ...formattedAnswers.q6_fabrics,
+        ...formattedAnswers.q7_prints,
+      ]);
+
+      // Directly persist styleAesthetic on user profile
+      try {
+        await userService.updateMe({ styleAesthetic: result.primary.aesthetic.id });
+      } catch {
+        // Non-blocking
       }
-      
-      router.replace('/(tabs)');
-    } catch (err: any) {
-      showToast('FAILED // RETRY', 'error');
+
+      if (user) {
+        setUser({
+          ...user,
+          styleAesthetic: result.primary.aesthetic.id,
+          onboardingDone: true,
+        });
+      }
+    } catch {
+      // Non-blocking fallback
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleProceedToApp = () => {
+    hapticFeedback.success();
+    showToast('AESTHETIC MATCH APPLIED', 'success');
+    router.replace('/(tabs)');
   };
 
   const handleSkip = async () => {
     setSubmitting(true);
     try {
       await aiService.skipStyleQuiz();
-      showToast('PROFILE UPDATED', 'success');
       if (user) {
         setUser({ ...user, onboardingDone: true });
       }
       router.replace('/(tabs)');
-    } catch (err) {
-      router.replace('/(tabs)'); // Fallback redirect
+    } catch {
+      router.replace('/(tabs)');
     } finally {
       setSubmitting(false);
     }
   };
 
+  // ══════════════════════════════════════════════════════════════════════════════
+  // RESULT VIEW
+  // ══════════════════════════════════════════════════════════════════════════════
+  if (matchResult) {
+    const { primary, closeSecond } = matchResult;
+
+    return (
+      <>
+        <ScrollView style={styles.container} contentContainerStyle={styles.resultScroll} showsVerticalScrollIndicator={false}>
+          {/* Header Badge */}
+          <View style={styles.resultHeaderCard}>
+            <Text style={styles.resultHeaderRank}>K♦</Text>
+            <Text style={styles.resultSubtitle}>KAPHOR DOSSIER — AESTHETIC-MATCH VERIFIED</Text>
+            <Text style={styles.resultMainTitle}>YOUR STYLE ARCHETYPE</Text>
+          </View>
+
+          {/* Primary Match Card */}
+          <View style={styles.primaryAestheticCard}>
+            <View style={styles.primaryBadgeRow}>
+              <View style={styles.aestheticPill}>
+                <Text style={styles.aestheticPillText}>PRIMARY ARCHETYPE</Text>
+              </View>
+            </View>
+
+            <Text style={styles.aestheticNameTitle}>{primary.aesthetic.name.toUpperCase()}</Text>
+            <Text style={styles.aestheticTagline}>{primary.aesthetic.tagline}</Text>
+            <Text style={styles.aestheticDescription}>{primary.aesthetic.description}</Text>
+
+            {/* High-Resolution Style Guide Moodboard Poster (Tap for Full Screen) */}
+            {AESTHETIC_IMAGES[primary.aesthetic.id] && (
+              <TouchableOpacity
+                style={styles.primaryAestheticHeroWrap}
+                onPress={() => setFullscreenAesthetic(primary.aesthetic.id)}
+                activeOpacity={0.92}
+              >
+                <Image
+                  source={AESTHETIC_IMAGES[primary.aesthetic.id]}
+                  style={styles.primaryAestheticHeroImage}
+                  contentFit="contain"
+                />
+                <View style={styles.tapToExpandOverlay}>
+                  <Ionicons name="expand" size={13} color={colors.cream} />
+                  <Text style={styles.tapToExpandText}>TAP TO EXPAND FULL SCREEN</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.dividerLine} />
+
+            {/* Essentials */}
+            <Text style={styles.essentialsHeading}>■ YOUR ESSENTIALS</Text>
+            <View style={styles.essentialsList}>
+              {primary.aesthetic.essentials.map((item, idx) => (
+                <View key={idx} style={styles.essentialRow}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.essentialItemText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Close Second Card (if applicable) */}
+          {closeSecond && (
+            <View style={styles.secondaryAestheticCard}>
+              <View style={styles.secondaryHeaderRow}>
+                <View style={styles.closeSecondBadge}>
+                  <Text style={styles.closeSecondBadgeText}>CLOSE SECOND</Text>
+                </View>
+              </View>
+              <Text style={styles.secondaryName}>{closeSecond.aesthetic.name.toUpperCase()}</Text>
+              <Text style={styles.secondaryTagline}>{closeSecond.aesthetic.tagline}</Text>
+
+              {AESTHETIC_IMAGES[closeSecond.aesthetic.id] && (
+                <TouchableOpacity
+                  style={styles.secondaryAestheticThumbWrap}
+                  onPress={() => setFullscreenAesthetic(closeSecond.aesthetic.id)}
+                  activeOpacity={0.92}
+                >
+                  <Image
+                    source={AESTHETIC_IMAGES[closeSecond.aesthetic.id]}
+                    style={styles.secondaryAestheticThumb}
+                    contentFit="contain"
+                  />
+                  <View style={styles.tapToExpandOverlay}>
+                    <Ionicons name="expand" size={13} color={colors.cream} />
+                    <Text style={styles.tapToExpandText}>TAP FOR FULL SCREEN</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* CTA */}
+          <TouchableOpacity
+            style={styles.exploreMarketplaceBtn}
+            onPress={handleProceedToApp}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.exploreBtnText}>EXPLORE CURATED ARCHIVE →</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* FULL SCREEN LIGHTBOX MODAL ON FINAL SCREEN */}
+        <Modal
+          visible={Boolean(fullscreenAesthetic)}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setFullscreenAesthetic(null)}
+        >
+          <View style={styles.fullscreenModalBackdrop}>
+            {/* Top Header */}
+            <View style={styles.fullscreenTopBar}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fullscreenAestheticTitle}>
+                  {fullscreenAesthetic?.toUpperCase()}
+                </Text>
+                <Text style={styles.fullscreenAestheticSub}>
+                  AESTHETIC STYLE GUIDE & MOODBOARD POSTER
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.fullscreenCloseBtn}
+                onPress={() => setFullscreenAesthetic(null)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="close" size={26} color={colors.cream} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Centered Large Image */}
+            {Boolean(fullscreenAesthetic && AESTHETIC_IMAGES[fullscreenAesthetic]) && (
+              <View style={styles.fullscreenImageContainer}>
+                <Image
+                  source={AESTHETIC_IMAGES[fullscreenAesthetic!]}
+                  style={styles.fullscreenImage}
+                  contentFit="contain"
+                />
+              </View>
+            )}
+
+            {/* Bottom Actions */}
+            <View style={styles.fullscreenBottomBar}>
+              <TouchableOpacity
+                style={styles.fullscreenSelectBtn}
+                onPress={() => setFullscreenAesthetic(null)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="checkmark-circle" size={18} color={colors.charcoal} />
+                <Text style={styles.fullscreenSelectBtnText}>CLOSE FULL SCREEN VIEW</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // QUESTIONNAIRE VIEW
+  // ══════════════════════════════════════════════════════════════════════════════
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HERO SECTION */}
       <View style={styles.heroCard}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -169,11 +518,11 @@ export default function StyleQuizScreen() {
           </TouchableOpacity>
         </View>
         <Text style={styles.heroTitle}>✦ DOSSIER ✦</Text>
-        
+
         <View style={styles.heroBottomBar}>
           <View>
-            <Text style={styles.heroSubTitle}>QUIZ ANALYSIS</Text>
-            <Text style={styles.heroItalic}>{currentQuestion.sub} (Select 1 or more)</Text>
+            <Text style={styles.heroSubTitle}>AESTHETIC-MATCH ENGINE</Text>
+            <Text style={styles.heroItalic}>{currentQuestion.sub}</Text>
           </View>
           <Text style={styles.heroZero}>{currentIndex + 1}</Text>
         </View>
@@ -191,109 +540,318 @@ export default function StyleQuizScreen() {
         </View>
 
         <View style={styles.progressHeader}>
-           <Text style={styles.progressText}>SIGNAL {currentIndex + 1} OF {QUIZ_DATA.length}</Text>
-           <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${((currentIndex + 1) / QUIZ_DATA.length) * 100}%` }]} />
-           </View>
+          <Text style={styles.progressText}>
+            QUESTION {currentIndex + 1} OF {QUESTIONS.length}
+          </Text>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${((currentIndex + 1) / QUESTIONS.length) * 100}%` },
+              ]}
+            />
+          </View>
         </View>
 
-        <Text style={styles.questionText}>
-          {currentQuestion.question}
-        </Text>
+        <Text style={styles.questionText}>{currentQuestion.question}</Text>
 
-        <View style={styles.optionsContainer}>
-          {currentQuestion.options.map((option, idx) => {
-            const token = currentQuestion.tokens[idx];
-            const isActive = currentSelections.includes(token);
+        {/* Options */}
+        <View style={currentQuestion.isRanked ? styles.vibeCardsContainer : styles.optionsContainer}>
+          {currentQuestion.options.map((opt) => {
+            if (currentQuestion.isRanked) {
+              const isIdk = opt.key === 'IDK';
+              const rankIndex = rankedVibes.indexOf(opt.key as AestheticId);
+              const isSelected = isIdk ? isIdkSelected : rankIndex !== -1;
+              const imgSource = AESTHETIC_IMAGES[opt.key];
+
+              if (isIdk) {
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[styles.idkOptionCard, isSelected && styles.idkOptionCardActive]}
+                    onPress={() => handleToggleOption(opt.key)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={[styles.idkIconCircle, isSelected && styles.idkIconCircleActive]}>
+                      <Ionicons
+                        name={isSelected ? 'checkmark' : 'help-outline'}
+                        size={18}
+                        color={isSelected ? colors.cream : colors.charcoal}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.idkTitle, isSelected && styles.idkTitleActive]}>
+                        {opt.label}
+                      </Text>
+                      {Boolean(opt.sub) && (
+                        <Text style={styles.idkSubtitle}>{opt.sub}</Text>
+                      )}
+                    </View>
+                    <View style={[styles.idkRadio, isSelected && styles.idkRadioActive]}>
+                      {isSelected && <View style={styles.idkRadioDot} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              }
+
+              return (
+                <View
+                  key={opt.key}
+                  style={[styles.vibeCardLarge, isSelected && styles.vibeCardLargeActive]}
+                >
+                  {/* Card Header with Rank & Full Screen CTA */}
+                  <View style={styles.vibeCardHeader}>
+                    <TouchableOpacity
+                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                      onPress={() => handleToggleOption(opt.key)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={[styles.vibeRankBadge, isSelected && styles.vibeRankBadgeActive]}>
+                        <Text style={[styles.vibeRankBadgeText, isSelected && styles.vibeRankBadgeTextActive]}>
+                          {isSelected ? `#${rankIndex + 1}` : '○'}
+                        </Text>
+                      </View>
+                      <Text style={[styles.vibeCardTitle, isSelected && styles.vibeCardTitleActive]}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.expandFullscreenBtn}
+                      onPress={() => setFullscreenAesthetic(opt.key)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="scan-outline" size={13} color={colors.charcoal} />
+                      <Text style={styles.expandFullscreenText}>FULL SCREEN</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Big Lookbook Moodboard Poster (Tap for Full Screen) */}
+                  {imgSource && (
+                    <TouchableOpacity
+                      style={styles.vibeImageWrapLarge}
+                      onPress={() => setFullscreenAesthetic(opt.key)}
+                      activeOpacity={0.92}
+                    >
+                      <Image
+                        source={imgSource}
+                        style={styles.vibeImageLarge}
+                        contentFit="contain"
+                      />
+                      <View style={styles.tapToExpandOverlay}>
+                        <Ionicons name="expand" size={13} color={colors.cream} />
+                        <Text style={styles.tapToExpandText}>TAP TO EXPAND FULL SCREEN</Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Subtitle / Description */}
+                  {Boolean(opt.sub) && (
+                    <Text style={styles.vibeCardSubLarge}>{opt.sub}</Text>
+                  )}
+
+                  {/* Tap to Select / Rank Button */}
+                  <TouchableOpacity
+                    style={[styles.vibeSelectPill, isSelected && styles.vibeSelectPillActive]}
+                    onPress={() => handleToggleOption(opt.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={isSelected ? 'checkmark-circle' : 'add-circle-outline'}
+                      size={15}
+                      color={isSelected ? colors.white : colors.charcoal}
+                    />
+                    <Text style={[styles.vibeSelectPillText, isSelected && styles.vibeSelectPillTextActive]}>
+                      {isSelected
+                        ? `SELECTED AS VIBE #${rankIndex + 1} (TAP TO REMOVE)`
+                        : 'SELECT AS AESTHETIC VIBE'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            }
+
+            // Standard options for Questions 1-7
+            const isSelected = currentSelections.includes(opt.key);
             return (
               <TouchableOpacity
-                key={option}
-                style={[styles.optionRow, isActive && styles.optionRowActive]}
-                onPress={() => toggleOption(token)}
-                activeOpacity={0.7}
+                key={opt.key}
+                style={[styles.optionRow, isSelected && styles.optionRowActive]}
+                onPress={() => handleToggleOption(opt.key)}
+                activeOpacity={0.8}
               >
-                <View style={[styles.radioOutline, isActive && styles.radioFilled]}>
-                  {isActive && <Ionicons name="checkmark" size={12} color={colors.white} />}
+                {/* Checkbox / Radio */}
+                <View style={[styles.radioOutline, isSelected && styles.radioFilled]}>
+                  {isSelected && <View style={styles.radioInner} />}
                 </View>
-                
-                <Text style={[styles.optionText, isActive && styles.optionTextActive]}>
-                  {option.toUpperCase()}
-                </Text>
-                
-                <Text style={[styles.suitIcon, isActive && { color: colors.red }]}>
-                  {isActive ? '♥' : '♦'}
-                </Text>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
+                    {opt.label}
+                  </Text>
+                  {Boolean(opt.sub) && (
+                    <Text style={styles.optionSubText}>{opt.sub}</Text>
+                  )}
+                </View>
+
+                {isSelected && (
+                  <Ionicons name="checkmark" size={16} color={colors.red} />
+                )}
               </TouchableOpacity>
             );
           })}
         </View>
 
+        {/* Nav Buttons */}
         <View style={styles.navButtonsRow}>
-          <TouchableOpacity 
-            style={styles.backBtn} 
-            onPress={handleBack}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Text style={styles.backBtnText}>[← BACK]</Text>
+          <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+            <Text style={styles.backBtnText}>PREV</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.nextBtn, currentSelections.length === 0 && { opacity: 0.5 }]}
-            onPress={handleNext}
-            disabled={submitting || currentSelections.length === 0}
-          >
+
+          <TouchableOpacity style={styles.nextBtn} onPress={handleNext} disabled={submitting}>
             {submitting ? (
-              <ActivityIndicator color={colors.white} />
+              <ActivityIndicator color={colors.cream} size="small" />
             ) : (
               <Text style={styles.nextBtnText}>
-                {currentIndex === QUIZ_DATA.length - 1 ? 'REVEAL DNA →' : 'NEXT →'}
+                {currentIndex === QUESTIONS.length - 1 ? 'GENERATE STYLE PROFILE →' : 'NEXT STEP →'}
               </Text>
             )}
           </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
+
+    {/* FULL SCREEN LIGHTBOX MODAL */}
+    <Modal
+      visible={Boolean(fullscreenAesthetic)}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setFullscreenAesthetic(null)}
+    >
+      <View style={styles.fullscreenModalBackdrop}>
+        {/* Top Header */}
+        <View style={styles.fullscreenTopBar}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.fullscreenAestheticTitle}>
+              {fullscreenAesthetic?.toUpperCase()}
+            </Text>
+            <Text style={styles.fullscreenAestheticSub}>
+              AESTHETIC STYLE GUIDE & MOODBOARD
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.fullscreenCloseBtn}
+            onPress={() => setFullscreenAesthetic(null)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close" size={26} color={colors.cream} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Centered Large Image */}
+        {Boolean(fullscreenAesthetic && AESTHETIC_IMAGES[fullscreenAesthetic]) && (
+          <View style={styles.fullscreenImageContainer}>
+            <Image
+              source={AESTHETIC_IMAGES[fullscreenAesthetic!]}
+              style={styles.fullscreenImage}
+              contentFit="contain"
+            />
+          </View>
+        )}
+
+        {/* Bottom Actions */}
+        <View style={styles.fullscreenBottomBar}>
+          {fullscreenAesthetic && (
+            <TouchableOpacity
+              style={[
+                styles.fullscreenSelectBtn,
+                rankedVibes.includes(fullscreenAesthetic as AestheticId) && styles.fullscreenSelectBtnActive,
+              ]}
+              onPress={() => {
+                if (fullscreenAesthetic) {
+                  handleToggleOption(fullscreenAesthetic);
+                }
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons
+                name={
+                  rankedVibes.includes(fullscreenAesthetic as AestheticId)
+                    ? 'checkmark-circle'
+                    : 'add-circle-outline'
+                }
+                size={20}
+                color={
+                  rankedVibes.includes(fullscreenAesthetic as AestheticId)
+                    ? colors.white
+                    : colors.charcoal
+                }
+              />
+              <Text
+                style={[
+                  styles.fullscreenSelectBtnText,
+                  rankedVibes.includes(fullscreenAesthetic as AestheticId) &&
+                    styles.fullscreenSelectBtnTextActive,
+                ]}
+              >
+                {rankedVibes.includes(fullscreenAesthetic as AestheticId)
+                  ? `SELECTED AS VIBE #${
+                      rankedVibes.indexOf(fullscreenAesthetic as AestheticId) + 1
+                    } — TAP TO REMOVE`
+                  : `CHOOSE ${fullscreenAesthetic.toUpperCase()} AS VIBE`}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </Modal>
+  </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0609', 
-    padding: 16,
-    paddingTop: 32,
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 16,
+    paddingTop: 48,
   },
   heroCard: {
     backgroundColor: colors.charcoal,
-    borderRadius: 8,
     borderWidth: 2,
-    borderColor: colors.charcoal,
-    height: 160,
+    borderColor: colors.red,
     padding: 16,
-    marginBottom: 20,
-    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   heroRank: {
     fontFamily: typography.ranks,
-    fontSize: 24,
-    color: colors.red,
+    fontSize: 20,
+    color: colors.cream,
+    fontWeight: 'bold',
   },
   heroTitle: {
-    fontFamily: typography.ranks,
-    fontSize: 22,
+    fontFamily: typography.headings,
+    fontSize: 32,
     color: colors.cream,
     textAlign: 'center',
-    letterSpacing: 4,
+    marginVertical: 12,
+    letterSpacing: 3,
   },
   heroBottomBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(245, 240, 232, 0.2)',
+    paddingTop: 8,
   },
   heroSubTitle: {
-    fontFamily: typography.headings,
+    fontFamily: typography.mono,
+    fontSize: 10,
     color: colors.cream,
-    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
   heroItalic: {
     fontFamily: typography.mono,
@@ -303,10 +861,11 @@ const styles = StyleSheet.create({
   },
   heroZero: {
     fontFamily: typography.ranks,
-    fontSize: 40,
+    fontSize: 36,
     color: colors.red,
-    lineHeight: 44,
+    lineHeight: 40,
   },
+
   quizPanel: {
     backgroundColor: colors.cream,
     borderWidth: 2,
@@ -358,35 +917,37 @@ const styles = StyleSheet.create({
   },
   questionText: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 20,
     color: colors.charcoal,
     paddingHorizontal: 16,
-    marginVertical: 16,
+    marginVertical: 14,
     letterSpacing: 0.5,
+    lineHeight: 26,
   },
   optionsContainer: {
     paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    height: 48,
+    paddingVertical: 10,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.1)',
+    borderColor: 'rgba(26,26,26,0.12)',
     backgroundColor: colors.white,
+    borderRadius: 4,
   },
   optionRowActive: {
     backgroundColor: '#F0E8D5',
     borderColor: colors.red,
   },
   radioOutline: {
-    width: 14,
-    height: 14,
+    width: 16,
+    height: 16,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.2)',
+    borderColor: 'rgba(26,26,26,0.25)',
     marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -395,25 +956,378 @@ const styles = StyleSheet.create({
     borderColor: colors.red,
   },
   radioInner: {
-    width: 6,
-    height: 6,
+    width: 8,
+    height: 8,
     backgroundColor: colors.red,
   },
-  optionText: {
-    flex: 1,
+  rankCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(26,26,26,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  rankCircleActive: {
+    borderColor: colors.red,
+    backgroundColor: colors.red,
+  },
+  rankCircleText: {
     fontFamily: typography.mono,
     fontSize: 10,
-    color: 'rgba(26,26,26,0.6)',
+    color: colors.textMuted,
     fontWeight: '800',
+  },
+  rankCircleTextActive: {
+    color: colors.cream,
+  },
+  optionText: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    color: colors.charcoal,
+    fontWeight: '700',
   },
   optionTextActive: {
     color: colors.charcoal,
   },
-  suitIcon: {
-    fontFamily: typography.ranks,
-    fontSize: 14,
-    color: 'rgba(26,26,26,0.15)',
+  optionSubText: {
+    fontFamily: typography.body,
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 2,
   },
+
+  /* Vibe Cards & Lookbook Images */
+  vibeCardsContainer: {
+    paddingHorizontal: 16,
+    gap: 14,
+    marginBottom: 20,
+  },
+  vibeCardLarge: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: 'rgba(26,26,26,0.15)',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+    gap: 12,
+  },
+  vibeCardLargeActive: {
+    borderColor: colors.charcoal,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+    backgroundColor: '#FFFEFC',
+  },
+  vibeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  vibeCardTitle: {
+    fontFamily: typography.headings,
+    fontSize: 16,
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  vibeCardTitleActive: {
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  vibeRankBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: 'rgba(26,26,26,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  vibeRankBadgeActive: {
+    backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
+  },
+  vibeRankBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  vibeRankBadgeTextActive: {
+    color: colors.cream,
+  },
+  expandFullscreenBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(26,26,26,0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(26,26,26,0.15)',
+  },
+  expandFullscreenText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  vibeImageWrapLarge: {
+    width: '100%',
+    height: 320,
+    borderRadius: 6,
+    overflow: 'hidden',
+    backgroundColor: '#F7F5F0',
+    borderWidth: 1,
+    borderColor: 'rgba(26,26,26,0.12)',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vibeImageLarge: {
+    width: '100%',
+    height: '100%',
+  },
+  tapToExpandOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(26,26,26,0.85)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  tapToExpandText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: colors.cream,
+    letterSpacing: 0.5,
+  },
+  vibeCardSubLarge: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 17,
+  },
+  vibeSelectPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(26,26,26,0.08)',
+    paddingVertical: 10,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(26,26,26,0.18)',
+  },
+  vibeSelectPillActive: {
+    backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
+  },
+  vibeSelectPillText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  vibeSelectPillTextActive: {
+    color: colors.cream,
+  },
+
+  /* Full Screen Lightbox Modal */
+  fullscreenModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(10, 10, 12, 0.96)',
+    paddingTop: 48,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+  },
+  fullscreenTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  fullscreenAestheticTitle: {
+    fontFamily: typography.headings,
+    fontSize: 22,
+    color: colors.cream,
+    letterSpacing: 1,
+  },
+  fullscreenAestheticSub: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: 'rgba(245, 240, 232, 0.6)',
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  fullscreenCloseBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImageContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  fullscreenImage: {
+    width: '100%',
+    height: '100%',
+    maxWidth: 950,
+    maxHeight: '94%',
+  },
+  fullscreenBottomBar: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  fullscreenSelectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.cream,
+    height: 48,
+    borderRadius: 4,
+  },
+  fullscreenSelectBtnActive: {
+    backgroundColor: colors.crimson,
+  },
+  fullscreenSelectBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  fullscreenSelectBtnTextActive: {
+    color: colors.white,
+  },
+  idkOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(26,26,26,0.25)',
+    backgroundColor: '#FAF8F5',
+    borderRadius: 6,
+    gap: 12,
+    marginTop: 6,
+  },
+  idkOptionCardActive: {
+    backgroundColor: '#F5EBE1',
+    borderColor: colors.charcoal,
+    borderStyle: 'solid',
+  },
+  idkIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: 'rgba(26,26,26,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
+  idkIconCircleActive: {
+    backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
+  },
+  idkTitle: {
+    fontFamily: typography.headings,
+    fontSize: 13,
+    color: colors.charcoal,
+    fontWeight: '700',
+  },
+  idkTitleActive: {
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  idkSubtitle: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    marginTop: 2,
+    lineHeight: 13,
+  },
+  idkRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(26,26,26,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
+  idkRadioActive: {
+    borderColor: colors.charcoal,
+    backgroundColor: colors.charcoal,
+  },
+  idkRadioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.cream,
+  },
+  primaryAestheticHeroWrap: {
+    width: '100%',
+    height: 440,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginVertical: 14,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: '#FAF8F5',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryAestheticHeroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  secondaryAestheticThumbWrap: {
+    width: '100%',
+    height: 320,
+    borderRadius: 6,
+    overflow: 'hidden',
+    marginTop: 12,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: '#FAF8F5',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryAestheticThumb: {
+    width: '100%',
+    height: '100%',
+  },
+
   navButtonsRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -426,15 +1340,16 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.white,
   },
   backBtnText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 10,
     color: colors.charcoal,
     fontWeight: '800',
   },
   nextBtn: {
-    flex: 2,
+    flex: 2.5,
     height: 44,
     backgroundColor: colors.charcoal,
     justifyContent: 'center',
@@ -442,8 +1357,193 @@ const styles = StyleSheet.create({
   },
   nextBtnText: {
     fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.cream,
+    fontWeight: '800',
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // RESULTS STYLING
+  // ══════════════════════════════════════════════════════════════════════════════
+  resultScroll: {
+    paddingBottom: 60,
+  },
+  resultHeaderCard: {
+    backgroundColor: colors.charcoal,
+    borderWidth: 2,
+    borderColor: colors.gold,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  resultHeaderRank: {
+    fontFamily: typography.ranks,
+    fontSize: 28,
+    color: colors.gold,
+  },
+  resultSubtitle: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.cream,
+    letterSpacing: 1.5,
+    marginTop: 4,
+  },
+  resultMainTitle: {
+    fontFamily: typography.headings,
+    fontSize: 26,
+    color: colors.cream,
+    letterSpacing: 2,
+    marginTop: 6,
+  },
+
+  primaryAestheticCard: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    padding: 18,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  primaryBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  aestheticPill: {
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 3,
+  },
+  aestheticPillText: {
+    fontFamily: typography.mono,
     fontSize: 9,
     color: colors.cream,
     fontWeight: '800',
+    letterSpacing: 1,
+  },
+  matchPercentBadge: {
+    fontFamily: typography.mono,
+    fontSize: 14,
+    fontWeight: '900',
+    color: colors.red,
+  },
+  aestheticNameTitle: {
+    fontFamily: typography.headings,
+    fontSize: 24,
+    color: colors.charcoal,
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+  aestheticTagline: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    color: colors.red,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  aestheticDescription: {
+    fontFamily: typography.body,
+    fontSize: 13,
+    color: 'rgba(30,31,34,0.75)',
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  dividerLine: {
+    height: 1,
+    backgroundColor: 'rgba(26,26,26,0.1)',
+    marginVertical: 12,
+  },
+  essentialsHeading: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    color: colors.charcoal,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  essentialsList: {
+    gap: 6,
+  },
+  essentialRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  bulletDot: {
+    color: colors.red,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  essentialItemText: {
+    flex: 1,
+    fontFamily: typography.body,
+    fontSize: 12.5,
+    color: colors.charcoal,
+    lineHeight: 18,
+  },
+
+  secondaryAestheticCard: {
+    backgroundColor: 'rgba(247, 244, 238, 0.95)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(26,26,26,0.3)',
+    padding: 14,
+    borderRadius: 6,
+    marginBottom: 20,
+  },
+  secondaryHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  closeSecondBadge: {
+    backgroundColor: 'rgba(26,26,26,0.12)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  closeSecondBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.charcoal,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  secondaryMatchPercent: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.charcoal,
+  },
+  secondaryName: {
+    fontFamily: typography.headings,
+    fontSize: 16,
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  secondaryTagline: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  exploreMarketplaceBtn: {
+    backgroundColor: colors.red,
+    paddingVertical: 14,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+  },
+  exploreBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 1.5,
   },
 });

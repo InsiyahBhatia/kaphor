@@ -218,7 +218,7 @@ export default function ConditionCheckScreen() {
                   {(result as any).rag_context?.guides_matched > 0 && (
                     <View style={styles.tutorialMeta}>
                       <View style={styles.tutorialChip}>
-                        <Text style={styles.tutorialChipText}>📋 {result.suggested_repair_technique || 'Guides available'}</Text>
+                        <Text style={styles.tutorialChipText}>{result.suggested_repair_technique || 'Guides available'}</Text>
                       </View>
                     </View>
                   )}

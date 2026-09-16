@@ -11,7 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { userService } from '../../services/userService';
 import { garmentService } from '../../services/garmentService';
@@ -45,6 +45,12 @@ export function MyListingsScreen() {
   useEffect(() => {
     fetchListings();
   }, [fetchListings]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchListings();
+    }, [fetchListings])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

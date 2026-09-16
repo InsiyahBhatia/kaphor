@@ -24,6 +24,12 @@ export interface YouTubeVideo {
   publishedAt: string;
 }
 
+export interface T5DetailedStep {
+  step?: number;
+  instruction: string;
+  tip?: string;
+}
+
 export interface T5GuideResult {
   doc_type: string;
   title: string;
@@ -32,6 +38,10 @@ export interface T5GuideResult {
   technique_style: string;
   tools_required: string[];
   steps: string[];
+  detailed_steps?: T5DetailedStep[];
+  pro_tip?: string;
+  care_instructions?: string;
+  upcycle_alternative?: string;
 }
 
 export interface DamageBreakdown {

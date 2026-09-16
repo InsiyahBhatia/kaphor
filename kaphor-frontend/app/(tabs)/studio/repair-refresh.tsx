@@ -431,16 +431,60 @@ export default function RepairRefreshScreen() {
                       {/* Steps */}
                       {guide.steps.length > 0 && (
                         <View style={styles.guideSteps}>
-                          {guide.steps.map((step, si) => (
-                            <View key={si} style={styles.guideStep}>
-                              <View style={styles.guideStepNum}>
-                                <Text style={styles.guideStepNumText}>{si + 1}</Text>
+                          {guide.steps.map((step, si) => {
+                            const detailedTip = guide.detailed_steps?.[si]?.tip;
+                            return (
+                              <View key={si} style={styles.guideStepWrapper}>
+                                <View style={styles.guideStep}>
+                                  <View style={styles.guideStepNum}>
+                                    <Text style={styles.guideStepNumText}>{si + 1}</Text>
+                                  </View>
+                                  <Text style={styles.guideStepText}>{step}</Text>
+                                </View>
+                                {detailedTip ? (
+                                  <View style={styles.stepTipBox}>
+                                    <Ionicons name="bulb-outline" size={12} color={colors.gold} />
+                                    <Text style={styles.stepTipText}>{detailedTip}</Text>
+                                  </View>
+                                ) : null}
                               </View>
-                              <Text style={styles.guideStepText}>{step}</Text>
-                            </View>
-                          ))}
+                            );
+                          })}
                         </View>
                       )}
+
+                      {/* Artisan Pro Tip */}
+                      {guide.pro_tip ? (
+                        <View style={styles.proTipBox}>
+                          <Ionicons name="sparkles" size={14} color={colors.gold} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.proTipHeading}>ARTISAN PRO TIP</Text>
+                            <Text style={styles.proTipText}>{guide.pro_tip}</Text>
+                          </View>
+                        </View>
+                      ) : null}
+
+                      {/* Care & Preservation */}
+                      {guide.care_instructions ? (
+                        <View style={styles.careBox}>
+                          <Ionicons name="shield-checkmark-outline" size={14} color={colors.forest} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.careHeading}>POST-REPAIR CARE</Text>
+                            <Text style={styles.careText}>{guide.care_instructions}</Text>
+                          </View>
+                        </View>
+                      ) : null}
+
+                      {/* Circular Upcycle Alternative */}
+                      {guide.upcycle_alternative ? (
+                        <View style={styles.upcycleAltBox}>
+                          <Ionicons name="repeat" size={14} color={colors.orange} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.upcycleAltHeading}>CIRCULAR UPCYCLE OPTION</Text>
+                            <Text style={styles.upcycleAltText}>{guide.upcycle_alternative}</Text>
+                          </View>
+                        </View>
+                      ) : null}
 
                       {/* Tools */}
                       {guide.tools_required.length > 0 && (
@@ -833,11 +877,27 @@ const styles = StyleSheet.create({
   guideTime: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted },
   guideTitle: { fontFamily: typography.headings, fontSize: 20, color: colors.charcoal, marginBottom: 6, lineHeight: 24 },
   guideTechnique: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, marginBottom: 16, letterSpacing: 0.5 },
-  guideSteps: { gap: 8, marginBottom: 16 },
+  guideSteps: { gap: 12, marginBottom: 16 },
+  guideStepWrapper: { gap: 4 },
   guideStep: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   guideStepNum: { width: 22, height: 22, backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', marginTop: 2 },
   guideStepNumText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '800', color: colors.cream },
   guideStepText: { flex: 1, fontFamily: typography.body, fontSize: 13, color: colors.charcoal, lineHeight: 20 },
+  stepTipBox: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 32, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(201, 95, 18, 0.08)', borderWidth: 1, borderColor: 'rgba(201, 95, 18, 0.2)' },
+  stepTipText: { fontFamily: typography.mono, fontSize: 10, color: colors.textSecond, flex: 1, fontStyle: 'italic' },
+
+  proTipBox: { flexDirection: 'row', gap: 10, padding: 12, backgroundColor: '#FAF7EE', borderWidth: 1.5, borderColor: colors.gold, marginBottom: 12 },
+  proTipHeading: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.gold, letterSpacing: 0.8, marginBottom: 2 },
+  proTipText: { fontFamily: typography.body, fontSize: 12, color: colors.charcoal, lineHeight: 17 },
+
+  careBox: { flexDirection: 'row', gap: 10, padding: 12, backgroundColor: 'rgba(30, 59, 47, 0.06)', borderWidth: 1.5, borderColor: colors.forest, marginBottom: 12 },
+  careHeading: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.forest, letterSpacing: 0.8, marginBottom: 2 },
+  careText: { fontFamily: typography.body, fontSize: 11.5, color: colors.charcoal, lineHeight: 16 },
+
+  upcycleAltBox: { flexDirection: 'row', gap: 10, padding: 12, backgroundColor: 'rgba(201, 95, 18, 0.06)', borderWidth: 1.5, borderColor: colors.orange, marginBottom: 12 },
+  upcycleAltHeading: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.orange, letterSpacing: 0.8, marginBottom: 2 },
+  upcycleAltText: { fontFamily: typography.body, fontSize: 11.5, color: colors.charcoal, lineHeight: 16 },
+
   guideTools: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
   guideToolsLabel: { fontFamily: typography.mono, fontSize: 9, fontWeight: '700', color: colors.textMuted, marginBottom: 8 },
   guideToolsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },

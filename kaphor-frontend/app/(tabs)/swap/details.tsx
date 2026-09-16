@@ -76,7 +76,7 @@ export default function SwapDetailsScreen() {
             try {
               const res = await swapService.confirmReceived(swapId, true);
               if (res?.status === 'COMPLETED') {
-                Alert.alert('🎉 Swap Completed!', 'Both packages confirmed! Escrow security deposits have been released and garment ownership transferred.');
+                Alert.alert('Swap Completed', 'Both packages confirmed! Escrow security deposits have been released and garment ownership transferred.');
               } else {
                 Alert.alert('Receipt Confirmed!', 'We recorded your delivery confirmation. When your partner also confirms receipt, the swap will finalize automatically.');
               }
@@ -197,7 +197,7 @@ export default function SwapDetailsScreen() {
         partner.id,
         garmentContextId
       );
-      router.push(`/messages/${conversation.id}` as any);
+      router.push(`/messages/${conversation.id}?swapId=${swap.id}` as any);
     } catch (err: any) {
       console.error('Message partner error:', err);
       Alert.alert('Message Error', 'Could not open conversation with swap partner.');
@@ -557,6 +557,29 @@ export default function SwapDetailsScreen() {
           style={{ marginHorizontal: 16, marginTop: 12, marginBottom: 4 }}
         />
 
+        {/* DISCUSS VALUATION CHAT CTA */}
+        <TouchableOpacity
+          style={styles.chatPartnerBanner}
+          onPress={handleMessagePartner}
+          disabled={actionLoading}
+          activeOpacity={0.8}
+        >
+          <View style={styles.chatPartnerBannerLeft}>
+            <View style={styles.chatIconWrap}>
+              <Ionicons name="chatbubbles" size={16} color={colors.cream} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.chatPartnerBannerTitle}>
+                DISCUSS WITH @{(partner?.username || partner?.displayName || 'PARTNER').toUpperCase()}
+              </Text>
+              <Text style={styles.chatPartnerBannerSubtitle}>
+                Chat about trade balance, garment condition, or logistics →
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.charcoal} />
+        </TouchableOpacity>
+
         {/* Proposal Note */}
         {swap.message && (
           <View style={styles.messageBox}>
@@ -698,16 +721,25 @@ export default function SwapDetailsScreen() {
         {swap.status === 'REQUESTED' && isReceiver && (
           <View style={styles.dockButtonRow}>
             <TouchableOpacity
-              style={[styles.dockBtn, styles.declineBtn]}
+              style={[styles.dockBtn, styles.secondaryBtn, { flex: 1 }]}
+              onPress={handleMessagePartner}
+              disabled={actionLoading}
+            >
+              <Ionicons name="chatbubbles-outline" size={15} color={colors.charcoal} />
+              <Text style={styles.secondaryBtnText}>CHAT</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.dockBtn, styles.declineBtn, { flex: 1 }]}
               onPress={() => handleRespond(false)}
               disabled={actionLoading}
             >
-              <Ionicons name="close" size={16} color={colors.red} />
+              <Ionicons name="close" size={15} color={colors.red} />
               <Text style={styles.declineBtnText}>DECLINE</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.dockBtn, styles.acceptBtn]}
+              style={[styles.dockBtn, styles.acceptBtn, { flex: 1.5 }]}
               onPress={() => handleRespond(true)}
               disabled={actionLoading}
             >
@@ -715,8 +747,8 @@ export default function SwapDetailsScreen() {
                 <ActivityIndicator size="small" color={colors.cream} />
               ) : (
                 <>
-                  <Ionicons name="checkmark" size={16} color={colors.cream} />
-                  <Text style={styles.acceptBtnText}>ACCEPT SWAP</Text>
+                  <Ionicons name="checkmark" size={15} color={colors.cream} />
+                  <Text style={styles.acceptBtnText}>ACCEPT</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -948,6 +980,46 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.md,
     marginBottom: spacing.md,
+  },
+  chatPartnerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FAF7EE',
+    borderWidth: 1.5,
+    borderColor: '#C9A84C',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: spacing.sm,
+  },
+  chatPartnerBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  chatIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.charcoal,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatPartnerBannerTitle: {
+    fontFamily: typography.mono,
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  chatPartnerBannerSubtitle: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   partnerInfoRow: {
     flexDirection: 'row',

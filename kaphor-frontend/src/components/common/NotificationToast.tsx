@@ -193,6 +193,7 @@ export function NotificationToast() {
 
         showToast(payload);
       }
+      useNotificationStore.getState().fetchUnreadMessageCount();
     };
 
     const handleUnreadCountUpdated = (data: any) => {
@@ -201,10 +202,17 @@ export function NotificationToast() {
       }
     };
 
+    const handleUnreadMessagesCountUpdated = (data: any) => {
+      if (typeof data?.unreadCount === 'number') {
+        useNotificationStore.getState().setUnreadMessageCount(data.unreadCount);
+      }
+    };
+
     const attach = (s: any) => {
       s.on('new_notification', handleNewNotification);
       s.on('new_direct_message', handleNewDirectMessage);
       s.on('unread_count_updated', handleUnreadCountUpdated);
+      s.on('unread_messages_count_updated', handleUnreadMessagesCountUpdated);
     };
 
     if (activeSocket) {
@@ -225,6 +233,7 @@ export function NotificationToast() {
         activeSocket.off('new_notification', handleNewNotification);
         activeSocket.off('new_direct_message', handleNewDirectMessage);
         activeSocket.off('unread_count_updated', handleUnreadCountUpdated);
+        activeSocket.off('unread_messages_count_updated', handleUnreadMessagesCountUpdated);
       }
       if (timerRef.current) clearTimeout(timerRef.current);
     };

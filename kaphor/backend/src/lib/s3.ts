@@ -161,6 +161,11 @@ export async function getDownloadUrl(originalUrlOrKey: string): Promise<string> 
   const trimmed = originalUrlOrKey.trim();
   if (!trimmed) return '';
 
+  // ── Cloudinary URL — return immediately without presigning ────────────────
+  if (trimmed.includes('res.cloudinary.com')) {
+    return trimmed;
+  }
+
   // ── Derive the correct S3 key ────────────────────────────────────────────
   let s3Key: string | null = null;
 

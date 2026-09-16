@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,18 +22,23 @@ export function Header({
   showBack,
   onBack,
   fallbackPath,
-  unreadCount = 0,
+  unreadCount: propUnreadCount,
   showLogo = false,
   rightElement,
 }: HeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const notifUnread = useNotificationStore((s) => s.unreadCount);
+  const unreadMessageCount = useNotificationStore((s) => s.unreadMessageCount);
   const fetchUnreadCount = useNotificationStore((s) => s.fetchUnreadCount);
+  const fetchUnreadMessageCount = useNotificationStore((s) => s.fetchUnreadMessageCount);
 
   useEffect(() => {
     fetchUnreadCount();
-  }, [fetchUnreadCount]);
+    fetchUnreadMessageCount();
+  }, [fetchUnreadCount, fetchUnreadMessageCount]);
+
+  const activeMessageUnread = propUnreadCount !== undefined ? propUnreadCount : unreadMessageCount;
 
   // If this header has a back button, wire up hardware back press
   useBackHandler(
@@ -86,8 +91,16 @@ export function Header({
       </View>
 
       {showLogo ? (
-        <Pressable onPress={() => router.replace('/(tabs)' as any)} hitSlop={8}>
-          <Text style={styles.logo}>KAPHOR</Text>
+        <Pressable 
+          onPress={() => router.replace('/(tabs)' as any)} 
+          hitSlop={8}
+          style={styles.logoContainer}
+        >
+          <Image
+            source={require('../../../assets/kaphor-logo-transparent.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </Pressable>
       ) : (
         <View style={{ flex: 1, alignItems: 'center' }}>
@@ -117,9 +130,9 @@ export function Header({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.textPrimary} />
-              {unreadCount > 0 && (
+              {activeMessageUnread > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  <Text style={styles.badgeText}>{activeMessageUnread > 9 ? '9+' : activeMessageUnread}</Text>
                 </View>
               )}
             </Pressable>
@@ -154,13 +167,14 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textAlign: 'center',
   },
-  logo: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontFamily: typography.headings,
-    fontSize: 22,
-    letterSpacing: 4,
-    textAlign: 'center',
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+  },
+  logoImage: {
+    width: 96,
+    height: 34,
   },
   badge: {
     position: 'absolute',

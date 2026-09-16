@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../../../src/theme';
 import { userService } from '../../../../src/services/userService';
 import { messageService } from '../../../../src/services/messageService';
+import { garmentService } from '../../../../src/services/garmentService';
+import { useAuth } from '../../../../src/context/AuthContext';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../../src/components/common/VerifiedBadge';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
@@ -40,11 +42,38 @@ interface ReviewItem {
 export default function PublicSellerProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   useBackHandler('/(tabs)/shop');
   const [profile, setProfile] = useState<Awaited<ReturnType<typeof userService.getPublicProfile>> | null>(null);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [startingChat, setStartingChat] = useState(false);
+  const [activeListingsTab, setActiveListingsTab] = useState<'ALL' | 'RENTAL' | 'SWAP' | 'SALE'>('ALL');
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  const listings = profile?.listings || [];
+
+  const filteredListings = useMemo(() => {
+    if (activeListingsTab === 'ALL') return listings;
+    if (activeListingsTab === 'RENTAL') {
+      return listings.filter((g: any) => g.listingType === 'RENTAL' || (g.rentalPriceDay && Number(g.rentalPriceDay) > 0));
+    }
+    if (activeListingsTab === 'SWAP') {
+      return listings.filter((g: any) => g.listingType === 'ACCESSORY_SWAP' || g.listingType === 'SWAP');
+    }
+    return listings.filter((g: any) => g.listingType === 'SALE');
+  }, [listings, activeListingsTab]);
+
+  const handleNavigateToGarment = (g: any) => {
+    if (!g?.id) return;
+    if (g.listingType === 'RENTAL' || (g.rentalPriceDay && Number(g.rentalPriceDay) > 0)) {
+      router.push(`/(tabs)/rental/${g.id}` as any);
+    } else if (g.listingType === 'ACCESSORY_SWAP' || g.listingType === 'SWAP') {
+      router.push(`/(tabs)/swap/${g.id}` as any);
+    } else {
+      router.push(`/(tabs)/shop/${g.id}` as any);
+    }
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -53,12 +82,79 @@ export default function PublicSellerProfileScreen() {
 
   const loadData = async () => {
     try {
-      const [pData, rData] = await Promise.all([
-        userService.getPublicProfile(userId as string),
-        userService.getUserReviews(userId as string),
-      ]);
-      setProfile(pData);
-      setReviews(rData);
+      let pData: any = null;
+      let rData: any = [];
+
+      try {
+        pData = await userService.getPublicProfile(userId as string);
+      } catch (err) {
+        console.warn('Public profile fetch failed, attempting fallback', err);
+      }
+
+      try {
+        rData = await userService.getUserReviews(userId as string);
+      } catch (err) {}
+
+      const cleanParam = String(userId || '').replace(/^@/, '');
+      const isMe = user?.id === pData?.id || user?.id === userId || user?.username === cleanParam;
+
+      if (!pData && isMe && user) {
+        pData = {
+          id: user.id,
+          displayName: user.displayName || user.username || 'Kaphor Member',
+          username: user.username,
+          avatar: user.avatar,
+          bio: (user as any)?.bio || null,
+          tier: (user as any)?.tier || 'TOP RATED',
+          isVerified: true,
+          peerReviewCount: 0,
+          peerReviewAvg: null,
+          trustedSeller: true,
+        };
+      }
+
+      let sellerListings = pData?.listings;
+
+      // If backend profile has no listings array (e.g. older backend deployment or empty response)
+      if (!sellerListings || sellerListings.length === 0) {
+        if (isMe) {
+          try {
+            const myListings = await userService.getMyListings();
+            if (Array.isArray(myListings) && myListings.length > 0) {
+              sellerListings = myListings;
+            }
+          } catch (e) {
+            console.warn('Failed to load myListings fallback', e);
+          }
+        }
+
+        // Secondary fallback to browse catalog filtering by seller ID or username
+        if (!sellerListings || sellerListings.length === 0) {
+          try {
+            const browse = await garmentService.getGarments();
+            const targetSellerId = pData?.id || userId;
+            const matching = (browse || []).filter(
+              (g: any) =>
+                g.sellerId === targetSellerId ||
+                g.seller?.id === targetSellerId ||
+                g.seller?.username === cleanParam
+            );
+            if (matching.length > 0) {
+              sellerListings = matching;
+            }
+          } catch (e) {
+            console.warn('Failed to load browse fallback', e);
+          }
+        }
+      }
+
+      if (pData) {
+        setProfile({
+          ...pData,
+          listings: sellerListings || [],
+        });
+      }
+      setReviews(rData || []);
     } catch (e) {
       console.error('Failed to load seller profile', e);
     } finally {
@@ -199,107 +295,211 @@ export default function PublicSellerProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Rating Scorecard */}
+      {/* 1. Reputation & Peer Reviews Section (At Top, Horizontally Scrollable) */}
       <View style={styles.sectionCard}>
-        <View style={styles.sectionCardHeader}>
-          <Ionicons name="star" size={16} color="#C9A84C" />
-          <Text style={styles.sectionTitle}>REPUTATION & RATINGS</Text>
-        </View>
-
-        <View style={styles.scorecardRow}>
-          <View style={styles.scoreBigCol}>
-            <Text style={styles.bigRatingText}>{avgRating}</Text>
-            <View style={styles.starsRow}>
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Ionicons key={s} name="star" size={14} color="#C9A84C" />
-              ))}
-            </View>
-            <Text style={styles.totalReviewsText}>
-              {totalReviews} verified {totalReviews === 1 ? 'sale' : 'sales'}
-            </Text>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={styles.sectionCardHeaderNoMargin}>
+            <Ionicons name="star" size={16} color="#C9A84C" />
+            <Text style={styles.sectionTitle}>REPUTATION & REVIEWS ({reviews.length})</Text>
           </View>
 
-          {/* Breakdown Bars */}
-          <View style={styles.barsCol}>
-            {[5, 4, 3, 2, 1].map((starNum) => {
-              const count = (breakdown as any)[starNum] || 0;
-              const percent = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
-              return (
-                <View key={starNum} style={styles.barRow}>
-                  <Text style={styles.barLabel}>{starNum}★</Text>
-                  <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { width: `${percent}%` }]} />
-                  </View>
-                  <Text style={styles.barCount}>{count}</Text>
+          <TouchableOpacity
+            style={styles.ratingSummaryPill}
+            onPress={() => setShowBreakdown((prev) => !prev)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="star" size={12} color="#C9A84C" />
+            <Text style={styles.ratingSummaryScore}>{avgRating}</Text>
+            <Text style={styles.ratingSummaryCount}>({totalReviews})</Text>
+            <Ionicons
+              name={showBreakdown ? 'chevron-up' : 'chevron-down'}
+              size={12}
+              color={colors.charcoal}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Optional Collapsible Scorecard Breakdown */}
+        {showBreakdown && (
+          <View style={styles.breakdownContainer}>
+            <View style={styles.scorecardRow}>
+              <View style={styles.scoreBigCol}>
+                <Text style={styles.bigRatingText}>{avgRating}</Text>
+                <View style={styles.starsRow}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Ionicons key={s} name="star" size={13} color="#C9A84C" />
+                  ))}
                 </View>
-              );
-            })}
+                <Text style={styles.totalReviewsText}>
+                  {totalReviews} verified {totalReviews === 1 ? 'sale' : 'sales'}
+                </Text>
+              </View>
+
+              <View style={styles.barsCol}>
+                {[5, 4, 3, 2, 1].map((starNum) => {
+                  const count = (breakdown as any)[starNum] || 0;
+                  const percent = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                  return (
+                    <View key={starNum} style={styles.barRow}>
+                      <Text style={styles.barLabel}>{starNum}★</Text>
+                      <View style={styles.barTrack}>
+                        <View style={[styles.barFill, { width: `${percent}%` }]} />
+                      </View>
+                      <Text style={styles.barCount}>{count}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
           </View>
-        </View>
-      </View>
+        )}
 
-      {/* Reviews List */}
-      <View style={styles.reviewsSection}>
-        <Text style={styles.reviewsSectionTitle}>
-          PEER REVIEWS ({reviews.length})
-        </Text>
-
+        {/* Scrollable Reviews Row */}
         {reviews.length === 0 ? (
-          <View style={styles.emptyReviews}>
-            <Ionicons name="chatbox-ellipses-outline" size={32} color={colors.textMuted} />
-            <Text style={styles.emptyReviewsTitle}>NO REVIEWS YET</Text>
-            <Text style={styles.emptyReviewsDesc}>
-              Reviews appear here after verified buyers confirm receipt of orders.
+          <View style={styles.compactEmptyCard}>
+            <Ionicons name="chatbox-ellipses-outline" size={22} color={colors.textMuted} />
+            <Text style={styles.compactEmptyText}>
+              No peer reviews recorded yet. Verified reviews appear here after completed transactions.
             </Text>
           </View>
         ) : (
-          reviews.map((rev) => (
-            <View key={rev.id} style={styles.reviewCard}>
-              <View style={styles.reviewHeader}>
-                <KaphorImage uri={rev.reviewer?.avatar || ''} style={styles.reviewerAvatar} contentFit="cover" />
-                <View style={{ flex: 1 }}>
-                  <View style={styles.reviewerNameRow}>
-                    <Text style={styles.reviewerName}>{rev.reviewer.displayName}</Text>
-                    {rev.reviewer.isVerified && <VerifiedBadge size="compact" />}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalReviewsScroll}
+          >
+            {reviews.map((rev) => (
+              <View key={rev.id} style={styles.reviewCarouselCard}>
+                <View style={styles.reviewHeader}>
+                  <KaphorImage uri={rev.reviewer?.avatar || ''} style={styles.reviewerAvatar} contentFit="cover" />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={styles.reviewerNameRow}>
+                      <Text style={styles.reviewerName} numberOfLines={1}>{rev.reviewer.displayName}</Text>
+                      {rev.reviewer.isVerified && <VerifiedBadge size="compact" />}
+                    </View>
+                    <Text style={styles.reviewDate}>
+                      {new Date(rev.createdAt).toLocaleDateString('en-IN', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </Text>
                   </View>
-                  <Text style={styles.reviewDate}>
-                    {new Date(rev.createdAt).toLocaleDateString('en-IN', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </Text>
+
+                  <View style={styles.starsRow}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Ionicons
+                        key={s}
+                        name={s <= rev.rating ? 'star' : 'star-outline'}
+                        size={11}
+                        color="#C9A84C"
+                      />
+                    ))}
+                  </View>
                 </View>
 
-                {/* Stars */}
-                <View style={styles.starsRow}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Ionicons
-                      key={s}
-                      name={s <= rev.rating ? 'star' : 'star-outline'}
-                      size={12}
-                      color="#C9A84C"
-                    />
-                  ))}
-                </View>
+                {/* Garment Tag */}
+                {rev.garment && (
+                  <View style={styles.verifiedPurchaseBadge}>
+                    <Ionicons name="checkmark-circle" size={10} color={colors.forest} />
+                    <Text style={styles.verifiedPurchaseText} numberOfLines={1}>
+                      {rev.garment.title}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Comment */}
+                {rev.comment && (
+                  <Text style={styles.reviewComment} numberOfLines={3}>
+                    "{rev.comment}"
+                  </Text>
+                )}
               </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
 
-              {/* Garment Tag */}
-              {rev.garment && (
-                <View style={styles.verifiedPurchaseBadge}>
-                  <Ionicons name="checkmark-circle" size={11} color={colors.forest} />
-                  <Text style={styles.verifiedPurchaseText}>
-                    VERIFIED PURCHASE: {rev.garment.title}
-                  </Text>
-                </View>
-              )}
+      {/* 2. Wardrobe & Curated Pieces Section (Scrollable of Just Images) */}
+      <View style={styles.sectionCard}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={styles.sectionCardHeaderNoMargin}>
+            <Ionicons name="shirt-outline" size={16} color={colors.charcoal} />
+            <Text style={styles.sectionTitle}>CURATED WARDROBE ({listings.length})</Text>
+          </View>
+        </View>
 
-              {/* Comment */}
-              {rev.comment && (
-                <Text style={styles.reviewComment}>"{rev.comment}"</Text>
-              )}
-            </View>
-          ))
+        {/* Tab Filters */}
+        <View style={styles.listingsTabRow}>
+          {(['ALL', 'RENTAL', 'SWAP', 'SALE'] as const).map((t) => (
+            <TouchableOpacity
+              key={t}
+              style={[styles.listingTabBtn, activeListingsTab === t && styles.listingTabBtnActive]}
+              onPress={() => setActiveListingsTab(t)}
+            >
+              <Text style={[styles.listingTabText, activeListingsTab === t && styles.listingTabTextActive]}>
+                {t}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {filteredListings.length === 0 ? (
+          <View style={styles.compactEmptyCard}>
+            <Ionicons name="sparkles-outline" size={22} color={colors.textMuted} />
+            <Text style={styles.compactEmptyText}>
+              No active {activeListingsTab === 'ALL' ? '' : activeListingsTab.toLowerCase()} pieces listed.
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.imageGalleryScroll}
+          >
+            {filteredListings.map((item: any) => {
+              const isRental = item.listingType === 'RENTAL' || (item.rentalPriceDay && Number(item.rentalPriceDay) > 0);
+              const isSwap = item.listingType === 'ACCESSORY_SWAP' || item.listingType === 'SWAP';
+              const thumbUri = item.images?.[0] || item.image;
+              const priceTag = isRental
+                ? `₹${Math.round(item.rentalPriceDay || item.price || 0)}/d`
+                : isSwap
+                ? 'SWAP'
+                : `₹${Math.round(item.price || 0)}`;
+
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.imageTile}
+                  onPress={() => handleNavigateToGarment(item)}
+                  activeOpacity={0.88}
+                >
+                  {thumbUri ? (
+                    <KaphorImage uri={thumbUri} style={styles.imageTileImg} contentFit="cover" />
+                  ) : (
+                    <View style={[styles.imageTileImg, styles.imagePlaceholder]}>
+                      <Ionicons name="shirt-outline" size={28} color={colors.textMuted} />
+                    </View>
+                  )}
+
+                  {/* Minimal Top Corner Type Badge */}
+                  <View style={[
+                    styles.imageTileTypeBadge,
+                    isRental ? { backgroundColor: '#6B46C1' } : isSwap ? { backgroundColor: '#8C6D3B' } : { backgroundColor: colors.charcoal }
+                  ]}>
+                    <Text style={styles.imageTileTypeBadgeText}>{isRental ? 'RENT' : isSwap ? 'SWAP' : 'BUY'}</Text>
+                  </View>
+
+                  {/* Clean Bottom Overlay for Price */}
+                  <View style={styles.imageTilePriceOverlay}>
+                    <Text style={styles.imageTilePriceText} numberOfLines={1}>
+                      {priceTag}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         )}
       </View>
     </ScrollView>
@@ -485,11 +685,22 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
+  sectionHeaderBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
   sectionCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 16,
+  },
+  sectionCardHeaderNoMargin: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   sectionTitle: {
     fontFamily: typography.mono,
@@ -498,21 +709,49 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     letterSpacing: 1,
   },
+  ratingSummaryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(201, 168, 76, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 168, 76, 0.3)',
+  },
+  ratingSummaryScore: {
+    fontFamily: typography.mono,
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  ratingSummaryCount: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    color: colors.textMuted,
+  },
+  breakdownContainer: {
+    marginBottom: 14,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,31,34,0.08)',
+  },
   scorecardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 20,
+    gap: 16,
   },
   scoreBigCol: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingRight: 16,
+    paddingRight: 14,
     borderRightWidth: 1,
     borderRightColor: 'rgba(30,31,34,0.15)',
   },
   bigRatingText: {
     fontFamily: typography.headings,
-    fontSize: 36,
+    fontSize: 32,
     color: colors.charcoal,
   },
   starsRow: {
@@ -559,21 +798,36 @@ const styles = StyleSheet.create({
     width: 16,
     textAlign: 'right',
   },
-  reviewsSection: {
-    gap: 12,
+  compactEmptyCard: {
+    backgroundColor: '#FAF8F5',
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.1)',
+    padding: 20,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 4,
   },
-  reviewsSectionTitle: {
+  compactEmptyText: {
     fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: 9.5,
     color: colors.textMuted,
-    letterSpacing: 1,
+    textAlign: 'center',
+    lineHeight: 14,
   },
-  reviewCard: {
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
+  horizontalReviewsScroll: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  reviewCarouselCard: {
+    width: 260,
+    backgroundColor: '#FAF8F5',
+    borderWidth: 1,
     borderColor: 'rgba(30,31,34,0.15)',
-    padding: 14,
+    padding: 12,
+    borderRadius: 6,
     gap: 8,
   },
   reviewHeader: {
@@ -612,6 +866,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     alignSelf: 'flex-start',
+    borderRadius: 2,
+    maxWidth: '100%',
   },
   verifiedPurchaseText: {
     fontFamily: typography.mono,
@@ -625,25 +881,90 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     lineHeight: 15,
   },
-  emptyReviews: {
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.15)',
-    padding: 24,
-    alignItems: 'center',
+  listingsTabRow: {
+    flexDirection: 'row',
     gap: 8,
+    marginVertical: 10,
   },
-  emptyReviewsTitle: {
+  listingTabBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.15)',
+    backgroundColor: colors.white,
+  },
+  listingTabBtnActive: {
+    backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
+  },
+  listingTabText: {
     fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: colors.charcoal,
+    fontSize: 8.5,
+    fontWeight: '700',
+    color: colors.textMuted,
   },
-  emptyReviewsDesc: {
+  listingTabTextActive: {
+    color: colors.cream,
+    fontWeight: '900',
+  },
+  imageGalleryScroll: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: 4,
+  },
+  imageTile: {
+    width: 135,
+    height: 180,
+    borderRadius: 6,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#EDE8DD',
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.15)',
+  },
+  imageTileImg: {
+    width: '100%',
+    height: '100%',
+  },
+  imagePlaceholder: {
+    backgroundColor: '#EDE8DD',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageTileTypeBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 2,
+    zIndex: 2,
+  },
+  imageTileTypeBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 7.5,
+    fontWeight: '900',
+    color: colors.white,
+    letterSpacing: 0.5,
+  },
+  imageTilePriceOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(26,26,26,0.85)',
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  imageTilePriceText: {
     fontFamily: typography.mono,
     fontSize: 9.5,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 14,
+    fontWeight: '800',
+    color: colors.cream,
+    letterSpacing: 0.5,
   },
 });

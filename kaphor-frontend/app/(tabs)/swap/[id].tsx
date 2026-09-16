@@ -222,6 +222,14 @@ export default function SwapDetailScreen() {
                   {(garment.condition || 'PRISTINE').replace('_', ' ')}
                 </Text>
               </View>
+              <TouchableOpacity
+                onPress={() => router.push(`/(tabs)/shop/${targetGarmentId}` as any)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}
+              >
+                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.gold, fontWeight: '700' }}>
+                  VIEW FULL PIECE DETAILS →
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -332,7 +340,7 @@ export default function SwapDetailScreen() {
                     <Text style={styles.linkText}>VIEW ALL ACCESSORIES</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity onPress={() => router.push('/(tabs)/shop/sell')}>
+                  <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { prefillListingType: 'ACCESSORY_SWAP', listingType: 'ACCESSORY_SWAP', fresh: Date.now().toString() } } as any)}>
                     <Text style={styles.linkText}>LIST AN ACCESSORY</Text>
                   </TouchableOpacity>
                 )}
@@ -372,7 +380,7 @@ export default function SwapDetailScreen() {
                         ]}>
                           <Text style={styles.parityTagText}>
                             {isFair 
-                              ? `⚖️ FAIR (±${diffPct}%)` 
+                              ? `FAIR (±${diffPct}%)` 
                               : isSurplus 
                                 ? `+₹${delta.toLocaleString()} SURPLUS` 
                                 : `+₹${delta.toLocaleString()} SPREAD`}

@@ -64,7 +64,7 @@ export async function getCart(req: Request, res: Response): Promise<void> {
     const resolvedItems = await Promise.all(
       cartItems.map(async (item: any) => {
         if (item.garment && item.garment.images) {
-          const { getDownloadUrl } = await import('../lib/s3');
+          const { getDownloadUrl } = await import('../lib/cloudinary');
           const resolvedImages = await Promise.all(
             item.garment.images.map((img: string) => getDownloadUrl(img))
           );

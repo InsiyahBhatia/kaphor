@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { createNotification } from '../services/notification.service';
+import { emitToUser, emitToConversation } from '../lib/socket';
 
 export async function getAvailableRentals(req: Request, res: Response): Promise<void> {
     try {
@@ -41,7 +42,7 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
                 where: query,
                 include: {
                     rentals: {
-                        where: { status: { in: ['RESERVED', 'ACTIVE'] } },
+                        where: { status: { in: ['APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED'] } },
                         select: { startDate: true, endDate: true },
                     },
                     seller: { select: { id: true, displayName: true, avatar: true } },
@@ -77,7 +78,7 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
         }
 
         // Presign images + seller avatar (bucket is private; raw URLs would 403)
-        const { getDownloadUrl } = await import('../lib/s3');
+        const { getDownloadUrl } = await import('../lib/cloudinary');
         garments = await Promise.all(
             garments.map(async (g: any) => {
                 const images = Array.isArray(g.images) && g.images.length > 0
@@ -115,8 +116,8 @@ export async function createRental(req: Request, res: Response): Promise<void> {
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        // Allow reservations starting today or later (with a 24h grace buffer for global timezone offsets)
+        const pastCutoff = new Date(today.getTime() - 24 * 60 * 60 * 1000);
 
         let reqStart: Date;
         let reqEnd: Date;
@@ -129,16 +130,16 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             reqEnd = new Date(reqStart);
             reqEnd.setDate(reqEnd.getDate() + Number(inputDays));
         } else if (inputDays) {
-            reqStart = new Date(tomorrow);
-            reqEnd = new Date(tomorrow);
+            reqStart = new Date(today);
+            reqEnd = new Date(today);
             reqEnd.setDate(reqEnd.getDate() + Number(inputDays));
         } else {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Valid dates or rental duration required' });
             return;
         }
 
-        if (reqStart < tomorrow) {
-            res.status(400).json({ error: 'BAD_REQUEST', message: 'Start date must be at least tomorrow' });
+        if (reqStart < pastCutoff) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Start date cannot be in the past' });
             return;
         }
 
@@ -157,7 +158,7 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             where: { id: String(garmentId) },
             include: {
                 rentals: {
-                    where: { status: { in: ['RESERVED', 'ACTIVE'] } }
+                    where: { status: { in: ['APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED'] } }
                 }
             }
         });
@@ -206,6 +207,14 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             return;
         }
 
+        const initialHistory = [
+            {
+                status: 'REQUESTED',
+                timestamp: new Date().toISOString(),
+                note: 'Rental request submitted by borrower. Awaiting lender approval.'
+            }
+        ];
+
         const rental = await db.rental.create({
             data: {
                 garmentId: garment.id,
@@ -213,10 +222,11 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                 startDate: reqStart,
                 endDate: reqEnd,
                 totalPrice: amount,
-                status: 'RESERVED',
+                status: 'REQUESTED',
                 message: typeof message === 'string' && message.trim().length > 0 ? message.trim().slice(0, 2000) : null,
                 shippingAddress: shippingAddress ? (typeof shippingAddress === 'string' ? JSON.parse(shippingAddress) : shippingAddress) : null,
                 metadata: metadata ? (typeof metadata === 'string' ? JSON.parse(metadata) : metadata) : null,
+                trackingHistory: initialHistory,
             },
             include: {
                 garment: {
@@ -234,15 +244,60 @@ export async function createRental(req: Request, res: Response): Promise<void> {
 
         // Notify owner about initial reservation request
         try {
+            const renterName = (req.user as any).displayName || (req.user as any).username || 'A verified member';
             await createNotification({
                 userId: garment.sellerId,
                 type: 'RENTAL_RESERVED',
-                title: 'New Rental Reservation',
-                body: `${garment.title} has been reserved for ${days} days.`,
-                data: { rentalId: rental.id, garmentId: garment.id },
+                title: '👗 New Rental Request',
+                body: `${renterName} requested to rent "${garment.title}" for ${days} days. Please review and approve.`,
+                data: { rentalId: rental.id, garmentId: garment.id, targetRoute: `/(tabs)/rental/lease/${rental.id}` },
             });
+            emitToUser(garment.sellerId, 'rental:requested', { rentalId: rental.id, garmentId: garment.id });
+
+            // Post notification into direct conversation thread
+            let conv = await db.conversation.findFirst({
+                where: {
+                    OR: [
+                        { participant1Id: req.user.id, participant2Id: garment.sellerId },
+                        { participant1Id: garment.sellerId, participant2Id: req.user.id },
+                    ],
+                },
+            });
+            if (!conv) {
+                conv = await db.conversation.create({
+                    data: {
+                        participant1Id: req.user.id,
+                        participant2Id: garment.sellerId,
+                        garmentId: garment.id,
+                    },
+                });
+            }
+            const reservationText = `👗 [RENTAL RESERVATION] Initiated a ${days}-day rental request for "${garment.title}".\n• Dates: ${new Date(reqStart).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – ${new Date(reqEnd).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}\n• Estimated Total: ₹${amount.toLocaleString()}`;
+            const chatMsg = await db.directMessage.create({
+                data: {
+                    conversationId: conv.id,
+                    senderId: req.user.id,
+                    recipientId: garment.sellerId,
+                    content: reservationText,
+                },
+                include: {
+                    sender: {
+                        select: { id: true, displayName: true, username: true, avatar: true, isVerified: true },
+                    },
+                },
+            });
+            await db.conversation.update({
+                where: { id: conv.id },
+                data: {
+                    lastMessageText: reservationText.slice(0, 100),
+                    lastMessageAt: new Date(),
+                    garmentId: conv.garmentId || garment.id,
+                },
+            });
+            emitToConversation(conv.id, 'direct_message', chatMsg);
+            emitToUser(garment.sellerId, 'new_direct_message', { conversationId: conv.id, message: chatMsg });
         } catch (notifErr) {
-            logger.warn('Failed to send rental reserved notification', { error: notifErr });
+            logger.warn('Failed to send rental reserved notification / chat message', { error: notifErr });
         }
 
         res.status(201).json({
@@ -338,8 +393,14 @@ export async function getRentalEscrow(req: Request, res: Response): Promise<void
         }
 
         const { id } = req.params;
-        const rental = await db.rental.findUnique({
-            where: { id },
+        const cleanId = String(id || '').trim();
+        const rental = await db.rental.findFirst({
+            where: {
+                OR: [
+                    { id: cleanId },
+                    { stripeId: cleanId },
+                ]
+            },
             include: { garment: true }
         });
 
@@ -383,8 +444,14 @@ export async function releaseRentalDeposit(req: Request, res: Response): Promise
         }
 
         const { id } = req.params;
-        const rental = await db.rental.findUnique({
-            where: { id },
+        const cleanId = String(id || '').trim();
+        const rental = await db.rental.findFirst({
+            where: {
+                OR: [
+                    { id: cleanId },
+                    { stripeId: cleanId },
+                ]
+            },
             include: { garment: true }
         });
 
@@ -403,27 +470,57 @@ export async function releaseRentalDeposit(req: Request, res: Response): Promise
             return;
         }
 
+        const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
+        await db.rental.update({
+            where: { id: rental.id },
+            data: {
+                status: 'COMPLETED',
+                depositRefundedAt: new Date(),
+                trackingHistory: [
+                    ...currentHistory,
+                    { status: 'COMPLETED', timestamp: new Date().toISOString(), note: 'Garment inspected. ₹299 security deposit released to renter. Rental complete.' }
+                ]
+            }
+        });
+
         try {
             await createNotification({
                 userId: rental.renterId,
                 type: 'RENTAL_RETURNED',
-                title: 'Security Deposit Refunded',
-                body: `Your security deposit for "${rental.garment.title}" has been released back to your account.`,
-                data: { rentalId: rental.id, garmentId: rental.garmentId },
+                title: '✨ Security Deposit Refunded',
+                body: `Your ₹299 security deposit for "${rental.garment.title}" has been released back to your account.`,
+                data: { rentalId: rental.id, targetRoute: `/(tabs)/rental/lease/${rental.id}` },
             });
-        } catch (notifErr) {
-            logger.warn('Failed to send deposit release notification', { error: notifErr });
-        }
 
-        const depositAmount = 299; // Flat refundable security deposit in pure Rupees
+            // Prompt Renter to review the Lender/Piece
+            await createNotification({
+                userId: rental.renterId,
+                type: 'PEER_REVIEW',
+                title: '⭐ Rate Your Rental Experience',
+                body: `Your lease for "${rental.garment.title}" is complete! Leave a review for the owner.`,
+                data: { rentalId: rental.id, targetRoute: `/(tabs)/rental/lease/${rental.id}?review=true` },
+            });
+
+            // Prompt Lender to review the Borrower
+            if (rental.garment?.sellerId) {
+                await createNotification({
+                    userId: rental.garment.sellerId,
+                    type: 'PEER_REVIEW',
+                    title: '⭐ Rate Your Rental Partner',
+                    body: `Rental complete for "${rental.garment.title}". Leave a review for the borrower.`,
+                    data: { rentalId: rental.id, targetRoute: `/(tabs)/rental/lease/${rental.id}?review=true` },
+                });
+            }
+        } catch (notifErr) {
+            logger.warn('Failed to send rental deposit refund notification', { error: notifErr });
+        }
 
         res.json({
             data: {
-                id: `escrow_${rental.id}`,
                 rentalId: rental.id,
-                amount: depositAmount,
-                status: 'RELEASED',
-                heldAt: rental.createdAt.toISOString(),
+                status: 'COMPLETED',
+                escrowStatus: 'RELEASED',
+                refundedAmount: 29900,
                 releasedAt: new Date().toISOString(),
             }
         });
@@ -479,7 +576,7 @@ export async function getMyRentals(req: Request, res: Response): Promise<void> {
             take: 50
         });
 
-        const { getDownloadUrl } = await import('../lib/s3');
+        const { getDownloadUrl } = await import('../lib/cloudinary');
         const rentals = await Promise.all(
             rawRentals.map(async (rental: any) => {
                 const userRole = rental.renterId === uid ? 'RENTER' : 'LENDER';
@@ -520,10 +617,18 @@ export async function getRentalById(req: Request, res: Response): Promise<void> 
         }
 
         const { id } = req.params;
+        const cleanId = String(id || '').trim();
         const uid = req.user.id;
 
-        const rental = await db.rental.findUnique({
-            where: { id },
+        const rental = await db.rental.findFirst({
+            where: {
+                OR: [
+                    { id: cleanId },
+                    { stripeId: cleanId },
+                    { garmentId: cleanId, renterId: uid },
+                    { garmentId: cleanId, garment: { sellerId: uid } },
+                ]
+            },
             include: {
                 garment: {
                     select: {
@@ -565,7 +670,7 @@ export async function getRentalById(req: Request, res: Response): Promise<void> 
 
         const userRole = isRenter ? 'RENTER' : 'LENDER';
 
-        const { getDownloadUrl } = await import('../lib/s3');
+        const { getDownloadUrl } = await import('../lib/cloudinary');
         let resolvedImages = rental.garment?.images || [];
         if (Array.isArray(resolvedImages) && resolvedImages.length > 0) {
             resolvedImages = await Promise.all(resolvedImages.map((img: string) => getDownloadUrl(img)));
@@ -593,6 +698,266 @@ export async function getRentalById(req: Request, res: Response): Promise<void> 
     }
 }
 
+export async function approveRentalRequest(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const { id } = req.params;
+        const rental = await db.rental.findUnique({
+            where: { id },
+            include: { garment: true, renter: true }
+        });
+
+        if (!rental) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'Rental request not found' });
+            return;
+        }
+
+        if (rental.garment.sellerId !== req.user.id && (req.user as any).role !== 'ADMIN') {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Only the garment owner can approve this rental request' });
+            return;
+        }
+
+        if (rental.status !== 'REQUESTED') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot approve rental in status: ${rental.status}` });
+            return;
+        }
+
+        const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
+        const updated = await db.rental.update({
+            where: { id },
+            data: {
+                status: 'APPROVED',
+                approvedAt: new Date(),
+                trackingHistory: [
+                    ...currentHistory,
+                    { status: 'APPROVED', timestamp: new Date().toISOString(), note: 'Rental request approved by lender. 24-hour payment window opened.' }
+                ]
+            },
+            include: { garment: true, renter: true }
+        });
+
+        try {
+            await createNotification({
+                userId: rental.renterId,
+                type: 'RENTAL_ACTIVE',
+                title: '✨ Rental Request Approved!',
+                body: `Your rental request for "${rental.garment.title}" has been approved by the owner! Complete payment to secure your dates.`,
+                data: { rentalId: rental.id, garmentId: rental.garmentId, targetRoute: `/(tabs)/rental/lease/${rental.id}` },
+            });
+            emitToUser(rental.renterId, 'rental:approved', { rentalId: rental.id, garmentId: rental.garmentId });
+
+            // Post approval into direct message thread
+            const conv = await db.conversation.findFirst({
+                where: {
+                    OR: [
+                        { participant1Id: rental.renterId, participant2Id: rental.garment.sellerId },
+                        { participant1Id: rental.garment.sellerId, participant2Id: rental.renterId },
+                    ],
+                },
+            });
+            if (conv) {
+                const approveText = `✨ [RENTAL APPROVED] I have approved your rental dates for "${rental.garment.title}"! You can now proceed to payment in the lease dossier.`;
+                const chatMsg = await db.directMessage.create({
+                    data: {
+                        conversationId: conv.id,
+                        senderId: req.user.id,
+                        recipientId: rental.renterId,
+                        content: approveText,
+                    },
+                    include: {
+                        sender: {
+                            select: { id: true, displayName: true, username: true, avatar: true, isVerified: true },
+                        },
+                    },
+                });
+                await db.conversation.update({
+                    where: { id: conv.id },
+                    data: {
+                        lastMessageText: approveText.slice(0, 100),
+                        lastMessageAt: new Date(),
+                    },
+                });
+                emitToConversation(conv.id, 'direct_message', chatMsg);
+                emitToUser(rental.renterId, 'new_direct_message', { conversationId: conv.id, message: chatMsg });
+            }
+        } catch (notifErr) {
+            logger.warn('Failed to send rental approved notification', { error: notifErr });
+        }
+
+        res.json({ data: updated });
+    } catch (error) {
+        logger.error('Failed to approve rental request', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to approve rental request' });
+    }
+}
+
+export async function declineRentalRequest(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const { id } = req.params;
+        const { reason } = req.body || {};
+
+        const rental = await db.rental.findUnique({
+            where: { id },
+            include: { garment: true, renter: true }
+        });
+
+        if (!rental) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'Rental request not found' });
+            return;
+        }
+
+        if (rental.garment.sellerId !== req.user.id && (req.user as any).role !== 'ADMIN') {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Only the garment owner can decline this rental request' });
+            return;
+        }
+
+        if (rental.status !== 'REQUESTED') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot decline rental in status: ${rental.status}` });
+            return;
+        }
+
+        const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
+        const updated = await db.rental.update({
+            where: { id },
+            data: {
+                status: 'DECLINED',
+                declineReason: reason ? String(reason).trim().slice(0, 1000) : null,
+                trackingHistory: [
+                    ...currentHistory,
+                    { status: 'DECLINED', timestamp: new Date().toISOString(), note: reason ? `Declined by lender: ${reason}` : 'Declined by lender' }
+                ]
+            },
+            include: { garment: true, renter: true }
+        });
+
+        try {
+            await createNotification({
+                userId: rental.renterId,
+                type: 'RENTAL_RETURNED',
+                title: 'Rental Request Declined',
+                body: `Your rental request for "${rental.garment.title}" could not be accommodated at this time${reason ? `: "${reason}"` : '.'}`,
+                data: { rentalId: rental.id, garmentId: rental.garmentId, targetRoute: `/(tabs)/rental/lease/${rental.id}` },
+            });
+            emitToUser(rental.renterId, 'rental:declined', { rentalId: rental.id, garmentId: rental.garmentId });
+
+            // Post decline note into chat
+            const conv = await db.conversation.findFirst({
+                where: {
+                    OR: [
+                        { participant1Id: rental.renterId, participant2Id: rental.garment.sellerId },
+                        { participant1Id: rental.garment.sellerId, participant2Id: rental.renterId },
+                    ],
+                },
+            });
+            if (conv) {
+                const declineText = `⚠️ [RENTAL DECLINED] Rental request for "${rental.garment.title}" could not be accommodated${reason ? `: "${reason}"` : '.'}`;
+                const chatMsg = await db.directMessage.create({
+                    data: {
+                        conversationId: conv.id,
+                        senderId: req.user.id,
+                        recipientId: rental.renterId,
+                        content: declineText,
+                    },
+                    include: {
+                        sender: {
+                            select: { id: true, displayName: true, username: true, avatar: true, isVerified: true },
+                        },
+                    },
+                });
+                await db.conversation.update({
+                    where: { id: conv.id },
+                    data: {
+                        lastMessageText: declineText.slice(0, 100),
+                        lastMessageAt: new Date(),
+                    },
+                });
+                emitToConversation(conv.id, 'direct_message', chatMsg);
+                emitToUser(rental.renterId, 'new_direct_message', { conversationId: conv.id, message: chatMsg });
+            }
+        } catch (notifErr) {
+            logger.warn('Failed to send rental declined notification', { error: notifErr });
+        }
+
+        res.json({ data: updated });
+    } catch (error) {
+        logger.error('Failed to decline rental request', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to decline rental request' });
+    }
+}
+
+export async function confirmRentalPayment(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const { id } = req.params;
+        const { paymentId, razorpayOrderId } = req.body || {};
+
+        const rental = await db.rental.findUnique({
+            where: { id },
+            include: { garment: true, renter: true }
+        });
+
+        if (!rental) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
+            return;
+        }
+
+        if (rental.renterId !== req.user.id && (req.user as any).role !== 'ADMIN') {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to pay for this rental' });
+            return;
+        }
+
+        if (rental.status !== 'APPROVED' && rental.status !== 'REQUESTED') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot confirm payment for rental in status: ${rental.status}` });
+            return;
+        }
+
+        const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
+        const updated = await db.rental.update({
+            where: { id },
+            data: {
+                status: 'RESERVED',
+                paidAt: new Date(),
+                stripeId: razorpayOrderId || paymentId || rental.stripeId,
+                trackingHistory: [
+                    ...currentHistory,
+                    { status: 'RESERVED', timestamp: new Date().toISOString(), note: 'Payment verified and held safely in escrow. Awaiting garment dispatch.' }
+                ]
+            },
+            include: { garment: true, renter: true }
+        });
+
+        try {
+            await createNotification({
+                userId: rental.garment.sellerId,
+                type: 'RENTAL_RESERVED',
+                title: '💳 Payment Secured in Escrow!',
+                body: `Borrower completed payment for "${rental.garment.title}". Please prepare the piece for dispatch.`,
+                data: { rentalId: rental.id, garmentId: rental.garmentId },
+            });
+        } catch (notifErr) {
+            logger.warn('Failed to send rental paid notification', { error: notifErr });
+        }
+
+        res.json({ data: updated });
+    } catch (error) {
+        logger.error('Failed to confirm rental payment', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to confirm rental payment' });
+    }
+}
+
 export async function dispatchRental(req: Request, res: Response): Promise<void> {
     try {
         if (!req.user) {
@@ -605,7 +970,7 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
 
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true }
+            include: { garment: true, renter: true }
         });
 
         if (!rental) {
@@ -618,17 +983,30 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
             return;
         }
 
-        if (rental.status !== 'RESERVED') {
+        if (rental.status !== 'RESERVED' && rental.status !== 'APPROVED') {
             res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot dispatch rental in status: ${rental.status}` });
             return;
         }
 
+        const selectedCarrier = carrier || 'BlueDart';
+        const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
         const updated = await db.rental.update({
             where: { id },
             data: {
-                status: 'ACTIVE',
+                status: 'DISPATCHED',
                 trackingNumber: trackingNumber || null,
-                carrier: carrier || 'BlueDart',
+                carrier: selectedCarrier,
+                dispatchedAt: new Date(),
+                trackingHistory: [
+                    ...currentHistory,
+                    {
+                        status: 'DISPATCHED',
+                        timestamp: new Date().toISOString(),
+                        note: trackingNumber
+                            ? `Dispatched via ${selectedCarrier} (AWB: ${trackingNumber})`
+                            : `Dispatched via ${selectedCarrier}`
+                    }
+                ]
             },
             include: { garment: true, renter: true }
         });
@@ -637,9 +1015,9 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
             await createNotification({
                 userId: rental.renterId,
                 type: 'RENTAL_ACTIVE',
-                title: '🚚 Rental Dispatched / Active',
-                body: `"${rental.garment.title}" has been marked as dispatched by the lender (${carrier || 'BlueDart'}). Your rental period is active!`,
-                data: { rentalId: id, trackingNumber, carrier },
+                title: '🚚 Rental Dispatched!',
+                body: `"${rental.garment.title}" has been dispatched by the owner (${selectedCarrier}${trackingNumber ? ` • ${trackingNumber}` : ''}). Track your delivery in the app!`,
+                data: { rentalId: id, trackingNumber, carrier: selectedCarrier },
             });
         } catch (notifErr) {
             logger.warn('Failed to send rental dispatched notification', { error: notifErr });
@@ -649,6 +1027,67 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
     } catch (error) {
         logger.error('Failed to dispatch rental', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to dispatch rental' });
+    }
+}
+
+export async function confirmRentalDelivery(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const { id } = req.params;
+        const rental = await db.rental.findUnique({
+            where: { id },
+            include: { garment: true, renter: true }
+        });
+
+        if (!rental) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
+            return;
+        }
+
+        if (rental.renterId !== req.user.id && (req.user as any).role !== 'ADMIN') {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Only the borrower can confirm receiving the garment' });
+            return;
+        }
+
+        if (rental.status !== 'DISPATCHED' && rental.status !== 'RESERVED') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot confirm delivery for status: ${rental.status}` });
+            return;
+        }
+
+        const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
+        const updated = await db.rental.update({
+            where: { id },
+            data: {
+                status: 'ACTIVE',
+                deliveredAt: new Date(),
+                trackingHistory: [
+                    ...currentHistory,
+                    { status: 'ACTIVE', timestamp: new Date().toISOString(), note: 'Delivery confirmed by borrower. Active lease period officially started.' }
+                ]
+            },
+            include: { garment: true, renter: true }
+        });
+
+        try {
+            await createNotification({
+                userId: rental.garment.sellerId,
+                type: 'RENTAL_ACTIVE',
+                title: '📦 Garment Delivered & Active!',
+                body: `Borrower has confirmed receipt of "${rental.garment.title}". Active lease duration is now running.`,
+                data: { rentalId: rental.id, garmentId: rental.garmentId },
+            });
+        } catch (notifErr) {
+            logger.warn('Failed to send rental delivery confirmed notification', { error: notifErr });
+        }
+
+        res.json({ data: updated });
+    } catch (error) {
+        logger.error('Failed to confirm delivery', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to confirm delivery' });
     }
 }
 
@@ -664,7 +1103,7 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
 
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true }
+            include: { garment: true, renter: true }
         });
 
         if (!rental) {
@@ -672,19 +1111,37 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        if (rental.renterId !== req.user.id) {
+        if (rental.renterId !== req.user.id && (req.user as any).role !== 'ADMIN') {
             res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to return this rental' });
             return;
         }
 
+        if (rental.status !== 'ACTIVE' && rental.status !== 'DISPATCHED') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot initiate return in status: ${rental.status}` });
+            return;
+        }
+
+        const selectedCarrier = returnCarrier || 'Delhivery';
+        const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
         const updated = await db.rental.update({
             where: { id },
             data: {
-                status: 'RETURNED',
+                status: 'RETURN_DISPATCHED',
                 returnTracking: returnTracking || null,
-                returnCarrier: returnCarrier || 'Delhivery',
+                returnCarrier: selectedCarrier,
+                returnDispatchedAt: new Date(),
+                trackingHistory: [
+                    ...currentHistory,
+                    {
+                        status: 'RETURN_DISPATCHED',
+                        timestamp: new Date().toISOString(),
+                        note: returnTracking
+                            ? `Return package dispatched via ${selectedCarrier} (AWB: ${returnTracking})`
+                            : `Return package dispatched via ${selectedCarrier}`
+                    }
+                ]
             },
-            include: { garment: true }
+            include: { garment: true, renter: true }
         });
 
         if (updated?.garment) {
@@ -692,9 +1149,9 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
                 await createNotification({
                     userId: updated.garment.sellerId,
                     type: 'RENTAL_RETURNED',
-                    title: 'Rental Item Returned',
-                    body: `"${updated.garment.title}" has been dispatched back by renter (${returnCarrier || 'Delhivery'}). Please inspect upon delivery to release deposit.`,
-                    data: { rentalId: id, returnTracking, returnCarrier },
+                    title: '🔁 Return Shipment Dispatched',
+                    body: `"${updated.garment.title}" has been dispatched back by borrower (${selectedCarrier}${returnTracking ? ` • ${returnTracking}` : ''}). Track return in app!`,
+                    data: { rentalId: id, returnTracking, returnCarrier: selectedCarrier },
                 });
             } catch (notifErr) {
                 logger.warn('Failed to send rental return notification', { error: notifErr });
@@ -705,6 +1162,67 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
     } catch (error) {
         logger.error('Failed to mark rental returned', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+export async function confirmReturnDelivery(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const { id } = req.params;
+        const rental = await db.rental.findUnique({
+            where: { id },
+            include: { garment: true, renter: true }
+        });
+
+        if (!rental) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
+            return;
+        }
+
+        if (rental.garment.sellerId !== req.user.id && (req.user as any).role !== 'ADMIN') {
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Only the garment owner can confirm return receipt' });
+            return;
+        }
+
+        if (rental.status !== 'RETURN_DISPATCHED' && rental.status !== 'ACTIVE') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot confirm return receipt for status: ${rental.status}` });
+            return;
+        }
+
+        const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
+        const updated = await db.rental.update({
+            where: { id },
+            data: {
+                status: 'RETURNED',
+                returnDeliveredAt: new Date(),
+                trackingHistory: [
+                    ...currentHistory,
+                    { status: 'RETURNED', timestamp: new Date().toISOString(), note: 'Return package delivered to owner. 48-hour inspection window active.' }
+                ]
+            },
+            include: { garment: true, renter: true }
+        });
+
+        try {
+            await createNotification({
+                userId: rental.renterId,
+                type: 'RENTAL_RETURNED',
+                title: '✨ Return Delivered to Owner',
+                body: `The owner received "${rental.garment.title}". Condition inspection is underway before deposit release.`,
+                data: { rentalId: rental.id, garmentId: rental.garmentId },
+            });
+        } catch (notifErr) {
+            logger.warn('Failed to send return received notification', { error: notifErr });
+        }
+
+        res.json({ data: updated });
+    } catch (error) {
+        logger.error('Failed to confirm return delivery', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to confirm return delivery' });
     }
 }
 
@@ -742,17 +1260,54 @@ export async function postRentalReview(req: Request, res: Response): Promise<voi
         const isRenter = rental.renterId === req.user.id;
         const targetUserId = isRenter ? rental.garment.sellerId : rental.renterId;
 
-        // Save peer review record if renter is reviewing lender/seller
-        let review = null;
-        if (isRenter) {
-            review = await db.peerReview.create({
-                data: {
-                    reviewerId: req.user.id,
-                    sellerId: targetUserId,
-                    rating: numRating,
-                    comment: typeof comment === 'string' ? comment.trim().slice(0, 2000) : null,
+        // Persist review in rental metadata
+        const currentMeta = (rental.metadata && typeof rental.metadata === 'object') ? (rental.metadata as any) : {};
+        const reviews = currentMeta.reviews || {};
+        const reviewRecord = {
+            id: `rental_rev_${Date.now()}`,
+            reviewerId: req.user.id,
+            reviewerName: (req.user as any).displayName || (req.user as any).username || 'Rental Partner',
+            rating: numRating,
+            comment: typeof comment === 'string' ? comment.trim().slice(0, 2000) : null,
+            createdAt: new Date().toISOString(),
+            role: isRenter ? 'RENTER' : 'LENDER',
+        };
+        reviews[req.user.id] = reviewRecord;
+
+        await db.rental.update({
+            where: { id },
+            data: {
+                metadata: {
+                    ...currentMeta,
+                    reviews,
                 }
-            }).catch(() => null);
+            }
+        });
+
+        // Also upsert into db.review so it links to the garment and counts in ratings
+        if (rental.garmentId) {
+            try {
+                await db.review.upsert({
+                    where: {
+                        userId_garmentId: {
+                            userId: req.user.id,
+                            garmentId: rental.garmentId,
+                        }
+                    },
+                    create: {
+                        userId: req.user.id,
+                        garmentId: rental.garmentId,
+                        rating: numRating,
+                        comment: typeof comment === 'string' ? comment.trim().slice(0, 2000) : null,
+                    },
+                    update: {
+                        rating: numRating,
+                        comment: typeof comment === 'string' ? comment.trim().slice(0, 2000) : null,
+                    }
+                });
+            } catch (rErr) {
+                logger.warn('Failed to upsert db.review for rental garment', { error: rErr });
+            }
         }
 
         // Send Notification to reviewed party
@@ -761,17 +1316,86 @@ export async function postRentalReview(req: Request, res: Response): Promise<voi
                 userId: targetUserId,
                 type: 'PEER_REVIEW',
                 title: '⭐️ New Rental Review!',
-                body: `${req.user.displayName || 'Your rental partner'} left you a ${numRating}-star review for "${rental.garment?.title || 'the rental asset'}".`,
-                data: { rentalId: id, rating: numRating, userId: targetUserId }
+                body: `${(req.user as any).displayName || 'Your rental partner'} left you a ${numRating}-star review for "${rental.garment?.title || 'the rental asset'}".`,
+                data: { rentalId: id, rating: numRating, userId: targetUserId, targetRoute: `/(tabs)/rental/lease/${id}?review=true` }
             });
+            emitToUser(targetUserId, 'rental:reviewed', { rentalId: id, rating: numRating });
         } catch (notifErr) {
             logger.warn('Failed to send rental review notification', { error: notifErr });
         }
 
-        res.status(201).json({ success: true, data: review || { rating: numRating, comment } });
+        res.status(201).json({ success: true, data: reviewRecord });
     } catch (error: any) {
         logger.error('postRentalReview failed', { error: error.message });
         res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to submit review' });
+    }
+}
+
+export async function checkRentalAvailability(req: Request, res: Response): Promise<void> {
+    try {
+        const { garmentId, startDate, endDate } = req.query;
+
+        if (!garmentId) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Garment ID is required' });
+            return;
+        }
+
+        const garment = await db.garment.findUnique({
+            where: { id: String(garmentId) },
+            select: {
+                id: true,
+                title: true,
+                sellerId: true,
+                listingType: true,
+                lifecycleState: true,
+                isActive: true,
+                rentalPriceDay: true,
+                rentalPriceWeek: true,
+                rentals: {
+                    where: { status: { in: ['RESERVED', 'ACTIVE'] } },
+                    select: { startDate: true, endDate: true }
+                }
+            }
+        });
+
+        if (!garment) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found' });
+            return;
+        }
+
+        const bookedRanges = (garment.rentals || []).map((r: any) => ({
+            startDate: r.startDate,
+            endDate: r.endDate,
+        }));
+
+        let isAvailable = garment.isActive && garment.lifecycleState === 'LISTED';
+
+        if (isAvailable && startDate && endDate) {
+            const reqStart = new Date(String(startDate));
+            const reqEnd = new Date(String(endDate));
+            const hasConflict = bookedRanges.some((r: any) => {
+                const bStart = new Date(r.startDate);
+                const bEnd = new Date(r.endDate);
+                return (reqStart <= bEnd && reqEnd >= bStart);
+            });
+            if (hasConflict) {
+                isAvailable = false;
+            }
+        }
+
+        res.json({
+            data: {
+                garmentId: garment.id,
+                sellerId: garment.sellerId,
+                isAvailable,
+                bookedRanges,
+                rentalPriceDay: garment.rentalPriceDay,
+                rentalPriceWeek: garment.rentalPriceWeek,
+            }
+        });
+    } catch (error: any) {
+        logger.error('checkRentalAvailability failed', { error: error.message });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to check availability' });
     }
 }
 

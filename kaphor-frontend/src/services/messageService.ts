@@ -18,7 +18,12 @@ export interface ConversationGarment {
   image?: string;
   price?: number;
   rentalPriceDay?: number;
+  rentalPriceWeek?: number;
   listingType?: string;
+  category?: string;
+  size?: string;
+  condition?: string;
+  description?: string;
   sellerId?: string;
   userId?: string;
   seller?: ConversationParticipant;
@@ -37,6 +42,8 @@ export interface ConversationSummary {
   otherUser: ConversationParticipant;
   garment: ConversationGarment | null;
   order?: ConversationOrder | null;
+  swap?: { id: string; status: string } | null;
+  rental?: { id: string; status: string } | null;
   lastMessageText: string;
   lastMessageAt: string;
   unreadCount: number;
@@ -62,11 +69,29 @@ export interface ConversationDetailResponse {
     otherUser: ConversationParticipant;
     garment: ConversationGarment | null;
     order?: ConversationOrder | null;
+    swap?: { id: string; status: string; createdAt?: string } | null;
+    rental?: { id: string; status: string; totalPrice?: number; totalAmount?: number; startDate?: string; endDate?: string; createdAt?: string } | null;
+    counterpartyGarments?: ConversationGarment[];
+    sellerGarments?: ConversationGarment[];
   };
   messages: DirectMessageItem[];
 }
 
 export const messageService = {
+  async getUnreadCount(): Promise<number> {
+    try {
+      const { data } = await api.get<{ unreadCount: number }>('/messages/unread-count');
+      return typeof data?.unreadCount === 'number' ? data.unreadCount : 0;
+    } catch {
+      try {
+        const list = await messageService.listConversations();
+        return list.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+      } catch {
+        return 0;
+      }
+    }
+  },
+
   async listConversations(): Promise<ConversationSummary[]> {
     const { data } = await api.get<{ data: ConversationSummary[] }>('/messages/conversations');
     return data.data;
@@ -87,6 +112,14 @@ export const messageService = {
 
   async getConversationMessages(conversationId: string): Promise<ConversationDetailResponse> {
     const { data } = await api.get<{ data: ConversationDetailResponse }>(`/messages/conversations/${conversationId}`);
+    return data.data;
+  },
+
+  async linkGarment(conversationId: string, garmentId: string | null): Promise<{ garment: ConversationGarment | null }> {
+    const { data } = await api.patch<{ data: { garment: ConversationGarment | null } }>(
+      `/messages/conversations/${conversationId}/garment`,
+      { garmentId }
+    );
     return data.data;
   },
 

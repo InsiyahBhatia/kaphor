@@ -76,11 +76,11 @@ interface Message {
 }
 
 const QUICK_COMMANDS = [
-  { label: '✨ Style from my wardrobe', prompt: 'Look at my digital wardrobe and style an outfit combining what I own with pieces from the archive.' },
-  { label: '👗 Curate evening look', prompt: 'Curate a sophisticated evening outfit for an art gallery opening.' },
-  { label: '🔍 Rent under ₹1,000/day', prompt: 'Find designer pieces available for rental under ₹1,000 per day.' },
-  { label: '⚖️ Fair swaps for my accessories', prompt: 'Evaluate my accessories and find fair peer swaps with equitable trade valuation.' },
-  { label: '🌿 Sustainable wear advice', prompt: 'How can I maximize the wear count and circular lifecycle of my current wardrobe?' },
+  { label: 'Find an outfit for an event', prompt: 'Show me outfit ideas from the app for an evening dinner or party.' },
+  { label: 'Rent under ₹1,000/day', prompt: 'Find pieces on the app available to rent under ₹1,000 per day.' },
+  { label: 'Explore fair swaps', prompt: 'Find accessories on the app available to swap fairly.' },
+  { label: 'Trending party looks', prompt: 'Show me trending party dresses and evening wear on the app.' },
+  { label: 'Casual everyday styles', prompt: 'Show me comfortable, stylish everyday tops and denims.' },
 ];
 
 export default function AIChatScreen() {
@@ -92,11 +92,12 @@ export default function AIChatScreen() {
     {
       id: 'welcome-1',
       role: 'assistant',
-      content: "Namaste! I am your KaPhor Autonomous Fashion Stylist Agent.\n\nI can inspect your digital wardrobe, search the circular archive for rental and buy pieces, evaluate fair trade swaps, and curate full multi-piece ensembles. How may I style you today?",
+      content: "Hi! I'm KaPhor AI, your personal shopping and style helper.\n\nTell me what you're looking for, an event you're dressing for, or your budget, and I'll find the best pieces on the app for you. What would you like to see today?",
       suggestedFollowUps: [
-        '✨ Style from my wardrobe',
-        '🔍 Find a rental under ₹1,000/day',
-        '⚖️ Fair swaps for my accessories',
+        'Find an outfit for an event',
+        'Find a rental under ₹1,000/day',
+        'Trending party looks',
+        'Casual everyday styles',
       ],
     },
   ]);
@@ -315,7 +316,7 @@ export default function AIChatScreen() {
                 {/* 1. Agent Tool Execution Badges */}
                 {msg.actionsExecuted && msg.actionsExecuted.length > 0 && (
                   <View style={styles.agentActionsBox}>
-                    <Text style={styles.actionsBoxHeader}>⚡ AGENT EXECUTION LOG</Text>
+                    <Text style={styles.actionsBoxHeader}>WHAT I FOUND IN THE APP</Text>
                     {msg.actionsExecuted.map((act, idx) => (
                       <View key={idx} style={styles.actionItemRow}>
                         <Ionicons name="checkmark-circle" size={13} color="#2E7D32" />
@@ -341,7 +342,12 @@ export default function AIChatScreen() {
 
                     <View style={styles.outfitPiecesRow}>
                       {msg.outfitLook.items.map((item, pIdx) => (
-                        <View key={pIdx} style={styles.outfitPieceCard}>
+                        <TouchableOpacity
+                          key={pIdx}
+                          style={styles.outfitPieceCard}
+                          activeOpacity={0.8}
+                          onPress={() => handleCardAction(item.garment)}
+                        >
                           <View style={styles.outfitThumbWrapper}>
                             <KaphorImage
                               uri={item.garment.imageUrl}
@@ -363,7 +369,7 @@ export default function AIChatScreen() {
                           <Text style={styles.outfitPieceRole}>
                             {item.slot}
                           </Text>
-                        </View>
+                        </TouchableOpacity>
                       ))}
                     </View>
 
@@ -383,10 +389,17 @@ export default function AIChatScreen() {
                       contentContainerStyle={styles.cardsCarouselContent}
                     >
                       {msg.cards.map((card) => (
-                        <View key={card.id} style={styles.garmentActionCard}>
+                        <TouchableOpacity
+                          key={card.id}
+                          style={styles.garmentActionCard}
+                          activeOpacity={0.88}
+                          onPress={() => handleCardAction(card)}
+                        >
                           <View style={styles.cardImageWrapper}>
                             <KaphorImage
-                              uri={card.imageUrl}
+                              uri={card.imageUrl || (card as any).images?.[0] || (card as any).image || ''}
+                              brand={card.brand}
+                              category={card.category}
                               style={styles.cardImage}
                               contentFit="cover"
                             />
@@ -416,7 +429,7 @@ export default function AIChatScreen() {
                               <Ionicons name="arrow-forward" size={12} color={colors.cream} />
                             </TouchableOpacity>
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       ))}
                     </ScrollView>
                   </View>
@@ -493,7 +506,7 @@ export default function AIChatScreen() {
           <View style={[styles.inputWrapper, isFocused && styles.inputWrapperFocused]}>
             <TextInput
               style={styles.textInput}
-              placeholder="Ask stylist: outfit, rental, swap..."
+              placeholder="Ask KaPhor AI: outfit, rental, swap..."
               placeholderTextColor="rgba(30,31,34,0.4)"
               value={input}
               onChangeText={setInput}

@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest as Request } from '../middleware/auth';
 import db from '../lib/prisma';
-import { uploadToS3, getDownloadUrl, deleteFromS3 } from '../lib/s3';
+import { uploadToCloudinary, getDownloadUrl, deleteFromCloudinary } from '../lib/cloudinary';
 import { GarmentCondition, ListingType, EventType } from '@prisma/client';
 import { logger } from '../lib/logger';
 import { evaluateLifecycle } from '../services/lifecycle.service';
@@ -10,6 +10,7 @@ import { getFeedGarments } from '../services/garment.service';
 import { generateGarmentVectorHybrid } from '../services/garmentVector.service';
 import { getEstimatedGarmentValue } from '../utils/pricing';
 import { InsightService } from '../services/insight.service';
+import { cacheClear } from '../lib/cache';
 
 /**
  * Helper to resolve all image URLs for a garment (handles S3 presigning and local fallback)
@@ -270,7 +271,7 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
     if (files?.length) {
       // Parallelize image uploads for maximum performance
       const uploadResults = await Promise.all(
-        files.map(file => uploadToS3(file.buffer, 'garments', file.mimetype))
+        files.map(file => uploadToCloudinary(file.buffer, 'garments', file.mimetype))
       );
       for (const res of uploadResults) {
         imageUrls.push(res.url);
@@ -365,12 +366,13 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
       return g;
     });
 
+    cacheClear('feed:');
     const resolvedGarment = await resolveGarmentImages(garment);
     res.status(201).json({ data: resolvedGarment });
   } catch (err) {
     if (imageUrls.length > 0) {
       for (const url of imageUrls) {
-        deleteFromS3(url).catch(() => {});
+        deleteFromCloudinary(url).catch(() => {});
       }
     }
     logger.error('createGarment failed', { error: err instanceof Error ? err.message : String(err) });
@@ -419,7 +421,7 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
     const newImageUrls: string[] = [];
     if (files?.length) {
       for (const file of files) {
-        const result = await uploadToS3(file.buffer, 'garments', file.mimetype);
+        const result = await uploadToCloudinary(file.buffer, 'garments', file.mimetype);
         newImageUrls.push(result.url);
       }
     }
@@ -431,7 +433,7 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
       const kept = new Set((body.images as string[]).map(String));
       const removed = existing.images.filter((img: string) => !kept.has(img));
       for (const img of removed) {
-        deleteFromS3(img).catch((delErr) => logger.warn('Failed to prune replaced S3 image', { img, error: delErr }));
+        deleteFromCloudinary(img).catch((delErr) => logger.warn('Failed to prune replaced image', { img, error: delErr }));
       }
       updatedImages = body.images.map(String);
     }
@@ -483,6 +485,7 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
         images: updatedImages,
       },
     });
+    cacheClear('feed:');
     const resolvedGarment = await resolveGarmentImages(garment);
     res.status(200).json({ data: resolvedGarment });
   } catch (err) {
@@ -514,16 +517,23 @@ export async function deleteGarment(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Prune S3 storage if this unsold/unrented garment is deleted
+    // Prune storage if this unsold/unrented garment is deleted
     const hasHistory = (existing.orderItems && existing.orderItems.length > 0) || (existing.rentals && existing.rentals.length > 0);
     if (!hasHistory && Array.isArray(existing.images)) {
       for (const img of existing.images) {
-        deleteFromS3(img).catch((delErr) => logger.warn('Failed to prune S3 image on garment deletion', { img, error: delErr }));
+        deleteFromCloudinary(img).catch((delErr: any) => logger.warn('Failed to prune image on garment deletion', { img, error: delErr }));
       }
     }
 
-    await db.garment.update({ where: { id }, data: { isActive: false } });
-    res.status(200).json({ data: { message: 'Garment deleted' } });
+    await db.garment.update({
+      where: { id },
+      data: {
+        isActive: false,
+        lifecycleState: 'DECLINE',
+      },
+    });
+    cacheClear('feed:');
+    res.status(200).json({ data: { message: 'Garment de-listed successfully' } });
   } catch (err) {
     logger.error('deleteGarment failed', { error: err instanceof Error ? err.message : String(err) });
     throw err;

@@ -1,7 +1,7 @@
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { redisGet, redisSet } from '../lib/redis';
-import { getDownloadUrl } from '../lib/s3';
+import { getDownloadUrl } from '../lib/cloudinary';
 import { getEstimatedGarmentValue } from '../utils/pricing';
 import { AESTHETIC_VECTORS } from '../controllers/ai.controller';
 import { cosineSimilarity, UserPreferenceProfile } from './preference.service';
@@ -14,6 +14,8 @@ export interface RecommendedGarment {
   subCategory?: string | null;
   size: string;
   price: number;
+  rentalPriceDay?: number | null;
+  rentalPriceWeek?: number | null;
   condition: string;
   listingType: string;
   images: string[];
@@ -336,6 +338,8 @@ export const RecommendationService = {
         subCategory: true,
         size: true,
         price: true,
+        rentalPriceDay: true,
+        rentalPriceWeek: true,
         condition: true,
         listingType: true,
         images: true,
@@ -350,9 +354,18 @@ export const RecommendationService = {
       const vecSim = r.garmentVector?.length === 20 ? cosineSimilarity(userVector, r.garmentVector) : 0.7;
       const fitScore = Math.round(Math.min(99, Math.max(68, vecSim * 100)));
       const effectivePrice = r.price && r.price > 0 ? r.price : getEstimatedGarmentValue(r.category, r.brand);
+      const effectiveRentalDay = r.rentalPriceDay && r.rentalPriceDay > 0
+        ? r.rentalPriceDay
+        : Math.round(effectivePrice * 0.04);
+      const effectiveRentalWeek = r.rentalPriceWeek && r.rentalPriceWeek > 0
+        ? r.rentalPriceWeek
+        : Math.round(effectiveRentalDay * 5.5);
+
       return {
         ...r,
         price: effectivePrice,
+        rentalPriceDay: effectiveRentalDay,
+        rentalPriceWeek: effectiveRentalWeek,
         fitScore,
         matchReason: `High-value occasion piece for your style`,
       };
@@ -376,6 +389,8 @@ export const RecommendationService = {
           subCategory: g.subCategory,
           size: g.size,
           price: g.price,
+          rentalPriceDay: g.rentalPriceDay,
+          rentalPriceWeek: g.rentalPriceWeek,
           condition: g.condition,
           listingType: g.listingType,
           images: resolvedImages,

@@ -21,6 +21,7 @@ import {
   Address,
   CreateAddressInput,
 } from '../../../../src/services/addressService';
+import api from '../../../../src/services/api';
 
 type ScreenMode = 'select' | 'add' | 'edit';
 
@@ -40,10 +41,11 @@ const EMPTY_FORM: CreateAddressInput = {
 const LABEL_OPTIONS = ['Home', 'Work', 'Other'];
 
 export default function DeliveryScreen() {
-  const { orderId } = useLocalSearchParams<{ orderId: string }>();
+  const { orderId: paramOrderId, garmentId } = useLocalSearchParams<{ orderId?: string; garmentId?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const [currentOrderId, setCurrentOrderId] = useState<string | undefined>(paramOrderId);
   const [mode, setMode] = useState<ScreenMode>('select');
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -192,21 +194,40 @@ export default function DeliveryScreen() {
   };
 
   const handleContinue = async () => {
-    if (!selectedId || !orderId) {
+    if (!selectedId) {
       Alert.alert('Selection Required', 'Please select or add a delivery address.');
       return;
     }
     setSaving(true);
     try {
+      let resolvedOrderId = currentOrderId || paramOrderId;
+      if (!resolvedOrderId && garmentId) {
+        // Direct buy-now fallback: create order if not already initialized
+        const { data } = await api.post('/orders/cart', { garmentIds: [garmentId] });
+        resolvedOrderId = data?.data?.id || data?.data?.orderId;
+        if (resolvedOrderId) {
+          setCurrentOrderId(resolvedOrderId);
+        }
+      }
+
+      if (!resolvedOrderId) {
+        Alert.alert('Order Session Error', 'Could not locate your order checkout session. Please restart checkout.');
+        setSaving(false);
+        return;
+      }
+
       // Save shipping address to the order
-      await addressService.setOrderShippingAddress(orderId, selectedId);
+      await addressService.setOrderShippingAddress(resolvedOrderId, selectedId);
+      if (selectedAddr) {
+        addressService.setActiveDeliveryAddress(selectedAddr);
+      }
       setSaving(false);
       router.replace({
         pathname: '/(tabs)/shop/checkout/[orderId]',
-        params: { orderId },
+        params: { orderId: resolvedOrderId },
       });
     } catch (e: any) {
-      const msg = e?.response?.data?.message || 'Failed to set delivery address';
+      const msg = e?.response?.data?.message || e?.message || 'Failed to set delivery address';
       Alert.alert('Error', msg);
       setSaving(false);
     }

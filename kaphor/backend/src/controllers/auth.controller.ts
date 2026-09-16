@@ -24,6 +24,9 @@ function userPayload(user: {
     email: user.email,
     username: user.username,
     displayName: user.displayName,
+    avatar: (user as any).avatar ?? null,
+    bio: (user as any).bio ?? null,
+    isVerified: (user as any).isVerified ?? false,
     role: user.role,
     onboardingDone: user.onboardingDone ?? false,
   };

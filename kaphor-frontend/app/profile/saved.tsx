@@ -200,7 +200,6 @@ export default function SavedAssetsScreen() {
           price={item.price ? Math.round(item.price) : 0}
           size={item.size || 'OS'}
           imageUrl={item.images[0]}
-          matchPercent={Math.floor(Math.random() * 20) + 80}
           condition={item.condition || "Excellent"}
           onAddToCart={() => handleAddToCart(item)}
           onSwapRequest={() => router.push(`/(tabs)/shop/${item.id}` as any)}

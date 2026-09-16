@@ -13,6 +13,7 @@ import { colors, typography } from '../../../src/theme';
 import { isAccessoryCategory } from '../../../src/constants/market';
 import api from '../../../src/services/api';
 import { hapticFeedback } from '../../../src/utils/haptics';
+import { navigateToLiveSwapStage } from '../../../src/utils/swapNavigation';
 
 export default function SwapFeedScreen() {
   const router = useRouter();
@@ -103,7 +104,8 @@ export default function SwapFeedScreen() {
       ]);
       return;
     }
-    router.push(`/(tabs)/swap/${item.id}` as any);
+    // Show swap item detail screen first then the user can tap "INITIATE ACCESSORY SWAP" to open the offer screen
+    router.push(`/(tabs)/shop/${item.id}` as any);
   };
 
   // ── Message Partner handler ───────────────────────────────────
@@ -233,7 +235,7 @@ export default function SwapFeedScreen() {
         <TouchableOpacity
           key={swap.id}
           style={styles.swapRequestCard}
-          onPress={() => router.push(`/(tabs)/swap/details?swapId=${swap.id}` as any)}
+          onPress={() => navigateToLiveSwapStage(router, swap, effectiveUserId)}
           activeOpacity={0.88}
         >
           <View style={styles.swapRequestHeader}>
@@ -351,7 +353,7 @@ export default function SwapFeedScreen() {
             {swap.status === 'COMPLETED' && (
               <TouchableOpacity
                 style={[styles.swapActionBtn, { backgroundColor: colors.forest, borderColor: colors.forest }]}
-                onPress={() => router.push(`/(tabs)/swap/details?swapId=${swap.id}` as any)}
+                onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
               >
                 <Ionicons name="star" size={12} color={colors.cream} />
                 <Text style={styles.swapActionText}>REVIEW</Text>
@@ -408,7 +410,7 @@ export default function SwapFeedScreen() {
           <Text style={styles.title}>SWAP</Text>
           <TouchableOpacity
             style={styles.sellBtn}
-            onPress={() => router.push('/(tabs)/shop/sell')}
+            onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { prefillListingType: 'ACCESSORY_SWAP', listingType: 'ACCESSORY_SWAP', fresh: Date.now().toString() } } as any)}
           >
             <Ionicons name="add" size={20} color={colors.cream} />
           </TouchableOpacity>

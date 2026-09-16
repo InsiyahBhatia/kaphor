@@ -26,8 +26,30 @@ export default function RentalDetailScreen() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [zoomVisible, setZoomVisible] = useState(false);
   const [startingChat, setStartingChat] = useState(false);
+  const [availabilityData, setAvailabilityData] = useState<{
+    isAvailable: boolean;
+    bookedRanges: Array<{ startDate: string; endDate: string }>;
+  }>({
+    isAvailable: true,
+    bookedRanges: [],
+  });
 
   useBackHandler('/(tabs)/shop');
+
+  useEffect(() => {
+    if (!id) return;
+    api
+      .get('/rentals/check-availability', { params: { garmentId: id } })
+      .then((res) => {
+        if (res.data?.data) {
+          setAvailabilityData({
+            isAvailable: res.data.data.isAvailable !== false,
+            bookedRanges: res.data.data.bookedRanges || [],
+          });
+        }
+      })
+      .catch(() => {});
+  }, [id]);
 
   useEffect(() => {
     let isMounted = true;
@@ -44,11 +66,15 @@ export default function RentalDetailScreen() {
         console.warn('Failed to fetch garment by id in rental detail:', err);
       }
 
-      // If id was actually a rentalId from a notification, resolve the garment from my rentals
+      // If id was actually a rentalId from a notification or payment history, route to lease dossier
       try {
         const myRentalsRes = await api.get('/rentals/me');
         const myRentals = myRentalsRes?.data?.data || myRentalsRes?.data || [];
         const match = myRentals.find((r: any) => r.id === id || r.garmentId === id);
+        if (match?.id === id && isMounted) {
+          router.replace(`/(tabs)/rental/lease/${match.id}` as any);
+          return;
+        }
         if (match?.garment && isMounted) {
           setGarment(match.garment);
           setLoading(false);
@@ -272,6 +298,47 @@ export default function RentalDetailScreen() {
             </View>
           </View>
 
+          {/* Real-time Availability & Request Checker */}
+          <View style={styles.availabilityCard}>
+            <View style={styles.availabilityHeaderRow}>
+              <View style={styles.availabilityTitleGroup}>
+                <Ionicons
+                  name={availabilityData.isAvailable ? 'checkmark-circle' : 'time'}
+                  size={18}
+                  color={availabilityData.isAvailable ? '#2E7D32' : colors.gold}
+                />
+                <Text style={styles.availabilityTitle}>ATELIER AVAILABILITY</Text>
+              </View>
+              <View style={[
+                styles.availabilityBadge,
+                availabilityData.isAvailable ? styles.availabilityBadgeOk : styles.availabilityBadgeWarn
+              ]}>
+                <Text style={styles.availabilityBadgeText}>
+                  {availabilityData.isAvailable ? 'AVAILABLE TO RENT' : 'CHECK DATES'}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.availabilitySubtext}>
+              {availabilityData.isAvailable
+                ? 'Insured and sanitized in atelier storage. Ready for courier dispatch on your selected event dates.'
+                : 'Current dates have reservation holds. Check specific dates to schedule an occasion lease.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.checkDatesBtn}
+              onPress={() => {
+                hapticFeedback.light();
+                router.push({
+                  pathname: '/(tabs)/rental/reserve',
+                  params: { garmentId: garment.id, dayRate: String(dayRate) }
+                });
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="calendar-outline" size={15} color={colors.charcoal} />
+              <Text style={styles.checkDatesBtnText}>CHECK SPECIFIC DATES & AVAILABILITY →</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.details}>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>SIZE</Text>
@@ -404,7 +471,10 @@ export default function RentalDetailScreen() {
               }}
               activeOpacity={0.88}
             >
-              <Text style={styles.reserveButtonText}>RESERVE NOW</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Ionicons name="calendar-outline" size={16} color={colors.white} />
+                <Text style={styles.reserveButtonText}>REQUEST TO RENT</Text>
+              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -629,5 +699,85 @@ const styles = StyleSheet.create({
     fontFamily: typography.mono,
     fontWeight: '800',
     letterSpacing: 1,
+  },
+
+  // ── Availability Card ──────────────────────────────────────────
+  availabilityCard: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  availabilityHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  availabilityTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  availabilityTitle: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.8,
+  },
+  availabilityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  availabilityBadgeOk: {
+    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+    borderColor: '#2E7D32',
+  },
+  availabilityBadgeWarn: {
+    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+    borderColor: colors.gold,
+  },
+  availabilityBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  availabilitySubtext: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textMuted,
+    marginBottom: 12,
+  },
+  checkDatesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.cream,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  checkDatesBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.8,
   },
 });

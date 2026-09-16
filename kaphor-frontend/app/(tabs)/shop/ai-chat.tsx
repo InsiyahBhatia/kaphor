@@ -1,587 +1,1068 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard, Image, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  Keyboard,
+  Dimensions,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import { colors, typography } from '../../../src/theme';
-import { useAuth } from '../../../src/context/AuthContext';
 import api from '../../../src/services/api';
+import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KaphorImage } from '../../../src/components/KaphorImage';
+import { hapticFeedback } from '../../../src/utils/haptics';
 
-interface ChatProduct {
-    id: string;
-    title: string;
-    brand?: string;
-    price?: number | null;
-    rentalPriceDay?: number | null;
-    images?: string[];
-    category?: string;
-    listingType?: string;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+export interface AgentActionLog {
+  tool: string;
+  description: string;
+  count?: number;
 }
 
-interface MessageItem {
-    role: 'user' | 'assistant';
-    content: string;
-    image?: string;
-    products?: ChatProduct[];
+export interface AgentCard {
+  id: string;
+  title: string;
+  brand: string;
+  price: number;
+  rentalPriceDay?: number;
+  listingType: 'BUY' | 'RENTAL' | 'ACCESSORY_SWAP';
+  imageUrl: string;
+  images?: string[];
+  image?: string;
+  condition: string;
+  category: string;
+  source: 'WARDROBE' | 'CATALOG';
+  actionType: 'RENT' | 'SWAP' | 'BUY' | 'VIEW';
+  actionUrl: string;
+  actionLabel: string;
+  badge?: string;
 }
 
-export default function AIChatScreen() {
-    const { garmentId, initialMessage } = useLocalSearchParams<{ garmentId?: string; initialMessage?: string }>();
-    const { user } = useAuth();
-    const router = useRouter();
-    const insets = useSafeAreaInsets();
-    useBackHandler('/(tabs)/shop');
-    
-    const [messages, setMessages] = useState<MessageItem[]>([]);
-    const [inputText, setInputText] = useState('');
-    const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [conversationId, setConversationId] = useState<string | null>(null);
-    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-    const [isInputFocused, setIsInputFocused] = useState(false);
-    const scrollViewRef = useRef<ScrollView>(null);
+export interface AgentOutfitItem {
+  slot: 'TOP' | 'BOTTOM' | 'OUTERWEAR' | 'ACCESSORY' | 'FOOTWEAR' | 'ACCENT';
+  garment: AgentCard;
+  isFromWardrobe: boolean;
+  stylingNote?: string;
+}
 
-    useEffect(() => {
-        const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setIsKeyboardVisible(true));
-        const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setIsKeyboardVisible(false));
-        return () => {
-            showSub.remove();
-            hideSub.remove();
-        };
-    }, []);
+export interface AgentOutfitLook {
+  title: string;
+  vibe: string;
+  occasion: string;
+  editorialNote: string;
+  items: AgentOutfitItem[];
+}
 
-    useEffect(() => {
-        if (initialMessage) {
-            handleSendMessage(initialMessage);
-        }
-    }, []);
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  image?: string;
+  actionsExecuted?: AgentActionLog[];
+  cards?: AgentCard[];
+  outfitLook?: AgentOutfitLook;
+  suggestedFollowUps?: string[];
+}
 
-    const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission required', 'Grant photo gallery permissions to ask AI about your outfit.');
-            return;
-        }
+const QUICK_COMMANDS = [
+  { label: 'Find an outfit for an event', prompt: 'Show me outfit ideas from the app for an evening dinner or party.' },
+  { label: 'Rent under ₹1,000/day', prompt: 'Find pieces on the app available to rent under ₹1,000 per day.' },
+  { label: 'Explore fair swaps', prompt: 'Find accessories on the app available to swap fairly.' },
+  { label: 'Trending party looks', prompt: 'Show me trending party dresses and evening wear on the app.' },
+  { label: 'Casual everyday styles', prompt: 'Show me comfortable, stylish everyday tops and denims.' },
+];
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            quality: 0.8,
-        });
+export default function ShopAIChatScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { garmentId, initialMessage } = useLocalSearchParams<{ garmentId?: string; initialMessage?: string }>();
+  useBackHandler('/(tabs)/shop');
 
-        if (!result.canceled && result.assets?.[0]?.uri) {
-            setSelectedPhoto(result.assets[0].uri);
-        }
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'welcome-1',
+      role: 'assistant',
+      content: "Hi! I'm KaPhor AI, your personal shopping and style assistant.\n\nTell me what you're looking for, an occasion you're dressing for, or your budget, and I'll find matching pieces from the app archive for you. What would you like to explore today?",
+      suggestedFollowUps: [
+        'Find an outfit for an event',
+        'Find a rental under ₹1,000/day',
+        'Trending party looks',
+        'Casual everyday styles',
+      ],
+    },
+  ]);
+
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const initialSentRef = useRef(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setIsKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
     };
+  }, []);
 
-    const handleSendMessage = async (text: string) => {
-        if ((!text.trim() && !selectedPhoto) || loading) return;
-        
-        const photoToSend = selectedPhoto;
-        const userMsg: MessageItem = { 
-            role: 'user', 
-            content: text.trim() || '📷 Visual Styling Query',
-            image: photoToSend || undefined
-        };
+  useEffect(() => {
+    if (initialMessage && !initialSentRef.current) {
+      initialSentRef.current = true;
+      handleSendPrompt(initialMessage);
+    }
+  }, [initialMessage]);
 
-        setMessages(prev => [...prev, userMsg]);
-        setInputText('');
-        setSelectedPhoto(null);
-        setLoading(true);
-
-        try {
-            let base64Image: string | undefined = undefined;
-            if (photoToSend) {
-                const base64 = await FileSystem.readAsStringAsync(photoToSend, { encoding: 'base64' });
-                base64Image = `data:image/jpeg;base64,${base64}`;
-            }
-
-            const { data } = await api.post('/ai/chat', {
-                message: text.trim(),
-                image: base64Image,
-                garmentId,
-                conversationId,
-                stream: false
+  const pickImage = async () => {
+    Alert.alert('Attach Garment Photo', 'Select an outfit photo or garment for KaPhor AI to analyze:', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') return;
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 0.85,
             });
-
-            if (data.conversationId) setConversationId(data.conversationId);
-            
-            const fullText = data.text;
-            const returnedProducts: ChatProduct[] = Array.isArray(data.products) ? data.products : [];
-            let currentText = '';
-            
-            setMessages(prev => [...prev, { role: 'assistant', content: '', products: returnedProducts }]);
-
-            for (let i = 0; i < fullText.length; i++) {
-                currentText += fullText[i];
-                setMessages(prev => {
-                    const next = [...prev];
-                    next[next.length - 1] = { 
-                        role: 'assistant', 
-                        content: currentText, 
-                        products: returnedProducts 
-                    };
-                    return next;
-                });
-                await new Promise(r => setTimeout(r, 12)); 
+            if (!result.canceled && result.assets && result.assets[0]) {
+              setImageUri(result.assets[0].uri);
             }
-        } catch (error) {
-            console.error('Chat error', error);
-            setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an issue connecting with the styling catalog. Please try again.' }]);
-        } finally {
-            setLoading(false);
-        }
+          } catch { }
+        },
+      },
+      {
+        text: 'Choose from Library',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') return;
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 0.85,
+            });
+            if (!result.canceled && result.assets && result.assets[0]) {
+              setImageUri(result.assets[0].uri);
+            }
+          } catch { }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleSendPrompt = async (promptToSend: string, imageToSend?: string | null) => {
+    const trimmed = promptToSend.trim();
+    if ((!trimmed && !imageToSend) || loading) return;
+
+    hapticFeedback.light();
+
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: trimmed || 'Visual Styling Query',
+      image: imageToSend || undefined,
     };
 
-    return (
-        <KeyboardAvoidingView 
-            style={styles.container} 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    setMessages((prev) => [...prev, userMsg]);
+    setInput('');
+    setImageUri(null);
+    setLoading(true);
+
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+
+    try {
+      let base64Image: string | undefined = undefined;
+      if (imageToSend) {
+        try {
+          const base64 = await FileSystem.readAsStringAsync(imageToSend, { encoding: 'base64' });
+          base64Image = `data:image/jpeg;base64,${base64}`;
+        } catch {
+          base64Image = imageToSend;
+        }
+      }
+
+      const payload: any = {
+        message: trimmed || 'Inspect this photo and recommend matching pieces from the app catalog.',
+        garmentId,
+        conversationId,
+      };
+      if (base64Image) {
+        payload.image = base64Image;
+      }
+
+      const res = await api.post('/ai/chat', payload);
+      const resData = res?.data?.data || res?.data || {};
+
+      if (resData.conversationId) {
+        setConversationId(resData.conversationId);
+      }
+
+      const replyText = resData.reply || resData.text || resData.message || 'I have found matching pieces on the app for your style.';
+
+      // Normalize cards / products to guarantee images and URLs are populated
+      const rawCards = resData.cards || resData.products || [];
+      const normalizedCards: AgentCard[] = rawCards.map((c: any) => ({
+        ...c,
+        imageUrl: c.imageUrl || c.images?.[0] || c.image || '',
+        price: c.price || 0,
+        brand: c.brand || 'KAPHOR ARCHIVE',
+        title: c.title || 'Curated Garment',
+        actionUrl: c.actionUrl || `/(tabs)/shop/${c.id}`,
+        actionLabel: c.actionLabel || (c.listingType === 'RENTAL' ? 'REQUEST RENTAL' : c.listingType === 'ACCESSORY_SWAP' ? 'REQUEST SWAP' : 'BUY PIECE'),
+        badge: c.badge || (c.listingType === 'RENTAL' ? `RENT ₹${c.rentalPriceDay || 299}/DAY` : c.listingType === 'ACCESSORY_SWAP' ? 'PEER SWAP' : `BUY ₹${c.price || 999}`),
+      }));
+
+      const agentMsg: Message = {
+        id: `agent-${Date.now()}`,
+        role: 'assistant',
+        content: replyText,
+        actionsExecuted: resData.actionsExecuted || [],
+        cards: normalizedCards,
+        outfitLook: resData.outfitLook,
+        suggestedFollowUps: resData.suggestedFollowUps || [],
+      };
+
+      setMessages((prev) => [...prev, agentMsg]);
+      hapticFeedback.success();
+    } catch (err: any) {
+      console.warn('Agent request failed', err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `err-${Date.now()}`,
+          role: 'assistant',
+          content: 'I encountered an issue connecting to the styling engine. Please verify your connection and try again.',
+        },
+      ]);
+    } finally {
+      setLoading(false);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+    }
+  };
+
+  const handleCardAction = (card: AgentCard) => {
+    hapticFeedback.medium();
+    if (card.actionUrl) {
+      router.push(card.actionUrl as any);
+    } else {
+      router.push(`/(tabs)/shop/${card.id}` as any);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
+        <TouchableOpacity
+          onPress={() => safeBack('/(tabs)/shop')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-            <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-                <TouchableOpacity 
-                    onPress={() => safeBack('/(tabs)/shop')}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                    <Ionicons name="close" size={26} color={colors.charcoal} />
-                </TouchableOpacity>
-                <View style={{ alignItems: 'center' }}>
-                    <Text style={styles.headerTitle}>AI SHOPPING AGENT</Text>
-                    <Text style={styles.headerSub}>DISCOVER // PAIR // ARCHIVE</Text>
-                </View>
-                <TouchableOpacity onPress={() => setMessages([])} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                    <Ionicons name="refresh-outline" size={20} color={colors.textMuted} />
-                </TouchableOpacity>
-            </View>
+          <Ionicons name="chevron-back" size={26} color={colors.charcoal} />
+        </TouchableOpacity>
 
-            <ScrollView 
-                ref={scrollViewRef}
-                style={styles.chatContainer}
-                contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
-                onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>KAPHOR STYLIST AGENT</Text>
+          <View style={styles.agentStatusRow}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>AUTONOMOUS STYLIST · ONLINE</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.wardrobeQuickBtn}
+          onPress={() => router.push('/(tabs)/shop' as any)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="bag-handle-outline" size={20} color={colors.charcoal} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Quick Prompts Bar */}
+      <View style={styles.quickCommandsBar}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.quickCommandsScroll}
+        >
+          {QUICK_COMMANDS.map((cmd, i) => (
+            <TouchableOpacity
+              key={i}
+              style={styles.quickCommandChip}
+              onPress={() => handleSendPrompt(cmd.prompt)}
+              activeOpacity={0.75}
             >
-                {messages.length === 0 && (
-                    <View style={styles.emptyState}>
-                        <View style={styles.emptyIconCircle}>
-                            <Ionicons name="sparkles" size={36} color={colors.crimson} />
-                        </View>
-                        <Text style={styles.emptyTitle}>KAPHOR SHOPPING AGENT</Text>
-                        <Text style={styles.emptySub}>
-                            Ask for outfit recommendations, find matching jewelry or bags, or upload a photo to find similar pieces in the catalog.
-                        </Text>
+              <Ionicons name="sparkles" size={12} color={colors.charcoal} style={{ marginRight: 5 }} />
+              <Text style={styles.quickCommandText}>{cmd.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
-                        {/* Quick Prompts */}
-                        <View style={styles.quickPrompts}>
-                            <TouchableOpacity 
-                                style={styles.promptChip}
-                                onPress={() => handleSendMessage('Recommend statement ethnic pieces for a wedding')}
-                            >
-                                <Ionicons name="flash-outline" size={14} color={colors.charcoal} />
-                                <Text style={styles.promptChipText}>Statement ethnic pieces</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity 
-                                style={styles.promptChip}
-                                onPress={() => handleSendMessage('Find minimalist luxury handbags and accessories')}
-                            >
-                                <Ionicons name="search-outline" size={14} color={colors.charcoal} />
-                                <Text style={styles.promptChipText}>Minimalist bags & accessories</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity 
-                                style={styles.promptChip}
-                                onPress={pickImage}
-                            >
-                                <Ionicons name="camera-outline" size={14} color={colors.crimson} />
-                                <Text style={[styles.promptChipText, { color: colors.crimson, fontWeight: '700' }]}>Match from my photo</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                )}
-
-                {messages.map((m, i) => (
-                    <View key={i} style={[styles.messageWrapper, m.role === 'user' ? styles.userWrapper : styles.aiWrapper]}>
-                        <View style={[styles.messageBubble, m.role === 'user' ? styles.userBubble : styles.aiBubble]}>
-                            {m.image && (
-                                <Image source={{ uri: m.image }} style={styles.bubbleUploadedImage} />
-                            )}
-                            <Text style={[styles.messageText, m.role === 'user' ? styles.userText : styles.aiText]}>
-                                {m.content}
-                            </Text>
-                        </View>
-
-                        {/* Interactive Catalog Product Recommendations */}
-                        {m.products && m.products.length > 0 && (
-                            <View style={styles.productsContainer}>
-                                <Text style={styles.productsSectionTitle}>MATCHING IN-APP PIECES</Text>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productsRow}>
-                                    {m.products.map((prod) => (
-                                        <TouchableOpacity
-                                            key={prod.id}
-                                            style={styles.productCard}
-                                            onPress={() => router.push(`/(tabs)/shop/${prod.id}` as any)}
-                                            activeOpacity={0.88}
-                                        >
-                                            {prod.images && prod.images[0] ? (
-                                                <Image source={{ uri: prod.images[0] }} style={styles.prodThumb} />
-                                            ) : (
-                                                <View style={[styles.prodThumb, styles.prodThumbPlaceholder]}>
-                                                    <Ionicons name="shirt-outline" size={24} color={colors.textMuted} />
-                                                </View>
-                                            )}
-                                            <View style={styles.prodInfo}>
-                                                <Text style={styles.prodBrand} numberOfLines={1}>
-                                                    {(prod.brand || 'KAPHOR ARCHIVE').toUpperCase()}
-                                                </Text>
-                                                <Text style={styles.prodTitle} numberOfLines={1}>
-                                                    {prod.title}
-                                                </Text>
-                                                <Text style={styles.prodPrice}>
-                                                    {prod.listingType === 'RENTAL' 
-                                                        ? `₹${prod.rentalPriceDay || 299}/day` 
-                                                        : `₹${prod.price || 999}`}
-                                                </Text>
-                                                <View style={styles.viewBadge}>
-                                                    <Text style={styles.viewBadgeText}>VIEW ITEM →</Text>
-                                                </View>
-                                            </View>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
-                            </View>
-                        )}
-                    </View>
-                ))}
-
-                {loading && messages[messages.length - 1]?.role === 'user' && (
-                    <View style={styles.aiLoadingBox}>
-                        <ActivityIndicator size="small" color={colors.crimson} />
-                        <Text style={styles.aiLoadingText}>AI Shopping Agent is searching the catalog...</Text>
-                    </View>
-                )}
-            </ScrollView>
-
-            {/* Photo Attachment Preview */}
-            {selectedPhoto && (
-                <View style={styles.attachedPhotoBar}>
-                    <Image source={{ uri: selectedPhoto }} style={styles.attachedThumb} />
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.attachedTitle}>Photo attached for styling analysis</Text>
-                        <Text style={styles.attachedSub}>Ask about matchings, sizing, or circular value</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => setSelectedPhoto(null)} style={styles.removePhotoBtn}>
-                        <Ionicons name="close-circle" size={22} color={colors.charcoal} />
-                    </TouchableOpacity>
-                </View>
-            )}
-
-            {/* Input Bar */}
-            <View
-                style={[
-                    styles.inputArea,
-                    {
-                        paddingBottom: isKeyboardVisible
-                            ? 8
-                            : Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 8),
-                    },
-                ]}
-            >
-                <TouchableOpacity 
-                    style={styles.photoAttachBtn} 
-                    onPress={pickImage}
-                    activeOpacity={0.8}
-                >
-                    <Ionicons name="camera-outline" size={22} color={colors.charcoal} />
-                </TouchableOpacity>
-
-                <View style={[styles.inputWrapper, isInputFocused && styles.inputWrapperFocused]}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder={selectedPhoto ? "Ask anything about this piece..." : "Ask styling, fabrics, or find garments..."}
-                        placeholderTextColor="rgba(30,31,34,0.45)"
-                        value={inputText}
-                        onChangeText={setInputText}
-                        onFocus={() => {
-                            setIsInputFocused(true);
-                            setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
-                        }}
-                        onBlur={() => setIsInputFocused(false)}
-                        onSubmitEditing={() => handleSendMessage(inputText)}
-                        multiline
-                        maxLength={1000}
+      {/* Chat Messages */}
+      <ScrollView
+        ref={scrollRef}
+        style={styles.messageScroll}
+        contentContainerStyle={[
+          styles.messageContent,
+          { paddingBottom: isKeyboardVisible ? 20 : 100 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {messages.map((msg) => (
+          <View key={msg.id} style={styles.messageContainer}>
+            {msg.role === 'user' ? (
+              <View style={styles.userBubbleWrapper}>
+                {msg.image && (
+                  <View style={styles.attachedImagePreview}>
+                    <KaphorImage
+                      uri={msg.image}
+                      style={styles.userAttachedImg}
+                      contentFit="cover"
                     />
+                  </View>
+                )}
+                <View style={styles.userBubble}>
+                  <Text style={styles.userBubbleText}>{msg.content}</Text>
                 </View>
-                <TouchableOpacity 
-                    style={[
-                        styles.sendButton, 
-                        (!inputText.trim() && !selectedPhoto) || loading ? styles.sendButtonDisabled : styles.sendButtonActive
-                    ]} 
-                    onPress={() => handleSendMessage(inputText)}
-                    disabled={(!inputText.trim() && !selectedPhoto) || loading}
-                    activeOpacity={0.85}
-                >
-                    {loading ? (
-                        <ActivityIndicator color={colors.white} size="small" />
-                    ) : (
-                        <Ionicons 
-                            name="arrow-up" 
-                            size={20} 
-                            color={(!inputText.trim() && !selectedPhoto) ? colors.textMuted : colors.white} 
-                        />
+              </View>
+            ) : (
+              <View style={styles.agentMessageWrapper}>
+                {/* 1. Tool execution action logs */}
+                {msg.actionsExecuted && msg.actionsExecuted.length > 0 && (
+                  <View style={styles.actionExecutionLogs}>
+                    {msg.actionsExecuted.map((act, aIdx) => (
+                      <View key={aIdx} style={styles.actionLogPill}>
+                        <Ionicons name="checkmark-circle" size={13} color="#2E7D32" />
+                        <Text style={styles.actionLogText}>{act.description}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* 2. Main Assistant Speech Bubble */}
+                <View style={styles.agentBubble}>
+                  <Text style={styles.agentBubbleText}>{msg.content}</Text>
+                </View>
+
+                {/* 3. Synthesized Outfit Look Card */}
+                {msg.outfitLook && msg.outfitLook.items && msg.outfitLook.items.length > 0 && (
+                  <View style={styles.outfitLookCard}>
+                    <View style={styles.outfitHeaderRow}>
+                      <View style={styles.outfitTagPill}>
+                        <Ionicons name="sparkles" size={11} color={colors.cream} />
+                        <Text style={styles.outfitTagText}>AI SYNTHESIZED LOOK</Text>
+                      </View>
+                      <Text style={styles.outfitLookTitle}>{msg.outfitLook.title}</Text>
+                    </View>
+                    <Text style={styles.outfitVibeText}>{msg.outfitLook.vibe} · {msg.outfitLook.occasion}</Text>
+
+                    <View style={styles.outfitPiecesRow}>
+                      {msg.outfitLook.items.map((item, pIdx) => (
+                        <TouchableOpacity
+                          key={pIdx}
+                          style={styles.outfitPieceCard}
+                          activeOpacity={0.8}
+                          onPress={() => handleCardAction(item.garment)}
+                        >
+                          <View style={styles.outfitThumbWrapper}>
+                            <KaphorImage
+                              uri={item.garment.imageUrl || item.garment.images?.[0] || ''}
+                              style={styles.outfitThumbImg}
+                              contentFit="cover"
+                            />
+                            <View style={[
+                              styles.outfitSourceBadge,
+                              item.isFromWardrobe ? styles.sourceWardrobe : styles.sourceArchive
+                            ]}>
+                              <Text style={styles.outfitSourceText}>
+                                {item.isFromWardrobe ? 'YOUR CLOSET' : item.garment.listingType}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={styles.outfitPieceTitle} numberOfLines={1}>
+                            {item.garment.title}
+                          </Text>
+                          <Text style={styles.outfitPieceRole}>
+                            {item.slot}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {Boolean(msg.outfitLook.editorialNote) && (
+                      <Text style={styles.outfitEditorialNote}>{msg.outfitLook.editorialNote}</Text>
                     )}
-                </TouchableOpacity>
-            </View>
-        </KeyboardAvoidingView>
-    );
+                  </View>
+                )}
+
+                {/* 4. Interactive Garment Action Cards Carousel */}
+                {msg.cards && msg.cards.length > 0 && (
+                  <View style={styles.cardsCarouselContainer}>
+                    <Text style={styles.cardsSectionLabel}>MATCHING PIECES FROM THE APP</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.cardsCarouselContent}
+                    >
+                      {msg.cards.map((card) => (
+                        <TouchableOpacity
+                          key={card.id}
+                          style={styles.garmentActionCard}
+                          activeOpacity={0.88}
+                          onPress={() => handleCardAction(card)}
+                        >
+                          <View style={styles.cardImageWrapper}>
+                            <KaphorImage
+                              uri={card.imageUrl || card.images?.[0] || ''}
+                              brand={card.brand}
+                              category={card.category}
+                              style={styles.cardImage}
+                              contentFit="cover"
+                            />
+                            {Boolean(card.badge) && (
+                              <View style={styles.cardBadge}>
+                                <Text style={styles.cardBadgeText}>{card.badge}</Text>
+                              </View>
+                            )}
+                          </View>
+
+                          <View style={styles.cardInfo}>
+                            <Text style={styles.cardBrand}>{card.brand.toUpperCase()}</Text>
+                            <Text style={styles.cardTitle} numberOfLines={1}>{card.title}</Text>
+                            <Text style={styles.cardPrice}>
+                              {card.rentalPriceDay ? `₹${card.rentalPriceDay.toLocaleString()}/day` : `₹${card.price.toLocaleString()}`}
+                            </Text>
+
+                            <TouchableOpacity
+                              style={[
+                                styles.cardActionBtn,
+                                card.actionType === 'RENT' && styles.actionBtnRent,
+                                card.actionType === 'SWAP' && styles.actionBtnSwap,
+                              ]}
+                              onPress={() => handleCardAction(card)}
+                            >
+                              <Text style={styles.cardActionBtnText}>{card.actionLabel}</Text>
+                              <Ionicons name="arrow-forward" size={12} color={colors.cream} />
+                            </TouchableOpacity>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {/* 5. Suggested Follow-up Chips */}
+                {msg.suggestedFollowUps && msg.suggestedFollowUps.length > 0 && (
+                  <View style={styles.followUpsRow}>
+                    {msg.suggestedFollowUps.map((promptText, fIdx) => (
+                      <TouchableOpacity
+                        key={fIdx}
+                        style={styles.followUpChip}
+                        onPress={() => handleSendPrompt(promptText)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.followUpText}>"{promptText}"</Text>
+                        <Ionicons name="arrow-forward" size={12} color={colors.charcoal} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        ))}
+
+        {loading && (
+          <View style={styles.loadingBubble}>
+            <ActivityIndicator color={colors.charcoal} size="small" />
+            <Text style={styles.loadingText}>KaPhor AI is analyzing style and finding matching pieces...</Text>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Input Dock */}
+      <View
+        style={[
+          styles.inputContainer,
+          {
+            paddingBottom: isKeyboardVisible
+              ? 10
+              : Math.max(insets.bottom, Platform.OS === 'android' ? 14 : 10),
+          },
+        ]}
+      >
+        {imageUri && (
+          <View style={styles.imagePreviewBar}>
+            <KaphorImage uri={imageUri} style={styles.attachedPreviewThumb} contentFit="cover" />
+            <Text style={styles.imageAttachedText} numberOfLines={1}>Photo attached for styling analysis</Text>
+            <TouchableOpacity onPress={() => setImageUri(null)} hitSlop={8}>
+              <Ionicons name="close-circle" size={20} color={colors.charcoal} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.inputRow}>
+          <TouchableOpacity
+            style={styles.cameraBtn}
+            onPress={pickImage}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="camera-outline" size={22} color={colors.charcoal} />
+          </TouchableOpacity>
+
+          <View style={[styles.inputWrapper, isFocused && styles.inputWrapperFocused]}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ask KaPhor AI: outfit, rental, swap..."
+              placeholderTextColor="rgba(30,31,34,0.4)"
+              value={input}
+              onChangeText={setInput}
+              onFocus={() => {
+                setIsFocused(true);
+                setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+              }}
+              onBlur={() => setIsFocused(false)}
+              onSubmitEditing={() => handleSendPrompt(input, imageUri)}
+              returnKeyType="send"
+              multiline
+              maxLength={1000}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.sendBtn,
+              (!input.trim() && !imageUri) || loading ? styles.sendBtnDisabled : styles.sendBtnActive,
+            ]}
+            onPress={() => handleSendPrompt(input, imageUri)}
+            disabled={(!input.trim() && !imageUri) || loading}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.cream} size="small" />
+            ) : (
+              <Ionicons
+                name="arrow-up"
+                size={20}
+                color={!input.trim() && !imageUri ? colors.textMuted : colors.cream}
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg },
-    header: { 
-        paddingHorizontal: 20, 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        backgroundColor: colors.bgCard, 
-        paddingBottom: 14, 
-        borderBottomWidth: 1.5, 
-        borderBottomColor: colors.border 
-    },
-    headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5 },
-    headerSub: { color: colors.textMuted, fontSize: 9, fontFamily: typography.mono, letterSpacing: 1 },
-    chatContainer: { flex: 1 },
-    messageWrapper: { marginBottom: 16 },
-    userWrapper: { alignItems: 'flex-end' },
-    aiWrapper: { alignItems: 'flex-start' },
-    messageBubble: { maxWidth: '85%', padding: 14, borderRadius: 12 },
-    userBubble: { 
-        backgroundColor: colors.charcoal,
-        borderTopRightRadius: 2,
-    },
-    aiBubble: { 
-        backgroundColor: colors.bgCard, 
-        borderWidth: 1.5, 
-        borderColor: colors.border,
-        borderTopLeftRadius: 2,
-    },
-    messageText: { fontSize: 14, lineHeight: 21, fontFamily: typography.mono },
-    userText: { color: colors.white },
-    aiText: { color: colors.textPrimary },
-    bubbleUploadedImage: {
-        width: 190,
-        height: 190,
-        borderRadius: 8,
-        marginBottom: 10,
-    },
-    productsContainer: {
-        marginTop: 10,
-        width: '100%',
-    },
-    productsSectionTitle: {
-        fontSize: 10,
-        fontFamily: typography.mono,
-        fontWeight: '800',
-        color: colors.textMuted,
-        letterSpacing: 1,
-        marginBottom: 8,
-        marginLeft: 4,
-    },
-    productsRow: {
-        flexDirection: 'row',
-        gap: 12,
-        paddingLeft: 4,
-        paddingRight: 16,
-    },
-    productCard: {
-        width: 148,
-        backgroundColor: colors.white,
-        borderRadius: 8,
-        borderWidth: 1.5,
-        borderColor: colors.border,
-        overflow: 'hidden',
-    },
-    prodThumb: {
-        width: '100%',
-        height: 140,
-        backgroundColor: '#EBE8DF',
-    },
-    prodThumbPlaceholder: {
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    prodInfo: {
-        padding: 8,
-    },
-    prodBrand: {
-        fontSize: 9,
-        fontFamily: typography.mono,
-        fontWeight: '800',
-        color: colors.textMuted,
-        letterSpacing: 0.5,
-    },
-    prodTitle: {
-        fontSize: 12,
-        fontFamily: typography.mono,
-        color: colors.charcoal,
-        marginTop: 2,
-        fontWeight: '600',
-    },
-    prodPrice: {
-        fontSize: 11,
-        fontFamily: typography.mono,
-        fontWeight: '800',
-        color: colors.crimson,
-        marginTop: 4,
-    },
-    viewBadge: {
-        backgroundColor: colors.bg,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 4,
-        paddingVertical: 3,
-        alignItems: 'center',
-        marginTop: 6,
-    },
-    viewBadgeText: {
-        fontSize: 9,
-        fontFamily: typography.mono,
-        fontWeight: '800',
-        color: colors.charcoal,
-    },
-    aiLoadingBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        padding: 12,
-    },
-    aiLoadingText: {
-        fontSize: 12,
-        fontFamily: typography.mono,
-        color: colors.textMuted,
-    },
-    attachedPhotoBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#EFECE6',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
-    },
-    attachedThumb: {
-        width: 42,
-        height: 42,
-        borderRadius: 6,
-        borderWidth: 1,
-        borderColor: colors.charcoal,
-    },
-    attachedTitle: {
-        fontSize: 11,
-        fontFamily: typography.mono,
-        fontWeight: '700',
-        color: colors.charcoal,
-    },
-    attachedSub: {
-        fontSize: 9,
-        fontFamily: typography.mono,
-        color: colors.textMuted,
-    },
-    removePhotoBtn: {
-        padding: 4,
-    },
-    inputArea: {
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        paddingHorizontal: 12,
-        paddingTop: 8,
-        backgroundColor: '#FAF9F6',
-        borderTopWidth: 1.5,
-        borderTopColor: colors.border,
-        gap: 8,
-    },
-    photoAttachBtn: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#EBE8DF',
-        marginBottom: 2,
-    },
-    inputWrapper: {
-        flex: 1,
-        backgroundColor: colors.white,
-        borderWidth: 1.5,
-        borderColor: 'rgba(30,31,34,0.18)',
-        borderRadius: 22,
-        paddingHorizontal: 16,
-        minHeight: 44,
-        maxHeight: 120,
-        justifyContent: 'center',
-    },
-    inputWrapperFocused: {
-        borderColor: colors.charcoal,
-    },
-    input: {
-        fontFamily: typography.mono,
-        fontSize: 13,
-        color: colors.charcoal,
-        lineHeight: 18,
-        maxHeight: 110,
-        paddingVertical: Platform.OS === 'ios' ? 10 : 8,
-        textAlignVertical: 'center',
-    },
-    sendButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 2,
-    },
-    sendButtonActive: {
-        backgroundColor: colors.charcoal,
-    },
-    sendButtonDisabled: {
-        backgroundColor: '#EBE8DF',
-    },
-    emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 40, paddingHorizontal: 20 },
-    emptyIconCircle: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        backgroundColor: '#F3EFE6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
-        borderWidth: 1.5,
-        borderColor: colors.border,
-    },
-    emptyTitle: { color: colors.charcoal, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, marginBottom: 8 },
-    emptySub: { color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18, fontFamily: typography.mono },
-    quickPrompts: {
-        marginTop: 24,
-        width: '100%',
-        gap: 8,
-    },
-    promptChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: colors.white,
-        borderWidth: 1.5,
-        borderColor: colors.border,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 8,
-    },
-    promptChipText: {
-        fontSize: 12,
-        fontFamily: typography.mono,
-        color: colors.charcoal,
-    },
+  container: { flex: 1, backgroundColor: colors.cream },
+  header: {
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.charcoal,
+    paddingBottom: 14,
+    backgroundColor: colors.cream,
+  },
+  headerCenter: { alignItems: 'center' },
+  headerTitle: {
+    color: colors.charcoal,
+    fontSize: 15,
+    fontFamily: typography.mono,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  agentStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 3,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#2E7D32',
+  },
+  statusText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  wardrobeQuickBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
+
+  quickCommandsBar: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,31,34,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+  quickCommandsScroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  quickCommandChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.15)',
+  },
+  quickCommandText: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.charcoal,
+    fontWeight: '600',
+  },
+
+  messageScroll: { flex: 1 },
+  messageContent: { padding: 16, gap: 18 },
+  messageContainer: { width: '100%' },
+
+  userBubbleWrapper: {
+    alignSelf: 'flex-end',
+    maxWidth: '85%',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  attachedImagePreview: {
+    width: 140,
+    height: 140,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+  },
+  userAttachedImg: { width: '100%', height: '100%' },
+  userBubble: {
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderBottomRightRadius: 4,
+  },
+  userBubbleText: {
+    color: colors.cream,
+    fontFamily: typography.body,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  agentMessageWrapper: {
+    alignSelf: 'flex-start',
+    width: '100%',
+    gap: 12,
+  },
+  actionExecutionLogs: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 4,
+  },
+  actionLogPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.25)',
+  },
+  actionLogText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: '#2E7D32',
+    fontWeight: '700',
+  },
+
+  agentBubble: {
+    backgroundColor: colors.white,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    maxWidth: '92%',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  agentBubbleText: {
+    color: colors.charcoal,
+    fontFamily: typography.body,
+    fontSize: 14.5,
+    lineHeight: 22,
+  },
+
+  outfitLookCard: {
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    padding: 14,
+    width: '100%',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  outfitHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  outfitTagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  outfitTagText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  outfitLookTitle: {
+    fontFamily: typography.body,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.charcoal,
+    flex: 1,
+  },
+  outfitVibeText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginBottom: 12,
+  },
+  outfitPiecesRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
+  },
+  outfitPieceCard: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  outfitThumbWrapper: {
+    width: '100%',
+    aspectRatio: 0.85,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.bgMuted,
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.1)',
+  },
+  outfitThumbImg: { width: '100%', height: '100%' },
+  outfitSourceBadge: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  sourceWardrobe: { backgroundColor: '#2E7D32' },
+  sourceArchive: { backgroundColor: colors.charcoal },
+  outfitSourceText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 7.5,
+    fontWeight: '800',
+  },
+  outfitPieceTitle: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.charcoal,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  outfitPieceRole: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  outfitEditorialNote: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.charcoal,
+    fontStyle: 'italic',
+    lineHeight: 18,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(30,31,34,0.08)',
+    paddingTop: 8,
+    marginTop: 4,
+  },
+
+  cardsCarouselContainer: {
+    width: '100%',
+    marginTop: 4,
+  },
+  cardsSectionLabel: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
+  cardsCarouselContent: {
+    gap: 12,
+    paddingRight: 16,
+  },
+  garmentActionCard: {
+    width: SCREEN_WIDTH * 0.52,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    overflow: 'hidden',
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  cardImageWrapper: {
+    width: '100%',
+    aspectRatio: 0.95,
+    backgroundColor: colors.bgMuted,
+    position: 'relative',
+  },
+  cardImage: { width: '100%', height: '100%' },
+  cardBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  cardBadgeText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  cardInfo: {
+    padding: 10,
+    gap: 3,
+  },
+  cardBrand: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.8,
+  },
+  cardTitle: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.charcoal,
+  },
+  cardPrice: {
+    fontFamily: typography.mono,
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.charcoal,
+    marginVertical: 2,
+  },
+  cardActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: colors.charcoal,
+    paddingVertical: 7,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  actionBtnRent: { backgroundColor: colors.copper },
+  actionBtnSwap: { backgroundColor: colors.forest },
+  cardActionBtnText: {
+    color: colors.cream,
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+
+  followUpsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  followUpChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.18)',
+  },
+  followUpText: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.charcoal,
+    fontWeight: '500',
+  },
+
+  loadingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.15)',
+    alignSelf: 'flex-start',
+  },
+  loadingText: {
+    fontFamily: typography.body,
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+
+  inputContainer: {
+    backgroundColor: colors.white,
+    borderTopWidth: 1.5,
+    borderTopColor: colors.charcoal,
+    paddingHorizontal: 14,
+    paddingTop: 8,
+  },
+  imagePreviewBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.bgMuted,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  attachedPreviewThumb: {
+    width: 32,
+    height: 32,
+    borderRadius: 4,
+  },
+  imageAttachedText: {
+    flex: 1,
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.charcoal,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cameraBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
+  inputWrapper: {
+    flex: 1,
+    backgroundColor: colors.bgMuted,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 4,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.15)',
+    minHeight: 40,
+    maxHeight: 100,
+    justifyContent: 'center',
+  },
+  inputWrapperFocused: {
+    borderColor: colors.charcoal,
+    backgroundColor: colors.white,
+  },
+  textInput: {
+    fontFamily: typography.body,
+    fontSize: 14,
+    color: colors.charcoal,
+    maxHeight: 90,
+  },
+  sendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendBtnActive: {
+    backgroundColor: colors.charcoal,
+  },
+  sendBtnDisabled: {
+    backgroundColor: 'rgba(30,31,34,0.2)',
+  },
 });

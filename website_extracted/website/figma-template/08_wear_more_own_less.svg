@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<defs><radialGradient id="bg"><stop offset="0" stop-color="#252725"/><stop offset=".58" stop-color="#101211"/><stop offset="1" stop-color="#050606"/></radialGradient></defs>
+<rect width="1440" height="900" fill="url(#bg)"/>
+<rect x="28" y="28" width="1384" height="844" fill="none" stroke="#343633"/>
+<text x="54" y="58" fill="#92928D" font-family="Inter,Arial" font-size="12" letter-spacing="2">08 / KAPHOR</text>
+<text x="54" y="110" fill="#F2F0EA" font-family="Georgia,serif" font-size="48">Wear more. Own less.</text>
+<text x="54" y="145" fill="#92928D" font-family="Inter,Arial" font-size="15">Rent favourite styles for as long as you need them.</text>
+<text x="1000" y="58" fill="#F2F0EA" font-family="Inter,Arial" font-size="11" letter-spacing="2">DISCOVER   STYLE   SWAP   SELL   RENT   ABOUT</text>
+<line x1="54" y1="172" x2="1386" y2="172" stroke="#343633"/>
+
+<circle cx="75" cy="220" r="3" fill="#F2F0EA"/>
+<text x="95" y="225" fill="#F2F0EA" font-family="Inter,Arial" font-size="13" letter-spacing="1">RENT</text>
+<rect x="270" y="215" width="780" height="540" fill="#0B0D0C" stroke="#343633"/>
+<ellipse cx="660" cy="710" rx="280" ry="28" fill="#000" opacity=".7"/>
+<path d="M585 300 L640 265 L695 300 L755 350 L725 430 L710 625 L610 625 L595 430 L565 350 Z" fill="none" stroke="#B8B7AF" stroke-width="3"/>
+<path d="M640 265 L640 625 M585 300 L640 355 L695 300 M610 625 L710 625" stroke="#555954" stroke-width="2" fill="none"/>
+<text x="660" y="675" text-anchor="middle" fill="#777A75" font-family="Inter,Arial" font-size="11" letter-spacing="3">3D OBJECT / GLB PLACEHOLDER</text>
+<rect x="300" y="780" width="90" height="30" rx="15" fill="none" stroke="#343633"/>
+<text x="345.0" y="800" text-anchor="middle" fill="#92928D" font-family="Inter,Arial" font-size="11" letter-spacing="1">RENT</text>
+<rect x="400" y="780" width="90" height="30" rx="15" fill="none" stroke="#343633"/>
+<text x="445.0" y="800" text-anchor="middle" fill="#92928D" font-family="Inter,Arial" font-size="11" letter-spacing="1">RETURN</text>
+<rect x="500" y="780" width="108.3" height="30" rx="15" fill="none" stroke="#343633"/>
+<text x="554.15" y="800" text-anchor="middle" fill="#92928D" font-family="Inter,Arial" font-size="11" letter-spacing="1">NEXT PERSON</text>
+<rect x="1090" y="215" width="260" height="310" fill="#0C0E0D" stroke="#343633"/>
+<text x="1115" y="255" fill="#F2F0EA" font-family="Inter,Arial" font-size="13" letter-spacing="2">RENTAL</text>
+<text x="1115" y="300" fill="#92928D" font-family="Inter,Arial" font-size="13">DENIM JACKET  ₹499/DAY</text>
+<text x="1115" y="338" fill="#92928D" font-family="Inter,Arial" font-size="13">DRESS  ₹299/DAY</text>
+<text x="1115" y="376" fill="#92928D" font-family="Inter,Arial" font-size="13">HANDBAG  ₹199/DAY</text>
+<rect x="1115" y="455" width="210" height="40" rx="20" fill="#F2F0EA"/>
+<text x="1220" y="480" text-anchor="middle" fill="#080909" font-family="Inter,Arial" font-size="11" letter-spacing="1">EXPLORE</text>
+<text x="54" y="838" fill="#92928D" font-family="Inter,Arial" font-size="11" letter-spacing="2">SCROLL / INTERACT WITH 3D WORLD</text>
+</svg>
