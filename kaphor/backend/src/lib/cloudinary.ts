@@ -1,6 +1,6 @@
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { logger } from './logger';
-import { getDownloadUrl as getS3DownloadUrl, deleteFromS3 } from './s3';
+import { getDownloadUrl as getS3DownloadUrl, deleteFromS3, uploadToS3 as uploadToAwsS3 } from './s3';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -104,13 +104,24 @@ export async function uploadToCloudinary(
         key: uploadResult.public_id,
       };
     } catch (err: any) {
-      logger.warn(`Cloudinary upload failed, attempting local storage fallback: ${err.message}`);
+      logger.warn(`Cloudinary upload failed, attempting S3 storage fallback: ${err.message}`);
     }
   } else {
-    logger.info('Cloudinary credentials missing, using local disk storage.');
+    logger.info('Cloudinary credentials missing, attempting S3 storage fallback.');
   }
 
-  // 2. Local Fallback (for development / offline)
+  // 2. S3 Fallback (persistent cloud storage)
+  try {
+    const s3Result = await uploadToAwsS3(buffer, cleanFolder, mimetype);
+    if (s3Result && s3Result.url && !s3Result.url.includes('/uploads/')) {
+      logger.info(`File successfully uploaded to S3 fallback: ${s3Result.url}`);
+      return s3Result;
+    }
+  } catch (s3Err: any) {
+    logger.warn(`S3 fallback upload failed, attempting local storage fallback: ${s3Err.message}`);
+  }
+
+  // 3. Local Fallback (for development / offline)
   try {
     const ext = mimetype.split('/')[1] || 'jpg';
     const localFilename = `${filename}.${ext}`;

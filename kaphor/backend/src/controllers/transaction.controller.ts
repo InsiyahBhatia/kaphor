@@ -381,7 +381,14 @@ export async function postPeerReview(req: AuthRequest, res: Response): Promise<v
 
     const order = await db.order.findUnique({
       where: { id: orderId },
-      include: { peerReview: true },
+      include: {
+        peerReview: true,
+        items: {
+          include: {
+            garment: { select: { title: true } },
+          },
+        },
+      },
     });
     if (!order || order.buyerId !== req.user.id) {
       res.status(403).json({ error: 'FORBIDDEN', message: 'Only the buyer can review the seller' });
@@ -410,11 +417,12 @@ export async function postPeerReview(req: AuthRequest, res: Response): Promise<v
     });
 
     // Notify Seller
+    const garmentTitle = order.items?.[0]?.garment?.title || 'item';
     await createNotification({
       userId: order.sellerId,
       type: 'PEER_REVIEW',
       title: '⭐️ New Review!',
-      body: `${req.user.displayName} left you a ${rating}-star review for the ${order.items[0]?.garment?.title || 'item'}.`,
+      body: `${req.user.displayName} left you a ${rating}-star review for the ${garmentTitle}.`,
       data: { orderId }
     });
 

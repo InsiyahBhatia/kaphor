@@ -347,9 +347,11 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
           garmentVector,
           lifecycleState: 'LISTED',
           listingType: (body.listingType as ListingType) || 'SALE',
-          price: body.price != null && Number(body.price) > 0
-            ? Math.round(Number(body.price))
-            : getEstimatedGarmentValue(String(body.category), String(body.brand || '')),
+          price: (body.listingType === 'ACCESSORY_SWAP' || String(body.listingType).toUpperCase() === 'ACCESSORY_SWAP')
+            ? (body.price != null && Number(body.price) > 0 ? Math.round(Number(body.price)) : 0)
+            : (body.price != null && Number(body.price) > 0
+              ? Math.round(Number(body.price))
+              : getEstimatedGarmentValue(String(body.category), String(body.brand || ''))),
           rentalPriceDay: body.rentalPriceDay != null ? Math.round(Number(body.rentalPriceDay)) : null,
           rentalPriceWeek: body.rentalPriceWeek != null ? Math.round(Number(body.rentalPriceWeek)) : null,
         },
@@ -469,7 +471,11 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
         ...(body.category != null && { category: String(body.category) }),
         ...(body.subCategory != null && { subCategory: String(body.subCategory) }),
         ...(body.size != null && { size: String(body.size) }),
-        ...(body.price != null && { price: Math.round(Number(body.price)) }),
+        ...(body.price != null && {
+          price: (newListingType === 'ACCESSORY_SWAP' || String(newListingType).toUpperCase() === 'ACCESSORY_SWAP')
+            ? (body.price !== '' && !isNaN(Number(body.price)) && Number(body.price) > 0 ? Math.round(Number(body.price)) : 0)
+            : Math.round(Number(body.price)),
+        }),
         ...(body.rentalPriceDay != null && { rentalPriceDay: Math.round(Number(body.rentalPriceDay)) }),
         ...(body.rentalPriceWeek != null && { rentalPriceWeek: Math.round(Number(body.rentalPriceWeek)) }),
         ...(body.listingType != null && { listingType: body.listingType as ListingType }),

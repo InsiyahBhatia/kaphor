@@ -126,6 +126,8 @@ export default function EditListingScreen() {
         if (rentalWeek && !isNaN(Number(rentalWeek))) {
           updates.rentalPriceWeek = Number(rentalWeek);
         }
+      } else if (listingType === 'ACCESSORY_SWAP') {
+        updates.price = (price && !isNaN(Number(price)) && Number(price) > 0) ? Number(price) : 0;
       }
 
       if (fabric.trim()) updates.fabric = fabric.trim();
@@ -302,11 +304,27 @@ export default function EditListingScreen() {
             )}
 
             {listingType === 'ACCESSORY_SWAP' && (
-              <View style={styles.swapNotice}>
-                <Ionicons name="repeat" size={20} color={colors.gold} />
-                <Text style={styles.swapNoticeText}>
-                  This garment is available for direct peer-to-peer swaps in the Circular Hub.
-                </Text>
+              <View>
+                <View style={styles.swapNotice}>
+                  <Ionicons name="repeat" size={20} color={colors.gold} />
+                  <Text style={styles.swapNoticeText}>
+                    This accessory is available for direct peer-to-peer swaps in the Circular Hub.
+                  </Text>
+                </View>
+                <View style={[styles.inputWrap, { marginTop: spacing.sm }]}>
+                  <Text style={styles.fieldLabel}>ESTIMATED TRADE VALUE (₹) (OPTIONAL)</Text>
+                  <View style={styles.priceInputRow}>
+                    <Text style={styles.currencySymbol}>₹</Text>
+                    <TextInput
+                      style={styles.priceInput}
+                      keyboardType="numeric"
+                      placeholder="Optional (1:1 trade)"
+                      placeholderTextColor={colors.textMuted}
+                      value={price}
+                      onChangeText={setPrice}
+                    />
+                  </View>
+                </View>
               </View>
             )}
           </View>

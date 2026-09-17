@@ -57,20 +57,37 @@ function inferOutfitSlot(card: AgentCard): AgentOutfitItem['slot'] {
   const title = (card.title || '').toLowerCase();
   const text = `${category} ${title}`;
 
-  // 1. Explicit Category Match First
-  if (['tops', 'top', 'kurtas', 'blouses', 'shirts', 't-shirts'].includes(category)) return 'TOP';
-  if (['bottoms', 'bottom', 'pants', 'trousers', 'skirts', 'jeans', 'palazzos'].includes(category)) return 'BOTTOM';
-  if (['footwear', 'shoes', 'heels', 'flats', 'sandals', 'boots'].includes(category)) return 'FOOTWEAR';
-  if (['jewelry', 'jewellery', 'accessories', 'bags', 'handbags', 'belts'].includes(category)) return 'ACCESSORY';
-  if (['jackets', 'coats', 'blazers', 'outerwear'].includes(category)) return 'OUTERWEAR';
+  // 1. Jewelry & Accessories (never mix up with apparel or footwear)
+  if (/\b(earring|earrings|cuff|bangle|bracelet|necklace|choker|ring|pendant|brooch|jewelry|jewellery|watch|watches|eyewear|sunglasses|shades|belt|belts|scarf|scarves|hat|hats|cap|caps|headband)\b/.test(text)) {
+    return 'ACCESSORY';
+  }
+  if (/\b(bag|bags|handbag|tote|crossbody|clutch|purse|shoulder bag|satchel|backpack)\b/.test(text)) {
+    return 'ACCESSORY';
+  }
+  if (['jewelry', 'jewellery', 'accessories', 'bags', 'handbags', 'belts', 'eyewear', 'watches'].includes(category)) {
+    return 'ACCESSORY';
+  }
 
-  // 2. Keyword Evaluation with Correct Priority (TOP checked BEFORE Accessory/Bottom)
+  // 2. Full-body & Co-ord Ensembles (Dresses, Jumpsuits, 2-Piece Sets, Sarees)
+  if (/\b(co-ord|coord|set|ensemble|2-piece|two-piece|jumpsuit|romper|dress|gown|sari|saree|lehenga|anarkali)\b/.test(text)) {
+    return 'ACCENT';
+  }
+
+  // 3. Outerwear (Jackets, Coats, Blazers, Vests)
+  if (['jackets', 'coats', 'blazers', 'outerwear'].includes(category)) return 'OUTERWEAR';
+  if (/\b(jacket|coat|blazer|cardigan|vest|trench|shrug|bomber|outerwear)\b/.test(text)) return 'OUTERWEAR';
+
+  // 4. Tops
+  if (['tops', 'top', 'kurtas', 'blouses', 'shirts', 't-shirts'].includes(category)) return 'TOP';
   if (/\b(top|crop top|shirt|tee|t-shirt|blouse|tank|kurta|kurti|sweater|hoodie|corset)\b/.test(text)) return 'TOP';
-  if (/\b(pant|trousers?|jeans?|skirt|shorts?|leggings?|palazzo|slacks)\b/.test(text)) return 'BOTTOM';
-  if (/\b(jacket|coat|blazer|cardigan|vest|shrug|outerwear)\b/.test(text)) return 'OUTERWEAR';
-  if (/\b(shoes?|sandals?|heels?|boots?|sneakers?|loafers?|flats?|footwear)\b/.test(text)) return 'FOOTWEAR';
-  if (/\b(bags?|belts?|jewel(ry)?|necklace|earrings?|bracelet|ring|scarf|hat|watch|sunglasses?|accessories)\b/.test(text)) return 'ACCESSORY';
-  if (/\b(dress|gown|jumpsuit|co-ord|coord|set|sari|saree|lehenga)\b/.test(text)) return 'ACCENT';
+
+  // 5. Bottoms
+  if (['bottoms', 'bottom', 'pants', 'trousers', 'skirts', 'jeans', 'palazzos'].includes(category)) return 'BOTTOM';
+  if (/\b(pant|pants|trousers?|jeans?|skirt|skirts?|shorts?|leggings?|palazzo|slacks|culottes?)\b/.test(text)) return 'BOTTOM';
+
+  // 6. Footwear (strictly actual footwear keywords and category, not skirts/apparel)
+  if (['footwear', 'shoes', 'heels', 'flats', 'sandals', 'boots'].includes(category)) return 'FOOTWEAR';
+  if (/\b(shoes?|sandals?|heels?|boots?|sneakers?|loafers?|flats?|mules?|juttis?|footwear)\b/.test(text)) return 'FOOTWEAR';
 
   return 'ACCENT';
 }

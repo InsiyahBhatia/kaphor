@@ -356,7 +356,7 @@ export default function AIChatScreen() {
                               item.isFromWardrobe ? styles.sourceWardrobe : styles.sourceArchive
                             ]}>
                               <Text style={styles.outfitSourceText}>
-                                {item.isFromWardrobe ? 'YOUR CLOSET' : item.garment.listingType}
+                                {item.isFromWardrobe ? 'YOUR CLOSET' : (item.garment.listingType === 'ACCESSORY_SWAP' ? 'SWAP' : (item.garment.listingType || 'ARCHIVE'))}
                               </Text>
                             </View>
                           </View>

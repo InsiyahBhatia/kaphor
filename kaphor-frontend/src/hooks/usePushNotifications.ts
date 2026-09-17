@@ -22,12 +22,13 @@ export function usePushNotifications() {
         if (data?.url) {
           router.push(data.url as any);
         } else if (data?.conversationId) {
-          router.push({
-            pathname: '/(tabs)/studio/chat',
-            params: { id: data.conversationId },
-          } as any);
-        } else if (data?.type === 'DIRECT_MESSAGE') {
-          router.push('/(tabs)/studio' as any);
+          router.push(`/messages/${data.conversationId}` as any);
+        } else if (data?.orderId) {
+          router.push(`/(tabs)/shop/orders/${data.orderId}` as any);
+        } else if (data?.swapId) {
+          router.push(`/(tabs)/swap/${data.swapId}` as any);
+        } else if (data?.type === 'DIRECT_MESSAGE' || data?.type === 'NEW_MESSAGE') {
+          router.push('/(tabs)/messages' as any);
         } else if (data?.type) {
           router.push('/(tabs)/notifications' as any);
         }

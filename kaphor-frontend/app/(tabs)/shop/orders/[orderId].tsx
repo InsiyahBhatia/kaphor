@@ -720,76 +720,83 @@ export default function OrderThreadScreen() {
             onPress={() => setReviewModalVisible(false)}
           />
           <View style={styles.reviewModalSheet}>
-            <View style={styles.reviewModalHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.reviewModalTitle}>RATE THE SELLER</Text>
-                <Text style={styles.reviewModalSub}>
-                  Order #{order.id.slice(0, 8).toUpperCase()} · {other.displayName}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setReviewModalVisible(false)}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                style={styles.modalCloseBtn}
-              >
-                <Ionicons name="close" size={20} color={colors.charcoal} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.reviewRatingHelp}>SELECT STAR RATING (1–5)</Text>
-            <View style={styles.starsRow}>
-              {[1, 2, 3, 4, 5].map((n) => (
+            <ScrollView
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 16 }}
+            >
+              <View style={styles.reviewModalHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.reviewModalTitle}>RATE THE SELLER</Text>
+                  <Text style={styles.reviewModalSub}>
+                    Order #{order.id.slice(0, 8).toUpperCase()} · {other.displayName}
+                  </Text>
+                </View>
                 <TouchableOpacity
-                  key={n}
-                  onPress={() => {
-                    hapticFeedback.selection();
-                    setRating(n);
-                  }}
-                  style={styles.starHitTarget}
+                  onPress={() => setReviewModalVisible(false)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={styles.modalCloseBtn}
                 >
-                  <Ionicons
-                    name={n <= rating ? 'star' : 'star-outline'}
-                    size={36}
-                    color={n <= rating ? '#C95F12' : '#C8C4BA'}
-                  />
+                  <Ionicons name="close" size={20} color={colors.charcoal} />
                 </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.starLabel}>
-              {rating === 5 ? '★★★★★ EXCEPTIONAL' :
-               rating === 4 ? '★★★★☆ GREAT' :
-               rating === 3 ? '★★★☆☆ GOOD' :
-               rating === 2 ? '★★☆☆☆ SUBPAR' : '★☆☆☆☆ POOR'}
-            </Text>
+              </View>
 
-            <TextInput
-              style={styles.reviewModalInput}
-              placeholder="How was the seller's communication, garment condition, and dispatch speed?"
-              placeholderTextColor={colors.textMuted}
-              value={reviewComment}
-              onChangeText={setReviewComment}
-              multiline
-              numberOfLines={4}
-            />
+              <Text style={styles.reviewRatingHelp}>SELECT STAR RATING (1–5)</Text>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <TouchableOpacity
+                    key={n}
+                    onPress={() => {
+                      hapticFeedback.selection();
+                      setRating(n);
+                    }}
+                    style={styles.starHitTarget}
+                  >
+                    <Ionicons
+                      name={n <= rating ? 'star' : 'star-outline'}
+                      size={36}
+                      color={n <= rating ? '#C95F12' : '#C8C4BA'}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.starLabel}>
+                {rating === 5 ? '★★★★★ EXCEPTIONAL' :
+                 rating === 4 ? '★★★★☆ GREAT' :
+                 rating === 3 ? '★★★☆☆ GOOD' :
+                 rating === 2 ? '★★☆☆☆ SUBPAR' : '★☆☆☆☆ POOR'}
+              </Text>
 
-            <TouchableOpacity
-              style={[styles.submitReviewBtn, reviewSubmitting && styles.disabled]}
-              onPress={submitReview}
-              disabled={reviewSubmitting}
-            >
-              {reviewSubmitting ? (
-                <ActivityIndicator color={colors.cream} />
-              ) : (
-                <Text style={styles.submitReviewBtnText}>SUBMIT PEER REVIEW ★</Text>
-              )}
-            </TouchableOpacity>
+              <TextInput
+                style={styles.reviewModalInput}
+                placeholder="How was the seller's communication, garment condition, and dispatch speed?"
+                placeholderTextColor={colors.textMuted}
+                value={reviewComment}
+                onChangeText={setReviewComment}
+                multiline
+                numberOfLines={4}
+              />
 
-            <TouchableOpacity
-              style={styles.cancelReviewBtn}
-              onPress={() => setReviewModalVisible(false)}
-            >
-              <Text style={styles.cancelReviewBtnText}>MAYBE LATER</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.submitReviewBtn, reviewSubmitting && styles.disabled]}
+                onPress={submitReview}
+                disabled={reviewSubmitting}
+              >
+                {reviewSubmitting ? (
+                  <ActivityIndicator color={colors.cream} />
+                ) : (
+                  <Text style={styles.submitReviewBtnText}>SUBMIT PEER REVIEW ★</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelReviewBtn}
+                onPress={() => setReviewModalVisible(false)}
+              >
+                <Text style={styles.cancelReviewBtnText}>MAYBE LATER</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>

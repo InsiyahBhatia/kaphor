@@ -377,7 +377,7 @@ export default function SellScreen() {
     const finalDescription = description.trim() || `Garment listing assessed by Kaphor AI Vision engine.`;
     const finalCondition = condition || 'PRISTINE';
     const finalSize = size || (FREE_SIZE_CATEGORIES.includes(finalCategory) ? 'FREE SIZE' : 'M');
-    const finalPrice = price || '999';
+    const finalPrice = listingType === 'ACCESSORY_SWAP' ? (price || '0') : (price || '999');
 
     if (!finalTitle || finalTitle.length < 3) {
       Alert.alert('Title Required', 'Please enter a title of at least 3 characters.');
@@ -414,6 +414,10 @@ export default function SellScreen() {
       if (listingType === 'RENTAL') {
         formData.append('rentalPriceDay', rentalDay || '199');
         if (rentalWeek) formData.append('rentalPriceWeek', rentalWeek);
+      } else if (listingType === 'ACCESSORY_SWAP') {
+        if (price && Number(price) > 0) {
+          formData.append('price', price);
+        }
       } else {
         formData.append('price', finalPrice);
       }
@@ -663,7 +667,7 @@ export default function SellScreen() {
               <>
                 <TextInput
                   style={styles.input}
-                  placeholder="ESTIMATED TRADE VALUE (₹) (e.g. 2499)"
+                  placeholder="ESTIMATED TRADE VALUE (₹) (OPTIONAL)"
                   placeholderTextColor={colors.textMuted}
                   value={price}
                   onChangeText={setPrice}
@@ -672,7 +676,7 @@ export default function SellScreen() {
                 <View style={styles.swapNoticeBox}>
                   <Ionicons name="scale-outline" size={16} color={colors.crimson} />
                   <Text style={styles.swapNoticeText}>
-                    FAIR SWAP VALUATION: Not a cash sale price. Used by Kaphor's Fair Value Matcher to calculate balance parity and recommend equitable 1:1 trades.
+                    1:1 PEER SWAP: Cash price is completely optional. Swapping on KaPhor is an exchange of accessories. Any valuation you enter is purely optional to guide fair balance matching.
                   </Text>
                 </View>
               </>
@@ -750,7 +754,7 @@ export default function SellScreen() {
               <Text style={styles.summaryLabel}>
                 {listingType === 'RENTAL' ? 'RENT PER DAY: ' : listingType === 'ACCESSORY_SWAP' ? 'ESTIMATED TRADE VALUE: ' : 'PRICE: '}
                 <Text style={styles.summaryValue}>
-                  {listingType === 'RENTAL' ? `₹${rentalDay}` : `₹${price || '2,499'}`}
+                  {listingType === 'RENTAL' ? `₹${rentalDay}` : listingType === 'ACCESSORY_SWAP' ? (price ? `₹${price}` : '1:1 Trade (No Price Required)') : `₹${price || '999'}`}
                 </Text>
               </Text>
               {fabric ? <Text style={styles.summaryLabel}>FABRIC: <Text style={styles.summaryValue}>{fabric}</Text></Text> : null}
