@@ -168,16 +168,16 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           select: {
             id: true,
             status: true,
-            garmentOffered: { select: { id: true, title: true, brand: true, images: true, price: true } },
-            garmentWanted: { select: { id: true, title: true, brand: true, images: true, price: true } },
+            offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+            wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
           },
         });
 
         // Resolve swap garment images
         let swapGarments: any[] = [];
         if (activeSwap) {
-          const g1 = activeSwap.garmentOffered ? await resolveGarmentThumbnail(activeSwap.garmentOffered) : null;
-          const g2 = activeSwap.garmentWanted ? await resolveGarmentThumbnail(activeSwap.garmentWanted) : null;
+          const g1 = activeSwap.offeredGarment ? await resolveGarmentThumbnail(activeSwap.offeredGarment) : null;
+          const g2 = activeSwap.wantedGarment ? await resolveGarmentThumbnail(activeSwap.wantedGarment) : null;
           swapGarments = [g1, g2].filter(Boolean);
         }
 
