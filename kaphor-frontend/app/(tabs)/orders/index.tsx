@@ -1046,6 +1046,37 @@ const styles = StyleSheet.create({
   primaryTabTextActive: {
     color: colors.cream,
   },
+  summaryStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#F7F5F0',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryNum: {
+    fontFamily: typography.mono,
+    fontSize: 16,
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  summaryLbl: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.textMuted,
+    letterSpacing: 0.4,
+    marginTop: 1,
+  },
+  summaryDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
   content: {
     padding: 16,
     paddingBottom: 100,
