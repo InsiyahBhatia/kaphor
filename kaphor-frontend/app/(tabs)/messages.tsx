@@ -21,15 +21,14 @@ import { useNotificationStore } from '../../src/store/notificationStore';
 type FilterTab = 'ALL' | 'SELL' | 'SWAP' | 'RENT';
 
 export function getConversationCategory(c: ConversationSummary): 'SELL' | 'SWAP' | 'RENT' {
-  // 1. Explicit Conversation Type
-  if (c.type === 'RENTAL') return 'RENT';
-  if (c.type === 'SWAP') return 'SWAP';
-  if (c.type === 'SALE') return 'SELL';
-
-  // 2. Active Transaction Check (foreign keys or attached models)
+  // 1. Active Transaction Check (foreign keys or attached models)
   if (c.rentalId || c.rental) return 'RENT';
   if (c.swapId || c.swap) return 'SWAP';
   if (c.orderId || c.order) return 'SELL';
+
+  // 2. Explicit Non-Sale Conversation Type
+  if (c.type === 'RENTAL') return 'RENT';
+  if (c.type === 'SWAP') return 'SWAP';
 
   // 3. Garment Listing Type & Rate Specification
   const listingType = c.garment?.listingType;
@@ -40,7 +39,12 @@ export function getConversationCategory(c: ConversationSummary): 'SELL' | 'SWAP'
     return 'SWAP';
   }
 
-  // 4. Default to SELL pillar
+  // 4. Legacy Message Heuristic Fallback
+  const text = c.lastMessageText || '';
+  if (/\b(rent|rental|lease|deposit|booking)\b/i.test(text)) return 'RENT';
+  if (/\b(swap|trade|exchange|proposal)\b/i.test(text)) return 'SWAP';
+
+  // 5. Default to SELL pillar
   return 'SELL';
 }
 

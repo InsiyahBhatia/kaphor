@@ -162,7 +162,7 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
               { initiatorId: c.participant1Id, receiverId: c.participant2Id },
               { initiatorId: c.participant2Id, receiverId: c.participant1Id },
             ],
-            status: { in: ['REQUESTED', 'ACCEPTED', 'AGREEMENT_SIGNED', 'ADDRESS_SHARED', 'SHIPPED', 'BOTH_SHIPPED', 'DELIVERED', 'COMPLETED'] },
+            status: { notIn: ['CANCELLED', 'REJECTED'] },
           },
           orderBy: { updatedAt: 'desc' },
           select: {
@@ -191,13 +191,14 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           },
         });
 
+        const snippet = c.lastMessageText || c.messages[0]?.content || '';
         let resolvedType = c.type || 'SALE';
-        if (c.orderId || activeOrder) {
-          resolvedType = 'SALE';
-        } else if (c.swapId || activeSwap || c.garment?.listingType === 'ACCESSORY_SWAP' || c.garment?.listingType === 'SWAP') {
-          resolvedType = 'SWAP';
-        } else if (c.rentalId || activeRental || c.garment?.listingType === 'RENTAL') {
+        if (c.rentalId || activeRental || c.garment?.listingType === 'RENTAL' || /\b(rent|rental|lease|booking)\b/i.test(snippet)) {
           resolvedType = 'RENTAL';
+        } else if (c.swapId || activeSwap || c.garment?.listingType === 'ACCESSORY_SWAP' || (c.garment?.listingType as string) === 'SWAP' || /\b(swap|trade|proposal)\b/i.test(snippet)) {
+          resolvedType = 'SWAP';
+        } else if (c.orderId || activeOrder) {
+          resolvedType = 'SALE';
         } else if (!c.garment && !c.orderId && !c.swapId && !c.rentalId) {
           resolvedType = c.type === 'GENERAL' ? 'GENERAL' : 'SALE';
         }
