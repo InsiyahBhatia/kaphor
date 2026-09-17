@@ -201,6 +201,10 @@ export function WardrobeScreen() {
     try {
       const data = await cachedGet('/users/me/wardrobe');
       setWardrobe(Array.isArray(data) ? data : []);
+      // Fetch fresh in background to ensure recently bought/rented items show up immediately
+      fetchFresh('/users/me/wardrobe').then((fresh) => {
+        if (Array.isArray(fresh)) setWardrobe(fresh);
+      }).catch(() => {});
     } catch (error) {
       console.error('Failed to load wardrobe', error);
     } finally {

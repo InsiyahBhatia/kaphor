@@ -1,11 +1,46 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+
+const UPCYCLE_YOUTUBE_TUTORIALS = [
+  {
+    id: 'yt-1',
+    title: 'DIY Clothes Upcycling: Transform Old Clothes Into Trendy Outfits',
+    channel: 'Coolirpa',
+    videoId: '04Y_c20_92k',
+    thumbnail: 'https://img.youtube.com/vi/04Y_c20_92k/hqdefault.jpg',
+    vibe: 'BEGINNER FRIENDLY',
+  },
+  {
+    id: 'yt-2',
+    title: 'Thrift Flip & Denim Re-imagining: Old Jeans to Designer Co-ord',
+    channel: 'Withwendy',
+    videoId: 'W6LgQd59xWg',
+    thumbnail: 'https://img.youtube.com/vi/W6LgQd59xWg/hqdefault.jpg',
+    vibe: 'DENIM & OUTERWEAR',
+  },
+  {
+    id: 'yt-3',
+    title: 'Turn Heavy Old Sari / Dupatta into Modern Indo-Western Jacket & Dress',
+    channel: 'Kriti Atelier DIY',
+    videoId: 'fQ7rW1u5K_U',
+    thumbnail: 'https://img.youtube.com/vi/fQ7rW1u5K_U/hqdefault.jpg',
+    vibe: 'ETHNIC FUSION',
+  },
+  {
+    id: 'yt-4',
+    title: 'Sashiko Visible Mending & Japanese Patchwork Technique',
+    channel: 'Minimalist Crafting',
+    videoId: 'P6S911v0wWw',
+    thumbnail: 'https://img.youtube.com/vi/P6S911v0wWw/hqdefault.jpg',
+    vibe: 'ARTISANAL REPAIR',
+  },
+];
 
 export default function UpcycleSuggestionsScreen() {
   const router = useRouter();
@@ -123,6 +158,67 @@ export default function UpcycleSuggestionsScreen() {
                 </View>
               )}
             </TouchableOpacity>
+
+            {/* ── YouTube Upcycling Masterclass Tutorials ───────────────────────────── */}
+            <View style={{ marginTop: 32, marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <Ionicons name="logo-youtube" size={20} color="#FF0000" />
+                <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 18, color: '#C9A84C', letterSpacing: 1.5 }}>
+                  UPCYCLING VIDEO TUTORIALS
+                </Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
+                {UPCYCLE_YOUTUBE_TUTORIALS.map((yt) => (
+                  <TouchableOpacity
+                    key={yt.id}
+                    style={{
+                      width: 210,
+                      backgroundColor: '#1A0C10',
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: '#3A2C30',
+                      overflow: 'hidden',
+                    }}
+                    onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${yt.videoId}`)}
+                    activeOpacity={0.88}
+                  >
+                    <View style={{ width: '100%', height: 120, position: 'relative' }}>
+                      <Image source={{ uri: yt.thumbnail }} style={{ width: '100%', height: '100%' }} />
+                      <View style={{
+                        position: 'absolute',
+                        top: 0, bottom: 0, left: 0, right: 0,
+                        backgroundColor: 'rgba(0,0,0,0.35)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Ionicons name="play-circle" size={36} color="rgba(255,255,255,0.9)" />
+                      </View>
+                      <View style={{
+                        position: 'absolute',
+                        top: 8,
+                        left: 8,
+                        backgroundColor: '#C9A84C',
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 3,
+                      }}>
+                        <Text style={{ color: '#1A0C10', fontSize: 8, fontWeight: '900', letterSpacing: 0.5 }}>
+                          {yt.vibe}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={{ padding: 10 }}>
+                      <Text style={{ color: '#E0D6C8', fontSize: 12, fontWeight: '700', lineHeight: 16 }} numberOfLines={2}>
+                        {yt.title}
+                      </Text>
+                      <Text style={{ color: '#6B5C52', fontSize: 10, marginTop: 4 }}>
+                        Channel: {yt.channel}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
           </>
         ) : (
           <>

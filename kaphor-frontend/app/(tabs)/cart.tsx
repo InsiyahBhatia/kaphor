@@ -68,7 +68,19 @@ export default function CartScreen() {
         }
         setLoading(true);
         try {
-            const { data } = await api.post('/orders/cart', { garmentIds: Array.from(selectedIds) });
+            const freshCart = await fetchFresh<any[]>('/cart').catch(() => items);
+            const availableSelectedIds = new Set(
+                (Array.isArray(freshCart) ? freshCart : [])
+                    .filter((item) => item.garment && selectedIds.has(item.garmentId))
+                    .map((item) => item.garmentId)
+            );
+            if (availableSelectedIds.size === 0) {
+                setItems([]);
+                setSelectedIds(new Set());
+                Alert.alert('Cart Updated', 'Those items are no longer in your cart. Please add them again before checkout.');
+                return;
+            }
+            const { data } = await api.post('/orders/cart', { garmentIds: Array.from(availableSelectedIds) });
             const orderId = data.data.id || data.data.orderId;
             if (!orderId) {
               Alert.alert('Error', 'Could not create order. Please try again.');

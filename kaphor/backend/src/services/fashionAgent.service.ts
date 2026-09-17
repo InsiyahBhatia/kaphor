@@ -52,6 +52,29 @@ export interface AgentResult {
   suggestedFollowUps: string[];
 }
 
+function inferOutfitSlot(card: AgentCard): AgentOutfitItem['slot'] {
+  const category = (card.category || '').toLowerCase();
+  const title = (card.title || '').toLowerCase();
+  const text = `${category} ${title}`;
+
+  // 1. Explicit Category Match First
+  if (['tops', 'top', 'kurtas', 'blouses', 'shirts', 't-shirts'].includes(category)) return 'TOP';
+  if (['bottoms', 'bottom', 'pants', 'trousers', 'skirts', 'jeans', 'palazzos'].includes(category)) return 'BOTTOM';
+  if (['footwear', 'shoes', 'heels', 'flats', 'sandals', 'boots'].includes(category)) return 'FOOTWEAR';
+  if (['jewelry', 'jewellery', 'accessories', 'bags', 'handbags', 'belts'].includes(category)) return 'ACCESSORY';
+  if (['jackets', 'coats', 'blazers', 'outerwear'].includes(category)) return 'OUTERWEAR';
+
+  // 2. Keyword Evaluation with Correct Priority (TOP checked BEFORE Accessory/Bottom)
+  if (/\b(top|crop top|shirt|tee|t-shirt|blouse|tank|kurta|kurti|sweater|hoodie|corset)\b/.test(text)) return 'TOP';
+  if (/\b(pant|trousers?|jeans?|skirt|shorts?|leggings?|palazzo|slacks)\b/.test(text)) return 'BOTTOM';
+  if (/\b(jacket|coat|blazer|cardigan|vest|shrug|outerwear)\b/.test(text)) return 'OUTERWEAR';
+  if (/\b(shoes?|sandals?|heels?|boots?|sneakers?|loafers?|flats?|footwear)\b/.test(text)) return 'FOOTWEAR';
+  if (/\b(bags?|belts?|jewel(ry)?|necklace|earrings?|bracelet|ring|scarf|hat|watch|sunglasses?|accessories)\b/.test(text)) return 'ACCESSORY';
+  if (/\b(dress|gown|jumpsuit|co-ord|coord|set|sari|saree|lehenga)\b/.test(text)) return 'ACCENT';
+
+  return 'ACCENT';
+}
+
 // ── Helper to resolve garment images ──────────────────────────────────────────
 async function resolveGarmentCard(
   g: any,
@@ -287,7 +310,10 @@ export async function searchCatalog(params: {
       }
     }
 
-    const finalItems = Array.from(matchedGarmentMap.values()).slice(0, params.take || 6);
+    const rawItems = Array.from(matchedGarmentMap.values());
+    // Shuffle items slightly to provide recommendation diversity across queries
+    const shuffledItems = [...rawItems].sort(() => Math.random() - 0.5);
+    const finalItems = shuffledItems.slice(0, params.take || 6);
     const cards = await Promise.all(
       finalItems.map((g: any) => resolveGarmentCard(g, 'CATALOG'))
     );
@@ -373,39 +399,32 @@ export async function createOutfitLook(
   const allCards = useWardrobe ? [...wardrobeCards, ...catalogCards] : [...catalogCards];
   if (allCards.length === 0) return undefined;
 
-  // Classify available pieces
+  const slotOrder: AgentOutfitItem['slot'][] = ['ACCENT', 'TOP', 'BOTTOM', 'OUTERWEAR', 'FOOTWEAR', 'ACCESSORY'];
+  const usedIds = new Set<string>();
   const items: AgentOutfitItem[] = [];
 
-  // Slot 1: Main piece
-  const heroPiece = (useWardrobe ? wardrobeCards[0] : catalogCards[0]) || allCards[0];
-  if (heroPiece) {
+  for (const slot of slotOrder) {
+    const garment = allCards.find((card) => !usedIds.has(card.id) && inferOutfitSlot(card) === slot);
+    if (!garment) continue;
+    usedIds.add(garment.id);
     items.push({
-      slot: 'TOP',
-      garment: heroPiece,
-      isFromWardrobe: heroPiece.source === 'WARDROBE',
-      stylingNote: heroPiece.source === 'WARDROBE' ? 'From your closet' : 'Main statement piece',
+      slot,
+      garment,
+      isFromWardrobe: garment.source === 'WARDROBE',
+      stylingNote: garment.source === 'WARDROBE' ? 'From your closet' : slot === 'ACCESSORY' ? 'Finishing touch' : 'Category match',
     });
+    if (items.length >= 3) break;
   }
 
-  // Slot 2: Complementary piece
-  const secondary = catalogCards.find(c => c.id !== heroPiece?.id) || allCards.find(c => c.id !== heroPiece?.id);
-  if (secondary) {
+  for (const garment of allCards) {
+    if (items.length >= 3) break;
+    if (usedIds.has(garment.id)) continue;
+    usedIds.add(garment.id);
     items.push({
-      slot: 'BOTTOM',
-      garment: secondary,
-      isFromWardrobe: secondary.source === 'WARDROBE',
-      stylingNote: 'Complementary match',
-    });
-  }
-
-  // Slot 3: Accessory / Accent
-  const accessory = allCards.find(c => c.id !== heroPiece?.id && c.id !== secondary?.id);
-  if (accessory) {
-    items.push({
-      slot: 'ACCESSORY',
-      garment: accessory,
-      isFromWardrobe: accessory.source === 'WARDROBE',
-      stylingNote: 'Finishing touch',
+      slot: inferOutfitSlot(garment),
+      garment,
+      isFromWardrobe: garment.source === 'WARDROBE',
+      stylingNote: garment.source === 'WARDROBE' ? 'From your closet' : 'Recommended piece',
     });
   }
 

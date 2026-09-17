@@ -191,8 +191,23 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           },
         });
 
+        let resolvedType = c.type || 'SALE';
+        if (c.orderId || activeOrder) {
+          resolvedType = 'SALE';
+        } else if (c.swapId || activeSwap || c.garment?.listingType === 'ACCESSORY_SWAP' || c.garment?.listingType === 'SWAP') {
+          resolvedType = 'SWAP';
+        } else if (c.rentalId || activeRental || c.garment?.listingType === 'RENTAL') {
+          resolvedType = 'RENTAL';
+        } else if (!c.garment && !c.orderId && !c.swapId && !c.rentalId) {
+          resolvedType = c.type === 'GENERAL' ? 'GENERAL' : 'SALE';
+        }
+
         return {
           id: c.id,
+          type: resolvedType,
+          orderId: c.orderId || activeOrder?.id || null,
+          swapId: c.swapId || activeSwap?.id || null,
+          rentalId: c.rentalId || activeRental?.id || null,
           otherUser: {
             ...otherUser,
             avatar: otherAvatar,
@@ -233,7 +248,14 @@ export async function getOrCreateConversation(req: AuthRequest, res: Response): 
       return;
     }
     const uid = req.user.id;
-    const { recipientId, garmentId } = req.body as { recipientId?: string; garmentId?: string };
+    const { recipientId, garmentId, type, orderId, swapId, rentalId } = req.body as {
+      recipientId?: string;
+      garmentId?: string;
+      type?: 'SALE' | 'SWAP' | 'RENTAL' | 'GENERAL';
+      orderId?: string;
+      swapId?: string;
+      rentalId?: string;
+    };
 
     if (!recipientId) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'recipientId is required' });
@@ -243,6 +265,22 @@ export async function getOrCreateConversation(req: AuthRequest, res: Response): 
     if (recipientId === uid) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Cannot start conversation with yourself' });
       return;
+    }
+
+    let initialType: 'SALE' | 'SWAP' | 'RENTAL' | 'GENERAL' = type || 'SALE';
+    if (orderId) {
+      initialType = 'SALE';
+    } else if (swapId) {
+      initialType = 'SWAP';
+    } else if (rentalId) {
+      initialType = 'RENTAL';
+    } else if (garmentId) {
+      const g = await db.garment.findUnique({ where: { id: garmentId }, select: { listingType: true } });
+      if (g?.listingType === 'RENTAL') initialType = 'RENTAL';
+      else if (g?.listingType === 'ACCESSORY_SWAP' || (g?.listingType as string) === 'SWAP') initialType = 'SWAP';
+      else initialType = 'SALE';
+    } else if (!type) {
+      initialType = 'GENERAL';
     }
 
     // Check if conversation exists
@@ -286,20 +324,41 @@ export async function getOrCreateConversation(req: AuthRequest, res: Response): 
           },
         },
       });
-      if (conv && garmentId && !conv.garmentId) {
-        await db.conversation.update({
-          where: { id: conv.id },
-          data: { garmentId },
-        });
-      }
     }
 
-    if (!conv) {
+    if (conv) {
+      const updateData: any = {};
+      if (garmentId && !conv.garmentId) updateData.garmentId = garmentId;
+      if (orderId && !conv.orderId) { updateData.orderId = orderId; updateData.type = 'SALE'; }
+      if (swapId && !conv.swapId) { updateData.swapId = swapId; updateData.type = 'SWAP'; }
+      if (rentalId && !conv.rentalId) { updateData.rentalId = rentalId; updateData.type = 'RENTAL'; }
+      if (Object.keys(updateData).length > 0) {
+        conv = await db.conversation.update({
+          where: { id: conv.id },
+          data: updateData,
+          include: {
+            participant1: {
+              select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+            },
+            participant2: {
+              select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+            },
+            garment: {
+              select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true },
+            },
+          },
+        });
+      }
+    } else {
       conv = await db.conversation.create({
         data: {
           participant1Id: uid,
           participant2Id: recipientId,
           garmentId: garmentId || null,
+          type: initialType,
+          orderId: orderId || null,
+          swapId: swapId || null,
+          rentalId: rentalId || null,
         },
         include: {
           participant1: {
@@ -322,6 +381,10 @@ export async function getOrCreateConversation(req: AuthRequest, res: Response): 
     res.json({
       data: {
         id: conv.id,
+        type: conv.type,
+        orderId: conv.orderId,
+        swapId: conv.swapId,
+        rentalId: conv.rentalId,
         otherUser: {
           ...otherUser,
           avatar: resolvedAvatar,
@@ -728,12 +791,32 @@ export async function getOrCreateOrderConversation(req: AuthRequest, res: Respon
       },
     });
 
-    if (!conv) {
+    if (conv) {
+      if (!conv.orderId) {
+        conv = await db.conversation.update({
+          where: { id: conv.id },
+          data: { orderId: order.id, type: 'SALE' },
+          include: {
+            participant1: {
+              select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+            },
+            participant2: {
+              select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true },
+            },
+            garment: {
+              select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true },
+            },
+          },
+        });
+      }
+    } else {
       conv = await db.conversation.create({
         data: {
           participant1Id: order.buyerId,
           participant2Id: order.sellerId,
           garmentId: firstGarmentId,
+          orderId: order.id,
+          type: 'SALE',
         },
         include: {
           participant1: {
@@ -756,6 +839,8 @@ export async function getOrCreateOrderConversation(req: AuthRequest, res: Respon
     res.json({
       data: {
         id: conv.id,
+        type: 'SALE',
+        orderId: order.id,
         otherUser: {
           ...otherUser,
           avatar: resolvedAvatar,

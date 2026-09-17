@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { rentalService } from '../../../src/services/rentalService';
 import { messageService } from '../../../src/services/messageService';
 import { cachedGet, fetchFresh } from '../../../src/services/api';
-import { PlayingCard } from '../../../src/components/PlayingCard';
+import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -333,34 +333,18 @@ export default function RentalScreen() {
         }
       >
         <View style={styles.grid}>
-          {rentals.map((item: any, index: number) => {
-            const isMyAsset = Boolean(
-              currentUserId &&
-              (item.sellerId === currentUserId || item.seller?.id === currentUserId)
-            );
-            const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
-            const ranks = ['K', 'Q', 'J', '10', '9'];
+          {rentals.map((item: any) => {
             return (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.cardWrapper}
-                onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)}
-              >
-                <PlayingCard
-                  rank={ranks[index % ranks.length]}
-                  suit={suits[index % 4]}
-                  productName={item.title}
-                  size={item.size || 'OS'}
-                  category={item.category}
-                  subCategory={item.subCategory}
-                  price={item.rentalPriceDay ? Math.round(item.rentalPriceDay) : 0}
-                  imageUrl={item.images?.[0]}
-                  condition={item.condition || 'Pristine'}
-                  buttonText={isMyAsset ? 'OWNED BY YOU' : 'REQUEST RENTAL'}
-                  onSwapRequest={() => router.push(`/(tabs)/rental/${item.id}` as any)}
-                  style={{ width: '100%' }}
+              <View key={item.id} style={styles.cardWrapper}>
+                <EditorialGarmentCard
+                  item={{
+                    ...item,
+                    price: item.rentalPriceDay ? Math.round(item.rentalPriceDay) : (item.price ? Math.round(item.price) : 0),
+                  }}
+                  onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)}
+                  style={{ width: '100%', marginRight: 0 }}
                 />
-              </TouchableOpacity>
+              </View>
             );
           })}
         </View>

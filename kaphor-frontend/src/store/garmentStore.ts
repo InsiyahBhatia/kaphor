@@ -17,6 +17,9 @@ export interface Garment {
   listingType: string;
   sellerId: string;
   seller?: { id: string; displayName: string };
+  isActive?: boolean;
+  lifecycleState?: string;
+  reservedOrderId?: string | null;
 }
 
 interface GarmentState {

@@ -70,8 +70,39 @@ export const AESTHETIC_SUMMARIES: Record<string, string> = {
     PREPPY:      "Your style is rooted in a refined academic tradition. Clean silhouettes, structured outerwear, classic patterns like plaid and herringbone, and a palette that signals understated confidence. You appreciate the discipline of a well-executed classic look—polished, reliable, and subtly prestigious.",
 };
 
+const AESTHETIC_COMPAT_MAP: Record<string, keyof typeof AESTHETIC_VECTORS> = {
+    'Y2K': 'STREETWEAR',
+    'OFFICE SIREN': 'LUXURY',
+    'ROCKSTAR GIRLFRIEND': 'BOLD',
+    'SADE GIRL': 'LUXURY',
+    'VINTAGE': 'VINTAGE',
+    'ACUBI': 'MINIMALIST',
+    'BUSINESS COMFORT': 'LUXURY',
+    'COTTAGECORE': 'BOHO',
+    'DARK ACADEMIA': 'DARK',
+    'DARK COQUETTE': 'DARK',
+    'FLEUR NOIRE': 'DARK',
+    'GRUNGE': 'STREETWEAR',
+    'MERMAID CORE': 'BOLD',
+    'MINIMAL DESI': 'CULTURAL',
+    'MAXIMAL DESI': 'BOLD',
+    'SOFT GIRL': 'BOHO',
+};
+
+function toPersistedStyleAesthetic(aesthetic: string): 'MINIMALIST' | 'VINTAGE' | 'BOLD' | 'ETHNIC' | 'STREETWEAR' | 'LUXURY' {
+    const key = (aesthetic || '').toUpperCase().trim();
+    const mapped = AESTHETIC_COMPAT_MAP[key] || key;
+    if (mapped === 'CULTURAL' || mapped === 'ARTISANAL' || mapped === 'BOHO') return 'ETHNIC';
+    if (mapped === 'DARK' || mapped === 'PREPPY') return 'LUXURY';
+    if (mapped === 'MINIMALIST' || mapped === 'VINTAGE' || mapped === 'BOLD' || mapped === 'STREETWEAR' || mapped === 'LUXURY') {
+        return mapped;
+    }
+    return 'LUXURY';
+}
+
 function getAestheticDetails(aesthetic: string) {
     const rawKey = (aesthetic || '').toUpperCase().trim();
+    const vectorKey = AESTHETIC_COMPAT_MAP[rawKey] || rawKey;
     const metadata: Record<string, any> = {
         'Y2K': {
             recommendedBrands: ["Blumarine", "Diesel", "Von Dutch", "Juicy Couture", "Coperni"],
@@ -223,8 +254,9 @@ function getAestheticDetails(aesthetic: string) {
     const extra = metadata[matchedKey] || metadata.LUXURY;
 
     return {
-        styleVector: AESTHETIC_VECTORS[matchedKey] || AESTHETIC_VECTORS.LUXURY,
+        styleVector: AESTHETIC_VECTORS[vectorKey] || AESTHETIC_VECTORS.LUXURY,
         styleAesthetic: matchedKey,
+        selectedAesthetic: matchedKey,
         summary: extra.tagline || extra.aestheticVibe || 'Curated luxury archetype',
         ...extra,
     };
@@ -303,12 +335,17 @@ export async function processStyleQuiz(req: Request, res: Response): Promise<voi
         const cached = await redisGet(quizHash);
         if (cached) {
             const profile = JSON.parse(cached);
+            const persistedAesthetic = toPersistedStyleAesthetic(profile.selectedAesthetic || profile.styleAesthetic);
             await db.user.update({
                 where: { id: req.user.id },
                 data: {
                     styleVector: profile.styleVector,
-                    styleAesthetic: profile.styleAesthetic,
-                    onboardingDone: true
+                    styleAesthetic: persistedAesthetic,
+                    onboardingDone: true,
+                    preferenceProfile: {
+                        ...profile,
+                        dominantAesthetic: persistedAesthetic,
+                    } as any,
                 }
             });
             res.json({ data: { ...profile, message: 'Style profile updated (cached)' } });
@@ -327,15 +364,22 @@ export async function processStyleQuiz(req: Request, res: Response): Promise<voi
 
         logger.info(`Processing style quiz -> selected archetype: ${selectedAesthetic}`);
         const profile = getAestheticDetails(selectedAesthetic);
-        profile.styleAesthetic = selectedAesthetic;
+        const persistedAesthetic = toPersistedStyleAesthetic(selectedAesthetic);
+        profile.styleAesthetic = persistedAesthetic;
+        profile.selectedAesthetic = selectedAesthetic;
 
         // Persist to user
         await db.user.update({
             where: { id: req.user.id },
             data: {
                 styleVector: profile.styleVector,
-                styleAesthetic: selectedAesthetic as any,
-                onboardingDone: true
+                styleAesthetic: persistedAesthetic,
+                onboardingDone: true,
+                preferenceProfile: {
+                    ...(profile as any),
+                    selectedAesthetic,
+                    dominantAesthetic: persistedAesthetic,
+                } as any,
             }
         });
 

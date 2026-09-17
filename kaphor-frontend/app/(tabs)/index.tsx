@@ -23,8 +23,10 @@ import {
   FairSwapRecommendation,
 } from '../../src/services/recommendationService';
 import { KaphorImage } from '../../src/components/KaphorImage';
+import { EditorialGarmentCard } from '../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
 import { Header } from '../../src/components/common/Header';
+import api from '../../src/services/api';
 import { colors, typography, spacing, radius } from '../../src/theme';
 import { hapticFeedback } from '../../src/utils/haptics';
 
@@ -228,96 +230,7 @@ function SectionHeader({
   );
 }
 
-// ── 5. Editorial Garment Card (Clean, Luxury, Accurate Pricing) ─────────────
-function EditorialGarmentCard({
-  item,
-  onPress,
-  onAddToCart,
-}: {
-  item: RecommendedGarment;
-  onPress: () => void;
-  onAddToCart?: () => void;
-}) {
-  const price = item.price ? Math.round(item.price) : 0;
-  const estimatedOriginal = price > 0 ? Math.round(price * 1.65) : 0;
-  const discountPercent = estimatedOriginal > 0 ? Math.round(((estimatedOriginal - price) / estimatedOriginal) * 100) : 0;
-
-  return (
-    <TouchableOpacity
-      style={styles.garmentCard}
-      onPress={onPress}
-      activeOpacity={0.9}
-    >
-      <View style={styles.garmentImageWrap}>
-        <KaphorImage
-          uri={item.images?.[0]}
-          brand={item.brand}
-          category={item.category}
-          style={styles.garmentImage}
-          contentFit="cover"
-        />
-
-        {item.fitScore ? (
-          <View style={styles.matchPill}>
-            <Ionicons name="sparkles" size={10} color={colors.white} />
-            <Text style={styles.matchPillText}>CURATED MATCH</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.conditionPill}>
-          <Text style={styles.conditionPillText}>
-            {item.condition ? item.condition.toUpperCase() : 'PRISTINE'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.garmentInfo}>
-        <View style={styles.garmentMetaRow}>
-          <Text style={styles.garmentBrand} numberOfLines={1}>
-            {(item.brand || 'ARCHIVE ATELIER').toUpperCase()}
-          </Text>
-          <Text style={styles.garmentSize}>SIZE {item.size || 'M'}</Text>
-        </View>
-
-        <Text style={styles.garmentTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-
-        <View style={styles.garmentPriceRow}>
-          <View>
-            <View style={styles.priceWithDiscountRow}>
-              <Text style={styles.garmentPrice}>₹{formatCurrency(price)}</Text>
-              {discountPercent > 0 && (
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountBadgeText}>-{discountPercent}%</Text>
-                </View>
-              )}
-            </View>
-            {estimatedOriginal > price && (
-              <Text style={styles.garmentOriginalPrice}>
-                MRP ₹{formatCurrency(estimatedOriginal)}
-              </Text>
-            )}
-          </View>
-
-          {onAddToCart && (
-            <TouchableOpacity
-              style={styles.quickAddBtn}
-              onPress={(e) => {
-                e.stopPropagation();
-                hapticFeedback.light();
-                onAddToCart();
-              }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="cart-outline" size={17} color={colors.white} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-}
+// ── 5. Editorial Garment Card imported from src/components/EditorialGarmentCard ─────
 
 // ── 6. Occasion Rental Card (Accurate Daily Rate) ───────────────────────────
 function OccasionRentalCard({
@@ -327,13 +240,29 @@ function OccasionRentalCard({
   item: RecommendedGarment;
   onPress: () => void;
 }) {
-  // Use authentic daily rental rate from item, or proportional 5% day rate based on asset value
+  const [isLiked, setIsLiked] = useState<boolean>(Boolean((item as any).isLiked));
   const assetValue = item.price ? Math.round(item.price) : 0;
   const dailyRate = item.rentalPriceDay && item.rentalPriceDay > 0
     ? Math.round(item.rentalPriceDay)
     : assetValue > 0
     ? Math.round(assetValue * 0.05)
     : 150;
+
+  const handleToggleLike = async (e: any) => {
+    e.stopPropagation();
+    hapticFeedback.selection();
+    const nextState = !isLiked;
+    setIsLiked(nextState);
+
+    try {
+      await api.post('/interactions', {
+        garmentId: item.id,
+        eventType: 'WISHLIST',
+      });
+    } catch (err) {
+      setIsLiked(!nextState);
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -350,10 +279,18 @@ function OccasionRentalCard({
           contentFit="cover"
         />
 
-        <View style={styles.rentalBadgePill}>
-          <Ionicons name="calendar-outline" size={11} color={colors.white} />
-          <Text style={styles.rentalBadgePillText}>OCCASION LEASE</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.wishlistBtn}
+          onPress={handleToggleLike}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name={isLiked ? 'heart' : 'heart-outline'}
+            size={18}
+            color={isLiked ? colors.crimson : colors.charcoal}
+          />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.rentalInfo}>
@@ -396,7 +333,24 @@ function FairSwapCard({
   onPress: () => void;
 }) {
   const swapItem = item.recommendedSwap;
+  const [isLiked, setIsLiked] = useState<boolean>(Boolean((swapItem as any).isLiked));
   const valuation = swapItem.price ? Math.round(swapItem.price) : 0;
+
+  const handleToggleLike = async (e: any) => {
+    e.stopPropagation();
+    hapticFeedback.selection();
+    const nextState = !isLiked;
+    setIsLiked(nextState);
+
+    try {
+      await api.post('/interactions', {
+        garmentId: swapItem.id,
+        eventType: 'WISHLIST',
+      });
+    } catch (err) {
+      setIsLiked(!nextState);
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -412,6 +366,19 @@ function FairSwapCard({
           style={styles.garmentImage}
           contentFit="cover"
         />
+
+        <TouchableOpacity
+          style={styles.wishlistBtn}
+          onPress={handleToggleLike}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name={isLiked ? 'heart' : 'heart-outline'}
+            size={18}
+            color={isLiked ? colors.crimson : colors.charcoal}
+          />
+        </TouchableOpacity>
 
         <View style={styles.swapParityPill}>
           <Ionicons name="swap-horizontal" size={11} color={colors.white} />
@@ -525,6 +492,24 @@ export default function HomeScreen() {
     .filter(
       (g) =>
         g.listingType === 'SALE' &&
+        g.isActive !== false &&
+        !['OWNERSHIP', 'RESERVED_SALE', 'PURCHASE_INTENT'].includes((g as any).lifecycleState || '') &&
+        !(g as any).reservedOrderId &&
+        g.sellerId !== currentUserId &&
+        (g as any).seller?.id !== currentUserId
+    )
+    .slice(0, 10);
+
+  const accessoriesList = garments
+    .filter(
+      (g) =>
+        (g.category?.toLowerCase().includes('accessor') ||
+          (g as any).subCategory?.toLowerCase().includes('accessor') ||
+          g.listingType === 'ACCESSORY_SWAP' ||
+          ['jewel', 'watch', 'bag', 'belt', 'sunglass', 'hat', 'scarf', 'clutch'].some((keyword) =>
+            (g.title + ' ' + (g.category || '') + ' ' + (g.subCategory || '')).toLowerCase().includes(keyword)
+          )) &&
+        g.isActive !== false &&
         g.sellerId !== currentUserId &&
         (g as any).seller?.id !== currentUserId
     )
@@ -652,6 +637,36 @@ export default function HomeScreen() {
                   key={swap.recommendedSwap.id || idx}
                   item={swap}
                   onPress={() => navigateToSwap(swap.recommendedSwap.id)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* 4. ACCESSORIES ARCHIVE */}
+        {accessoriesList.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <SectionHeader
+              title="ACCESSORIES ARCHIVE"
+              tag="LUXURY HARDWARE"
+              tagBg={colors.navy}
+              tagColor={colors.white}
+              onSeeAll={() => navigateToRoute('/(tabs)/shop', { category: 'Accessories' })}
+            />
+            <Text style={styles.sectionSubtitle}>
+              Fine jewelry, watches, designer handbags, and leather goods ready for instant purchase or barter.
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
+              {accessoriesList.map((item) => (
+                <EditorialGarmentCard
+                  key={item.id}
+                  item={{
+                    ...item,
+                    price: item.price ? Math.round(item.price) : 0,
+                    condition: item.condition || 'Pristine',
+                  }}
+                  onPress={() => navigateToItem(item.id)}
+                  onAddToCart={() => handleAddToCart(item)}
                 />
               ))}
             </ScrollView>
@@ -1126,7 +1141,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(74, 46, 26, 0.15)',
+    borderColor: 'rgba(30,31,34,0.08)',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
@@ -1136,7 +1151,7 @@ const styles = StyleSheet.create({
   },
   rentalImageWrap: {
     width: '100%',
-    height: CARD_WIDTH * 1.22,
+    height: CARD_WIDTH * 1.25,
     backgroundColor: '#F3EFE9',
     position: 'relative',
   },
@@ -1216,7 +1231,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(30, 59, 47, 0.15)',
+    borderColor: 'rgba(30,31,34,0.08)',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
@@ -1226,8 +1241,8 @@ const styles = StyleSheet.create({
   },
   swapImageWrap: {
     width: '100%',
-    height: CARD_WIDTH * 1.22,
-    backgroundColor: '#F0F4F2',
+    height: CARD_WIDTH * 1.25,
+    backgroundColor: '#F3EFE9',
     position: 'relative',
   },
   swapParityPill: {
@@ -1306,5 +1321,22 @@ const styles = StyleSheet.create({
     fontSize: 9.5,
     color: colors.textMuted,
     fontStyle: 'italic',
+  },
+  wishlistBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 10,
   },
 });

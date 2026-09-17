@@ -4,6 +4,7 @@ import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { auditLog } from '../services/audit.service';
 import { createNotification } from '../services/notification.service';
+import { transferGarmentsToBuyer } from '../services/garment-claim.service';
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
@@ -58,18 +59,8 @@ async function handlePaymentSuccess(paymentIntent: any) {
         },
       });
 
-      // Transfer ownership
-      for (const item of updatedOrder.items) {
-        if (item.garmentId) {
-          await db.garment.update({
-            where: { id: item.garmentId },
-            data: {
-              sellerId: updatedOrder.buyerId,
-              lifecycleState: 'OWNERSHIP',
-            },
-          });
-        }
-      }
+      // Atomically transfer garments to buyer (OWNERSHIP, sellerId = buyerId, isActive = false)
+      await transferGarmentsToBuyer(metaOrderId, updatedOrder.buyerId);
 
       // Notify Seller
       await createNotification({

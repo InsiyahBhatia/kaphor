@@ -295,7 +295,15 @@ export default function OrderThreadScreen() {
       setReviewModalVisible(false);
       Alert.alert('Thank you', 'Your review helps other buyers trust great sellers.');
     } catch (e: any) {
-      Alert.alert('Review', e?.response?.data?.message ?? 'Could not submit review');
+      const status = e?.response?.status;
+      const msg = e?.response?.data?.message || '';
+      if (status === 409 || msg.toLowerCase().includes('already') || msg.toLowerCase().includes('duplicate')) {
+        await loadAll();
+        setReviewModalVisible(false);
+        Alert.alert('Review Saved', 'Your review has been saved for this transaction.');
+      } else {
+        Alert.alert('Review', msg || 'Could not submit review');
+      }
     } finally {
       setReviewSubmitting(false);
     }

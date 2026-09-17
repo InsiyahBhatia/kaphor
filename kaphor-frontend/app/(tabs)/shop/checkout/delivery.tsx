@@ -203,8 +203,13 @@ export default function DeliveryScreen() {
       let resolvedOrderId = currentOrderId || paramOrderId;
       if (!resolvedOrderId && garmentId) {
         // Direct buy-now fallback: create order if not already initialized
-        const { data } = await api.post('/orders/cart', { garmentIds: [garmentId] });
-        resolvedOrderId = data?.data?.id || data?.data?.orderId;
+        try {
+          const { data } = await api.post('/orders', { garmentId });
+          resolvedOrderId = data?.data?.orderId || data?.data?.id;
+        } catch {
+          const { data } = await api.post('/orders/cart', { garmentIds: [garmentId] });
+          resolvedOrderId = data?.data?.orderId || data?.data?.id;
+        }
         if (resolvedOrderId) {
           setCurrentOrderId(resolvedOrderId);
         }

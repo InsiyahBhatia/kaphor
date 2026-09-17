@@ -19,6 +19,13 @@ enum UserRole {
   ADMIN
 }
 
+enum ConversationType {
+  SALE
+  SWAP
+  RENTAL
+  GENERAL
+}
+
 enum VerificationStatus {
   UNVERIFIED
   PENDING_REVIEW
@@ -206,6 +213,7 @@ model User {
   reportsReceived     UserReport[]    @relation("ReportsReceived")
   upcycleRequests     UpcycleRequest[]
   glieCorrections     GLIECorrection[]
+  payoutAccounts      PayoutAccount[]
 
   @@map("users")
 }
@@ -391,6 +399,9 @@ model Order {
   razorpayOrderId String?
   razorpayPaymentId String?
   shippingAddress Json?
+  trackingNumber  String?
+  carrier         String?
+  trackingHistory Json?
   notes           String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -400,6 +411,7 @@ model Order {
   items           OrderItem[]
   messages        OrderMessage[]
   peerReview      PeerReview?
+  conversations   Conversation[]
 
   @@map("orders")
 }
@@ -438,6 +450,7 @@ model Swap {
   receiver        User       @relation("SwapReceiver",  fields: [receiverId],  references: [id])
   offeredGarment  Garment    @relation("SwapOffered", fields: [garmentOffered], references: [id])
   wantedGarment   Garment    @relation("SwapWanted", fields: [garmentWanted], references: [id])
+  conversations   Conversation[]
 
   @@map("swaps")
 }
@@ -476,6 +489,7 @@ model Rental {
 
   garment            Garment      @relation(fields: [garmentId], references: [id])
   renter             User         @relation(fields: [renterId],  references: [id])
+  conversations      Conversation[]
 
   @@map("rentals")
 }
@@ -804,23 +818,31 @@ model MaterialImpact {
 // ═══════════════════════════════════════════════
 
 model Conversation {
-  id              String          @id @default(uuid())
+  id              String           @id @default(uuid())
   participant1Id  String
   participant2Id  String
   garmentId       String?
+  type            ConversationType @default(SALE)
+  orderId         String?
+  swapId          String?
+  rentalId        String?
   lastMessageText String?
-  lastMessageAt   DateTime        @default(now())
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  lastMessageAt   DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
-  participant1    User            @relation("Participant1Conversations", fields: [participant1Id], references: [id], onDelete: Cascade)
-  participant2    User            @relation("Participant2Conversations", fields: [participant2Id], references: [id], onDelete: Cascade)
-  garment         Garment?        @relation(fields: [garmentId], references: [id], onDelete: SetNull)
+  participant1    User             @relation("Participant1Conversations", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2    User             @relation("Participant2Conversations", fields: [participant2Id], references: [id], onDelete: Cascade)
+  garment         Garment?         @relation(fields: [garmentId], references: [id], onDelete: SetNull)
+  order           Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  swap            Swap?            @relation(fields: [swapId], references: [id], onDelete: SetNull)
+  rental          Rental?          @relation(fields: [rentalId], references: [id], onDelete: SetNull)
   messages        DirectMessage[]
 
   @@unique([participant1Id, participant2Id, garmentId])
   @@index([participant1Id, lastMessageAt])
   @@index([participant2Id, lastMessageAt])
+  @@index([type])
   @@map("conversations")
 }
 
@@ -887,4 +909,26 @@ model GLIECorrection {
   @@index([userId])
   @@index([garmentCategory, fiberType])
   @@map("glie_corrections")
+}
+
+// ═══════════════════════════════════════════════
+// SELLER PAYOUT ACCOUNTS
+// ═══════════════════════════════════════════════
+
+model PayoutAccount {
+  id                String   @id @default(uuid())
+  userId            String
+  accountHolderName String
+  accountNumber     String
+  ifsc              String
+  bankName          String
+  upiId             String?
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("payout_accounts")
 }

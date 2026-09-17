@@ -749,15 +749,17 @@ export default function DirectChatScreen() {
   }, [rental, garment, displayMessages]);
 
   const isSwapInquiry = useMemo(() => {
+    if (order || garment?.listingType === 'SALE') return false;
     if (swapId || swapDetails) return true;
     if (garment?.listingType === 'ACCESSORY_SWAP' || garment?.listingType === 'SWAP') return true;
     return displayMessages.some((m) =>
-      /\b(swap|swaps|swapping|swapped|trade|trading|trades|traded|exchange)\b/i.test(m.content || '')
+      /\b(swap|swaps|swapping|swapped|trade|trading|trades|traded)\b/i.test(m.content || '')
     );
-  }, [swapId, swapDetails, garment, displayMessages]);
+  }, [order, swapId, swapDetails, garment, displayMessages]);
 
   const getGarmentMode = useCallback(
     (targetGarment: ConversationGarment | null | undefined) => {
+      if (order || targetGarment?.listingType === 'SALE') return 'BUY';
       if (!targetGarment) return 'BUY';
       if (
         targetGarment.listingType === 'RENTAL' ||
@@ -778,7 +780,7 @@ export default function DirectChatScreen() {
       }
       return 'BUY';
     },
-    [rental, isRentalInquiry, swapId, swapDetails, isSwapInquiry]
+    [order, rental, isRentalInquiry, swapId, swapDetails, isSwapInquiry]
   );
 
   const garmentMode = getGarmentMode(effectiveGarment);

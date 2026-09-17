@@ -373,6 +373,61 @@ export default function RepairRefreshScreen() {
             </View>
           )}
 
+          {/* ── YouTube Tutorials (First to avoid excess scrolling) ── */}
+          {hasYouTube && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="logo-youtube" size={20} color="#FF0000" />
+                <Text style={styles.sectionTitle}>VIDEO TUTORIALS</Text>
+              </View>
+              <Text style={styles.sectionSubtitle}>
+                YouTube results for: {result.youtube_query}
+              </Text>
+              {result.youtube.map((video, idx) => {
+                const videoSaveId = `yt-${video.videoId}`;
+                const isVideoSaved = savedVideoIds.has(videoSaveId);
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.videoCard}
+                    onPress={() => openYouTube(video.videoId)}
+                    activeOpacity={0.85}
+                  >
+                    {/* Save Button */}
+                    <TouchableOpacity
+                      style={styles.saveBtnVideo}
+                      onPress={() => handleToggleSaveYouTube(video)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons
+                        name={isVideoSaved ? 'bookmark' : 'bookmark-outline'}
+                        size={16}
+                        color={isVideoSaved ? colors.gold : colors.cream}
+                      />
+                    </TouchableOpacity>
+
+                    <View style={styles.videoThumbWrap}>
+                      {video.thumbnail ? (
+                        <Image source={{ uri: video.thumbnail }} style={styles.videoThumb} />
+                      ) : (
+                        <View style={styles.videoThumbPlaceholder}>
+                          <Ionicons name="image-outline" size={28} color={colors.textMuted} />
+                        </View>
+                      )}
+                      <View style={styles.playOverlay}>
+                        <Ionicons name="play-circle" size={36} color="rgba(255,255,255,0.9)" />
+                      </View>
+                    </View>
+                    <View style={styles.videoInfo}>
+                      <Text style={styles.videoTitle} numberOfLines={2}>{video.title}</Text>
+                      <Text style={styles.videoChannel}>{video.channelTitle}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
           {/* ── T5 Repair Guides ────────────────────────────────── */}
           {hasGuides && (
             <View style={styles.section}>
@@ -512,61 +567,6 @@ export default function RepairRefreshScreen() {
                   </TouchableOpacity>
                 </View>
               )}
-            </View>
-          )}
-
-          {/* ── YouTube Tutorials ────────────────────────────────── */}
-          {hasYouTube && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="logo-youtube" size={20} color="#FF0000" />
-                <Text style={styles.sectionTitle}>VIDEO TUTORIALS</Text>
-              </View>
-              <Text style={styles.sectionSubtitle}>
-                YouTube results for: {result.youtube_query}
-              </Text>
-              {result.youtube.map((video, idx) => {
-                const videoSaveId = `yt-${video.videoId}`;
-                const isVideoSaved = savedVideoIds.has(videoSaveId);
-                return (
-                  <TouchableOpacity
-                    key={idx}
-                    style={styles.videoCard}
-                    onPress={() => openYouTube(video.videoId)}
-                    activeOpacity={0.85}
-                  >
-                    {/* Save Button */}
-                    <TouchableOpacity
-                      style={styles.saveBtnVideo}
-                      onPress={() => handleToggleSaveYouTube(video)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons
-                        name={isVideoSaved ? 'bookmark' : 'bookmark-outline'}
-                        size={16}
-                        color={isVideoSaved ? colors.gold : colors.cream}
-                      />
-                    </TouchableOpacity>
-
-                    <View style={styles.videoThumbWrap}>
-                      {video.thumbnail ? (
-                        <Image source={{ uri: video.thumbnail }} style={styles.videoThumb} />
-                      ) : (
-                        <View style={styles.videoThumbPlaceholder}>
-                          <Ionicons name="image-outline" size={28} color={colors.textMuted} />
-                        </View>
-                      )}
-                      <View style={styles.playOverlay}>
-                        <Ionicons name="play-circle" size={36} color="rgba(255,255,255,0.9)" />
-                      </View>
-                    </View>
-                    <View style={styles.videoInfo}>
-                      <Text style={styles.videoTitle} numberOfLines={2}>{video.title}</Text>
-                      <Text style={styles.videoChannel}>{video.channelTitle}</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
             </View>
           )}
 

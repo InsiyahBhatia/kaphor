@@ -28,7 +28,7 @@ export async function listPayoutAccounts(req: Request, res: Response): Promise<v
       res.status(401).json({ error: 'UNAUTHORIZED' });
       return;
     }
-    const accounts = getUserPayoutAccounts(req.user.id);
+    const accounts = await getUserPayoutAccounts(req.user.id);
     res.json({ data: accounts });
   } catch (err) {
     logger.error('listPayoutAccounts failed', { error: err });
@@ -54,7 +54,7 @@ export async function createPayoutAccount(req: Request, res: Response): Promise<
       return;
     }
 
-    const account = addPayoutAccount(req.user.id, {
+    const account = await addPayoutAccount(req.user.id, {
       accountHolderName,
       accountNumber: accountNumber || '',
       ifsc: ifsc || '',
@@ -80,7 +80,7 @@ export async function removePayoutAccount(req: Request, res: Response): Promise<
       return;
     }
     const { id } = req.params;
-    const success = deletePayoutAccount(req.user.id, id);
+    const success = await deletePayoutAccount(req.user.id, id);
     if (!success) {
       res.status(404).json({ error: 'NOT_FOUND', message: 'Payout account not found' });
       return;
@@ -237,10 +237,31 @@ export async function getSellerPayouts(req: Request, res: Response): Promise<voi
     });
 
     const payouts = soldOrders.map((order: any) => {
-      const amount = order.totalAmount; // in paise
+      const amount = order.totalAmount; // Pure Rupees (₹)
       const commission = Math.round(amount * 0.1); // 10% platform commission
       const netAmount = amount - commission;
-      const isDelivered = order.status === 'DELIVERED';
+
+      // Escrow state machine:
+      // - PENDING: UNPAID
+      // - CONFIRMED / SHIPPED: HELD_IN_ESCROW
+      // - DELIVERED: 48h inspection window before settlement
+      let status = 'PROCESSING';
+      let releaseDate: string | undefined = undefined;
+
+      if (order.status === 'DELIVERED') {
+        const deliveredAt = new Date(order.updatedAt).getTime();
+        const inspectionEnd = deliveredAt + 48 * 60 * 60 * 1000;
+        const now = Date.now();
+        if (now >= inspectionEnd) {
+          status = 'SETTLED';
+          releaseDate = new Date(inspectionEnd).toISOString();
+        } else {
+          status = 'INSPECTION_WINDOW_48H';
+          releaseDate = new Date(inspectionEnd).toISOString();
+        }
+      } else if (order.status === 'CONFIRMED' || order.status === 'SHIPPED') {
+        status = 'HELD_IN_ESCROW';
+      }
 
       return {
         id: `payout_${order.id}`,
@@ -248,9 +269,11 @@ export async function getSellerPayouts(req: Request, res: Response): Promise<voi
         amount,
         commission,
         netAmount,
-        status: isDelivered ? 'PAID' : 'PROCESSING',
+        currency: order.currency || 'INR',
+        status,
+        inspectionPeriodEndsAt: releaseDate,
         createdAt: order.createdAt.toISOString(),
-        paidAt: isDelivered ? order.updatedAt.toISOString() : undefined,
+        paidAt: status === 'SETTLED' ? releaseDate : undefined,
       };
     });
 

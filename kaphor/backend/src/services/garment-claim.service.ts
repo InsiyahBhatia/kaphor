@@ -64,8 +64,8 @@ export async function claimGarmentsForOrder(orderId: string, buyerId: string): P
 }
 
 /**
- * Transfer ownership of all order items to the buyer (called at delivery).
- * Also clears the reservation pointer — the sale is now final.
+ * Transfer ownership of all order items to the buyer (called immediately at payment confirmation / checkout completion).
+ * Sets lifecycleState: 'OWNERSHIP', sellerId: buyerId, isActive: false, and clears reservedOrderId.
  */
 export async function transferGarmentsToBuyer(orderId: string, buyerId: string): Promise<boolean> {
   try {

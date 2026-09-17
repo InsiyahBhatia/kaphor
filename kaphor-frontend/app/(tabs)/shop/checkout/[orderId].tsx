@@ -222,6 +222,8 @@ export default function CheckoutScreen() {
           invalidateCache('/impact');
           invalidateCache('/users/me');
           invalidateCache('/garments');
+          invalidateCache('/cart');
+          invalidateCache('/recommendations');
           router.replace(`/(tabs)/shop/order-confirmed?orderId=${order.id}`);
         } catch (verifyErr: any) {
           console.error('Verification call threw error, checking status fallback...', verifyErr);
@@ -230,6 +232,7 @@ export default function CheckoutScreen() {
             const statusCheck = await api.get(`/orders/${order.id}`);
             const confirmedStatus = statusCheck?.data?.data?.status;
             if (confirmedStatus === 'CONFIRMED' || confirmedStatus === 'PAID') {
+              invalidateCache(['/cart', '/garments', '/users/me/wardrobe', '/recommendations']);
               router.replace(`/(tabs)/shop/order-confirmed?orderId=${order.id}`);
               return;
             }

@@ -308,7 +308,7 @@ export async function getMyWardrobe(req: Request, res: Response): Promise<void> 
                 status: { in: ['CONFIRMED', 'SHIPPED', 'DELIVERED'] }
             },
             include: {
-                orderItems: {
+                items: {
                     include: {
                         garment: {
                             select: {
@@ -349,13 +349,12 @@ export async function getMyWardrobe(req: Request, res: Response): Promise<void> 
         const combined = [...ownedGarments];
 
         for (const order of buyerOrders) {
-            for (const item of order.orderItems) {
+            for (const item of (order.items || [])) {
                 if (item.garment && !seenGarmentIds.has(item.garment.id)) {
                     seenGarmentIds.add(item.garment.id);
-                    const state = order.status === 'DELIVERED' ? 'OWNERSHIP' : 'PURCHASE_INTENT';
                     combined.push({
                         ...item.garment,
-                        lifecycleState: state,
+                        lifecycleState: 'OWNERSHIP',
                     });
                 }
             }

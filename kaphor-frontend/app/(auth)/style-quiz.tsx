@@ -18,6 +18,7 @@ import { userService } from '../../src/services/userService';
 import { useToastStore } from '../../src/store/toastStore';
 import { colors, typography } from '../../src/theme';
 import { useAuth } from '../../src/context/AuthContext';
+import { safeStorage } from '../../src/utils/storage';
 import { safeBack } from '../../src/utils/navigation';
 import { hapticFeedback } from '../../src/utils/haptics';
 import {
@@ -311,11 +312,27 @@ export default function StyleQuizScreen() {
       }
 
       if (user) {
-        setUser({
+        const updatedUser = {
           ...user,
           styleAesthetic: result.primary.aesthetic.id,
           onboardingDone: true,
-        });
+        };
+        setUser(updatedUser);
+
+        try {
+          const storedAccess = await safeStorage.getItem('kaphor_access_token');
+          const storedRefresh = await safeStorage.getItem('kaphor_refresh_token');
+          await safeStorage.setItem(
+            'auth_data',
+            JSON.stringify({
+              accessToken: storedAccess || '',
+              refreshToken: storedRefresh || '',
+              user: updatedUser,
+            })
+          );
+        } catch (storageErr) {
+          console.warn('Failed to update auth_data storage for style quiz', storageErr);
+        }
       }
     } catch {
       // Non-blocking fallback

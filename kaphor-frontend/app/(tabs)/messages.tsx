@@ -18,21 +18,20 @@ import { messageService, ConversationSummary } from '../../src/services/messageS
 import { getSocket, connectSocket } from '../../src/services/socket';
 import { useNotificationStore } from '../../src/store/notificationStore';
 
-type FilterTab = 'SELL' | 'SWAP' | 'RENT';
+type FilterTab = 'ALL' | 'SELL' | 'SWAP' | 'RENT';
 
 export function getConversationCategory(c: ConversationSummary): 'SELL' | 'SWAP' | 'RENT' {
-  // 1. Explicit Active Transaction Check
-  if (c.rental) {
-    return 'RENT';
-  }
-  if (c.swap) {
-    return 'SWAP';
-  }
-  if (c.order) {
-    return 'SELL';
-  }
+  // 1. Explicit Conversation Type
+  if (c.type === 'RENTAL') return 'RENT';
+  if (c.type === 'SWAP') return 'SWAP';
+  if (c.type === 'SALE') return 'SELL';
 
-  // 2. Garment Listing Type & Rate Specification
+  // 2. Active Transaction Check (foreign keys or attached models)
+  if (c.rentalId || c.rental) return 'RENT';
+  if (c.swapId || c.swap) return 'SWAP';
+  if (c.orderId || c.order) return 'SELL';
+
+  // 3. Garment Listing Type & Rate Specification
   const listingType = c.garment?.listingType;
   if (listingType === 'RENTAL' || (c.garment?.rentalPriceDay && c.garment.rentalPriceDay > 0)) {
     return 'RENT';
@@ -40,22 +39,8 @@ export function getConversationCategory(c: ConversationSummary): 'SELL' | 'SWAP'
   if (listingType === 'ACCESSORY_SWAP' || listingType === 'SWAP') {
     return 'SWAP';
   }
-  if (listingType === 'SALE') {
-    return 'SELL';
-  }
 
-  // 3. Keyword Content Heuristics on Last Message
-  const text = (c.lastMessageText || '').toLowerCase();
-  if (/\b(rent|rents|rental|rentals|renting|rented|lease|leasing|leased|lender|deposit|borrow)\b/i.test(text)) {
-    return 'RENT';
-  }
-  if (/\b(swap|swaps|swapping|swapped|trade|trading|trades|traded|exchange)\b/i.test(text)) {
-    return 'SWAP';
-  }
-  if (/\b(buy|buyer|bought|purchase|order|sold|selling|discount)\b/i.test(text)) {
-    return 'SELL';
-  }
-
+  // 4. Default to SELL pillar
   return 'SELL';
 }
 
@@ -64,7 +49,7 @@ export default function MessagesScreen() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<FilterTab>('SELL');
+  const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
 
   const loadConversations = useCallback(async () => {
     try {
@@ -112,16 +97,18 @@ export default function MessagesScreen() {
   };
 
   const filteredConversations = useMemo(() => {
+    if (activeTab === 'ALL') return conversations;
     return conversations.filter((c) => getConversationCategory(c) === activeTab);
   }, [conversations, activeTab]);
 
+  const allUnread = useMemo(() => conversations.filter((c) => (c.unreadCount || 0) > 0).length, [conversations]);
   const sellCount = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SELL').length, [conversations]);
   const swapCount = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SWAP').length, [conversations]);
   const rentCount = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'RENT').length, [conversations]);
 
-  const sellUnread = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SELL' && c.unreadCount > 0).length, [conversations]);
-  const swapUnread = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SWAP' && c.unreadCount > 0).length, [conversations]);
-  const rentUnread = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'RENT' && c.unreadCount > 0).length, [conversations]);
+  const sellUnread = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SELL' && (c.unreadCount || 0) > 0).length, [conversations]);
+  const swapUnread = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'SWAP' && (c.unreadCount || 0) > 0).length, [conversations]);
+  const rentUnread = useMemo(() => conversations.filter((c) => getConversationCategory(c) === 'RENT' && (c.unreadCount || 0) > 0).length, [conversations]);
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -281,8 +268,27 @@ export default function MessagesScreen() {
     <View style={styles.container}>
       <Header title="MESSAGES" showBack={false} />
 
-      {/* 3 Categories: SELL, SWAP, RENT */}
+      {/* Categories: ALL, SELL, SWAP, RENT */}
       <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'ALL' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('ALL')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.tabContentRow}>
+            <Text style={[styles.tabText, activeTab === 'ALL' && styles.tabTextActive]}>
+              ALL ({conversations.length})
+            </Text>
+            {allUnread > 0 && (
+              <View style={[styles.tabUnreadBadge, activeTab === 'ALL' && styles.tabUnreadBadgeActive]}>
+                <Text style={[styles.tabUnreadBadgeText, activeTab === 'ALL' && styles.tabUnreadBadgeTextActive]}>
+                  {allUnread}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'SELL' && styles.tabBtnActive]}
           onPress={() => setActiveTab('SELL')}
@@ -365,7 +371,9 @@ export default function MessagesScreen() {
                       ? 'swap-horizontal-outline'
                       : activeTab === 'RENT'
                       ? 'calendar-outline'
-                      : 'bag-check-outline'
+                      : activeTab === 'SELL'
+                      ? 'bag-check-outline'
+                      : 'chatbubbles-outline'
                   }
                   size={42}
                   color={colors.charcoal}
@@ -376,22 +384,40 @@ export default function MessagesScreen() {
                   ? 'NO SWAP CHATS'
                   : activeTab === 'RENT'
                   ? 'NO RENT CHATS'
-                  : 'NO SELL OR ORDER CHATS'}
+                  : activeTab === 'SELL'
+                  ? 'NO SELL OR ORDER CHATS'
+                  : 'NO MESSAGES YET'}
               </Text>
               <Text style={styles.emptyDesc}>
                 {activeTab === 'SWAP'
                   ? 'Accessory trade proposals and swap negotiations will appear here.'
                   : activeTab === 'RENT'
                   ? 'Garment rentals, reservations, and lease booking chats will appear here.'
-                  : 'Garment sales, purchases, and order tracking threads will appear here.'}
+                  : activeTab === 'SELL'
+                  ? 'Garment sales, purchases, and order tracking threads will appear here.'
+                  : 'Your direct messages, inquiries, and transaction chats will appear here.'}
               </Text>
               <TouchableOpacity
                 style={styles.exploreBtn}
-                onPress={() => router.push(activeTab === 'SWAP' ? ('/(tabs)/swap' as any) : activeTab === 'RENT' ? ('/(tabs)/rental' as any) : ('/(tabs)/shop' as any))}
+                onPress={() =>
+                  router.push(
+                    activeTab === 'SWAP'
+                      ? ('/(tabs)/swap' as any)
+                      : activeTab === 'RENT'
+                      ? ('/(tabs)/rental' as any)
+                      : ('/(tabs)/shop' as any)
+                  )
+                }
                 activeOpacity={0.8}
               >
                 <Text style={styles.exploreBtnText}>
-                  {activeTab === 'SWAP' ? 'EXPLORE SWAPS →' : activeTab === 'RENT' ? 'EXPLORE RENTALS →' : 'EXPLORE MARKETPLACE →'}
+                  {activeTab === 'SWAP'
+                    ? 'EXPLORE SWAPS →'
+                    : activeTab === 'RENT'
+                    ? 'EXPLORE RENTALS →'
+                    : activeTab === 'SELL'
+                    ? 'EXPLORE MARKETPLACE →'
+                    : 'EXPLORE KAPHOR →'}
                 </Text>
               </TouchableOpacity>
             </View>

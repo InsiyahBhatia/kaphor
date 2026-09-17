@@ -39,6 +39,10 @@ export interface ConversationOrder {
 
 export interface ConversationSummary {
   id: string;
+  type?: 'SALE' | 'SWAP' | 'RENTAL' | 'GENERAL';
+  orderId?: string | null;
+  swapId?: string | null;
+  rentalId?: string | null;
   otherUser: ConversationParticipant;
   garment: ConversationGarment | null;
   order?: ConversationOrder | null;

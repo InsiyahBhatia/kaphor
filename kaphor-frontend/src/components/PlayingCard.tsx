@@ -56,13 +56,6 @@ export function PlayingCard({
         <Text style={[styles.suitText, { color: suitColor }]}>{suit}</Text>
       </View>
 
-      {/* Match Badge */}
-      {matchPercent !== undefined && (
-        <View style={styles.matchBadge}>
-          <Text style={styles.matchBadgeText}>CURATED MATCH</Text>
-        </View>
-      )}
-
       {/* Product Image */}
       <View style={styles.imageWrapper}>
         <KaphorImage

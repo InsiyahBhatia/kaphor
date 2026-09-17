@@ -1,6 +1,4 @@
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 
 export interface PayoutAccountRecord {
@@ -10,45 +8,37 @@ export interface PayoutAccountRecord {
   accountNumber: string; // masked to last 4 digits
   ifsc: string;
   bankName: string;
-  upiId?: string;
+  upiId?: string | null;
   isDefault: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
-const DATA_FILE = path.join(__dirname, '../../data/payout_accounts.json');
-
-function loadAccounts(): PayoutAccountRecord[] {
+export async function getUserPayoutAccounts(userId: string): Promise<PayoutAccountRecord[]> {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, JSON.stringify([]), 'utf-8');
-      return [];
-    }
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    return JSON.parse(raw) as PayoutAccountRecord[];
+    const accounts = await db.payoutAccount.findMany({
+      where: { userId },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    });
+    return accounts.map((acc: any) => ({
+      id: acc.id,
+      userId: acc.userId,
+      accountHolderName: acc.accountHolderName,
+      accountNumber: acc.accountNumber,
+      ifsc: acc.ifsc,
+      bankName: acc.bankName,
+      upiId: acc.upiId,
+      isDefault: acc.isDefault,
+      createdAt: acc.createdAt.toISOString(),
+      updatedAt: acc.updatedAt?.toISOString(),
+    }));
   } catch (err) {
-    logger.error('Failed to read payout accounts file', { error: err });
+    logger.error('Failed to get user payout accounts from db', { userId, error: err });
     return [];
   }
 }
 
-function saveAccounts(accounts: PayoutAccountRecord[]): void {
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(accounts, null, 2), 'utf-8');
-  } catch (err) {
-    logger.error('Failed to write payout accounts file', { error: err });
-  }
-}
-
-export function getUserPayoutAccounts(userId: string): PayoutAccountRecord[] {
-  const all = loadAccounts();
-  return all.filter((acc) => acc.userId === userId);
-}
-
-export function addPayoutAccount(
+export async function addPayoutAccount(
   userId: string,
   data: {
     accountHolderName: string;
@@ -58,56 +48,72 @@ export function addPayoutAccount(
     upiId?: string;
     isDefault?: boolean;
   }
-): PayoutAccountRecord {
-  const all = loadAccounts();
-  const userAccounts = all.filter((acc) => acc.userId === userId);
+): Promise<PayoutAccountRecord> {
+  const existingCount = await db.payoutAccount.count({ where: { userId } });
+  const shouldBeDefault = data.isDefault ?? (existingCount === 0);
 
-  const shouldBeDefault = data.isDefault ?? (userAccounts.length === 0);
-
-  if (shouldBeDefault) {
-    for (const acc of all) {
-      if (acc.userId === userId) {
-        acc.isDefault = false;
-      }
-    }
+  if (shouldBeDefault && existingCount > 0) {
+    await db.payoutAccount.updateMany({
+      where: { userId },
+      data: { isDefault: false },
+    });
   }
 
-  // Mask account number: only keep last 4 digits
   const rawNum = String(data.accountNumber || '').replace(/\s+/g, '');
   const masked = rawNum.length > 4 ? `••••${rawNum.slice(-4)}` : rawNum;
 
-  const newAccount: PayoutAccountRecord = {
-    id: `payout_${crypto.randomUUID()}`,
-    userId,
-    accountHolderName: String(data.accountHolderName).trim(),
-    accountNumber: masked,
-    ifsc: String(data.ifsc).toUpperCase().trim(),
-    bankName: String(data.bankName).trim(),
-    upiId: data.upiId ? String(data.upiId).trim() : undefined,
-    isDefault: shouldBeDefault,
-    createdAt: new Date().toISOString(),
-  };
+  const created = await db.payoutAccount.create({
+    data: {
+      userId,
+      accountHolderName: String(data.accountHolderName).trim(),
+      accountNumber: masked,
+      ifsc: String(data.ifsc).toUpperCase().trim(),
+      bankName: String(data.bankName).trim(),
+      upiId: data.upiId ? String(data.upiId).trim() : null,
+      isDefault: shouldBeDefault,
+    },
+  });
 
-  all.push(newAccount);
-  saveAccounts(all);
-  return newAccount;
+  return {
+    id: created.id,
+    userId: created.userId,
+    accountHolderName: created.accountHolderName,
+    accountNumber: created.accountNumber,
+    ifsc: created.ifsc,
+    bankName: created.bankName,
+    upiId: created.upiId,
+    isDefault: created.isDefault,
+    createdAt: created.createdAt.toISOString(),
+    updatedAt: created.updatedAt.toISOString(),
+  };
 }
 
-export function deletePayoutAccount(userId: string, accountId: string): boolean {
-  const all = loadAccounts();
-  const index = all.findIndex((acc) => acc.id === accountId && acc.userId === userId);
-  if (index === -1) return false;
+export async function deletePayoutAccount(userId: string, accountId: string): Promise<boolean> {
+  try {
+    const existing = await db.payoutAccount.findFirst({
+      where: { id: accountId, userId },
+    });
+    if (!existing) return false;
 
-  const wasDefault = all[index].isDefault;
-  all.splice(index, 1);
+    const wasDefault = existing.isDefault;
+    await db.payoutAccount.delete({ where: { id: accountId } });
 
-  if (wasDefault) {
-    const nextDefault = all.find((acc) => acc.userId === userId);
-    if (nextDefault) {
-      nextDefault.isDefault = true;
+    if (wasDefault) {
+      const nextDefault = await db.payoutAccount.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (nextDefault) {
+        await db.payoutAccount.update({
+          where: { id: nextDefault.id },
+          data: { isDefault: true },
+        });
+      }
     }
-  }
 
-  saveAccounts(all);
-  return true;
+    return true;
+  } catch (err) {
+    logger.error('Failed to delete payout account from db', { accountId, error: err });
+    return false;
+  }
 }

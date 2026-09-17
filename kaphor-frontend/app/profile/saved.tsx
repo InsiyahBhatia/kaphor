@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../src/services/garmentService';
 import { cartService } from '../../src/services/cartService';
-import { PlayingCard } from '../../src/components/PlayingCard';
+import { EditorialGarmentCard } from '../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
 import { colors, typography } from '../../src/theme';
 import {
@@ -186,25 +186,14 @@ export default function SavedAssetsScreen() {
     return null;
   };
 
-  // ── Render shop item ───────────────────────────────────────────
-  const renderShopItem = ({ item, index }: { item: any; index: number }) => (
+  const renderShopItem = ({ item }: { item: any }) => (
     <View style={styles.cardContainer}>
-      <TouchableOpacity
+      <EditorialGarmentCard
+        item={item}
         onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
-        activeOpacity={0.9}
-      >
-        <PlayingCard
-          rank={['A', 'K', 'Q', 'J'][index % 4]}
-          suit={(['♠', '♥', '♦', '♣'] as const)[index % 4]}
-          productName={item.title}
-          price={item.price ? Math.round(item.price) : 0}
-          size={item.size || 'OS'}
-          imageUrl={item.images[0]}
-          condition={item.condition || "Excellent"}
-          onAddToCart={() => handleAddToCart(item)}
-          onSwapRequest={() => router.push(`/(tabs)/shop/${item.id}` as any)}
-        />
-      </TouchableOpacity>
+        onAddToCart={() => handleAddToCart(item)}
+        style={{ width: '100%', marginRight: 0 }}
+      />
     </View>
   );
 
@@ -293,9 +282,9 @@ export default function SavedAssetsScreen() {
                   </View>
                 </View>
                 <View style={styles.grid}>
-                  {savedAssets.map((item, index) => (
+                  {savedAssets.map((item) => (
                     <View key={item.id} style={styles.gridCol}>
-                      {renderShopItem({ item, index })}
+                      {renderShopItem({ item })}
                     </View>
                   ))}
                 </View>

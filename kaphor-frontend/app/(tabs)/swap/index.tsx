@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useAuth } from '../../../src/context/AuthContext';
-import { PlayingCard } from '../../../src/components/PlayingCard';
+import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { messageService } from '../../../src/services/messageService';
@@ -448,31 +448,18 @@ export default function SwapFeedScreen() {
                     <Text style={styles.emptyText}>NO SWAPPABLE ASSETS</Text>
                   </View>
                 ) : (
-                  swappableItems.map((item, index) => {
-                    const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
-                    const ranks = ['J', 'Q', 'K', 'A', '8', '7'];
-                    const itemImage: string | undefined = item.images?.[0] as string | undefined;
+                  swappableItems.map((item) => {
                     return (
-                      <TouchableOpacity
-                        key={item.id}
-                        style={styles.cardWrapper}
-                        onPress={() => handleCardPress(item)}
-                      >
-                        <PlayingCard
-                          rank={ranks[index % ranks.length]}
-                          suit={suits[index % 4]}
-                          productName={item.title}
-                          size="M"
-                          category={item.category}
-                          subCategory={item.subCategory}
-                          price={item.price ? Math.round(item.price) : (item.estimatedValue ? Math.round(item.estimatedValue) : 2499)}
-                          imageUrl={itemImage}
-                          condition="Like New"
-                          buttonText="SWAP REQUEST"
-                          onSwapRequest={() => handleCardPress(item)}
-                          style={{ width: '100%' }}
+                      <View key={item.id} style={styles.cardWrapper}>
+                        <EditorialGarmentCard
+                          item={{
+                            ...item,
+                            price: item.price ? Math.round(item.price) : (item.estimatedValue ? Math.round(item.estimatedValue) : 0),
+                          }}
+                          onPress={() => handleCardPress(item)}
+                          style={{ width: '100%', marginRight: 0 }}
                         />
-                      </TouchableOpacity>
+                      </View>
                     );
                   })
                 )}

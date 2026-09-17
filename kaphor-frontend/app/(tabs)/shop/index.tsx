@@ -5,7 +5,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { cartService } from '../../../src/services/cartService';
-import { PlayingCard } from '../../../src/components/PlayingCard';
+import { KaphorImage } from '../../../src/components/KaphorImage';
+import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { 
@@ -93,18 +94,6 @@ export default function ShopScreen() {
     } finally {
       setTimeout(() => setRefreshing(false), 600);
     }
-  };
-
-  const getDeterminants = (id: string, index: number) => {
-    const suits: ('♠' | '♥' | '♦' | '♣')[] = ['♠', '♥', '♦', '♣'];
-    const ranks = ['A', 'K', 'Q', 'J', '10', '9', '8', '7'];
-    const bgs = [colors.charcoal, colors.navy, colors.forest, colors.copper, colors.purple, colors.teal];
-    const charCode = id ? id.charCodeAt(id.length - 1) : index;
-    return {
-      suit: suits[(charCode + index) % suits.length],
-      rank: ranks[(charCode * 2 + index) % ranks.length],
-      bg: bgs[(charCode + index * 3) % bgs.length],
-    };
   };
 
   const handleAddToCart = async (item: any) => {
@@ -210,6 +199,9 @@ export default function ShopScreen() {
               const saleItems = garments.filter(
                 (item) =>
                   item.listingType === 'SALE' &&
+                  item.isActive !== false &&
+                  !['OWNERSHIP', 'RESERVED_SALE', 'PURCHASE_INTENT'].includes((item as any).lifecycleState || '') &&
+                  !(item as any).reservedOrderId &&
                   item.sellerId !== currentUserId &&
                   (item as any).seller?.id !== currentUserId
               );
@@ -222,35 +214,16 @@ export default function ShopScreen() {
               }
               return (
                 <View style={styles.grid}>
-                  {saleItems.map((item, index) => {
-                    const { rank, suit } = getDeterminants(item.id, index);
-                    return (
-                      <TouchableOpacity
-                        key={item.id}
-                        style={styles.cardWrapper}
+                  {saleItems.map((item) => (
+                    <View key={item.id} style={styles.cardWrapper}>
+                      <EditorialGarmentCard
+                        item={item}
                         onPress={() => router.push(`/(tabs)/shop/${item.id}`)}
-                      >
-                        <PlayingCard
-                          rank={rank}
-                          suit={suit}
-                          productName={item.title}
-                          size={item.size || 'OS'}
-                          price={item.price ? Math.round(item.price) : 0}
-                          imageUrl={item.images?.[0] || undefined}
-                          category={item.category || undefined}
-                          subCategory={item.subCategory || undefined}
-                          condition={item.condition || "Excellent"}
-                          onAddToCart={() => handleAddToCart(item)}
-                          buttonText={
-                            item.listingType === 'SALE' ? 'BUY ASSET' :
-                            item.listingType === 'RENTAL' ? 'RENT ASSET' : 'SWAP REQUEST'
-                          }
-                          onSwapRequest={() => router.push(`/(tabs)/shop/${item.id}`)}
-                          style={{ width: '100%' }}
-                        />
-                      </TouchableOpacity>
-                    );
-                  })}
+                        onAddToCart={() => handleAddToCart(item)}
+                        style={{ width: '100%', marginRight: 0 }}
+                      />
+                    </View>
+                  ))}
                 </View>
               );
             })()}
@@ -459,6 +432,94 @@ const styles = StyleSheet.create({
   cardWrapper: {
     width: '48%',
     marginBottom: 24,
+  },
+  shopCard: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.08)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  shopCardImageWrap: {
+    width: '100%',
+    aspectRatio: 0.8,
+    backgroundColor: '#F3EFE9',
+    position: 'relative',
+  },
+  shopCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  conditionPill: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 3,
+  },
+  conditionPillText: {
+    color: colors.charcoal,
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  shopCardInfo: {
+    padding: 10,
+  },
+  shopMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+    gap: 6,
+  },
+  shopBrand: {
+    flex: 1,
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 0.4,
+  },
+  shopSize: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
+  shopTitle: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.charcoal,
+    marginBottom: 8,
+  },
+  shopPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  shopPrice: {
+    fontFamily: typography.mono,
+    fontSize: 14,
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  quickAddBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.charcoal,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardActions: {
     flexDirection: 'row',

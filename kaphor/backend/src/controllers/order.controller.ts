@@ -159,7 +159,7 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
 
             await db.garment.update({
                 where: { id: garment.id },
-                data: { lifecycleState: 'PURCHASE_INTENT' }
+                data: { lifecycleState: 'PURCHASE_INTENT', reservedOrderId: order.id }
             });
         }
 
@@ -197,36 +197,42 @@ export async function createCartOrder(req: Request, res: Response): Promise<void
             return;
         }
 
-        const { garmentIds } = req.body; // Optional list of IDs to checkout
+        const { garmentIds, garmentId } = req.body;
+        const requestedIds: string[] = Array.isArray(garmentIds) && garmentIds.length > 0
+            ? garmentIds.map(String)
+            : garmentId ? [String(garmentId)] : [];
 
-        const whereClause: any = { userId: req.user.id };
-        if (Array.isArray(garmentIds) && garmentIds.length > 0) {
-            whereClause.garmentId = { in: garmentIds };
+        let targetGarments: any[] = [];
+        if (requestedIds.length > 0) {
+            targetGarments = await db.garment.findMany({
+                where: { id: { in: requestedIds } }
+            });
+        } else {
+            const cartItems = await db.cartItem.findMany({
+                where: { userId: req.user.id },
+                include: { garment: true }
+            });
+            targetGarments = cartItems.map((ci: any) => ci.garment).filter(Boolean);
         }
 
-        const cartItems = await db.cartItem.findMany({
-            where: whereClause,
-            include: { garment: true }
-        });
-
-        if (cartItems.length === 0) {
+        if (targetGarments.length === 0) {
             res.status(400).json({ error: 'EMPTY_CART', message: 'Your cart is empty' });
             return;
         }
 
-        const validItems = cartItems.filter((i: any) => i.garment && i.garment.isActive && i.garment.lifecycleState !== 'OWNERSHIP' && i.garment.lifecycleState !== 'RESERVED_SALE' && !i.garment.reservedOrderId);
+        const validItems = targetGarments.filter((g: any) => g && g.isActive !== false && g.lifecycleState !== 'OWNERSHIP' && g.lifecycleState !== 'RESERVED_SALE');
         if (validItems.length === 0) {
-            res.status(400).json({ error: 'INVALID_CART', message: 'Items in your cart are no longer available' });
+            res.status(400).json({ error: 'INVALID_CART', message: 'Items are no longer available' });
             return;
         }
 
         // Calculate items subtotal and delivery fee
-        const itemsSubtotal = validItems.reduce((sum: number, item: any) => sum + (item.garment?.price || 0), 0);
+        const itemsSubtotal = validItems.reduce((sum: number, g: any) => sum + (g.price || 0), 0);
         const deliveryFee = calculateDeliveryFee(itemsSubtotal);
         const totalAmount = itemsSubtotal + deliveryFee;
 
         // For simplicity, use first seller
-        const sellerId = validItems[0].garment!.sellerId;
+        const sellerId = validItems[0].sellerId;
 
         const order = await db.order.create({
             data: {
@@ -235,9 +241,9 @@ export async function createCartOrder(req: Request, res: Response): Promise<void
                 totalAmount,
                 status: 'PENDING',
                 items: {
-                    create: validItems.map((item: any) => ({
-                        garmentId: item.garmentId,
-                        price: item.garment!.price || 0,
+                    create: validItems.map((g: any) => ({
+                        garmentId: g.id,
+                        price: g.price || 0,
                         quantity: 1,
                     }))
                 }
@@ -250,7 +256,7 @@ export async function createCartOrder(req: Request, res: Response): Promise<void
         });
 
         // Transition garments to PURCHASE_INTENT and associate with order
-        const garmentIdsToUpdate = validItems.map((item: any) => item.garmentId);
+        const garmentIdsToUpdate = validItems.map((g: any) => g.id);
         if (garmentIdsToUpdate.length > 0) {
             await db.garment.updateMany({
                 where: { id: { in: garmentIdsToUpdate } },

@@ -184,9 +184,24 @@ export async function markOrderShipped(req: AuthRequest, res: Response): Promise
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Order must be paid (confirmed) before shipping' });
       return;
     }
+    const { trackingNumber, carrier } = req.body as { trackingNumber?: string; carrier?: string };
+    const awb = trackingNumber || `KPH-DEL-${Math.floor(100000 + Math.random() * 900000)}`;
+    const courierName = carrier || 'Delhivery Express';
+    const currentHistory = Array.isArray(order.trackingHistory) ? order.trackingHistory : [];
+
     const updated = await db.order.update({
       where: { id: orderId },
-      data: { status: 'SHIPPED' },
+      data: {
+        status: 'SHIPPED',
+        trackingNumber: awb,
+        carrier: courierName,
+        trackingHistory: [
+          ...currentHistory,
+          { status: 'BOOKED', timestamp: new Date().toISOString(), note: `Shipment booked with ${courierName}. AWB: ${awb}` },
+          { status: 'PICKED_UP', timestamp: new Date().toISOString(), note: 'Package picked up from seller atelier.' },
+          { status: 'IN_TRANSIT', timestamp: new Date().toISOString(), note: 'In transit to buyer destination facility.' },
+        ],
+      },
       include: orderInclude,
     });
 
@@ -224,9 +239,16 @@ export async function markOrderDelivered(req: AuthRequest, res: Response): Promi
         .json({ error: 'BAD_REQUEST', message: 'Order cannot be marked delivered from this status' });
       return;
     }
+    const currentHistory = Array.isArray(order.trackingHistory) ? order.trackingHistory : [];
     const updated = await db.order.update({
       where: { id: orderId },
-      data: { status: 'DELIVERED' },
+      data: {
+        status: 'DELIVERED',
+        trackingHistory: [
+          ...currentHistory,
+          { status: 'DELIVERED', timestamp: new Date().toISOString(), note: 'Package delivered to buyer doorstep. 48-hour condition inspection window is now active.' },
+        ],
+      },
       include: orderInclude,
     });
 

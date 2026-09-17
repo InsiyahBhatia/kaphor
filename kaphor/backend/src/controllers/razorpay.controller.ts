@@ -311,8 +311,7 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         },
       });
 
-      // Atomically reserve garments for this order so no other buyer can pay for them.
-      // Ownership itself transfers only at delivery (markOrderDelivered).
+      // Atomically reserve garments for this order
       const claimed = await claimGarmentsForOrder(orderId, order.buyerId);
       if (!claimed) {
         logger.error('Payment verified but garments could not be reserved (sold elsewhere)', {
@@ -336,6 +335,9 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         });
         return;
       }
+
+      // Immediately transfer garments to buyer so they appear in their wardrobe and are delisted
+      await transferGarmentsToBuyer(orderId, order.buyerId);
 
       // Clear purchased items from buyer's cart (they are now reserved for them)
       const orderItems = await db.orderItem.findMany({
@@ -369,6 +371,29 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         });
       } catch (notifErr) {
         logger.warn('Failed to send order paid notification to seller', { error: notifErr });
+      }
+
+      // Link conversation with this order so it appears under SELL/ORDER tab
+      try {
+        const firstGarmentId = purchasedGarmentIds[0] || null;
+        let conv = await db.conversation.findFirst({
+          where: {
+            OR: [
+              { participant1Id: order.buyerId, participant2Id: order.sellerId, garmentId: firstGarmentId },
+              { participant1Id: order.sellerId, participant2Id: order.buyerId, garmentId: firstGarmentId },
+              { participant1Id: order.buyerId, participant2Id: order.sellerId },
+              { participant1Id: order.sellerId, participant2Id: order.buyerId },
+            ],
+          },
+        });
+        if (conv) {
+          await db.conversation.update({
+            where: { id: conv.id },
+            data: { orderId: order.id, type: 'SALE' },
+          });
+        }
+      } catch (convErr) {
+        logger.warn('Failed to associate conversation with order', { error: convErr });
       }
 
       res.json({ data: updated, isRental: false });
@@ -431,6 +456,28 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         });
       } catch (notifErr) {
         logger.warn('Failed to send rental confirmed notification to renter', { error: notifErr });
+      }
+
+      // Link conversation with this rental so it appears under RENT tab
+      try {
+        let conv = await db.conversation.findFirst({
+          where: {
+            OR: [
+              { participant1Id: rental.renterId, participant2Id: rental.garment.sellerId, garmentId: rental.garmentId },
+              { participant1Id: rental.garment.sellerId, participant2Id: rental.renterId, garmentId: rental.garmentId },
+              { participant1Id: rental.renterId, participant2Id: rental.garment.sellerId },
+              { participant1Id: rental.garment.sellerId, participant2Id: rental.renterId },
+            ],
+          },
+        });
+        if (conv) {
+          await db.conversation.update({
+            where: { id: conv.id },
+            data: { rentalId: rental.id, type: 'RENTAL' },
+          });
+        }
+      } catch (convErr) {
+        logger.warn('Failed to associate conversation with rental', { error: convErr });
       }
 
       res.json({ data: updatedRental, isRental: true });
