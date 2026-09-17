@@ -18,6 +18,7 @@ import { colors, typography } from '../../theme';
 import { KaphorImage } from '../../components/KaphorImage';
 import { Header } from '../../components/common/Header';
 import { DossierLoading } from '../../components/common/DossierLoading';
+import { RecyclingHubsModal } from '../../components/RecyclingHubsModal';
 import { cachedGet, fetchFresh, invalidateCache } from '../../services/api';
 import api from '../../services/api';
 import { hapticFeedback } from '../../utils/haptics';
@@ -51,7 +52,7 @@ function getStateConfig(state: string): StateConfig {
 // ── Wardrobe Item Card ──────────────────────────────────────────
 interface WardrobeItemProps {
   item: any;
-  onAction: (action: string, garmentId: string) => void;
+  onAction: (action: string, item: any) => void;
 }
 
 const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
@@ -83,25 +84,32 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
         {state === 'OWNERSHIP' && (
           <>
             <TouchableOpacity
-              style={[styles.actionBtn, { borderColor: colors.forest }]}
-              onPress={() => onAction('LOG_WEAR', item.id)}
+              style={[styles.actionBtn, { borderColor: colors.forest, flex: 1 }]}
+              onPress={() => onAction('LOG_WEAR', item)}
             >
-              <Ionicons name="footsteps" size={13} color={colors.forest} />
+              <Ionicons name="footsteps" size={12} color={colors.forest} />
               <Text style={[styles.actionBtnText, { color: colors.forest }]}>I WORE THIS</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, { borderColor: colors.charcoal }]}
-              onPress={() => onAction('INITIATE_RESELL', item.id)}
+              onPress={() => onAction('INITIATE_RESELL', item)}
             >
-              <Ionicons name="pricetag" size={13} color={colors.charcoal} />
+              <Ionicons name="pricetag" size={12} color={colors.charcoal} />
               <Text style={[styles.actionBtnText, { color: colors.charcoal }]}>SELL</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, { borderColor: '#8C6D3B', paddingHorizontal: 6 }]}
+              onPress={() => onAction('RECYCLE_HUBS', item)}
+              accessibilityLabel="Recycle this garment"
+            >
+              <Ionicons name="leaf-outline" size={12} color="#8C6D3B" />
             </TouchableOpacity>
           </>
         )}
         {state === 'SELL_INTENT' && (
           <TouchableOpacity
             style={[styles.actionBtn, { borderColor: colors.forest, flex: 1 }]}
-            onPress={() => onAction('RELIST', item.id)}
+            onPress={() => onAction('RELIST', item)}
           >
             <Ionicons name="arrow-up-circle" size={14} color={colors.forest} />
             <Text style={[styles.actionBtnText, { color: colors.forest }]}>RELIST NOW</Text>
@@ -109,20 +117,20 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
         )}
         {state === 'CIRCULATION' && (
           <TouchableOpacity
-            style={[styles.actionBtn, { borderColor: colors.navy, flex: 1 }]}
-            onPress={() => onAction('CIRCULAR_END', item.id)}
+            style={[styles.actionBtn, { borderColor: colors.navy, flex: 1, backgroundColor: 'rgba(30,58,138,0.06)' }]}
+            onPress={() => onAction('RECYCLE_HUBS', item)}
           >
-            <Ionicons name="leaf" size={14} color={colors.navy} />
-            <Text style={[styles.actionBtnText, { color: colors.navy }]}>END OF LIFE</Text>
+            <Ionicons name="leaf" size={13} color={colors.navy} />
+            <Text style={[styles.actionBtnText, { color: colors.navy }]}>END OF LIFE ♻️</Text>
           </TouchableOpacity>
         )}
         {state === 'REUSE_UPCYCLE_RECYCLE' && (
           <TouchableOpacity
-            style={[styles.actionBtn, { borderColor: colors.textMuted, flex: 1, opacity: 0.6 }]}
-            disabled
+            style={[styles.actionBtn, { borderColor: colors.forest, flex: 1, backgroundColor: 'rgba(40,54,24,0.06)' }]}
+            onPress={() => onAction('RECYCLE_HUBS', item)}
           >
-            <Ionicons name="checkmark-done" size={14} color={colors.textMuted} />
-            <Text style={[styles.actionBtnText, { color: colors.textMuted }]}>COMPLETED</Text>
+            <Ionicons name="location" size={13} color={colors.forest} />
+            <Text style={[styles.actionBtnText, { color: colors.forest }]}>RECYCLING HUBS 📍</Text>
           </TouchableOpacity>
         )}
         {state === 'PURCHASE_INTENT' && (
@@ -134,10 +142,28 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
             <Text style={[styles.actionBtnText, { color: colors.orange }]}>AWAITING PAYMENT</Text>
           </TouchableOpacity>
         )}
-        {(state === 'DECLINE' || state === 'LISTED' || state === 'INTEREST') && (
+        {state === 'DECLINE' && (
+          <>
+            <TouchableOpacity
+              style={[styles.actionBtn, { borderColor: colors.charcoal, flex: 1 }]}
+              onPress={() => onAction('VIEW', item)}
+            >
+              <Ionicons name="eye" size={13} color={colors.charcoal} />
+              <Text style={[styles.actionBtnText, { color: colors.charcoal }]}>VIEW</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, { borderColor: colors.navy, flex: 1 }]}
+              onPress={() => onAction('RECYCLE_HUBS', item)}
+            >
+              <Ionicons name="leaf" size={13} color={colors.navy} />
+              <Text style={[styles.actionBtnText, { color: colors.navy }]}>RECYCLE ♻️</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        {(state === 'LISTED' || state === 'INTEREST') && (
           <TouchableOpacity
             style={[styles.actionBtn, { borderColor: colors.charcoal, flex: 1 }]}
-            onPress={() => onAction('VIEW', item.id)}
+            onPress={() => onAction('VIEW', item)}
           >
             <Ionicons name="eye" size={14} color={colors.charcoal} />
             <Text style={[styles.actionBtnText, { color: colors.charcoal }]}>VIEW</Text>
@@ -149,7 +175,13 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
 });
 
 // ── Summary stats for wardrobe header ───────────────────────────
-function WardrobeStats({ garments }: { garments: any[] }) {
+function WardrobeStats({
+  garments,
+  onOpenRecyclingModal,
+}: {
+  garments: any[];
+  onOpenRecyclingModal: () => void;
+}) {
   const owned = garments.filter(g => g.lifecycleState === 'OWNERSHIP').length;
   const sellReady = garments.filter(g => g.lifecycleState === 'SELL_INTENT').length;
   const inCirculation = garments.filter(g =>
@@ -173,6 +205,23 @@ function WardrobeStats({ garments }: { garments: any[] }) {
         </View>
       </View>
 
+      {/* End-of-Life Recycling Banner */}
+      <TouchableOpacity
+        style={styles.recycleBanner}
+        onPress={onOpenRecyclingModal}
+        activeOpacity={0.8}
+      >
+        <View style={styles.recycleIconWrap}>
+          <Ionicons name="location" size={15} color="#283618" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.recycleBannerTitle}>END-OF-LIFE TEXTILE ROUTING</Text>
+          <Text style={styles.recycleBannerSub}>
+            Have damaged or worn garments? View certified recycling centers near you with free doorstep pickup →
+          </Text>
+        </View>
+      </TouchableOpacity>
+
       {/* Impact Multiplier Banner */}
       <View style={styles.impactBanner}>
         <View style={styles.impactIconWrap}>
@@ -195,7 +244,8 @@ export function WardrobeScreen() {
   const [wardrobe, setWardrobe] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
+  const [recyclingGarment, setRecyclingGarment] = useState<any | null>(null);
+  const [showRecyclingModal, setShowRecyclingModal] = useState(false);
 
   const loadWardrobe = useCallback(async () => {
     try {
@@ -251,9 +301,17 @@ export function WardrobeScreen() {
     return () => sub.remove();
   }, []);
 
-  const handleAction = async (action: string, garmentId: string) => {
+  const handleAction = async (action: string, itemOrId: any) => {
+    const garmentId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.id;
+    const item = typeof itemOrId === 'object' ? itemOrId : wardrobe.find((g) => g.id === garmentId);
+
     try {
       switch (action) {
+        case 'RECYCLE_HUBS':
+          setRecyclingGarment(item);
+          setShowRecyclingModal(true);
+          break;
+
         case 'LOG_WEAR': {
           const res = await api.post('/interactions', { garmentId, eventType: 'LOG_WEAR' });
           const wearImpact = res?.data?.data?.wearImpact;
@@ -288,24 +346,8 @@ export function WardrobeScreen() {
           break;
 
         case 'CIRCULAR_END':
-          Alert.alert(
-            'End of Life',
-            'Send this garment to the circular end-of-life path? It will be routed to reuse, upcycling, or recycling, diverting 450g of textile waste.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Send to Circular End',
-                style: 'destructive',
-                onPress: async () => {
-                  await api.post(`/garments/${garmentId}/circular-end`);
-                  Alert.alert('Done', 'Garment routed to circular end-of-life. +450g textile waste diversion credited to your Impact Dossier!');
-                  invalidateCache('/users/me/wardrobe');
-                  invalidateCache('/impact');
-                  loadWardrobe();
-                },
-              },
-            ]
-          );
+          setRecyclingGarment(item);
+          setShowRecyclingModal(true);
           break;
 
         case 'VIEW':
@@ -361,8 +403,18 @@ export function WardrobeScreen() {
             />
           }
         >
-          {/* Stats & Impact Multiplier */}
-          <WardrobeStats garments={wardrobe} />
+          {/* Stats & Recycling Guide Banner */}
+          <WardrobeStats
+            garments={wardrobe}
+            onOpenRecyclingModal={() => {
+              const candidate =
+                wardrobe.find((g) => g.lifecycleState === 'REUSE_UPCYCLE_RECYCLE' || g.lifecycleState === 'CIRCULATION') ||
+                wardrobe[0] ||
+                null;
+              setRecyclingGarment(candidate);
+              setShowRecyclingModal(true);
+            }}
+          />
 
           {/* Section label */}
           <View style={styles.sectionHeader}>
@@ -387,6 +439,14 @@ export function WardrobeScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* Certified Textile Recycling Hubs Guided Modal */}
+      <RecyclingHubsModal
+        visible={showRecyclingModal}
+        onClose={() => setShowRecyclingModal(false)}
+        garment={recyclingGarment}
+        onSuccess={loadWardrobe}
+      />
     </SafeAreaView>
   );
 }
@@ -408,6 +468,41 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 32, fontFamily: typography.headings, color: colors.forest },
   statLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '800', marginTop: 2, letterSpacing: 1 },
+
+  // Recycling Guide Banner
+  recycleBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F5ED',
+    borderWidth: 1.5,
+    borderColor: '#283618',
+    padding: 12,
+    gap: 10,
+    marginBottom: 10,
+    borderRadius: 4,
+  },
+  recycleIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(40,54,24,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recycleBannerTitle: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#283618',
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
+  recycleBannerSub: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    color: colors.charcoal,
+    lineHeight: 12,
+  },
 
   // Impact Banner
   impactBanner: {

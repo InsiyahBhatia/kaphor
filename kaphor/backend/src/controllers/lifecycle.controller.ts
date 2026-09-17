@@ -125,10 +125,11 @@ export async function markCircularEnd(req: Request, res: Response): Promise<void
       return;
     }
 
-    if (garment.lifecycleState !== 'CIRCULATION') {
+    const allowableStates = ['CIRCULATION', 'DECLINE', 'OWNERSHIP'];
+    if (!allowableStates.includes(garment.lifecycleState)) {
       res.status(400).json({
         error: 'BAD_REQUEST',
-        message: `Cannot mark circular end from state ${garment.lifecycleState}. Must be in CIRCULATION.`,
+        message: `Cannot mark circular end from state ${garment.lifecycleState}. Must be in ${allowableStates.join(', ')}.`,
       });
       return;
     }

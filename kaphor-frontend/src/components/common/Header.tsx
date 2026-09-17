@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     borderColor: colors.bg,
   },
   notifBadge: {
-    backgroundColor: '#8C6D3B', // Kaphor signature gold
+    backgroundColor: colors.crimson,
   },
   badgeText: {
     color: 'white',

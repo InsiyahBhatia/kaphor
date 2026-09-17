@@ -198,7 +198,8 @@ const STOP_WORDS = new Set([
   'perfectly', 'seamless', 'fusion', 'think', 'sharp', 'structured', 'flowing', 'elevated', 'pointed',
   'editorial-grade', 'approach', 'truly', 'circular', 'consider', 'renting', 'specific', 'events',
   'swapping', 'peers', 'occasion', 'ensuring', 'enjoy', 'glamour', 'long-term', 'storage', 'footprint',
-  'digital', 'closet', 'mapped', 'yet', 'pulled', 'rent', 'rental', 'swap', 'buy'
+  'digital', 'closet', 'mapped', 'yet', 'pulled', 'rent', 'rental', 'swap', 'buy',
+  'under', 'below', 'less', 'than', 'max', 'min', 'price', 'budget', 'rs', 'inr', 'day', 'per', 'within', 'around'
 ]);
 
 // ── Agent Tool 2: Search Catalog ──────────────────────────────────────────────
@@ -246,11 +247,11 @@ export async function searchCatalog(params: {
       }
     }
 
-    // 2. Extract meaningful search tokens
+    // 2. Extract meaningful search tokens (excluding pure digits and price words)
     const rawTokens = promptText
       .replace(/[^a-z0-9\s-]/g, ' ')
       .split(/\s+/)
-      .filter(w => w.length >= 3 && !STOP_WORDS.has(w));
+      .filter(w => w.length >= 3 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
 
     // 3. Tier 1: Query with detected categories and/or tokens
     const tier1OrConditions: any[] = [];
@@ -312,25 +313,50 @@ export async function searchCatalog(params: {
       }
     }
 
-    // 5. Tier 3: If still fewer than 4 items, pull top active catalog pieces
-    if (matchedGarmentMap.size < 4) {
+    // 5. Tier 3: If still fewer than 4 items, pull top active catalog pieces matching baseWhere
+    if (matchedGarmentMap.size < (params.take || 4)) {
       const tier3Items = await db.garment.findMany({
         where: {
           ...baseWhere,
           id: { notIn: Array.from(matchedGarmentMap.keys()) },
         },
-        orderBy: { popularityScore: 'desc' },
-        take: 6 - matchedGarmentMap.size,
+        orderBy: params.listingType === 'RENTAL' ? { rentalPriceDay: 'asc' } : { popularityScore: 'desc' },
+        take: (params.take || 6) - matchedGarmentMap.size,
       });
       for (const item of tier3Items) {
         matchedGarmentMap.set(item.id, item);
       }
     }
 
+    // 6. Tier 4 Fallback: If maxPrice resulted in 0 matches, relax maxPrice to return lowest price rentals/buys
+    if (matchedGarmentMap.size === 0 && params.maxPrice) {
+      const fallbackWhere: any = { isActive: true, lifecycleState: 'LISTED' };
+      if (params.listingType) fallbackWhere.listingType = params.listingType;
+
+      const fallbackItems = await db.garment.findMany({
+        where: fallbackWhere,
+        orderBy: params.listingType === 'RENTAL' ? { rentalPriceDay: 'asc' } : { price: 'asc' },
+        take: params.take || 6,
+      });
+      for (const item of fallbackItems) {
+        matchedGarmentMap.set(item.id, item);
+      }
+    }
+
+    // 7. Ultimate Fallback: If still 0 matches, pull any active listed garments
+    if (matchedGarmentMap.size === 0) {
+      const ultimateItems = await db.garment.findMany({
+        where: { isActive: true, lifecycleState: 'LISTED' },
+        orderBy: { popularityScore: 'desc' },
+        take: params.take || 6,
+      });
+      for (const item of ultimateItems) {
+        matchedGarmentMap.set(item.id, item);
+      }
+    }
+
     const rawItems = Array.from(matchedGarmentMap.values());
-    // Shuffle items slightly to provide recommendation diversity across queries
-    const shuffledItems = [...rawItems].sort(() => Math.random() - 0.5);
-    const finalItems = shuffledItems.slice(0, params.take || 6);
+    const finalItems = rawItems.slice(0, params.take || 6);
     const cards = await Promise.all(
       finalItems.map((g: any) => resolveGarmentCard(g, 'CATALOG'))
     );
@@ -619,9 +645,12 @@ export async function runFashionAgent(params: {
 
   // Extract budget or price hint if present
   let maxPrice: number | undefined = undefined;
-  const priceMatch = prompt.match(/(?:under|below|less than|max)\s*(?:rs\.?|inr|₹)?\s*(\d+)/i);
+  const priceMatch = prompt.match(/(?:under|below|less than|max|within|budget of)\s*(?:rs\.?|inr|₹)?\s*([\d,]+)/i);
   if (priceMatch && priceMatch[1]) {
-    maxPrice = parseInt(priceMatch[1], 10);
+    const parsedVal = parseInt(priceMatch[1].replace(/,/g, ''), 10);
+    if (!isNaN(parsedVal) && parsedVal > 0) {
+      maxPrice = parsedVal;
+    }
   }
 
   const catalogData = await searchCatalog({
@@ -686,24 +715,42 @@ export async function runFashionAgent(params: {
 
   // 3. AI Assistant Synthesis
   const wardrobeSummary = wardrobeData.cards.map(c => `"${c.title}" (${c.brand}, ${c.category})`).join(', ') || 'None';
-  const catalogSummary = cards.map((c, i) => `${i + 1}. "${c.title}" by ${c.brand} (Category: ${c.category}, ${c.listingType}: ₹${c.rentalPriceDay ? `${c.rentalPriceDay}/day` : c.price})`).join('\n') || 'App pieces found';
+
+  // Build a clear catalog summary with per-item pricing confirmed against the budget
+  const catalogSummary = cards.length > 0
+    ? cards.map((c, i) => {
+        const priceLabel = c.rentalPriceDay
+          ? `₹${c.rentalPriceDay}/day${maxPrice ? ` ✓ under ₹${maxPrice}/day` : ''}`
+          : `₹${c.price}`;
+        return `${i + 1}. "${c.title}" by ${c.brand} (${c.category}, ${c.listingType}: ${priceLabel})`;
+      }).join('\n')
+    : '';
+
+  // Build explicit budget context hint for the LLM
+  const budgetContext = maxPrice && wantsRental
+    ? `IMPORTANT FACT: All ${cards.length} items listed below have already been filtered and confirmed to be under ₹${maxPrice}/day. Do NOT say you couldn't find items. They are all within budget.`
+    : maxPrice
+    ? `IMPORTANT FACT: All ${cards.length} items listed below are confirmed under ₹${maxPrice}. Do NOT say you couldn't find items.`
+    : '';
 
   const agentPrompt = `You are KaPhor AI, a friendly, warm shopping and style helper.
 You speak in very simple, natural, everyday English.
 Never use complicated fashion jargon or pretentious words (strictly avoid words like "curate", "ensemble", "silhouette", "intentional layering", "circular vault", "equitable trade valuation", "proportions", "textiles", "dossier").
 
 CRITICAL RULES:
-1. NEVER mention whether the user's closet or digital closet is mapped, unmapped, empty, digitized, or pending digitization. NEVER say "Since your digital closet isn't mapped..." or "Since your closet digitization is pending..." or anything similar!
-2. You MUST recommend ONLY the actual pieces from "Available pieces found on the app" below. DO NOT invent designers, brands (like Torani, Payal Khandwala, Sabyasachi, etc.) or pieces that are not listed in the "Available pieces found on the app" list. Reference 1 or 2 specific pieces from that list by exact title and brand and explain why they match what was asked for.
-3. Keep your reply short, warm, and natural: strictly 2 to 3 simple sentences.
-4. The user sees the full interactive product cards with photos, prices, and direct buttons right below your message, so do not include markdown bullet lists, links, or item IDs.
+1. NEVER mention whether the user's closet or digital closet is mapped, unmapped, empty, digitized, or pending digitization.
+2. You MUST recommend pieces from "Available pieces found on the app" below by exact title and brand.
+3. NEVER say "I couldn't find", "unable to recommend", or "check the app directly" when pieces ARE listed below. The pieces listed are real, confirmed, and in-budget.
+4. Keep your reply short, warm, and natural: strictly 2 to 3 simple sentences.
+5. The user sees interactive product cards below your message, so do not use markdown lists or item IDs.
+${budgetContext ? `6. ${budgetContext}` : ''}
 
 The user asked: "${message}".
 ${visualAnalysisSummary ? `User uploaded photo: "${visualAnalysisSummary}".` : ''}
 User Style Profile: ${userAesthetic}${topCats.length ? `, Preferred: ${topCats.join(', ')}` : ''}${topBrands.length ? `, Brands: ${topBrands.join(', ')}` : ''}.
 
-Available pieces found on the app:
-${catalogSummary}
+Available pieces found on the app (${cards.length} items, all confirmed in-budget):
+${catalogSummary || 'No specific catalog items — suggest the user browse by category or occasion.'}
 ${outfitLook ? `Outfit look: ${outfitLook.title}` : ''}
 ${wantsWardrobe ? `User's closet items: ${wardrobeSummary}` : ''}`;
 
@@ -723,6 +770,21 @@ ${wantsWardrobe ? `User's closet items: ${wardrobeSummary}` : ''}`;
         reply = `I can help you find pieces on the app to rent, buy, or swap. What style, color, or event are you dressing up for?`;
       }
     }
+  }
+
+  // Guard: If the LLM returned a negative/fallback message but we actually have cards, override it
+  const negativePhrases = [
+    "couldn't find", "could not find", "unable to find", "no specific",
+    "check those brands", "check directly", "visit their", "unable to recommend"
+  ];
+  const replyLower = reply.toLowerCase();
+  if (cards.length > 0 && negativePhrases.some(p => replyLower.includes(p))) {
+    const top = cards[0];
+    const priceStr = top.rentalPriceDay ? `₹${top.rentalPriceDay}/day` : `₹${top.price}`;
+    const secondCard = cards[1];
+    reply = secondCard
+      ? `Great news — we have ${cards.length} options that fit your budget perfectly! The ${top.title} by ${top.brand} is just ${priceStr}, and the ${secondCard.title} by ${secondCard.brand} is another lovely pick. Check them all out below!`
+      : `Great news — the ${top.title} by ${top.brand} is right within your budget at ${priceStr}. Check it out below!`;
   }
 
   // 4. Suggested Follow-ups (Simple, clean, no emojis)

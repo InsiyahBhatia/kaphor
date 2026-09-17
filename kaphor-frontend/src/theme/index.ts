@@ -1,46 +1,57 @@
 /**
- * Kaphor design system — brutalist spy-agency playing-card aesthetic.
+ * Kaphor design system — Editorial Archive / Circular Fashion Palette
+ * Strict 5-Role Color Palette
  */
 export const colors = {
-  // 60-30-10 Minimal & Bold Brutalist Palette
-  cream: '#F7F5F0',    // 60% Base
-  red: '#A82222',      // 10% Accent
-  charcoal: '#1E1F22', // 30% Structural/Text
-  navy: '#1C2B4A',
-  forest: '#1E3B2F',
-  copper: '#4A2E1A',
-  purple: '#2D1B4E',
-  teal: '#0D3B3B',
-  orange: '#C95F12',
-  white: '#FFFFFF',    // 30% Card background
+  // Core 5-Role Color System (Each color has exactly ONE job)
+  cream: '#F5F1E8',       // Base/paper surface
+  ink: '#141414',         // Text, structure, primary buttons, AI features
+  crimson: '#C81E2C',     // Urgency/live states only — active nav tab, ending soon, live counters
+  emerald: '#0F5C46',     // Sustainability data only — CO2 saved, water saved, circular impact metrics
+  gold: '#B8912F',        // Status/prestige only — membership tier badges + "Curated Match" tags
+
+  // Dark & Light Family Shades (Rule: Text on colored fill uses darkest shade from same family)
+  emeraldDark: '#072B20',
+  emeraldLight: '#E6F4EF',
+  crimsonDark: '#5C0B12',
+  crimsonLight: '#FCEBEF',
+  goldDark: '#4A3A13',
+  goldLight: '#FDF9EE',
+
+  // Structure / Utility aliases
+  white: '#FFFFFF',
+  black: '#141414',
+  charcoal: '#141414',    // Mapped to ink
+  bg: '#F5F1E8',          // Cream paper surface
+  bgCard: '#FFFFFF',
+  bgMuted: '#EAE6DF',
   
-  // Backwards compatibility mappings
-  bg: '#F7F5F0',       // 60%
-  bgCard: '#FFFFFF',   // 30%
-  bgMuted: '#EAE6DF',  // Subtle contrast
-  
-  crimson: '#A82222',  // 10% Accent
-  crimsonDark: '#7A1616',
-  crimsonLight: '#D33F3F',
-  
-  textPrimary: '#1E1F22', // 30%
+  border: '#141414',      // Sharp ink structure borders
+  textPrimary: '#141414', // Ink text
   textSecond: '#383A40',
-  textMuted: '#9A8E7E',
+  textMuted: '#706C66',
   
-  gold: '#C95F12',
-  goldLight: '#E87D33',
-  
-  border: '#1E1F22', // Sharp dark borders matching charcoal
-  success: '#1E3B2F',
-  error: '#A82222',
-  warning: '#C95F12',
-  black: '#0F0F11',
+  // Backward compatibility alias mappings
+  red: '#C81E2C',         // Mapped to crimson
+  forest: '#0F5C46',      // Mapped to emerald
+  terracotta: '#141414',  // Replaced/folded into ink
+  terracottaDark: '#141414',
+  terracottaLight: '#F5F1E8',
+  orange: '#141414',
+  copper: '#B8912F',
+  navy: '#141414',
+  teal: '#0F5C46',
+  purple: '#141414',
+
+  success: '#0F5C46',
+  error: '#C81E2C',
+  warning: '#B8912F',
 } as const;
 
 export const typography = {
   headings: 'BebasNeue_400Regular',
-  body: 'IBMPlexMono_400Regular',
   mono: 'IBMPlexMono_400Regular',
+  body: 'IBMPlexMono_400Regular',
   accent: 'PlayfairDisplay_400Regular_Italic',
   ranks: 'IMFellEnglish_400Regular',
 } as const;
@@ -62,3 +73,4 @@ export const radius = {
   card: 20,
   full: 999,
 } as const;
+

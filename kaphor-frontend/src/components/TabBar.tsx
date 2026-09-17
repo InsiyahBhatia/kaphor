@@ -67,7 +67,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
 
 
         const config = getTabConfig(route.name);
-        const color = isFocused ? colors.red : colors.textMuted;
+        const color = isFocused ? colors.crimson : colors.textMuted;
 
         return (
           <TouchableOpacity
