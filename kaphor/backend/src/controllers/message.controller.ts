@@ -168,8 +168,18 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           select: {
             id: true,
             status: true,
+            garmentOffered: { select: { id: true, title: true, brand: true, images: true, price: true } },
+            garmentWanted: { select: { id: true, title: true, brand: true, images: true, price: true } },
           },
         });
+
+        // Resolve swap garment images
+        let swapGarments: any[] = [];
+        if (activeSwap) {
+          const g1 = activeSwap.garmentOffered ? await resolveGarmentThumbnail(activeSwap.garmentOffered) : null;
+          const g2 = activeSwap.garmentWanted ? await resolveGarmentThumbnail(activeSwap.garmentWanted) : null;
+          swapGarments = [g1, g2].filter(Boolean);
+        }
 
         // Find associated active rental if any exists between these participants
         const activeRental = await db.rental.findFirst({
@@ -215,7 +225,8 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           },
           garment: garmentData,
           order: activeOrder,
-          swap: activeSwap,
+          swap: activeSwap ? { id: activeSwap.id, status: activeSwap.status } : null,
+          swapGarments,
           rental: activeRental,
           lastMessageText: c.lastMessageText || c.messages[0]?.content || '',
           lastMessageAt: c.lastMessageAt || c.createdAt,
@@ -1093,10 +1104,9 @@ export async function deleteConversation(req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // Delete conversation (cascade deletes all direct_messages via Prisma schema relation onDelete: Cascade)
-    await db.conversation.delete({
-      where: { id: conversationId },
-    });
+    // Explicitly delete all messages first, then the conversation (handles cases without DB cascade)
+    await db.directMessage.deleteMany({ where: { conversationId } });
+    await db.conversation.delete({ where: { id: conversationId } });
 
     const otherParticipantId =
       conversation.participant1Id === req.user.id

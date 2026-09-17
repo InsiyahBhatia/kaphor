@@ -271,15 +271,37 @@ export default function MessagesScreen() {
           </Text>
         </View>
 
-        {/* Right side: Garment Thumb, Unread Badge, and Delete Option */}
+        {/* Right side: Swap dual thumbnails OR single garment thumb, unread badge, delete */}
         <View style={styles.convRightCol}>
-          {isGarmentInquiry && item.garment?.image && (
+          {category === 'SWAP' && item.swapGarments && item.swapGarments.length >= 2 ? (
+            <View style={styles.swapDualThumbWrap}>
+              <KaphorImage
+                uri={item.swapGarments[0]?.image || item.swapGarments[0]?.images?.[0] || ''}
+                style={styles.swapThumbBack}
+                contentFit="cover"
+              />
+              <KaphorImage
+                uri={item.swapGarments[1]?.image || item.swapGarments[1]?.images?.[0] || ''}
+                style={styles.swapThumbFront}
+                contentFit="cover"
+              />
+              <View style={styles.swapThumbBadge}>
+                <Ionicons name="swap-horizontal" size={8} color="#fff" />
+              </View>
+            </View>
+          ) : category === 'SWAP' && (item.garment?.image || item.garment?.images?.[0]) ? (
             <KaphorImage
-              uri={item.garment.image}
+              uri={item.garment.image || item.garment.images?.[0] || ''}
               style={styles.garmentThumb}
               contentFit="cover"
             />
-          )}
+          ) : isGarmentInquiry && (item.garment?.image || item.garment?.images?.[0]) ? (
+            <KaphorImage
+              uri={item.garment?.image || item.garment?.images?.[0] || ''}
+              style={styles.garmentThumb}
+              contentFit="cover"
+            />
+          ) : null}
           <View style={styles.rightActionRow}>
             {isUnread && (
               <View style={styles.unreadPill}>
@@ -662,6 +684,47 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 6,
     backgroundColor: colors.cream,
+  },
+  swapDualThumbWrap: {
+    width: 52,
+    height: 52,
+    position: 'relative',
+    marginBottom: 2,
+  },
+  swapThumbBack: {
+    width: 36,
+    height: 44,
+    borderRadius: 6,
+    backgroundColor: colors.cream,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  swapThumbFront: {
+    width: 36,
+    height: 44,
+    borderRadius: 6,
+    backgroundColor: '#EDE8DD',
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    borderWidth: 1.5,
+    borderColor: '#fff',
+  },
+  swapThumbBadge: {
+    position: 'absolute',
+    bottom: 16,
+    right: 12,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#8C6D3B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
   },
   unreadPill: {
     backgroundColor: colors.red,

@@ -47,6 +47,7 @@ export interface ConversationSummary {
   garment: ConversationGarment | null;
   order?: ConversationOrder | null;
   swap?: { id: string; status: string } | null;
+  swapGarments?: ConversationGarment[] | null;
   rental?: { id: string; status: string } | null;
   lastMessageText: string;
   lastMessageAt: string;
