@@ -223,89 +223,68 @@ export default function OrdersManagementScreen() {
             onPress={() => safeBack('/(tabs)/profile')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+            <Ionicons name="arrow-back" size={22} color={colors.charcoal} />
           </TouchableOpacity>
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={styles.headerTitle}>MANAGE ALL ORDERS</Text>
-            <Text style={styles.headerSubtitle}>TRACKING & TRANSACTION DOSSIER</Text>
+            <Text style={styles.headerTitle}>MY ORDERS</Text>
           </View>
           <View style={{ width: 40 }} />
-        </View>
-
-        {/* METRIC PILLS */}
-        <View style={styles.metricRow}>
-          <View style={styles.metricBadge}>
-            <Text style={styles.metricCount}>{summary?.orders.buyingActive || 0}</Text>
-            <Text style={styles.metricLabel}>PURCHASES</Text>
-          </View>
-          <View style={styles.metricBadge}>
-            <Text style={styles.metricCount}>{summary?.orders.sellingActive || 0}</Text>
-            <Text style={styles.metricLabel}>SALES</Text>
-          </View>
-          <View style={styles.metricBadge}>
-            <Text style={styles.metricCount}>
-              {(summary?.rentals.borrowingActive || 0) + (summary?.rentals.lendingActive || 0)}
-            </Text>
-            <Text style={styles.metricLabel}>RENTALS</Text>
-          </View>
-          <View style={styles.metricBadge}>
-            <Text style={styles.metricCount}>{summary?.swaps.active || 0}</Text>
-            <Text style={styles.metricLabel}>SWAPS</Text>
-          </View>
         </View>
 
         {/* PRIMARY CATEGORY TABS */}
         <View style={styles.primaryTabs}>
           <TouchableOpacity
             style={[styles.primaryTab, activeTab === 'orders' && styles.primaryTabActive]}
-            onPress={() => {
-              hapticFeedback.selection();
-              setActiveTab('orders');
-            }}
+            onPress={() => { hapticFeedback.selection(); setActiveTab('orders'); }}
           >
-            <Text
-              style={[
-                styles.primaryTabText,
-                activeTab === 'orders' && styles.primaryTabTextActive,
-              ]}
-            >
-              PURCHASES & SALES
+            <Ionicons name="bag-check-outline" size={13} color={activeTab === 'orders' ? colors.cream : colors.charcoal} />
+            <Text style={[styles.primaryTabText, activeTab === 'orders' && styles.primaryTabTextActive]}>
+              SALES
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.primaryTab, activeTab === 'rentals' && styles.primaryTabActive]}
-            onPress={() => {
-              hapticFeedback.selection();
-              setActiveTab('rentals');
-            }}
+            onPress={() => { hapticFeedback.selection(); setActiveTab('rentals'); }}
           >
-            <Text
-              style={[
-                styles.primaryTabText,
-                activeTab === 'rentals' && styles.primaryTabTextActive,
-              ]}
-            >
+            <Ionicons name="calendar-outline" size={13} color={activeTab === 'rentals' ? colors.cream : colors.charcoal} />
+            <Text style={[styles.primaryTabText, activeTab === 'rentals' && styles.primaryTabTextActive]}>
               RENTALS
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.primaryTab, activeTab === 'swaps' && styles.primaryTabActive]}
-            onPress={() => {
-              hapticFeedback.selection();
-              setActiveTab('swaps');
-            }}
+            onPress={() => { hapticFeedback.selection(); setActiveTab('swaps'); }}
           >
-            <Text
-              style={[
-                styles.primaryTabText,
-                activeTab === 'swaps' && styles.primaryTabTextActive,
-              ]}
-            >
+            <Ionicons name="swap-horizontal-outline" size={13} color={activeTab === 'swaps' ? colors.cream : colors.charcoal} />
+            <Text style={[styles.primaryTabText, activeTab === 'swaps' && styles.primaryTabTextActive]}>
               SWAPS
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* SLIM SUMMARY STRIP */}
+        <View style={styles.summaryStrip}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNum}>{summary?.orders.buyingActive || 0}</Text>
+            <Text style={styles.summaryLbl}>Buying</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNum}>{summary?.orders.sellingActive || 0}</Text>
+            <Text style={styles.summaryLbl}>Selling</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNum}>{(summary?.rentals.borrowingActive || 0) + (summary?.rentals.lendingActive || 0)}</Text>
+            <Text style={styles.summaryLbl}>Rentals</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNum}>{summary?.swaps.active || 0}</Text>
+            <Text style={styles.summaryLbl}>Swaps</Text>
+          </View>
         </View>
       </View>
 
@@ -1018,64 +997,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   header: {
-    backgroundColor: colors.cream,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.charcoal,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.08)',
+    paddingBottom: 0,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
   backButton: {
     width: 40,
-    height: 40,
-    justifyContent: 'center',
+    height: 36,
     alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 20,
     color: colors.charcoal,
-    letterSpacing: 1.5,
-  },
-  headerSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    color: colors.red,
-    fontWeight: '800',
     letterSpacing: 1,
-    marginTop: 2,
-  },
-  metricRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  metricBadge: {
-    flex: 1,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
-    paddingVertical: 7,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  metricCount: {
-    fontFamily: typography.mono,
-    fontSize: 15,
-    fontWeight: '900',
-    color: colors.charcoal,
-  },
-  metricLabel: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-    marginTop: 2,
   },
   primaryTabs: {
     flexDirection: 'row',

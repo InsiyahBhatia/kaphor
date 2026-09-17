@@ -496,16 +496,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.06)',
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 6,
     gap: 6,
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
+    borderRadius: 10,
     backgroundColor: '#F5F4F0',
   },
   tabBtnActive: {
@@ -513,10 +513,10 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.textMuted,
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
     textAlign: 'center',
   },
   tabTextActive: {
@@ -551,8 +551,9 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   listContent: {
-    padding: 12,
+    padding: 14,
     gap: 10,
+    paddingBottom: 100,
   },
   convCard: {
     flexDirection: 'row',
@@ -581,9 +582,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: colors.cream,
   },
   verifiedDot: {
