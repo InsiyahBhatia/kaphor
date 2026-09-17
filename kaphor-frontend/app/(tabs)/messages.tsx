@@ -150,6 +150,35 @@ export default function MessagesScreen() {
     const isGarmentInquiry = !!item.garment;
     const hasOrder = !!item.order;
     const orderStyle = hasOrder ? getOrderStatusStyle(item.order!.status) : null;
+    const category = getConversationCategory(item);
+
+    // Single concise, unified context pill
+    let contextLabel = 'DIRECT CHAT';
+    let contextBg = 'rgba(0,0,0,0.05)';
+    let contextColor: string = colors.charcoal;
+    let contextIcon: any = 'chatbubble-outline';
+
+    if (hasOrder && orderStyle) {
+      contextLabel = `ORDER · #${item.order!.id.slice(0, 6).toUpperCase()} · ${orderStyle.label}`;
+      contextBg = orderStyle.bg;
+      contextColor = orderStyle.color;
+      contextIcon = 'bag-check';
+    } else if (category === 'SWAP') {
+      contextLabel = `SWAP · ${item.garment?.title || 'Accessory Trade'}`;
+      contextBg = 'rgba(140,109,59,0.12)';
+      contextColor = '#8C6D3B';
+      contextIcon = 'swap-horizontal';
+    } else if (category === 'RENT') {
+      contextLabel = `RENTAL · ${item.garment?.title || 'Garment Hire'}`;
+      contextBg = 'rgba(107,70,193,0.1)';
+      contextColor = '#6B46C1';
+      contextIcon = 'calendar';
+    } else if (isGarmentInquiry) {
+      contextLabel = `${item.garment?.brand ? `${item.garment.brand} · ` : ''}${item.garment?.title || 'Garment'}`;
+      contextBg = 'rgba(193,65,58,0.08)';
+      contextColor = colors.red;
+      contextIcon = 'pricetag';
+    }
 
     return (
       <TouchableOpacity
@@ -159,7 +188,7 @@ export default function MessagesScreen() {
           hasOrder && styles.convCardOrder,
         ]}
         onPress={() => router.push(`/messages/${item.id}` as any)}
-        activeOpacity={0.75}
+        activeOpacity={0.8}
       >
         {/* User Avatar */}
         <TouchableOpacity
@@ -174,7 +203,7 @@ export default function MessagesScreen() {
           />
           {item.otherUser.isVerified && (
             <View style={styles.verifiedDot}>
-              <Ionicons name="shield-checkmark" size={12} color="#C9A84C" />
+              <Ionicons name="shield-checkmark" size={11} color="#C9A84C" />
             </View>
           )}
         </TouchableOpacity>
@@ -191,53 +220,12 @@ export default function MessagesScreen() {
             <Text style={styles.timeText}>{formatTime(item.lastMessageAt)}</Text>
           </View>
 
-          {/* Category Pill + Context Badges */}
-          <View style={styles.badgeRow}>
-            {getConversationCategory(item) === 'SWAP' && (
-              <View style={[styles.categoryPill, { backgroundColor: 'rgba(140,109,59,0.12)' }]}>
-                <Ionicons name="swap-horizontal" size={10} color="#8C6D3B" />
-                <Text style={[styles.categoryPillText, { color: '#8C6D3B' }]}>SWAP</Text>
-              </View>
-            )}
-            {getConversationCategory(item) === 'RENT' && (
-              <View style={[styles.categoryPill, { backgroundColor: 'rgba(107,70,193,0.1)' }]}>
-                <Ionicons name="calendar" size={10} color="#6B46C1" />
-                <Text style={[styles.categoryPillText, { color: '#6B46C1' }]}>RENT</Text>
-              </View>
-            )}
-            {getConversationCategory(item) === 'SELL' && (
-              <View style={[styles.categoryPill, { backgroundColor: 'rgba(30,58,138,0.1)' }]}>
-                <Ionicons name="bag-check" size={10} color="#1E3A8A" />
-                <Text style={[styles.categoryPillText, { color: '#1E3A8A' }]}>SELL</Text>
-              </View>
-            )}
-
-            {hasOrder && orderStyle && (
-              <View style={[styles.orderBadge, { backgroundColor: orderStyle.bg }]}>
-                <Ionicons name="bag-check" size={10} color={orderStyle.color} />
-                <Text style={[styles.orderBadgeText, { color: orderStyle.color }]}>
-                  {orderStyle.label} · #{item.order!.id.slice(0, 6).toUpperCase()}
-                </Text>
-              </View>
-            )}
-
-            {isGarmentInquiry && !hasOrder && (
-              <View style={styles.garmentBadge}>
-                <Ionicons name="pricetag" size={10} color={colors.red} />
-                <Text style={styles.garmentBadgeText} numberOfLines={1}>
-                  {item.garment?.brand} · {item.garment?.title}
-                </Text>
-              </View>
-            )}
-
-            {!isGarmentInquiry && !hasOrder && !item.swap && !item.rental && (
-              <View style={styles.directBadge}>
-                <Ionicons name="person" size={10} color={colors.forest || '#2D5A27'} />
-                <Text style={styles.directBadgeText} numberOfLines={1}>
-                  Direct Chat
-                </Text>
-              </View>
-            )}
+          {/* Unified single context pill */}
+          <View style={[styles.unifiedContextPill, { backgroundColor: contextBg }]}>
+            <Ionicons name={contextIcon} size={11} color={contextColor} />
+            <Text style={[styles.unifiedContextText, { color: contextColor }]} numberOfLines={1}>
+              {contextLabel}
+            </Text>
           </View>
 
           {/* Message snippet */}
@@ -245,25 +233,25 @@ export default function MessagesScreen() {
             style={[styles.messageSnippet, isUnread && styles.messageSnippetUnread]}
             numberOfLines={1}
           >
-            {item.lastMessageText || 'Tap to start conversation'}
+            {item.lastMessageText || 'Tap to open conversation'}
           </Text>
         </View>
 
-        {/* Garment Thumbnail if inquiry */}
-        {isGarmentInquiry && item.garment?.image && (
-          <KaphorImage
-            uri={item.garment.image}
-            style={styles.garmentThumb}
-            contentFit="cover"
-          />
-        )}
-
-        {/* Unread Pill */}
-        {isUnread && (
-          <View style={styles.unreadPill}>
-            <Text style={styles.unreadPillText}>{item.unreadCount}</Text>
-          </View>
-        )}
+        {/* Right side: Garment Thumb or Unread Badge */}
+        <View style={styles.convRightCol}>
+          {isGarmentInquiry && item.garment?.image && (
+            <KaphorImage
+              uri={item.garment.image}
+              style={styles.garmentThumb}
+              contentFit="cover"
+            />
+          )}
+          {isUnread && (
+            <View style={styles.unreadPill}>
+              <Text style={styles.unreadPillText}>{item.unreadCount}</Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -461,34 +449,11 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.charcoal,
-    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 6,
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.charcoal,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    gap: 6,
-  },
-  categoryPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  categoryPillText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 0.5,
   },
   tabBtn: {
     flex: 1,
@@ -496,46 +461,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
+    borderRadius: 18,
+    backgroundColor: '#F5F4F0',
   },
   tabBtnActive: {
     backgroundColor: colors.charcoal,
-    borderColor: colors.charcoal,
   },
   tabText: {
     fontFamily: typography.mono,
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textMuted,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
     textAlign: 'center',
   },
   tabTextActive: {
-    color: colors.cream,
+    color: colors.white,
     fontWeight: '900',
   },
   tabContentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: 4,
   },
   tabUnreadBadge: {
     backgroundColor: colors.red,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    borderRadius: 7,
+    minWidth: 14,
+    height: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
   },
   tabUnreadBadgeActive: {
-    backgroundColor: colors.cream,
+    backgroundColor: colors.white,
   },
   tabUnreadBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '900',
     color: colors.white,
   },
@@ -543,67 +507,64 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   listContent: {
-    padding: 16,
-    gap: 12,
+    padding: 12,
+    gap: 10,
   },
   convCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    padding: 14,
-    borderWidth: 2,
-    borderColor: 'rgba(30,31,34,0.15)',
-    gap: 12,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 0,
-    elevation: 2,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   convCardUnread: {
     borderColor: colors.charcoal,
-    backgroundColor: colors.white,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    elevation: 3,
+    backgroundColor: '#FFFEFB',
   },
   convCardOrder: {
-    borderLeftWidth: 5,
+    borderLeftWidth: 4,
     borderLeftColor: colors.forest,
   },
   avatarWrap: {
     position: 'relative',
   },
   avatar: {
-    width: 48,
-    height: 48,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: colors.cream,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
   },
   verifiedDot: {
     position: 'absolute',
-    bottom: -4,
-    right: -4,
-    backgroundColor: colors.charcoal,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: '#C9A84C',
+    bottom: -2,
+    right: -2,
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    padding: 1,
   },
   convInfo: {
     flex: 1,
+    justifyContent: 'center',
   },
   convHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginRight: 8,
+    marginRight: 6,
   },
   userName: {
     fontFamily: typography.mono,
@@ -619,77 +580,43 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.textMuted,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginBottom: 4,
-  },
-  orderBadge: {
+  unifiedContextPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 5,
     alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: 'rgba(40,54,24,0.3)',
+    marginVertical: 3,
+    maxWidth: '94%',
   },
-  orderBadgeText: {
+  unifiedContextText: {
     fontFamily: typography.mono,
     fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  garmentBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(193,65,58,0.08)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: 'rgba(193,65,58,0.25)',
-  },
-  garmentBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '700',
-    color: colors.red,
-  },
-  directBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(45,90,39,0.08)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: 'rgba(45,90,39,0.25)',
-  },
-  directBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '700',
-    color: colors.forest || '#2D5A27',
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   messageSnippet: {
     fontFamily: typography.mono,
     fontSize: 10,
     color: colors.textMuted,
+    marginTop: 1,
   },
   messageSnippetUnread: {
     color: colors.charcoal,
-    fontWeight: '800',
+    fontWeight: '700',
+  },
+  convRightCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
   },
   garmentThumb: {
-    width: 44,
-    height: 50,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    width: 40,
+    height: 48,
+    borderRadius: 6,
+    backgroundColor: colors.cream,
   },
   unreadPill: {
     backgroundColor: colors.red,
@@ -701,7 +628,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   unreadPillText: {
-    color: colors.cream,
+    color: colors.white,
     fontFamily: typography.mono,
     fontSize: 9,
     fontWeight: '900',

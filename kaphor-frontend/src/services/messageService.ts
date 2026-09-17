@@ -101,10 +101,15 @@ export const messageService = {
     return data.data;
   },
 
-  async getOrCreateConversation(recipientId: string, garmentId?: string): Promise<ConversationSummary> {
+  async getOrCreateConversation(
+    recipientId: string,
+    garmentId?: string,
+    options?: { orderId?: string; swapId?: string; rentalId?: string; type?: string }
+  ): Promise<ConversationSummary> {
     const { data } = await api.post<{ data: ConversationSummary }>('/messages/conversations', {
       recipientId,
       garmentId,
+      ...options,
     });
     return data.data;
   },

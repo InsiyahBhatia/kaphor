@@ -156,7 +156,7 @@ export default function OrderThreadScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  useBackHandler('/(tabs)/shop/orders');
+  useBackHandler('/(tabs)/orders');
   const [order, setOrder] = useState<TransactionOrder | null>(null);
   const [messages, setMessages] = useState<OrderMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -338,7 +338,7 @@ export default function OrderThreadScreen() {
         <Text style={[styles.miss, { marginTop: 12 }]}>Order not found</Text>
         <TouchableOpacity 
           style={styles.goBackBtn} 
-          onPress={() => safeBack('/(tabs)/shop/orders')}
+          onPress={() => safeBack('/(tabs)/orders')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text style={styles.goBackText}>GO BACK</Text>
@@ -366,7 +366,7 @@ export default function OrderThreadScreen() {
       {/* ── Header ──────────────────────────────────────────── */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => safeBack('/(tabs)/shop/orders')} 
+          onPress={() => safeBack('/(tabs)/orders')} 
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >

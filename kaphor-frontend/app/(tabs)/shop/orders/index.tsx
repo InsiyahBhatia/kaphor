@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -34,8 +34,11 @@ function statusLabel(s: string) {
 
 export default function OrdersInboxScreen() {
   const router = useRouter();
+  useEffect(() => {
+    router.replace('/(tabs)/orders?tab=orders');
+  }, [router]);
   const { user } = useAuth();
-  useBackHandler('/(tabs)/shop');
+  useBackHandler('/(tabs)/orders');
   const [orders, setOrders] = useState<TransactionOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

@@ -93,13 +93,17 @@ export default function OrdersManagementScreen() {
   };
 
   // Helper to open chat
-  const handleOpenChat = async (otherUserId: string, garmentId?: string) => {
+  const handleOpenChat = async (
+    otherUserId: string,
+    garmentId?: string,
+    extra?: { orderId?: string; swapId?: string; rentalId?: string; type?: string }
+  ) => {
     if (!otherUserId) return;
     try {
-      const conv = await messageService.getOrCreateConversation(otherUserId, garmentId);
+      const conv = await messageService.getOrCreateConversation(otherUserId, garmentId, extra);
       router.push(`/messages/${conv.id}` as any);
     } catch {
-      router.push('/messages' as any);
+      router.push('/(tabs)/messages' as any);
     }
   };
 
@@ -456,7 +460,13 @@ export default function OrdersManagementScreen() {
                     <View style={styles.cardActionRow}>
                       <TouchableOpacity
                         style={styles.chatActionBtn}
-                        onPress={() => handleOpenChat(otherParty?.id, firstItem?.garment?.id)}
+                        onPress={() =>
+                          handleOpenChat(otherParty?.id, firstItem?.garment?.id, {
+                            orderId: order.id,
+                            type: 'SALE',
+                          })
+                        }
+                        activeOpacity={0.8}
                       >
                         <Ionicons name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.chatActionText}>CHAT</Text>
@@ -468,36 +478,28 @@ export default function OrdersManagementScreen() {
                           const gid = firstItem?.garment?.id || firstItem?.garmentId;
                           if (gid) router.push(`/(tabs)/shop/${gid}` as any);
                         }}
+                        activeOpacity={0.8}
                       >
-                        <Ionicons name="eye-outline" size={13} color={colors.charcoal} />
-                        <Text style={styles.detailActionText}>VIEW</Text>
+                        <Ionicons name="eye-outline" size={14} color={colors.charcoal} />
+                        <Text style={styles.detailActionText}>ITEM</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity
-                        style={styles.trackActionBtn}
-                        onPress={() => router.push(`/(tabs)/shop/orders/${order.id}` as any)}
-                      >
-                        <Ionicons name="navigate-outline" size={13} color={colors.cream} />
-                        <Text style={styles.trackActionText}>TRACK</Text>
-                      </TouchableOpacity>
-
-                      {/* Delivered: Prompt Review if Buyer and not yet reviewed */}
-                      {isBuyer && order.status === 'DELIVERED' && !(order as any).peerReview && (
+                      {/* Primary CTA based on status */}
+                      {isBuyer && order.status === 'DELIVERED' && !(order as any).peerReview ? (
                         <TouchableOpacity
                           style={styles.reviewActionBtn}
                           onPress={() => router.push(`/(tabs)/shop/orders/${order.id}?review=true` as any)}
+                          activeOpacity={0.85}
                         >
                           <Ionicons name="star" size={13} color="#C95F12" />
-                          <Text style={styles.reviewActionText}>REVIEW</Text>
+                          <Text style={styles.reviewActionText}>REVIEW ★</Text>
                         </TouchableOpacity>
-                      )}
-
-                      {/* Role Specific Fulfillment CTAs */}
-                      {!isBuyer && order.status === 'CONFIRMED' && (
+                      ) : !isBuyer && order.status === 'CONFIRMED' ? (
                         <TouchableOpacity
                           style={styles.primaryActionBtn}
                           onPress={() => handleMarkShipped(order.id)}
                           disabled={isLoading}
+                          activeOpacity={0.85}
                         >
                           {isLoading ? (
                             <ActivityIndicator size="small" color={colors.cream} />
@@ -505,19 +507,27 @@ export default function OrdersManagementScreen() {
                             <Text style={styles.primaryActionText}>MARK SHIPPED</Text>
                           )}
                         </TouchableOpacity>
-                      )}
-
-                      {isBuyer && order.status === 'SHIPPED' && (
+                      ) : isBuyer && order.status === 'SHIPPED' ? (
                         <TouchableOpacity
                           style={[styles.primaryActionBtn, { backgroundColor: '#2E7D32', borderColor: '#2E7D32' }]}
                           onPress={() => handleMarkDelivered(order.id)}
                           disabled={isLoading}
+                          activeOpacity={0.85}
                         >
                           {isLoading ? (
                             <ActivityIndicator size="small" color={colors.cream} />
                           ) : (
                             <Text style={styles.primaryActionText}>CONFIRM DELIVERED</Text>
                           )}
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.trackActionBtn}
+                          onPress={() => router.push(`/(tabs)/shop/orders/${order.id}` as any)}
+                          activeOpacity={0.85}
+                        >
+                          <Ionicons name="navigate-outline" size={13} color={colors.cream} />
+                          <Text style={styles.trackActionText}>TRACK ORDER →</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -695,9 +705,11 @@ export default function OrdersManagementScreen() {
                         onPress={() =>
                           handleOpenChat(
                             isRenter ? rental.garment?.sellerId : rental.renterId,
-                            rental.garmentId
+                            rental.garmentId,
+                            { rentalId: rental.id, type: 'RENTAL' }
                           )
                         }
+                        activeOpacity={0.8}
                       >
                         <Ionicons name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.chatActionText}>CHAT</Text>
@@ -709,25 +721,19 @@ export default function OrdersManagementScreen() {
                           const gid = rental.garmentId || rental.garment?.id;
                           if (gid) router.push(`/(tabs)/shop/${gid}` as any);
                         }}
+                        activeOpacity={0.8}
                       >
-                        <Ionicons name="eye-outline" size={13} color={colors.charcoal} />
-                        <Text style={styles.detailActionText}>VIEW</Text>
+                        <Ionicons name="eye-outline" size={14} color={colors.charcoal} />
+                        <Text style={styles.detailActionText}>ITEM</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity
-                        style={styles.trackActionBtn}
-                        onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
-                      >
-                        <Ionicons name="navigate-outline" size={13} color={colors.cream} />
-                        <Text style={styles.trackActionText}>TRACK</Text>
-                      </TouchableOpacity>
-
-                      {/* LENDER: Mark Dispatched */}
-                      {!isRenter && rental.status === 'RESERVED' && (
+                      {/* Primary CTA based on rental status */}
+                      {!isRenter && rental.status === 'RESERVED' ? (
                         <TouchableOpacity
                           style={styles.primaryActionBtn}
                           onPress={() => handleDispatchRental(rental.id)}
                           disabled={isLoading}
+                          activeOpacity={0.85}
                         >
                           {isLoading ? (
                             <ActivityIndicator size="small" color={colors.cream} />
@@ -735,14 +741,12 @@ export default function OrdersManagementScreen() {
                             <Text style={styles.primaryActionText}>MARK DISPATCHED</Text>
                           )}
                         </TouchableOpacity>
-                      )}
-
-                      {/* RENTER: Mark Returned */}
-                      {isRenter && (rental.status === 'RESERVED' || rental.status === 'ACTIVE') && (
+                      ) : isRenter && (rental.status === 'RESERVED' || rental.status === 'ACTIVE') ? (
                         <TouchableOpacity
                           style={[styles.primaryActionBtn, { backgroundColor: colors.charcoal }]}
                           onPress={() => handleReturnRental(rental.id)}
                           disabled={isLoading}
+                          activeOpacity={0.85}
                         >
                           {isLoading ? (
                             <ActivityIndicator size="small" color={colors.cream} />
@@ -750,20 +754,27 @@ export default function OrdersManagementScreen() {
                             <Text style={styles.primaryActionText}>MARK RETURNED</Text>
                           )}
                         </TouchableOpacity>
-                      )}
-
-                      {/* LENDER: Release Deposit */}
-                      {!isRenter && rental.status === 'RETURNED' && (
+                      ) : !isRenter && rental.status === 'RETURNED' ? (
                         <TouchableOpacity
                           style={[styles.primaryActionBtn, { backgroundColor: '#2E7D32', borderColor: '#2E7D32' }]}
                           onPress={() => handleReleaseDeposit(rental.id)}
                           disabled={isLoading}
+                          activeOpacity={0.85}
                         >
                           {isLoading ? (
                             <ActivityIndicator size="small" color={colors.cream} />
                           ) : (
                             <Text style={styles.primaryActionText}>RELEASE DEPOSIT</Text>
                           )}
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.trackActionBtn}
+                          onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
+                          activeOpacity={0.85}
+                        >
+                          <Ionicons name="navigate-outline" size={13} color={colors.cream} />
+                          <Text style={styles.trackActionText}>TRACK LEASE →</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -957,7 +968,13 @@ export default function OrdersManagementScreen() {
                     <View style={styles.cardActionRow}>
                       <TouchableOpacity
                         style={styles.chatActionBtn}
-                        onPress={() => handleOpenChat(partner?.id, wantedGarment?.id || offeredGarment?.id)}
+                        onPress={() =>
+                          handleOpenChat(partner?.id, wantedGarment?.id || offeredGarment?.id, {
+                            swapId: swap.id,
+                            type: 'SWAP',
+                          })
+                        }
+                        activeOpacity={0.8}
                       >
                         <Ionicons name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.chatActionText}>CHAT</Text>
@@ -969,17 +986,19 @@ export default function OrdersManagementScreen() {
                           const targetGid = theirGarment?.id || myGarment?.id;
                           if (targetGid) router.push(`/(tabs)/shop/${targetGid}` as any);
                         }}
+                        activeOpacity={0.8}
                       >
-                        <Ionicons name="eye-outline" size={13} color={colors.charcoal} />
-                        <Text style={styles.detailActionText}>VIEW</Text>
+                        <Ionicons name="eye-outline" size={14} color={colors.charcoal} />
+                        <Text style={styles.detailActionText}>ITEM</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
                         style={styles.trackActionBtn}
                         onPress={() => navigateToLiveSwapStage(router, swap, user?.id)}
+                        activeOpacity={0.85}
                       >
                         <Ionicons name="navigate-outline" size={13} color={colors.cream} />
-                        <Text style={styles.trackActionText}>TRACK</Text>
+                        <Text style={styles.trackActionText}>TRACK STAGE →</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1038,28 +1057,29 @@ const styles = StyleSheet.create({
   metricBadge: {
     flex: 1,
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
-    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    paddingVertical: 7,
     alignItems: 'center',
-    borderRadius: 6,
+    borderRadius: 8,
   },
   metricCount: {
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '900',
     color: colors.charcoal,
   },
   metricLabel: {
     fontFamily: typography.mono,
-    fontSize: 7,
+    fontSize: 8,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.5,
+    marginTop: 2,
   },
   primaryTabs: {
     flexDirection: 'row',
-    backgroundColor: '#EBE7DE',
+    backgroundColor: '#ECE8DF',
     borderRadius: 8,
     padding: 3,
     gap: 4,
@@ -1098,14 +1118,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 9,
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
-    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 8,
   },
   rolePillActive: {
     backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
   },
   rolePillText: {
     fontFamily: typography.mono,
@@ -1119,23 +1140,23 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    borderRadius: 12,
     padding: 14,
     marginBottom: 16,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     borderBottomWidth: 1,
-    borderBottomColor: '#EDE9DE',
+    borderBottomColor: '#F0ECE1',
     paddingBottom: 10,
     marginBottom: 12,
   },
@@ -1156,7 +1177,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   statusTagText: {
     fontFamily: typography.mono,
@@ -1173,10 +1194,10 @@ const styles = StyleSheet.create({
   garmentThumb: {
     width: 68,
     height: 84,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: '#F0ECE1',
     borderWidth: 1,
-    borderColor: '#D8D4C8',
+    borderColor: 'rgba(0,0,0,0.06)',
   },
   garmentInfo: {
     flex: 1,
@@ -1212,7 +1233,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF8F3',
     borderWidth: 1,
     borderColor: '#ECE8DD',
-    borderRadius: 6,
+    borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 10,
     marginBottom: 12,
@@ -1224,7 +1245,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F5E9',
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 4,
+    borderRadius: 6,
     marginBottom: 12,
   },
   escrowNoticeText: {
@@ -1246,9 +1267,9 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 38,
     backgroundColor: '#F5F3ED',
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
-    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)',
+    borderRadius: 8,
   },
   chatActionText: {
     fontFamily: typography.mono,
@@ -1262,9 +1283,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 38,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
-    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)',
+    borderRadius: 8,
   },
   detailActionText: {
     fontFamily: typography.mono,
@@ -1279,9 +1300,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 38,
     backgroundColor: colors.charcoal,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.charcoal,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   primaryActionText: {
     fontFamily: typography.mono,
@@ -1298,9 +1319,9 @@ const styles = StyleSheet.create({
     gap: 4,
     height: 38,
     backgroundColor: colors.charcoal,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.charcoal,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   trackActionText: {
     fontFamily: typography.mono,
@@ -1317,9 +1338,9 @@ const styles = StyleSheet.create({
     gap: 4,
     height: 38,
     backgroundColor: '#FFF8E1',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#C95F12',
-    borderRadius: 6,
+    borderRadius: 8,
   },
   reviewActionText: {
     fontFamily: typography.mono,
@@ -1407,9 +1428,9 @@ const styles = StyleSheet.create({
     paddingVertical: 50,
     paddingHorizontal: 20,
     backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    borderRadius: 12,
   },
   emptyTitle: {
     fontFamily: typography.headings,
@@ -1430,9 +1451,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderRadius: 8,
   },
   emptyBtnText: {
     fontFamily: typography.mono,
