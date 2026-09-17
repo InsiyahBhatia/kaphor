@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { cartService } from '../../src/services/cartService';
@@ -19,7 +19,6 @@ export default function CartScreen() {
 
     const loadCart = async () => {
         try {
-            // cachedGet shows stale data instantly, refreshes in background
             const data = await cachedGet('/cart');
             const validItems = Array.isArray(data) ? data.filter(i => i.garment) : [];
             setItems(validItems);
@@ -31,7 +30,6 @@ export default function CartScreen() {
         }
     };
 
-    // useFocusEffect handles mount + every focus — cachedGet returns instantly if data exists
     useFocusEffect(
         React.useCallback(() => {
             loadCart();
@@ -83,11 +81,10 @@ export default function CartScreen() {
             const { data } = await api.post('/orders/cart', { garmentIds: Array.from(availableSelectedIds) });
             const orderId = data.data.id || data.data.orderId;
             if (!orderId) {
-              Alert.alert('Error', 'Could not create order. Please try again.');
-              setLoading(false);
-              return;
+                Alert.alert('Error', 'Could not create order. Please try again.');
+                setLoading(false);
+                return;
             }
-            // Navigate to delivery address screen first
             router.push(`/(tabs)/shop/checkout/delivery?orderId=${orderId}` as any);
         } catch (e: any) {
             const msg = e.response?.data?.message || e.message || 'Failed to initialize checkout';
@@ -121,7 +118,7 @@ export default function CartScreen() {
                 ) : (
                     items.map((item) => {
                         const garment = item.garment;
-                        const images = garment.images;
+                        const images = garment?.images;
                         const imageUrl = Array.isArray(images) ? images[0] : typeof images === 'string' ? images : null;
                         const isSelected = selectedIds.has(item.garmentId);
 
@@ -134,16 +131,24 @@ export default function CartScreen() {
                                     {isSelected && <Ionicons name="checkmark" size={14} color={colors.white} />}
                                 </TouchableOpacity>
 
-                                <KaphorImage 
-                                    uri={imageUrl} 
-                                    style={styles.itemImage} 
-                                    contentFit="cover"
-                                />
-                                <View style={styles.itemInfo}>
-                                    <Text style={styles.brand}>{item.garment.brand}</Text>
-                                    <Text style={styles.title} numberOfLines={1}>{item.garment.title}</Text>
-                                    <Text style={styles.price}>₹{Math.round(item.garment.price || 0).toLocaleString('en-IN')}</Text>
-                                </View>
+                                {/* Clickable product area navigating to details */}
+                                <TouchableOpacity
+                                    style={styles.itemTouchArea}
+                                    onPress={() => router.push(`/(tabs)/shop/${item.garmentId || item.garment?.id}` as any)}
+                                    activeOpacity={0.8}
+                                >
+                                    <KaphorImage 
+                                        uri={imageUrl} 
+                                        style={styles.itemImage} 
+                                        contentFit="cover"
+                                    />
+                                    <View style={styles.itemInfo}>
+                                        <Text style={styles.brand}>{garment?.brand}</Text>
+                                        <Text style={styles.title} numberOfLines={1}>{garment?.title}</Text>
+                                        <Text style={styles.price}>₹{Math.round(garment?.price || 0).toLocaleString('en-IN')}</Text>
+                                    </View>
+                                </TouchableOpacity>
+
                                 <TouchableOpacity onPress={() => removeItem(item.garmentId)} style={styles.removeBtn}>
                                     <Ionicons name="trash-sharp" size={20} color={colors.red} />
                                 </TouchableOpacity>
@@ -182,17 +187,22 @@ const styles = StyleSheet.create({
         padding: 16, marginBottom: 16, borderWidth: 2, borderColor: colors.charcoal,
         shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4 
     },
+    itemTouchArea: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
     itemImage: { width: 70, height: 80, borderWidth: 1, borderColor: colors.charcoal },
     checkbox: { 
         width: 24, height: 24, borderWidth: 2, borderColor: colors.charcoal, 
         marginRight: 12, justifyContent: 'center', alignItems: 'center' 
     },
     checkboxActive: { backgroundColor: colors.charcoal },
-    itemInfo: { flex: 1, marginLeft: 4 },
+    itemInfo: { flex: 1, marginLeft: 10 },
     brand: { color: colors.red, fontFamily: typography.mono, fontSize: 10, letterSpacing: 1, fontWeight: '800', textTransform: 'uppercase' },
-    title: { color: colors.charcoal, fontSize: 20, fontFamily: typography.headings, marginTop: 4 },
+    title: { color: colors.charcoal, fontSize: 16, fontFamily: typography.headings, marginTop: 4 },
     price: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 14, fontWeight: '800', marginTop: 4 },
-    removeBtn: { padding: 8, borderWidth: 1, borderColor: colors.red, backgroundColor: 'rgba(204,17,17,0.05)' },
+    removeBtn: { padding: 8, borderWidth: 1, borderColor: colors.red, backgroundColor: 'rgba(204,17,17,0.05)', marginLeft: 8 },
     footer: { 
         position: 'absolute', bottom: 0, left: 0, right: 0,
         padding: 24, paddingBottom: 40, backgroundColor: colors.cream, 

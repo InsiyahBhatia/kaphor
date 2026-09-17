@@ -304,6 +304,35 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
+              {/* Quick Actions alongside profile info */}
+              <View style={styles.topProfileQuickActions}>
+                <TouchableOpacity
+                  style={styles.topQuickBtn}
+                  onPress={() => router.push('/my-listings' as any)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="shirt-outline" size={11} color={colors.charcoal} />
+                  <Text style={styles.topQuickBtnText}>MY LISTINGS</Text>
+                  <View style={styles.topQuickBadge}>
+                    <Text style={styles.topQuickBadgeText}>{profile?.stats?.listings || 0}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.topQuickBtn}
+                  onPress={() => router.push('/(tabs)/orders?tab=orders' as any)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="cube-outline" size={11} color={colors.charcoal} />
+                  <Text style={styles.topQuickBtnText}>MY ORDERS</Text>
+                  {activeOrdersCount > 0 ? (
+                    <View style={[styles.topQuickBadge, { backgroundColor: colors.crimson }]}>
+                      <Text style={[styles.topQuickBadgeText, { color: colors.white }]}>{activeOrdersCount}</Text>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+              </View>
+
               {/* Curator Bio */}
               <View style={styles.bioContainer}>
                 <Text style={styles.bioText} numberOfLines={3}>
@@ -1225,6 +1254,52 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '900',
     letterSpacing: 0.8,
+  },
+  topProfileQuickActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 4,
+    flexWrap: 'wrap',
+  },
+  topQuickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.cream,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 2,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 1.5, height: 1.5 },
+    shadowOpacity: 0.8,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  topQuickBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.6,
+  },
+  topQuickBadge: {
+    backgroundColor: colors.charcoal,
+    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    minWidth: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topQuickBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.white,
   },
   establishedPill: {
     flexDirection: 'row',
