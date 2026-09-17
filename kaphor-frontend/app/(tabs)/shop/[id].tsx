@@ -614,19 +614,6 @@ export default function GarmentDetailScreen() {
                         ) : (
                           <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgMuted }]} />
                         )}
-                        <View style={{
-                          position: 'absolute',
-                          top: 6,
-                          left: 6,
-                          backgroundColor: 'rgba(26,26,26,0.92)',
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 2,
-                        }}>
-                          <Text style={{ color: colors.gold, fontFamily: typography.mono, fontSize: 8.5, fontWeight: '800' }}>
-                            {item.fitScore}% SIMILAR
-                          </Text>
-                        </View>
                       </View>
                       <View style={{ padding: 8 }}>
                         <Text style={{ fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted }} numberOfLines={1}>

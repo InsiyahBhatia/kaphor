@@ -21,7 +21,8 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "icon": "./assets/icon.png",
@@ -66,8 +67,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "3aeb7c93-08b6-4700-b8aa-d55744986915"
+        "projectId": "e5b16a69-98ce-43ba-9faa-44859edbf66f"
       }
-    }
+    },
+    "owner": "kaphor"
   }
 }

@@ -290,7 +290,18 @@ export default function ConditionCheckScreen() {
               )}
               <TouchableOpacity
                 style={styles.actionBtn}
-                onPress={() => router.push('/(tabs)/studio/repair-refresh')}
+                onPress={() => {
+                  router.push({
+                    pathname: '/(tabs)/studio/repair-refresh',
+                    params: {
+                      prefillImage: imageUri || '',
+                      prefillBase64: imageBase64 || '',
+                      prefillCategory: category || (result as any)?.garment_category || '',
+                      prefillFiber: fiber || (result as any)?.fiber_type || '',
+                      prefillPrice: price || '',
+                    },
+                  });
+                }}
               >
                 <Text style={styles.actionBtnText}>REPAIR & REFRESH →</Text>
               </TouchableOpacity>

@@ -13,7 +13,7 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,18 +38,33 @@ import {
 
 export default function RepairRefreshScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    prefillImage?: string;
+    prefillBase64?: string;
+    prefillCategory?: string;
+    prefillFiber?: string;
+    prefillPrice?: string;
+  }>();
   const insets = useSafeAreaInsets();
   useBackHandler('/(tabs)/circular');
 
   // ── Input state ──────────────────────────────────────────────
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [category, setCategory] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(params.prefillImage || null);
+  const [imageBase64, setImageBase64] = useState<string | null>(params.prefillBase64 || null);
+  const [category, setCategory] = useState(params.prefillCategory || '');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const [fiber, setFiber] = useState('');
+  const [fiber, setFiber] = useState(params.prefillFiber || '');
   const [showFiberPicker, setShowFiberPicker] = useState(false);
-  const [price, setPrice] = useState('');
+  const [price, setPrice] = useState(params.prefillPrice || '');
   const [damageDesc, setDamageDesc] = useState('');
+
+  useEffect(() => {
+    if (params.prefillImage) setImageUri(params.prefillImage);
+    if (params.prefillBase64) setImageBase64(params.prefillBase64);
+    if (params.prefillCategory) setCategory(params.prefillCategory);
+    if (params.prefillFiber) setFiber(params.prefillFiber);
+    if (params.prefillPrice) setPrice(params.prefillPrice);
+  }, [params.prefillImage, params.prefillBase64, params.prefillCategory, params.prefillFiber, params.prefillPrice]);
 
   // ── Result state ─────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
