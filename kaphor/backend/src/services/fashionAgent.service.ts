@@ -406,6 +406,77 @@ export async function evaluateSwapMatches(userId: string): Promise<{ matches: Ag
   }
 }
 
+async function fetchComplementaryPiece(
+  slot: AgentOutfitItem['slot'],
+  excludeIds: Set<string>
+): Promise<AgentCard | null> {
+  try {
+    const whereClause: any = {
+      isActive: true,
+      lifecycleState: 'LISTED',
+      id: { notIn: Array.from(excludeIds) },
+    };
+
+    if (slot === 'TOP') {
+      whereClause.OR = [
+        { category: { in: ['Tops', 'top', 'Blouses', 'Shirts', 'Kurtas', 'blouses', 'shirts'] } },
+        { title: { contains: 'top', mode: 'insensitive' } },
+        { title: { contains: 'blouse', mode: 'insensitive' } },
+        { title: { contains: 'shirt', mode: 'insensitive' } },
+      ];
+    } else if (slot === 'BOTTOM') {
+      whereClause.OR = [
+        { category: { in: ['Bottoms', 'bottom', 'Skirts', 'Pants', 'Trousers', 'Jeans', 'skirts', 'pants'] } },
+        { title: { contains: 'skirt', mode: 'insensitive' } },
+        { title: { contains: 'trousers', mode: 'insensitive' } },
+        { title: { contains: 'pants', mode: 'insensitive' } },
+      ];
+    } else if (slot === 'ACCESSORY') {
+      whereClause.OR = [
+        { category: { in: ['Jewelry', 'Bags', 'Accessories', 'Watches', 'jewelry', 'bags', 'accessories'] } },
+        { listingType: 'ACCESSORY_SWAP' },
+        { title: { contains: 'cuff', mode: 'insensitive' } },
+        { title: { contains: 'earring', mode: 'insensitive' } },
+        { title: { contains: 'bag', mode: 'insensitive' } },
+        { title: { contains: 'necklace', mode: 'insensitive' } },
+      ];
+    } else if (slot === 'OUTERWEAR') {
+      whereClause.OR = [
+        { category: { in: ['Jackets', 'Coats', 'Blazers', 'Outerwear', 'jackets', 'blazers'] } },
+        { title: { contains: 'jacket', mode: 'insensitive' } },
+        { title: { contains: 'blazer', mode: 'insensitive' } },
+      ];
+    } else if (slot === 'FOOTWEAR') {
+      whereClause.OR = [
+        { category: { in: ['Footwear', 'Shoes', 'Heels', 'Flats', 'Boots', 'footwear', 'shoes'] } },
+        { title: { contains: 'shoes', mode: 'insensitive' } },
+        { title: { contains: 'boots', mode: 'insensitive' } },
+        { title: { contains: 'heels', mode: 'insensitive' } },
+      ];
+    } else if (slot === 'ACCENT') {
+      whereClause.OR = [
+        { category: { in: ['Dresses', 'Co-ords', 'Sarees', 'Sets', 'dresses'] } },
+        { title: { contains: 'dress', mode: 'insensitive' } },
+        { title: { contains: 'co-ord', mode: 'insensitive' } },
+        { title: { contains: 'set', mode: 'insensitive' } },
+      ];
+    }
+
+    const piece = await db.garment.findFirst({
+      where: whereClause,
+      orderBy: { popularityScore: 'desc' },
+    });
+
+    if (piece) {
+      return await resolveGarmentCard(piece, 'CATALOG');
+    }
+    return null;
+  } catch (err) {
+    logger.warn('fetchComplementaryPiece failed', { slot, error: err });
+    return null;
+  }
+}
+
 // ── Agent Tool 4: Create Outfit Look ──────────────────────────────────────────
 export async function createOutfitLook(
   wardrobeCards: AgentCard[],
@@ -416,42 +487,84 @@ export async function createOutfitLook(
   const allCards = useWardrobe ? [...wardrobeCards, ...catalogCards] : [...catalogCards];
   if (allCards.length === 0) return undefined;
 
-  const slotOrder: AgentOutfitItem['slot'][] = ['ACCENT', 'TOP', 'BOTTOM', 'OUTERWEAR', 'FOOTWEAR', 'ACCESSORY'];
   const usedIds = new Set<string>();
+  const usedSlots = new Set<AgentOutfitItem['slot']>();
   const items: AgentOutfitItem[] = [];
 
-  for (const slot of slotOrder) {
-    const garment = allCards.find((card) => !usedIds.has(card.id) && inferOutfitSlot(card) === slot);
-    if (!garment) continue;
-    usedIds.add(garment.id);
-    items.push({
-      slot,
-      garment,
-      isFromWardrobe: garment.source === 'WARDROBE',
-      stylingNote: garment.source === 'WARDROBE' ? 'From your closet' : slot === 'ACCESSORY' ? 'Finishing touch' : 'Category match',
-    });
-    if (items.length >= 3) break;
+  // Pick anchor piece
+  const anchorCard = allCards[0];
+  const anchorSlot = inferOutfitSlot(anchorCard);
+
+  usedIds.add(anchorCard.id);
+  usedSlots.add(anchorSlot);
+  items.push({
+    slot: anchorSlot,
+    garment: anchorCard,
+    isFromWardrobe: anchorCard.source === 'WARDROBE',
+    stylingNote: anchorCard.source === 'WARDROBE' ? 'From your closet' : 'Anchor statement piece',
+  });
+
+  // Determine complementary target slots strictly without repetition
+  let targetSlots: AgentOutfitItem['slot'][] = [];
+  if (anchorSlot === 'BOTTOM') {
+    targetSlots = ['TOP', 'ACCESSORY', 'OUTERWEAR', 'FOOTWEAR'];
+  } else if (anchorSlot === 'TOP') {
+    targetSlots = ['BOTTOM', 'ACCESSORY', 'OUTERWEAR', 'FOOTWEAR'];
+  } else if (anchorSlot === 'ACCENT') {
+    targetSlots = ['ACCESSORY', 'OUTERWEAR', 'FOOTWEAR'];
+  } else if (anchorSlot === 'OUTERWEAR') {
+    targetSlots = ['TOP', 'BOTTOM', 'ACCESSORY'];
+  } else if (anchorSlot === 'ACCESSORY') {
+    targetSlots = ['TOP', 'BOTTOM', 'ACCENT', 'OUTERWEAR'];
+  } else if (anchorSlot === 'FOOTWEAR') {
+    targetSlots = ['TOP', 'BOTTOM', 'ACCENT', 'ACCESSORY'];
   }
 
-  for (const garment of allCards) {
+  // 1. Fill complementary slots from available cards in allCards (strictly 1 item per slot)
+  for (const slot of targetSlots) {
     if (items.length >= 3) break;
-    if (usedIds.has(garment.id)) continue;
-    usedIds.add(garment.id);
-    items.push({
-      slot: inferOutfitSlot(garment),
-      garment,
-      isFromWardrobe: garment.source === 'WARDROBE',
-      stylingNote: garment.source === 'WARDROBE' ? 'From your closet' : 'Recommended piece',
-    });
+    if (usedSlots.has(slot)) continue;
+
+    const match = allCards.find((c) => !usedIds.has(c.id) && inferOutfitSlot(c) === slot);
+    if (match) {
+      usedIds.add(match.id);
+      usedSlots.add(slot);
+      items.push({
+        slot,
+        garment: match,
+        isFromWardrobe: match.source === 'WARDROBE',
+        stylingNote: match.source === 'WARDROBE' ? 'From your closet' : slot === 'ACCESSORY' ? 'Finishing touch' : 'Harmonious pairing',
+      });
+    }
   }
+
+  // 2. If slots are still missing, fetch complementary pieces from the catalog so every piece is distinct
+  for (const slot of targetSlots) {
+    if (items.length >= 3) break;
+    if (usedSlots.has(slot)) continue;
+
+    const complementary = await fetchComplementaryPiece(slot, usedIds);
+    if (complementary) {
+      usedIds.add(complementary.id);
+      usedSlots.add(slot);
+      items.push({
+        slot,
+        garment: complementary,
+        isFromWardrobe: false,
+        stylingNote: slot === 'ACCESSORY' ? 'Finishing touch' : 'Harmonious pairing',
+      });
+    }
+  }
+
+  if (items.length === 0) return undefined;
 
   return {
     title: occasion,
-    vibe: 'Refined & Stylish',
-    occasion: 'Event & Evening',
+    vibe: 'Refined & Harmonious',
+    occasion: 'Curated Ensemble',
     editorialNote: useWardrobe
-      ? 'Here is an outfit combining pieces from your closet with curated pieces from the app.'
-      : 'Here is an outfit put together with pieces from the app that match your style.',
+      ? 'A balanced ensemble combining a piece from your wardrobe with perfectly paired complementary pieces.'
+      : 'A balanced ensemble with distinct, coordinated pieces styled for a complete look.',
     items,
   };
 }
