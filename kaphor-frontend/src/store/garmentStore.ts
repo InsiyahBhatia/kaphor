@@ -31,6 +31,7 @@ interface GarmentState {
   setFeatured: (featured: Garment[]) => void;
   setLoading: (loading: boolean) => void;
   appendGarments: (garments: Garment[]) => void;
+  removeGarment: (garmentId: string) => void;
   fetchGarments: () => Promise<void>;
   fetchFeed: (filters?: any) => Promise<void>;
 }
@@ -46,6 +47,11 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
   appendGarments: (garments) =>
     set((state) => ({
       garments: [...state.garments, ...garments],
+    })),
+  removeGarment: (garmentId: string) =>
+    set((state) => ({
+      garments: state.garments.filter((g) => g.id !== garmentId),
+      featured: state.featured.filter((g) => g.id !== garmentId),
     })),
   fetchGarments: async () => {
     return get().fetchFeed();
@@ -72,3 +78,20 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
     }
   },
 }));
+
+// Real-time live synchronization: remove delisted or paused garments instantly across all accounts
+(() => {
+  try {
+    import('../services/socket').then(({ getSocket, connectSocket }) => {
+      const socket = connectSocket() || getSocket();
+      if (socket) {
+        socket.on('garment:delisted', (payload: { garmentId?: string }) => {
+          if (payload?.garmentId) {
+            useGarmentStore.getState().removeGarment(payload.garmentId);
+          }
+        });
+      }
+    }).catch(() => {});
+  } catch {}
+})();
+

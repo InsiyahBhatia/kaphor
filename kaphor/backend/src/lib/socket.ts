@@ -62,3 +62,10 @@ export function emitToConversation(conversationId: string, event: string, data: 
   }
 }
 
+export function emitBroadcast(event: string, data: unknown): void {
+  if (io) {
+    io.emit(event, data);
+  }
+}
+
+

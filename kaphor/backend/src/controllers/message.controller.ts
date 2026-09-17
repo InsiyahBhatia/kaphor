@@ -1057,3 +1057,68 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to submit report' });
   }
 }
+
+/**
+ * Delete a complete message thread / conversation for participants.
+ */
+export async function deleteConversation(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+    const { conversationId } = req.params;
+
+    const conversation = await db.conversation.findUnique({
+      where: { id: conversationId },
+      select: {
+        id: true,
+        participant1Id: true,
+        participant2Id: true,
+      },
+    });
+
+    if (!conversation) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Conversation not found' });
+      return;
+    }
+
+    const isParticipant =
+      conversation.participant1Id === req.user.id ||
+      conversation.participant2Id === req.user.id ||
+      req.user.role === 'ADMIN';
+
+    if (!isParticipant) {
+      res.status(403).json({ error: 'FORBIDDEN', message: 'You are not a participant in this conversation' });
+      return;
+    }
+
+    // Delete conversation (cascade deletes all direct_messages via Prisma schema relation onDelete: Cascade)
+    await db.conversation.delete({
+      where: { id: conversationId },
+    });
+
+    const otherParticipantId =
+      conversation.participant1Id === req.user.id
+        ? conversation.participant2Id
+        : conversation.participant1Id;
+
+    // Notify other participant and self via socket
+    emitToUser(otherParticipantId, 'conversation_deleted', { conversationId });
+    emitToUser(req.user.id, 'conversation_deleted', { conversationId });
+
+    logger.info('Conversation deleted', { conversationId, deletedBy: req.user.id });
+
+    res.json({
+      data: {
+        success: true,
+        conversationId,
+        message: 'Conversation and all messages deleted successfully',
+      },
+    });
+  } catch (error) {
+    logger.error('deleteConversation failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to delete conversation' });
+  }
+}
+

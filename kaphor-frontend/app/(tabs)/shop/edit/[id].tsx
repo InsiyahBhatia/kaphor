@@ -27,6 +27,7 @@ import {
   MARKET_SIZES,
 } from '../../../../src/constants/market';
 import { DropdownPicker } from '../../../../src/components/DropdownPicker';
+import { DelistOptionsModal } from '../../../../src/components/DelistOptionsModal';
 
 export default function EditListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,6 +37,8 @@ export default function EditListingScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [garmentData, setGarmentData] = useState<any | null>(null);
 
   // Form fields
   const [images, setImages] = useState<string[]>([]);
@@ -79,6 +82,7 @@ export default function EditListingScreen() {
         setColor(Array.isArray(g.color) ? g.color.join(', ') : g.color || '');
         setIsActive(g.isActive ?? true);
         setImages(g.images || []);
+        setGarmentData(g);
       }
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || 'Could not load listing details.');
@@ -148,25 +152,30 @@ export default function EditListingScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert('De-List Asset', 'Are you sure you want to deactivate and remove this listing from the marketplace?', [
-      { text: 'CANCEL', style: 'cancel' },
-      {
-        text: 'DE-LIST',
-        style: 'destructive',
-        onPress: async () => {
-          setDeleting(true);
-          try {
-            await garmentService.deleteGarment(id as string);
-            Alert.alert('De-Listed', 'Your listing has been removed.', [
-              { text: 'OK', onPress: () => safeBack('/my-listings') },
-            ]);
-          } catch (err: any) {
-            Alert.alert('Error', err?.response?.data?.message || 'Could not delete listing.');
-          } finally {
-            setDeleting(false);
-          }
-        },
-      },
+    setShowManageModal(true);
+  };
+
+  const handleTogglePause = async () => {
+    const res = await garmentService.pauseGarment(id as string);
+    setIsActive(res.isActive);
+    setGarmentData((prev: any) => ({ ...prev, isActive: res.isActive }));
+    Alert.alert(
+      res.isActive ? 'Listing Resumed' : 'Listing Paused',
+      res.message || (res.isActive ? 'Listing is now live.' : 'Listing is paused.')
+    );
+  };
+
+  const handleMoveToWardrobe = async () => {
+    await garmentService.moveToWardrobe(id as string);
+    Alert.alert('Moved to Wardrobe', 'Your item has been moved to your private wardrobe closet.', [
+      { text: 'OK', onPress: () => safeBack('/my-listings') },
+    ]);
+  };
+
+  const handlePermanentDelete = async () => {
+    await garmentService.deleteGarment(id as string);
+    Alert.alert('Deleted', 'Your listing has been permanently removed.', [
+      { text: 'OK', onPress: () => safeBack('/my-listings') },
     ]);
   };
 
@@ -519,6 +528,16 @@ export default function EditListingScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Delist, Pause & Wardrobe Lifecycle Modal */}
+      <DelistOptionsModal
+        visible={showManageModal}
+        item={garmentData || { id, title, isActive }}
+        onClose={() => setShowManageModal(false)}
+        onPauseToggle={handleTogglePause}
+        onMoveToWardrobe={handleMoveToWardrobe}
+        onDelete={handlePermanentDelete}
+      />
     </SafeAreaView>
   );
 }

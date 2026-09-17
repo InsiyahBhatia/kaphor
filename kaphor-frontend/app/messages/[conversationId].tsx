@@ -688,6 +688,29 @@ export default function DirectChatScreen() {
     }
   };
 
+  const handleDeleteConversation = () => {
+    if (!conversationId) return;
+    Alert.alert(
+      'Delete Conversation',
+      'Are you sure you want to permanently delete this conversation and all its messages? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await messageService.deleteConversation(conversationId);
+              safeBack('/(tabs)/messages');
+            } catch (err: any) {
+              Alert.alert('Error', err?.response?.data?.message || 'Could not delete conversation.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const garment = detail?.conversation.garment;
   const other = detail?.conversation.otherUser;
   const order = detail?.conversation.order;
@@ -870,6 +893,15 @@ export default function DirectChatScreen() {
 
           <TouchableOpacity style={styles.reportBtn} onPress={handleReport} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
             <Ionicons name="shield-outline" size={18} color={colors.charcoal} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.reportBtn} 
+            onPress={handleDeleteConversation} 
+            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+            accessibilityLabel="Delete Conversation"
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.red || '#C1413A'} />
           </TouchableOpacity>
         </View>
       </View>

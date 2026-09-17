@@ -21,6 +21,7 @@ import { safeBack, useBackHandler } from '../../utils/navigation';
 import { hapticFeedback } from '../../utils/haptics';
 import { getFormattedGarmentPrice } from '../../utils/priceFormatter';
 import { ListingInsightsModal } from '../../components/ListingInsightsModal';
+import { DelistOptionsModal } from '../../components/DelistOptionsModal';
 
 export function MyListingsScreen() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export function MyListingsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedInsightsGarmentId, setSelectedInsightsGarmentId] = useState<string | null>(null);
+  const [manageItem, setManageItem] = useState<any | null>(null);
 
   const fetchListings = useCallback(async () => {
     try {
@@ -58,27 +60,32 @@ export function MyListingsScreen() {
     fetchListings();
   };
 
-  const handleDeList = (item: any) => {
-    Alert.alert(
-      'De-List Asset',
-      `Are you sure you want to remove "${item.title}" from the marketplace?`,
-      [
-        { text: 'CANCEL', style: 'cancel' },
-        {
-          text: 'DE-LIST',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await garmentService.deleteGarment(item.id);
-              setListings((prev) => prev.filter((g) => g.id !== item.id));
-              Alert.alert('De-Listed', 'Your garment listing has been removed.');
-            } catch (err: any) {
-              Alert.alert('Error', err?.response?.data?.message || 'Failed to remove listing.');
-            }
-          },
-        },
-      ]
+  const handleTogglePause = async (item: any) => {
+    const res = await garmentService.pauseGarment(item.id);
+    setListings((prev) =>
+      prev.map((g) => (g.id === item.id ? { ...g, isActive: res.isActive } : g))
     );
+    Alert.alert(
+      res.isActive ? 'Listing Resumed' : 'Listing Paused',
+      res.message || (res.isActive ? 'Listing is now live.' : 'Listing is paused.')
+    );
+  };
+
+  const handleMoveToWardrobe = async (item: any) => {
+    await garmentService.moveToWardrobe(item.id);
+    setListings((prev) =>
+      prev.map((g) => (g.id === item.id ? { ...g, isActive: false, lifecycleState: 'OWNERSHIP' } : g))
+    );
+    Alert.alert(
+      'Moved to Wardrobe',
+      'This garment has been moved to your private wardrobe closet and removed from the marketplace.'
+    );
+  };
+
+  const handlePermanentDelete = async (item: any) => {
+    await garmentService.deleteGarment(item.id);
+    setListings((prev) => prev.filter((g) => g.id !== item.id));
+    Alert.alert('Deleted', 'Your listing has been permanently removed.');
   };
 
   const ListingCard = ({ item }: { item: any }) => (
@@ -193,10 +200,21 @@ export function MyListingsScreen() {
 
         <TouchableOpacity
           style={styles.actionBtn}
-          onPress={() => handleDeList(item)}
+          onPress={() => setManageItem(item)}
         >
-          <Ionicons name="trash-outline" size={14} color={colors.crimson} />
-          <Text style={[styles.actionBtnText, { color: colors.crimson }]}>DE-LIST</Text>
+          <Ionicons
+            name={item.isActive ? 'options-outline' : 'pause-circle-outline'}
+            size={14}
+            color={item.isActive ? colors.charcoal : '#D97706'}
+          />
+          <Text
+            style={[
+              styles.actionBtnText,
+              { color: item.isActive ? colors.charcoal : '#D97706' },
+            ]}
+          >
+            {item.isActive ? 'MANAGE' : 'PAUSED'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -265,6 +283,16 @@ export function MyListingsScreen() {
         visible={!!selectedInsightsGarmentId}
         garmentId={selectedInsightsGarmentId}
         onClose={() => setSelectedInsightsGarmentId(null)}
+      />
+
+      {/* Delist, Pause & Wardrobe Lifecycle Management Modal */}
+      <DelistOptionsModal
+        visible={!!manageItem}
+        item={manageItem}
+        onClose={() => setManageItem(null)}
+        onPauseToggle={handleTogglePause}
+        onMoveToWardrobe={handleMoveToWardrobe}
+        onDelete={handlePermanentDelete}
       />
     </SafeAreaView>
   );

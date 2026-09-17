@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -83,17 +84,48 @@ export default function MessagesScreen() {
         const handler = () => {
           loadConversations();
         };
+        const handleDeleted = ({ conversationId }: { conversationId: string }) => {
+          setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+        };
         socket.on('new_direct_message', handler);
         socket.on('direct_message', handler);
+        socket.on('conversation_deleted', handleDeleted);
         socket.on('connect', handler);
         return () => {
           socket.off('new_direct_message', handler);
           socket.off('direct_message', handler);
+          socket.off('conversation_deleted', handleDeleted);
           socket.off('connect', handler);
         };
       }
     }, [loadConversations])
   );
+
+  const handleDeleteConversation = (item: ConversationSummary) => {
+    Alert.alert(
+      'Delete Conversation',
+      `Permanently delete your conversation with ${item.otherUser?.displayName || 'this user'}? All messages will be erased.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await messageService.deleteConversation(item.id);
+              setConversations((prev) => prev.filter((c) => c.id !== item.id));
+              const remainingUnread = conversations
+                .filter((c) => c.id !== item.id)
+                .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+              useNotificationStore.getState().setUnreadMessageCount(remainingUnread);
+            } catch (err: any) {
+              Alert.alert('Error', err?.response?.data?.message || 'Could not delete conversation.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -188,6 +220,8 @@ export default function MessagesScreen() {
           hasOrder && styles.convCardOrder,
         ]}
         onPress={() => router.push(`/messages/${item.id}` as any)}
+        onLongPress={() => handleDeleteConversation(item)}
+        delayLongPress={350}
         activeOpacity={0.8}
       >
         {/* User Avatar */}
@@ -237,7 +271,7 @@ export default function MessagesScreen() {
           </Text>
         </View>
 
-        {/* Right side: Garment Thumb or Unread Badge */}
+        {/* Right side: Garment Thumb, Unread Badge, and Delete Option */}
         <View style={styles.convRightCol}>
           {isGarmentInquiry && item.garment?.image && (
             <KaphorImage
@@ -246,11 +280,21 @@ export default function MessagesScreen() {
               contentFit="cover"
             />
           )}
-          {isUnread && (
-            <View style={styles.unreadPill}>
-              <Text style={styles.unreadPillText}>{item.unreadCount}</Text>
-            </View>
-          )}
+          <View style={styles.rightActionRow}>
+            {isUnread && (
+              <View style={styles.unreadPill}>
+                <Text style={styles.unreadPillText}>{item.unreadCount}</Text>
+              </View>
+            )}
+            <TouchableOpacity
+              onPress={() => handleDeleteConversation(item)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.delIconBtn}
+              accessibilityLabel="Delete Conversation"
+            >
+              <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -632,6 +676,16 @@ const styles = StyleSheet.create({
     fontFamily: typography.mono,
     fontSize: 9,
     fontWeight: '900',
+  },
+  rightActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  delIconBtn: {
+    padding: 3,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0,0,0,0.03)',
   },
   emptyContainer: {
     flex: 1,

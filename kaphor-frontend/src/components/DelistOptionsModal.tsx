@@ -1,0 +1,321 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, typography, spacing, radius } from '../theme';
+import { hapticFeedback } from '../utils/haptics';
+
+interface DelistOptionsModalProps {
+  visible: boolean;
+  item: any;
+  onClose: () => void;
+  onPauseToggle: (item: any) => Promise<void>;
+  onMoveToWardrobe: (item: any) => Promise<void>;
+  onDelete: (item: any) => Promise<void>;
+}
+
+export function DelistOptionsModal({
+  visible,
+  item,
+  onClose,
+  onPauseToggle,
+  onMoveToWardrobe,
+  onDelete,
+}: DelistOptionsModalProps) {
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
+
+  if (!item) return null;
+
+  const isPaused = !item.isActive;
+
+  const handlePause = async () => {
+    try {
+      hapticFeedback.light();
+      setLoadingAction('pause');
+      await onPauseToggle(item);
+      onClose();
+    } catch (err: any) {
+      Alert.alert('Action Failed', err?.message || 'Could not update listing status.');
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleWardrobe = async () => {
+    Alert.alert(
+      'Move to Wardrobe',
+      `Move "${item.title}" off the marketplace and return it to your personal digital wardrobe?`,
+      [
+        { text: 'CANCEL', style: 'cancel' },
+        {
+          text: 'MOVE TO WARDROBE',
+          onPress: async () => {
+            try {
+              hapticFeedback.medium();
+              setLoadingAction('wardrobe');
+              await onMoveToWardrobe(item);
+              onClose();
+            } catch (err: any) {
+              Alert.alert('Action Failed', err?.message || 'Could not move to wardrobe.');
+            } finally {
+              setLoadingAction(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Listing Permanently',
+      `Are you sure you want to permanently delete "${item.title}"? This cannot be undone.`,
+      [
+        { text: 'CANCEL', style: 'cancel' },
+        {
+          text: 'DELETE',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              hapticFeedback.heavy();
+              setLoadingAction('delete');
+              await onDelete(item);
+              onClose();
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'Could not delete listing.');
+            } finally {
+              setLoadingAction(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.title}>MANAGE LISTING</Text>
+              <Text style={styles.subtitle} numberOfLines={1}>{item.title}</Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close" size={20} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Options */}
+          <View style={styles.optionsContainer}>
+            {/* 1. Pause / Resume Listing */}
+            <TouchableOpacity
+              style={styles.optionCard}
+              onPress={handlePause}
+              disabled={loadingAction !== null}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.iconWrap, { backgroundColor: isPaused ? 'rgba(30,59,47,0.1)' : 'rgba(217,119,6,0.1)' }]}>
+                <Ionicons
+                  name={isPaused ? 'play-circle-outline' : 'pause-circle-outline'}
+                  size={24}
+                  color={isPaused ? colors.forest : '#D97706'}
+                />
+              </View>
+              <View style={styles.optionTextContainer}>
+                <Text style={styles.optionTitle}>
+                  {isPaused ? 'RESUME LISTING' : 'PAUSE LISTING'}
+                </Text>
+                <Text style={styles.optionDesc}>
+                  {isPaused
+                    ? 'Reactivate this listing so buyers can discover and purchase it in the feed.'
+                    : 'Temporarily hide from the feed and search without losing any listing details.'}
+                </Text>
+              </View>
+              {loadingAction === 'pause' ? (
+                <ActivityIndicator size="small" color={colors.charcoal} />
+              ) : (
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              )}
+            </TouchableOpacity>
+
+            {/* 2. Move to Wardrobe */}
+            <TouchableOpacity
+              style={styles.optionCard}
+              onPress={handleWardrobe}
+              disabled={loadingAction !== null}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.iconWrap, { backgroundColor: 'rgba(28,43,74,0.1)' }]}>
+                <Ionicons name="shirt-outline" size={22} color={colors.navy} />
+              </View>
+              <View style={styles.optionTextContainer}>
+                <Text style={styles.optionTitle}>MOVE TO WARDROBE</Text>
+                <Text style={styles.optionDesc}>
+                  Delist from the marketplace and return to your private digital closet for personal styling.
+                </Text>
+              </View>
+              {loadingAction === 'wardrobe' ? (
+                <ActivityIndicator size="small" color={colors.navy} />
+              ) : (
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              )}
+            </TouchableOpacity>
+
+            {/* 3. Delete Permanently */}
+            <TouchableOpacity
+              style={[styles.optionCard, styles.deleteCard]}
+              onPress={handleDelete}
+              disabled={loadingAction !== null}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.iconWrap, { backgroundColor: 'rgba(192,57,43,0.1)' }]}>
+                <Ionicons name="trash-outline" size={22} color={colors.crimson} />
+              </View>
+              <View style={styles.optionTextContainer}>
+                <Text style={[styles.optionTitle, { color: colors.crimson }]}>DELETE LISTING</Text>
+                <Text style={styles.optionDesc}>
+                  Permanently remove this listing from the marketplace.
+                </Text>
+              </View>
+              {loadingAction === 'delete' ? (
+                <ActivityIndicator size="small" color={colors.crimson} />
+              ) : (
+                <Ionicons name="chevron-forward" size={18} color={colors.crimson} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Cancel Button */}
+          <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+            <Text style={styles.cancelBtnText}>CANCEL</Text>
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: colors.cream,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    borderTopWidth: 2,
+    borderColor: colors.charcoal,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,31,34,0.1)',
+  },
+  title: {
+    fontFamily: typography.mono,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    color: colors.textPrimary,
+  },
+  subtitle: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.textSecond,
+    marginTop: 2,
+    maxWidth: 260,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(30,31,34,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionsContainer: {
+    gap: 12,
+    marginBottom: spacing.lg,
+  },
+  optionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    gap: 12,
+  },
+  deleteCard: {
+    borderColor: 'rgba(192,57,43,0.3)',
+    backgroundColor: 'rgba(192,57,43,0.02)',
+  },
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionTextContainer: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.textPrimary,
+  },
+  optionDesc: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.textSecond,
+    marginTop: 3,
+    lineHeight: 15,
+  },
+  cancelBtn: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.charcoal,
+    borderRadius: radius.sm,
+  },
+  cancelBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    color: colors.cream,
+  },
+});

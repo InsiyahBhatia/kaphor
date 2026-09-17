@@ -43,4 +43,15 @@ export const garmentService = {
     const { data } = await api.delete(`/garments/${id}`);
     return data.data;
   },
+
+  pauseGarment: async (id: string) => {
+    const { data } = await api.post(`/garments/${id}/pause`);
+    return data.data;
+  },
+
+  moveToWardrobe: async (id: string) => {
+    const { data } = await api.post(`/garments/${id}/wardrobe`);
+    return data.data;
+  },
 };
+

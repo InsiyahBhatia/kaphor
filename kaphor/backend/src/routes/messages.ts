@@ -9,6 +9,7 @@ import {
   reportUser,
   getUnreadMessagesCount,
   linkConversationGarment,
+  deleteConversation,
 } from '../controllers/message.controller';
 
 const router = Router();
@@ -20,6 +21,7 @@ router.get('/conversations', listConversations);
 router.post('/conversations', getOrCreateConversation);
 router.post('/orders/:orderId/conversation', getOrCreateOrderConversation);
 router.get('/conversations/:conversationId', getConversationMessages);
+router.delete('/conversations/:conversationId', deleteConversation);
 router.patch('/conversations/:conversationId/garment', linkConversationGarment);
 router.post('/conversations/:conversationId', sendDirectMessage);
 router.post('/users/:userId/report', reportUser);

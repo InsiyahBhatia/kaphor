@@ -151,4 +151,12 @@ export const messageService = {
     });
     return data.data;
   },
+
+  async deleteConversation(conversationId: string): Promise<{ success: boolean; message: string }> {
+    const { data } = await api.delete<{ data: { success: boolean; message: string } }>(
+      `/messages/conversations/${conversationId}`
+    );
+    return data.data;
+  },
 };
+

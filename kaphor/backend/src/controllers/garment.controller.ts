@@ -11,6 +11,7 @@ import { generateGarmentVectorHybrid } from '../services/garmentVector.service';
 import { getEstimatedGarmentValue } from '../utils/pricing';
 import { InsightService } from '../services/insight.service';
 import { cacheClear } from '../lib/cache';
+import { emitBroadcast } from '../lib/socket';
 
 /**
  * Helper to resolve all image URLs for a garment (handles S3 presigning and local fallback)
@@ -539,9 +540,97 @@ export async function deleteGarment(req: Request, res: Response): Promise<void> 
       },
     });
     cacheClear('feed:');
+    emitBroadcast('garment:delisted', { garmentId: id, action: 'delete' });
     res.status(200).json({ data: { message: 'Garment de-listed successfully' } });
   } catch (err) {
     logger.error('deleteGarment failed', { error: err instanceof Error ? err.message : String(err) });
+    throw err;
+  }
+}
+
+export async function pauseGarment(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required', statusCode: 401 });
+      return;
+    }
+    const { id } = req.params;
+    const whereClause: any = { id };
+    if (req.user.role !== 'ADMIN') {
+      whereClause.sellerId = req.user.id;
+    }
+    const existing = await db.garment.findFirst({ where: whereClause });
+    if (!existing) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found', statusCode: 404 });
+      return;
+    }
+
+    const nextActive = !existing.isActive;
+    const updated = await db.garment.update({
+      where: { id },
+      data: {
+        isActive: nextActive,
+      },
+    });
+
+    cacheClear('feed:');
+    if (!nextActive) {
+      emitBroadcast('garment:delisted', { garmentId: id, action: 'pause' });
+    } else {
+      emitBroadcast('garment:listed', { garmentId: id, action: 'resume' });
+    }
+
+    res.status(200).json({
+      data: {
+        id: updated.id,
+        isActive: updated.isActive,
+        message: nextActive ? 'Listing resumed successfully' : 'Listing paused successfully'
+      }
+    });
+  } catch (err) {
+    logger.error('pauseGarment failed', { error: err instanceof Error ? err.message : String(err) });
+    throw err;
+  }
+}
+
+export async function moveGarmentToWardrobe(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required', statusCode: 401 });
+      return;
+    }
+    const { id } = req.params;
+    const whereClause: any = { id };
+    if (req.user.role !== 'ADMIN') {
+      whereClause.sellerId = req.user.id;
+    }
+    const existing = await db.garment.findFirst({ where: whereClause });
+    if (!existing) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found', statusCode: 404 });
+      return;
+    }
+
+    const updated = await db.garment.update({
+      where: { id },
+      data: {
+        isActive: false,
+        lifecycleState: 'OWNERSHIP',
+      },
+    });
+
+    cacheClear('feed:');
+    emitBroadcast('garment:delisted', { garmentId: id, action: 'wardrobe' });
+
+    res.status(200).json({
+      data: {
+        id: updated.id,
+        isActive: false,
+        lifecycleState: 'OWNERSHIP',
+        message: 'Garment moved back to your wardrobe successfully'
+      }
+    });
+  } catch (err) {
+    logger.error('moveGarmentToWardrobe failed', { error: err instanceof Error ? err.message : String(err) });
     throw err;
   }
 }

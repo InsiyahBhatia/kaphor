@@ -9,6 +9,8 @@ import {
   getGarmentById,
   updateGarment,
   deleteGarment,
+  pauseGarment,
+  moveGarmentToWardrobe,
   getGarmentLifecycle,
   getCompatibilityScore,
   searchGarments,
@@ -50,6 +52,8 @@ garmentRouter.put('/:id',
 );
 
 garmentRouter.delete('/:id', authenticate, deleteGarment);
+garmentRouter.post('/:id/pause', authenticate, pauseGarment);
+garmentRouter.post('/:id/wardrobe', authenticate, moveGarmentToWardrobe);
 
 // ── Lifecycle State Machine Endpoints ──────────────
 garmentRouter.post('/:id/initiate-resell', authenticate, initiateResell);
