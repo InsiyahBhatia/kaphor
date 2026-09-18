@@ -15,21 +15,31 @@ export async function addToCart(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const cartItem = await db.cartItem.upsert({
+    const existing = await db.cartItem.findUnique({
       where: {
         userId_garmentId: {
           userId: req.user.id,
           garmentId: String(garmentId),
         },
       },
-      create: {
+    });
+
+    if (existing) {
+      res.status(409).json({
+        error: 'ALREADY_IN_CART',
+        message: 'This unique circular piece is already in your shopping bag',
+      });
+      return;
+    }
+
+    const cartItem = await db.cartItem.create({
+      data: {
         userId: req.user.id,
         garmentId: String(garmentId),
       },
-      update: {}, // No-op if already in cart
     });
 
-    res.json({ data: cartItem, message: 'Item added to cart' });
+    res.status(201).json({ data: cartItem, message: 'Item added to shopping bag' });
   } catch (error) {
     logger.error('addToCart failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });

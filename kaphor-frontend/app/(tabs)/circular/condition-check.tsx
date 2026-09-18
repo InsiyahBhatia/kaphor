@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography } from '../../../src/theme';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { CenterCardsLoading } from '../../../src/components/common/CardLoadingScreen';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { circularService, RecyclingCenter, RecyclingCentersResponse } from '../../../src/services/circularService';
 
@@ -336,10 +337,7 @@ export default function ConditionCheckScreen() {
 
               {/* Centers List */}
               {loadingRecycling ? (
-                <View style={styles.recyclingLoadingBox}>
-                  <ActivityIndicator size="small" color={colors.charcoal} />
-                  <Text style={styles.recyclingLoadingText}>Locating certified regional textile hubs...</Text>
-                </View>
+                <CenterCardsLoading count={3} />
               ) : (
                 <View style={styles.centersListContainer}>
                   {(recyclingData?.centers || []).slice(0, 3).map((center) => {
@@ -384,39 +382,15 @@ export default function ConditionCheckScreen() {
                           Certs: {center.certifications.join(' • ')}
                         </Text>
 
-                        {/* Action Buttons */}
-                        <View style={styles.centerActionRow}>
-                          <TouchableOpacity
-                            style={[styles.scheduleBtn, isScheduling && { opacity: 0.6 }]}
-                            onPress={() => handleScheduleRecyclingPickup(center)}
-                            disabled={isScheduling}
-                            activeOpacity={0.8}
-                          >
-                            {isScheduling ? (
-                              <ActivityIndicator size="small" color={colors.cream} />
-                            ) : (
-                              <>
-                                <Ionicons name="calendar-outline" size={14} color={colors.cream} />
-                                <Text style={styles.scheduleBtnText}>SCHEDULE DOORSTEP PICKUP</Text>
-                              </>
-                            )}
-                          </TouchableOpacity>
-
-                          {center.dropOffAvailable && (
-                            <TouchableOpacity
-                              style={styles.dropOffBtn}
-                              onPress={() =>
-                                Alert.alert(
-                                  center.name,
-                                  `Address:\n${center.address}\n\nOperating Hours:\n${center.operatingHours}\n\nPhone:\n${center.phone}\n\nYou can drop off clean textiles during operating hours.`
-                                )
-                              }
-                              activeOpacity={0.7}
-                            >
-                              <Ionicons name="information-circle-outline" size={14} color={colors.charcoal} />
-                              <Text style={styles.dropOffBtnText}>DROP-OFF INFO</Text>
-                            </TouchableOpacity>
-                          )}
+                        {/* Facility Details & Drop-Off Protocol */}
+                        <View style={styles.facilityDetailsBox}>
+                          <View style={styles.detailRow}>
+                            <Ionicons name="call-outline" size={12} color={colors.forest} />
+                            <Text style={styles.detailPhoneText}>Helpline: {center.phone || '+91 1800-CIRCULAR'}</Text>
+                          </View>
+                          <Text style={styles.dropOffInstructions}>
+                            Drop-Off Depot: Bring clean unwearable textiles directly to facility reception. Garments are mechanically shredded or chemically converted into recycled yarn.
+                          </Text>
                         </View>
                       </View>
                     );
@@ -1100,46 +1074,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 2,
   },
-  centerActionRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 6,
-  },
-  scheduleBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.charcoal,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    borderRadius: 3,
-  },
-  scheduleBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
-    color: colors.cream,
-    letterSpacing: 0.5,
-  },
-  dropOffBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    backgroundColor: colors.white,
+  facilityDetailsBox: {
+    backgroundColor: '#F7F5EE',
     borderWidth: 1,
-    borderColor: colors.charcoal,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
+    borderColor: 'rgba(30,31,34,0.12)',
     borderRadius: 3,
+    padding: 8,
+    marginTop: 4,
+    gap: 4,
   },
-  dropOffBtnText: {
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  detailPhoneText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.forest,
+  },
+  dropOffInstructions: {
     fontFamily: typography.mono,
     fontSize: 8,
-    fontWeight: '900',
     color: colors.charcoal,
+    lineHeight: 11,
   },
   mailInCard: {
     flexDirection: 'row',

@@ -34,10 +34,10 @@ export const colors = {
   // Backward compatibility alias mappings
   red: '#C81E2C',         // Mapped to crimson
   forest: '#0F5C46',      // Mapped to emerald
-  terracotta: '#141414',  // Replaced/folded into ink
-  terracottaDark: '#141414',
-  terracottaLight: '#F5F1E8',
-  orange: '#141414',
+  terracotta: '#C85A32',  // Warm orange/terracotta for AI features
+  terracottaDark: '#8B3617',
+  terracottaLight: '#FCEEE8',
+  orange: '#C95F12',
   copper: '#B8912F',
   navy: '#141414',
   teal: '#0F5C46',

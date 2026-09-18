@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../src/theme';
 import { KaphorImage, normalizeImageUri } from '../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
+import { ConversationChatLoading } from '../../src/components/common/CardLoadingScreen';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import {
@@ -197,6 +198,8 @@ export default function DirectChatScreen() {
     const reactionsMap: Record<string, { emoji: string; count: number; userReacted: boolean }[]> = {};
     const visibleMsgs: DirectMessageItem[] = [];
 
+    const seenIds = new Set<string>();
+
     for (const msg of messages) {
       if (msg.content && msg.content.startsWith('[[REACTION:')) {
         const match = msg.content.match(/^\[\[REACTION:([^|]+)\|(.+)\]\]$/);
@@ -221,6 +224,18 @@ export default function DirectChatScreen() {
           }
         }
       } else {
+        // Prevent duplicate message rendering & flicker
+        if (seenIds.has(msg.id)) continue;
+        seenIds.add(msg.id);
+
+        // If a temp optimistic message exists but the confirmed real message is already present, skip the temp message
+        if (msg.id.startsWith('temp-')) {
+          const hasRealCounterpart = visibleMsgs.some(
+            (vm) => !vm.id.startsWith('temp-') && vm.senderId === msg.senderId && vm.content === msg.content
+          );
+          if (hasRealCounterpart) continue;
+        }
+
         visibleMsgs.push(msg);
       }
     }
@@ -247,7 +262,14 @@ export default function DirectChatScreen() {
   const [showTransactionsHub, setShowTransactionsHub] = useState(false);
   const [activeGarmentsTab, setActiveGarmentsTab] = useState<'counterparty' | 'seller'>('counterparty');
 
-  const swapId = swapIdParam || detail?.conversation?.swap?.id;
+  const isExplicitSale =
+    (detail?.conversation as any)?.type === 'SALE' ||
+    detail?.conversation?.garment?.listingType === 'SALE' ||
+    Boolean(detail?.conversation?.order?.id);
+
+  const swapId = !isExplicitSale
+    ? (swapIdParam || ((detail?.conversation as any)?.type === 'SWAP' || detail?.conversation?.garment?.listingType === 'SWAP' || detail?.conversation?.garment?.listingType === 'ACCESSORY_SWAP' ? detail?.conversation?.swap?.id : null))
+    : null;
 
   useEffect(() => {
     if (!swapId) return;
@@ -382,6 +404,19 @@ export default function DirectChatScreen() {
         if (newMsg && newMsg.conversationId === conversationId) {
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
+
+            // If sent by current user, replace matching optimistic temp message to avoid duplicate flickering
+            if (newMsg.senderId === user?.id) {
+              const tempIdx = prev.findIndex(
+                (m) => m.id.startsWith('temp-') && m.senderId === user?.id && m.content === newMsg.content
+              );
+              if (tempIdx !== -1) {
+                const updated = [...prev];
+                updated[tempIdx] = newMsg;
+                return updated;
+              }
+            }
+
             return [...prev, newMsg];
           });
           setIsPartnerTyping(false);
@@ -560,7 +595,13 @@ export default function DirectChatScreen() {
         finalImgUrl = await uploadPhotoBase64(imgUri);
       }
       const result = await messageService.sendMessage(conversationId, content, finalImgUrl);
-      setMessages((prev) => prev.map((m) => (m.id === tempMsg.id ? result.data : m)));
+      setMessages((prev) => {
+        const alreadyHasReal = prev.some((m) => m.id === result.data.id);
+        if (alreadyHasReal) {
+          return prev.filter((m) => m.id !== tempMsg.id);
+        }
+        return prev.map((m) => (m.id === tempMsg.id ? result.data : m));
+      });
     } catch (e: any) {
       Alert.alert('Failed to send', e?.response?.data?.message || 'Could not send message');
       setMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
@@ -633,10 +674,14 @@ export default function DirectChatScreen() {
       }
 
       const result = await messageService.sendMessage(conversationId, finalContent, finalImgUrl);
-      // Replace optimistic message with actual DB message
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempMsg.id ? result.data : m))
-      );
+      // Replace optimistic message with actual DB message (or remove temp if socket already added it)
+      setMessages((prev) => {
+        const alreadyHasReal = prev.some((m) => m.id === result.data.id);
+        if (alreadyHasReal) {
+          return prev.filter((m) => m.id !== tempMsg.id);
+        }
+        return prev.map((m) => (m.id === tempMsg.id ? result.data : m));
+      });
 
       if (result.warning) {
         Alert.alert('Safety Alert', result.warning);
@@ -831,13 +876,12 @@ export default function DirectChatScreen() {
     hapticFeedback.light();
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={colors.charcoal} />
-      </View>
-    );
-  }
+  const formatHandle = (u?: { username?: string | null; displayName?: string | null }) => {
+    if (!u) return 'member';
+    if (u.username && !u.username.startsWith('user_')) return u.username;
+    if (u.displayName && !u.displayName.startsWith('user_')) return u.displayName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    return 'member';
+  };
 
   return (
     <KeyboardAvoidingView
@@ -869,7 +913,7 @@ export default function DirectChatScreen() {
               {other?.isVerified && <VerifiedBadge size="compact" />}
             </View>
             <Text style={styles.headerHandle}>
-              {isPartnerTyping ? 'typing...' : `@${other?.username || 'user'} • View Profile`}
+              {isPartnerTyping ? 'typing...' : `@${formatHandle(other)} • View Profile`}
             </Text>
           </View>
         </TouchableOpacity>
@@ -1581,22 +1625,56 @@ export default function DirectChatScreen() {
                       </TouchableOpacity>
                     )}
 
-                    {/* In-Message Product Snippet if message is initial inquiry or mentions rental/product terms */}
-                    {effectiveGarment &&
-                      (index === 0 ||
-                        /\b(rent|rental|lease|swap|trade|buy|order|price|this|dress|piece|item|garment|jacket|shirt|pant|size)\b/i.test(
-                          parsed.text || ''
-                        )) && (
+                    {/* In-Message Product Snippet */}
+                    {(() => {
+                      const text = parsed.text || '';
+                      const isRentalMsg = text.includes('[RENTAL RESERVATION]') || text.includes('[RENTAL APPROVED]');
+                      const isSwapMsg = text.includes('[SWAP PROPOSAL]');
+
+                      let displayGarment = effectiveGarment;
+
+                      if (isRentalMsg) {
+                        const titleMatch = text.match(/rental request for "([^"]+)"/i) || text.match(/dates for "([^"]+)"/i);
+                        if (titleMatch && titleMatch[1]) {
+                          const targetTitle = titleMatch[1].trim().toLowerCase();
+                          const allAvailable: any[] = [
+                            ...(detail?.conversation?.sellerGarments || []),
+                            ...(detail?.conversation?.counterpartyGarments || []),
+                            (detail?.conversation as any)?.rental?.garment,
+                            garment,
+                          ].filter(Boolean);
+                          const matched = allAvailable.find((g: any) =>
+                            g.title?.trim().toLowerCase() === targetTitle ||
+                            targetTitle.includes(g.title?.trim().toLowerCase()) ||
+                            g.title?.trim().toLowerCase().includes(targetTitle)
+                          );
+                          displayGarment = matched || ((detail?.conversation as any)?.rental?.garment?.title?.toLowerCase().includes(targetTitle) ? (detail?.conversation as any)?.rental?.garment : null);
+                        } else if ((detail?.conversation as any)?.rental?.garment) {
+                          displayGarment = (detail?.conversation as any)?.rental?.garment;
+                        }
+                      } else if (isSwapMsg) {
+                        displayGarment = null;
+                      } else {
+                        const shouldShowSnippet = (
+                          index === 0 ||
+                          /\b(rent|rental|lease|swap|trade|buy|order|price|this|dress|piece|item|garment|jacket|shirt|pant|size)\b/i.test(text)
+                        );
+                        if (!shouldShowSnippet) displayGarment = null;
+                      }
+
+                      if (!displayGarment) return null;
+
+                      return (
                         <TouchableOpacity
                           style={[
                             styles.inBubbleProductSnippet,
                             isMine ? styles.inBubbleSnippetMine : styles.inBubbleSnippetTheir,
                           ]}
-                          onPress={() => setModalGarment(effectiveGarment)}
+                          onPress={() => setModalGarment(displayGarment)}
                           activeOpacity={0.88}
                         >
                           <KaphorImage
-                            uri={effectiveGarment.image || effectiveGarment.images?.[0] || ''}
+                            uri={displayGarment.image || displayGarment.images?.[0] || ''}
                             style={styles.inBubbleSnippetThumb}
                             contentFit="cover"
                           />
@@ -1608,7 +1686,7 @@ export default function DirectChatScreen() {
                               ]}
                               numberOfLines={1}
                             >
-                              {effectiveGarment.brand?.toUpperCase() || 'ARCHIVE'}
+                              {displayGarment.brand?.toUpperCase() || 'ARCHIVE'}
                             </Text>
                             <Text
                               style={[
@@ -1617,7 +1695,7 @@ export default function DirectChatScreen() {
                               ]}
                               numberOfLines={1}
                             >
-                              {effectiveGarment.title}
+                              {displayGarment.title}
                             </Text>
                             <Text
                               style={[
@@ -1625,11 +1703,11 @@ export default function DirectChatScreen() {
                                 isMine ? { color: '#C9A84C' } : { color: colors.charcoal },
                               ]}
                             >
-                              {garmentMode === 'RENT'
-                                ? `₹${Math.round(effectiveGarment.rentalPriceDay || effectiveGarment.price || 0)}/day (Rent)`
-                                : garmentMode === 'SWAP'
+                              {isRentalMsg || displayGarment.rentalPriceDay
+                                ? `₹${Math.round(displayGarment.rentalPriceDay || displayGarment.price || 0)}/day (Rent)`
+                                : displayGarment.listingType === 'ACCESSORY_SWAP'
                                 ? 'Swap Piece'
-                                : `₹${Math.round(effectiveGarment.price || 0)}`}
+                                : `₹${Math.round(displayGarment.price || 0)}`}
                             </Text>
                           </View>
                           <View
@@ -1650,7 +1728,8 @@ export default function DirectChatScreen() {
                             </Text>
                           </View>
                         </TouchableOpacity>
-                      )}
+                      );
+                    })()}
 
                     {item.imageUrl && (
                       <TouchableOpacity
@@ -1708,7 +1787,9 @@ export default function DirectChatScreen() {
                         ]}
                         onPress={() => {
                           const rentalIdMatch = parsed.text?.match(/Lease ID:\s*([a-zA-Z0-9_-]+)/);
-                          const targetRentalId = rentalIdMatch ? rentalIdMatch[1] : (detail?.conversation as any)?.rentalId;
+                          const targetRentalId = rentalIdMatch
+                            ? rentalIdMatch[1]
+                            : ((detail?.conversation as any)?.rental?.id || (detail?.conversation as any)?.rentalId);
                           if (targetRentalId) {
                             router.push(`/(tabs)/rental/lease/${targetRentalId}` as any);
                           } else {
@@ -2204,10 +2285,10 @@ export default function DirectChatScreen() {
                           {isMine
                             ? `YOUR LISTED PIECE (${mode === 'RENT' ? 'RENTAL' : mode === 'SWAP' ? 'SWAP' : 'FOR SALE'})`
                             : mode === 'RENT'
-                            ? `RENTING FROM @${other?.username || 'SELLER'}`
+                            ? `RENTING FROM @${formatHandle(other).toUpperCase()}`
                             : mode === 'SWAP'
-                            ? `SWAPPING WITH @${other?.username || 'SELLER'}`
-                            : `BUYING FROM @${other?.username || 'SELLER'}`}
+                            ? `SWAPPING WITH @${formatHandle(other).toUpperCase()}`
+                            : `BUYING FROM @${formatHandle(other).toUpperCase()}`}
                         </Text>
                         <Text style={styles.garmentModeBannerSub}>
                           {mode === 'RENT'

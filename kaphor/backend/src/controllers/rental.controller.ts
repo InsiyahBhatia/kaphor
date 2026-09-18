@@ -272,7 +272,7 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                     },
                 });
             }
-            const reservationText = `👗 [RENTAL RESERVATION] Initiated a ${days}-day rental request for "${garment.title}".\n• Dates: ${new Date(reqStart).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – ${new Date(reqEnd).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}\n• Estimated Total: ₹${amount.toLocaleString()}`;
+            const reservationText = `👗 [RENTAL RESERVATION] Initiated a ${days}-day rental request for "${garment.title}".\n• Dates: ${new Date(reqStart).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – ${new Date(reqEnd).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}\n• Estimated Total: ₹${amount.toLocaleString()}\n• Lease ID: ${rental.id}`;
             const chatMsg = await db.directMessage.create({
                 data: {
                     conversationId: conv.id,
@@ -291,7 +291,8 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                 data: {
                     lastMessageText: reservationText.slice(0, 100),
                     lastMessageAt: new Date(),
-                    garmentId: conv.garmentId || garment.id,
+                    garmentId: garment.id,
+                    rentalId: rental.id,
                 },
             });
             emitToConversation(conv.id, 'direct_message', chatMsg);
@@ -620,7 +621,12 @@ export async function getRentalById(req: Request, res: Response): Promise<void> 
         const cleanId = String(id || '').trim();
         const uid = req.user.id;
 
-        const rental = await db.rental.findFirst({
+        if (!cleanId || cleanId === 'undefined' || cleanId === 'null') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Valid Rental ID required' });
+            return;
+        }
+
+        let rental = await db.rental.findFirst({
             where: {
                 OR: [
                     { id: cleanId },
@@ -653,6 +659,41 @@ export async function getRentalById(req: Request, res: Response): Promise<void> 
                 }
             }
         });
+
+        // Fallback: check if cleanId is a conversation ID that has an associated rental
+        if (!rental) {
+            const conv = await db.conversation.findUnique({
+                where: { id: cleanId },
+            });
+            if (conv && conv.rentalId) {
+                rental = await db.rental.findUnique({
+                    where: { id: conv.rentalId },
+                    include: {
+                        garment: {
+                            select: {
+                                id: true,
+                                title: true,
+                                brand: true,
+                                images: true,
+                                category: true,
+                                price: true,
+                                rentalPriceDay: true,
+                                rentalPriceWeek: true,
+                                condition: true,
+                                listingType: true,
+                                sellerId: true,
+                                seller: {
+                                    select: { id: true, displayName: true, username: true, avatar: true, phone: true, email: true }
+                                }
+                            }
+                        },
+                        renter: {
+                            select: { id: true, displayName: true, username: true, avatar: true, phone: true, email: true }
+                        }
+                    }
+                });
+            }
+        }
 
         if (!rental) {
             res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
@@ -760,7 +801,7 @@ export async function approveRentalRequest(req: Request, res: Response): Promise
                 },
             });
             if (conv) {
-                const approveText = `✨ [RENTAL APPROVED] I have approved your rental dates for "${rental.garment.title}"! You can now proceed to payment in the lease dossier.`;
+                const approveText = `✨ [RENTAL APPROVED] I have approved your rental dates for "${rental.garment.title}"! You can now proceed to payment in the lease dossier.\n• Lease ID: ${rental.id}`;
                 const chatMsg = await db.directMessage.create({
                     data: {
                         conversationId: conv.id,
@@ -779,6 +820,7 @@ export async function approveRentalRequest(req: Request, res: Response): Promise
                     data: {
                         lastMessageText: approveText.slice(0, 100),
                         lastMessageAt: new Date(),
+                        rentalId: rental.id,
                     },
                 });
                 emitToConversation(conv.id, 'direct_message', chatMsg);

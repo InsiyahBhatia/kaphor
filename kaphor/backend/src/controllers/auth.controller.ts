@@ -11,18 +11,16 @@ import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid credentials';
 const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
 
-function userPayload(user: {
-  id: string;
-  email: string;
-  username: string;
-  displayName: string;
-  role: string;
-  onboardingDone?: boolean;
-}) {
+function userPayload(user: any) {
+  let cleanUsername = user.username;
+  if (!cleanUsername || /^user_[a-f0-9]{6,12}$/i.test(cleanUsername)) {
+    cleanUsername = (user.email ? user.email.split('@')[0] : user.displayName || 'member')
+      .toLowerCase().replace(/[^a-z0-9_]/g, '');
+  }
   return {
     id: user.id,
     email: user.email,
-    username: user.username,
+    username: cleanUsername,
     displayName: user.displayName,
     avatar: (user as any).avatar ?? null,
     bio: (user as any).bio ?? null,

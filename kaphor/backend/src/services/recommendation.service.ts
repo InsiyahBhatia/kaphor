@@ -74,7 +74,7 @@ export const RecommendationService = {
     const candidates = await db.garment.findMany({
       where: {
         isActive: true,
-        lifecycleState: 'LISTED',
+        lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
         sellerId: { not: userId },
       },
       take: 120,
@@ -90,6 +90,7 @@ export const RecommendationService = {
         listingType: true,
         images: true,
         garmentVector: true,
+        cooldownEnd: true,
         seller: {
           select: {
             id: true,
@@ -103,6 +104,7 @@ export const RecommendationService = {
 
     const totalCatInteractions = Object.values(profile.topCategories || {}).reduce((a, b) => a + b, 0) || 1;
     const totalBrandInteractions = Object.values(profile.topBrands || {}).reduce((a, b) => a + b, 0) || 1;
+    const now = new Date();
 
     const scored = candidates.map((g: any) => {
       // 1. Vector Similarity (0.0 to 1.0)
@@ -130,13 +132,17 @@ export const RecommendationService = {
       // 5. Preferred Size Match
       const sizeScore = profile.preferredSizes?.includes(g.size) ? 1.0 : 0.7;
 
+      // Cooldown penalty: keep cooldown items browsable but placed at the very end
+      const inCooldown = Boolean(g.cooldownEnd && new Date(g.cooldownEnd) > now);
+      const cooldownMultiplier = inCooldown ? 0.05 : 1.0;
+
       // Weighted Composite Score
       const composite =
-        vecSim * 0.40 +
+        (vecSim * 0.40 +
         catScore * 0.25 +
         brandScore * 0.15 +
         priceScore * 0.10 +
-        sizeScore * 0.10;
+        sizeScore * 0.10) * cooldownMultiplier;
 
       const fitScore = Math.round(Math.min(99, Math.max(65, composite * 100)));
 
@@ -326,10 +332,10 @@ export const RecommendationService = {
       where: {
         listingType: 'RENTAL',
         isActive: true,
-        lifecycleState: 'LISTED',
+        lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
         sellerId: { not: userId },
       },
-      take: 40,
+      take: 60,
       select: {
         id: true,
         title: true,
@@ -344,15 +350,23 @@ export const RecommendationService = {
         listingType: true,
         images: true,
         garmentVector: true,
+        cooldownEnd: true,
         seller: {
           select: { id: true, username: true, avatar: true },
         },
       },
     });
 
+    const now = new Date();
     const scored = rentals.map((r: any) => {
-      const vecSim = r.garmentVector?.length === 20 ? cosineSimilarity(userVector, r.garmentVector) : 0.7;
-      const fitScore = Math.round(Math.min(99, Math.max(68, vecSim * 100)));
+      const vecSim =
+        userVector && r.garmentVector && r.garmentVector.length === 20
+          ? Math.max(0, cosineSimilarity(userVector, r.garmentVector))
+          : 0.65;
+      const dayRate = r.rentalPriceDay || (r.price ? r.price * 0.08 : 300);
+      const inCooldown = Boolean(r.cooldownEnd && new Date(r.cooldownEnd) > now);
+      const score = (vecSim * 0.7 + (1 / Math.log10(dayRate + 10)) * 0.3) * (inCooldown ? 0.05 : 1.0);
+      const fitScore = Math.round(Math.min(99, Math.max(68, score * 100)));
       const effectivePrice = r.price && r.price > 0 ? r.price : getEstimatedGarmentValue(r.category, r.brand);
       const effectiveRentalDay = r.rentalPriceDay && r.rentalPriceDay > 0
         ? r.rentalPriceDay

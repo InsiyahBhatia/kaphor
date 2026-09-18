@@ -1834,3 +1834,17 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
   }
 }
 
+/**
+ * Discovers 2-way and 3-way circular barter trading rings across active listings and user wishlists.
+ */
+export async function getCircularBarterRingsHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const { findCircularBarterRings } = await import('../services/barterRing.service');
+    const rings = await findCircularBarterRings(req.user?.id);
+    res.json({ data: rings });
+  } catch (error) {
+    logger.error('getCircularBarterRingsHandler failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to discover circular barter rings' });
+  }
+}
+

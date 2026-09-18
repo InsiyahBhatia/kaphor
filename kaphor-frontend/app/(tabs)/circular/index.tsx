@@ -1,7 +1,7 @@
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
 import { impactService } from '../../../src/services/impactService';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
@@ -23,160 +23,228 @@ export default function CircularScreen() {
   const waterSaved = impactData?.impactRecord?.waterSavedL ?? 3040;
   const itemsCirculated = impactData?.impactRecord?.itemsCirculated ?? 12;
 
-  const circularActions = [
-    {
-      id: 'sell',
-      title: 'SELL ITEM',
-      subtitle: 'List pre-loved archive',
-      icon: 'pricetag-sharp' as const,
-      color: colors.ink,
-      onPress: () => router.push('/(tabs)/shop/sell'),
-    },
-    {
-      id: 'rent',
-      title: 'RENT CLOTHES',
-      subtitle: 'Occasion & couture lease',
-      icon: 'time-sharp' as const,
-      color: '#6B46C1',
-      onPress: () => router.push('/(tabs)/rental'),
-    },
-    {
-      id: 'swap',
-      title: 'SWAP ITEMS',
-      subtitle: 'Cashless trade vault',
-      icon: 'swap-horizontal-sharp' as const,
-      color: '#8C6D3B',
-      onPress: () => router.push('/(tabs)/swap'),
-    },
-    {
-      id: 'repair',
-      title: 'REPAIR & REFRESH',
-      subtitle: 'Atelier restoration & care',
-      icon: 'color-palette-sharp' as const,
-      color: colors.terracotta || '#C85A32',
-      onPress: () => router.push('/(tabs)/studio/repair-refresh'),
-    },
-    {
-      id: 'condition',
-      title: 'CONDITION SCAN',
-      subtitle: 'AI fiber wear check',
-      icon: 'scan-sharp' as const,
-      color: '#2563EB',
-      onPress: () => router.push('/(tabs)/circular/condition-check'),
-    },
-    {
-      id: 'recycle',
-      title: 'RECYCLING HUBS',
-      subtitle: 'Zero-landfill centers & pickup',
-      icon: 'leaf-sharp' as const,
-      color: colors.forest || '#1E3B2F',
-      badge: 'HUBS',
-      onPress: () => setShowRecyclingModal(true),
-    },
-    {
-      id: 'ai',
-      title: 'AI STYLIST & CARE',
-      subtitle: 'Instant curation chat',
-      icon: 'sparkles-sharp' as const,
-      color: '#4F46E5',
-      onPress: () => router.push('/(tabs)/studio/chat'),
-    },
-    {
-      id: 'impact',
-      title: 'ECO DOSSIER',
-      subtitle: 'Sustainability metrics',
-      icon: 'analytics-sharp' as const,
-      color: '#059669',
-      onPress: () => router.push('/(tabs)/impact'),
-    },
-  ];
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.cream }}>
       <Header title="CIRCULAR HUB" />
 
-      <View style={styles.container}>
-        {/* Compact Eco Impact Strip */}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── SECTION 1: AI & INTELLIGENCE (Orange / Terracotta) ── */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionDotTerracotta} />
+          <Text style={styles.sectionTitleTerracotta}>AI & INTELLIGENCE</Text>
+        </View>
+
+        {/* Hero Card: KAPHOR AI ADVISOR */}
         <TouchableOpacity
-          style={styles.impactStrip}
-          onPress={() => router.push('/(tabs)/impact')}
+          style={styles.heroAiCard}
+          onPress={() => router.push('/(tabs)/studio/chat')}
           activeOpacity={0.88}
         >
-          <View style={styles.impactStripCol}>
-            <Text style={styles.impactStripNum}>
-              {typeof carbonSaved === 'number' ? carbonSaved.toFixed(1) : carbonSaved}
-              <Text style={styles.impactStripUnit}> kg</Text>
-            </Text>
-            <Text style={styles.impactStripLbl}>CO₂ SAVED</Text>
+          <View style={styles.heroAiTopRow}>
+            <View style={styles.heroAiBadge}>
+              <Ionicons name="sparkles" size={12} color={colors.white} />
+              <Text style={styles.heroAiBadgeText}>FEATURED AI TOOL</Text>
+            </View>
+            <View style={styles.heroGoldChip}>
+              <Text style={styles.heroGoldChipText}>CURATED MATCH</Text>
+            </View>
           </View>
-          <View style={styles.impactDivider} />
-          <View style={styles.impactStripCol}>
-            <Text style={styles.impactStripNum}>
-              {typeof waterSaved === 'number' ? waterSaved.toLocaleString() : waterSaved}
-              <Text style={styles.impactStripUnit}> L</Text>
-            </Text>
-            <Text style={styles.impactStripLbl}>WATER SAVED</Text>
+
+          <View style={styles.heroAiMain}>
+            <View style={styles.heroAiIconBox}>
+              <Ionicons name="sparkles-sharp" size={26} color={colors.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroAiTitle}>KAPHOR AI ADVISOR</Text>
+              <Text style={styles.heroAiDesc}>
+                Instant style curation, fabric care guidelines & real-time garment intelligence.
+              </Text>
+            </View>
           </View>
-          <View style={styles.impactDivider} />
-          <View style={styles.impactStripCol}>
-            <Text style={styles.impactStripNum}>
-              {itemsCirculated}
-              <Text style={styles.impactStripUnit}> pcs</Text>
-            </Text>
-            <Text style={styles.impactStripLbl}>CIRCULATED</Text>
-          </View>
-          <View style={styles.impactStripLink}>
+
+          <View style={styles.heroAiCtaBtn}>
+            <Text style={styles.heroAiCtaText}>LAUNCH AI STYLIST & CARE CHAT</Text>
             <Ionicons name="arrow-forward" size={14} color={colors.ink} />
           </View>
         </TouchableOpacity>
 
-        {/* 2-Column Balanced Compact Grid - All in 1 screen */}
-        <View style={styles.gridContainer}>
-          {circularActions.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.actionCard}
-              onPress={item.onPress}
-              activeOpacity={0.85}
-            >
-              <View style={[styles.actionIconBox, { backgroundColor: item.color }]}>
-                <Ionicons name={item.icon} size={18} color={colors.white} />
+        {/* Secondary AI Tool: CONDITION SCAN */}
+        <TouchableOpacity
+          style={styles.aiSubCard}
+          onPress={() => router.push('/(tabs)/circular/condition-check')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.aiSubIconBox}>
+            <Ionicons name="scan-sharp" size={20} color={colors.white} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.aiSubTitle}>CONDITION SCAN</Text>
+              <View style={styles.aiGoldChip}>
+                <Text style={styles.aiGoldChipText}>AI EDIT</Text>
               </View>
-              <View style={styles.actionTextBox}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Text style={styles.actionTitle} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  {item.badge ? (
-                    <View style={styles.actionMiniBadge}>
-                      <Text style={styles.actionMiniBadgeText}>{item.badge}</Text>
-                    </View>
-                  ) : null}
-                </View>
-                <Text style={styles.actionSubtitle} numberOfLines={1}>
-                  {item.subtitle}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={14} color="rgba(0,0,0,0.3)" />
-            </TouchableOpacity>
-          ))}
+            </View>
+            <Text style={styles.aiSubDesc}>Scan item state, fiber degradation & automated resale routing</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.ink} />
+        </TouchableOpacity>
+
+        {/* ── SECTION 2: SUSTAINABILITY & IMPACT (Green / Emerald) ── */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionDotEmerald} />
+          <Text style={styles.sectionTitleEmerald}>SUSTAINABILITY & IMPACT</Text>
         </View>
 
-        {/* Direct Recycling Centers Info Link */}
+        {/* Featured Live Stat Card: MY ECO RECORDS */}
         <TouchableOpacity
-          style={styles.recyclingBanner}
-          onPress={() => setShowRecyclingModal(true)}
+          style={styles.impactCard}
+          onPress={() => router.push('/(tabs)/impact')}
           activeOpacity={0.88}
         >
-          <View style={styles.recyclingBannerLeft}>
-            <Ionicons name="location-sharp" size={14} color={colors.forest || '#1E3B2F'} />
-            <Text style={styles.recyclingBannerText}>
-              Find 15+ Verified Textile Recycling Hubs Across India
-            </Text>
+          <View style={styles.impactHeader}>
+            <View style={styles.impactHeaderLeft}>
+              <View style={styles.impactIconBox}>
+                <Ionicons name="leaf" size={16} color={colors.white} />
+              </View>
+              <View>
+                <Text style={styles.impactTitle}>MY ECO RECORDS</Text>
+                <Text style={styles.impactSubtitle}>LIVE CIRCULAR FOOTPRINT</Text>
+              </View>
+            </View>
+            <View style={styles.impactCtaChip}>
+              <Text style={styles.impactCtaText}>DOSSIER →</Text>
+            </View>
           </View>
-          <Text style={styles.recyclingBannerAction}>VIEW MAP →</Text>
+
+          {/* Live Stats Row */}
+          <View style={styles.statsGrid}>
+            <View style={styles.statBox}>
+              <Text style={styles.statNum}>
+                {typeof carbonSaved === 'number' ? carbonSaved.toFixed(1) : carbonSaved}
+                <Text style={styles.statUnit}> KG</Text>
+              </Text>
+              <Text style={styles.statLabel}>CO₂ SAVED</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statBox}>
+              <Text style={styles.statNum}>
+                {typeof waterSaved === 'number' ? waterSaved.toLocaleString() : waterSaved}
+                <Text style={styles.statUnit}> L</Text>
+              </Text>
+              <Text style={styles.statLabel}>WATER SAVED</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statBox}>
+              <Text style={styles.statNum}>
+                {itemsCirculated}
+                <Text style={styles.statUnit}> PCS</Text>
+              </Text>
+              <Text style={styles.statLabel}>CIRCULATED</Text>
+            </View>
+          </View>
         </TouchableOpacity>
-      </View>
+
+        {/* ── SECTION 3: CIRCULAR MARKETPLACE (Compact Action Cards) ── */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionDotInk} />
+          <Text style={styles.sectionTitleInk}>CIRCULAR MARKETPLACE</Text>
+        </View>
+
+        <View style={styles.marketplaceGrid}>
+          {/* Sell */}
+          <TouchableOpacity
+            style={styles.marketCard}
+            onPress={() => router.push('/(tabs)/shop/sell')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.marketIconBox}>
+              <Ionicons name="pricetag-sharp" size={18} color={colors.ink} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.marketTitle}>SELL ITEM</Text>
+              <Text style={styles.marketDesc}>List pre-loved designer pieces for direct P2P sale</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.ink} />
+          </TouchableOpacity>
+
+          {/* Rental */}
+          <TouchableOpacity
+            style={styles.marketCard}
+            onPress={() => router.push('/(tabs)/rental')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.marketIconBox}>
+              <Ionicons name="time-sharp" size={18} color={colors.ink} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.marketTitle}>RENT CLOTHES</Text>
+              <Text style={styles.marketDesc}>Borrow couture & occasion wear for short-term leases</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.ink} />
+          </TouchableOpacity>
+
+          {/* Swap */}
+          <TouchableOpacity
+            style={styles.marketCard}
+            onPress={() => router.push('/(tabs)/swap')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.marketIconBox}>
+              <Ionicons name="swap-horizontal-sharp" size={18} color={colors.ink} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.marketTitle}>SWAP ITEMS</Text>
+              <Text style={styles.marketDesc}>Trade fashion items cashless with deposit protection</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.ink} />
+          </TouchableOpacity>
+
+          {/* Repair & Refresh */}
+          <TouchableOpacity
+            style={styles.marketCard}
+            onPress={() => router.push('/(tabs)/studio/repair-refresh')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.marketIconBox}>
+              <Ionicons name="color-palette-sharp" size={18} color={colors.ink} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.marketTitle}>REPAIR & REFRESH</Text>
+              <Text style={styles.marketDesc}>Custom upcycling, tailoring & garment restoration</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.ink} />
+          </TouchableOpacity>
+
+          {/* Recycling Hubs */}
+          <TouchableOpacity
+            style={[styles.marketCard, styles.marketCardEmerald]}
+            onPress={() => setShowRecyclingModal(true)}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.marketIconBox, styles.marketIconBoxEmerald]}>
+              <Ionicons name="leaf" size={18} color={colors.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.marketTitle, { color: colors.emeraldDark }]}>RECYCLING HUBS</Text>
+                <View style={styles.verifiedChip}>
+                  <Text style={styles.verifiedChipText}>VERIFIED</Text>
+                </View>
+              </View>
+              <Text style={styles.marketDesc}>Zero-landfill textile drop-off & recovery facilities</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.emeraldDark} />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
 
       {/* Full Recycling Centers Directory Modal */}
       <RecyclingHubsModal
@@ -192,149 +260,371 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.cream,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 8,
-    justifyContent: 'space-between',
   },
-  // Compact Eco Impact Strip
-  impactStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginBottom: 8,
-    shadowColor: colors.ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 0,
-    elevation: 2,
-  },
-  impactStripCol: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  impactStripNum: {
-    fontFamily: typography.mono,
-    fontSize: 14,
-    fontWeight: '900',
-    color: colors.ink,
-  },
-  impactStripUnit: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  impactStripLbl: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-    marginTop: 1,
-  },
-  impactDivider: {
-    width: 1,
-    height: 22,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-  },
-  impactStripLink: {
-    paddingLeft: 4,
-    paddingRight: 2,
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 90,
   },
 
-  // 2-Column Grid
-  gridContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    alignContent: 'stretch',
-  },
-  actionCard: {
-    width: '48.5%',
-    flexGrow: 1,
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+  // ── Section Headers ───────────────────────────────────────────
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginTop: 14,
+    marginBottom: 10,
+  },
+  sectionDotTerracotta: {
+    width: 8,
+    height: 8,
+    backgroundColor: colors.terracotta,
+    borderRadius: 1,
+  },
+  sectionTitleTerracotta: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.terracottaDark,
+    letterSpacing: 1.5,
+  },
+  sectionDotEmerald: {
+    width: 8,
+    height: 8,
+    backgroundColor: colors.emerald,
+    borderRadius: 1,
+  },
+  sectionTitleEmerald: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.emeraldDark,
+    letterSpacing: 1.5,
+  },
+  sectionDotInk: {
+    width: 8,
+    height: 8,
+    backgroundColor: colors.ink,
+    borderRadius: 1,
+  },
+  sectionTitleInk: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.ink,
+    letterSpacing: 1.5,
+  },
+
+  // ── Hero AI Advisor (Orange / Terracotta Accent) ───────────────
+  heroAiCard: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  heroAiTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  heroAiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.terracotta,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 2,
+  },
+  heroAiBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.white,
+    letterSpacing: 0.8,
+  },
+  heroGoldChip: {
+    backgroundColor: colors.gold,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 2,
+  },
+  heroGoldChipText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.goldDark,
+    letterSpacing: 0.8,
+  },
+  heroAiMain: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  },
+  heroAiIconBox: {
+    width: 44,
+    height: 44,
+    backgroundColor: colors.terracotta,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+  },
+  heroAiTitle: {
+    fontFamily: typography.headings,
+    fontSize: 22,
+    color: colors.ink,
+    letterSpacing: 1.2,
+  },
+  heroAiDesc: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    color: colors.textPrimary,
+    marginTop: 2,
+    lineHeight: 14,
+  },
+  heroAiCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.cream,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+  },
+  heroAiCtaText: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: colors.ink,
+    letterSpacing: 0.8,
+  },
+
+  // ── Secondary AI Card (Condition Scan) ────────────────────────
+  aiSubCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    padding: 11,
+    gap: 12,
+    marginBottom: 6,
     shadowColor: colors.ink,
     shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 0,
     elevation: 2,
   },
-  actionIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
+  aiSubIconBox: {
+    width: 38,
+    height: 38,
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  actionTextBox: {
-    flex: 1,
-  },
-  actionTitle: {
+  aiSubTitle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.ink,
-    letterSpacing: 0.4,
+    letterSpacing: 0.8,
   },
-  actionSubtitle: {
+  aiGoldChip: {
+    backgroundColor: colors.gold,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  aiGoldChipText: {
+    fontFamily: typography.mono,
+    fontSize: 7.5,
+    fontWeight: '900',
+    color: colors.goldDark,
+  },
+  aiSubDesc: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  // ── Emerald Impact Card (Green / Sustainability) ─────────────
+  impactCard: {
+    backgroundColor: colors.emeraldLight,
+    borderWidth: 2,
+    borderColor: colors.emerald,
+    padding: 14,
+    marginBottom: 6,
+    shadowColor: colors.emeraldDark,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  impactHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  impactHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  impactIconBox: {
+    width: 32,
+    height: 32,
+    backgroundColor: colors.emerald,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 2,
+  },
+  impactTitle: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '900',
+    color: colors.emeraldDark,
+    letterSpacing: 0.8,
+  },
+  impactSubtitle: {
     fontFamily: typography.mono,
     fontSize: 8,
-    color: colors.textMuted,
+    color: colors.emeraldDark,
+    opacity: 0.8,
+  },
+  impactCtaChip: {
+    backgroundColor: colors.white,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderWidth: 1.5,
+    borderColor: colors.emeraldDark,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  impactCtaText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.emeraldDark,
+    letterSpacing: 0.8,
+  },
+
+  // Stats Grid
+  statsGrid: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.emeraldDark,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNum: {
+    fontFamily: typography.headings,
+    fontSize: 22,
+    color: colors.emeraldDark,
+  },
+  statUnit: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.emeraldDark,
+  },
+  statLabel: {
+    fontFamily: typography.mono,
+    fontSize: 7.5,
+    fontWeight: '900',
+    color: colors.emeraldDark,
     marginTop: 1,
+    letterSpacing: 0.4,
   },
-  actionMiniBadge: {
-    backgroundColor: '#DEF7EC',
-    borderRadius: 3,
-    paddingHorizontal: 4,
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: colors.emeraldDark,
+    opacity: 0.25,
+  },
+
+  // ── Circular Marketplace (Compact Cards) ────────────────────
+  marketplaceGrid: {
+    gap: 8,
+    marginBottom: 40,
+  },
+  marketCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 12,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  marketCardEmerald: {
+    borderColor: colors.emerald,
+    backgroundColor: '#F7FCFA',
+  },
+  marketIconBox: {
+    width: 36,
+    height: 36,
+    backgroundColor: colors.bgMuted,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  marketIconBoxEmerald: {
+    backgroundColor: colors.emerald,
+    borderColor: colors.emeraldDark,
+  },
+  marketTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.ink,
+    letterSpacing: 0.8,
+  },
+  marketDesc: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    marginTop: 2,
+    lineHeight: 13,
+  },
+  verifiedChip: {
+    backgroundColor: colors.emeraldLight,
+    borderWidth: 1,
+    borderColor: colors.emerald,
+    paddingHorizontal: 5,
     paddingVertical: 1,
+    borderRadius: 2,
   },
-  actionMiniBadgeText: {
+  verifiedChipText: {
     fontFamily: typography.mono,
     fontSize: 7,
     fontWeight: '900',
-    color: '#03543F',
-  },
-
-  // Bottom Recycling Banner
-  recyclingBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F3F4F1',
-    borderWidth: 1,
-    borderColor: colors.forest || '#1E3B2F',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginTop: 8,
-    marginBottom: 80,
-  },
-  recyclingBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
-  },
-  recyclingBannerText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    color: colors.ink,
-    fontWeight: '700',
-  },
-  recyclingBannerAction: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
-    color: colors.forest || '#1E3B2F',
+    color: colors.emeraldDark,
+    letterSpacing: 0.5,
   },
 });

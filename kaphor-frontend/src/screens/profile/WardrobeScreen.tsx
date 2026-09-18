@@ -36,9 +36,10 @@ interface StateConfig {
 
 const STATE_CONFIG: Record<string, StateConfig> = {
   OWNERSHIP: { label: 'OWNED', color: colors.forest, icon: 'checkmark-circle', description: 'In your possession' },
+  RENTED: { label: 'ON RENTAL', color: '#6B46C1', icon: 'time', description: 'Active rental in your wardrobe' },
   SELL_INTENT: { label: 'SELL READY', color: colors.orange, icon: 'pricetag', description: 'Ready to be relisted' },
   DECLINE: { label: 'DECLINED', color: colors.copper, icon: 'trending-down', description: 'Showing low interest' },
-  CIRCULATION: { label: 'COOLDOWN', color: colors.navy, icon: 'refresh', description: 'In circulation cooldown' },
+  CIRCULATION: { label: 'CIRCULATING', color: colors.navy, icon: 'refresh', description: 'Active circular rotation' },
   REUSE_UPCYCLE_RECYCLE: { label: 'END OF LIFE', color: colors.textMuted, icon: 'leaf', description: 'Routed to circular end' },
   PURCHASE_INTENT: { label: 'IN TRANSIT', color: colors.orange, icon: 'cart', description: 'Checkout in progress' },
   LISTED: { label: 'LISTED', color: colors.forest, icon: 'checkmark', description: 'Active on marketplace' },
@@ -56,7 +57,7 @@ interface WardrobeItemProps {
 }
 
 const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
-  const state = item.lifecycleState || 'OWNERSHIP';
+  const state = item.isRented ? 'RENTED' : (item.lifecycleState || 'OWNERSHIP');
   const config = getStateConfig(state);
   const imageUrl = item.images?.[0] || '';
 
@@ -115,13 +116,22 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
             <Text style={[styles.actionBtnText, { color: colors.forest }]}>RELIST NOW</Text>
           </TouchableOpacity>
         )}
+        {state === 'RENTED' && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { borderColor: '#6B46C1', flex: 1, backgroundColor: 'rgba(107,70,193,0.06)' }]}
+            onPress={() => onAction('VIEW_RENTAL', item)}
+          >
+            <Ionicons name="time" size={13} color="#6B46C1" />
+            <Text style={[styles.actionBtnText, { color: '#6B46C1' }]}>VIEW RENTAL</Text>
+          </TouchableOpacity>
+        )}
         {state === 'CIRCULATION' && (
           <TouchableOpacity
             style={[styles.actionBtn, { borderColor: colors.navy, flex: 1, backgroundColor: 'rgba(30,58,138,0.06)' }]}
-            onPress={() => onAction('RECYCLE_HUBS', item)}
+            onPress={() => onAction('VIEW', item)}
           >
-            <Ionicons name="leaf" size={13} color={colors.navy} />
-            <Text style={[styles.actionBtnText, { color: colors.navy }]}>END OF LIFE ♻️</Text>
+            <Ionicons name="eye" size={13} color={colors.navy} />
+            <Text style={[styles.actionBtnText, { color: colors.navy }]}>VIEW ITEM</Text>
           </TouchableOpacity>
         )}
         {state === 'REUSE_UPCYCLE_RECYCLE' && (
@@ -130,7 +140,7 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
             onPress={() => onAction('RECYCLE_HUBS', item)}
           >
             <Ionicons name="location" size={13} color={colors.forest} />
-            <Text style={[styles.actionBtnText, { color: colors.forest }]}>RECYCLING HUBS 📍</Text>
+            <Text style={[styles.actionBtnText, { color: colors.forest }]}>RECYCLING HUBS</Text>
           </TouchableOpacity>
         )}
         {state === 'PURCHASE_INTENT' && (
@@ -156,7 +166,7 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
               onPress={() => onAction('RECYCLE_HUBS', item)}
             >
               <Ionicons name="leaf" size={13} color={colors.navy} />
-              <Text style={[styles.actionBtnText, { color: colors.navy }]}>RECYCLE ♻️</Text>
+              <Text style={[styles.actionBtnText, { color: colors.navy }]}>RECYCLE</Text>
             </TouchableOpacity>
           </>
         )}
@@ -182,10 +192,11 @@ function WardrobeStats({
   garments: any[];
   onOpenRecyclingModal: () => void;
 }) {
-  const owned = garments.filter(g => g.lifecycleState === 'OWNERSHIP').length;
+  const owned = garments.filter(g => (g.lifecycleState === 'OWNERSHIP' || !g.lifecycleState) && !g.isRented).length;
+  const rented = garments.filter(g => g.lifecycleState === 'RENTED' || g.isRented).length;
   const sellReady = garments.filter(g => g.lifecycleState === 'SELL_INTENT').length;
   const inCirculation = garments.filter(g =>
-    ['DECLINE', 'CIRCULATION', 'REUSE_UPCYCLE_RECYCLE'].includes(g.lifecycleState)
+    ['DECLINE', 'CIRCULATION'].includes(g.lifecycleState)
   ).length;
 
   return (
@@ -195,6 +206,12 @@ function WardrobeStats({
           <Text style={styles.statValue}>{owned}</Text>
           <Text style={styles.statLabel}>IN CLOSET</Text>
         </View>
+        {rented > 0 ? (
+          <View style={styles.statBox}>
+            <Text style={[styles.statValue, { color: '#6B46C1' }]}>{rented}</Text>
+            <Text style={styles.statLabel}>ON RENTAL</Text>
+          </View>
+        ) : null}
         <View style={styles.statBox}>
           <Text style={[styles.statValue, { color: colors.orange }]}>{sellReady}</Text>
           <Text style={styles.statLabel}>SELL READY</Text>
@@ -308,6 +325,11 @@ export function WardrobeScreen() {
     try {
       switch (action) {
         case 'RECYCLE_HUBS':
+        case 'CIRCULAR_END':
+          if (item?.isRented || item?.lifecycleState === 'RENTED') {
+            Alert.alert('Rental Garment', 'This piece is an active rental on lease and cannot be routed to recycling.');
+            return;
+          }
           setRecyclingGarment(item);
           setShowRecyclingModal(true);
           break;
@@ -345,9 +367,12 @@ export function WardrobeScreen() {
           loadWardrobe();
           break;
 
-        case 'CIRCULAR_END':
-          setRecyclingGarment(item);
-          setShowRecyclingModal(true);
+        case 'VIEW_RENTAL':
+          if (item?.rentalId) {
+            router.push('/(tabs)/rental?tab=my' as any);
+          } else {
+            router.push(`/(tabs)/rental/${garmentId}` as any);
+          }
           break;
 
         case 'VIEW':
@@ -407,11 +432,7 @@ export function WardrobeScreen() {
           <WardrobeStats
             garments={wardrobe}
             onOpenRecyclingModal={() => {
-              const candidate =
-                wardrobe.find((g) => g.lifecycleState === 'REUSE_UPCYCLE_RECYCLE' || g.lifecycleState === 'CIRCULATION') ||
-                wardrobe[0] ||
-                null;
-              setRecyclingGarment(candidate);
+              setRecyclingGarment(null);
               setShowRecyclingModal(true);
             }}
           />

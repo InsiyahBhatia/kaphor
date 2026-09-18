@@ -176,17 +176,28 @@ const CATEGORY_MAP: Record<string, string[]> = {
   'Lehengas': ['lehenga', 'choli', 'ghagra'],
   'Kurtas': ['kurta', 'kurti', 'kurtis', 'anarkali', 'tunic'],
   'Suits': ['suit', 'salwar', 'churidar', 'pantsuit'],
-  'Dresses': ['dress', 'gown', 'mini dress', 'maxi', 'midi', 'cocktail'],
-  'Skirts': ['skirt'],
+  'Dresses': ['dress', 'gown', 'mini dress', 'maxi', 'midi', 'cocktail', 'sundress', 'slip dress'],
+  'Skirts': ['skirt', 'wrap skirt', 'pleated skirt'],
   'Blazers': ['blazer', 'tuxedo', 'suit jacket'],
   'Jackets': ['jacket', 'bomber', 'coat'],
-  'Tops': ['top', 'tops', 'crop top', 'blouse', 'shirt', 't-shirt'],
+  'Tops': ['top', 'tops', 'crop top', 'blouse', 'shirt', 't-shirt', 'peasant blouse', 'linen top'],
   'Sets': ['set', 'sets', 'co-ord', 'coord', 'matching set', 'two-piece'],
   'Heels': ['heel', 'heels', 'stiletto', 'pump'],
-  'Flats': ['flat', 'flats', 'loafer', 'mule', 'slides', 'juttis', 'shoe', 'shoes', 'footwear', 'sneakers'],
+  'Flats': ['flat', 'flats', 'loafer', 'mule', 'slides', 'juttis', 'shoe', 'shoes', 'footwear', 'sneakers', 'sandals'],
   'Bags': ['bag', 'bags', 'handbag', 'tote', 'crossbody', 'purse', 'clutch'],
   'Jewelry': ['jewelry', 'jewellery', 'necklace', 'earring', 'earrings', 'choker', 'bracelet'],
-  'Accessories': ['accessory', 'accessories', 'scarf', 'belt', 'watch', 'sunglasses'],
+  'Accessories': ['accessory', 'accessories', 'scarf', 'belt', 'watch', 'sunglasses', 'hat', 'shades'],
+};
+
+const THEME_EXPANSIONS: Record<string, string[]> = {
+  beach: ['dress', 'sandals', 'linen', 'swim', 'white', 'floral', 'skirt', 'breezy', 'hat', 'sunglasses', 'tote', 'slides', 'blouse'],
+  summer: ['dress', 'cotton', 'linen', 'shorts', 'skirt', 't-shirt', 'sandals', 'sunglasses', 'yellow', 'white', 'blouse'],
+  wedding: ['saree', 'lehenga', 'anarkali', 'silk', 'embroidery', 'gold', 'churidar', 'kurta', 'jewelry', 'choker', 'festive'],
+  party: ['cocktail', 'black', 'shimmer', 'sequin', 'heels', 'mini', 'blazer', 'crop top', 'silver', 'clutch'],
+  casual: ['jeans', 'cotton', 'denim', 't-shirt', 'sneakers', 'jacket', 'trousers', 'flat', 'top'],
+  brunch: ['dress', 'floral', 'pastel', 'linen', 'skirt', 'blouse', 'flats', 'tote', 'sandals'],
+  formal: ['blazer', 'trousers', 'suit', 'formal', 'shirt', 'watch', 'black', 'navy', 'loafers'],
+  winter: ['jacket', 'coat', 'sweater', 'wool', 'boots', 'scarf', 'trench'],
 };
 
 const STOP_WORDS = new Set([
@@ -247,25 +258,35 @@ export async function searchCatalog(params: {
       }
     }
 
-    // 2. Extract meaningful search tokens (excluding pure digits and price words)
+    // 2. Extract meaningful search tokens (including theme expansion tokens)
     const rawTokens = promptText
       .replace(/[^a-z0-9\s-]/g, ' ')
       .split(/\s+/)
       .filter(w => w.length >= 3 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
 
-    // 3. Tier 1: Query with detected categories and/or tokens
+    // Expand search terms if theme keywords are detected
+    const themeTerms: string[] = [];
+    for (const [theme, expTerms] of Object.entries(THEME_EXPANSIONS)) {
+      if (promptText.includes(theme)) {
+        themeTerms.push(...expTerms);
+      }
+    }
+
+    // 3. Tier 1: Query with detected categories, prompt tokens, and theme terms
     const tier1OrConditions: any[] = [];
     if (detectedCategories.length > 0) {
       tier1OrConditions.push({
         category: { in: detectedCategories, mode: 'insensitive' },
       });
     }
-    for (const token of rawTokens.slice(0, 4)) {
+    const combinedTokens = Array.from(new Set([...rawTokens.slice(0, 4), ...themeTerms.slice(0, 6)]));
+    for (const token of combinedTokens.slice(0, 8)) {
       tier1OrConditions.push(
         { title: { contains: token, mode: 'insensitive' } },
         { brand: { contains: token, mode: 'insensitive' } },
         { category: { contains: token, mode: 'insensitive' } },
-        { subCategory: { contains: token, mode: 'insensitive' } }
+        { subCategory: { contains: token, mode: 'insensitive' } },
+        { description: { contains: token, mode: 'insensitive' } }
       );
     }
 
@@ -343,14 +364,15 @@ export async function searchCatalog(params: {
       }
     }
 
-    // 7. Ultimate Fallback: If still 0 matches, pull any active listed garments
+    // 7. Ultimate Fallback: If still 0 matches, pull active listed garments with randomized sampling
     if (matchedGarmentMap.size === 0) {
       const ultimateItems = await db.garment.findMany({
         where: { isActive: true, lifecycleState: 'LISTED' },
-        orderBy: { popularityScore: 'desc' },
-        take: params.take || 6,
+        take: 20,
       });
-      for (const item of ultimateItems) {
+      // Shuffle to provide variety
+      const shuffled = ultimateItems.sort(() => 0.5 - Math.random());
+      for (const item of shuffled.slice(0, params.take || 6)) {
         matchedGarmentMap.set(item.id, item);
       }
     }
@@ -434,7 +456,8 @@ export async function evaluateSwapMatches(userId: string): Promise<{ matches: Ag
 
 async function fetchComplementaryPiece(
   slot: AgentOutfitItem['slot'],
-  excludeIds: Set<string>
+  excludeIds: Set<string>,
+  promptContext?: string
 ): Promise<AgentCard | null> {
   try {
     const whereClause: any = {
@@ -442,6 +465,10 @@ async function fetchComplementaryPiece(
       lifecycleState: 'LISTED',
       id: { notIn: Array.from(excludeIds) },
     };
+
+    const ctx = (promptContext || '').toLowerCase();
+    const isBeach = ctx.includes('beach') || ctx.includes('summer') || ctx.includes('resort') || ctx.includes('vacation');
+    const isWedding = ctx.includes('wedding') || ctx.includes('shaadi') || ctx.includes('sangeet') || ctx.includes('festive') || ctx.includes('reception');
 
     if (slot === 'TOP') {
       whereClause.OR = [
@@ -458,14 +485,23 @@ async function fetchComplementaryPiece(
         { title: { contains: 'pants', mode: 'insensitive' } },
       ];
     } else if (slot === 'ACCESSORY') {
-      whereClause.OR = [
-        { category: { in: ['Jewelry', 'Bags', 'Accessories', 'Watches', 'jewelry', 'bags', 'accessories'] } },
-        { listingType: 'ACCESSORY_SWAP' },
-        { title: { contains: 'cuff', mode: 'insensitive' } },
-        { title: { contains: 'earring', mode: 'insensitive' } },
-        { title: { contains: 'bag', mode: 'insensitive' } },
-        { title: { contains: 'necklace', mode: 'insensitive' } },
-      ];
+      whereClause.OR = isBeach
+        ? [
+            { category: { in: ['Accessories', 'Bags', 'Jewelry'] } },
+            { title: { contains: 'sunglass', mode: 'insensitive' } },
+            { title: { contains: 'tote', mode: 'insensitive' } },
+            { title: { contains: 'hat', mode: 'insensitive' } },
+            { title: { contains: 'shades', mode: 'insensitive' } },
+            { title: { contains: 'bracelet', mode: 'insensitive' } },
+          ]
+        : [
+            { category: { in: ['Jewelry', 'Bags', 'Accessories', 'Watches', 'jewelry', 'bags', 'accessories'] } },
+            { listingType: 'ACCESSORY_SWAP' },
+            { title: { contains: 'cuff', mode: 'insensitive' } },
+            { title: { contains: 'earring', mode: 'insensitive' } },
+            { title: { contains: 'bag', mode: 'insensitive' } },
+            { title: { contains: 'necklace', mode: 'insensitive' } },
+          ];
     } else if (slot === 'OUTERWEAR') {
       whereClause.OR = [
         { category: { in: ['Jackets', 'Coats', 'Blazers', 'Outerwear', 'jackets', 'blazers'] } },
@@ -473,27 +509,56 @@ async function fetchComplementaryPiece(
         { title: { contains: 'blazer', mode: 'insensitive' } },
       ];
     } else if (slot === 'FOOTWEAR') {
-      whereClause.OR = [
-        { category: { in: ['Footwear', 'Shoes', 'Heels', 'Flats', 'Boots', 'footwear', 'shoes'] } },
-        { title: { contains: 'shoes', mode: 'insensitive' } },
-        { title: { contains: 'boots', mode: 'insensitive' } },
-        { title: { contains: 'heels', mode: 'insensitive' } },
-      ];
+      whereClause.OR = isBeach
+        ? [
+            { title: { contains: 'sandals', mode: 'insensitive' } },
+            { title: { contains: 'slides', mode: 'insensitive' } },
+            { title: { contains: 'flats', mode: 'insensitive' } },
+            { category: { in: ['Flats', 'Footwear'] } },
+          ]
+        : [
+            { category: { in: ['Footwear', 'Shoes', 'Heels', 'Flats', 'Boots', 'footwear', 'shoes'] } },
+            { title: { contains: 'shoes', mode: 'insensitive' } },
+            { title: { contains: 'boots', mode: 'insensitive' } },
+            { title: { contains: 'heels', mode: 'insensitive' } },
+          ];
     } else if (slot === 'ACCENT') {
-      whereClause.OR = [
-        { category: { in: ['Dresses', 'Co-ords', 'Sarees', 'Sets', 'dresses'] } },
-        { title: { contains: 'dress', mode: 'insensitive' } },
-        { title: { contains: 'co-ord', mode: 'insensitive' } },
-        { title: { contains: 'set', mode: 'insensitive' } },
-      ];
+      if (isBeach) {
+        whereClause.OR = [
+          { category: { in: ['Dresses', 'Co-ords', 'Sets', 'Skirts'] } },
+          { title: { contains: 'dress', mode: 'insensitive' } },
+          { title: { contains: 'sundress', mode: 'insensitive' } },
+          { title: { contains: 'linen', mode: 'insensitive' } },
+        ];
+        whereClause.NOT = [
+          { title: { contains: 'saree', mode: 'insensitive' } },
+          { title: { contains: 'lehenga', mode: 'insensitive' } },
+        ];
+      } else if (isWedding) {
+        whereClause.OR = [
+          { category: { in: ['Sarees', 'Lehengas', 'Kurtas', 'Indo-Western'] } },
+          { title: { contains: 'saree', mode: 'insensitive' } },
+          { title: { contains: 'lehenga', mode: 'insensitive' } },
+          { title: { contains: 'anarkali', mode: 'insensitive' } },
+        ];
+      } else {
+        whereClause.OR = [
+          { category: { in: ['Dresses', 'Co-ords', 'Sarees', 'Sets', 'dresses'] } },
+          { title: { contains: 'dress', mode: 'insensitive' } },
+          { title: { contains: 'co-ord', mode: 'insensitive' } },
+          { title: { contains: 'set', mode: 'insensitive' } },
+        ];
+      }
     }
 
-    const piece = await db.garment.findFirst({
+    const candidates = await db.garment.findMany({
       where: whereClause,
-      orderBy: { popularityScore: 'desc' },
+      take: 8,
     });
 
-    if (piece) {
+    if (candidates.length > 0) {
+      const randomIndex = Math.floor(Math.random() * candidates.length);
+      const piece = candidates[randomIndex];
       return await resolveGarmentCard(piece, 'CATALOG');
     }
     return null;
@@ -507,7 +572,8 @@ async function fetchComplementaryPiece(
 export async function createOutfitLook(
   wardrobeCards: AgentCard[],
   catalogCards: AgentCard[],
-  occasion: string = 'Recommended Ensemble'
+  occasion: string = 'Recommended Ensemble',
+  promptContext?: string
 ): Promise<AgentOutfitLook | undefined> {
   const useWardrobe = wardrobeCards.length > 0;
   const allCards = useWardrobe ? [...wardrobeCards, ...catalogCards] : [...catalogCards];
@@ -564,12 +630,12 @@ export async function createOutfitLook(
     }
   }
 
-  // 2. If slots are still missing, fetch complementary pieces from the catalog so every piece is distinct
+  // 2. If slots are still missing, fetch complementary pieces from the catalog matching context
   for (const slot of targetSlots) {
     if (items.length >= 3) break;
     if (usedSlots.has(slot)) continue;
 
-    const complementary = await fetchComplementaryPiece(slot, usedIds);
+    const complementary = await fetchComplementaryPiece(slot, usedIds, promptContext);
     if (complementary) {
       usedIds.add(complementary.id);
       usedSlots.add(slot);
@@ -685,11 +751,24 @@ export async function runFashionAgent(params: {
 
   // Tool Invocation 4: Synthesize Outfit Look (if outfit requested or general styling inquiry)
   if (catalogData.cards.length > 0) {
-    outfitLook = await createOutfitLook(wantsWardrobe ? wardrobeData.cards : [], catalogData.cards, 'Recommended Ensemble');
+    const occasionTitle = prompt.includes('beach') ? 'Beach Day Look'
+      : prompt.includes('wedding') ? 'Wedding & Festive Ensemble'
+      : prompt.includes('party') ? 'Evening Party Look'
+      : prompt.includes('brunch') ? 'Weekend Brunch Ensemble'
+      : prompt.includes('casual') ? 'Casual Street Ensemble'
+      : prompt.includes('formal') ? 'Sophisticated Formal Look'
+      : 'Curated Occasion Ensemble';
+
+    outfitLook = await createOutfitLook(
+      wantsWardrobe ? wardrobeData.cards : [],
+      catalogData.cards,
+      occasionTitle,
+      prompt
+    );
     if (outfitLook) {
       actionsExecuted.push({
         tool: 'create_outfit_look',
-        description: 'Put together an outfit matching your style',
+        description: `Put together a ${occasionTitle.toLowerCase()} matching your style`,
       });
     }
   }

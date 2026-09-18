@@ -67,11 +67,14 @@ export async function googleLoginUser(idToken: string, req?: Request) {
   if (!user) {
     isNewUser = true;
     const styleVector = Array(16).fill(0);
+    const emailPrefix = (email.split('@')[0] || 'member').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 15);
+    const existingCheck = await prisma.user.findFirst({ where: { username: emailPrefix } });
+    const cleanUsername = existingCheck ? `${emailPrefix}_${crypto.randomBytes(2).toString('hex')}` : emailPrefix;
     user = await prisma.user.create({
       data: {
         email: email.toLowerCase(),
-        username: `user_${crypto.randomBytes(4).toString('hex')}`,
-        displayName: name || 'Google User',
+        username: cleanUsername,
+        displayName: name || 'Kaphor Member',
         googleId,
         avatar: picture,
         styleVector,

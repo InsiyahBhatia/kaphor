@@ -10,7 +10,6 @@ import {
     getUpcycleSuggestions,
     assessCondition,
     analyzeListingImage,
-    extractOutfitItems,
     skipStyleQuiz
 } from '../controllers/ai.controller';
 
@@ -31,6 +30,5 @@ router.get('/history/:conversationId', getChatHistory);
 router.post('/upcycle-suggestions', getUpcycleSuggestions);
 router.post('/assess-condition', assessCondition);
 router.post('/analyze-listing', analyzeListingImage);
-router.post('/extract-outfit-items', extractOutfitItems);
 
 export { router as aiRoutes };

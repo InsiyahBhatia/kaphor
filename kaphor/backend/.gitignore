@@ -5,4 +5,5 @@ dist/
 .DS_Store
 *.key
 *.pem
+firebase-service-account.json
 logs/

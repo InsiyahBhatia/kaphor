@@ -12,35 +12,48 @@ export function usePushNotifications() {
   useEffect(() => {
     if (!user) return;
 
-    // Register push token and Android channel when authenticated
+    // Register push token and Android channels when authenticated
     registerForPushNotificationsAsync();
 
-    // Listener for when user taps the notification from phone notification drawer or lock screen
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+    const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
       try {
         const data = response.notification.request.content.data;
-        if (data?.url) {
+        if (!data) return;
+
+        if (data.url) {
           router.push(data.url as any);
-        } else if (data?.conversationId) {
+        } else if (data.conversationId) {
           router.push(`/messages/${data.conversationId}` as any);
-        } else if (data?.orderId) {
+        } else if (data.orderId) {
           router.push(`/(tabs)/shop/orders/${data.orderId}` as any);
-        } else if (data?.swapId) {
+        } else if (data.swapId) {
           router.push(`/(tabs)/swap/${data.swapId}` as any);
-        } else if (data?.type === 'DIRECT_MESSAGE' || data?.type === 'NEW_MESSAGE') {
+        } else if (data.rentalId) {
+          router.push('/(tabs)/profile/wardrobe' as any);
+        } else if (data.type === 'DIRECT_MESSAGE' || data.type === 'NEW_MESSAGE') {
           router.push('/(tabs)/messages' as any);
-        } else if (data?.type) {
+        } else {
           router.push('/(tabs)/notifications' as any);
         }
       } catch (err) {
         console.warn('[Push] Error navigating from push notification response:', err);
       }
+    };
+
+    // 1. Handle cold-start launch if user tapped notification from lock screen while app was completely killed
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        handleNotificationResponse(response);
+      }
     });
+
+    // 2. Listener for when user taps the notification while app is in background or phone notification drawer
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
 
     return () => {
       if (responseListener.current) {
         responseListener.current.remove();
       }
     };
-  }, [user]);
+  }, [user, router]);
 }

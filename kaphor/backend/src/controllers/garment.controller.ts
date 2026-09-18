@@ -88,14 +88,27 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
 
 export async function getGarments(req: Request, res: Response): Promise<void> {
   try {
+    const limit = Math.min(Number(req.query.limit) || 120, 200);
     const garments = await db.garment.findMany({
       where: { 
         isActive: true,
+        lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
         ...(req.user ? { sellerId: { not: req.user.id } } : {})
       },
-      take: 50,
+      take: limit,
       include: { seller: { select: { id: true, displayName: true } } },
+      orderBy: { createdAt: 'desc' },
     });
+
+    const now = new Date();
+    // Sort: active/available items first, cooldown items placed at the end so users can scroll through everything
+    garments.sort((a: any, b: any) => {
+      const aCooldown = Boolean(a.cooldownEnd && new Date(a.cooldownEnd) > now);
+      const bCooldown = Boolean(b.cooldownEnd && new Date(b.cooldownEnd) > now);
+      if (aCooldown === bCooldown) return 0;
+      return aCooldown ? 1 : -1;
+    });
+
     const resolvedGarments = await resolveGarmentsImages(garments, true);
     res.status(200).json({ data: resolvedGarments });
   } catch (err) {

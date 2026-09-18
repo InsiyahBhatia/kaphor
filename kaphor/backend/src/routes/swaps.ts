@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuth } from '../middleware/auth';
 import {
   getSwapFeed,
   getSwaps,
@@ -20,14 +20,17 @@ import {
   getDispute,
   cancelSwap,
   postSwapReview,
+  getCircularBarterRingsHandler,
 } from '../controllers/swap.controller';
 
 const router = Router();
 
-router.use(authenticate);
+// Public / discovery endpoints (authenticated users get personalized prioritization)
+router.get('/feed', optionalAuth, getSwapFeed);
+router.get('/barter-rings', optionalAuth, getCircularBarterRingsHandler);
 
-// Listing / Feed
-router.get('/feed', getSwapFeed);
+// Protected transaction & request endpoints
+router.use(authenticate);
 
 // Requests & listing for current user
 router.get('/', getSwaps);

@@ -1,4 +1,4 @@
-import api from './api';
+import api, { invalidateCache } from './api';
 
 export const cartService = {
   getCart: async () => {
@@ -7,10 +7,12 @@ export const cartService = {
   },
   addToCart: async (garmentId: string) => {
     const { data } = await api.post('/cart', { garmentId });
+    invalidateCache('/cart');
     return data.data;
   },
   removeFromCart: async (garmentId: string) => {
     const { data } = await api.delete(`/cart/${garmentId}`);
+    invalidateCache('/cart');
     return data;
   },
 };

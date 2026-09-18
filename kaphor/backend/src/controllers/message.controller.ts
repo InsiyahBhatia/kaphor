@@ -107,6 +107,13 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           },
         },
         messages: {
+          where: {
+            NOT: {
+              content: {
+                startsWith: '[[REACTION:',
+              },
+            },
+          },
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
@@ -155,60 +162,114 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           },
         });
 
-        // Find associated active swap if any exists between these participants
-        const activeSwap = await db.swap.findFirst({
-          where: {
-            OR: [
-              { initiatorId: c.participant1Id, receiverId: c.participant2Id },
-              { initiatorId: c.participant2Id, receiverId: c.participant1Id },
-            ],
-            status: { notIn: ['CANCELLED', 'REJECTED'] },
-          },
-          orderBy: { updatedAt: 'desc' },
-          select: {
-            id: true,
-            status: true,
-            offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
-            wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
-          },
-        });
+        const isExplicitSale =
+          c.garment?.listingType === 'SALE' ||
+          c.type === 'SALE' ||
+          Boolean(c.orderId || activeOrder);
 
-        // Resolve swap garment images
+        const isExplicitRental =
+          !isExplicitSale &&
+          (c.garment?.listingType === 'RENTAL' || c.type === 'RENTAL' || Boolean(c.rentalId));
+
+        const isExplicitSwap =
+          !isExplicitSale &&
+          !isExplicitRental &&
+          (c.garment?.listingType === 'SWAP' ||
+            c.garment?.listingType === 'ACCESSORY_SWAP' ||
+            c.type === 'SWAP' ||
+            Boolean(c.swapId));
+
+        // Only find associated active swap if this thread is explicitly related to a swap,
+        // or if it has a swapId, or if c.garment is a SWAP piece. NEVER for buy/sell or sale garments!
+        let activeSwap: any = null;
         let swapGarments: any[] = [];
-        if (activeSwap) {
-          const g1 = activeSwap.offeredGarment ? await resolveGarmentThumbnail(activeSwap.offeredGarment) : null;
-          const g2 = activeSwap.wantedGarment ? await resolveGarmentThumbnail(activeSwap.wantedGarment) : null;
-          swapGarments = [g1, g2].filter(Boolean);
+        if (isExplicitSwap) {
+          activeSwap = await db.swap.findFirst({
+            where: {
+              ...(c.swapId
+                ? { id: c.swapId }
+                : {
+                    OR: [
+                      { initiatorId: c.participant1Id, receiverId: c.participant2Id },
+                      { initiatorId: c.participant2Id, receiverId: c.participant1Id },
+                    ],
+                    ...(c.garmentId
+                      ? { OR: [{ garmentOffered: c.garmentId }, { garmentWanted: c.garmentId }] }
+                      : {}),
+                    status: { notIn: ['CANCELLED', 'REJECTED'] },
+                  }),
+            },
+            orderBy: { updatedAt: 'desc' },
+            select: {
+              id: true,
+              status: true,
+              offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+              wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+            },
+          });
+
+          if (activeSwap) {
+            const g1 = activeSwap.offeredGarment ? await resolveGarmentThumbnail(activeSwap.offeredGarment) : null;
+            const g2 = activeSwap.wantedGarment ? await resolveGarmentThumbnail(activeSwap.wantedGarment) : null;
+            swapGarments = [g1, g2].filter(Boolean);
+          }
         }
 
-        // Find associated active rental if any exists between these participants
-        const activeRental = await db.rental.findFirst({
-          where: {
-            OR: [
-              { renterId: c.participant1Id, garment: { sellerId: c.participant2Id } },
-              { renterId: c.participant2Id, garment: { sellerId: c.participant1Id } },
-            ],
-            ...(c.garmentId ? { garmentId: c.garmentId } : {}),
-            status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'COMPLETED'] },
-          },
-          orderBy: { updatedAt: 'desc' },
-          select: {
-            id: true,
-            status: true,
-            totalPrice: true,
-            startDate: true,
-            endDate: true,
-          },
-        });
+        // Only find associated active rental if relevant
+        let activeRental: any = null;
+        if (isExplicitRental || (!isExplicitSale && !isExplicitSwap)) {
+          activeRental = await db.rental.findFirst({
+            where: {
+              ...(c.rentalId
+                ? { id: c.rentalId }
+                : {
+                    OR: [
+                      { renterId: c.participant1Id, garment: { sellerId: c.participant2Id } },
+                      { renterId: c.participant2Id, garment: { sellerId: c.participant1Id } },
+                    ],
+                    ...(c.garmentId ? { garmentId: c.garmentId } : {}),
+                    status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'COMPLETED'] },
+                  }),
+            },
+            orderBy: { updatedAt: 'desc' },
+            select: {
+              id: true,
+              status: true,
+              totalPrice: true,
+              startDate: true,
+              endDate: true,
+            },
+          });
+        }
 
-        const snippet = c.lastMessageText || c.messages[0]?.content || '';
+        let rawSnippet = c.lastMessageText || c.messages[0]?.content || '';
+        let formattedSnippet = rawSnippet;
+        if (rawSnippet.startsWith('[[REACTION:')) {
+          const match = rawSnippet.match(/^\[\[REACTION:([^|]+)\|(.+)\]\]$/);
+          const emoji = match ? match[2] : '❤️';
+          const fallbackText = c.messages[0]?.content;
+          if (fallbackText && !fallbackText.startsWith('[[REACTION:')) {
+            const cleanFallback = fallbackText.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
+            formattedSnippet = `Reacted ${emoji} to "${cleanFallback.slice(0, 30)}${cleanFallback.length > 30 ? '...' : ''}"`;
+          } else {
+            formattedSnippet = `Reacted ${emoji} to a message`;
+          }
+        } else {
+          formattedSnippet = formattedSnippet.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
+        }
+
+        const snippet = formattedSnippet;
         let resolvedType = c.type || 'SALE';
-        if (c.rentalId || activeRental || c.garment?.listingType === 'RENTAL' || /\b(rent|rental|lease|booking)\b/i.test(snippet)) {
-          resolvedType = 'RENTAL';
-        } else if (c.swapId || activeSwap || c.garment?.listingType === 'ACCESSORY_SWAP' || (c.garment?.listingType as string) === 'SWAP' || /\b(swap|trade|proposal)\b/i.test(snippet)) {
-          resolvedType = 'SWAP';
-        } else if (c.orderId || activeOrder) {
+        if (isExplicitSale) {
           resolvedType = 'SALE';
+        } else if (isExplicitRental || activeRental) {
+          resolvedType = 'RENTAL';
+        } else if (isExplicitSwap || activeSwap) {
+          resolvedType = 'SWAP';
+        } else if (/\b(rent|rental|lease|booking)\b/i.test(snippet)) {
+          resolvedType = 'RENTAL';
+        } else if (/\b(swap|trade|proposal)\b/i.test(snippet)) {
+          resolvedType = 'SWAP';
         } else if (!c.garment && !c.orderId && !c.swapId && !c.rentalId) {
           resolvedType = c.type === 'GENERAL' ? 'GENERAL' : 'SALE';
         }
@@ -217,18 +278,18 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           id: c.id,
           type: resolvedType,
           orderId: c.orderId || activeOrder?.id || null,
-          swapId: c.swapId || activeSwap?.id || null,
-          rentalId: c.rentalId || activeRental?.id || null,
+          swapId: isExplicitSale ? null : (c.swapId || activeSwap?.id || null),
+          rentalId: isExplicitSale ? null : (c.rentalId || activeRental?.id || null),
           otherUser: {
             ...otherUser,
             avatar: otherAvatar,
           },
           garment: garmentData,
           order: activeOrder,
-          swap: activeSwap ? { id: activeSwap.id, status: activeSwap.status } : null,
-          swapGarments,
-          rental: activeRental,
-          lastMessageText: c.lastMessageText || c.messages[0]?.content || '',
+          swap: isExplicitSale ? null : (activeSwap ? { id: activeSwap.id, status: activeSwap.status } : null),
+          swapGarments: isExplicitSale ? [] : swapGarments,
+          rental: isExplicitSale ? null : activeRental,
+          lastMessageText: formattedSnippet,
           lastMessageAt: c.lastMessageAt || c.createdAt,
           unreadCount,
           createdAt: c.createdAt,
@@ -554,42 +615,75 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
       },
     });
 
-    // Find associated swap between these users
-    const associatedSwap = await db.swap.findFirst({
-      where: {
-        AND: [
-          {
-            OR: [
-              { initiatorId: conv.participant1Id, receiverId: conv.participant2Id },
-              { initiatorId: conv.participant2Id, receiverId: conv.participant1Id },
-            ],
-          },
-          ...(conv.garmentId
-            ? [{ OR: [{ garmentOffered: conv.garmentId }, { garmentWanted: conv.garmentId }] }]
-            : []),
-        ],
-      },
-      orderBy: { updatedAt: 'desc' },
-      select: {
-        id: true,
-        status: true,
-        createdAt: true,
-      },
-    });
+    // Find associated swap between these users ONLY if conversation is explicitly for a swap
+    const isConvSale =
+      conv.type === 'SALE' ||
+      conv.garment?.listingType === 'SALE' ||
+      Boolean(associatedOrder);
 
-    // Find associated rental between these users
-    const associatedRental = await db.rental.findFirst({
-      where: {
-        OR: [
-          { renterId: conv.participant1Id, garment: { sellerId: conv.participant2Id } },
-          { renterId: conv.participant2Id, garment: { sellerId: conv.participant1Id } },
-        ],
-        ...(conv.garmentId ? { garmentId: conv.garmentId } : {}),
-        status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'OVERDUE'] },
-      },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        garment: {
+    const isConvSwap =
+      !isConvSale &&
+      (conv.type === 'SWAP' ||
+        Boolean(conv.swapId) ||
+        conv.garment?.listingType === 'SWAP' ||
+        conv.garment?.listingType === 'ACCESSORY_SWAP');
+
+    let associatedSwap: any = null;
+    if (isConvSwap) {
+      associatedSwap = await db.swap.findFirst({
+        where: {
+          ...(conv.swapId
+            ? { id: conv.swapId }
+            : {
+                AND: [
+                  {
+                    OR: [
+                      { initiatorId: conv.participant1Id, receiverId: conv.participant2Id },
+                      { initiatorId: conv.participant2Id, receiverId: conv.participant1Id },
+                    ],
+                  },
+                  ...(conv.garmentId
+                    ? [{ OR: [{ garmentOffered: conv.garmentId }, { garmentWanted: conv.garmentId }] }]
+                    : []),
+                  { status: { notIn: ['CANCELLED', 'REJECTED'] } },
+                ],
+              }),
+        },
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+    }
+
+    // Find associated rental between these users ONLY if conversation is for rental
+    const isConvRental =
+      !isConvSale &&
+      !isConvSwap &&
+      (conv.type === 'RENTAL' ||
+        Boolean(conv.rentalId) ||
+        conv.garment?.listingType === 'RENTAL');
+
+    let associatedRental: any = null;
+    if (isConvRental) {
+      associatedRental = await db.rental.findFirst({
+        where: {
+          ...(conv.rentalId
+            ? { id: conv.rentalId }
+            : {
+                OR: [
+                  { renterId: conv.participant1Id, garment: { sellerId: conv.participant2Id } },
+                  { renterId: conv.participant2Id, garment: { sellerId: conv.participant1Id } },
+                ],
+                ...(conv.garmentId ? { garmentId: conv.garmentId } : {}),
+                status: { in: ['REQUESTED', 'APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED', 'OVERDUE'] },
+              }),
+        },
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          garment: {
           select: {
             id: true,
             title: true,
@@ -608,8 +702,9 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
         },
       },
     });
+  }
 
-    let activeGarment = conv.garment;
+    let activeGarment = (isConvRental && associatedRental?.garment) ? (associatedRental.garment as any) : conv.garment;
     if (!activeGarment && associatedRental?.garment) {
       activeGarment = associatedRental.garment as any;
     } else if (!activeGarment && associatedOrder?.items?.[0]?.garment) {
@@ -704,6 +799,7 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
           order: associatedOrder,
           swap: associatedSwap,
           rental: associatedRental,
+          rentalId: conv.rentalId || associatedRental?.id || null,
           counterpartyGarments: resolvedOtherGarments,
           sellerGarments: resolvedMyGarments,
         },
@@ -961,12 +1057,38 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
       },
     });
 
-    // Update conversation last message timestamp & preview (cleaning reply prefix if present)
-    const cleanPreview = content.replace(/^\[\[REPLY:[^\]]+\]\]/, '');
+    // Update conversation last message timestamp & preview (cleaning reply prefix or formatting reactions)
+    let lastPreview = '';
+    const isReaction = content.startsWith('[[REACTION:');
+    if (isReaction) {
+      const match = content.match(/^\[\[REACTION:([^|]+)\|(.+)\]\]$/);
+      const targetId = match ? match[1] : null;
+      const emoji = match ? match[2] : '❤️';
+      if (targetId) {
+        const targetMsg = await db.directMessage.findUnique({
+          where: { id: targetId },
+          select: { content: true, imageUrl: true },
+        });
+        if (targetMsg?.content) {
+          const cleanTarget = targetMsg.content.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
+          lastPreview = `Reacted ${emoji} to "${cleanTarget.slice(0, 30)}${cleanTarget.length > 30 ? '...' : ''}"`;
+        } else if (targetMsg?.imageUrl) {
+          lastPreview = `Reacted ${emoji} to photo`;
+        } else {
+          lastPreview = `Reacted ${emoji} to a message`;
+        }
+      } else {
+        lastPreview = `Reacted ${emoji} to a message`;
+      }
+    } else {
+      const cleanPreview = content.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
+      lastPreview = imageUrl && !cleanPreview ? '📷 Photo' : cleanPreview.slice(0, 100);
+    }
+
     await db.conversation.update({
       where: { id: conversationId },
       data: {
-        lastMessageText: imageUrl && !cleanPreview ? '📷 Photo' : cleanPreview.slice(0, 100),
+        lastMessageText: lastPreview,
         lastMessageAt: new Date(),
       },
     });
@@ -990,21 +1112,24 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
     });
     emitToUser(recipientId, 'unread_messages_count_updated', { unreadCount: recipientUnread });
 
-    // Send push notification to recipient's device (phone notification outside app)
-    const senderName = msg.sender.displayName || msg.sender.username || 'Someone';
-    const messagePreview = cleanPreview || (imageUrl ? '📷 Sent a photo' : 'Sent you a message');
-    sendPushNotificationToUser(
-      recipientId,
-      senderName,
-      messagePreview,
-      {
-        type: 'DIRECT_MESSAGE',
-        conversationId,
-        url: `/messages/${conversationId}`,
-      }
-    ).catch(err => {
-      logger.warn('Direct message push notification failed', { error: err });
-    });
+    // Send push notification to recipient's device (for normal messages, not reactions)
+    if (!isReaction) {
+      const senderName = msg.sender.displayName || msg.sender.username || 'Someone';
+      const cleanPreview = content.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
+      const messagePreview = cleanPreview || (imageUrl ? '📷 Sent a photo' : 'Sent you a message');
+      sendPushNotificationToUser(
+        recipientId,
+        senderName,
+        messagePreview,
+        {
+          type: 'DIRECT_MESSAGE',
+          conversationId,
+          url: `/messages/${conversationId}`,
+        }
+      ).catch(err => {
+        logger.warn('Direct message push notification failed', { error: err });
+      });
+    }
 
     // Message delivered via realtime socket to conversation & user room (alerts bell reserved for swap, rental, sell, reviews)
 

@@ -18,25 +18,23 @@ import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 import { messageService, ConversationSummary } from '../../src/services/messageService';
 import { getSocket, connectSocket } from '../../src/services/socket';
 import { useNotificationStore } from '../../src/store/notificationStore';
+import { MessageCardsLoading } from '../../src/components/common/CardLoadingScreen';
 
 type FilterTab = 'ALL' | 'SELL' | 'SWAP' | 'RENT';
 
 export function getConversationCategory(c: ConversationSummary): 'SELL' | 'SWAP' | 'RENT' {
-  // 1. Active Transaction Check (foreign keys or attached models)
-  if (c.rentalId || c.rental) return 'RENT';
-  if (c.swapId || c.swap) return 'SWAP';
-  if (c.orderId || c.order) return 'SELL';
+  // 1. Explicit SALE Priority (Order, Garment Listing Type, Conversation Type)
+  if (c.orderId || c.order || c.garment?.listingType === 'SALE' || c.type === 'SALE') {
+    return 'SELL';
+  }
 
-  // 2. Explicit Non-Sale Conversation Type
-  if (c.type === 'RENTAL') return 'RENT';
-  if (c.type === 'SWAP') return 'SWAP';
-
-  // 3. Garment Listing Type & Rate Specification
-  const listingType = c.garment?.listingType;
-  if (listingType === 'RENTAL' || (c.garment?.rentalPriceDay && c.garment.rentalPriceDay > 0)) {
+  // 2. Explicit RENTAL Priority
+  if (c.rentalId || c.rental || c.type === 'RENTAL' || c.garment?.listingType === 'RENTAL' || (c.garment?.rentalPriceDay && c.garment.rentalPriceDay > 0)) {
     return 'RENT';
   }
-  if (listingType === 'ACCESSORY_SWAP' || listingType === 'SWAP') {
+
+  // 3. Explicit SWAP Priority
+  if (c.swapId || c.swap || c.type === 'SWAP' || c.garment?.listingType === 'ACCESSORY_SWAP' || c.garment?.listingType === 'SWAP') {
     return 'SWAP';
   }
 
@@ -49,12 +47,32 @@ export function getConversationCategory(c: ConversationSummary): 'SELL' | 'SWAP'
   return 'SELL';
 }
 
+export function formatConversationSnippet(text: string | null | undefined): string {
+  if (!text) return 'Tap to open conversation';
+  if (text.startsWith('[[REACTION:')) {
+    const match = text.match(/^\[\[REACTION:([^|]+)\|(.+)\]\]$/);
+    const emoji = match ? match[2] : '❤️';
+    return `Reacted ${emoji} to a message`;
+  }
+  return text.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
+}
+
 export default function MessagesScreen() {
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
+
+  const handleSelectTab = (tab: FilterTab) => {
+    if (tab === activeTab) return;
+    setIsTabSwitching(true);
+    setActiveTab(tab);
+    setTimeout(() => {
+      setIsTabSwitching(false);
+    }, 180);
+  };
 
   const loadConversations = useCallback(async () => {
     try {
@@ -267,7 +285,7 @@ export default function MessagesScreen() {
             style={[styles.messageSnippet, isUnread && styles.messageSnippetUnread]}
             numberOfLines={1}
           >
-            {item.lastMessageText || 'Tap to open conversation'}
+            {formatConversationSnippet(item.lastMessageText)}
           </Text>
         </View>
 
@@ -330,7 +348,7 @@ export default function MessagesScreen() {
       <View style={styles.tabsContainer}>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'ALL' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('ALL')}
+          onPress={() => handleSelectTab('ALL')}
           activeOpacity={0.8}
         >
           <View style={styles.tabContentRow}>
@@ -349,7 +367,7 @@ export default function MessagesScreen() {
 
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'SELL' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('SELL')}
+          onPress={() => handleSelectTab('SELL')}
           activeOpacity={0.8}
         >
           <View style={styles.tabContentRow}>
@@ -368,7 +386,7 @@ export default function MessagesScreen() {
 
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'SWAP' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('SWAP')}
+          onPress={() => handleSelectTab('SWAP')}
           activeOpacity={0.8}
         >
           <View style={styles.tabContentRow}>
@@ -387,7 +405,7 @@ export default function MessagesScreen() {
 
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'RENT' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('RENT')}
+          onPress={() => handleSelectTab('RENT')}
           activeOpacity={0.8}
         >
           <View style={styles.tabContentRow}>
@@ -405,10 +423,8 @@ export default function MessagesScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <View style={[styles.container, styles.center]}>
-          <ActivityIndicator color={colors.charcoal} size="large" />
-        </View>
+      {loading || isTabSwitching ? (
+        <MessageCardsLoading count={6} />
       ) : (
         <FlatList
           data={filteredConversations}

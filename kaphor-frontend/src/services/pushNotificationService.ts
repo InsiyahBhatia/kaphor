@@ -18,16 +18,17 @@ if (Platform.OS !== 'web') {
 }
 
 /**
- * Sets up Android notification channel, prompts the user for system-level
- * notification permissions, acquires the Expo Push Token, and persists it to the backend.
+ * Sets up Android notification channels, prompts the user for system-level
+ * notification permissions, acquires the Push Token, and persists it to the backend.
  */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   if (Platform.OS === 'web') {
     return null;
   }
 
-  // Configure high-priority Android notification channel for heads-up and lock-screen banners
+  // 1. Configure high-priority Android notification channels for heads-up and lock-screen banners
   if (Platform.OS === 'android') {
+    // Default system / general channel
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Kaphor Alerts & Updates',
       importance: Notifications.AndroidImportance.MAX,
@@ -39,15 +40,41 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       bypassDnd: false,
     });
+
+    // Direct messages channel (instant heads-up popup)
+    await Notifications.setNotificationChannelAsync('messages', {
+      name: 'Kaphor Direct Messages',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 200, 100, 200],
+      lightColor: '#1A1A1A',
+      sound: 'default',
+      enableVibrate: true,
+      showBadge: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: false,
+    });
+
+    // Orders, rentals, and swaps channel
+    await Notifications.setNotificationChannelAsync('orders', {
+      name: 'Kaphor Orders & Swaps',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 300, 150, 300],
+      lightColor: '#0F5C46',
+      sound: 'default',
+      enableVibrate: true,
+      showBadge: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: false,
+    });
   }
 
-  // Physical device check (emulators cannot reliably receive remote push notifications)
+  // 2. Physical device check (emulators cannot reliably receive remote push notifications)
   if (!Device.isDevice) {
     console.log('[Push] Must use a physical device for remote push notifications');
     return null;
   }
 
-  // Request system notification permissions
+  // 3. Request system notification permissions (Android 13+ POST_NOTIFICATIONS / iOS APNs)
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
@@ -61,26 +88,43 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     return null;
   }
 
-  try {
-    const projectId =
-      Constants?.expoConfig?.extra?.eas?.projectId ??
-      Constants?.easConfig?.projectId ??
-      '3aeb7c93-08b6-4700-b8aa-d55744986915';
+  // 4. Resolve correct EAS project ID
+  const projectId =
+    Constants?.expoConfig?.extra?.eas?.projectId ??
+    Constants?.easConfig?.projectId ??
+    'e5b16a69-98ce-43ba-9faa-44859edbf66f';
 
+  let token: string | null = null;
+
+  // Try acquiring Expo Push Token first
+  try {
     const tokenResponse = await Notifications.getExpoPushTokenAsync({
       projectId,
     });
-    const pushToken = tokenResponse.data;
-
-    // Register token with Kaphor backend for background alerts
-    if (pushToken) {
-      await userService.savePushToken(pushToken);
-      console.log('[Push] Registered push token with backend:', pushToken);
-    }
-
-    return pushToken;
-  } catch (error) {
-    console.warn('[Push] Error getting push token:', error);
-    return null;
+    token = tokenResponse.data;
+  } catch (expoErr) {
+    console.warn('[Push] Expo push token acquisition failed, attempting native device token:', expoErr);
   }
+
+  // If Expo push token failed on Android, fallback to native FCM device push token
+  if (!token && Platform.OS === 'android') {
+    try {
+      const deviceTokenRes = await Notifications.getDevicePushTokenAsync();
+      token = typeof deviceTokenRes?.data === 'string' ? deviceTokenRes.data : null;
+    } catch (fcmErr) {
+      console.warn('[Push] Native device token acquisition failed:', fcmErr);
+    }
+  }
+
+  // 5. Register acquired token with Kaphor backend
+  if (token) {
+    try {
+      await userService.savePushToken(token);
+      console.log('[Push] Registered push token with backend:', token);
+    } catch (apiErr) {
+      console.warn('[Push] Failed to save push token on backend:', apiErr);
+    }
+  }
+
+  return token;
 }

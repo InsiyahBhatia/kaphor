@@ -469,8 +469,12 @@ export default function HomeScreen() {
     try {
       await cartService.addToCart(item.id);
       Alert.alert('✓ Added to Bag', `"${item.title}" added to your shopping bag.`);
-    } catch (error) {
-      Alert.alert('Notice', 'Item could not be added. Please try again.');
+    } catch (error: any) {
+      if (error?.response?.status === 409 || error?.response?.data?.error === 'ALREADY_IN_CART') {
+        Alert.alert('Already in Bag', 'This unique circular piece is already in your shopping bag.');
+      } else {
+        Alert.alert('Notice', error?.response?.data?.message || 'Item could not be added. Please try again.');
+      }
     }
   }, []);
 

@@ -62,28 +62,44 @@ export default function RentalLeaseDossierScreen() {
   useBackHandler('/(tabs)/rental');
 
   const loadData = useCallback(async () => {
-    if (!id) {
-      setLoading(false);
-      return;
-    }
+    const cleanId = (!id || id === 'undefined' || id === 'null') ? '' : id;
     try {
       setLoading(true);
-      const data = await rentalService.getRentalById(id);
-      setRental(data);
+      let data: any = null;
 
-      if (data?.metadata?.reviews && currentUserId && data.metadata.reviews[currentUserId]) {
-        setReviewSubmitted(true);
-        setRating(data.metadata.reviews[currentUserId].rating || 5);
-        if (data.metadata.reviews[currentUserId].comment) {
-          setReviewComment(data.metadata.reviews[currentUserId].comment);
+      if (cleanId) {
+        try {
+          data = await rentalService.getRentalById(cleanId);
+        } catch (idErr) {
+          console.warn('Direct rental lookup failed, attempting fallback to my rentals', idErr);
         }
       }
 
-      try {
-        const escrowData = await rentalService.getEscrow(id);
-        setEscrow(escrowData);
-      } catch (escrowErr) {
-        console.warn('Escrow details unavailable for rental:', escrowErr);
+      if (!data) {
+        const myRentals = await rentalService.getMyRentals('all').catch(() => []);
+        if (Array.isArray(myRentals) && myRentals.length > 0) {
+          data = myRentals[0];
+        }
+      }
+
+      if (data) {
+        setRental(data);
+
+        if (data?.metadata?.reviews && currentUserId && data.metadata.reviews[currentUserId]) {
+          setReviewSubmitted(true);
+          setRating(data.metadata.reviews[currentUserId].rating || 5);
+          if (data.metadata.reviews[currentUserId].comment) {
+            setReviewComment(data.metadata.reviews[currentUserId].comment);
+          }
+        }
+
+        try {
+          const targetId = data.id || cleanId;
+          const escrowData = await rentalService.getEscrow(targetId);
+          setEscrow(escrowData);
+        } catch (escrowErr) {
+          console.warn('Escrow details unavailable for rental:', escrowErr);
+        }
       }
     } catch (err: any) {
       console.error('Failed to load rental lease:', err);

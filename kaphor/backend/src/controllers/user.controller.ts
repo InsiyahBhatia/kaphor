@@ -4,6 +4,7 @@ import { redisDel } from '../lib/redis';
 import { logger } from '../lib/logger';
 import { uploadToCloudinary, getDownloadUrl } from '../lib/cloudinary';
 import { InsightService } from '../services/insight.service';
+import { sendPushNotificationToUser } from '../services/pushNotification.service';
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 async function resolveAvatar(avatar: string | null): Promise<string | null> {
@@ -174,7 +175,33 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
     try {
         if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
-        const { displayName, bio, location, styleAesthetic } = req.body;
+        const { displayName, bio, location, styleAesthetic, username } = req.body;
+
+        let cleanUsername: string | undefined = undefined;
+        if (username !== undefined) {
+            cleanUsername = String(username).trim().toLowerCase().replace(/^@/, '');
+            if (!/^[a-z0-9_]{3,30}$/.test(cleanUsername)) {
+                res.status(400).json({ 
+                    error: 'INVALID_USERNAME', 
+                    message: 'Username must be 3-30 characters and contain only lowercase letters, numbers, and underscores.' 
+                });
+                return;
+            }
+            // Check if username taken by another user
+            const existing = await db.user.findFirst({
+                where: {
+                    username: cleanUsername,
+                    NOT: { id: req.user.id }
+                }
+            });
+            if (existing) {
+                res.status(400).json({ 
+                    error: 'USERNAME_TAKEN', 
+                    message: 'This username is already taken. Please choose another.' 
+                });
+                return;
+            }
+        }
 
         const all16Aesthetics = [
             'Y2K', 'Office Siren', 'Rockstar Girlfriend', 'Sade Girl', 'Vintage',
@@ -191,6 +218,7 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
         const updated = await db.user.update({
             where: { id: req.user.id },
             data: {
+                ...(cleanUsername && { username: cleanUsername }),
                 ...(displayName && { displayName }),
                 ...(bio !== undefined && { bio }),
                 ...(location !== undefined && { location }),
@@ -365,7 +393,12 @@ export async function getMyWardrobe(req: Request, res: Response): Promise<void> 
                 seenGarmentIds.add(rental.garment.id);
                 combined.push({
                     ...rental.garment,
-                    lifecycleState: 'CIRCULATION',
+                    lifecycleState: 'RENTED',
+                    isRented: true,
+                    rentalId: rental.id,
+                    rentalStatus: rental.status,
+                    startDate: rental.startDate,
+                    endDate: rental.endDate,
                 });
             }
         }
@@ -658,6 +691,48 @@ export async function savePushToken(req: Request, res: Response): Promise<void> 
         res.json({ success: true, message: 'Push token registered successfully' });
     } catch (error) {
         logger.error('savePushToken failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+// ── POST /users/me/test-push ────────────────────────────────────────────────
+export async function sendTestPushNotification(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+
+        const user = await db.user.findUnique({
+            where: { id: req.user.id },
+            select: { pushToken: true, displayName: true },
+        });
+
+        if (!user?.pushToken) {
+            res.status(400).json({
+                error: 'NO_PUSH_TOKEN',
+                message: 'No push token registered for your account. Please open the Kaphor mobile app to register your device.',
+            });
+            return;
+        }
+
+        const success = await sendPushNotificationToUser(
+            req.user.id,
+            'Kaphor Alert',
+            'Phone out-of-app notification is active and working properly!',
+            { type: 'TEST_ALERT', url: '/(tabs)/messages' },
+            'default'
+        );
+
+        res.json({
+            success,
+            message: success
+                ? 'Test notification dispatched to your phone!'
+                : 'Failed to dispatch test notification. Check server logs.',
+            pushTokenSnippet: user.pushToken.slice(0, 20) + '...',
+        });
+    } catch (error) {
+        logger.error('sendTestPushNotification failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
     }
 }

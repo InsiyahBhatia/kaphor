@@ -64,8 +64,12 @@ export default function SavedAssetsScreen() {
     try {
       await cartService.addToCart(item.id);
       Alert.alert('✓ Added', `${item.title} has been added to your cart.`);
-    } catch (error) {
-      Alert.alert('Error', 'Could not add to cart. Please try again.');
+    } catch (error: any) {
+      if (error?.response?.status === 409 || error?.response?.data?.error === 'ALREADY_IN_CART') {
+        Alert.alert('Already in Bag', 'This unique circular piece is already in your shopping bag.');
+      } else {
+        Alert.alert('Notice', error?.response?.data?.message || 'Could not add to cart. Please try again.');
+      }
       console.error(error);
     }
   };

@@ -276,10 +276,12 @@ export default function RentalReserveScreen() {
           grandTotal,
         },
       });
-      const rentalOrderId = data.data?.id || data.data?.rentalOrderId;
+      const rentalOrderId = data?.id || data?.rentalOrderId || data?.data?.id || data?.data?.rentalOrderId;
       if (garmentId) {
         telemetryService.trackConversion(String(garmentId), 'RENTAL');
       }
+
+      const targetRoute = rentalOrderId ? `/(tabs)/rental/lease/${rentalOrderId}` : '/(tabs)/rental?tab=my';
 
       Alert.alert(
         'Rental Request Submitted',
@@ -287,12 +289,12 @@ export default function RentalReserveScreen() {
         [
           {
             text: 'View Request Status',
-            onPress: () => router.replace(`/(tabs)/rental/lease/${rentalOrderId}` as any),
+            onPress: () => router.replace(targetRoute as any),
           }
         ]
       );
 
-      router.replace(`/(tabs)/rental/lease/${rentalOrderId}` as any);
+      router.replace(targetRoute as any);
     } catch (err: any) {
       console.error('[Rental Reservation Failed]:', err?.response?.data || err?.message);
       const backendMsg = err?.response?.data?.message || err?.response?.data?.error;

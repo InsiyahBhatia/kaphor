@@ -138,46 +138,48 @@ export default function PaymentHistoryScreen() {
       </View>
 
       {/* Type Filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        <TouchableOpacity
-          style={[styles.filterChip, filterType === null && styles.filterChipActive]}
-          onPress={() => setFilterType(null)}
-          activeOpacity={0.7}
+      <View style={styles.filterScrollWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
         >
-          <Text
-            style={[
-              styles.filterChipText,
-              filterType === null && styles.filterChipTextActive,
-            ]}
-          >
-            ALL ({transactions.length})
-          </Text>
-        </TouchableOpacity>
-        {types.map((type) => (
           <TouchableOpacity
-            key={type}
-            style={[
-              styles.filterChip,
-              filterType === type && styles.filterChipActive,
-            ]}
-            onPress={() => setFilterType(type)}
+            style={[styles.filterChip, filterType === null && styles.filterChipActive]}
+            onPress={() => setFilterType(null)}
             activeOpacity={0.7}
           >
             <Text
               style={[
                 styles.filterChipText,
-                filterType === type && styles.filterChipTextActive,
+                filterType === null && styles.filterChipTextActive,
               ]}
             >
-              {type.replace(/_/g, ' ')} ({typeCounts[type] || 0})
+              ALL ({transactions.length})
             </Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+          {types.map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[
+                styles.filterChip,
+                filterType === type && styles.filterChipActive,
+              ]}
+              onPress={() => setFilterType(type)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  filterType === type && styles.filterChipTextActive,
+                ]}
+              >
+                {type.replace(/_/g, ' ')} ({typeCounts[type] || 0})
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {loading ? (
         <View style={styles.center}>
@@ -425,16 +427,26 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
+  filterScrollWrapper: {
+    flexGrow: 0,
+    flexShrink: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(30,31,34,0.1)',
+    backgroundColor: colors.cream,
+  },
   filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
   },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: colors.charcoal,
     backgroundColor: colors.white,

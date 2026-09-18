@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../theme';
 import { KaphorImage } from './KaphorImage';
+import { CenterCardsLoading } from './common/CardLoadingScreen';
 import { circularService, RecyclingCenter, RecyclingCentersResponse } from '../services/circularService';
 import api from '../services/api';
 import { invalidateCache } from '../services/api';
@@ -98,7 +99,7 @@ export function RecyclingHubsModal({
               invalidateCache('/impact');
 
               Alert.alert(
-                'Collection Scheduled! ♻️',
+                'Collection Scheduled',
                 `Your doorstep collection with ${center.name} is booked for ${slot}.\n\n+450g textile waste diversion credited to your Impact Record!`
               );
 
@@ -145,8 +146,8 @@ export function RecyclingHubsModal({
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* Garment Summary Card */}
-            {garment && (
+            {/* Garment Summary Card - Only display if owned eligible item */}
+            {garment && !garment.isRented && garment.lifecycleState !== 'RENTED' && (
               <View style={styles.garmentCard}>
                 <KaphorImage uri={garment.images?.[0] || ''} style={styles.garmentThumb} contentFit="cover" />
                 <View style={styles.garmentInfo}>
@@ -178,10 +179,7 @@ export function RecyclingHubsModal({
 
             {/* Centers List */}
             {loading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator size="small" color={colors.charcoal} />
-                <Text style={styles.loadingText}>Locating certified textile reclamation hubs...</Text>
-              </View>
+              <CenterCardsLoading count={3} />
             ) : (
               <View style={styles.centersList}>
                 {(data?.centers || []).slice(0, 3).map((center) => {
@@ -228,39 +226,15 @@ export function RecyclingHubsModal({
                         Certs: {center.certifications.join(' • ')}
                       </Text>
 
-                      {/* Actions */}
-                      <View style={styles.actionRow}>
-                        <TouchableOpacity
-                          style={[styles.bookBtn, isBooking && { opacity: 0.6 }]}
-                          onPress={() => handleBookPickup(center)}
-                          disabled={isBooking}
-                          activeOpacity={0.8}
-                        >
-                          {isBooking ? (
-                            <ActivityIndicator size="small" color={colors.cream} />
-                          ) : (
-                            <>
-                              <Ionicons name="calendar" size={13} color={colors.cream} />
-                              <Text style={styles.bookBtnText}>SCHEDULE DOORSTEP PICKUP</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-
-                        {center.dropOffAvailable && (
-                          <TouchableOpacity
-                            style={styles.dropOffBtn}
-                            onPress={() =>
-                              Alert.alert(
-                                center.name,
-                                `Drop-Off Address:\n${center.address}\n\nOperating Hours:\n${center.operatingHours}\n\nPhone:\n${center.phone}\n\nBring clean textiles to the circular drop-off kiosk.`
-                              )
-                            }
-                            activeOpacity={0.7}
-                          >
-                            <Ionicons name="information-circle-outline" size={14} color={colors.charcoal} />
-                            <Text style={styles.dropOffBtnText}>INFO</Text>
-                          </TouchableOpacity>
-                        )}
+                      {/* Direct Hub Information & Drop-Off Protocol */}
+                      <View style={styles.facilityDetailsBox}>
+                        <View style={styles.detailRow}>
+                          <Ionicons name="call-outline" size={12} color={colors.forest} />
+                          <Text style={styles.detailPhoneText}>Helpline: {center.phone || '+91 1800-CIRCULAR'}</Text>
+                        </View>
+                        <Text style={styles.dropOffInstructions}>
+                          Drop-Off Depot: Bring clean post-consumer textiles directly to the facility reception. Garments are mechanically shredded or chemically converted into recycled yarn.
+                        </Text>
                       </View>
                     </View>
                   );
@@ -521,30 +495,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 3,
   },
-  bookBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
-    color: colors.cream,
-    letterSpacing: 0.5,
+  facilityDetailsBox: {
+    backgroundColor: '#F7F5EE',
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.12)',
+    borderRadius: 3,
+    padding: 8,
+    marginTop: 4,
+    gap: 4,
   },
-  dropOffBtn: {
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.charcoal,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    borderRadius: 3,
+    gap: 6,
   },
-  dropOffBtnText: {
+  detailPhoneText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.forest,
+  },
+  dropOffInstructions: {
     fontFamily: typography.mono,
     fontSize: 8,
-    fontWeight: '900',
     color: colors.charcoal,
+    lineHeight: 11,
   },
   aiScanCard: {
     flexDirection: 'row',

@@ -15,6 +15,7 @@ import {
   submitIdentityVerification,
   getVerificationStatus,
   savePushToken,
+  sendTestPushNotification,
 } from '../controllers/user.controller';
 import {
   listAddresses,
@@ -52,6 +53,7 @@ router.get('/me/purchases', getMyPurchases);
 router.post('/me/verify-identity', submitIdentityVerification);
 router.get('/me/verification-status', getVerificationStatus);
 router.post('/me/push-token', savePushToken);
+router.post('/me/test-push', sendTestPushNotification);
 
 // Authenticated — Address management
 router.get('/me/addresses', listAddresses);

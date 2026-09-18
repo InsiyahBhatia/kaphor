@@ -198,10 +198,26 @@ export default function PublicSellerProfileScreen() {
     );
   };
 
-  if (loading) {
+  if (loading && !profile) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator color={colors.charcoal} size="large" />
+      <View style={styles.container}>
+        <View style={styles.topBar}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => safeBack('/(tabs)/shop')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
+          </TouchableOpacity>
+          <Text style={styles.topBarTitle}>SELLER SCORECARD</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={{ padding: 20, alignItems: 'center', justifyContent: 'center', flex: 1, gap: 12 }}>
+          <ActivityIndicator color={colors.charcoal} size="small" />
+          <Text style={{ fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, letterSpacing: 1 }}>
+            RETRIEVING ATELIER PROFILE...
+          </Text>
+        </View>
       </View>
     );
   }

@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { OrderCardsLoading } from '../../../src/components/common/CardLoadingScreen';
 import { OrderTrackerStepper } from '../../../src/components/orders/OrderTrackerStepper';
 import { EstTradeValueBadge } from '../../../src/components/orders/EstTradeValueBadge';
 import { FairValueMatcher } from '../../../src/components/orders/FairValueMatcher';
@@ -52,6 +53,26 @@ export default function OrdersManagementScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
+
+  const handleSelectTab = (tab: 'orders' | 'rentals' | 'swaps') => {
+    if (tab === activeTab) return;
+    hapticFeedback.selection();
+    setIsTabSwitching(true);
+    setActiveTab(tab);
+    setTimeout(() => {
+      setIsTabSwitching(false);
+    }, 180);
+  };
+
+  const handleSelectRole = (action: () => void) => {
+    hapticFeedback.selection();
+    setIsTabSwitching(true);
+    action();
+    setTimeout(() => {
+      setIsTabSwitching(false);
+    }, 150);
+  };
 
   // If query params specify tab, sync it
   useEffect(() => {
@@ -235,7 +256,7 @@ export default function OrdersManagementScreen() {
         <View style={styles.primaryTabs}>
           <TouchableOpacity
             style={[styles.primaryTab, activeTab === 'orders' && styles.primaryTabActive]}
-            onPress={() => { hapticFeedback.selection(); setActiveTab('orders'); }}
+            onPress={() => handleSelectTab('orders')}
           >
             <Ionicons name="bag-check-outline" size={13} color={activeTab === 'orders' ? colors.cream : colors.charcoal} />
             <Text style={[styles.primaryTabText, activeTab === 'orders' && styles.primaryTabTextActive]}>
@@ -245,7 +266,7 @@ export default function OrdersManagementScreen() {
 
           <TouchableOpacity
             style={[styles.primaryTab, activeTab === 'rentals' && styles.primaryTabActive]}
-            onPress={() => { hapticFeedback.selection(); setActiveTab('rentals'); }}
+            onPress={() => handleSelectTab('rentals')}
           >
             <Ionicons name="calendar-outline" size={13} color={activeTab === 'rentals' ? colors.cream : colors.charcoal} />
             <Text style={[styles.primaryTabText, activeTab === 'rentals' && styles.primaryTabTextActive]}>
@@ -255,7 +276,7 @@ export default function OrdersManagementScreen() {
 
           <TouchableOpacity
             style={[styles.primaryTab, activeTab === 'swaps' && styles.primaryTabActive]}
-            onPress={() => { hapticFeedback.selection(); setActiveTab('swaps'); }}
+            onPress={() => handleSelectTab('swaps')}
           >
             <Ionicons name="swap-horizontal-outline" size={13} color={activeTab === 'swaps' ? colors.cream : colors.charcoal} />
             <Text style={[styles.primaryTabText, activeTab === 'swaps' && styles.primaryTabTextActive]}>
@@ -293,19 +314,20 @@ export default function OrdersManagementScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* ═══════════════════════════════════════════════ */}
-        {/* TAB 1: PURCHASES & SALES                        */}
-        {/* ═══════════════════════════════════════════════ */}
-        {activeTab === 'orders' && (
+        {loading || isTabSwitching ? (
+          <OrderCardsLoading count={4} />
+        ) : (
+          <>
+            {/* ═══════════════════════════════════════════════ */}
+            {/* TAB 1: PURCHASES & SALES                        */}
+            {/* ═══════════════════════════════════════════════ */}
+            {activeTab === 'orders' && (
           <View>
             {/* ROLE TOGGLE */}
             <View style={styles.roleToggleRow}>
               <TouchableOpacity
                 style={[styles.rolePill, ordersRole === 'buyer' && styles.rolePillActive]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setOrdersRole('buyer');
-                }}
+                onPress={() => handleSelectRole(() => setOrdersRole('buyer'))}
               >
                 <Ionicons
                   name="bag-handle-outline"
@@ -324,10 +346,7 @@ export default function OrdersManagementScreen() {
 
               <TouchableOpacity
                 style={[styles.rolePill, ordersRole === 'seller' && styles.rolePillActive]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setOrdersRole('seller');
-                }}
+                onPress={() => handleSelectRole(() => setOrdersRole('seller'))}
               >
                 <Ionicons
                   name="pricetag-outline"
@@ -526,10 +545,7 @@ export default function OrdersManagementScreen() {
             <View style={styles.roleToggleRow}>
               <TouchableOpacity
                 style={[styles.rolePill, rentalsRole === 'renter' && styles.rolePillActive]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setRentalsRole('renter');
-                }}
+                onPress={() => handleSelectRole(() => setRentalsRole('renter'))}
               >
                 <Ionicons
                   name="key-outline"
@@ -549,10 +565,7 @@ export default function OrdersManagementScreen() {
 
               <TouchableOpacity
                 style={[styles.rolePill, rentalsRole === 'lender' && styles.rolePillActive]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setRentalsRole('lender');
-                }}
+                onPress={() => handleSelectRole(() => setRentalsRole('lender'))}
               >
                 <Ionicons
                   name="shield-checkmark-outline"
@@ -773,10 +786,7 @@ export default function OrdersManagementScreen() {
             <View style={styles.roleToggleRow}>
               <TouchableOpacity
                 style={[styles.rolePill, swapsFilter === 'all' && styles.rolePillActive]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setSwapsFilter('all');
-                }}
+                onPress={() => handleSelectRole(() => setSwapsFilter('all'))}
               >
                 <Text
                   style={[
@@ -790,10 +800,7 @@ export default function OrdersManagementScreen() {
 
               <TouchableOpacity
                 style={[styles.rolePill, swapsFilter === 'action' && styles.rolePillActive]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setSwapsFilter('action');
-                }}
+                onPress={() => handleSelectRole(() => setSwapsFilter('action'))}
               >
                 <Text
                   style={[
@@ -807,10 +814,7 @@ export default function OrdersManagementScreen() {
 
               <TouchableOpacity
                 style={[styles.rolePill, swapsFilter === 'completed' && styles.rolePillActive]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setSwapsFilter('completed');
-                }}
+                onPress={() => handleSelectRole(() => setSwapsFilter('completed'))}
               >
                 <Text
                   style={[
@@ -985,6 +989,8 @@ export default function OrdersManagementScreen() {
               })
             )}
           </View>
+        )}
+          </>
         )}
       </ScrollView>
     </View>
