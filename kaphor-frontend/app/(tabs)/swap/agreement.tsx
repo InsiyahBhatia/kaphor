@@ -24,6 +24,8 @@ import {
   PLATFORM_LEGAL_DISCLAIMER,
 } from '../../../src/types/swap';
 import type { SwapTransaction, SwapAddress } from '../../../src/types/swap';
+import { KEY_SWAP_PROTECTIONS } from '../../../src/data/legalPolicies';
+import { LegalModal } from '../../../src/components/legal/LegalModal';
 
 export default function SwapAgreementScreen() {
   const { swapId } = useLocalSearchParams<{ swapId: string }>();
@@ -33,9 +35,8 @@ export default function SwapAgreementScreen() {
   const [swap, setSwap] = useState<SwapTransaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState<Set<number>>(new Set());
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showLegalClauses, setShowLegalClauses] = useState(false);
+  const [legalModalVisible, setLegalModalVisible] = useState(false);
 
   // Address Book Integration
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -95,26 +96,16 @@ export default function SwapAgreementScreen() {
     }
   };
 
-  const toggleTerm = (idx: number) => {
-    const next = new Set(acceptedTerms);
-    if (next.has(idx)) {
-      next.delete(idx);
-    } else {
-      next.add(idx);
-    }
-    setAcceptedTerms(next);
-    setTermsAccepted(next.size === SWAP_AGREEMENT_TERMS.length);
-  };
-
-  const acceptAll = () => {
-    const all = new Set(SWAP_AGREEMENT_TERMS.map((_, i) => i));
-    setAcceptedTerms(all);
-    setTermsAccepted(true);
-  };
-
   const handleSign = async () => {
     if (!termsAccepted) {
-      Alert.alert('Accept All Terms', 'Please read and accept all terms to proceed.');
+      Alert.alert(
+        'Swap Agreement Required',
+        'Please review and accept the mutual Swap Agreement terms to proceed with signing.',
+        [
+          { text: 'Review Terms', onPress: () => setLegalModalVisible(true) },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
       return;
     }
     if (!selectedAddress) {
@@ -234,131 +225,84 @@ export default function SwapAgreementScreen() {
           </Text>
         </View>
 
-        {/* Intermediary Safe Harbour & Legal Disclaimer (Indian Law) */}
-        <View style={styles.disclaimerCard}>
+        {/* Streamlined Mutual Swap Protections Card */}
+        <View style={styles.protectionsCard}>
           <View style={styles.disclaimerBadgeRow}>
             <View style={styles.disclaimerBadge}>
               <Ionicons name="shield-checkmark" size={12} color={colors.white} />
-              <Text style={styles.disclaimerBadgeText}>INDIAN LAW • SAFE HARBOUR</Text>
+              <Text style={styles.disclaimerBadgeText}>INDIAN CONTRACT ACT • BARTER</Text>
             </View>
             <Text style={styles.disclaimerStatuteRef}>IT ACT 2000 § 79</Text>
           </View>
 
-          <Text style={styles.disclaimerMainTitle}>
-            PLATFORM NON-LIABILITY DISCLAIMER
+          <Text style={styles.protectionsTitle}>MUTUAL SWAP PROTECTIONS</Text>
+          <Text style={styles.protectionsSubtitle}>
+            Both parties exchange under KaPhor's verified P2P escrow & fair-trade framework:
           </Text>
 
-          <Text style={styles.disclaimerNoticeText}>
-            Kaphor operates strictly as a peer-to-peer technology facilitator and electronic intermediary under Section 79 of the Information Technology Act, 2000.
-          </Text>
-
-          <View style={styles.nonLiabilityCallout}>
-            <Ionicons name="alert-circle" size={16} color={colors.red} style={{ marginTop: 1 }} />
-            <Text style={styles.nonLiabilityCalloutText}>
-              <Text style={{ fontWeight: '900', color: colors.red }}>PLATFORM IS NOT RESPONSIBLE: </Text>
-              Kaphor bears NO responsibility or liability for any transaction in Swapping, Rental, Buying, or Selling. All transactions constitute private bipartite contracts directly between users.
-            </Text>
-          </View>
-
-          {/* Key Legal Pillars */}
-          <View style={styles.legalPillarsRow}>
-            <View style={styles.legalPillarChip}>
-              <Ionicons name="people-outline" size={12} color={colors.charcoal} />
-              <Text style={styles.legalPillarText}>Direct P2P Contract</Text>
-            </View>
-            <View style={styles.legalPillarChip}>
-              <Ionicons name="eye-off-outline" size={12} color={colors.charcoal} />
-              <Text style={styles.legalPillarText}>No Item Warranty</Text>
-            </View>
-            <View style={styles.legalPillarChip}>
-              <Ionicons name="scale-outline" size={12} color={colors.charcoal} />
-              <Text style={styles.legalPillarText}>Caveat Emptor</Text>
-            </View>
-            <View style={styles.legalPillarChip}>
-              <Ionicons name="business-outline" size={12} color={colors.charcoal} />
-              <Text style={styles.legalPillarText}>India Jurisdiction</Text>
-            </View>
-          </View>
-
-          {/* Expandable Statutory Clauses Toggle */}
-          <TouchableOpacity
-            style={styles.expandClausesBtn}
-            onPress={() => setShowLegalClauses(!showLegalClauses)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.expandClausesBtnText}>
-              {showLegalClauses
-                ? 'HIDE STATUTORY CLAUSES ▲'
-                : 'READ STATUTORY DISCLAIMER (5 CLAUSES) ▼'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Expanded Statutory Clauses */}
-          {showLegalClauses && (
-            <View style={styles.clausesContainer}>
-              {PLATFORM_LEGAL_DISCLAIMER.clauses.map((clause, cIdx) => (
-                <View key={cIdx} style={styles.clauseItem}>
-                  <Text style={styles.clauseHeading}>{clause.heading}</Text>
-                  <Text style={styles.clauseContent}>{clause.content}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Agreement Terms */}
-        <View style={styles.termsCard}>
-          <Text style={styles.sectionTitle}>MUTUAL AGREEMENT & TRANSACTION CONDITIONS</Text>
-          <Text style={styles.sectionDesc}>
-            Please review each term carefully. Both parties must accept all conditions,
-            including the Indian Law non-liability disclaimer, to execute this agreement.
-          </Text>
-
-          {SWAP_AGREEMENT_TERMS.map((term, idx) => {
-            const splitIdx = term.indexOf(':');
-            const prefix = splitIdx !== -1 ? term.slice(0, splitIdx) : null;
-            const body = splitIdx !== -1 ? term.slice(splitIdx + 1).trim() : term;
-
-            return (
-              <TouchableOpacity
-                key={idx}
-                style={[
-                  styles.termRow,
-                  acceptedTerms.has(idx) && styles.termRowAccepted,
-                ]}
-                onPress={() => toggleTerm(idx)}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    styles.termCheckbox,
-                    acceptedTerms.has(idx) && styles.termCheckboxActive,
-                  ]}
-                >
-                  {acceptedTerms.has(idx) && (
-                    <Ionicons name="checkmark" size={14} color={colors.cream} />
-                  )}
+          {/* 4 Protection Pillars */}
+          <View style={styles.pillarsGrid}>
+            {KEY_SWAP_PROTECTIONS.map((prot, pIdx) => (
+              <View key={pIdx} style={styles.pillarItem}>
+                <View style={styles.pillarIconWrap}>
+                  <Ionicons name={prot.icon as any} size={16} color={colors.charcoal} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  {prefix && (
-                    <Text style={styles.termPrefix}>{prefix.toUpperCase()}</Text>
-                  )}
-                  <Text style={styles.termText}>{body}</Text>
+                  <Text style={styles.pillarTitle}>{prot.title}</Text>
+                  <Text style={styles.pillarSummary}>{prot.summary}</Text>
                 </View>
-              </TouchableOpacity>
-            );
-          })}
+              </View>
+            ))}
+          </View>
+        </View>
 
-          {/* Accept All Button */}
+        {/* Master Agreement Acceptance Card */}
+        <View style={styles.agreementAcceptanceCard}>
           <TouchableOpacity
-            style={styles.acceptAllBtn}
-            onPress={acceptAll}
+            style={[
+              styles.agreementCheckboxRow,
+              termsAccepted && styles.agreementCheckboxRowActive,
+            ]}
+            onPress={() => setTermsAccepted(!termsAccepted)}
             activeOpacity={0.7}
           >
-            <Text style={styles.acceptAllText}>
-              {termsAccepted ? 'ALL 7 CONDITIONS ACCEPTED ✓' : 'ACCEPT ALL CONDITIONS'}
-            </Text>
+            <View
+              style={[
+                styles.masterCheckbox,
+                termsAccepted && styles.masterCheckboxActive,
+              ]}
+            >
+              {termsAccepted && <Ionicons name="checkmark" size={16} color={colors.cream} />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.agreementConsentTitle}>
+                {termsAccepted ? 'SWAP AGREEMENT ACCEPTED ✓' : 'I ACCEPT THE SWAP AGREEMENT'}
+              </Text>
+              <Text style={styles.agreementConsentDesc}>
+                I confirm the offered item strictly matches photos and condition disclosures, agree to dispatch within 3 business days, and accept mutual barter terms and platform non-liability under Indian law.
+              </Text>
+            </View>
           </TouchableOpacity>
+
+          <View style={styles.legalLinksRow}>
+            <TouchableOpacity
+              style={styles.legalBtn}
+              onPress={() => setLegalModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="document-text-outline" size={14} color={colors.charcoal} />
+              <Text style={styles.legalBtnText}>READ STATUTORY TERMS (5 CLAUSES)</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.legalBtnOutline}
+              onPress={() => router.push('/legal?doc=swap-agreement' as any)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="shield-outline" size={14} color={colors.charcoal} />
+              <Text style={styles.legalBtnText}>LEGAL CENTER ↗</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Signature Status */}
@@ -586,13 +530,23 @@ export default function SwapAgreementScreen() {
               <Ionicons name="document-text" size={18} color={colors.cream} />
               <Text style={styles.signBtnText}>
                 {termsAccepted
-                  ? 'SIGN AGREEMENT'
-                  : 'ACCEPT ALL 7 CONDITIONS'}
+                  ? 'SIGN AGREEMENT & SHARE ADDRESS'
+                  : 'AGREE TO SWAP TERMS TO SIGN'}
               </Text>
             </>
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Full Statutory Legal Modal */}
+      <LegalModal
+        visible={legalModalVisible}
+        onClose={() => setLegalModalVisible(false)}
+        initialDocId="swap-agreement"
+        onAccept={() => setTermsAccepted(true)}
+        showAcceptButton={!termsAccepted}
+        acceptButtonText="ACCEPT SWAP TERMS"
+      />
     </View>
   );
 }
@@ -1059,17 +1013,29 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
+  protectionsCard: {
+    backgroundColor: colors.white,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    marginBottom: 20,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
   disclaimerBadgeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 10,
   },
   disclaimerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: colors.charcoal,
+    backgroundColor: '#1E3B2F',
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
@@ -1087,103 +1053,144 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     letterSpacing: 0.5,
   },
-  disclaimerMainTitle: {
+  protectionsTitle: {
     fontFamily: typography.headings,
     fontSize: 18,
     color: colors.charcoal,
     letterSpacing: 0.5,
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  disclaimerNoticeText: {
+  protectionsSubtitle: {
     fontFamily: typography.body,
     fontSize: 12,
     color: colors.textMuted,
-    lineHeight: 18,
-    marginBottom: 12,
+    lineHeight: 17,
+    marginBottom: 16,
   },
-  nonLiabilityCallout: {
-    flexDirection: 'row',
-    gap: 8,
-    backgroundColor: 'rgba(217,4,41,0.06)',
-    borderLeftWidth: 3,
-    borderLeftColor: colors.red,
-    padding: 10,
-    marginBottom: 14,
-  },
-  nonLiabilityCalloutText: {
-    flex: 1,
-    fontFamily: typography.body,
-    fontSize: 11.5,
-    color: colors.charcoal,
-    lineHeight: 16.5,
-  },
-  legalPillarsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 12,
-  },
-  legalPillarChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.18)',
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-  },
-  legalPillarText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.charcoal,
-  },
-  expandClausesBtn: {
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
-    paddingVertical: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  expandClausesBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.8,
-  },
-  clausesContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.12)',
+  pillarsGrid: {
     gap: 12,
   },
-  clauseItem: {
-    gap: 3,
+  pillarItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: 'rgba(30,31,34,0.03)',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(30,31,34,0.08)',
   },
-  clauseHeading: {
+  pillarIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: colors.cream,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  pillarTitle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
+    marginBottom: 3,
   },
-  clauseContent: {
+  pillarSummary: {
     fontFamily: typography.body,
     fontSize: 11,
-    color: colors.charcoal,
+    color: colors.textMuted,
     lineHeight: 16,
   },
-  termPrefix: {
+  agreementAcceptanceCard: {
+    backgroundColor: colors.white,
+    padding: 18,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    marginBottom: 20,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+    gap: 14,
+  },
+  agreementCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 12,
+    backgroundColor: colors.cream,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+  },
+  agreementCheckboxRowActive: {
+    backgroundColor: 'rgba(30,59,47,0.06)',
+    borderColor: colors.forest,
+  },
+  masterCheckbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    flexShrink: 0,
+  },
+  masterCheckboxActive: {
+    backgroundColor: colors.forest,
+    borderColor: colors.forest,
+  },
+  agreementConsentTitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.charcoal,
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  agreementConsentDesc: {
+    fontFamily: typography.body,
+    fontSize: 11.5,
+    color: colors.charcoal,
+    lineHeight: 17,
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  legalBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(30,31,34,0.04)',
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  legalBtnOutline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  legalBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.charcoal,
     letterSpacing: 0.6,
-    marginBottom: 2,
   },
   bottomBarNoticeRow: {
     flexDirection: 'row',

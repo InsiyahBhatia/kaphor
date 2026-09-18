@@ -1,15 +1,15 @@
+import { resolveApiBaseUrl } from './api';
+import { setSharedRepairAssessment, RepairResult } from './repairService';
+
 /**
  * GLIE (Garment Lifecycle Intelligence Engine) Service
  *
- * Communicates with the Kaphor GLIE RAGBOT FastAPI backend
- * (src.api.main) running separately on the configured GLIE_API_URL.
- *
- * The API returns a structured assessment with routing decision,
- * condition score, and route-specific enrichment (price suggestion,
- * upcycle tutorial, or recycling info).
+ * Calls the /repair/assess backend endpoint and returns the GLIE sub-object.
+ * The old /glie/* routes never existed on the Node backend — this rewires
+ * condition-check to the working repair pipeline.
  */
 
-const GLIE_API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://kaphor-backend.onrender.com/api/v1';
+const GLIE_API_URL = resolveApiBaseUrl();
 
 export interface GLIERequest {
   garment_id: string;
@@ -56,6 +56,7 @@ export interface GLIEResponse {
     prompt_tokens_estimated: number;
     gemini_model: string;
   };
+  rawRepairResult?: RepairResult;
 }
 
 /** Garment categories recognisable by the GLIE system */
@@ -89,62 +90,35 @@ export async function assessGarment(
   req: GLIERequest,
   onProgress?: (step: number) => void,
 ): Promise<GLIEResponse> {
-  let s3Url: string | undefined;
+  // Progress callbacks for the existing loading animation
+  onProgress?.(0); // UPLOADING IMAGE
+  onProgress?.(1); // ANALYSING FIBRE
+  onProgress?.(2); // SCANNING CONDITION
 
-  // Step 0: UPLOADING IMAGE — upload to S3 via temp endpoint
-  onProgress?.(0);
-  if (req.image_base64) {
-    try {
-      const base64Data = req.image_base64.includes(',')
-        ? req.image_base64.split(',')[1]
-        : req.image_base64;
-      const binaryStr = atob(base64Data);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-      const blob = new Blob([bytes], { type: 'image/jpeg' });
+  const payload: Record<string, any> = {
+    garment_id: req.garment_id,
+    image_base64: req.image_base64,
+    garment_category: req.garment_category,
+    fiber_type: req.fiber_type,
+    original_price_inr: req.original_price_inr,
+    style_tags: req.style_tags,
+    color_family: req.color_family,
+    season: req.season,
+  };
 
-      const formData = new FormData();
-      formData.append('image', blob, 'garment.jpg');
-
-      const uploadResp = await fetch(`${GLIE_API_URL}/glie/upload-temp`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (uploadResp.ok) {
-        const uploadData = await uploadResp.json();
-        s3Url = uploadData.url;
-      }
-    } catch {
-      // Upload failed — will fall back to base64
-    }
-  }
-
-  // Step 1: ANALYSING FIBRE — building RAG context
-  onProgress?.(1);
-
-  // Step 2: SCANNING CONDITION — send to Gemini Vision
-  onProgress?.(2);
-
-  const payload: Record<string, any> = { ...req };
-  if (s3Url) {
-    payload.image_s3_url = s3Url;
-    delete payload.image_base64;
-  }
-
-  const response = await fetch(`${GLIE_API_URL}/glie/assess`, {
+  const response = await fetch(`${GLIE_API_URL}/repair/assess`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 
-  // Step 3: COMPUTING SCORE — Gemini responded, computing sub-scores
+  // Step 3: COMPUTING SCORE
   onProgress?.(3);
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => '');
     throw new Error(
-      `GLIE assessment failed (${response.status}): ${errorBody || response.statusText}`
+      `Assessment failed (${response.status}): ${errorBody || response.statusText}`
     );
   }
 
@@ -153,7 +127,19 @@ export async function assessGarment(
   // Step 4: DETERMINING ROUTE
   onProgress?.(4);
 
-  return data;
+  const glie = data?.data?.glie;
+  if (!glie) {
+    throw new Error('Assessment returned an unexpected response.');
+  }
+
+  // Cache the complete repair & upcycle data in memory so redirecting to
+  // repair-refresh is instantaneous — zero photo re-upload, zero AI duplicate calls.
+  if (data?.data) {
+    setSharedRepairAssessment(data.data as RepairResult);
+    (glie as any).rawRepairResult = data.data;
+  }
+
+  return glie as GLIEResponse;
 }
 
 /**

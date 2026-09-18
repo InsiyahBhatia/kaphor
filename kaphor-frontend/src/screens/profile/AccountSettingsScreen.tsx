@@ -331,6 +331,27 @@ export function AccountSettingsScreen() {
             <Ionicons name="paper-plane-outline" size={16} color={colors.charcoal} />
           </Pressable>
         </View>
+
+        {/* Legal, Privacy & Compliance */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeader}>LEGAL, PRIVACY & COMPLIANCE</Text>
+        </View>
+
+        <View style={{ paddingHorizontal: 16, marginBottom: 24 }}>
+          <Pressable
+            style={[styles.compactActionCard, { width: '100%' }]}
+            onPress={() => router.push('/legal' as any)}
+          >
+            <View style={[styles.compactActionIcon, { backgroundColor: '#EBF3FB' }]}>
+              <Ionicons name="shield-checkmark-outline" size={18} color="#1C4B82" />
+            </View>
+            <View style={styles.compactActionBody}>
+              <Text style={styles.compactActionTitle}>LEGAL & COMPLIANCE CENTER</Text>
+              <Text style={styles.compactActionSub}>Terms of Use, DPDP Privacy, Grievance Officer & Swapping</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

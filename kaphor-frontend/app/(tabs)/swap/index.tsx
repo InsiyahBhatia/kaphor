@@ -12,8 +12,6 @@ import { messageService } from '../../../src/services/messageService';
 import { colors, typography } from '../../../src/theme';
 import { isAccessoryCategory } from '../../../src/constants/market';
 import api from '../../../src/services/api';
-import { swapService } from '../../../src/services/swapService';
-import type { BarterRing } from '../../../src/types/swap';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import { navigateToLiveSwapStage } from '../../../src/utils/swapNavigation';
 
@@ -25,12 +23,10 @@ export default function SwapFeedScreen() {
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [mySwaps, setMySwaps] = useState<any[]>([]);
   const [browseItems, setBrowseItems] = useState<any[]>([]);
-  const [barterRings, setBarterRings] = useState<BarterRing[]>([]);
   const [swapsLoading, setSwapsLoading] = useState(false);
   const [browseLoading, setBrowseLoading] = useState(false);
-  const [ringsLoading, setRingsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'browse' | 'rings' | 'requests'>('browse');
+  const [activeTab, setActiveTab] = useState<'browse' | 'requests'>('browse');
 
   const effectiveUserId = user?.id || resolvedUserId || authStoreUserId;
 
@@ -68,19 +64,6 @@ export default function SwapFeedScreen() {
     }
   };
 
-  // Discover circular 2-way and 3-way barter loops
-  const fetchBarterRings = async () => {
-    setRingsLoading(true);
-    try {
-      const rings = await swapService.getBarterRings();
-      setBarterRings(Array.isArray(rings) ? rings : []);
-    } catch {
-      setBarterRings([]);
-    } finally {
-      setRingsLoading(false);
-    }
-  };
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     hapticFeedback.light();
@@ -88,7 +71,6 @@ export default function SwapFeedScreen() {
       fetchBrowseItems(),
       fetchFeed({ listingType: 'ACCESSORY_SWAP' }),
       fetchMySwaps(),
-      fetchBarterRings(),
     ]);
     setRefreshing(false);
   }, []);
@@ -98,7 +80,6 @@ export default function SwapFeedScreen() {
       fetchBrowseItems();
       fetchFeed({ listingType: 'ACCESSORY_SWAP' });
       fetchMySwaps();
-      fetchBarterRings();
     }, [])
   );
 
@@ -391,179 +372,6 @@ export default function SwapFeedScreen() {
     });
   };
 
-  // ── 3-Way Barter Rings (Circular Multi-Party Matches) ─────────
-  const renderBarterRings = () => {
-    if (ringsLoading) return <DossierLoading variant="swap" compact />;
-
-    return (
-      <View style={{ gap: 16 }}>
-        {/* Editorial AI Matcher Banner */}
-        <View style={styles.ringsHeaderBanner}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <Ionicons name="git-network-outline" size={14} color={colors.emerald} />
-            <Text style={styles.ringsBadgeText}>AI GRAPH MATCHER // ZERO CASH</Text>
-          </View>
-          <Text style={styles.ringsHeaderTitle}>CIRCULAR BARTER RINGS</Text>
-          <Text style={styles.ringsHeaderSub}>
-            Multi-party circular trades. Member A gives to B, B gives to C, and C gives to A so all closets receive their wishlist pieces simultaneously.
-          </Text>
-        </View>
-
-        {barterRings.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyRingIconCircle}>
-              <Ionicons name="repeat-outline" size={36} color={colors.charcoal} />
-            </View>
-            <Text style={styles.emptyText}>NO ACTIVE BARTER RINGS</Text>
-            <Text style={styles.emptySubtext}>
-              As members add garments to wishlists and list accessories for swap, our AI graph engine continuously searches for 2-way and 3-way circular trade loops.
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyActionBtn}
-              onPress={() => setActiveTab('browse')}
-            >
-              <Text style={styles.emptyActionBtnText}>BROWSE SWAPPABLE ASSETS</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          barterRings.map((ring, ringIdx) => {
-            const isUserInRing = effectiveUserId && ring.participants.some((p) => p.userId === effectiveUserId);
-
-            return (
-              <View key={ring.ringId || `ring-${ringIdx}`} style={styles.ringCard}>
-                {/* Ring Card Header */}
-                <View style={styles.ringCardHeader}>
-                  <View style={styles.ringTypeBadge}>
-                    <Ionicons name="infinite-outline" size={13} color={colors.cream} />
-                    <Text style={styles.ringTypeBadgeText}>
-                      {ring.ringType === '3_WAY' ? '3-PARTY CIRCULAR LOOP' : '2-WAY BILATERAL LOOP'}
-                    </Text>
-                  </View>
-                  <View style={styles.confidenceBadge}>
-                    <Text style={styles.confidenceText}>
-                      {Math.round(ring.confidenceScore * 100)}% MATCH
-                    </Text>
-                  </View>
-                </View>
-
-                {isUserInRing && (
-                  <View style={styles.userInRingNotice}>
-                    <Ionicons name="checkmark-circle" size={14} color={colors.emerald} />
-                    <Text style={styles.userInRingNoticeText}>YOU ARE IN THIS TRADE LOOP!</Text>
-                  </View>
-                )}
-
-                {/* Participants Chain */}
-                <View style={styles.participantsChain}>
-                  {ring.participants.map((participant, pIdx) => {
-                    const isMe = effectiveUserId && participant.userId === effectiveUserId;
-
-                    return (
-                      <View key={`${participant.userId}-${pIdx}`}>
-                        <View style={[styles.participantBox, isMe && styles.participantBoxMe]}>
-                          {/* Participant Top Row */}
-                          <View style={styles.participantTopRow}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <View style={styles.participantAvatar}>
-                                <Ionicons name="person" size={12} color={colors.cream} />
-                              </View>
-                              <Text style={styles.participantName} numberOfLines={1}>
-                                @{participant.userName}
-                              </Text>
-                            </View>
-                            {isMe && (
-                              <View style={styles.meTag}>
-                                <Text style={styles.meTagText}>YOU</Text>
-                              </View>
-                            )}
-                          </View>
-
-                          {/* Garment Exchange Visual */}
-                          <View style={styles.garmentExchangeRow}>
-                            {/* Gives */}
-                            <TouchableOpacity
-                              style={styles.garmentTradeColumn}
-                              onPress={() => participant.giveGarmentId && router.push(`/(tabs)/shop/${participant.giveGarmentId}` as any)}
-                              activeOpacity={0.8}
-                            >
-                              <Text style={styles.tradeRoleLabel}>GIVES</Text>
-                              <View style={styles.tradeThumbWrap}>
-                                <KaphorImage uri={participant.giveGarmentImage} style={styles.tradeThumb} contentFit="cover" />
-                              </View>
-                              <Text style={styles.tradeGarmentTitle} numberOfLines={1}>
-                                {participant.giveGarmentTitle}
-                              </Text>
-                            </TouchableOpacity>
-
-                            {/* Arrow */}
-                            <View style={styles.tradeArrowWrap}>
-                              <Ionicons name="arrow-forward" size={16} color={colors.charcoal} />
-                            </View>
-
-                            {/* Receives */}
-                            <TouchableOpacity
-                              style={styles.garmentTradeColumn}
-                              onPress={() => participant.receiveGarmentId && router.push(`/(tabs)/shop/${participant.receiveGarmentId}` as any)}
-                              activeOpacity={0.8}
-                            >
-                              <Text style={styles.tradeRoleLabel}>RECEIVES</Text>
-                              <View style={styles.tradeThumbWrap}>
-                                <KaphorImage uri={participant.receiveGarmentImage} style={styles.tradeThumb} contentFit="cover" />
-                              </View>
-                              <Text style={styles.tradeGarmentTitle} numberOfLines={1}>
-                                {participant.receiveGarmentTitle}
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-
-                        {/* Connector */}
-                        {pIdx < ring.participants.length - 1 ? (
-                          <View style={styles.loopConnector}>
-                            <Ionicons name="arrow-down" size={14} color={colors.textMuted} />
-                            <Text style={styles.loopConnectorText}>PASSES TO NEXT COLLECTOR</Text>
-                          </View>
-                        ) : (
-                          <View style={styles.loopConnector}>
-                            <Ionicons name="return-up-back" size={14} color={colors.emerald} />
-                            <Text style={[styles.loopConnectorText, { color: colors.emerald, fontWeight: '900' }]}>
-                              CLOSES THE LOOP BACK TO FIRST COLLECTOR
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
-
-                {/* Card Action */}
-                <View style={styles.ringCardFooter}>
-                  <TouchableOpacity
-                    style={styles.inspectLoopBtn}
-                    onPress={() => {
-                      const targetId = isUserInRing
-                        ? ring.participants.find((p) => p.userId === effectiveUserId)?.receiveGarmentId
-                        : ring.participants[0]?.giveGarmentId;
-                      if (targetId) {
-                        router.push(`/(tabs)/shop/${targetId}` as any);
-                      }
-                    }}
-                    activeOpacity={0.88}
-                  >
-                    <Ionicons name={isUserInRing ? 'sparkles' : 'eye-outline'} size={14} color={colors.cream} />
-                    <Text style={styles.inspectLoopBtnText}>
-                      {isUserInRing ? 'INSPECT YOUR TARGET PIECE' : 'EXPLORE GARMENTS IN THIS LOOP'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          })
-        )}
-      </View>
-    );
-  };
-
   // ── Tab Bar ────────────────────────────────────────────────────
   const renderTabBar = () => (
     <View style={styles.tabBar}>
@@ -574,21 +382,6 @@ export default function SwapFeedScreen() {
         <Text style={[styles.tabText, activeTab === 'browse' && styles.tabTextActive]}>
           BROWSE
         </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'rings' && styles.tabActive]}
-        onPress={() => setActiveTab('rings')}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Text style={[styles.tabText, activeTab === 'rings' && styles.tabTextActive]}>
-            3-WAY RINGS
-          </Text>
-          {barterRings.length > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{barterRings.length}</Text>
-            </View>
-          )}
-        </View>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.tab, activeTab === 'requests' && styles.tabActive]}
@@ -603,7 +396,7 @@ export default function SwapFeedScreen() {
         onPress={() => router.push('/(tabs)/orders?tab=swaps' as any)}
       >
         <Text style={[styles.tabText, { color: colors.copper, fontWeight: '800' }]}>
-          TRACK ➔
+          TRACK SWAPS ➔
         </Text>
       </TouchableOpacity>
     </View>
@@ -642,10 +435,6 @@ export default function SwapFeedScreen() {
         {activeTab === 'requests' ? (
           <View style={styles.requestsContainer}>
             {renderSwapRequests()}
-          </View>
-        ) : activeTab === 'rings' ? (
-          <View style={styles.ringsContainer}>
-            {renderBarterRings()}
           </View>
         ) : (
           <>
@@ -743,265 +532,5 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 },
   emptyText: { fontFamily: typography.mono, fontSize: 12, color: colors.charcoal, fontWeight: '800', letterSpacing: 1 },
   emptySubtext: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted },
-
-  tabBadge: {
-    backgroundColor: colors.crimson,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabBadgeText: {
-    color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
-  },
-
-  // Barter Rings
-  ringsContainer: { padding: 16, gap: 16 },
-  ringsHeaderBanner: {
-    backgroundColor: colors.charcoal,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    padding: 16,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
-  },
-  ringsBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    color: colors.cream,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  ringsHeaderTitle: {
-    fontFamily: typography.headings,
-    fontSize: 22,
-    color: colors.cream,
-    letterSpacing: 1,
-    marginVertical: 4,
-  },
-  ringsHeaderSub: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: 'rgba(245, 241, 232, 0.75)',
-    lineHeight: 15,
-  },
-  emptyRingIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    backgroundColor: colors.bgMuted,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  emptyActionBtn: {
-    marginTop: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: colors.charcoal,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
-  },
-  emptyActionBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: colors.cream,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  // Ring Card
-  ringCard: {
-    backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    padding: 16,
-    gap: 12,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
-  },
-  ringCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ringTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.charcoal,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  ringTypeBadgeText: {
-    color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  confidenceBadge: {
-    backgroundColor: colors.bgMuted,
-    borderWidth: 1,
-    borderColor: colors.charcoal,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  confidenceText: {
-    color: colors.forest,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
-  },
-  userInRingNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#E8F5E9',
-    borderWidth: 1,
-    borderColor: colors.forest,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  userInRingNoticeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    color: colors.forest,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-
-  participantsChain: { gap: 8 },
-  participantBox: {
-    backgroundColor: colors.bgMuted,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
-    padding: 12,
-    gap: 10,
-  },
-  participantBoxMe: {
-    backgroundColor: '#F7F4EC',
-    borderColor: colors.gold,
-    borderWidth: 2,
-  },
-  participantTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  participantAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.charcoal,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  participantName: {
-    fontFamily: typography.headings,
-    fontSize: 14,
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
-  meTag: {
-    backgroundColor: colors.gold,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  meTagText: {
-    color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
-  },
-  garmentExchangeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 6,
-  },
-  garmentTradeColumn: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: 'rgba(20,20,20,0.15)',
-    padding: 8,
-  },
-  tradeRoleLabel: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    color: colors.textMuted,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  tradeThumbWrap: {
-    width: 48,
-    height: 48,
-    borderWidth: 1,
-    borderColor: colors.charcoal,
-    backgroundColor: colors.bgMuted,
-    marginBottom: 4,
-  },
-  tradeThumb: { width: '100%', height: '100%' },
-  tradeGarmentTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.charcoal,
-    textAlign: 'center',
-  },
-  tradeArrowWrap: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loopConnector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 4,
-  },
-  loopConnectorText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    color: colors.textMuted,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-
-  ringCardFooter: {
-    marginTop: 4,
-  },
-  inspectLoopBtn: {
-    flexDirection: 'row',
-    height: 38,
-    backgroundColor: colors.charcoal,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-  },
-  inspectLoopBtnText: {
-    color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
 });
+

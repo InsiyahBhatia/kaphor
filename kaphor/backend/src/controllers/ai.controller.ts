@@ -587,15 +587,15 @@ export async function chat(req: Request, res: Response): Promise<void> {
             try {
                 const visionAnalysis = await generateVisionWithFallback([
                     { inlineData: { mimeType, data: base64Data } },
-                    { text: 'Analyze this fashion item image. Identify: 1. Category (e.g. Saree, Bag, Denim, Blazer) 2. Main color & pattern 3. Style aesthetic 4. Materials. Provide a concise 2-sentence summary.' }
+                    { text: 'Analyze this uploaded garment/fashion item photo in detail. Identify: 1. Exact item type (e.g. Y2K graphic halter crop top, distressed denim jacket, flared midi skirt, silk saree). 2. Colors, graphics/prints, neckline, straps, hardware, and key visual features. 3. Aesthetic classification (e.g. Y2K, Streetwear, Vintage, Minimalist, Ethnic, Coquette). Be specific and concise (2-3 sentences).' }
                 ], { temperature: 0.2 });
                 visualAnalysisSummary = visionAnalysis;
                 userPromptText = userPromptText 
-                    ? `${userPromptText}\n[User uploaded image analysis: ${visualAnalysisSummary}]`
-                    : `Please recommend matching pieces for this item: ${visualAnalysisSummary}`;
+                    ? `${userPromptText}\n[Uploaded Garment Photo Analysis: ${visualAnalysisSummary}]`
+                    : `How do I style this item? [Uploaded Garment Photo Analysis: ${visualAnalysisSummary}]`;
             } catch (vErr) {
                 logger.warn('Chat vision analysis fallback', { error: vErr });
-                if (!userPromptText) userPromptText = 'Can you find matching pieces for this uploaded outfit?';
+                if (!userPromptText) userPromptText = 'How do I style this uploaded garment?';
             }
         }
 
@@ -609,11 +609,20 @@ export async function chat(req: Request, res: Response): Promise<void> {
         }
 
         if (!conversation) {
+            // Reuse active stylist conversation for this user so chat history is unified
+            conversation = await db.chatConversation.findFirst({
+                where: { userId: req.user.id },
+                orderBy: { updatedAt: 'desc' },
+                include: { messages: { orderBy: { createdAt: 'asc' }, take: 20 } }
+            });
+        }
+
+        if (!conversation) {
             conversation = await db.chatConversation.create({
                 data: {
                     userId: req.user.id,
                     garmentId: garmentId ? String(garmentId) : null,
-                    title: (message || 'Stylist Agent').substring(0, 40)
+                    title: (message || 'KaPhor Stylist Agent').substring(0, 40)
                 },
                 include: { messages: true }
             });

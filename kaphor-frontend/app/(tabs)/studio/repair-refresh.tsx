@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,8 +22,9 @@ import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import {
   assessRepair,
+  lookupRepairFromAssessment,
+  getSharedRepairAssessment,
   RepairResult,
-  T5GuideResult,
   YouTubeVideo,
   GARMENT_CATEGORIES,
   FIBER_TYPES,
@@ -32,21 +33,30 @@ import {
 } from '../../../src/services/repairService';
 import {
   isRepairSaved,
-  toggleSaveGuide,
   toggleSaveYouTube,
 } from '../../../src/services/savedRepairService';
 
 export default function RepairRefreshScreen() {
-  const router = useRouter();
   const params = useLocalSearchParams<{
     prefillImage?: string;
     prefillBase64?: string;
     prefillCategory?: string;
     prefillFiber?: string;
     prefillPrice?: string;
+    mode?: 'repair' | 'upcycle';
+    autoAssess?: string;
+    useSharedAssessment?: string;
+    damageTypes?: string;
+    repairFeasibility?: string;
+    conditionScore?: string;
   }>();
   const insets = useSafeAreaInsets();
   useBackHandler('/(tabs)/circular');
+
+  // ── Segregated Tab State ('repair' | 'upcycle') ──────────────
+  const [activeTab, setActiveTab] = useState<'repair' | 'upcycle'>(
+    params.mode === 'upcycle' ? 'upcycle' : 'repair'
+  );
 
   // ── Input state ──────────────────────────────────────────────
   const [imageUri, setImageUri] = useState<string | null>(params.prefillImage || null);
@@ -64,17 +74,84 @@ export default function RepairRefreshScreen() {
     if (params.prefillCategory) setCategory(params.prefillCategory);
     if (params.prefillFiber) setFiber(params.prefillFiber);
     if (params.prefillPrice) setPrice(params.prefillPrice);
-  }, [params.prefillImage, params.prefillBase64, params.prefillCategory, params.prefillFiber, params.prefillPrice]);
+    if (params.mode) setActiveTab(params.mode === 'upcycle' ? 'upcycle' : 'repair');
+  }, [params.prefillImage, params.prefillBase64, params.prefillCategory, params.prefillFiber, params.prefillPrice, params.mode]);
 
   // ── Result state ─────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RepairResult | null>(null);
 
-  // ── Difficulty filter state ───────────────────────────────────
-  const [difficultyFilter, setDifficultyFilter] = useState<string | null>(null);
+  // ── Submitted garment context (survives result render) ───────
+  const submittedRef = useRef<{ category: string; fiber: string }>({ category: '', fiber: '' });
+
+  // ── Shared Assessment / Auto-run if directed from Condition Check ─────
+  const autoAssessedRef = useRef(false);
+  useEffect(() => {
+    // 1. FASTEST PATH: Check if full LLM assessment is already available in shared memory.
+    // Zero re-upload, zero AI calls, zero delay!
+    const shared = getSharedRepairAssessment();
+    if ((params.useSharedAssessment === 'true' || params.autoAssess === 'true') && shared) {
+      setResult(shared);
+      submittedRef.current = {
+        category: params.prefillCategory || (shared.glie as any)?.garment_category || '',
+        fiber: params.prefillFiber || (shared.glie as any)?.fiber_type || '',
+      };
+      if (params.prefillImage) setImageUri(params.prefillImage);
+      setLoading(false);
+      return;
+    }
+
+    // 2. FALLBACK PATH: If redirected with LLM metadata but shared memory wasn't present,
+    // call the fast lookup API (still NO image re-upload, NO vision API re-analysis!).
+    if (
+      (params.useSharedAssessment === 'true' || params.autoAssess === 'true') &&
+      !autoAssessedRef.current
+    ) {
+      autoAssessedRef.current = true;
+      (async () => {
+        setLoading(true);
+        submittedRef.current = {
+          category: params.prefillCategory || '',
+          fiber: params.prefillFiber || '',
+        };
+        try {
+          let parsedDamages: string[] = [];
+          if (params.damageTypes) {
+            try {
+              parsedDamages = JSON.parse(params.damageTypes);
+            } catch {}
+          }
+          const data = await lookupRepairFromAssessment({
+            garment_category: params.prefillCategory || 'other',
+            fiber_type: params.prefillFiber || 'Cotton',
+            damage_types: parsedDamages,
+            repair_feasibility: params.repairFeasibility,
+            condition_score: params.conditionScore ? parseFloat(params.conditionScore) : undefined,
+            original_price_inr: parseFloat(params.prefillPrice || '0') || 0,
+            routing_decision: params.mode === 'upcycle' ? 'UPCYCLE' : 'REPAIR',
+          });
+          setResult(data);
+        } catch (e: any) {
+          Alert.alert('Assessment Failed', e?.message || 'Could not connect to the server.');
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [
+    params.useSharedAssessment,
+    params.autoAssess,
+    params.prefillCategory,
+    params.prefillFiber,
+    params.prefillPrice,
+    params.damageTypes,
+    params.repairFeasibility,
+    params.conditionScore,
+    params.mode,
+  ]);
+
 
   // ── Saved state ───────────────────────────────────────────────
-  const [savedGuideIds, setSavedGuideIds] = useState<Set<string>>(new Set());
   const [savedVideoIds, setSavedVideoIds] = useState<Set<string>>(new Set());
 
   // ── Image picker ──────────────────────────────────────────────
@@ -117,6 +194,7 @@ export default function RepairRefreshScreen() {
     if (!imageBase64) { Alert.alert('Image Error', 'Could not read image data. Try taking a new photo.'); return; }
 
     setLoading(true);
+    submittedRef.current = { category: category || '', fiber: fiber || '' };
     try {
       const data = await assessRepair({
         image_base64: imageBase64 || '',
@@ -135,6 +213,7 @@ export default function RepairRefreshScreen() {
 
   // ── Reset ──────────────────────────────────────────────────────
   const resetAll = () => {
+    submittedRef.current = { category: '', fiber: '' };
     setResult(null);
     setImageUri(null);
     setImageBase64(null);
@@ -142,8 +221,6 @@ export default function RepairRefreshScreen() {
     setFiber('');
     setPrice('');
     setDamageDesc('');
-    setDifficultyFilter(null);
-    setSavedGuideIds(new Set());
     setSavedVideoIds(new Set());
   };
 
@@ -151,54 +228,24 @@ export default function RepairRefreshScreen() {
   useEffect(() => {
     if (!result) return;
     const loadSavedState = async () => {
-      const guideIds = new Set<string>();
       const videoIds = new Set<string>();
 
-      for (const guide of result.guides) {
-        const id = `guide-${guide.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48)}`;
-        if (await isRepairSaved(id)) guideIds.add(id);
-      }
-      for (const video of result.youtube) {
+      for (const video of result.youtube || []) {
         const id = `yt-${video.videoId}`;
         if (await isRepairSaved(id)) videoIds.add(id);
       }
 
-      setSavedGuideIds(guideIds);
       setSavedVideoIds(videoIds);
     };
     loadSavedState();
   }, [result]);
-
-  // ── Toggle save for a guide ────────────────────────────────────
-  const handleToggleSaveGuide = useCallback(
-    async (guide: T5GuideResult) => {
-      try {
-        const garmentLabel = `${category.charAt(0).toUpperCase() + category.slice(1)} — ${fiber}`;
-        const damageTypes = result?.glie.damage_breakdown.damage_types.filter(d => d !== 'none') || [];
-        const { saved, id } = await toggleSaveGuide(guide, garmentLabel, damageTypes);
-        setSavedGuideIds((prev) => {
-          const next = new Set(prev);
-          if (saved) next.add(id);
-          else next.delete(id);
-          return next;
-        });
-        Alert.alert(
-          saved ? '✓ Saved' : '✓ Removed',
-          saved ? 'Guide saved to your Vault.' : 'Guide removed from your Vault.'
-        );
-      } catch {
-        Alert.alert('Error', 'Could not update saved guides. Please try again.');
-      }
-    },
-    [category, fiber, result]
-  );
 
   // ── Toggle save for a YouTube video ────────────────────────────
   const handleToggleSaveYouTube = useCallback(
     async (video: YouTubeVideo) => {
       try {
         const garmentLabel = `${category.charAt(0).toUpperCase() + category.slice(1)} — ${fiber}`;
-        const damageTypes = result?.glie.damage_breakdown.damage_types.filter(d => d !== 'none') || [];
+        const damageTypes = (result?.glie?.damage_breakdown?.damage_types || []).filter(d => d !== 'none') || [];
         const { saved, id } = await toggleSaveYouTube(video, garmentLabel, damageTypes);
         setSavedVideoIds((prev) => {
           const next = new Set(prev);
@@ -225,6 +272,13 @@ export default function RepairRefreshScreen() {
     });
   };
 
+  // ── Open a curated article in the browser ──────────────────────
+  const openArticle = (url: string) => {
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Could not open the browser.');
+    });
+  };
+
   // ── Loading view ──────────────────────────────────────────────
   if (loading) {
     return (
@@ -236,22 +290,189 @@ export default function RepairRefreshScreen() {
 
   // ── Result view ───────────────────────────────────────────────
   if (result) {
-    const hasGuides = result.guides.length > 0;
-    const hasYouTube = result.youtube.length > 0;
-    const damageTypes = result.glie.damage_breakdown.damage_types.filter(d => d !== 'none');
-    const garmentLabel = `${category.charAt(0).toUpperCase() + category.slice(1)} — ${fiber}`;
+    const isRepair = activeTab === 'repair';
+    const damageTypes = (result.glie?.damage_breakdown?.damage_types || []).filter(d => d !== 'none');
+    const sub = submittedRef.current;
+    const labelHead = sub.category ? sub.category.charAt(0).toUpperCase() + sub.category.slice(1) : 'Garment';
+    const garmentLabel = sub.fiber ? `${labelHead} — ${sub.fiber}` : labelHead;
 
-    // Filtered guides by difficulty
-    const filteredGuides = difficultyFilter
-      ? result.guides.filter((g) => g.difficulty.toLowerCase() === difficultyFilter.toLowerCase())
-      : result.guides;
-    const hasFilteredGuides = filteredGuides.length > 0;
+    // 1. YouTube videos for active tab (strictly filter out repair/mending from upcycle!)
+    const rawActiveYouTube = isRepair
+      ? (result.repair_youtube && result.repair_youtube.length > 0
+          ? result.repair_youtube
+          : (result.youtube || []).filter(v => {
+              const t = v.title.toLowerCase();
+              return t.includes('repair') || t.includes('mend') || t.includes('fix') || t.includes('stitch') || t.includes('darn') || !t.includes('upcycle');
+            }))
+      : (result.upcycle_youtube && result.upcycle_youtube.length > 0
+          ? result.upcycle_youtube.filter(v => {
+              const t = v.title.toLowerCase();
+              return !t.includes('repair') && !t.includes('mend') && !t.includes('darning') && !t.includes('fix hole') && !t.includes('ripped');
+            })
+          : (result.youtube || []).filter(v => {
+              const t = v.title.toLowerCase();
+              const isUpcycle = t.includes('upcycle') || t.includes('rework') || t.includes('diy') || t.includes('transform') || t.includes('shorts') || t.includes('tote');
+              const isRepairVideo = t.includes('repair') || t.includes('mend') || t.includes('darn');
+              return isUpcycle && !isRepairVideo;
+            }));
 
-    // Difficulty levels present
-    const difficultyLevels = ['beginner', 'intermediate', 'advanced'] as const;
-    const availableDifficulties = new Set(
-      result.guides.map((g) => g.difficulty.toLowerCase())
-    );
+    const upcycleFallbackVideos: YouTubeVideo[] = [
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'DIY Old Jeans into Cute Aesthetic Tote Bag Tutorial',
+        channelTitle: 'Upcycle Stitches & Reworks',
+        thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'x8_G4bB1s-8',
+        title: 'How to Cut & Distress Old Jeans into Summer Denim Shorts',
+        channelTitle: 'DIY Fashion Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ];
+
+    const activeYouTube = (!isRepair && rawActiveYouTube.length === 0)
+      ? upcycleFallbackVideos
+      : rawActiveYouTube;
+
+    // 2. Curated blog articles & pattern guides for active tab
+    const curatedUpcycleBlogs = [
+      {
+        id: 'blog-up-1',
+        title: 'How to Upcycle Old Jeans Into a Stylish Denim Tote Bag',
+        url: 'https://heatherhandmade.com/upcycle-jeans-tote-bag/',
+        source: 'Heather Handmade',
+        difficulty: 'beginner',
+        time_minutes: 45,
+        summary: 'Step-by-step pattern instructions to turn worn jeans legs into a durable tote with handles and pockets.',
+      },
+      {
+        id: 'blog-up-2',
+        title: 'Turn Old Jeans into Cute Distressed Denim Cutoff Shorts: 7 Easy Ideas',
+        url: 'https://sewguide.com/diy-cut-off-jean-shorts/',
+        source: 'Sew Guide',
+        difficulty: 'beginner',
+        time_minutes: 30,
+        summary: 'Guide on measuring the inseam, cutting cleanly, and fraying cuffs for a summer denim shorts silhouette.',
+      },
+      {
+        id: 'blog-up-3',
+        title: 'Make an Easy No-Sew T-Shirt Tote Bag',
+        url: 'https://diycandy.com/t-shirt-tote-bag/',
+        source: 'DIY Candy',
+        difficulty: 'beginner',
+        time_minutes: 20,
+        summary: 'Convert an old cotton t-shirt into a zero-waste grocery tote using simple fringe knots — no sewing machine required.',
+      },
+      {
+        id: 'blog-up-4',
+        title: 'Upcycle a Thrifted Sweater into a Beanie & Mitten Winter Set',
+        url: 'https://mellysews.com/thrift-flip-sweater-upcycle-to-beanie-and-mittens/',
+        source: 'Melly Sews',
+        difficulty: 'intermediate',
+        time_minutes: 60,
+        summary: 'Creative thrift flip instructions to repurpose ribbed wool and knitwear into matching accessories.',
+      },
+      {
+        id: 'blog-up-5',
+        title: 'Convert a Vintage Saree or Maxi Dress into a Designer Kurti',
+        url: 'https://herzindagi.com/fashion/old-saree-designer-anarkali-kurti-article-289532',
+        source: 'HerZindagi Fashion',
+        difficulty: 'intermediate',
+        time_minutes: 90,
+        summary: 'Indian ethnic garment upcycling tutorial to reconstruct heavy silks into modern fusion wear silhouettes.',
+      },
+      {
+        id: 'blog-up-6',
+        title: 'Upcycle a Button-Down Shirt into a Chef Apron',
+        url: 'https://weallsew.com/how-to-upcycle-a-shirt-to-an-apron/',
+        source: 'WeAllSew Studio',
+        difficulty: 'beginner',
+        time_minutes: 40,
+        summary: 'Turn an oversized collared shirt into an artisan kitchen apron using the collar and front button placket.',
+      },
+      {
+        id: 'blog-up-7',
+        title: '12 Creative Ways to Upcycle Lone or Worn Socks into Mug Cozies & Heat Packs',
+        url: 'https://thesprucecrafts.com/ways-to-upcycle-old-socks-4158434',
+        source: 'The Spruce Crafts',
+        difficulty: 'beginner',
+        time_minutes: 15,
+        summary: 'Repurpose single socks with worn heels into insulated coffee mug warmers, lavender microwave heat packs, and reusable floor dusters.',
+      },
+    ];
+
+    const curatedRepairBlogs = [
+      {
+        id: 'blog-rep-1',
+        title: 'Textile Triage: Fixing Pilling, Snags, Holes, and Seam Fraying',
+        url: 'https://closetcorepatterns.com/blogs/blog/textile-triage-pilling-snags-holes-and-fraying',
+        source: 'Closet Core Patterns',
+        difficulty: 'beginner',
+        time_minutes: 25,
+        summary: 'Artisan diagnostic guide for assessing textile wear, choosing darning thread, and stabilizing fiber edges.',
+      },
+      {
+        id: 'blog-rep-2',
+        title: 'Sashiko Style Japanese Mending: Tutorial for Repairing Denim Jeans',
+        url: 'https://heatherhandmade.com/sashiko-style-mending-tutorial/',
+        source: 'Heather Handmade',
+        difficulty: 'intermediate',
+        time_minutes: 45,
+        summary: 'Learn visible Japanese Sashiko geometric stitching to reinforce thigh and knee tears with aesthetic cotton thread.',
+      },
+      {
+        id: 'blog-rep-3',
+        title: 'How to Fix Holes in Jeans: 5 Easy Hand & Machine Methods',
+        url: 'https://sewguide.com/how-to-fix-a-hole-in-jeans/',
+        source: 'Sew Guide',
+        difficulty: 'beginner',
+        time_minutes: 30,
+        summary: 'Comprehensive mending walk-through covering back-patches, invisible darning, and zig-zag machine reinforcement.',
+      },
+      {
+        id: 'blog-rep-4',
+        title: 'How to Mend a Torn Seam and Pocket Edge by Hand',
+        url: 'https://www.thesprucecrafts.com/how-to-mend-a-torn-seam-2977797',
+        source: 'The Spruce Crafts',
+        difficulty: 'beginner',
+        time_minutes: 20,
+        summary: 'Step-by-step hand stitching instructions using ladder stitch and backstitch for invisible seam closures.',
+      },
+      {
+        id: 'blog-rep-5',
+        title: 'Zipper Repair Guide: How to Fix a Stuck or Split Zipper Slider',
+        url: 'https://www.artofmanliness.com/skills/how-to/how-to-fix-a-broken-zipper/',
+        source: 'Art of Manliness',
+        difficulty: 'beginner',
+        time_minutes: 15,
+        summary: 'Fix split zipper teeth, realign metal and nylon sliders, and replace zipper stops with simple household pliers.',
+      },
+    ];
+
+    const apiBlogs = isRepair
+      ? (result.repair_reading_list || [])
+      : (result.upcycle_reading_list || []);
+
+    const defaultCurated = isRepair ? curatedRepairBlogs : curatedUpcycleBlogs;
+
+    const blogLinks = [
+      ...apiBlogs.map((b) => ({
+        id: b.id || b.url || b.title,
+        title: b.title,
+        url: b.url,
+        source: b.source || 'Curated Sewing Blog',
+        difficulty: (b.difficulty || 'beginner').toLowerCase(),
+        time_minutes: 30,
+        summary: 'External blog tutorial with pattern guides, diagrams, and fabric recommendations.',
+      })),
+      ...defaultCurated,
+    ].filter((item, i, arr) => item.url && arr.findIndex((x) => x.url === item.url) === i);
+
+    const hasYouTube = activeYouTube.length > 0;
+    const hasAnyContent = hasYouTube || blogLinks.length > 0;
 
     return (
       <View style={styles.container}>
@@ -267,7 +488,7 @@ export default function RepairRefreshScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* ── Garment Summary + Before/After ──────────────────── */}
           <View style={styles.garmentSummaryCard}>
-            <Text style={styles.garmentSummaryTitle}>AI VISION ANALYSIS (QWEN2-VL VLM)</Text>
+            <Text style={styles.garmentSummaryTitle}>AI VISION ANALYSIS</Text>
             <Text style={styles.garmentSummaryName}>{garmentLabel}</Text>
             <Text style={styles.garmentSummaryDesc}>{result.glie.description}</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
@@ -339,66 +560,89 @@ export default function RepairRefreshScreen() {
             )}
           </View>
 
-          {/* ── Difficulty Filter ────────────────────────────────── */}
-          {hasGuides && (
-            <View style={styles.filterBar}>
-              <Text style={styles.filterLabel}>FILTER:</Text>
-              <TouchableOpacity
-                style={[styles.filterChip, difficultyFilter === null && styles.filterChipActive]}
-                onPress={() => setDifficultyFilter(null)}
-              >
-                <Text style={[styles.filterChipText, difficultyFilter === null && styles.filterChipTextActive]}>
-                  ALL
-                </Text>
-              </TouchableOpacity>
-              {difficultyLevels.map((level) => {
-                if (!availableDifficulties.has(level)) return null;
-                return (
-                  <TouchableOpacity
-                    key={level}
-                    style={[
-                      styles.filterChip,
-                      difficultyFilter === level && styles.filterChipActive,
-                      { borderColor: difficultyColor(level) },
-                    ]}
-                    onPress={() =>
-                      setDifficultyFilter((prev) => (prev === level ? null : level))
-                    }
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        difficultyFilter === level && styles.filterChipTextActive,
-                        { color: difficultyFilter === level ? colors.cream : difficultyColor(level) },
-                      ]}
-                    >
-                      {level.charAt(0).toUpperCase() + level.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-              {difficultyFilter && (
-                <TouchableOpacity
-                  style={styles.filterClear}
-                  onPress={() => setDifficultyFilter(null)}
-                >
-                  <Ionicons name="close-outline" size={16} color={colors.textMuted} />
-                </TouchableOpacity>
+          {/* ── Segregated Route Selector (Repair vs Upcycle) ──────── */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tabBtn, isRepair && styles.tabBtnActive]}
+              onPress={() => setActiveTab('repair')}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="bandage-outline"
+                size={16}
+                color={isRepair ? colors.cream : colors.charcoal}
+              />
+              <Text style={[styles.tabBtnText, isRepair && styles.tabBtnTextActive]}>
+                REPAIR & MEND
+              </Text>
+              {(result.repair_guides?.length || 0) > 0 && (
+                <View style={[styles.tabBadge, isRepair && styles.tabBadgeActive]}>
+                  <Text style={[styles.tabBadgeText, isRepair && styles.tabBadgeTextActive]}>
+                    {result.repair_guides?.length}
+                  </Text>
+                </View>
               )}
-            </View>
-          )}
+            </TouchableOpacity>
 
-          {/* ── YouTube Tutorials (First to avoid excess scrolling) ── */}
+            <TouchableOpacity
+              style={[
+                styles.tabBtn,
+                !isRepair && styles.tabBtnActive,
+                !isRepair && { backgroundColor: '#C95F12', borderColor: '#C95F12' },
+              ]}
+              onPress={() => setActiveTab('upcycle')}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="cut-outline"
+                size={16}
+                color={!isRepair ? colors.cream : colors.charcoal}
+              />
+              <Text style={[styles.tabBtnText, !isRepair && styles.tabBtnTextActive]}>
+                UPCYCLE & TRANSFORM
+              </Text>
+              {(result.upcycle_guides?.length || 0) > 0 && (
+                <View style={[styles.tabBadge, !isRepair && styles.tabBadgeActive]}>
+                  <Text style={[styles.tabBadgeText, !isRepair && styles.tabBadgeTextActive]}>
+                    {result.upcycle_guides?.length}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Active Route Focus Banner ─────────────────────────── */}
+          <View
+            style={[
+              styles.tabFocusBanner,
+              !isRepair && { borderLeftColor: '#C95F12', backgroundColor: '#FDF7EB' },
+            ]}
+          >
+            <Text style={[styles.tabFocusTitle, !isRepair && { color: '#C95F12' }]}>
+              {isRepair ? '🧵 PATHWAY: RESTORATION & HAND MENDING' : '✂️ PATHWAY: CREATIVE UPCYCLING & REWORK'}
+            </Text>
+            <Text style={styles.tabFocusText}>
+              {isRepair
+                ? 'Step-by-step tutorials, darning guides, and blogs curated specifically to repair holes, loose seams, and fiber wear on this garment.'
+                : 'Creative DIY tutorials, transformation guides, and blogs curated to convert this piece into tote bags, crop tops, or reworked patchwork.'}
+            </Text>
+          </View>
+
+          {/* ── YouTube Tutorials ──────────────────────────────────── */}
           {hasYouTube && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="logo-youtube" size={20} color="#FF0000" />
-                <Text style={styles.sectionTitle}>VIDEO TUTORIALS</Text>
+                <Text style={styles.sectionTitle}>
+                  {isRepair ? 'REPAIR VIDEO TUTORIALS' : 'UPCYCLE VIDEO TUTORIALS'}
+                </Text>
               </View>
               <Text style={styles.sectionSubtitle}>
-                YouTube results for: {result.youtube_query}
+                {isRepair
+                  ? 'Mending and restoration guides picked from YouTube — tap to watch'
+                  : 'Creative DIY rework tutorials picked from YouTube — tap to watch'}
               </Text>
-              {result.youtube.map((video, idx) => {
+              {activeYouTube.map((video, idx) => {
                 const videoSaveId = `yt-${video.videoId}`;
                 const isVideoSaved = savedVideoIds.has(videoSaveId);
                 return (
@@ -443,150 +687,69 @@ export default function RepairRefreshScreen() {
             </View>
           )}
 
-          {/* ── T5 Repair Guides ────────────────────────────────── */}
-          {hasGuides && (
+          {/* ── Curated Blog Articles & Tutorials (Direct Web Links) ─ */}
+          {blogLinks.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="book-outline" size={18} color={colors.charcoal} />
-                <Text style={styles.sectionTitle}>REPAIR GUIDES</Text>
-                {difficultyFilter && (
-                  <Text style={styles.sectionFilterNote}>
-                    ({filteredGuides.length} of {result.guides.length})
-                  </Text>
-                )}
+                <Ionicons name="newspaper-outline" size={20} color={isRepair ? '#1E3B2F' : '#C95F12'} />
+                <Text style={styles.sectionTitle}>
+                  {isRepair ? 'REPAIR & MENDING BLOG ARTICLES' : 'UPCYCLING & DIY REWORK BLOG ARTICLES'}
+                </Text>
               </View>
               <Text style={styles.sectionSubtitle}>
-                Step-by-step guides matched to your garment
+                {isRepair
+                  ? 'Curated external articles and mending tutorials — tap to open in browser'
+                  : 'Curated external DIY upcycling blogs and pattern guides — tap to open in browser'}
               </Text>
-              {hasFilteredGuides ? (
-                filteredGuides.map((guide, idx) => {
-                  const guideSaveId = `guide-${guide.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48)}`;
-                  const isGuideSaved = savedGuideIds.has(guideSaveId);
-                  return (
-                    <View key={idx} style={styles.guideCard}>
-                      {/* Save Button */}
-                      <TouchableOpacity
-                        style={styles.saveBtn}
-                        onPress={() => handleToggleSaveGuide(guide)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Ionicons
-                          name={isGuideSaved ? 'bookmark' : 'bookmark-outline'}
-                          size={18}
-                          color={isGuideSaved ? colors.gold : colors.textMuted}
-                        />
-                      </TouchableOpacity>
 
-                      <View style={styles.guideHeader}>
-                        <View style={[styles.guideTypeBadge, {
-                          backgroundColor: guide.doc_type === 'repair' ? '#1E3B2F' :
-                            guide.doc_type === 'upcycle' ? '#C95F12' : '#4A2E1A'
-                        }]}>
-                          <Text style={styles.guideTypeText}>
-                            {guide.doc_type.toUpperCase()}
-                          </Text>
-                        </View>
-                        <View style={styles.guideMeta}>
-                          <View style={[styles.guideDiffBadge, { borderColor: difficultyColor(guide.difficulty) }]}>
-                            <Text style={[styles.guideDiffText, { color: difficultyColor(guide.difficulty) }]}>
-                              {guide.difficulty}
-                            </Text>
-                          </View>
-                          <Text style={styles.guideTime}>⏱ {guide.time_minutes} min</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.guideTitle}>{guide.title}</Text>
-                      <Text style={styles.guideTechnique}>{guide.technique_style}</Text>
-
-                      {/* Steps */}
-                      {guide.steps.length > 0 && (
-                        <View style={styles.guideSteps}>
-                          {guide.steps.map((step, si) => {
-                            const detailedTip = guide.detailed_steps?.[si]?.tip;
-                            return (
-                              <View key={si} style={styles.guideStepWrapper}>
-                                <View style={styles.guideStep}>
-                                  <View style={styles.guideStepNum}>
-                                    <Text style={styles.guideStepNumText}>{si + 1}</Text>
-                                  </View>
-                                  <Text style={styles.guideStepText}>{step}</Text>
-                                </View>
-                                {detailedTip ? (
-                                  <View style={styles.stepTipBox}>
-                                    <Ionicons name="bulb-outline" size={12} color={colors.gold} />
-                                    <Text style={styles.stepTipText}>{detailedTip}</Text>
-                                  </View>
-                                ) : null}
-                              </View>
-                            );
-                          })}
-                        </View>
-                      )}
-
-                      {/* Artisan Pro Tip */}
-                      {guide.pro_tip ? (
-                        <View style={styles.proTipBox}>
-                          <Ionicons name="sparkles" size={14} color={colors.gold} />
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.proTipHeading}>ARTISAN PRO TIP</Text>
-                            <Text style={styles.proTipText}>{guide.pro_tip}</Text>
-                          </View>
-                        </View>
-                      ) : null}
-
-                      {/* Care & Preservation */}
-                      {guide.care_instructions ? (
-                        <View style={styles.careBox}>
-                          <Ionicons name="shield-checkmark-outline" size={14} color={colors.forest} />
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.careHeading}>POST-REPAIR CARE</Text>
-                            <Text style={styles.careText}>{guide.care_instructions}</Text>
-                          </View>
-                        </View>
-                      ) : null}
-
-                      {/* Circular Upcycle Alternative */}
-                      {guide.upcycle_alternative ? (
-                        <View style={styles.upcycleAltBox}>
-                          <Ionicons name="repeat" size={14} color={colors.orange} />
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.upcycleAltHeading}>CIRCULAR UPCYCLE OPTION</Text>
-                            <Text style={styles.upcycleAltText}>{guide.upcycle_alternative}</Text>
-                          </View>
-                        </View>
-                      ) : null}
-
-                      {/* Tools */}
-                      {guide.tools_required.length > 0 && (
-                        <View style={styles.guideTools}>
-                          <Text style={styles.guideToolsLabel}>Tools needed:</Text>
-                          <View style={styles.guideToolsRow}>
-                            {guide.tools_required.slice(0, 6).map((tool, ti) => (
-                              <View key={ti} style={styles.guideToolChip}>
-                                <Text style={styles.guideToolChipText}>{tool}</Text>
-                              </View>
-                            ))}
-                          </View>
-                        </View>
-                      )}
+              {blogLinks.map((article, idx) => (
+                <TouchableOpacity
+                  key={`${article.id}-${idx}`}
+                  style={styles.blogCard}
+                  onPress={() => openArticle(article.url)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.blogCardTopRow}>
+                    <View style={[styles.blogTypeBadge, !isRepair && { backgroundColor: '#C95F12' }]}>
+                      <Text style={styles.blogTypeBadgeText}>
+                        {isRepair ? '🧵 REPAIR BLOG' : '✂️ UPCYCLE BLOG'}
+                      </Text>
                     </View>
-                  );
-                })
-              ) : (
-                <View style={styles.noFilterResults}>
-                  <Text style={styles.noFilterResultsText}>
-                    No {difficultyFilter} guides found for this garment.
-                  </Text>
-                  <TouchableOpacity onPress={() => setDifficultyFilter(null)}>
-                    <Text style={styles.noFilterResultsAction}>Clear filter</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+                    <View style={styles.blogSourceBadge}>
+                      <Text style={styles.blogSourceBadgeText}>{article.source.toUpperCase()}</Text>
+                    </View>
+                    <View style={styles.blogDiffBadge}>
+                      <Text style={[styles.blogDiffBadgeText, { color: difficultyColor(article.difficulty) }]}>
+                        {article.difficulty.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.blogCardTitle}>{article.title}</Text>
+                  {article.summary ? (
+                    <Text style={styles.blogCardSummary}>{article.summary}</Text>
+                  ) : null}
+
+                  <View style={styles.blogCardFooter}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Ionicons name="time-outline" size={13} color={colors.textMuted} />
+                      <Text style={styles.blogTimeText}>{article.time_minutes || 30} min read</Text>
+                    </View>
+                    <View style={styles.blogReadAction}>
+                      <Text style={[styles.blogReadActionText, !isRepair && { color: '#C95F12' }]}>
+                        READ FULL BLOG ARTICLE ↗
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
           )}
 
+
+
           {/* ── No results fallback ──────────────────────────────── */}
-          {!hasGuides && !hasYouTube && (
+          {!hasAnyContent && (
             <View style={styles.emptyCard}>
               <Ionicons name="alert-circle-outline" size={40} color={colors.textMuted} />
               <Text style={styles.emptyTitle}>No Matching Guides Found</Text>
@@ -594,39 +757,6 @@ export default function RepairRefreshScreen() {
                 We couldn't find specific repair guides or videos for this combination. Try uploading a clearer photo or describing the damage in detail.
               </Text>
             </View>
-          )}
-
-          {/* ── Professional Upcycling CTA ──────────────────────────── */}
-          {result.glie.routing_decision !== 'RECYCLE' && (
-            <TouchableOpacity
-              style={styles.proUpcycleBtn}
-              onPress={() => {
-                router.push({
-                  pathname: '/(tabs)/studio/upcycle-request',
-                  params: {
-                    garmentTitle: `${category} — ${fiber}`,
-                    damageInfoJson: JSON.stringify({
-                      condition_score: result.glie.condition_score,
-                      damage_types: result.glie.damage_breakdown.damage_types,
-                      repair_feasibility: result.glie.repair_feasibility,
-                    }),
-                    guidesJson: JSON.stringify(result.guides),
-                    youtubeJson: JSON.stringify(result.youtube),
-                  },
-                });
-              }}
-            >
-              <View style={styles.proUpcycleIconWrap}>
-                <Ionicons name="leaf-outline" size={22} color={colors.cream} />
-              </View>
-              <View style={styles.proUpcycleContent}>
-                <Text style={styles.proUpcycleTitle}>PROFESSIONAL UPCYCLING</Text>
-                <Text style={styles.proUpcycleDesc}>
-                  Have our artisans transform this piece. Send your repair assessment to the Kaphor team.
-                </Text>
-              </View>
-              <Ionicons name="arrow-forward" size={20} color={colors.charcoal} />
-            </TouchableOpacity>
           )}
 
           {/* ── Try Another ──────────────────────────────────────── */}
@@ -870,6 +1000,81 @@ const styles = StyleSheet.create({
   garmentSummaryDesc: { fontFamily: typography.body, fontSize: 13, color: colors.charcoal, lineHeight: 20, marginBottom: 12 },
   garmentFeasibility: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, lineHeight: 16, fontStyle: 'italic', marginTop: 8 },
 
+  // ── Segregated Route Selector ───────────────────────────────
+  tabContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  tabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.white,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  tabBtnActive: {
+    backgroundColor: colors.charcoal,
+  },
+  tabBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 0.5,
+  },
+  tabBtnTextActive: {
+    color: colors.cream,
+  },
+  tabBadge: {
+    backgroundColor: '#ECE8DD',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  tabBadgeActive: {
+    backgroundColor: colors.gold,
+  },
+  tabBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  tabBadgeTextActive: {
+    color: colors.charcoal,
+  },
+  tabFocusBanner: {
+    backgroundColor: '#F7F4EB',
+    borderLeftWidth: 4,
+    borderLeftColor: '#1E3B2F',
+    padding: 12,
+    marginBottom: 20,
+  },
+  tabFocusTitle: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#1E3B2F',
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  tabFocusText: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.charcoal,
+    lineHeight: 18,
+  },
+
   // ── Result: Damage Tags ───────────────────────────────────────
   damageTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   damageTag: { backgroundColor: colors.cream, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: colors.charcoal },
@@ -929,39 +1134,161 @@ const styles = StyleSheet.create({
   videoTitle: { fontFamily: typography.body, fontSize: 14, fontWeight: '700', color: colors.charcoal, lineHeight: 20, marginBottom: 4 },
   videoChannel: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted },
 
-  // ── Result: Empty State ───────────────────────────────────────
-  emptyCard: { alignItems: 'center', padding: 32, borderWidth: 2, borderColor: colors.charcoal, borderStyle: 'dashed', gap: 12, marginBottom: 24 },
-  emptyTitle: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.charcoal },
-  emptyText: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, textAlign: 'center', lineHeight: 16 },
-
-  // ── Result: Professional Upcycling CTA ───────────────────────
-  proUpcycleBtn: {
+  // ── Result: Video → Steps strip (from enriched youtube guides) ──
+  videoStepsWrap: { borderTopWidth: 1.5, borderTopColor: colors.border },
+  videoStepsToggle: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#FAF7EE',
+  },
+  videoStepsToggleText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '900', color: colors.charcoal, letterSpacing: 1 },
+  videoStepsCountBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.charcoal,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  videoStepsCountText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.cream },
+  videoStepsMeta: { flex: 1, alignItems: 'flex-end' },
+  videoStepsMetaText: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, textTransform: 'capitalize' },
+  videoStepsList: { paddingHorizontal: 14, paddingVertical: 12, gap: 10, backgroundColor: colors.white },
+  videoStepRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  videoStepNum: { width: 20, height: 20, backgroundColor: colors.gold, justifyContent: 'center', alignItems: 'center', marginTop: 1 },
+  videoStepNumText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.charcoal },
+  videoStepText: { flex: 1, fontFamily: typography.body, fontSize: 13, color: colors.charcoal, lineHeight: 19 },
+
+  // ── Result: Curated Reading List (blog articles) ──────────────
+  readCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     backgroundColor: colors.white,
-    padding: 18,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    padding: 14,
+    marginBottom: 12,
+  },
+  readIconWrap: {
+    width: 38,
+    height: 38,
+    backgroundColor: colors.cream,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  readInfo: { flex: 1 },
+  readTitle: { fontFamily: typography.body, fontSize: 13, fontWeight: '700', color: colors.charcoal, lineHeight: 18, marginBottom: 4 },
+  readSource: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, textTransform: 'capitalize' },
+
+  // ── Result: Curated Blog Cards ─────────────────────────────────
+  blogCard: {
+    backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: colors.charcoal,
+    padding: 16,
+    marginBottom: 16,
     shadowColor: colors.charcoal,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 3,
-    marginBottom: 20,
-    gap: 14,
   },
-  proUpcycleIconWrap: {
-    width: 44,
-    height: 44,
-    backgroundColor: colors.forest,
-    justifyContent: 'center',
+  blogCardTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    gap: 8,
+    marginBottom: 10,
+    flexWrap: 'wrap',
   },
-  proUpcycleContent: { flex: 1 },
-  proUpcycleTitle: { fontFamily: typography.mono, fontSize: 11, fontWeight: '900', color: colors.charcoal, letterSpacing: 1, marginBottom: 4 },
-  proUpcycleDesc: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, lineHeight: 14 },
+  blogTypeBadge: {
+    backgroundColor: '#1E3B2F',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  blogTypeBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.white,
+    letterSpacing: 0.8,
+  },
+  blogSourceBadge: {
+    backgroundColor: colors.cream,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  blogSourceBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: colors.charcoal,
+  },
+  blogDiffBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  blogDiffBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '800',
+  },
+  blogCardTitle: {
+    fontFamily: typography.headings,
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.charcoal,
+    lineHeight: 22,
+    marginBottom: 6,
+  },
+  blogCardSummary: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.textSecond,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  blogCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(30,31,34,0.08)',
+    paddingTop: 10,
+    marginTop: 4,
+  },
+  blogTimeText: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    color: colors.textMuted,
+  },
+  blogReadAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  blogReadActionText: {
+    fontFamily: typography.mono,
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#1E3B2F',
+    letterSpacing: 0.8,
+  },
+
+  // ── Result: Empty State ───────────────────────────────────────
+  emptyCard: { alignItems: 'center', padding: 32, borderWidth: 2, borderColor: colors.charcoal, borderStyle: 'dashed', gap: 12, marginBottom: 24 },
+  emptyTitle: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.charcoal },
+  emptyText: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, textAlign: 'center', lineHeight: 16 },
 
   // ── Result: Before / After ────────────────────────────────────
   beforeAfterWrap: { marginTop: 20, marginBottom: 16, padding: 16, backgroundColor: colors.cream, borderWidth: 1.5, borderColor: colors.charcoal },
@@ -1004,6 +1331,29 @@ const styles = StyleSheet.create({
   filterChipText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '700', color: colors.charcoal },
   filterChipTextActive: { color: colors.cream },
   filterClear: { padding: 4 },
+
+  // ── Result: Content Tabs (progressive disclosure) ──────────────
+  tabBar: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  tabText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.charcoal, letterSpacing: 1 },
+  tabTextActive: { color: colors.cream },
+
+  // ── Result: Guide expand/collapse ───────────────────────────────
+  guideExpandBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.cream,
+    marginBottom: 12,
+  },
+  guideExpandText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.charcoal, letterSpacing: 1 },
 
   // ── Result: Section filter note ────────────────────────────────
   sectionFilterNote: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginLeft: 'auto' },

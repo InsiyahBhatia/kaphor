@@ -15,23 +15,36 @@ export function ReviewsScreen() {
     const [reviews, setReviews] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const handleBack = () => {
+        try {
+            if (router.canGoBack()) {
+                router.back();
+                return;
+            }
+        } catch {}
+        router.replace('/(tabs)/profile');
+    };
+
     useEffect(() => {
         const fetchReviews = async () => {
             try {
-                // If no userId is passed, we might be looking at our own profile 
-                // but usually this screen takes a userId param.
-                const idToFetch = userId || 'me'; 
-                
-                // Fetch reviews. We might need a slightly different endpoint if 'me'
+                const idToFetch = userId || 'me';
+                let resolvedTargetId = idToFetch;
                 let data = [];
                 if (idToFetch === 'me') {
                     const me = await userService.getMe();
-                    data = await userService.getUserReviews(me.id);
+                    resolvedTargetId = me?.id || '';
+                    data = await userService.getUserReviews(resolvedTargetId);
                 } else {
                     data = await userService.getUserReviews(idToFetch);
                 }
+
+                // Defensive filter: never show reviews authored by the profile subject
+                const peerReviewsOnly = (Array.isArray(data) ? data : []).filter(
+                    (r: any) => r.reviewer?.id !== resolvedTargetId
+                );
                 
-                setReviews(data);
+                setReviews(peerReviewsOnly);
             } catch (err) {
                 console.error('Failed to fetch reviews', err);
             } finally {
@@ -74,13 +87,13 @@ export function ReviewsScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
                 <Pressable 
-                    onPress={() => safeBack('/(tabs)/profile')} 
+                    onPress={handleBack} 
                     style={styles.backBtn}
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
                     <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
                 </Pressable>
-                <Text style={styles.headerTitle}>Reviews</Text>
+                <Text style={styles.headerTitle}>COMMUNITY REVIEWS</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -91,7 +104,13 @@ export function ReviewsScreen() {
             ) : reviews.length === 0 ? (
                 <View style={styles.center}>
                     <Ionicons name="star-outline" size={48} color={colors.textMuted} />
-                    <Text style={styles.emptyText}>No reviews yet.</Text>
+                    <Text style={styles.emptyText}>No verified reviews yet.</Text>
+                    <Pressable
+                        onPress={handleBack}
+                        style={{ marginTop: 20, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: colors.charcoal, borderRadius: 6 }}
+                    >
+                        <Text style={{ color: colors.white, fontFamily: typography.mono, fontSize: 12, letterSpacing: 1 }}>RETURN TO PROFILE</Text>
+                    </Pressable>
                 </View>
             ) : (
                 <FlatList

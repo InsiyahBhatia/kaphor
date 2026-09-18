@@ -15,6 +15,7 @@ import { useRazorpay } from '@codearcade/expo-razorpay';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import paymentService from '../../../src/services/paymentService';
+import { rentalService } from '../../../src/services/rentalService';
 import { invalidateCache } from '../../../src/services/api';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import type { RentalPaymentBreakdown } from '../../../src/types/payment';
@@ -87,6 +88,27 @@ export default function RentalPaymentScreen() {
 
   const loadBreakdown = async () => {
     try {
+      if (rentalOrderId) {
+        try {
+          const rental = await rentalService.getRentalById(rentalOrderId);
+          if (rental?.paidAt || ['RESERVED', 'DISPATCHED', 'ACTIVE', 'COMPLETED'].includes(rental?.status)) {
+            Alert.alert(
+              'Already Paid',
+              'This rental lease has already been paid and secured into escrow.',
+              [
+                {
+                  text: 'View Lease',
+                  onPress: () => router.replace(`/(tabs)/rental/lease/${rentalOrderId}` as any),
+                },
+              ],
+            );
+            return;
+          }
+        } catch (rErr) {
+          console.warn('Could not verify rental pre-payment status', rErr);
+        }
+      }
+
       const bd = await paymentService.getRentalBreakdown(garmentId!, days);
       setBreakdown(bd);
     } catch {
@@ -182,6 +204,19 @@ export default function RentalPaymentScreen() {
         onClose: () => setProcessing(false),
       });
     } catch (e: any) {
+      if (e?.response?.data?.error === 'ALREADY_PAID' || e?.response?.data?.message?.includes('already been paid')) {
+        Alert.alert(
+          'Payment Completed',
+          'This rental has already been paid and secured into escrow.',
+          [
+            {
+              text: 'View Lease',
+              onPress: () => router.replace(`/(tabs)/rental/lease/${rentalOrderId}` as any),
+            },
+          ],
+        );
+        return;
+      }
       Alert.alert(
         'Error',
         e?.response?.data?.message || 'Failed to start payment.',

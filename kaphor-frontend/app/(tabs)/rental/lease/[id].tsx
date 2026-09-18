@@ -361,8 +361,18 @@ export default function RentalLeaseDossierScreen() {
       setReviewModalVisible(false);
       setReviewSubmitted(true);
       Alert.alert('Review Submitted', 'Thank you for rating your circular rental partner!');
+      await loadData();
     } catch (err: any) {
-      Alert.alert('Review Error', err?.response?.data?.message || 'Failed to submit review.');
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message || '';
+      if (status === 409 || msg.toLowerCase().includes('already') || msg.toLowerCase().includes('duplicate')) {
+        setReviewModalVisible(false);
+        setReviewSubmitted(true);
+        Alert.alert('Review Saved', 'Your review has been recorded for this transaction.');
+        await loadData();
+      } else {
+        Alert.alert('Review Error', msg || 'Failed to submit review.');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -584,7 +594,7 @@ export default function RentalLeaseDossierScreen() {
         )}
 
         {/* ── Prominent Borrower Payment Action Card when Approved ── */}
-        {isRenter && rental.status === 'APPROVED' && (
+        {isRenter && rental.status === 'APPROVED' && !rental.paidAt && (
           <View style={[styles.actionPromptCard, { borderColor: colors.forest, backgroundColor: '#F0FDF4' }]}>
             <View style={styles.actionPromptTop}>
               <View style={[styles.actionPromptIconBadge, { backgroundColor: '#DCFCE7' }]}>

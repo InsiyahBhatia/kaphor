@@ -30,6 +30,14 @@ export interface T5DetailedStep {
   tip?: string;
 }
 
+export interface BlogArticle {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  difficulty: string;
+}
+
 export interface T5GuideResult {
   doc_type: string;
   title: string;
@@ -42,6 +50,9 @@ export interface T5GuideResult {
   pro_tip?: string;
   care_instructions?: string;
   upcycle_alternative?: string;
+  source?: string;
+  source_id?: string;
+  source_url?: string;
 }
 
 export interface DamageBreakdown {
@@ -79,8 +90,17 @@ export interface GLIEAssessment {
 export interface RepairResult {
   glie: GLIEAssessment;
   guides: T5GuideResult[];
+  repair_guides?: T5GuideResult[];
+  upcycle_guides?: T5GuideResult[];
   youtube: YouTubeVideo[];
+  repair_youtube?: YouTubeVideo[];
+  upcycle_youtube?: YouTubeVideo[];
   youtube_query: string;
+  repair_youtube_query?: string;
+  upcycle_youtube_query?: string;
+  reading_list: BlogArticle[];
+  repair_reading_list?: BlogArticle[];
+  upcycle_reading_list?: BlogArticle[];
 }
 
 export const GARMENT_CATEGORIES = [
@@ -96,11 +116,48 @@ export const FIBER_TYPES = [
   'Hemp', 'Cashmere', 'Velvet', 'Satin', 'Georgette', 'Chiffon',
 ];
 
+export interface RepairLookupInput {
+  garment_category: string;
+  fiber_type: string;
+  damage_types?: string[];
+  damage_description?: string;
+  repair_feasibility?: string;
+  condition_score?: number;
+  routing_decision?: string;
+  original_price_inr?: number;
+}
+
+// ── In-Memory Assessment Store ──────────────────────────────────────────────
+// Stores the full repair/upcycle results returned during condition check
+// to eliminate duplicate image uploads, duplicate AI prompts, and delay.
+let _sharedRepairResult: RepairResult | null = null;
+
+export function setSharedRepairAssessment(result: RepairResult | null) {
+  _sharedRepairResult = result;
+}
+
+export function getSharedRepairAssessment(): RepairResult | null {
+  return _sharedRepairResult;
+}
+
+export function clearSharedRepairAssessment() {
+  _sharedRepairResult = null;
+}
+
 /**
  * Assess a garment for repair/upcycling: runs GLIE + T5 guides + YouTube search
  */
 export async function assessRepair(input: RepairInput): Promise<RepairResult> {
   const { data } = await api.post('/repair/assess', input, { timeout: 60000 });
+  return data.data;
+}
+
+/**
+ * Instant lookup without re-uploading an image or re-running Gemini Vision.
+ * Uses previously computed LLM assessment fields (category, fiber, damage types).
+ */
+export async function lookupRepairFromAssessment(input: RepairLookupInput): Promise<RepairResult> {
+  const { data } = await api.post('/repair/lookup', input, { timeout: 15000 });
   return data.data;
 }
 

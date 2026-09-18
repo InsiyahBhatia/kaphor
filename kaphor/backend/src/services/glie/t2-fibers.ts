@@ -83,10 +83,10 @@ export function loadT2(): void {
 }
 
 const FABRIC_ALIAS_MAP: Record<string, string> = {
-  denim: 'Standard Cotton',
-  jean: 'Standard Cotton',
-  jeans: 'Standard Cotton',
-  canvas: 'Standard Cotton',
+  denim: 'Denim',
+  jean: 'Denim',
+  jeans: 'Denim',
+  canvas: 'Canvas',
   corduroy: 'Standard Cotton',
   flannel: 'Standard Cotton',
   terry: 'Standard Cotton',

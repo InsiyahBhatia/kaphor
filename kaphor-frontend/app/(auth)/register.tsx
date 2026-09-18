@@ -6,6 +6,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 import { useGoogleAuth } from '../../src/hooks/useGoogleAuth';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
+import { LegalModal } from '../../src/components/legal/LegalModal';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -16,6 +17,14 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [legalModalVisible, setLegalModalVisible] = useState(false);
+  const [legalDocId, setLegalDocId] = useState('terms-and-conditions');
+
+  const openLegal = (docId: string = 'terms-and-conditions') => {
+    setLegalDocId(docId);
+    setLegalModalVisible(true);
+  };
 
   const getPasswordStrength = (pass: string) => {
     if (pass.length === 0) return null;
@@ -41,6 +50,18 @@ export default function RegisterScreen() {
       return;
     }
 
+    if (!agreeToTerms) {
+      Alert.alert(
+        'Terms & Conditions Required',
+        'Please review and agree to KaPhor\'s Terms & Conditions and Privacy Policy to create your account.',
+        [
+          { text: 'Review Terms', onPress: () => openLegal('terms-and-conditions') },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+      return;
+    }
+
     try {
       await signUp({ email, password, displayName, username });
       router.replace('/(auth)/style-quiz');
@@ -60,6 +81,17 @@ export default function RegisterScreen() {
   };
 
   const handleGoogleLogin = async () => {
+    if (!agreeToTerms) {
+      Alert.alert(
+        'Terms & Conditions Required',
+        'Please review and agree to KaPhor\'s Terms & Conditions and Privacy Policy before signing up with Google.',
+        [
+          { text: 'Review Terms', onPress: () => openLegal('terms-and-conditions') },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+      return;
+    }
     const ok = await loginWithGoogle();
     if (ok) router.replace('/(auth)/style-quiz');
   };
@@ -129,6 +161,36 @@ export default function RegisterScreen() {
           )}
         </View>
 
+        {/* Terms & Privacy Consent Checkbox */}
+        <View style={styles.termsConsentCard}>
+          <TouchableOpacity
+            style={styles.checkboxTouch}
+            onPress={() => setAgreeToTerms(!agreeToTerms)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkboxBox, agreeToTerms && styles.checkboxBoxActive]}>
+              {agreeToTerms && <Ionicons name="checkmark" size={14} color={colors.white} />}
+            </View>
+          </TouchableOpacity>
+          <View style={styles.termsTextWrap}>
+            <Text style={styles.termsText}>
+              I confirm I am 18+ and agree to KaPhor's{' '}
+              <Text style={styles.termsLink} onPress={() => openLegal('terms-and-conditions')}>
+                Terms of Use
+              </Text>
+              {', '}
+              <Text style={styles.termsLink} onPress={() => openLegal('privacy-policy')}>
+                Privacy Policy
+              </Text>
+              {' & '}
+              <Text style={styles.termsLink} onPress={() => openLegal('community-policy')}>
+                Community Standards
+              </Text>
+              .
+            </Text>
+          </View>
+        </View>
+
         <TouchableOpacity 
           style={[styles.button, isLoading && styles.buttonDisabled]}
           onPress={handleRegister}
@@ -170,6 +232,16 @@ export default function RegisterScreen() {
         </TouchableOpacity>
       </View>
       </ScrollView>
+
+      {/* Reusable Legal Modal */}
+      <LegalModal
+        visible={legalModalVisible}
+        onClose={() => setLegalModalVisible(false)}
+        initialDocId={legalDocId}
+        onAccept={() => setAgreeToTerms(true)}
+        showAcceptButton={!agreeToTerms}
+        acceptButtonText="ACCEPT & CONTINUE"
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -218,6 +290,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 16,
     backgroundColor: colors.bgCard,
+  },
+  termsConsentCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.bgCard,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 12,
+    marginTop: 4,
+  },
+  checkboxTouch: {
+    paddingTop: 2,
+  },
+  checkboxBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.textMuted,
+    backgroundColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxBoxActive: {
+    backgroundColor: colors.crimson,
+    borderColor: colors.crimson,
+  },
+  termsTextWrap: {
+    flex: 1,
+  },
+  termsText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textSecond,
+  },
+  termsLink: {
+    color: colors.crimson,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   button: {
     backgroundColor: colors.crimson,

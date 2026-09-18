@@ -21,6 +21,8 @@ export interface TransactionOrder {
   buyerId: string;
   sellerId: string;
   status: OrderStatus;
+  approvalStatus?: 'REQUESTED' | 'APPROVED' | 'REJECTED';
+  isApproved?: boolean;
   totalAmount: number;
   currency: string;
   shippingAddress: ShippingAddress | null;
@@ -93,5 +95,15 @@ export const orderService = {
       comment,
     });
     return data.data;
+  },
+
+  async approveOrder(orderId: string): Promise<TransactionOrder> {
+    const { data } = await api.post<{ data: TransactionOrder }>(`/orders/${orderId}/approve`);
+    return data.data;
+  },
+
+  async rejectOrder(orderId: string, reason?: string): Promise<{ message: string }> {
+    const { data } = await api.post<{ message: string }>(`/orders/${orderId}/reject`, { reason });
+    return data;
   },
 };

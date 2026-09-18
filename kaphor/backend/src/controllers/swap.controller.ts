@@ -456,14 +456,7 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
     let conversationId: string | undefined;
     try {
       let conv = await db.conversation.findFirst({
-        where: {
-          OR: [
-            { participant1Id: initiatorId, participant2Id: wantedGarment.sellerId, garmentId: wantedGarment.id },
-            { participant1Id: wantedGarment.sellerId, participant2Id: initiatorId, garmentId: wantedGarment.id },
-            { participant1Id: initiatorId, participant2Id: wantedGarment.sellerId },
-            { participant1Id: wantedGarment.sellerId, participant2Id: initiatorId },
-          ],
-        },
+        where: { swapId: swap.id },
       });
 
       if (!conv) {
@@ -472,6 +465,8 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
             participant1Id: initiatorId,
             participant2Id: wantedGarment.sellerId,
             garmentId: wantedGarment.id,
+            swapId: swap.id,
+            type: 'SWAP',
           },
         });
       }
@@ -612,14 +607,19 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
 
       // Post acceptance notification message to direct conversation thread
       try {
-        const conv = await db.conversation.findFirst({
-          where: {
-            OR: [
-              { participant1Id: swap.initiatorId, participant2Id: swap.receiverId },
-              { participant1Id: swap.receiverId, participant2Id: swap.initiatorId },
-            ],
-          },
+        let conv = await db.conversation.findFirst({
+          where: { swapId: swap.id },
         });
+        if (!conv) {
+          conv = await db.conversation.findFirst({
+            where: {
+              OR: [
+                { participant1Id: swap.initiatorId, participant2Id: swap.receiverId },
+                { participant1Id: swap.receiverId, participant2Id: swap.initiatorId },
+              ],
+            },
+          });
+        }
         if (conv) {
           const acceptText = `🎉 [SWAP ACCEPTED] I accepted your swap proposal! Next step: review & sign the swap agreement.`;
           const acceptMsg = await db.directMessage.create({
@@ -673,14 +673,19 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
 
       // Post decline notification message to direct conversation thread
       try {
-        const conv = await db.conversation.findFirst({
-          where: {
-            OR: [
-              { participant1Id: swap.initiatorId, participant2Id: swap.receiverId },
-              { participant1Id: swap.receiverId, participant2Id: swap.initiatorId },
-            ],
-          },
+        let conv = await db.conversation.findFirst({
+          where: { swapId: swap.id },
         });
+        if (!conv) {
+          conv = await db.conversation.findFirst({
+            where: {
+              OR: [
+                { participant1Id: swap.initiatorId, participant2Id: swap.receiverId },
+                { participant1Id: swap.receiverId, participant2Id: swap.initiatorId },
+              ],
+            },
+          });
+        }
         if (conv) {
           const declineText = `❌ [SWAP DECLINED] I have declined this swap proposal.`;
           const declineMsg = await db.directMessage.create({
@@ -1831,20 +1836,6 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
   } catch (error) {
     logger.error('postSwapReview failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
-  }
-}
-
-/**
- * Discovers 2-way and 3-way circular barter trading rings across active listings and user wishlists.
- */
-export async function getCircularBarterRingsHandler(req: Request, res: Response): Promise<void> {
-  try {
-    const { findCircularBarterRings } = await import('../services/barterRing.service');
-    const rings = await findCircularBarterRings(req.user?.id);
-    res.json({ data: rings });
-  } catch (error) {
-    logger.error('getCircularBarterRingsHandler failed', { error });
-    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to discover circular barter rings' });
   }
 }
 

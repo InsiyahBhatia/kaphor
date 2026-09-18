@@ -254,14 +254,9 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             });
             emitToUser(garment.sellerId, 'rental:requested', { rentalId: rental.id, garmentId: garment.id });
 
-            // Post notification into direct conversation thread
+            // Create dedicated direct conversation thread for this rental transaction
             let conv = await db.conversation.findFirst({
-                where: {
-                    OR: [
-                        { participant1Id: req.user.id, participant2Id: garment.sellerId },
-                        { participant1Id: garment.sellerId, participant2Id: req.user.id },
-                    ],
-                },
+                where: { rentalId: rental.id },
             });
             if (!conv) {
                 conv = await db.conversation.create({
@@ -269,6 +264,8 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                         participant1Id: req.user.id,
                         participant2Id: garment.sellerId,
                         garmentId: garment.id,
+                        rentalId: rental.id,
+                        type: 'RENTAL',
                     },
                 });
             }
@@ -792,14 +789,19 @@ export async function approveRentalRequest(req: Request, res: Response): Promise
             emitToUser(rental.renterId, 'rental:approved', { rentalId: rental.id, garmentId: rental.garmentId });
 
             // Post approval into direct message thread
-            const conv = await db.conversation.findFirst({
-                where: {
-                    OR: [
-                        { participant1Id: rental.renterId, participant2Id: rental.garment.sellerId },
-                        { participant1Id: rental.garment.sellerId, participant2Id: rental.renterId },
-                    ],
-                },
+            let conv = await db.conversation.findFirst({
+                where: { rentalId: rental.id },
             });
+            if (!conv) {
+                conv = await db.conversation.findFirst({
+                    where: {
+                        OR: [
+                            { participant1Id: rental.renterId, participant2Id: rental.garment.sellerId, garmentId: rental.garmentId },
+                            { participant1Id: rental.garment.sellerId, participant2Id: rental.renterId, garmentId: rental.garmentId },
+                        ],
+                    },
+                });
+            }
             if (conv) {
                 const approveText = `✨ [RENTAL APPROVED] I have approved your rental dates for "${rental.garment.title}"! You can now proceed to payment in the lease dossier.\n• Lease ID: ${rental.id}`;
                 const chatMsg = await db.directMessage.create({
@@ -892,14 +894,19 @@ export async function declineRentalRequest(req: Request, res: Response): Promise
             emitToUser(rental.renterId, 'rental:declined', { rentalId: rental.id, garmentId: rental.garmentId });
 
             // Post decline note into chat
-            const conv = await db.conversation.findFirst({
-                where: {
-                    OR: [
-                        { participant1Id: rental.renterId, participant2Id: rental.garment.sellerId },
-                        { participant1Id: rental.garment.sellerId, participant2Id: rental.renterId },
-                    ],
-                },
+            let conv = await db.conversation.findFirst({
+                where: { rentalId: rental.id },
             });
+            if (!conv) {
+                conv = await db.conversation.findFirst({
+                    where: {
+                        OR: [
+                            { participant1Id: rental.renterId, participant2Id: rental.garment.sellerId, garmentId: rental.garmentId },
+                            { participant1Id: rental.garment.sellerId, participant2Id: rental.renterId, garmentId: rental.garmentId },
+                        ],
+                    },
+                });
+            }
             if (conv) {
                 const declineText = `⚠️ [RENTAL DECLINED] Rental request for "${rental.garment.title}" could not be accommodated${reason ? `: "${reason}"` : '.'}`;
                 const chatMsg = await db.directMessage.create({

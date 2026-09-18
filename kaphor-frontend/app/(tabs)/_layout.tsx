@@ -68,7 +68,6 @@ export default function TabLayout() {
       <Tabs.Screen name="studio/bespoke" options={{ href: null }} />
       <Tabs.Screen name="studio/chat" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="studio/upcycle" options={{ href: null }} />
-      <Tabs.Screen name="studio/upcycle-request" options={{ href: null }} />
       <Tabs.Screen name="studio/repair-refresh" options={{ href: null }} />
       <Tabs.Screen name="shop/[id]" options={{ href: null }} />
       <Tabs.Screen name="shop/edit/[id]" options={{ href: null }} />

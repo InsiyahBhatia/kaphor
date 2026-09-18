@@ -133,15 +133,17 @@ export function queryT3(
   const prices = matched.map(r => r.listed_price_inr);
   const soldPrices = matched.filter(r => r.was_sold === '1').map(r => r.sold_price_inr);
   const daysToSell = matched.filter(r => r.was_sold === '1').map(r => r.days_to_sell);
-  const ratios = matched.filter(r => r.was_sold === '1').map(r => r.resale_value_ratio);
+  const soldRatios = matched.filter(r => r.was_sold === '1' && r.resale_value_ratio > 0).map(r => r.resale_value_ratio);
+  const allRatios = matched.filter(r => r.resale_value_ratio > 0).map(r => r.resale_value_ratio);
+  const ratios = soldRatios.length > 0 ? soldRatios : allRatios;
   const demandScores = matched.map(r => r.platform_demand_score);
   const trendScores = matched.map(r => r.trend_score_at_listing);
 
   const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
-  const medianDays = daysToSell.length > 0 ? median(daysToSell) : 0;
-  const avgRatio = ratios.length > 0 ? ratios.reduce((a, b) => a + b, 0) / ratios.length : 0;
-  const avgDemand = demandScores.length > 0 ? demandScores.reduce((a, b) => a + b, 0) / demandScores.length : 0;
-  const avgTrend = trendScores.length > 0 ? trendScores.reduce((a, b) => a + b, 0) / trendScores.length : 0;
+  const medianDays = daysToSell.length > 0 ? median(daysToSell) : 21;
+  const avgRatio = ratios.length > 0 ? ratios.reduce((a, b) => a + b, 0) / ratios.length : 0.45;
+  const avgDemand = demandScores.length > 0 ? demandScores.reduce((a, b) => a + b, 0) / demandScores.length : 0.5;
+  const avgTrend = trendScores.length > 0 ? trendScores.reduce((a, b) => a + b, 0) / trendScores.length : 0.5;
 
   // Determine demand trend
   let demand_trend: T3Stats['demand_trend'] = 'stable';

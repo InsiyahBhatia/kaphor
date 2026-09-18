@@ -177,6 +177,7 @@ const CATEGORY_MAP: Record<string, string[]> = {
   'Kurtas': ['kurta', 'kurti', 'kurtis', 'anarkali', 'tunic'],
   'Suits': ['suit', 'salwar', 'churidar', 'pantsuit'],
   'Dresses': ['dress', 'gown', 'mini dress', 'maxi', 'midi', 'cocktail', 'sundress', 'slip dress'],
+  'Bottoms': ['jeans', 'denim', 'trousers', 'pants', 'cargo', 'cargos', 'palazzo', 'shorts', 'bottoms', 'chinos', 'joggers'],
   'Skirts': ['skirt', 'wrap skirt', 'pleated skirt'],
   'Blazers': ['blazer', 'tuxedo', 'suit jacket'],
   'Jackets': ['jacket', 'bomber', 'coat'],
@@ -217,6 +218,8 @@ const STOP_WORDS = new Set([
 export async function searchCatalog(params: {
   query?: string;
   category?: string;
+  categories?: string[];
+  excludeCategories?: string[];
   listingType?: 'BUY' | 'RENTAL' | 'ACCESSORY_SWAP';
   maxPrice?: number;
   excludeId?: string;
@@ -234,6 +237,13 @@ export async function searchCatalog(params: {
       baseWhere.id = { not: params.excludeId };
     }
 
+    if (params.excludeCategories && params.excludeCategories.length > 0) {
+      baseWhere.category = {
+        notIn: params.excludeCategories,
+        mode: 'insensitive',
+      };
+    }
+
     if (params.listingType) {
       baseWhere.listingType = params.listingType;
     }
@@ -247,13 +257,20 @@ export async function searchCatalog(params: {
     const matchedGarmentMap = new Map<string, any>();
     const promptText = (params.query || '').toLowerCase();
 
-    // 1. Detect categories from prompt text
+    // 1. Detect categories from prompt text or explicit list
     const detectedCategories: string[] = [];
     if (params.category) {
       detectedCategories.push(params.category);
     }
+    if (params.categories && params.categories.length > 0) {
+      detectedCategories.push(...params.categories);
+    }
     for (const [cat, keywords] of Object.entries(CATEGORY_MAP)) {
       if (keywords.some(kw => promptText.includes(kw))) {
+        // If this category is explicitly excluded, do not detect it
+        if (params.excludeCategories && params.excludeCategories.some(exc => exc.toLowerCase() === cat.toLowerCase())) {
+          continue;
+        }
         detectedCategories.push(cat);
       }
     }
@@ -661,6 +678,130 @@ export async function createOutfitLook(
   };
 }
 
+export interface ParsedFashionIntent {
+  intent: 'STYLING_ADVICE' | 'SHOP_BUY' | 'RENTAL' | 'SWAP' | 'WARDROBE_QUERY' | 'FULL_OUTFIT_LOOK';
+  isStylingAdvice: boolean;
+  targetGarment: {
+    slot: 'TOP' | 'BOTTOM' | 'DRESS' | 'OUTERWEAR' | 'FOOTWEAR' | 'ACCESSORY' | 'NONE';
+    color: string | null;
+    itemName: string | null;
+  };
+  complementaryCategories: string[];
+  excludeCategories: string[];
+  searchKeywords: string[];
+  maxBudget?: number;
+  wantsClosetItems: boolean;
+}
+
+/**
+ * LLM-powered Intent Classification and Slot Parameter Extraction
+ * Runs sub-200ms via Groq with seamless Gemini fallback.
+ */
+export async function classifyFashionIntent(
+  message: string,
+  visualSummary?: string
+): Promise<ParsedFashionIntent> {
+  const prompt = `You are the intent classification and parameter extraction engine for KaPhor, a circular fashion and styling app.
+Analyze the user's message (and any image summary) and return a strictly valid JSON object matching this schema:
+
+{
+  "intent": "STYLING_ADVICE" | "SHOP_BUY" | "RENTAL" | "SWAP" | "WARDROBE_QUERY" | "FULL_OUTFIT_LOOK",
+  "isStylingAdvice": boolean,
+  "targetGarment": {
+    "slot": "TOP" | "BOTTOM" | "DRESS" | "OUTERWEAR" | "FOOTWEAR" | "ACCESSORY" | "NONE",
+    "color": string or null,
+    "itemName": string or null
+  },
+  "complementaryCategories": string[],
+  "excludeCategories": string[],
+  "searchKeywords": string[],
+  "maxBudget": number or null,
+  "wantsClosetItems": boolean
+}
+
+RULES:
+1. If the user asks how to style something, color combinations, palette, what goes with, what to wear with, or ideas for an item:
+   - "intent": "STYLING_ADVICE"
+   - "isStylingAdvice": true
+   - Set "targetGarment" to what the user ALREADY HAS (e.g. for "baby pink top", slot="TOP", color="baby pink").
+   - "complementaryCategories" MUST be categories that go with it (if user has a TOP, return ["Bottoms", "Skirts", "Jackets", "Blazers", "Accessories", "Jewelry", "Flats", "Heels"]).
+   - "excludeCategories" MUST exclude the same category (if user has a TOP, exclude ["Tops", "Sets"]).
+   - "searchKeywords" should be 3-5 harmonious pairings (e.g. for baby pink top: ["white trousers", "chocolate brown pants", "light wash denim", "silver jewelry"]).
+2. If the user asks to rent, lease, or hire:
+   - "intent": "RENTAL"
+3. If the user asks to swap, trade, or exchange:
+   - "intent": "SWAP"
+4. If the user asks to buy, find pieces, shop, or browse catalog:
+   - "intent": "SHOP_BUY"
+5. If the user asks for a complete look, full outfit, head-to-toe ensemble:
+   - "intent": "FULL_OUTFIT_LOOK"
+6. Extract numerical budget if specified (e.g. "under 1500" -> maxBudget: 1500).
+7. If the user mentions their closet, wardrobe, or clothes they own:
+   - "wantsClosetItems": true
+
+User Message: "${message}"
+${visualSummary ? `Item Image Analysis: "${visualSummary}"` : ''}`;
+
+  try {
+    const raw = await generateWithGroq(prompt, {
+      responseFormat: 'json',
+      temperature: 0.1,
+      maxTokens: 512,
+    });
+    const parsed = JSON.parse(raw);
+    return {
+      intent: parsed.intent || 'STYLING_ADVICE',
+      isStylingAdvice: Boolean(parsed.isStylingAdvice ?? (parsed.intent === 'STYLING_ADVICE')),
+      targetGarment: parsed.targetGarment || { slot: 'NONE', color: null, itemName: null },
+      complementaryCategories: Array.isArray(parsed.complementaryCategories) ? parsed.complementaryCategories : [],
+      excludeCategories: Array.isArray(parsed.excludeCategories) ? parsed.excludeCategories : [],
+      searchKeywords: Array.isArray(parsed.searchKeywords) ? parsed.searchKeywords : [],
+      maxBudget: typeof parsed.maxBudget === 'number' && parsed.maxBudget > 0 ? parsed.maxBudget : undefined,
+      wantsClosetItems: Boolean(parsed.wantsClosetItems),
+    };
+  } catch (groqErr) {
+    logger.warn('Groq intent classification failed, falling back to Gemini', { error: groqErr });
+    try {
+      const rawGemini = await generateWithGemini(prompt, {
+        responseMimeType: 'application/json',
+        temperature: 0.1,
+      });
+      const parsed = JSON.parse(rawGemini);
+      return {
+        intent: parsed.intent || 'STYLING_ADVICE',
+        isStylingAdvice: Boolean(parsed.isStylingAdvice ?? (parsed.intent === 'STYLING_ADVICE')),
+        targetGarment: parsed.targetGarment || { slot: 'NONE', color: null, itemName: null },
+        complementaryCategories: Array.isArray(parsed.complementaryCategories) ? parsed.complementaryCategories : [],
+        excludeCategories: Array.isArray(parsed.excludeCategories) ? parsed.excludeCategories : [],
+        searchKeywords: Array.isArray(parsed.searchKeywords) ? parsed.searchKeywords : [],
+        maxBudget: typeof parsed.maxBudget === 'number' && parsed.maxBudget > 0 ? parsed.maxBudget : undefined,
+        wantsClosetItems: Boolean(parsed.wantsClosetItems),
+      };
+    } catch (geminiErr) {
+      logger.warn('Gemini intent classification fallback failed, using heuristic', { error: geminiErr });
+      const lower = message.toLowerCase();
+      const isStyling = Boolean(visualSummary) || /\b(how to style|how do i style|how to wear|color combo|pair with|what goes with)\b/i.test(lower);
+      const isTop = /\b(top|tops|tshirt|tee|shirt|blouse|sweater)\b/i.test(lower);
+      const isRental = /\b(rent|rental|lease|hire)\b/i.test(lower);
+      const isSwap = /\b(swap|trade|exchange)\b/i.test(lower);
+      return {
+        intent: isRental ? 'RENTAL' : isSwap ? 'SWAP' : isStyling ? 'STYLING_ADVICE' : 'SHOP_BUY',
+        isStylingAdvice: isStyling,
+        targetGarment: {
+          slot: isTop ? 'TOP' : 'NONE',
+          color: null,
+          itemName: null,
+        },
+        complementaryCategories: isTop ? ['Bottoms', 'Skirts', 'Jackets', 'Accessories'] : [],
+        excludeCategories: isTop ? ['Tops', 'Sets'] : [],
+        searchKeywords: [],
+        maxBudget: undefined,
+        wantsClosetItems: /\b(closet|wardrobe)\b/i.test(lower),
+      };
+    }
+  }
+}
+
 // ── Agent Orchestrator: Main Pipeline ─────────────────────────────────────────
 export async function runFashionAgent(params: {
   userId: string;
@@ -685,11 +826,15 @@ export async function runFashionAgent(params: {
   const topCats = Object.keys(profile.topCategories || {}).slice(0, 3);
   const topBrands = Object.keys(profile.topBrands || {}).slice(0, 3);
 
-  // 2. Determine User Intent: only inspect wardrobe if explicitly requested
-  const wantsWardrobe = /\b(my closet|my wardrobe|in my closet|in my wardrobe|from my closet|clothes i own|what i own|pair with my|match my)\b/i.test(prompt);
-  const wantsRental = /\b(rent|rental|lease|hire|day rate)\b/i.test(prompt);
-  const wantsSwap = /\b(swap|trade|exchange)\b/i.test(prompt);
-  const wantsOutfit = /\b(outfit|look|style me|what to wear|wear tonight|wedding|party|brunch|cocktail|dinner|date night|event|sets|silhouette)\b/i.test(prompt);
+  // 2. LLM Intent Classification & Slot Extraction
+  const parsedIntent = await classifyFashionIntent(message, visualAnalysisSummary);
+  const wantsWardrobe = parsedIntent.wantsClosetItems;
+  const wantsRental = parsedIntent.intent === 'RENTAL';
+  const wantsSwap = parsedIntent.intent === 'SWAP';
+  const isStylingAdviceQuery = parsedIntent.isStylingAdvice || Boolean(params.imageUrl || visualAnalysisSummary);
+  const maxPrice = parsedIntent.maxBudget;
+  const isExplicitShoppingQuery = wantsRental || wantsSwap || !!maxPrice || parsedIntent.intent === 'SHOP_BUY';
+  const wantsFullOutfit = parsedIntent.intent === 'FULL_OUTFIT_LOOK';
 
   // Tool Invocation 1: Inspect User Wardrobe (ONLY when user explicitly asks about their closet)
   let wardrobeData = { items: [] as any[], cards: [] as AgentCard[] };
@@ -709,21 +854,32 @@ export async function runFashionAgent(params: {
   if (wantsRental) catalogType = 'RENTAL';
   else if (wantsSwap) catalogType = 'ACCESSORY_SWAP';
 
-  // Extract budget or price hint if present
-  let maxPrice: number | undefined = undefined;
-  const priceMatch = prompt.match(/(?:under|below|less than|max|within|budget of)\s*(?:rs\.?|inr|₹)?\s*([\d,]+)/i);
-  if (priceMatch && priceMatch[1]) {
-    const parsedVal = parseInt(priceMatch[1].replace(/,/g, ''), 10);
-    if (!isNaN(parsedVal) && parsedVal > 0) {
-      maxPrice = parsedVal;
+  // For styling queries, search for COMPLEMENTARY categories, NEVER more of the same piece
+  let targetCategories: string[] | undefined = undefined;
+  let excludeCategories: string[] | undefined = undefined;
+  let catalogSearchQuery = message;
+
+  if (isStylingAdviceQuery) {
+    if (parsedIntent.complementaryCategories.length > 0) {
+      targetCategories = parsedIntent.complementaryCategories;
+    }
+    if (parsedIntent.excludeCategories.length > 0) {
+      excludeCategories = parsedIntent.excludeCategories;
+    }
+    if (parsedIntent.searchKeywords.length > 0) {
+      catalogSearchQuery = parsedIntent.searchKeywords.slice(0, 3).join(' ');
+    } else {
+      catalogSearchQuery = 'trousers jeans skirt accessories';
     }
   }
 
   const catalogData = await searchCatalog({
     listingType: catalogType,
     maxPrice,
-    query: message,
-    topCategories: topCats,
+    query: catalogSearchQuery,
+    categories: targetCategories,
+    excludeCategories,
+    topCategories: isStylingAdviceQuery ? undefined : topCats,
     topBrands: topBrands,
     take: 6,
   });
@@ -731,7 +887,9 @@ export async function runFashionAgent(params: {
   if (catalogData.cards.length > 0) {
     actionsExecuted.push({
       tool: 'search_catalog',
-      description: `Found ${catalogData.cards.length} pieces on the app`,
+      description: isStylingAdviceQuery
+        ? `Found ${catalogData.cards.length} complementary pairings on the app`
+        : `Found ${catalogData.cards.length} pieces on the app`,
       count: catalogData.cards.length,
     });
   }
@@ -749,8 +907,8 @@ export async function runFashionAgent(params: {
     }
   }
 
-  // Tool Invocation 4: Synthesize Outfit Look (if outfit requested or general styling inquiry)
-  if (catalogData.cards.length > 0) {
+  // Tool Invocation 4: Synthesize Outfit Look (ONLY for shopping or when user explicitly asks for an outfit look)
+  if ((isExplicitShoppingQuery || wantsFullOutfit) && !isStylingAdviceQuery && catalogData.cards.length > 0) {
     const occasionTitle = prompt.includes('beach') ? 'Beach Day Look'
       : prompt.includes('wedding') ? 'Wedding & Festive Ensemble'
       : prompt.includes('party') ? 'Evening Party Look'
@@ -795,7 +953,6 @@ export async function runFashionAgent(params: {
   // 3. AI Assistant Synthesis
   const wardrobeSummary = wardrobeData.cards.map(c => `"${c.title}" (${c.brand}, ${c.category})`).join(', ') || 'None';
 
-  // Build a clear catalog summary with per-item pricing confirmed against the budget
   const catalogSummary = cards.length > 0
     ? cards.map((c, i) => {
         const priceLabel = c.rentalPriceDay
@@ -805,33 +962,67 @@ export async function runFashionAgent(params: {
       }).join('\n')
     : '';
 
-  // Build explicit budget context hint for the LLM
   const budgetContext = maxPrice && wantsRental
     ? `IMPORTANT FACT: All ${cards.length} items listed below have already been filtered and confirmed to be under ₹${maxPrice}/day. Do NOT say you couldn't find items. They are all within budget.`
     : maxPrice
     ? `IMPORTANT FACT: All ${cards.length} items listed below are confirmed under ₹${maxPrice}. Do NOT say you couldn't find items.`
     : '';
 
-  const agentPrompt = `You are KaPhor AI, a friendly, warm shopping and style helper.
+  let agentPrompt = '';
+
+  if (isStylingAdviceQuery) {
+    agentPrompt = `You are KaPhor AI, an expert, inspiring, chic fashion stylist.
+You speak in clear, natural, warm, modern English. Avoid pretentious fashion clichés (never use words like "curate", "ensemble", "silhouette", "circular vault", "dossier", "intentional layering").
+
+STYLING ADVICE TASK:
+The user is asking: "${message}".
+${visualAnalysisSummary ? `Uploaded Item Photo Analysis: "${visualAnalysisSummary}".` : ''}
+
+INSTRUCTIONS:
+1. If the user is asking about COLOR COMBOS / PALETTES:
+   - Provide 3 to 4 chic, sophisticated color combinations specifically tailored to this shade.
+   - For example, for soft/baby pink:
+     * Chocolate Brown / Mocha: A rich, 90s-inspired contrast that makes soft pink look grounded and high-end.
+     * Crisp White / Cream / Ecru: Clean, effortless, and fresh for warm weather or minimalist tailoring.
+     * Vintage Light-Wash Denim: The ultimate effortless pairing for casual elegance.
+     * Muted Olive / Sage Green: An unexpected, editorial complementary contrast that feels modern and artistic.
+     * Slate Grey or Charcoal: A sleek, tailored pairing that tones down the sweetness of pink for work or evening.
+   - For each color combo, suggest practical bottoms (trousers, jeans, skirts), layering pieces, or shoes/accessories.
+2. If the user is asking general styling advice:
+   - Provide 2 to 3 distinct styling directions (Casual & Effortless, Chic & Polished, Feminine & Elevated).
+   - Detail bottom cuts, outerwear, footwear, and accessory finishing touches.
+
+STRICT STYLING RULES & PRODUCT INTEGRITY:
+- ANATOMICAL REALITY: A TOP must always be styled with bottoms (jeans, trousers, skirts, shorts) or outerwear. NEVER recommend wearing a top with another top (e.g. NEVER suggest pairing a top with a blouse, shirt, or tee).
+- ONLY mention items from "Available complementary pieces on the app" below if they are truly harmonious bottoms, jackets, or accessories. If none are a natural fit, focus on your pure styling advice without forcing catalog mentions.
+- Keep your response structured, warm, stylish, and direct (4 to 6 sentences, clean formatting with bolded combos).
+
+User Style Profile: ${userAesthetic}${topCats.length ? `, Preferred: ${topCats.join(', ')}` : ''}.
+
+Available complementary pieces on the app (${cards.length} items):
+${catalogSummary || 'No specific catalog items.'}`;
+
+  } else {
+    agentPrompt = `You are KaPhor AI, a friendly, warm shopping and style helper.
 You speak in very simple, natural, everyday English.
-Never use complicated fashion jargon or pretentious words (strictly avoid words like "curate", "ensemble", "silhouette", "intentional layering", "circular vault", "equitable trade valuation", "proportions", "textiles", "dossier").
+Never use complicated fashion jargon or pretentious words (strictly avoid words like "curate", "ensemble", "silhouette", "intentional layering", "circular vault", "equitable trade valuation", "dossier").
 
 CRITICAL RULES:
-1. NEVER mention whether the user's closet or digital closet is mapped, unmapped, empty, digitized, or pending digitization.
-2. You MUST recommend pieces from "Available pieces found on the app" below by exact title and brand.
-3. NEVER say "I couldn't find", "unable to recommend", or "check the app directly" when pieces ARE listed below. The pieces listed are real, confirmed, and in-budget.
+1. NEVER mention whether the user's closet or digital closet is mapped, unmapped, empty, digitized, or pending.
+2. The user wants to shop, rent, swap, or buy items. Recommend matching pieces from "Available pieces found on the app" below by exact title and brand.
+3. Never say "I couldn't find", "unable to recommend", or "check the app directly" when pieces ARE listed below.
 4. Keep your reply short, warm, and natural: strictly 2 to 3 simple sentences.
 5. The user sees interactive product cards below your message, so do not use markdown lists or item IDs.
 ${budgetContext ? `6. ${budgetContext}` : ''}
 
 The user asked: "${message}".
-${visualAnalysisSummary ? `User uploaded photo: "${visualAnalysisSummary}".` : ''}
 User Style Profile: ${userAesthetic}${topCats.length ? `, Preferred: ${topCats.join(', ')}` : ''}${topBrands.length ? `, Brands: ${topBrands.join(', ')}` : ''}.
 
 Available pieces found on the app (${cards.length} items, all confirmed in-budget):
 ${catalogSummary || 'No specific catalog items — suggest the user browse by category or occasion.'}
 ${outfitLook ? `Outfit look: ${outfitLook.title}` : ''}
 ${wantsWardrobe ? `User's closet items: ${wardrobeSummary}` : ''}`;
+  }
 
   let reply = '';
   try {
@@ -844,20 +1035,22 @@ ${wantsWardrobe ? `User's closet items: ${wardrobeSummary}` : ''}`;
       logger.warn('Gemini agent synthesis fallback', { err });
       if (cards.length > 0) {
         const topOne = cards[0];
-        reply = `I found some great pieces on the app that match your style, like the ${topOne.title} by ${topOne.brand}. You can check out all the pieces below to view details, rent, or buy!`;
+        reply = isExplicitShoppingQuery
+          ? `I found some great pieces on the app that match your style, like the ${topOne.title} by ${topOne.brand}. You can check out all the pieces below to view details, rent, or buy!`
+          : `For this piece, pair it with structured high-waist bottoms or wide-leg denim, and complete the look with chunky footwear and clean minimalist jewelry!`;
       } else {
-        reply = `I can help you find pieces on the app to rent, buy, or swap. What style, color, or event are you dressing up for?`;
+        reply = `To style this piece, balance the proportions with relaxed high-waist denim or trousers, layer an oversized blazer, and complete the look with clean footwear and subtle accessories!`;
       }
     }
   }
 
-  // Guard: If the LLM returned a negative/fallback message but we actually have cards, override it
+  // Guard: If a SHOPPING prompt returned a negative/fallback message but we actually have cards, override it
   const negativePhrases = [
     "couldn't find", "could not find", "unable to find", "no specific",
     "check those brands", "check directly", "visit their", "unable to recommend"
   ];
   const replyLower = reply.toLowerCase();
-  if (cards.length > 0 && negativePhrases.some(p => replyLower.includes(p))) {
+  if (isExplicitShoppingQuery && cards.length > 0 && negativePhrases.some(p => replyLower.includes(p))) {
     const top = cards[0];
     const priceStr = top.rentalPriceDay ? `₹${top.rentalPriceDay}/day` : `₹${top.price}`;
     const secondCard = cards[1];

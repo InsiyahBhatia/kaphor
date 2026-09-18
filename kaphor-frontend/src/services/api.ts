@@ -8,7 +8,7 @@ import { useAuthStore } from '../store/authStore';
  * Android devices cannot reach the dev machine via "localhost" (that is the phone itself).
  * When the URL points at localhost/127.0.0.1, swap in the Metro host IP (physical device) or 10.0.2.2 (emulator).
  */
-function resolveApiBaseUrl(): string {
+export function resolveApiBaseUrl(): string {
   const fallback = 'https://kaphor-backend.onrender.com/api/v1';
   const raw = process.env.EXPO_PUBLIC_API_URL ?? fallback;
 

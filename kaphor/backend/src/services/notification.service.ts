@@ -5,6 +5,7 @@ import { sendPushNotificationToUser } from './pushNotification.service';
 
 export type NotificationType =
   | 'ORDER_PAID' | 'ORDER_SHIPPED' | 'ORDER_DELIVERED'
+  | 'ORDER_REQUESTED' | 'ORDER_APPROVED' | 'ORDER_DECLINED'
   | 'NEW_MESSAGE' | 'DIRECT_MESSAGE' | 'PEER_REVIEW'
   | 'SWAP_REQUEST' | 'SWAP_ACCEPTED' | 'SWAP_REJECTED' | 'SWAP_COMPLETED'
   | 'SWAP_SHIPPED' | 'SWAP_RECEIVED' | 'SWAP_DISPUTED' | 'SWAP_CANCELLED'

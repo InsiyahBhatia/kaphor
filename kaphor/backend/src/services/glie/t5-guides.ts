@@ -33,6 +33,11 @@ export interface T5Guide {
   quality_score?: number;
   /** true when the doc is garment repair/upcycling (skipped for garment queries) */
   is_garment?: boolean;
+  /** provenance — "kaphor_artisan_library" | "youtube" | ... */
+  source?: string;
+  /** YouTube video id when the guide was derived from a tutorial */
+  source_id?: string;
+  source_url?: string;
 }
 
 export interface T5GuideCondensed {
@@ -48,6 +53,9 @@ export interface T5GuideCondensed {
   care_instructions?: string;
   upcycle_alternative?: string;
   quality_score: number;
+  source?: string;
+  source_id?: string;
+  source_url?: string;
 }
 
 let guideDocs: T5Guide[] | null = null;
@@ -99,11 +107,15 @@ export function loadT5(): void {
         typeof f === 'string' && isKnownFiber(f)
       ),
     };
-    // Estimate quality score based on number of steps + specificity
-    const stepsScore = Math.min(1, (guide.steps?.length || 0) / 10);
-    const haveTools = guide.tools_required?.length > 0 ? 0.2 : 0;
-    const hasFiber = guide.fiber_types?.length > 0 ? 0.1 : 0;
-    guide.quality_score = Math.round((stepsScore + haveTools + hasFiber) * 1000) / 1000;
+// Estimate quality score based on number of steps + specificity
+      const stepsScore = Math.min(1, (guide.steps?.length || 0) / 10);
+      const haveTools = guide.tools_required?.length > 0 ? 0.2 : 0;
+      const hasFiber = guide.fiber_types?.length > 0 ? 0.1 : 0;
+      guide.quality_score = Math.round((stepsScore + haveTools + hasFiber) * 1000) / 1000;
+
+      guide.source = doc.source || '';
+      guide.source_id = doc.source_id || '';
+      guide.source_url = doc.source_url || '';
 
     guideDocs.push(guide);
     qualityMap.set(guide.doc_id, guide.quality_score);
@@ -112,61 +124,64 @@ export function loadT5(): void {
   logger.info(`[GLIE/T5] Loaded ${guideDocs.length} guides`);
 }
 
+interface GuideMatch {
+  guide: T5Guide;
+  score: number;
+}
+
 /**
- * Query T5 — filter by fiber + damage + category, return top 5 condensed guides
+ * Score guides by fiber + damage + category overlap (skipping non-garment docs).
+ * Returns matches sorted by relevance descending.
  */
-export function queryT5(
+function rankGuides(
   fiber: string,
   damageTypes: string[],
   category: string,
-): T5GuideCondensed[] {
-  if (!guideDocs) loadT5();
-  if (!guideDocs || guideDocs.length === 0) return [];
-
+  guides: T5Guide[],
+): GuideMatch[] {
   const fiberKey = normalize(fiber);
   const categoryKey = normalize(category);
   const damageKeys = damageTypes.map(d => normalize(d));
 
-  // Score each guide by relevance (skipping non-garment upcycling docs)
-  const scored = guideDocs
+  return guides
     .filter(g => g.is_garment !== false)
     .map(guide => {
-    let score = 0;
+      let score = 0;
 
-    // Fiber match (weight: 40%)
-    const fiberMatch = guide.fiber_types.some(f => {
-      const fk = normalize(f);
-      return fk === fiberKey || fk.includes(fiberKey) || fiberKey.includes(fk);
-    });
-    if (fiberMatch) score += 0.40;
+      // Fiber match (weight: 40%)
+      const fiberMatch = guide.fiber_types.some(f => {
+        const fk = normalize(f);
+        return fk === fiberKey || fk.includes(fiberKey) || fiberKey.includes(fk);
+      });
+      if (fiberMatch) score += 0.40;
 
-    // Damage type match (weight: 30%)
-    const damageMatch = guide.damage_types.some(gd => {
-      const gdk = normalize(gd);
-      return damageKeys.some(dk => gdk === dk || gdk.includes(dk) || dk.includes(gdk));
-    });
-    if (damageMatch) score += 0.30;
+      // Damage type match (weight: 30%)
+      const damageMatch = guide.damage_types.some(gd => {
+        const gdk = normalize(gd);
+        return damageKeys.some(dk => dk && (gdk === dk || gdk.includes(dk) || dk.includes(gdk)));
+      });
+      if (damageMatch) score += 0.30;
 
-    // Category match (weight: 20%)
-    const catMatch = guide.garment_categories.some(gc => {
-      const gck = normalize(gc);
-      return gck === categoryKey || gck.includes(categoryKey) || categoryKey.includes(gck);
-    }) || categoryKey === 'other' || categoryKey === '';
-    if (catMatch) score += 0.20;
+      // Category match (weight: 20%)
+      const catMatch = guide.garment_categories.some(gc => {
+        const gck = normalize(gc);
+        return gck === categoryKey || gck.includes(categoryKey) || categoryKey.includes(gck);
+      }) || categoryKey === 'other' || categoryKey === '';
+      if (catMatch) score += 0.20;
 
-    // Quality bonus (weight: 10%)
-    score += (guide.quality_score || 0) * 0.10;
+      // Quality bonus (weight: 10%)
+      score += (guide.quality_score || 0) * 0.10;
 
-    return { guide, score };
-  });
+      return { guide, score };
+    })
+    .sort((a, b) => b.score - a.score);
+}
 
-  // Sort by score desc, fallback to top quality guides if scores are low
-  const sorted = scored.sort((a, b) => b.score - a.score);
-  const relevant = sorted.filter(s => s.score >= 0.10);
-  const selected = relevant.length > 0 ? relevant : sorted.slice(0, 5);
-  const top5 = selected.slice(0, 5);
-
-  return top5.map(({ guide }) => ({
+/**
+ * Condense a full guide into the lightweight shape returned to clients
+ */
+function toCondensed(guide: T5Guide): T5GuideCondensed {
+  return {
     doc_type: guide.doc_type,
     title: guide.title,
     difficulty: guide.difficulty,
@@ -181,7 +196,82 @@ export function queryT5(
     care_instructions: guide.care_instructions || '',
     upcycle_alternative: guide.upcycle_alternative || '',
     quality_score: guide.quality_score || 0,
-  }));
+    source: guide.source || '',
+    source_id: guide.source_id || '',
+    source_url: guide.source_url || '',
+  };
+}
+
+/**
+ * Query T5 — filter by fiber + damage + category + optional docType, return top 5 condensed guides
+ */
+export function queryT5(
+  fiber: string,
+  damageTypes: string[],
+  category: string,
+  docType?: 'repair' | 'upcycle',
+): T5GuideCondensed[] {
+  if (!guideDocs) loadT5();
+  if (!guideDocs || guideDocs.length === 0) return [];
+
+  let pool = guideDocs;
+  if (docType === 'repair') {
+    pool = guideDocs.filter(g => g.doc_type !== 'upcycle');
+  } else if (docType === 'upcycle') {
+    pool = guideDocs.filter(g => g.doc_type === 'upcycle');
+  }
+
+  const sorted = rankGuides(fiber, damageTypes, category, pool);
+  const relevant = sorted.filter(s => s.score >= 0.10);
+  const selected = relevant.length > 0 ? relevant : sorted.slice(0, 5);
+  const top5 = selected.slice(0, 5);
+
+  return top5.map(({ guide }) => toCondensed(guide));
+}
+
+/**
+ * Reading list — curated real blog articles (source === 'blog') users can open
+ * in a browser. Real article titles + URLs, attributed and ToS-clean.
+ * Best matches first, padded with a general set so the block is never empty.
+ */
+export function queryBlogReads(
+  fiber: string,
+  damageTypes: string[],
+  category: string,
+  limit = 6,
+  docType?: 'repair' | 'upcycle',
+): T5GuideCondensed[] {
+  if (!guideDocs) loadT5();
+  if (!guideDocs || guideDocs.length === 0) return [];
+
+  let blogDocs = guideDocs.filter(g => g.source === 'blog');
+  if (docType === 'repair') {
+    blogDocs = blogDocs.filter(g => g.doc_type !== 'upcycle');
+  } else if (docType === 'upcycle') {
+    blogDocs = blogDocs.filter(g => g.doc_type === 'upcycle');
+  }
+  if (blogDocs.length === 0) return [];
+
+  const picked: T5Guide[] = [];
+  const seen = new Set<string>();
+  const addDoc = (g: T5Guide) => {
+    if (seen.has(g.doc_id)) return;
+    seen.add(g.doc_id);
+    picked.push(g);
+  };
+
+  // 1) Spec-matched articles, best relevance first
+  const queryDamages = docType === 'upcycle' ? [] : damageTypes;
+  const relevant = rankGuides(fiber, queryDamages, category, blogDocs);
+  for (const { guide } of relevant) addDoc(guide);
+
+  // 2) Pad with general articles so we always return a curated reading set
+  for (const g of blogDocs) {
+    if (picked.length >= limit) break;
+    addDoc(g);
+  }
+
+  return picked.slice(0, limit).map(toCondensed);
 }
 
 function cleanTechniqueName(tech: string): string {

@@ -50,7 +50,7 @@ describe('T2 Fiber Properties', () => {
   it('finds fiber data for fabric terms like Denim', () => {
     const fiber = lookupT2('Denim');
     expect(fiber).not.toBeNull();
-    expect(fiber!.fiber_name.toLowerCase()).toContain('cotton');
+    expect(fiber!.fiber_name.toLowerCase()).toMatch(/denim|cotton/);
   });
 
   it('returns null for unknown fiber', () => {

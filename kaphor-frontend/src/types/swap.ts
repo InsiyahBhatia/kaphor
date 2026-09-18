@@ -206,21 +206,3 @@ export const SWAP_STATUS_LABELS: Record<SwapStatus, string> = {
   DISPUTED: 'Dispute Open',
   CANCELLED: 'Cancelled',
 };
-
-export interface BarterRingNode {
-  userId: string;
-  userName: string;
-  giveGarmentId: string;
-  giveGarmentTitle: string;
-  giveGarmentImage: string;
-  receiveGarmentId: string;
-  receiveGarmentTitle: string;
-  receiveGarmentImage: string;
-}
-
-export interface BarterRing {
-  ringId: string;
-  ringType: '2_WAY' | '3_WAY';
-  confidenceScore: number;
-  participants: BarterRingNode[];
-}

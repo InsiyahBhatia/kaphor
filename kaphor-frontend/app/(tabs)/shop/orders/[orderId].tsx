@@ -168,6 +168,7 @@ export default function OrderThreadScreen() {
   const [reviewModalVisible, setReviewModalVisible] = useState(review === 'true');
   const [addressExpanded, setAddressExpanded] = useState(true);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (review === 'true') {
@@ -205,6 +206,56 @@ export default function OrderThreadScreen() {
       loadAll();
     }, [loadAll])
   );
+
+  const handleApprove = async () => {
+    if (!orderId || actionLoading) return;
+    setActionLoading(true);
+    try {
+      await orderService.approveOrder(orderId);
+      Alert.alert('Request Approved', 'Buyer has been notified and can now proceed with payment.');
+      await loadAll();
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Could not approve order.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = () => {
+    if (!orderId || actionLoading) return;
+    Alert.alert(
+      'Decline Request',
+      'Are you sure you want to decline this purchase request? The garment reservation will be released.',
+      [
+        { text: 'Back', style: 'cancel' },
+        {
+          text: 'DECLINE',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              await orderService.rejectOrder(orderId);
+              Alert.alert('Request Declined', 'Purchase request has been declined.');
+              await loadAll();
+            } catch (e: any) {
+              Alert.alert('Error', e?.response?.data?.message || 'Could not decline order.');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleProceedToPayment = () => {
+    if (!order) return;
+    if (order.shippingAddress) {
+      router.push(`/(tabs)/shop/checkout/${order.id}` as any);
+    } else {
+      router.push(`/(tabs)/shop/checkout/delivery?orderId=${order.id}` as any);
+    }
+  };
 
   const send = async () => {
     const text = draft.trim();
@@ -351,11 +402,22 @@ export default function OrderThreadScreen() {
   const isSeller = user.id === order.sellerId;
   const other = isBuyer ? order.seller : order.buyer;
   const canMessage = order.status !== 'CANCELLED' && order.status !== 'REFUNDED';
+  const isApproved = Boolean(order.isApproved || order.approvalStatus === 'APPROVED');
+  const isPendingApproval = order.status === 'PENDING' && order.approvalStatus === 'REQUESTED';
+  const isRejected = order.approvalStatus === 'REJECTED';
   const showCancel = isBuyer && (order.status === 'PENDING' || order.status === 'CONFIRMED');
   const showShip = isSeller && order.status === 'CONFIRMED';
   const showDeliver = isBuyer && (order.status === 'SHIPPED' || order.status === 'CONFIRMED');
   const showReview = isBuyer && order.status === 'DELIVERED' && !order.peerReview;
-  const cfg = statusConfig[order.status] || statusConfig.PENDING;
+  
+  let cfg = (statusConfig as any)[order.status] || statusConfig.PENDING;
+  if (isPendingApproval) {
+    cfg = { label: 'AWAITING SELLER APPROVAL', color: '#C95F12', icon: 'hourglass-outline' };
+  } else if (isRejected) {
+    cfg = { label: 'REQUEST DECLINED', color: colors.red, icon: 'close-circle-outline' };
+  } else if (order.status === 'PENDING' && isApproved) {
+    cfg = { label: 'APPROVED · AWAITING PAYMENT', color: colors.forest, icon: 'checkmark-circle-outline' };
+  }
 
   return (
     <KeyboardAvoidingView
@@ -393,10 +455,53 @@ export default function OrderThreadScreen() {
         <Text style={styles.orderIdText}>#{order.id.slice(0, 8)}</Text>
       </View>
 
-      {/* ── Action Buttons ──────────────────────────────────── */}
-      {(showShip || showDeliver || showCancel) && (
+      {/* ── Seller Approval Action Bar ─────────────────────── */}
+      {isSeller && isPendingApproval && (
         <View style={styles.actionBar}>
-          {showCancel ? (
+          <TouchableOpacity
+            style={[styles.actionBtnDanger, actionLoading && styles.disabled]}
+            onPress={handleReject}
+            disabled={actionLoading}
+          >
+            <Ionicons name="close-circle-outline" size={16} color={colors.cream} />
+            <Text style={styles.actionBtnText}>DECLINE</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionBtnSuccess, actionLoading && styles.disabled]}
+            onPress={handleApprove}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <ActivityIndicator size="small" color={colors.cream} />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle-outline" size={16} color={colors.cream} />
+                <Text style={styles.actionBtnText}>APPROVE PURCHASE</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ── Buyer Proceed to Payment Action Bar ─────────────── */}
+      {isBuyer && order.status === 'PENDING' && isApproved && (
+        <View style={styles.actionBar}>
+          <TouchableOpacity
+            style={styles.actionBtnSuccess}
+            onPress={handleProceedToPayment}
+          >
+            <Ionicons name="card-outline" size={16} color={colors.cream} />
+            <Text style={styles.actionBtnText}>
+              PROCEED TO PAYMENT (₹{Math.round(order.totalAmount).toLocaleString('en-IN')})
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ── Standard Action Buttons ──────────────────────────── */}
+      {(showShip || showDeliver || (showCancel && !isSeller)) && (
+        <View style={styles.actionBar}>
+          {showCancel && !isSeller ? (
             <TouchableOpacity style={styles.actionBtnDanger} onPress={handleCancelRefund}>
               <Ionicons name="close-circle-outline" size={16} color={colors.cream} />
               <Text style={styles.actionBtnText}>
@@ -416,6 +521,57 @@ export default function OrderThreadScreen() {
               <Text style={styles.actionBtnText}>CONFIRM DELIVERED</Text>
             </TouchableOpacity>
           ) : null}
+        </View>
+      )}
+
+      {/* ── Next Steps Instructions (Approval / Seller / Buyer Specific) ─────── */}
+      {isPendingApproval && (
+        <View style={[styles.nextStepsBanner, { backgroundColor: '#FDF7EB', borderLeftWidth: 4, borderLeftColor: '#C95F12' }]}>
+          <View style={styles.nextStepsHeader}>
+            <Ionicons
+              name={isSeller ? "alert-circle" : "hourglass"}
+              size={18}
+              color="#C95F12"
+            />
+            <Text style={[styles.nextStepsTitle, { color: '#C95F12' }]}>
+              {isSeller ? 'PURCHASE APPROVAL REQUIRED' : 'AWAITING SELLER APPROVAL'}
+            </Text>
+          </View>
+          <Text style={styles.nextStepsBody}>
+            {isSeller
+              ? `The buyer has requested to purchase this piece for ₹${Math.round(order.totalAmount).toLocaleString('en-IN')}. Please approve above to allow the buyer to complete payment and arrange dispatch.`
+              : `Your purchase request has been submitted to ${other.displayName}. Once they approve your request, you can proceed directly to secure payment.`}
+          </Text>
+        </View>
+      )}
+
+      {order.status === 'PENDING' && isApproved && (
+        <View style={[styles.nextStepsBanner, { backgroundColor: '#F2F8F4', borderLeftWidth: 4, borderLeftColor: colors.forest }]}>
+          <View style={styles.nextStepsHeader}>
+            <Ionicons name="checkmark-circle" size={18} color={colors.forest} />
+            <Text style={[styles.nextStepsTitle, { color: colors.forest }]}>
+              {isBuyer ? 'PURCHASE APPROVED · READY FOR PAYMENT' : 'PURCHASE APPROVED · AWAITING BUYER PAYMENT'}
+            </Text>
+          </View>
+          <Text style={styles.nextStepsBody}>
+            {isBuyer
+              ? 'The seller has accepted your purchase request! Tap "PROCEED TO PAYMENT" to complete checkout and secure this garment.'
+              : 'You approved this order. The buyer has been notified to complete payment.'}
+          </Text>
+        </View>
+      )}
+
+      {isRejected && (
+        <View style={[styles.nextStepsBanner, { backgroundColor: '#FCEDEC', borderLeftWidth: 4, borderLeftColor: colors.red }]}>
+          <View style={styles.nextStepsHeader}>
+            <Ionicons name="close-circle" size={18} color={colors.red} />
+            <Text style={[styles.nextStepsTitle, { color: colors.red }]}>
+              REQUEST DECLINED
+            </Text>
+          </View>
+          <Text style={styles.nextStepsBody}>
+            This purchase request was declined. Any garment reservation has been released.
+          </Text>
         </View>
       )}
 

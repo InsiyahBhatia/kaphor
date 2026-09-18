@@ -11,6 +11,7 @@ import {
   transferGarmentsToBuyer,
   releaseGarmentReservations,
 } from '../services/garment-claim.service';
+import { cacheClear } from '../lib/cache';
 
 const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 
@@ -73,6 +74,23 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
       orderBy: { createdAt: 'desc' },
     });
 
+    if (order) {
+      let isApproved = false;
+      try {
+        const parsed = order.notes ? JSON.parse(order.notes) : null;
+        isApproved = parsed?.approvalStatus === 'APPROVED' || Boolean(order.notes?.includes('APPROVED'));
+      } catch {
+        isApproved = Boolean(order.notes?.includes('APPROVED'));
+      }
+      if (!isApproved) {
+        res.status(400).json({
+          error: 'APPROVAL_REQUIRED',
+          message: 'Seller approval is required before payment can be generated.',
+        });
+        return;
+      }
+    }
+
     if (!order) {
       order = await db.order.create({
         data: {
@@ -81,6 +99,7 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
           totalAmount,
           currency: 'INR',
           status: 'PENDING',
+          notes: JSON.stringify({ approvalStatus: 'REQUESTED' }),
           items: {
             create: {
               garmentId: garment.id,
@@ -196,6 +215,11 @@ export async function createRazorpayOrderForRental(req: Request, res: Response):
 
     if (rental.renterId !== req.user.id) {
       res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to pay for this rental' });
+      return;
+    }
+
+    if (rental.paidAt || ['RESERVED', 'DISPATCHED', 'ACTIVE', 'COMPLETED'].includes(rental.status)) {
+      res.status(400).json({ error: 'ALREADY_PAID', message: 'This rental has already been paid.' });
       return;
     }
 
@@ -396,6 +420,9 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         logger.warn('Failed to associate conversation with order', { error: convErr });
       }
 
+      // Invalidate feed cache immediately
+      cacheClear('feed:');
+
       res.json({ data: updated, isRental: false });
       return;
     }
@@ -409,6 +436,11 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
     if (rental) {
       if (rental.renterId !== req.user.id) {
         res.status(403).json({ error: 'FORBIDDEN', message: 'Not allowed to verify this rental' });
+        return;
+      }
+
+      if (rental.paidAt || ['RESERVED', 'DISPATCHED', 'ACTIVE', 'COMPLETED'].includes(rental.status)) {
+        res.status(400).json({ error: 'ALREADY_PAID', message: 'This rental has already been paid and confirmed.' });
         return;
       }
 
@@ -479,6 +511,9 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
       } catch (convErr) {
         logger.warn('Failed to associate conversation with rental', { error: convErr });
       }
+
+      // Invalidate feed cache immediately
+      cacheClear('feed:');
 
       res.json({ data: updatedRental, isRental: true });
       return;

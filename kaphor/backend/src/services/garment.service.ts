@@ -24,7 +24,16 @@ export async function getFeedGarments(params: FeedParams) {
   if (cached) return cached;
 
   const limit = params.limit ?? DEFAULT_FEED_LIMIT;
-  const where: Record<string, unknown> = { isActive: true };
+  const where: Record<string, unknown> = {
+    isActive: true,
+    lifecycleState: 'LISTED',
+    reservedOrderId: null,
+    rentals: {
+      none: {
+        status: { in: ['RESERVED', 'DISPATCHED', 'ACTIVE'] },
+      },
+    },
+  };
 
   // Exclude current user's own listings from their feed
   if (params.userId) {

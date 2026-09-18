@@ -85,11 +85,11 @@ const QUICK_COMMANDS = [
   { label: 'Casual everyday styles', prompt: 'Show me comfortable, stylish everyday tops and denims.' },
 ];
 
-export default function ShopAIChatScreen() {
+export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fallbackPath?: string } = {}) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { garmentId, initialMessage } = useLocalSearchParams<{ garmentId?: string; initialMessage?: string }>();
-  useBackHandler('/(tabs)/shop');
+  useBackHandler(fallbackPath);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -274,7 +274,7 @@ export default function ShopAIChatScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
         <TouchableOpacity
-          onPress={() => safeBack('/(tabs)/shop')}
+          onPress={() => safeBack(fallbackPath)}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="chevron-back" size={26} color={colors.charcoal} />

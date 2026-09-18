@@ -12,6 +12,7 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
+    "enrich:t5": "ts-node scripts/enrich-t5-from-youtube.ts",
     "test": "jest --coverage"
   },
   "dependencies": {
@@ -51,6 +52,7 @@
     "typescript": "^5.9.3",
     "winston": "^3.14.2",
     "winston-daily-rotate-file": "^5.0.0",
+    "youtube-transcript": "^1.2.1",
     "zod": "^3.23.8"
   },
   "prisma": {

@@ -18,7 +18,6 @@ import type {
   SwapAddress,
   SwapTracking,
   SwapGarmentSnapshot,
-  BarterRing,
 } from '../types/swap';
 
 export const swapService = {
@@ -28,12 +27,6 @@ export const swapService = {
   async getSwapFeed(params?: { category?: string; limit?: number }) {
     const { data } = await api.get('/swaps/feed', { params });
     return data.data;
-  },
-
-  /** Discover 2-way and 3-way circular barter trading rings */
-  async getBarterRings(): Promise<BarterRing[]> {
-    const { data } = await api.get('/swaps/barter-rings');
-    return data?.data || [];
   },
 
   /** Get all swap requests for the current user (incoming + outgoing) */

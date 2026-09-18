@@ -95,24 +95,37 @@ export default function GarmentDetailScreen() {
     setBuying(true);
     telemetryService.trackIntent(id as string, 'PURCHASE');
     try {
-      // POST /orders/ (createPaymentIntent) creates order directly from garmentId
-      // without requiring the item to be in the cart first
       const { data } = await api.post('/orders', { garmentId: id as string });
-      const orderId = data?.data?.orderId || data?.data?.id;
+      const orderData = data?.data || data;
+      const orderId = orderData?.orderId || orderData?.id;
       if (!orderId) {
         throw new Error('Could not initiate order session');
       }
-      router.push({
-        pathname: '/(tabs)/shop/checkout/delivery',
-        params: {
-          orderId,
-          garmentId: id as string,
-          price: String(priceData.numericRupees || 0),
-          title: garment.title,
-          image: garment.images?.[0] || '',
-          brand: garment.brand || '',
-        },
-      });
+
+      if (orderData?.isApproved) {
+        router.push({
+          pathname: '/(tabs)/shop/checkout/delivery',
+          params: {
+            orderId,
+            garmentId: id as string,
+            price: String(priceData.numericRupees || 0),
+            title: garment.title,
+            image: garment.images?.[0] || '',
+            brand: garment.brand || '',
+          },
+        });
+      } else {
+        Alert.alert(
+          'Purchase Request Sent! 🛍️',
+          'Your purchase request has been submitted to the seller for approval. No payment is taken until the seller approves.\n\nYou will receive a notification as soon as the seller accepts your request.',
+          [
+            {
+              text: 'View Order Status',
+              onPress: () => router.push(`/(tabs)/shop/orders/${orderId}` as any),
+            },
+          ]
+        );
+      }
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || 'Could not start checkout.';
       Alert.alert('Checkout Error', msg);

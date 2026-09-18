@@ -96,15 +96,41 @@ export type RoutingDecision = 'RESELL' | 'UPCYCLE' | 'RECYCLE';
  * Routing from GLIE score & Condition Score
  * - CS >= 0.70 or GLIE >= 0.63 → RESELL (good/excellent condition garments)
  * - CS >= 0.45 or GLIE >= 0.50 → UPCYCLE (minor tears, small holes, upcyclable items)
+ * - High-durability materials (Denim, Jeans, Canvas, Wool, Silk) with CS > 0.20 → UPCYCLE
  * - CS < 0.45 and GLIE < 0.50 → RECYCLE (severely degraded/destroyed items)
  */
-export function getRouting(glie: number, cs?: number): RoutingDecision {
+export function getRouting(
+  glie: number,
+  cs?: number,
+  fiberType?: string,
+  garmentCategory?: string,
+): RoutingDecision {
+  const normFiber = (fiberType || '').trim().toLowerCase();
+  const normCat = (garmentCategory || '').trim().toLowerCase();
+
+  // High-value and versatile circular textiles (Denim, Cotton, Silk, Wool, Flannel)
+  // and garments (Jeans, Shirts, T-Shirts, Sarees, Socks, Sweaters) that remain
+  // prime candidates for creative upcycling before industrial recycling.
+  const isUpcyclableItem =
+    ['denim', 'cotton', 'canvas', 'corduroy', 'wool', 'cashmere', 'leather', 'suede', 'linen', 'silk', 'jute', 'hemp', 'jersey', 'flannel'].some(
+      (f) => normFiber.includes(f)
+    ) ||
+    ['jeans', 'jacket', 'shirt', 'tshirt', 't-shirt', 'top', 'saree', 'kurti', 'kurta', 'socks', 'sock', 'sweater', 'hoodie', 'lehenga', 'dress', 'skirt', 'blouse'].some(
+      (c) => normCat.includes(c)
+    );
+
   if (cs !== undefined) {
     if (cs >= 0.70 || glie >= 0.63) return 'RESELL';
+    // Upcycling Safeguard: Wearable garments with usable panels/knits (Jeans, Shirts, T-shirts, Sarees, Socks, Sweaters)
+    // should NOT be dumped into industrial shredder recycling unless destroyed or rotted (cs <= 0.20).
+    if (isUpcyclableItem && cs > 0.20) {
+      return 'UPCYCLE';
+    }
     if (cs >= 0.45 || glie >= 0.50) return 'UPCYCLE';
     return 'RECYCLE';
   }
   if (glie >= 0.63) return 'RESELL';
+  if (isUpcyclableItem && glie > 0.25) return 'UPCYCLE';
   if (glie >= 0.50) return 'UPCYCLE';
   return 'RECYCLE';
 }

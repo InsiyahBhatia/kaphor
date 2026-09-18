@@ -230,7 +230,7 @@ export async function assessGarment(input: AssessGarmentInput): Promise<AssessGa
   // ── Step 5: Compute GLIE Master Formula ────────────────────────────────
 
   const glieScore = computeGLIE(cs, ms, mds, ss);
-  const routing = getRouting(glieScore, cs);
+  const routing = getRouting(glieScore, cs, input.fiber_type, input.garment_category);
 
   // ── Step 6: Impact Calculations ────────────────────────────────────────
 

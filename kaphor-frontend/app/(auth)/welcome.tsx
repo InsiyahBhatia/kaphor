@@ -1,10 +1,19 @@
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from '../../src/theme';
+import { LegalModal } from '../../src/components/legal/LegalModal';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const [legalVisible, setLegalVisible] = useState(false);
+  const [legalDocId, setLegalDocId] = useState('terms-and-conditions');
+
+  const openLegal = (docId: string) => {
+    setLegalDocId(docId);
+    setLegalVisible(true);
+  };
 
   return (
     <View style={styles.container}>
@@ -33,9 +42,29 @@ export default function WelcomeScreen() {
             >
               <Text style={styles.secondaryButtonText}>I ALREADY HAVE AN ACCOUNT</Text>
             </TouchableOpacity>
+
+            <View style={styles.legalNotice}>
+              <Text style={styles.legalNoticeText}>
+                By continuing, you agree to KaPhor's{' '}
+                <Text style={styles.legalNoticeLink} onPress={() => openLegal('terms-and-conditions')}>
+                  Terms of Service
+                </Text>
+                {' & '}
+                <Text style={styles.legalNoticeLink} onPress={() => openLegal('privacy-policy')}>
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
+            </View>
           </View>
         </View>
       </ImageBackground>
+
+      <LegalModal
+        visible={legalVisible}
+        onClose={() => setLegalVisible(false)}
+        initialDocId={legalDocId}
+      />
     </View>
   );
 }
@@ -106,5 +135,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     letterSpacing: 1,
     fontWeight: '700',
+  },
+  legalNotice: {
+    marginTop: 18,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  legalNoticeText: {
+    fontSize: 11,
+    color: 'rgba(0, 0, 0, 0.65)',
+    textAlign: 'center',
+    lineHeight: 16,
+    fontWeight: '500',
+  },
+  legalNoticeLink: {
+    color: colors.crimson,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });

@@ -46,6 +46,13 @@ export async function searchGarments(req: Request, res: Response): Promise<void>
     const garments = await db.garment.findMany({
       where: {
         isActive: true,
+        lifecycleState: 'LISTED',
+        reservedOrderId: null,
+        rentals: {
+          none: {
+            status: { in: ['RESERVED', 'DISPATCHED', 'ACTIVE'] },
+          },
+        },
         ...(req.user ? { sellerId: { not: req.user.id } } : {}),
         ...(q ? { OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] } : {}),
       },
@@ -92,7 +99,13 @@ export async function getGarments(req: Request, res: Response): Promise<void> {
     const garments = await db.garment.findMany({
       where: { 
         isActive: true,
-        lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
+        lifecycleState: 'LISTED',
+        reservedOrderId: null,
+        rentals: {
+          none: {
+            status: { in: ['RESERVED', 'DISPATCHED', 'ACTIVE'] },
+          },
+        },
         ...(req.user ? { sellerId: { not: req.user.id } } : {})
       },
       take: limit,

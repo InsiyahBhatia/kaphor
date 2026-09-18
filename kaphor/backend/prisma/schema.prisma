@@ -839,7 +839,7 @@ model Conversation {
   rental          Rental?          @relation(fields: [rentalId], references: [id], onDelete: SetNull)
   messages        DirectMessage[]
 
-  @@unique([participant1Id, participant2Id, garmentId])
+  @@index([participant1Id, participant2Id, garmentId])
   @@index([participant1Id, lastMessageAt])
   @@index([participant2Id, lastMessageAt])
   @@index([type])

@@ -20,14 +20,12 @@ import {
   getDispute,
   cancelSwap,
   postSwapReview,
-  getCircularBarterRingsHandler,
 } from '../controllers/swap.controller';
 
 const router = Router();
 
 // Public / discovery endpoints (authenticated users get personalized prioritization)
 router.get('/feed', optionalAuth, getSwapFeed);
-router.get('/barter-rings', optionalAuth, getCircularBarterRingsHandler);
 
 // Protected transaction & request endpoints
 router.use(authenticate);

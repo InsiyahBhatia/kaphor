@@ -11,6 +11,8 @@ import {
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
+  Modal,
+  Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,6 +33,7 @@ import {
   conditionGrade,
   GLIEResponse,
 } from '../../../src/services/glieService';
+import { setSharedRepairAssessment } from '../../../src/services/repairService';
 
 export default function ConditionCheckScreen() {
   const router = useRouter();
@@ -53,7 +56,6 @@ export default function ConditionCheckScreen() {
   const [result, setResult] = useState<GLIEResponse | null>(null);
   const [recyclingData, setRecyclingData] = useState<RecyclingCentersResponse | null>(null);
   const [loadingRecycling, setLoadingRecycling] = useState(false);
-  const [schedulingCenterId, setSchedulingCenterId] = useState<string | null>(null);
 
   const fetchRecyclingCenters = async () => {
     setLoadingRecycling(true);
@@ -65,46 +67,6 @@ export default function ConditionCheckScreen() {
     } finally {
       setLoadingRecycling(false);
     }
-  };
-
-  const handleScheduleRecyclingPickup = (center: RecyclingCenter) => {
-    Alert.alert(
-      'Schedule Textile Pickup',
-      `Request doorstep collection for certified textile recycling at ${center.name}?\n\nA courier will collect your end-of-life garment directly from your address.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm Pickup',
-          onPress: async () => {
-            setSchedulingCenterId(center.id);
-            try {
-              const tomorrow = new Date();
-              tomorrow.setDate(tomorrow.getDate() + 1);
-              const slot = `Tomorrow (${tomorrow.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}) 10:00 AM - 1:00 PM`;
-
-              await circularService.scheduleCollection({
-                garmentId: `temp-${Date.now()}`,
-                address: recyclingData?.userLocation.city ? `Saved Address in ${recyclingData.userLocation.city}` : 'Default Address',
-                preferredSlot: slot,
-                partnerId: center.id,
-              });
-
-              Alert.alert(
-                'Collection Scheduled! ♻️',
-                `Your doorstep textile collection with ${center.name} is booked for ${slot}.\n\nA confirmation SMS has been dispatched with pickup tracking.`
-              );
-            } catch {
-              Alert.alert(
-                'Pickup Request Logged',
-                `Your doorstep collection request for ${center.name} has been received. Our circular logistics coordinator will confirm pickup at your registered phone number.`
-              );
-            } finally {
-              setSchedulingCenterId(null);
-            }
-          },
-        },
-      ]
-    );
   };
 
   // ── Image picker ──────────────────────────────────────────────
@@ -162,7 +124,7 @@ export default function ConditionCheckScreen() {
     } catch (e: any) {
       Alert.alert(
         'Assessment Failed',
-        e?.message || 'Could not connect to the assessment service. Make sure the GLIE server is running on port 8000.'
+        e?.message || 'Could not connect to the assessment service. Make sure the backend is running and try again.'
       );
     } finally {
       setAnalyzing(false);
@@ -265,47 +227,63 @@ export default function ConditionCheckScreen() {
 
           {result.routing_decision === 'UPCYCLE' && (
             <View style={styles.actionCard}>
-              <Text style={styles.actionCardTitle}>Repair & Upcycle</Text>
-              {result.repair_feasibility || result.description ? (
-                <>
-                  <Text style={styles.actionCardTutorial}>
-                    {result.description || 'Garment assessed by GLIE engine.'}
-                  </Text>
-                  {result.repair_feasibility && (
-                    <Text style={[styles.actionCardTutorial, { marginTop: 8, fontSize: 12, color: colors.textMuted }]}>
-                      {result.repair_feasibility}
-                    </Text>
-                  )}
-                  {(result as any).rag_context?.guides_matched > 0 && (
-                    <View style={styles.tutorialMeta}>
-                      <View style={styles.tutorialChip}>
-                        <Text style={styles.tutorialChipText}>{result.suggested_repair_technique || 'Guides available'}</Text>
-                      </View>
-                    </View>
-                  )}
-                </>
-              ) : (
-                <Text style={styles.actionCardPlaceholder}>
-                  Explore our studio for repair and upcycling inspiration.
+              <View style={styles.segregationBanner}>
+                <View style={styles.segregationBadge}>
+                  <Ionicons name="sparkles" size={12} color={colors.white} />
+                  <Text style={styles.segregationBadgeText}>WEAR / DAMAGE DETECTED · REPAIR OR UPCYCLE</Text>
+                </View>
+                <Text style={styles.actionCardTitle}>RESTORE OR TRANSFORM</Text>
+                <Text style={styles.segregationSub}>
+                  {result.description || 'This garment shows localized wear or damage. Choose whether to mend it back to original wearability or creatively transform it into a brand new item.'}
                 </Text>
-              )}
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => {
-                  router.push({
-                    pathname: '/(tabs)/studio/repair-refresh',
-                    params: {
-                      prefillImage: imageUri || '',
-                      prefillBase64: imageBase64 || '',
-                      prefillCategory: category || (result as any)?.garment_category || '',
-                      prefillFiber: fiber || (result as any)?.fiber_type || '',
-                      prefillPrice: price || '',
-                    },
-                  });
-                }}
-              >
-                <Text style={styles.actionBtnText}>REPAIR & REFRESH →</Text>
-              </TouchableOpacity>
+              </View>
+
+              {/* Single CTA: repair & upcycle live on the same page behind a toggle */}
+              <View style={[styles.pathCard, { borderColor: '#C95F12' }]}>
+                <View style={styles.pathHeader}>
+                  <View style={[styles.pathIconBox, { backgroundColor: '#C95F12' }]}>
+                    <Ionicons name="cut-outline" size={18} color={colors.cream} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.pathTitle, { color: '#C95F12' }]}>REPAIR & UPCYCLE</Text>
+                    <Text style={styles.pathSubtitle}>Mend it back to wearable or transform it into something new</Text>
+                  </View>
+                </View>
+                <Text style={styles.pathDescription}>
+                  {result.repair_feasibility
+                    ? `${result.repair_feasibility} You'll get matching repair guides, video tutorials, and upcycling ideas for this garment.`
+                    : 'Get step-by-step repair guides, video tutorials, and upcycling ideas for this garment.'}
+                </Text>
+                <View style={styles.pathTagsRow}>
+                  <View style={styles.pathTag}><Text style={styles.pathTagText}>🧵 Repair Guides</Text></View>
+                  <View style={styles.pathTag}><Text style={styles.pathTagText}>🎬 Video Tutorials</Text></View>
+                  <View style={styles.pathTag}><Text style={styles.pathTagText}>✂️ Upcycle Ideas</Text></View>
+                </View>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: '#C95F12', borderColor: '#C95F12', marginTop: 12 }]}
+                  onPress={() => {
+                    if ((result as any)?.rawRepairResult) {
+                      setSharedRepairAssessment((result as any).rawRepairResult);
+                    }
+                    router.push({
+                      pathname: '/(tabs)/studio/repair-refresh',
+                      params: {
+                        mode: 'upcycle',
+                        useSharedAssessment: 'true',
+                        prefillImage: imageUri || '',
+                        prefillCategory: category || (result as any)?.garment_category || '',
+                        prefillFiber: fiber || (result as any)?.fiber_type || '',
+                        prefillPrice: price || '',
+                        damageTypes: JSON.stringify(result.damage_breakdown?.damage_types || []),
+                        repairFeasibility: result.repair_feasibility || '',
+                        conditionScore: String(result.condition_score ?? 0.45),
+                      },
+                    });
+                  }}
+                >
+                  <Text style={styles.actionBtnText}>EXPLORE REPAIR & UPCYCLE GUIDES →</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
@@ -314,20 +292,20 @@ export default function ConditionCheckScreen() {
               <View style={styles.recycleHeader}>
                 <View style={styles.recycleHeaderBadge}>
                   <Ionicons name="leaf" size={13} color={colors.white} />
-                  <Text style={styles.recycleHeaderBadgeText}>CERTIFIED ZERO-LANDFILL RECYCLING</Text>
+                  <Text style={styles.recycleHeaderBadgeText}>VERIFIED RECYCLING PARTNER DIRECTORY</Text>
                 </View>
-                <Text style={styles.actionCardTitle}>END-OF-LIFE TEXTILE ROUTING</Text>
+                <Text style={styles.actionCardTitle}>CERTIFIED TEXTILE RECYCLING HUBS</Text>
               </View>
 
               <Text style={styles.actionCardTutorial}>
-                This garment has reached the end of its wearable lifecycle. We route it to certified mechanical and chemical textile recycling hubs based on your location.
+                This garment has reached the end of its wearable lifecycle. Bring your unwearable garments directly to any verified recycling center reception listed below for drop-off processing.
               </Text>
 
-              {/* Detected Location Banner */}
+              {/* Location Banner */}
               <View style={styles.locationDetectionBanner}>
                 <Ionicons name="location" size={15} color={colors.charcoal} />
                 <Text style={styles.locationDetectionText}>
-                  Matching certified recyclers near{' '}
+                  Showing verified drop-off centers near{' '}
                   <Text style={styles.locationDetectionBold}>
                     {recyclingData?.userLocation?.city || 'Your Area'}
                   </Text>
@@ -335,79 +313,71 @@ export default function ConditionCheckScreen() {
                 </Text>
               </View>
 
-              {/* Centers List */}
+              {/* Clean Recycling Centers Database Cards */}
               {loadingRecycling ? (
                 <CenterCardsLoading count={3} />
               ) : (
                 <View style={styles.centersListContainer}>
-                  {(recyclingData?.centers || []).slice(0, 3).map((center) => {
-                    const isScheduling = schedulingCenterId === center.id;
-                    return (
-                      <View key={center.id} style={styles.centerItemCard}>
-                        {/* Top row: Name & Distance / Match */}
-                        <View style={styles.centerItemHeader}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.centerItemName}>{center.name}</Text>
-                            <Text style={styles.centerItemCity}>
-                              {center.city}, {center.state} • {center.distance || 'Regional Partner'}
-                            </Text>
-                          </View>
-                          <View style={styles.centerScorePill}>
-                            <Ionicons name="shield-checkmark" size={11} color="#283618" />
-                            <Text style={styles.centerScoreText}>{center.zeroLandfillScore}% ZERO-LANDFILL</Text>
-                          </View>
+                  {(recyclingData?.centers || []).map((center) => (
+                    <View key={center.id} style={styles.centerItemCard}>
+                      {/* Top row: Name & Zero-Landfill Score */}
+                      <View style={styles.centerItemHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.centerItemName}>{center.name}</Text>
+                          <Text style={styles.centerItemCity}>
+                            {center.city}, {center.state} • {center.distance || 'Regional Partner'}
+                          </Text>
                         </View>
+                        <View style={styles.centerScorePill}>
+                          <Ionicons name="shield-checkmark" size={11} color="#283618" />
+                          <Text style={styles.centerScoreText}>{center.zeroLandfillScore}% ZERO-LANDFILL</Text>
+                        </View>
+                      </View>
 
-                        {/* Address & Hours */}
+                      {/* Description */}
+                      {center.description ? (
+                        <Text style={styles.centerDescriptionText}>{center.description}</Text>
+                      ) : null}
+
+                      {/* Address & Operating Hours */}
+                      <View style={styles.centerMetaRow}>
+                        <Ionicons name="navigate-outline" size={12} color={colors.textMuted} />
+                        <Text style={styles.centerMetaText} numberOfLines={2}>{center.address}</Text>
+                      </View>
+                      <View style={styles.centerMetaRow}>
+                        <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+                        <Text style={styles.centerMetaText}>{center.operatingHours}</Text>
+                      </View>
+
+                      {/* Helpline Phone */}
+                      {center.phone ? (
                         <View style={styles.centerMetaRow}>
-                          <Ionicons name="navigate-outline" size={12} color={colors.textMuted} />
-                          <Text style={styles.centerMetaText} numberOfLines={2}>{center.address}</Text>
+                          <Ionicons name="call-outline" size={12} color={colors.forest} />
+                          <Text style={[styles.centerMetaText, { color: colors.forest, fontWeight: '800' }]}>
+                            {center.phone}
+                          </Text>
                         </View>
-                        <View style={styles.centerMetaRow}>
-                          <Ionicons name="time-outline" size={12} color={colors.textMuted} />
-                          <Text style={styles.centerMetaText}>{center.operatingHours}</Text>
-                        </View>
+                      ) : null}
 
-                        {/* Accepted Fibers */}
-                        <View style={styles.fiberTagRow}>
-                          {center.acceptedFibers.slice(0, 3).map((fib, idx) => (
-                            <View key={idx} style={styles.fiberTagPill}>
-                              <Text style={styles.fiberTagText}>{fib}</Text>
-                            </View>
-                          ))}
-                        </View>
+                      {/* Accepted Fibers */}
+                      <View style={styles.fiberTagRow}>
+                        {center.acceptedFibers.map((fib, idx) => (
+                          <View key={idx} style={styles.fiberTagPill}>
+                            <Text style={styles.fiberTagText}>{fib}</Text>
+                          </View>
+                        ))}
+                      </View>
 
-                        {/* Certifications */}
+                      {/* Certifications */}
+                      {center.certifications && center.certifications.length > 0 && (
                         <Text style={styles.certText} numberOfLines={1}>
                           Certs: {center.certifications.join(' • ')}
                         </Text>
-
-                        {/* Facility Details & Drop-Off Protocol */}
-                        <View style={styles.facilityDetailsBox}>
-                          <View style={styles.detailRow}>
-                            <Ionicons name="call-outline" size={12} color={colors.forest} />
-                            <Text style={styles.detailPhoneText}>Helpline: {center.phone || '+91 1800-CIRCULAR'}</Text>
-                          </View>
-                          <Text style={styles.dropOffInstructions}>
-                            Drop-Off Depot: Bring clean unwearable textiles directly to facility reception. Garments are mechanically shredded or chemically converted into recycled yarn.
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  })}
+                      )}
+                    </View>
+                  ))}
                 </View>
               )}
-
-              {/* Mail-In Fallback Callout */}
-              <View style={styles.mailInCard}>
-                <Ionicons name="cube-outline" size={20} color={colors.forest} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.mailInTitle}>Free National Mail-In Recycling Box</Text>
-                  <Text style={styles.mailInSub}>
-                    Anywhere in India • We dispatch a prepaid courier return satchel straight to your door. Zero landfill guaranteed.
-                  </Text>
-                </View>
-              </View>
             </View>
           )}
 
@@ -876,6 +846,105 @@ const styles = StyleSheet.create({
   actionCardPrice: { fontFamily: typography.headings, fontSize: 42, color: colors.charcoal, marginBottom: 16 },
   actionCardTutorial: { fontFamily: typography.body, fontSize: 14, color: colors.charcoal, lineHeight: 22, marginBottom: 16 },
   actionCardPlaceholder: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, lineHeight: 18, marginBottom: 16 },
+  
+  // Segregated Path Cards
+  segregationBanner: {
+    marginBottom: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ECE8DD',
+  },
+  segregationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 3,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  segregationBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 0.8,
+  },
+  segregationSub: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.charcoal,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  pathCard: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: '#1E3B2F',
+    padding: 14,
+    borderRadius: 6,
+    shadowColor: colors.charcoal,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.9,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  pathHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  pathIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pathTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#1E3B2F',
+    letterSpacing: 0.8,
+  },
+  pathSubtitle: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  pathDescription: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.charcoal,
+    lineHeight: 17,
+    marginBottom: 10,
+  },
+  pathTagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 4,
+  },
+  pathTag: {
+    backgroundColor: '#F5F2EA',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#DCD8CC',
+    borderRadius: 3,
+  },
+  pathTagText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.charcoal,
+  },
+
   tutorialMeta: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   tutorialChip: { backgroundColor: colors.cream, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: colors.charcoal },
   tutorialChipText: { fontFamily: typography.mono, fontSize: 8, fontWeight: '700', color: colors.charcoal },
@@ -1023,6 +1092,13 @@ const styles = StyleSheet.create({
     color: colors.forest,
     marginTop: 2,
   },
+  centerDescriptionText: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.charcoal,
+    lineHeight: 16,
+    marginVertical: 2,
+  },
   centerScorePill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1135,4 +1211,352 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   scanAgainText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+
+  // Hard Reject Banner (Part 4 PDF)
+  hardRejectBanner: {
+    backgroundColor: 'rgba(200,30,44,0.1)',
+    borderWidth: 2,
+    borderColor: colors.red,
+    padding: 14,
+    borderRadius: 4,
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  hardRejectTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.red,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  hardRejectText: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.charcoal,
+    lineHeight: 16,
+  },
+
+  // Point-of-Disposal Prep Card (Part 4 PDF)
+  prepCard: {
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    padding: 14,
+    borderRadius: 4,
+    marginBottom: 16,
+  },
+  prepCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  prepCardTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  prepCardSub: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginBottom: 10,
+    lineHeight: 16,
+  },
+  prepCheckItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  prepTaskText: {
+    fontFamily: typography.mono,
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: colors.charcoal,
+  },
+  prepTaskDone: {
+    textDecorationLine: 'line-through',
+    opacity: 0.5,
+  },
+  prepTaskDetail: {
+    fontFamily: typography.body,
+    fontSize: 10.5,
+    color: colors.textMuted,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  verifyPrepBtn: {
+    backgroundColor: colors.charcoal,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 12,
+    borderRadius: 3,
+  },
+  verifyPrepBtnDone: {
+    backgroundColor: colors.forest,
+  },
+  verifyPrepBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 1,
+  },
+
+  // Domestic-Only Toggle (Part 2 PDF)
+  toggleRowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    padding: 12,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    borderRadius: 4,
+    marginBottom: 14,
+  },
+  toggleTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.charcoal,
+  },
+  toggleSub: {
+    fontFamily: typography.body,
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  // RVRT Score & Metric Badges (Part 2 PDF)
+  nameTierRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  decayBadge: {
+    backgroundColor: colors.copper,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  decayBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 7.5,
+    fontWeight: '900',
+    color: colors.white,
+  },
+  rvrtScoreBadge: {
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  rvrtScoreLabel: {
+    fontFamily: typography.mono,
+    fontSize: 7,
+    fontWeight: '800',
+    color: colors.cream,
+    letterSpacing: 0.5,
+  },
+  rvrtScoreValue: {
+    fontFamily: typography.mono,
+    fontSize: 12,
+    fontWeight: '900',
+    color: colors.gold,
+  },
+  rvrtMetricsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginVertical: 4,
+  },
+  rvrtChip: {
+    backgroundColor: '#EFECE4',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  rvrtChipText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '800',
+    color: colors.charcoal,
+  },
+  labourBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(15,92,70,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 3,
+    marginVertical: 2,
+  },
+  labourBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: colors.forest,
+  },
+  scheduleCenterBtn: {
+    backgroundColor: colors.forest,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 8,
+    borderRadius: 3,
+  },
+  scheduleCenterBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: colors.white,
+    letterSpacing: 0.8,
+  },
+
+  // Transparency Card (Part 1 & 3 PDF)
+  transparencyCard: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.forest,
+    padding: 14,
+    borderRadius: 4,
+    marginBottom: 16,
+  },
+  transparencyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  transparencyTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.forest,
+    letterSpacing: 1,
+  },
+  transparencyText: {
+    fontFamily: typography.body,
+    fontSize: 11.5,
+    color: colors.charcoal,
+    lineHeight: 18,
+  },
+  informalSectorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FAF5E8',
+    borderWidth: 1,
+    borderColor: colors.gold,
+    padding: 8,
+    borderRadius: 3,
+    marginTop: 10,
+  },
+  informalSectorText: {
+    fontFamily: typography.mono,
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.charcoal,
+    flex: 1,
+  },
+
+  // Partner Onboarding Callout (Part 3 PDF)
+  onboardCalloutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.gold,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    marginBottom: 16,
+  },
+  onboardCalloutText: {
+    fontFamily: typography.mono,
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: colors.cream,
+    width: '100%',
+    maxHeight: '85%',
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    padding: 20,
+    borderRadius: 6,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  modalTitle: {
+    fontFamily: typography.mono,
+    fontSize: 13,
+    fontWeight: '900',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  modalSub: {
+    fontFamily: typography.body,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginBottom: 16,
+  },
+  modalPpeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 14,
+    marginBottom: 10,
+    backgroundColor: colors.white,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  modalPpeText: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    color: colors.charcoal,
+    flex: 1,
+    fontWeight: '700',
+  },
+  modalSubmitBtn: {
+    backgroundColor: colors.charcoal,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+    borderRadius: 3,
+  },
+  modalSubmitText: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.cream,
+    letterSpacing: 1,
+  },
 });
+

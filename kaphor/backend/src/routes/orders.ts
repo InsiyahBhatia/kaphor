@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { createPaymentIntent, createInquiryOrder, createCartOrder, getOrderPaymentDetails } from '../controllers/order.controller';
+import { createPaymentIntent, createInquiryOrder, createCartOrder, getOrderPaymentDetails, approveOrderRequest, rejectOrderRequest } from '../controllers/order.controller';
 import {
   listTransactionOrders,
   getOrderDetail,
@@ -18,6 +18,8 @@ const router = Router();
 router.post('/inquiry', authenticate, createInquiryOrder);
 router.post('/cart', authenticate, createCartOrder);
 router.post('/', authenticate, createPaymentIntent);
+router.post('/:orderId/approve', authenticate, approveOrderRequest);
+router.post('/:orderId/reject', authenticate, rejectOrderRequest);
 router.get('/summary', authenticate, getOrdersSummary);
 router.get('/transactions', authenticate, listTransactionOrders);
 router.get('/:orderId', authenticate, getOrderDetail);

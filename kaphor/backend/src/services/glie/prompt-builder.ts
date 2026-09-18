@@ -113,24 +113,46 @@ CONDITION SCORE (CS):
   0.85 = Like new, minimal signs of use
   0.70 = Good, light wear, no visible structural damage
   0.55 = Fair, minor tear / small hole / light fading / minor stain (IDEAL FOR UPCYCLE)
-  0.40 = Poor, multiple moderate tears / heavy wear
-  0.25 = Bad, widespread large holes / severe damage
-  0.10 = Destroyed, unsalvageable textile scrap
+  0.48 = Heavily distressed / torn knees or seams on durable fabrics (PRIME UPCYCLE CANDIDATE)
+  0.40 = Poor, widespread structural breakdown on weak synthetics
+  0.25 = Bad, severely disintegrated / rotting / unwearable
+  0.10 = Destroyed, toxic contamination or unsalvageable textile scrap
 
-CRITICAL RULES:
+CRITICAL RULES FOR CIRCULAR CLASSIFICATION:
 - Wrinkles alone → CS ≥ 0.60
 - Fading alone → CS ~ 0.55-0.65
 - Light stains → CS ~ 0.55-0.65
 - Minor tear / isolated small hole / distressing → CS ~ 0.50-0.65 (UPCYCLE ROUTE)
-- Multiple large tears / severe structural collapse → CS ≤ 0.40 (RECYCLE ROUTE)
+- DENIM & HIGH-DURABILITY TEXTILES (Denim, Jeans, Canvas, Heavy Twill, Corduroy, Leather):
+  * Ripped or torn denim jeans (knee rips, distressing, frayed cuffs, crotch wear) ARE THE #1 PRIME CANDIDATE FOR UPCYCLING.
+  * DO NOT assign CS ≤ 0.40 to torn denim or canvas! 75%+ of the heavy twill panels (thighs, calves, back pockets) remain structurally sound for tote bags, shorts, patchwork, or aprons.
+  * Always score torn denim jeans between CS 0.48 – 0.60 so it cleanly routes to UPCYCLE.
+- COTTON T-SHIRTS & KNIT TOPS:
+  * Worn, faded, or pinhole t-shirts upcycle into no-sew grocery bags, rag rugs, t-shirt yarn, scrunchies, and crop tops.
+  * Assign CS 0.48 – 0.60 (UPCYCLE ROUTE) instead of recycling.
+- BUTTON-DOWN SHIRTS:
+  * Torn collars or frayed cuffs can be upcycled into artisan kitchen aprons, pillowcases, halter tops, or baby bibs.
+  * Assign CS 0.50 – 0.65 (UPCYCLE ROUTE).
+- VINTAGE ETHNIC WEAR & SAREES (Silk, Georgette, Chiffon, Brocade):
+  * Torn borders or pallu damage should be routed to UPCYCLE (CS ≥ 0.50) to reconstruct into designer kurtis, kimonos, luxury cushion covers, or table runners.
+- SOCKS & ACCESSORIES:
+  * Single socks or socks with worn heels/toes upcycle into insulated mug cozies, wrist warmers, microfiber dusters, or scented heating pads.
+  * Assign CS 0.45 – 0.55 (UPCYCLE ROUTE).
+- WOOL, CASHMERE & KNITWEAR:
+  * Moth holes or unraveling knits are prime candidates for visible mending or upcycling into beanies, mittens, or pet wear. Assign CS ≥ 0.48 (UPCYCLE).
+- RECYCLE ROUTE (CS ≤ 0.25) IS STRICTLY RESERVED FOR:
+  * Perished spandex/elastane with dry-rot (sticky, gummy, crispy, lost elasticity)
+  * Thin melted fast-fashion polyester with burn holes that cannot be sewn
+  * Bio-contaminated, motor-oil-soaked, or mildew/mold-rotted textiles
+  * Unusable micro-scraps smaller than a palm that have no workable fabric area.
 
 GLIE MASTER FORMULA:
   GLIE = 0.35×CS + 0.25×MS + 0.20×MDS + 0.20×SS
 
 ROUTING:
   GLIE ≥ 0.63 → RESELL
-  GLIE ≥ 0.50 or CS ≥ 0.45 → UPCYCLE
-  GLIE < 0.50 and CS < 0.45 → RECYCLE
+  GLIE ≥ 0.50 or CS ≥ 0.45 (or Any Upcyclable Garment with CS > 0.20) → UPCYCLE
+  GLIE < 0.50 and CS ≤ 0.20 → RECYCLE
 ${fiberSection}${sustainSection}${marketSection}${guidesSection}${examplesSection}`;
 
   // ── User Prompt ───────────────────────────────────────────────────────────

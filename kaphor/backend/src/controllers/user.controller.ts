@@ -520,7 +520,7 @@ export async function getUserReviews(req: Request, res: Response): Promise<void>
         const { userId } = req.params;
         const [peerReviews, garmentReviews] = await Promise.all([
             db.peerReview.findMany({
-                where: { sellerId: userId },
+                where: { sellerId: userId, reviewerId: { not: userId } },
                 orderBy: { createdAt: 'desc' },
                 include: {
                     reviewer: {
@@ -543,7 +543,7 @@ export async function getUserReviews(req: Request, res: Response): Promise<void>
                 }
             }),
             db.review.findMany({
-                where: { garment: { sellerId: userId } },
+                where: { garment: { sellerId: userId }, userId: { not: userId } },
                 orderBy: { createdAt: 'desc' },
                 include: {
                     user: {
@@ -590,9 +590,9 @@ export async function getUserReviews(req: Request, res: Response): Promise<void>
             };
         }));
 
-        const allCombined = [...resolvedPeerReviews, ...resolvedGarmentReviews].sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        const allCombined = [...resolvedPeerReviews, ...resolvedGarmentReviews]
+            .filter((r) => r.reviewer && r.reviewer.id !== userId)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         res.json({ data: allCombined });
     } catch (error) {

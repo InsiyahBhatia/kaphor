@@ -12,6 +12,7 @@
 
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
+import { cacheClear } from '../lib/cache';
 
 /**
  * Atomically reserve all order items for the given order.
@@ -54,6 +55,7 @@ export async function claimGarmentsForOrder(orderId: string, buyerId: string): P
         throw new Error('GARMENT_CLAIM_FAILED');
       }
     });
+    cacheClear('feed:');
     return true;
   } catch (err) {
     if (!(err instanceof Error && (err.message === 'GARMENT_CLAIM_FAILED' || err.message === 'ORDER_HAS_NO_ITEMS'))) {
@@ -88,6 +90,7 @@ export async function transferGarmentsToBuyer(orderId: string, buyerId: string):
         });
       }
     });
+    cacheClear('feed:');
     return true;
   } catch (err) {
     logger.error('transferGarmentsToBuyer failed', { orderId, error: err });
@@ -118,6 +121,7 @@ export async function releaseGarmentReservations(orderId: string, originalSeller
         },
       });
     }
+    cacheClear('feed:');
   } catch (err) {
     logger.error('releaseGarmentReservations failed', { orderId, error: err });
   }

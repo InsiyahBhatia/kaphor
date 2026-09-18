@@ -142,17 +142,23 @@ export async function getOrderDetail(req: AuthRequest, res: Response): Promise<v
 
     // Find associated unified conversation
     const firstGarmentId = order.items?.[0]?.garmentId || null;
-    const conv = await db.conversation.findFirst({
-      where: {
-        OR: [
-          { participant1Id: order.buyerId, participant2Id: order.sellerId, garmentId: firstGarmentId },
-          { participant1Id: order.sellerId, participant2Id: order.buyerId, garmentId: firstGarmentId },
-          { participant1Id: order.buyerId, participant2Id: order.sellerId },
-          { participant1Id: order.sellerId, participant2Id: order.buyerId },
-        ],
-      },
+    let conv = await db.conversation.findFirst({
+      where: { orderId: order.id },
       select: { id: true },
     });
+    if (!conv) {
+      conv = await db.conversation.findFirst({
+        where: {
+          OR: [
+            { participant1Id: order.buyerId, participant2Id: order.sellerId, garmentId: firstGarmentId },
+            { participant1Id: order.sellerId, participant2Id: order.buyerId, garmentId: firstGarmentId },
+            { participant1Id: order.buyerId, participant2Id: order.sellerId },
+            { participant1Id: order.sellerId, participant2Id: order.buyerId },
+          ],
+        },
+        select: { id: true },
+      });
+    }
     orderData.conversationId = conv?.id || null;
 
     const isBuyer = orderData.buyerId === req.user.id;
@@ -160,6 +166,22 @@ export async function getOrderDetail(req: AuthRequest, res: Response): Promise<v
     orderData.needsShipping = !isBuyer && orderData.status === 'CONFIRMED';
     orderData.inTransit = orderData.status === 'SHIPPED';
     orderData.isCompleted = orderData.status === 'DELIVERED';
+
+    let approvalStatus: 'REQUESTED' | 'APPROVED' | 'REJECTED' = 'APPROVED';
+    if (orderData.status === 'PENDING') {
+      try {
+        const parsed = orderData.notes ? JSON.parse(orderData.notes) : null;
+        if (parsed?.approvalStatus) {
+          approvalStatus = parsed.approvalStatus;
+        } else if (orderData.notes?.includes('REQUESTED')) {
+          approvalStatus = 'REQUESTED';
+        }
+      } catch {
+        if (orderData.notes?.includes('REQUESTED')) approvalStatus = 'REQUESTED';
+      }
+    }
+    orderData.approvalStatus = approvalStatus;
+    orderData.isApproved = approvalStatus === 'APPROVED' || orderData.status !== 'PENDING';
 
     res.json({ data: orderData });
   } catch (e) {
