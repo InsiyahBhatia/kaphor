@@ -121,9 +121,18 @@ function TutorialPill({ tutorial, accent, accentLight, accentDark }: {
   tutorial: Tutorial; accent: string; accentLight: string; accentDark: string;
 }) {
   const handlePress = async () => {
-    const supported = await Linking.canOpenURL(tutorial.url);
-    if (supported) { await Linking.openURL(tutorial.url); }
-    else { Alert.alert('Cannot open link', tutorial.url); }
+    try {
+      await Linking.openURL(tutorial.url);
+    } catch {
+      try {
+        const fallbackUrl = tutorial.url.includes('youtu.be')
+          ? tutorial.url.replace('youtu.be/', 'www.youtube.com/watch?v=')
+          : tutorial.url;
+        await Linking.openURL(fallbackUrl);
+      } catch {
+        Alert.alert('Unable to open link', 'Please ensure you have a web browser or YouTube app installed.');
+      }
+    }
   };
   return (
     <TouchableOpacity style={[styles.pill, { backgroundColor: accentLight, borderColor: accent }]} onPress={handlePress} activeOpacity={0.75}>

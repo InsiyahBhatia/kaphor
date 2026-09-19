@@ -185,7 +185,13 @@ export default function UpcycleSuggestionsScreen() {
                       borderColor: '#3A2C30',
                       overflow: 'hidden',
                     }}
-                    onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${yt.videoId}`)}
+                    onPress={async () => {
+                      try {
+                        await Linking.openURL(`https://www.youtube.com/watch?v=${yt.videoId}`);
+                      } catch {
+                        Alert.alert('Unable to open video', 'Please ensure you have a browser or YouTube app installed.');
+                      }
+                    }}
                     activeOpacity={0.88}
                   >
                     <View style={{ width: '100%', height: 120, position: 'relative' }}>
