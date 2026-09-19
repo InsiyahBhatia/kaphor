@@ -4,13 +4,14 @@ import { logger } from '../lib/logger';
 // Free-tier model chain (no paid plan), ordered best → fallback.
 // Every model here is verified working on all configured keys.
 // `gemini-2.5-flash` is kept last because it only works on the primary key.
+// Free-tier model chain (no paid plan), ordered best/most stable → fallback.
+// Every model here is verified working across configured keys.
 export const GEMINI_MODEL_CHAIN = [
-  'gemini-3.6-flash',
   'gemini-3.5-flash',
   'gemini-flash-lite-latest',
   'gemini-3.5-flash-lite',
-  'gemini-3.1-flash-lite',
   'gemini-2.5-flash',
+  'gemini-3.6-flash',
 ];
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -18,10 +19,16 @@ const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 function getGeminiKeys(): string[] {
   const keys: string[] = [];
   const primary = process.env.GEMINI_API_KEY;
-  if (primary) keys.push(primary);
+  if (primary) {
+    const clean = primary.split('#')[0].trim();
+    if (clean) keys.push(clean);
+  }
   for (let i = 1; i <= 8; i++) {
     const extra = process.env[`GEMINI_API_KEY${i}`];
-    if (extra) keys.push(extra);
+    if (extra) {
+      const clean = extra.split('#')[0].trim();
+      if (clean) keys.push(clean);
+    }
   }
   return keys;
 }
@@ -68,12 +75,17 @@ export async function generateWithGemini(
         lastError = err;
         const status = err?.status || err?.response?.status;
         if (status === 404) {
-          logger.warn(`[Gemini] model ${modelName} unavailable on key ...${keySuffix}, trying next`);
+          logger.warn(`[Gemini] model ${modelName} unavailable on key ...${keySuffix}, trying next model`);
+          continue;
+        }
+        if (status === 429) {
+          // 429 quota is per-model on Gemini free tier; try next model before abandoning key
+          logger.warn(`[Gemini] ${modelName} (key ...${keySuffix}) quota limit (429), trying next model on same key`);
           continue;
         }
         if (RETRYABLE_STATUSES.has(status)) {
-          logger.warn(`[Gemini] ${modelName} (key ...${keySuffix}) status ${status}, rotating key`);
-          break; // move to next API key
+          logger.warn(`[Gemini] ${modelName} (key ...${keySuffix}) server status ${status}, trying next model`);
+          continue;
         }
         logger.warn(`[Gemini] ${modelName} (key ...${keySuffix}) error: ${err.message}, trying next`);
       }

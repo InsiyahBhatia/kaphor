@@ -3,7 +3,7 @@ import db from '../lib/prisma';
 import { redisGet, redisSet, redisDel } from '../lib/redis';
 import { logger } from '../lib/logger';
 import { runFashionAgent } from '../services/fashionAgent.service';
-import { generateWithGroq } from '../services/groq.service';
+import { generateWithGroq, generateWithGroqVision } from '../services/groq.service';
 import { generateWithGemini } from '../services/gemini.service';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -888,7 +888,17 @@ Be precise. If the brand or hardware logo is visible, identify it.`;
                 { text: prompt }
             ]);
         } catch (visionErr: any) {
-            logger.warn('AI Vision generation failed or timed out, using fallback attributes', { error: visionErr?.message });
+            logger.warn('Gemini Vision generation failed or timed out, trying Groq Vision fallback', { error: visionErr?.message });
+            try {
+                raw = await generateWithGroqVision(
+                    'You are an expert circular fashion archivist and valuation specialist for KaPhor. Analyze the item photo and return ONLY valid JSON matching the exact requested schema.',
+                    prompt,
+                    base64Data,
+                    { responseFormat: 'json', temperature: 0.1 }
+                );
+            } catch (groqErr: any) {
+                logger.warn('Groq Vision fallback also failed, using default attributes', { error: groqErr?.message });
+            }
         }
 
         let data: any;

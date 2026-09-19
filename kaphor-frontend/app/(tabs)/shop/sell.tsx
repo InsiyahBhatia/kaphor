@@ -265,12 +265,25 @@ export default function SellScreen() {
         setWeight(res.styleAttributes?.weight || '');
         setCondition(matchMarketCondition(res.condition));
 
-        // Note: AI setting price is disabled per requirements; seller sets their own price
+        // Auto-fill suggested prices and rates as smart starting defaults
+        if (res.estimatedPrice && !price) {
+          setPrice(String(res.estimatedPrice));
+        }
+        if (res.estimatedPrice && !originalPrice) {
+          setOriginalPrice(String(Math.round(Number(res.estimatedPrice) * 2.2)));
+        }
+        if (res.suggestedRentalPriceDay && !rentalDay) {
+          setRentalDay(String(res.suggestedRentalPriceDay));
+        }
+        if (res.suggestedRentalPriceWeek && !rentalWeek) {
+          setRentalWeek(String(res.suggestedRentalPriceWeek));
+        }
+
         if (listingType === 'ACCESSORY_SWAP') {
           if (isAccessory) {
             Alert.alert(
               'AI Magic Fill',
-              `Identified as "${matchedCat}". Item details filled from photo. Set your desired trade valuation and review details before publishing.`
+              `Identified as "${matchedCat}". All item specs, styling details, and estimated trade valuation have been filled from your photo. Review before publishing.`
             );
           } else {
             Alert.alert(
@@ -281,21 +294,14 @@ export default function SellScreen() {
         } else if (listingType === 'RENTAL') {
           Alert.alert(
             'AI Magic Fill',
-            `Identified as "${matchedCat}". Garment details filled from photo. Enter your daily and weekly rental rates below.`
+            `Identified as "${matchedCat}". All garment specs, styling details, and suggested rental rates have been filled from your photo. You can adjust them as needed.`
           );
         } else {
           // SALE
-          if (isAccessory) {
-            Alert.alert(
-              'AI Magic Fill',
-              `Identified as "${matchedCat}". Item details filled from photo. Enter your desired price below (this accessory is also eligible for SWAP if you prefer exchanging).`
-            );
-          } else {
-            Alert.alert(
-              'AI Magic Fill',
-              `Identified as "${matchedCat}". Garment details filled from photo. Enter your desired price below and review before publishing.`
-            );
-          }
+          Alert.alert(
+            'AI Magic Fill',
+            `Identified as "${matchedCat}". All garment specs, fabric details, and smart pricing suggestions have been filled from your photo. You can adjust them as needed.`
+          );
         }
 
         setStep(2);
@@ -318,7 +324,7 @@ export default function SellScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      quality: 0.85,
+      quality: 0.6,
     });
     if (!result.canceled && result.assets[0]?.uri) {
       const uri = result.assets[0].uri;
@@ -338,7 +344,7 @@ export default function SellScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      quality: 0.85,
+      quality: 0.6,
     });
     if (!result.canceled) {
       setImages((prev) => [...prev, result.assets[0].uri].slice(0, 5));
@@ -352,7 +358,7 @@ export default function SellScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      quality: 0.85,
+      quality: 0.6,
     });
 
     if (!result.canceled) {
@@ -623,6 +629,18 @@ export default function SellScreen() {
 
             {/* Listing Type Prominently at Top */}
             {renderListingTypeSelector()}
+
+            {/* AI Auto-Fill Button on Details Step */}
+            <TouchableOpacity
+              style={[styles.step2AiButton, aiLoading && { opacity: 0.7 }]}
+              onPress={images.length > 0 ? () => executeAiFill(images[0]) : pickAndRunAiFill}
+              disabled={aiLoading}
+            >
+              <Ionicons name="sparkles" size={16} color={colors.white} />
+              <Text style={styles.step2AiButtonText}>
+                {images.length > 0 ? 'AI AUTO-FILL ALL DETAILS FROM PHOTO' : 'PICK PHOTO & AUTO-FILL DETAILS WITH AI'}
+              </Text>
+            </TouchableOpacity>
 
             {/* Category filtered according to Listing Type */}
             <DropdownPicker
@@ -1161,5 +1179,27 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: colors.textMuted,
+  },
+  step2AiButton: {
+    backgroundColor: colors.crimson,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 4,
+    gap: 8,
+    marginBottom: 14,
+    elevation: 2,
+    shadowColor: colors.crimson,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  step2AiButtonText: {
+    color: colors.white,
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
 });

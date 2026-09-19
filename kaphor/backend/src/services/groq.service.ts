@@ -8,10 +8,16 @@ const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 function getGroqKeys(): string[] {
   const keys: string[] = [];
   const primary = process.env.GROQ_API_KEY;
-  if (primary) keys.push(primary);
+  if (primary) {
+    const clean = primary.split('#')[0].trim();
+    if (clean) keys.push(clean);
+  }
   for (let i = 1; i <= 8; i++) {
     const extra = process.env[`GROQ_API_KEY${i}`];
-    if (extra) keys.push(extra);
+    if (extra) {
+      const clean = extra.split('#')[0].trim();
+      if (clean) keys.push(clean);
+    }
   }
   return keys;
 }
