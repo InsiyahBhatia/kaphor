@@ -62,6 +62,7 @@ export default function TabLayout() {
       <Tabs.Screen name="swap/agreement" options={{ href: null }} />
       <Tabs.Screen name="swap/shipping" options={{ href: null }} />
       <Tabs.Screen name="circular/condition-check" options={{ href: null }} />
+      <Tabs.Screen name="circular/upcycle" options={{ href: null }} />
       <Tabs.Screen name="impact/index" options={{ href: null }} />
       <Tabs.Screen name="impact/report" options={{ href: null }} />
       <Tabs.Screen name="studio/index" options={{ href: null }} />

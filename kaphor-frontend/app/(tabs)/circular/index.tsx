@@ -152,7 +152,54 @@ export default function CircularScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* ── SECTION 3: CIRCULAR MARKETPLACE (Compact Action Cards) ── */}
+        {/* ── SECTION 3: UPCYCLE STUDIO ── */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionDotTerracotta} />
+          <Text style={styles.sectionTitleTerracotta}>UPCYCLE STUDIO</Text>
+        </View>
+
+        {/* Hero Upcycle Card */}
+        <TouchableOpacity
+          style={styles.upcycleHeroCard}
+          onPress={() => router.push('/(tabs)/circular/upcycle' as any)}
+          activeOpacity={0.88}
+        >
+          <View style={styles.upcycleTopRow}>
+            <View style={styles.upcycleBadge}>
+              <Ionicons name="leaf-sharp" size={10} color={colors.white} />
+              <Text style={styles.upcycleBadgeText}>ZERO WASTE</Text>
+            </View>
+            <View style={styles.upcycleCountChip}>
+              <Text style={styles.upcycleCountText}>15+ VIDEOS</Text>
+            </View>
+          </View>
+          <View style={styles.upcycleMain}>
+            <View style={styles.upcycleIconBox}>
+              <Ionicons name="cut-sharp" size={22} color={colors.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.upcycleTitle}>UPCYCLE STUDIO</Text>
+              <Text style={styles.upcycleDesc}>
+                Jeans → Bags · Shirts → Skirts · Sarees → Tops · T-shirts → Art
+              </Text>
+            </View>
+          </View>
+          <View style={styles.upcycleCtaRow}>
+            <View style={styles.upcyclePillsPreview}>
+              {['JEANS', 'SHIRT', 'T-SHIRT', 'SAREE', 'SOCKS'].map((g) => (
+                <View key={g} style={styles.upcycleGarmentPill}>
+                  <Text style={styles.upcycleGarmentPillText}>{g}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+          <View style={styles.upcycleCtaBtn}>
+            <Text style={styles.upcycleCtaBtnText}>EXPLORE UPCYCLING IDEAS</Text>
+            <Ionicons name="arrow-forward" size={14} color={colors.ink} />
+          </View>
+        </TouchableOpacity>
+
+        {/* ── SECTION 4: CIRCULAR MARKETPLACE (Compact Action Cards) ── */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionDotInk} />
           <Text style={styles.sectionTitleInk}>CIRCULAR MARKETPLACE</Text>
@@ -265,6 +312,122 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 90,
+  },
+
+  // ── Upcycle Hero Card (Terracotta) ────────────────────────────
+  upcycleHeroCard: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.terracotta,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: colors.terracottaDark,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  upcycleTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  upcycleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.emerald,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  upcycleBadgeText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.white,
+    letterSpacing: 0.8,
+  },
+  upcycleCountChip: {
+    backgroundColor: colors.terracottaLight,
+    borderWidth: 1.5,
+    borderColor: colors.terracotta,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  upcycleCountText: {
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.terracottaDark,
+    letterSpacing: 0.8,
+  },
+  upcycleMain: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 10,
+  },
+  upcycleIconBox: {
+    width: 44,
+    height: 44,
+    backgroundColor: colors.terracotta,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+  },
+  upcycleTitle: {
+    fontFamily: typography.headings,
+    fontSize: 22,
+    color: colors.terracottaDark,
+    letterSpacing: 1.2,
+  },
+  upcycleDesc: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    color: colors.textMuted,
+    marginTop: 3,
+    lineHeight: 14,
+  },
+  upcycleCtaRow: {
+    marginBottom: 10,
+  },
+  upcyclePillsPreview: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  upcycleGarmentPill: {
+    backgroundColor: colors.terracottaLight,
+    borderWidth: 1,
+    borderColor: colors.terracotta,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  upcycleGarmentPillText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.terracottaDark,
+    letterSpacing: 0.5,
+  },
+  upcycleCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.cream,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+  },
+  upcycleCtaBtnText: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: colors.ink,
+    letterSpacing: 0.8,
   },
 
   // ── Section Headers ───────────────────────────────────────────

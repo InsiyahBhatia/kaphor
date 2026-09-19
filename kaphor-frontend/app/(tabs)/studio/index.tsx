@@ -61,6 +61,20 @@ export default function StudioScreen() {
         <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={[styles.bespokeCard, { marginTop: 0 }]}
+        onPress={() => router.push('/(tabs)/studio/upcycle')}
+      >
+        <View style={[styles.bespokeIconBox, { backgroundColor: colors.terracotta }]}>
+          <Ionicons name="cut-sharp" size={24} color={colors.white} />
+        </View>
+        <View style={{ flex: 1, marginLeft: 16 }}>
+          <Text style={styles.bespokeTitle}>UPCYCLE LAB</Text>
+          <Text style={styles.bespokeSubtitle}>Curated video tutorials for transforming your clothes</Text>
+        </View>
+        <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
+      </TouchableOpacity>
+
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>SYSTEM DOSSIERS // FIELD GUIDES</Text>
       </View>

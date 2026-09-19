@@ -37,6 +37,7 @@ export const colors = {
   terracotta: '#C85A32',  // Warm orange/terracotta for AI features
   terracottaDark: '#8B3617',
   terracottaLight: '#FCEEE8',
+
   orange: '#C95F12',
   copper: '#B8912F',
   navy: '#141414',
@@ -51,7 +52,9 @@ export const colors = {
 export const typography = {
   headings: 'BebasNeue_400Regular',
   mono: 'IBMPlexMono_400Regular',
+  monoBold: 'IBMPlexMono_700Bold',
   body: 'IBMPlexMono_400Regular',
+  bodyBold: 'IBMPlexMono_700Bold',
   accent: 'PlayfairDisplay_400Regular_Italic',
   ranks: 'IMFellEnglish_400Regular',
 } as const;
