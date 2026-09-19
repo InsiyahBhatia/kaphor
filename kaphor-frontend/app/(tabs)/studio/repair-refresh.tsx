@@ -787,7 +787,13 @@ export default function RepairRefreshScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
+      >
         {/* Hero */}
         <View style={styles.formHero}>
           <Ionicons name="construct-outline" size={40} color={colors.charcoal} />
@@ -943,7 +949,7 @@ const styles = StyleSheet.create({
   headerTitle: { color: colors.charcoal, fontSize: 14, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
 
   // ── Scroll ─────────────────────────────────────────────────────
-  scrollContent: { padding: 20, paddingBottom: 100 },
+  scrollContent: { padding: 20, paddingBottom: 180 },
 
   // ── Form Hero ──────────────────────────────────────────────────
   formHero: { alignItems: 'center', marginBottom: 28, gap: 12 },

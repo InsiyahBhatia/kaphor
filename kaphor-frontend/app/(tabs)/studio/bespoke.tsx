@@ -49,7 +49,13 @@ export default function BespokeScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
+      >
         <Text style={styles.title}>CUSTOM RECONSTRUCTION</Text>
         <Text style={styles.subtitle}>
           Our heritage artisans transform your existing pieces into contemporary statement garments.
@@ -108,7 +114,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20, borderBottomWidth: 2, borderBottomColor: colors.charcoal
   },
   headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, letterSpacing: 2, fontWeight: '800' },
-  content: { padding: 20, paddingBottom: 120 },
+  content: { padding: 20, paddingBottom: 180 },
   title: { fontSize: 48, fontFamily: typography.headings, color: colors.charcoal, marginBottom: 12 },
   subtitle: { color: colors.textPrimary, fontFamily: typography.mono, fontSize: 12, lineHeight: 22, marginBottom: 32 },
   

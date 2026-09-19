@@ -10,6 +10,8 @@ import {
   Alert,
   Image,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -150,26 +152,36 @@ export function AccountSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Top Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => safeBack('/(tabs)/profile')}
-          style={styles.backBtn}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>ACCOUNT SETTINGS</Text>
-        <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn}>
-          {saving ? (
-            <ActivityIndicator size="small" color={colors.cream} />
-          ) : (
-            <Text style={styles.saveText}>SAVE</Text>
-          )}
-        </Pressable>
-      </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* Top Header */}
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => safeBack('/(tabs)/profile')}
+            style={styles.backBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>ACCOUNT SETTINGS</Text>
+          <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn}>
+            {saving ? (
+              <ActivityIndicator size="small" color={colors.cream} />
+            ) : (
+              <Text style={styles.saveText}>SAVE</Text>
+            )}
+          </Pressable>
+        </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets={true}
+          keyboardDismissMode="on-drag"
+        >
         {/* Compact Avatar Row */}
         <View style={styles.avatarRow}>
           <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={styles.avatarWrap}>
@@ -353,6 +365,7 @@ export function AccountSettingsScreen() {
           </Pressable>
         </View>
       </ScrollView>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -408,7 +421,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 14,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: 160,
     gap: 12,
   },
 

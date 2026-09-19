@@ -188,7 +188,13 @@ export default function SwapDetailScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
+      >
         {garment && (
           <View style={[styles.wantedCard, isOwnGarment && styles.wantedCardOwn]}>
             <TouchableOpacity 
@@ -527,7 +533,7 @@ const styles = StyleSheet.create({
   center: { justifyContent: 'center', alignItems: 'center' },
   header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
-  content: { padding: 20, paddingBottom: 120 },
+  content: { padding: 20, paddingBottom: 180 },
 
   stepsIndicator: {
     flexDirection: 'row',

@@ -52,6 +52,7 @@ export default function SellScreen() {
     listingType?: string;
     mode?: string;
     prefillPrice?: string;
+    prefillOriginalPrice?: string;
     prefillRentalDay?: string;
     fresh?: string;
   }>();
@@ -74,6 +75,7 @@ export default function SellScreen() {
   const [condition, setCondition] = useState('PRISTINE');
   const [listingType, setListingType] = useState(() => getParamListingType() || 'SALE');
   const [price, setPrice] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
   const [rentalDay, setRentalDay] = useState('');
   const [rentalWeek, setRentalWeek] = useState('');
   const [fabric, setFabric] = useState('');
@@ -105,6 +107,7 @@ export default function SellScreen() {
       setSize('FREE SIZE');
     }
     setPrice('');
+    setOriginalPrice('');
     setRentalDay('');
     setRentalWeek('');
     setFabric('');
@@ -176,12 +179,14 @@ export default function SellScreen() {
       }
     }
     if (params.prefillPrice) setPrice(params.prefillPrice);
+    if (params.prefillOriginalPrice) setOriginalPrice(params.prefillOriginalPrice);
     if (params.prefillRentalDay) setRentalDay(params.prefillRentalDay);
   }, [
     params.prefillImage,
     params.prefillCategory,
     params.prefillTitle,
     params.prefillPrice,
+    params.prefillOriginalPrice,
     params.prefillRentalDay,
     params.prefillListingType,
     params.listingType,
@@ -420,6 +425,9 @@ export default function SellScreen() {
         }
       } else {
         formData.append('price', finalPrice);
+        if (originalPrice && Number(originalPrice) > 0) {
+          formData.append('originalPrice', originalPrice);
+        }
       }
 
       formData.append('fabric', fabric);
@@ -655,14 +663,45 @@ export default function SellScreen() {
                 />
               </>
             ) : listingType === 'SALE' ? (
-              <TextInput
-                style={styles.input}
-                placeholder="PRICE (₹)"
-                placeholderTextColor={colors.textMuted}
-                value={price}
-                onChangeText={setPrice}
-                keyboardType="numeric"
-              />
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ fontFamily: typography.mono, fontSize: 9.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 }}>
+                  SELLING PRICE (₹) *
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="SELLING PRICE (₹) e.g. 899"
+                  placeholderTextColor={colors.textMuted}
+                  value={price}
+                  onChangeText={setPrice}
+                  keyboardType="numeric"
+                />
+
+                <Text style={{ fontFamily: typography.mono, fontSize: 9.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 }}>
+                  ORIGINAL RETAIL PRICE / MRP (₹) (OPTIONAL)
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="ORIGINAL COST / MRP (₹) e.g. 2499"
+                  placeholderTextColor={colors.textMuted}
+                  value={originalPrice}
+                  onChangeText={setOriginalPrice}
+                  keyboardType="numeric"
+                />
+
+                {Number(originalPrice) > Number(price) && Number(price) > 0 ? (
+                  <View style={{ marginTop: 8, padding: 10, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.25)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="pricetag" size={15} color={colors.emerald} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: typography.mono, fontSize: 10.5, color: colors.emerald, fontWeight: '800' }}>
+                        FEED PREVIEW: -{Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)}% OFF MRP
+                      </Text>
+                      <Text style={{ fontFamily: typography.body, fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                        Listing at ₹{Number(price).toLocaleString('en-IN')} with strikethrough MRP ₹{Number(originalPrice).toLocaleString('en-IN')}.
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
             ) : (
               <>
                 <TextInput
@@ -838,11 +877,16 @@ export default function SellScreen() {
         ))}
       </View>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets={true}
+          keyboardDismissMode="on-drag"
+        >
           {renderStep()}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -857,7 +901,7 @@ const styles = StyleSheet.create({
   progressContainer: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 32 },
   progressDot: { width: 30, height: 4, backgroundColor: colors.bgCard, borderRadius: 2 },
   activeDot: { backgroundColor: colors.crimson },
-  scrollContent: { padding: 24, paddingBottom: 100 },
+  scrollContent: { padding: 24, paddingBottom: 220 },
   stepContainer: { gap: 16 },
   stepTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, marginBottom: 4 },
   stepSubtitle: { fontSize: 16, color: colors.textSecond, lineHeight: 22 },

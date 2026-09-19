@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
-import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono';
+import { IBMPlexMono_400Regular, IBMPlexMono_700Bold } from '@expo-google-fonts/ibm-plex-mono';
 import { PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-display';
 import { IMFellEnglish_400Regular } from '@expo-google-fonts/im-fell-english';
 import { Ionicons } from '@expo/vector-icons';
@@ -62,6 +62,7 @@ export default function RootLayout() {
     ...Ionicons.font,
     BebasNeue_400Regular,
     IBMPlexMono_400Regular,
+    IBMPlexMono_700Bold,
     PlayfairDisplay_400Regular_Italic,
     IMFellEnglish_400Regular,
   });

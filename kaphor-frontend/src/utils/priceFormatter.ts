@@ -107,7 +107,9 @@ export function getFormattedGarmentPrice(garment: any): FormattedPriceResult {
   // 3. SALE LISTING
   const saleRupees = normalizeRupees(garment.price);
   if (saleRupees > 0) {
-    const estOriginal = Math.round(saleRupees * 1.8);
+    const rawOrig = normalizeRupees(garment.originalPrice || garment.costPrice);
+    const estOriginal = rawOrig > saleRupees ? rawOrig : Math.round(saleRupees * 1.8);
+    const discountPct = Math.round(((estOriginal - saleRupees) / estOriginal) * 100);
     return {
       isSwap: false,
       isRental: false,
@@ -115,7 +117,7 @@ export function getFormattedGarmentPrice(garment: any): FormattedPriceResult {
       displayPrice: formatRupees(saleRupees),
       priceUnit: undefined,
       originalPrice: formatRupees(estOriginal),
-      discountTag: '45% OFF ARCHIVE',
+      discountTag: `${discountPct}% OFF ARCHIVE`,
       subtext: 'Certified Authenticated Asset · Full Ownership',
       numericRupees: saleRupees,
       estTradeValue: saleRupees,

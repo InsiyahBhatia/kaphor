@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -89,15 +90,22 @@ export default function ResetPasswordScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <TouchableOpacity
-        style={styles.backBtn}
-        onPress={() => safeBack('/(auth)/login')}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
       >
-        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => safeBack('/(auth)/login')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
+        </TouchableOpacity>
 
-      <View style={styles.center}>
+        <View style={styles.center}>
         <View style={styles.iconCircle}>
           <Ionicons name="key-outline" size={40} color={colors.crimson} />
         </View>
@@ -162,13 +170,15 @@ export default function ResetPasswordScreen() {
           )}
         </TouchableOpacity>
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 24 },
-  backBtn: { marginTop: 44, width: 44, height: 44, justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: { padding: 24, paddingBottom: 160, flexGrow: 1 },
+  backBtn: { marginTop: 36, width: 44, height: 44, justifyContent: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
   iconCircle: {
     width: 80,

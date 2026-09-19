@@ -103,7 +103,13 @@ export default function UpcycleSuggestionsScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
+      >
         {!result ? (
           <>
             <View style={styles.heroSection}>
@@ -265,7 +271,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F0609' },
   header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, backgroundColor: '#1A0C10', paddingBottom: 16 },
   headerTitle: { color: '#C9A84C', fontSize: 14, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
-  content: { padding: 24, paddingBottom: 100 },
+  content: { padding: 24, paddingBottom: 180 },
   heroSection: { alignItems: 'center', marginBottom: 28 },
   title: { fontSize: 26, fontFamily: 'BebasNeue_400Regular', color: '#C9A84C', marginTop: 12, marginBottom: 8 },
   subtitle: { color: '#6B5C52', fontSize: 14, lineHeight: 22, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4 },

@@ -379,6 +379,9 @@ export async function createGarment(req: Request, res: Response): Promise<void> 
             : (body.price != null && Number(body.price) > 0
               ? Math.round(Number(body.price))
               : getEstimatedGarmentValue(String(body.category), String(body.brand || ''))),
+          originalPrice: (body.originalPrice != null && Number(body.originalPrice) > 0)
+            ? Math.round(Number(body.originalPrice))
+            : (body.costPrice != null && Number(body.costPrice) > 0 ? Math.round(Number(body.costPrice)) : null),
           rentalPriceDay: body.rentalPriceDay != null ? Math.round(Number(body.rentalPriceDay)) : null,
           rentalPriceWeek: body.rentalPriceWeek != null ? Math.round(Number(body.rentalPriceWeek)) : null,
         },
@@ -502,6 +505,11 @@ export async function updateGarment(req: Request, res: Response): Promise<void> 
           price: (newListingType === 'ACCESSORY_SWAP' || String(newListingType).toUpperCase() === 'ACCESSORY_SWAP')
             ? (body.price !== '' && !isNaN(Number(body.price)) && Number(body.price) > 0 ? Math.round(Number(body.price)) : 0)
             : Math.round(Number(body.price)),
+        }),
+        ...((body.originalPrice != null || body.costPrice != null) && {
+          originalPrice: (body.originalPrice != null && Number(body.originalPrice) > 0)
+            ? Math.round(Number(body.originalPrice))
+            : (body.costPrice != null && Number(body.costPrice) > 0 ? Math.round(Number(body.costPrice)) : null),
         }),
         ...(body.rentalPriceDay != null && { rentalPriceDay: Math.round(Number(body.rentalPriceDay)) }),
         ...(body.rentalPriceWeek != null && { rentalPriceWeek: Math.round(Number(body.rentalPriceWeek)) }),

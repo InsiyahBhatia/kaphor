@@ -209,7 +209,13 @@ export default function EditListingScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets={true}
+          keyboardDismissMode="on-drag"
+        >
           {/* Images Preview */}
           {images.length > 0 && (
             <View style={styles.section}>
@@ -603,7 +609,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.md,
-    paddingBottom: 100,
+    paddingBottom: 180,
   },
   section: {
     marginBottom: spacing.lg,

@@ -310,6 +310,8 @@ export default function AddressBookScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={styles.formContent}
           keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets={true}
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           {/* Label selector */}
@@ -1130,7 +1132,7 @@ const styles = StyleSheet.create({
   },
   formContent: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: 160,
   },
   formFooter: {
     paddingHorizontal: 16,

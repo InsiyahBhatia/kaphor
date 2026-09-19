@@ -85,7 +85,13 @@ export default function SwapWithWantedScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
+      >
         {garment && (
           <View style={styles.wantedCard}>
             <TouchableOpacity 
@@ -219,7 +225,7 @@ const styles = StyleSheet.create({
   center: { justifyContent: 'center', alignItems: 'center' },
   header: { paddingHorizontal: 24, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.cream },
   headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
-  content: { padding: 20, paddingBottom: 120 },
+  content: { padding: 20, paddingBottom: 200 },
   wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden' },
   wantedImage: { width: 100, height: 120 },
   wantedInfo: { flex: 1, padding: 16, justifyContent: 'center' },

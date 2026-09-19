@@ -342,7 +342,13 @@ export default function RentalReserveScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
+      >
         {/* Owner Restriction Notice */}
         {isOwner && (
           <View style={styles.ownerWarningCard}>
@@ -905,7 +911,7 @@ const styles = StyleSheet.create({
     marginBottom: 16
   },
   headerTitle: { color: colors.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
-  content: { padding: 20, paddingBottom: 130 },
+  content: { padding: 20, paddingBottom: 180 },
   sectionTitle: {
     color: colors.textPrimary,
     fontSize: 11,

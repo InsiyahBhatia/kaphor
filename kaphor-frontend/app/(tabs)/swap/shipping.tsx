@@ -372,8 +372,7 @@ export default function SwapShippingScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Header title="SHIPPING" showBack fallbackPath={fallback} />
 
@@ -956,7 +955,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 180 },
   sectionTitle: {
     fontFamily: typography.mono,
     fontSize: 10,

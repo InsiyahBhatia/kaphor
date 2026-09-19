@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuth } from '../middleware/auth';
 import {
   getPersonalizedFeed,
   getSimilarGarments,
@@ -10,14 +10,13 @@ import {
 
 const router = Router();
 
-// Similar garments can be public (e.g. browsing product dossier)
+// Similar garments and discovery feeds can be browsed publicly or personalized when logged in
 router.get('/similar/:garmentId', getSimilarGarments);
+router.get('/for-you', optionalAuth, getPersonalizedFeed);
+router.get('/rentals', optionalAuth, getRentalRecommendations);
+router.get('/swaps', optionalAuth, getFairSwapRecommendations);
 
-// Authenticated user recommendations
-router.use(authenticate);
-router.get('/for-you', getPersonalizedFeed);
-router.get('/rentals', getRentalRecommendations);
-router.get('/swaps', getFairSwapRecommendations);
-router.get('/profile', getUserTasteProfile);
+// Strictly authenticated user endpoints
+router.get('/profile', authenticate, getUserTasteProfile);
 
 export { router as recommendationRouter };

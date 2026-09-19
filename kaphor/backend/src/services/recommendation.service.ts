@@ -70,12 +70,13 @@ export const RecommendationService = {
       userVector = (AESTHETIC_VECTORS as any)[aestheticKey] || AESTHETIC_VECTORS.LUXURY;
     }
 
-    // Fetch candidate active listings (exclude user's own listings)
-    const candidates = await db.garment.findMany({
+    // Fetch candidate active listings (exclude user's own listings if registered)
+    const isRegisteredUser = Boolean(user && user.id);
+    let candidates = await db.garment.findMany({
       where: {
         isActive: true,
         lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
-        sellerId: { not: userId },
+        ...(isRegisteredUser ? { sellerId: { not: userId } } : {}),
       },
       take: 120,
       select: {
@@ -90,7 +91,6 @@ export const RecommendationService = {
         listingType: true,
         images: true,
         garmentVector: true,
-        cooldownEnd: true,
         seller: {
           select: {
             id: true,
@@ -132,9 +132,7 @@ export const RecommendationService = {
       // 5. Preferred Size Match
       const sizeScore = profile.preferredSizes?.includes(g.size) ? 1.0 : 0.7;
 
-      // Cooldown penalty: keep cooldown items browsable but placed at the very end
-      const inCooldown = Boolean(g.cooldownEnd && new Date(g.cooldownEnd) > now);
-      const cooldownMultiplier = inCooldown ? 0.05 : 1.0;
+      const cooldownMultiplier = 1.0;
 
       // Weighted Composite Score
       const composite =
@@ -153,7 +151,7 @@ export const RecommendationService = {
       } else if (brandCount > 1) {
         matchReason = `From your preferred brand ${g.brand}`;
       } else if (vecSim > 0.85) {
-        matchReason = `98% visual & architectural style alignment`;
+        matchReason = `Harmonious visual & architectural style alignment`;
       }
 
       return {
@@ -328,12 +326,13 @@ export const RecommendationService = {
       ? user.styleVector
       : AESTHETIC_VECTORS[user?.styleAesthetic || 'LUXURY'] || AESTHETIC_VECTORS.LUXURY;
 
-    const rentals = await db.garment.findMany({
+    const isRegisteredUser = Boolean(user && user.id);
+    let rentals = await db.garment.findMany({
       where: {
         listingType: 'RENTAL',
         isActive: true,
         lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
-        sellerId: { not: userId },
+        ...(isRegisteredUser ? { sellerId: { not: userId } } : {}),
       },
       take: 60,
       select: {
@@ -350,12 +349,40 @@ export const RecommendationService = {
         listingType: true,
         images: true,
         garmentVector: true,
-        cooldownEnd: true,
         seller: {
           select: { id: true, username: true, avatar: true },
         },
       },
     });
+
+    if (rentals.length === 0) {
+      rentals = await db.garment.findMany({
+        where: {
+          listingType: 'RENTAL',
+          isActive: true,
+          lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
+        },
+        take: 60,
+        select: {
+          id: true,
+          title: true,
+          brand: true,
+          category: true,
+          subCategory: true,
+          size: true,
+          price: true,
+          rentalPriceDay: true,
+          rentalPriceWeek: true,
+          condition: true,
+          listingType: true,
+          images: true,
+          garmentVector: true,
+          seller: {
+            select: { id: true, username: true, avatar: true },
+          },
+        },
+      });
+    }
 
     const now = new Date();
     const scored = rentals.map((r: any) => {
@@ -364,8 +391,7 @@ export const RecommendationService = {
           ? Math.max(0, cosineSimilarity(userVector, r.garmentVector))
           : 0.65;
       const dayRate = r.rentalPriceDay || (r.price ? r.price * 0.08 : 300);
-      const inCooldown = Boolean(r.cooldownEnd && new Date(r.cooldownEnd) > now);
-      const score = (vecSim * 0.7 + (1 / Math.log10(dayRate + 10)) * 0.3) * (inCooldown ? 0.05 : 1.0);
+      const score = vecSim * 0.7 + (1 / Math.log10(dayRate + 10)) * 0.3;
       const fitScore = Math.round(Math.min(99, Math.max(68, score * 100)));
       const effectivePrice = r.price && r.price > 0 ? r.price : getEstimatedGarmentValue(r.category, r.brand);
       const effectiveRentalDay = r.rentalPriceDay && r.rentalPriceDay > 0

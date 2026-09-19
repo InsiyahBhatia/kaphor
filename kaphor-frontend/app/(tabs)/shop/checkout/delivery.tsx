@@ -246,8 +246,7 @@ export default function DeliveryScreen() {
     return (
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: colors.cream }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Header title={title} showBack onBack={() => { setMode('select'); setErrors({}); setEditId(null); setForm({...EMPTY_FORM}); }} />
         <ScrollView
@@ -512,7 +511,7 @@ export default function DeliveryScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 140 },
-  formContent: { padding: 20, paddingBottom: 24 },
+  formContent: { padding: 20, paddingBottom: 160 },
   formFooter: {
     paddingHorizontal: 20,
     paddingTop: 14,

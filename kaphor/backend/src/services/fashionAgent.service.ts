@@ -177,27 +177,29 @@ const CATEGORY_MAP: Record<string, string[]> = {
   'Kurtas': ['kurta', 'kurti', 'kurtis', 'anarkali', 'tunic'],
   'Suits': ['suit', 'salwar', 'churidar', 'pantsuit'],
   'Dresses': ['dress', 'gown', 'mini dress', 'maxi', 'midi', 'cocktail', 'sundress', 'slip dress'],
-  'Bottoms': ['jeans', 'denim', 'trousers', 'pants', 'cargo', 'cargos', 'palazzo', 'shorts', 'bottoms', 'chinos', 'joggers'],
-  'Skirts': ['skirt', 'wrap skirt', 'pleated skirt'],
-  'Blazers': ['blazer', 'tuxedo', 'suit jacket'],
-  'Jackets': ['jacket', 'bomber', 'coat'],
-  'Tops': ['top', 'tops', 'crop top', 'blouse', 'shirt', 't-shirt', 'peasant blouse', 'linen top'],
+  'Bottoms': ['trousers', 'pants', 'cargo', 'cargos', 'palazzo', 'shorts', 'bottoms', 'chinos', 'joggers', 'salwar', 'linen trousers'],
+  'Denims': ['denim', 'denims', 'jeans', 'straight-leg', 'flared jeans', 'wide-leg denim', 'wash denim'],
+  'Skirts': ['skirt', 'skirts', 'wrap skirt', 'pleated skirt', 'midi skirt', 'maxi skirt'],
+  'Blazers': ['blazer', 'blazers', 'tuxedo', 'suit jacket', 'single-breasted'],
+  'Jackets': ['jacket', 'jackets', 'bomber', 'coat', 'cardigan', 'trucker jacket'],
+  'Tops': ['top', 'tops', 'crop top', 'blouse', 'shirt', 't-shirt', 'peasant blouse', 'linen top', 'tee'],
   'Sets': ['set', 'sets', 'co-ord', 'coord', 'matching set', 'two-piece'],
-  'Heels': ['heel', 'heels', 'stiletto', 'pump'],
-  'Flats': ['flat', 'flats', 'loafer', 'mule', 'slides', 'juttis', 'shoe', 'shoes', 'footwear', 'sneakers', 'sandals'],
+  'Footwear': ['shoe', 'shoes', 'footwear', 'heel', 'heels', 'flat', 'flats', 'loafer', 'mule', 'slides', 'juttis', 'sneakers'],
+  'Sandals': ['sandal', 'sandals', 'slides', 'strap sandals', 'archival sandals'],
+  'Watches': ['watch', 'watches', 'dial', 'bracelet watch', 'timepiece'],
   'Bags': ['bag', 'bags', 'handbag', 'tote', 'crossbody', 'purse', 'clutch'],
-  'Jewelry': ['jewelry', 'jewellery', 'necklace', 'earring', 'earrings', 'choker', 'bracelet'],
-  'Accessories': ['accessory', 'accessories', 'scarf', 'belt', 'watch', 'sunglasses', 'hat', 'shades'],
+  'Jewelry': ['jewelry', 'jewellery', 'necklace', 'earring', 'earrings', 'choker', 'bracelet', 'bangle', 'cuff', 'ring', 'pendant'],
+  'Accessories': ['accessory', 'accessories', 'scarf', 'belt', 'chain belt', 'sunglasses', 'hat', 'shades'],
 };
 
 const THEME_EXPANSIONS: Record<string, string[]> = {
-  beach: ['dress', 'sandals', 'linen', 'swim', 'white', 'floral', 'skirt', 'breezy', 'hat', 'sunglasses', 'tote', 'slides', 'blouse'],
-  summer: ['dress', 'cotton', 'linen', 'shorts', 'skirt', 't-shirt', 'sandals', 'sunglasses', 'yellow', 'white', 'blouse'],
+  beach: ['dress', 'sandals', 'linen', 'swim', 'white', 'floral', 'skirt', 'breezy', 'hat', 'sunglasses', 'tote', 'slides'],
+  summer: ['dress', 'cotton', 'linen', 'shorts', 'skirt', 'sandals', 'sunglasses', 'yellow', 'white'],
   wedding: ['saree', 'lehenga', 'anarkali', 'silk', 'embroidery', 'gold', 'churidar', 'kurta', 'jewelry', 'choker', 'festive'],
-  party: ['cocktail', 'black', 'shimmer', 'sequin', 'heels', 'mini', 'blazer', 'crop top', 'silver', 'clutch'],
-  casual: ['jeans', 'cotton', 'denim', 't-shirt', 'sneakers', 'jacket', 'trousers', 'flat', 'top'],
-  brunch: ['dress', 'floral', 'pastel', 'linen', 'skirt', 'blouse', 'flats', 'tote', 'sandals'],
-  formal: ['blazer', 'trousers', 'suit', 'formal', 'shirt', 'watch', 'black', 'navy', 'loafers'],
+  party: ['cocktail', 'black', 'shimmer', 'sequin', 'heels', 'mini', 'blazer', 'silver', 'clutch'],
+  casual: ['jeans', 'cotton', 'denim', 'sneakers', 'jacket', 'trousers', 'flat'],
+  brunch: ['dress', 'floral', 'pastel', 'linen', 'skirt', 'flats', 'tote', 'sandals'],
+  formal: ['blazer', 'trousers', 'suit', 'formal', 'watch', 'black', 'navy', 'loafers'],
   winter: ['jacket', 'coat', 'sweater', 'wool', 'boots', 'scarf', 'trench'],
 };
 
@@ -267,7 +269,6 @@ export async function searchCatalog(params: {
     }
     for (const [cat, keywords] of Object.entries(CATEGORY_MAP)) {
       if (keywords.some(kw => promptText.includes(kw))) {
-        // If this category is explicitly excluded, do not detect it
         if (params.excludeCategories && params.excludeCategories.some(exc => exc.toLowerCase() === cat.toLowerCase())) {
           continue;
         }
@@ -281,7 +282,6 @@ export async function searchCatalog(params: {
       .split(/\s+/)
       .filter(w => w.length >= 3 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
 
-    // Expand search terms if theme keywords are detected
     const themeTerms: string[] = [];
     for (const [theme, expTerms] of Object.entries(THEME_EXPANSIONS)) {
       if (promptText.includes(theme)) {
@@ -289,84 +289,84 @@ export async function searchCatalog(params: {
       }
     }
 
-    // 3. Tier 1: Query with detected categories, prompt tokens, and theme terms
-    const tier1OrConditions: any[] = [];
+    // 3. Query Candidate Pool: fetch up to 60 candidates matching baseWhere
+    const candidateWhere: any = { ...baseWhere };
     if (detectedCategories.length > 0) {
-      tier1OrConditions.push({
-        category: { in: detectedCategories, mode: 'insensitive' },
-      });
-    }
-    const combinedTokens = Array.from(new Set([...rawTokens.slice(0, 4), ...themeTerms.slice(0, 6)]));
-    for (const token of combinedTokens.slice(0, 8)) {
-      tier1OrConditions.push(
-        { title: { contains: token, mode: 'insensitive' } },
-        { brand: { contains: token, mode: 'insensitive' } },
-        { category: { contains: token, mode: 'insensitive' } },
-        { subCategory: { contains: token, mode: 'insensitive' } },
-        { description: { contains: token, mode: 'insensitive' } }
-      );
+      candidateWhere.category = { in: Array.from(new Set(detectedCategories)), mode: 'insensitive' };
     }
 
-    if (tier1OrConditions.length > 0) {
-      const tier1Items = await db.garment.findMany({
+    let candidateItems = await db.garment.findMany({
+      where: candidateWhere,
+      take: 60,
+      orderBy: { popularityScore: 'desc' },
+    });
+
+    // If candidate items are sparse, broaden to general active items (still respecting excludeCategories)
+    if (candidateItems.length < (params.take || 6)) {
+      const existingIds = new Set(candidateItems.map((i: any) => i.id));
+      const broaderItems = await db.garment.findMany({
         where: {
           ...baseWhere,
-          OR: tier1OrConditions,
+          id: { notIn: Array.from(existingIds) },
         },
+        take: 40,
         orderBy: { popularityScore: 'desc' },
-        take: params.take || 6,
       });
-      for (const item of tier1Items) {
+      candidateItems.push(...broaderItems);
+    }
+
+    // 4. Relevance Scoring: score candidates by title, color, category, description matches
+    const searchTokens = Array.from(new Set([...rawTokens, ...themeTerms]));
+    const scoredCandidates = candidateItems.map((item: any) => {
+      let score = 0;
+      const titleLower = (item.title || '').toLowerCase();
+      const catLower = (item.category || '').toLowerCase();
+      const subCatLower = (item.subCategory || '').toLowerCase();
+      const descLower = (item.description || '').toLowerCase();
+      const colorLower = (item.color || []).join(' ').toLowerCase();
+
+      for (const token of searchTokens) {
+        if (colorLower.includes(token)) score += 8;
+        if (titleLower.includes(token)) score += 6;
+        if (catLower.includes(token) || subCatLower.includes(token)) score += 4;
+        if (descLower.includes(token)) score += 2;
+      }
+
+      // Small popularity tie-breaker
+      score += (item.popularityScore || 0) * 0.05;
+
+      // Small jitter (0 to 0.4) to ensure fresh variety
+      score += Math.random() * 0.4;
+
+      return { item, score };
+    });
+
+    scoredCandidates.sort((a: any, b: any) => b.score - a.score);
+
+    // 5. Slot & Category Diversity Capping: NEVER allow more than 2 items from the same category
+    const categoryCount: Record<string, number> = {};
+    const maxPerCategory = 2;
+
+    for (const { item } of scoredCandidates) {
+      const cat = (item.category || 'Other').toLowerCase();
+      if ((categoryCount[cat] || 0) < maxPerCategory) {
         matchedGarmentMap.set(item.id, item);
+        categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+        if (matchedGarmentMap.size >= (params.take || 6)) break;
       }
     }
 
-    // 4. Tier 2: If fewer than 4 items, search by user top categories or top brands
-    if (matchedGarmentMap.size < (params.take || 4)) {
-      const tier2OrConditions: any[] = [];
-      if (params.topCategories && params.topCategories.length > 0) {
-        tier2OrConditions.push({
-          category: { in: params.topCategories, mode: 'insensitive' },
-        });
-      }
-      if (params.topBrands && params.topBrands.length > 0) {
-        tier2OrConditions.push({
-          brand: { in: params.topBrands, mode: 'insensitive' },
-        });
-      }
-
-      if (tier2OrConditions.length > 0) {
-        const tier2Items = await db.garment.findMany({
-          where: {
-            ...baseWhere,
-            OR: tier2OrConditions,
-            id: { notIn: Array.from(matchedGarmentMap.keys()) },
-          },
-          orderBy: { popularityScore: 'desc' },
-          take: (params.take || 6) - matchedGarmentMap.size,
-        });
-        for (const item of tier2Items) {
+    // Fill remaining slots if category cap left us under target
+    if (matchedGarmentMap.size < (params.take || 6)) {
+      for (const { item } of scoredCandidates) {
+        if (!matchedGarmentMap.has(item.id)) {
           matchedGarmentMap.set(item.id, item);
+          if (matchedGarmentMap.size >= (params.take || 6)) break;
         }
       }
     }
 
-    // 5. Tier 3: If still fewer than 4 items, pull top active catalog pieces matching baseWhere
-    if (matchedGarmentMap.size < (params.take || 4)) {
-      const tier3Items = await db.garment.findMany({
-        where: {
-          ...baseWhere,
-          id: { notIn: Array.from(matchedGarmentMap.keys()) },
-        },
-        orderBy: params.listingType === 'RENTAL' ? { rentalPriceDay: 'asc' } : { popularityScore: 'desc' },
-        take: (params.take || 6) - matchedGarmentMap.size,
-      });
-      for (const item of tier3Items) {
-        matchedGarmentMap.set(item.id, item);
-      }
-    }
-
-    // 6. Tier 4 Fallback: If maxPrice resulted in 0 matches, relax maxPrice to return lowest price rentals/buys
+    // 6. Tier 4 Fallback: If maxPrice resulted in 0 matches, relax maxPrice
     if (matchedGarmentMap.size === 0 && params.maxPrice) {
       const fallbackWhere: any = { isActive: true, lifecycleState: 'LISTED' };
       if (params.listingType) fallbackWhere.listingType = params.listingType;
@@ -387,7 +387,6 @@ export async function searchCatalog(params: {
         where: { isActive: true, lifecycleState: 'LISTED' },
         take: 20,
       });
-      // Shuffle to provide variety
       const shuffled = ultimateItems.sort(() => 0.5 - Math.random());
       for (const item of shuffled.slice(0, params.take || 6)) {
         matchedGarmentMap.set(item.id, item);
@@ -724,9 +723,9 @@ RULES:
    - "intent": "STYLING_ADVICE"
    - "isStylingAdvice": true
    - Set "targetGarment" to what the user ALREADY HAS (e.g. for "baby pink top", slot="TOP", color="baby pink").
-   - "complementaryCategories" MUST be categories that go with it (if user has a TOP, return ["Bottoms", "Skirts", "Jackets", "Blazers", "Accessories", "Jewelry", "Flats", "Heels"]).
+   - "complementaryCategories" MUST be categories that go with it (if user has a TOP, return ["Bottoms", "Denims", "Skirts", "Jackets", "Blazers", "Accessories", "Jewelry", "Watches", "Footwear", "Sandals"]).
    - "excludeCategories" MUST exclude the same category (if user has a TOP, exclude ["Tops", "Sets"]).
-   - "searchKeywords" should be 3-5 harmonious pairings (e.g. for baby pink top: ["white trousers", "chocolate brown pants", "light wash denim", "silver jewelry"]).
+   - "searchKeywords" should be 4-6 specific harmonious color & piece keywords (e.g. for baby pink top: ["chocolate brown", "white trousers", "light wash denim", "linen pants", "silver"]).
 2. If the user asks to rent, lease, or hire:
    - "intent": "RENTAL"
 3. If the user asks to swap, trade, or exchange:
@@ -971,31 +970,22 @@ export async function runFashionAgent(params: {
   let agentPrompt = '';
 
   if (isStylingAdviceQuery) {
-    agentPrompt = `You are KaPhor AI, an expert, inspiring, chic fashion stylist.
-You speak in clear, natural, warm, modern English. Avoid pretentious fashion clichés (never use words like "curate", "ensemble", "silhouette", "circular vault", "dossier", "intentional layering").
+    agentPrompt = `You are KaPhor AI, a chic, inspiring fashion stylist.
+You speak in warm, modern, breezy English. Keep your tone effortless, chic, and direct. Avoid pretentious fashion clichés (never use words like "curate", "ensemble", "silhouette", "circular vault", "dossier", "intentional layering").
 
-STYLING ADVICE TASK:
-The user is asking: "${message}".
+TASK: Provide styling & color advice for: "${message}".
 ${visualAnalysisSummary ? `Uploaded Item Photo Analysis: "${visualAnalysisSummary}".` : ''}
 
-INSTRUCTIONS:
-1. If the user is asking about COLOR COMBOS / PALETTES:
-   - Provide 3 to 4 chic, sophisticated color combinations specifically tailored to this shade.
-   - For example, for soft/baby pink:
-     * Chocolate Brown / Mocha: A rich, 90s-inspired contrast that makes soft pink look grounded and high-end.
-     * Crisp White / Cream / Ecru: Clean, effortless, and fresh for warm weather or minimalist tailoring.
-     * Vintage Light-Wash Denim: The ultimate effortless pairing for casual elegance.
-     * Muted Olive / Sage Green: An unexpected, editorial complementary contrast that feels modern and artistic.
-     * Slate Grey or Charcoal: A sleek, tailored pairing that tones down the sweetness of pink for work or evening.
-   - For each color combo, suggest practical bottoms (trousers, jeans, skirts), layering pieces, or shoes/accessories.
-2. If the user is asking general styling advice:
-   - Provide 2 to 3 distinct styling directions (Casual & Effortless, Chic & Polished, Feminine & Elevated).
-   - Detail bottom cuts, outerwear, footwear, and accessory finishing touches.
-
-STRICT STYLING RULES & PRODUCT INTEGRITY:
-- ANATOMICAL REALITY: A TOP must always be styled with bottoms (jeans, trousers, skirts, shorts) or outerwear. NEVER recommend wearing a top with another top (e.g. NEVER suggest pairing a top with a blouse, shirt, or tee).
-- ONLY mention items from "Available complementary pieces on the app" below if they are truly harmonious bottoms, jackets, or accessories. If none are a natural fit, focus on your pure styling advice without forcing catalog mentions.
-- Keep your response structured, warm, stylish, and direct (4 to 6 sentences, clean formatting with bolded combos).
+CRITICAL BREVITY & FORMATTING RULES (STRICTLY ENFORCE):
+1. NEVER write a heavy paragraph or wall of text. Keep your entire reply short, punchy, and under 60-70 words!
+2. Format your response exactly like this:
+   - A friendly 1-sentence intro.
+   - Exactly 2 to 3 bullet points, each on its own line:
+     • **Combo / Vibe Name**: 1 concise sentence describing the bottom, cut, or layering (e.g. • **Chocolate Brown**: Ground it with tailored wide-leg trousers or a pleated skirt for a rich 90s contrast.)
+   - A brief 1-sentence wrap-up referencing the curated pieces below.
+3. Use bolding for each combo name with **Bold Name**.
+4. ANATOMICAL REALITY: A TOP must always be styled with bottoms (jeans, trousers, skirts, shorts) or outerwear. NEVER recommend wearing a top with another top (no blouses/shirts over tops).
+5. ONLY reference items from "Available complementary pieces on the app" below if they genuinely fit the vibe.
 
 User Style Profile: ${userAesthetic}${topCats.length ? `, Preferred: ${topCats.join(', ')}` : ''}.
 

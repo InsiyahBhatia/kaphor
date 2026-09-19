@@ -886,8 +886,7 @@ export default function DirectChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Top Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>

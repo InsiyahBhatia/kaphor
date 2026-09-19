@@ -99,14 +99,15 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView 
         style={styles.container} 
         contentContainerStyle={styles.inner} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
       >
         <TouchableOpacity 
           style={styles.backBtn} 
@@ -253,6 +254,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     padding: 24,
+    paddingBottom: 180,
   },
   backBtn: {
     marginTop: 20,

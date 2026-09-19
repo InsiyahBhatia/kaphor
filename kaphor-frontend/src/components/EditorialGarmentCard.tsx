@@ -40,9 +40,12 @@ export function EditorialGarmentCard({
 }: EditorialGarmentCardProps) {
   const [isLiked, setIsLiked] = useState<boolean>(Boolean(item.isLiked));
   const price = item.price ? Math.round(item.price) : 0;
-  const estimatedOriginal = price > 0 ? Math.round(price * 1.65) : 0;
+  const rawOriginal = item.originalPrice ? Math.round(Number(item.originalPrice)) : (item.costPrice ? Math.round(Number(item.costPrice)) : 0);
+  const estimatedOriginal = rawOriginal > price
+    ? rawOriginal
+    : (price > 0 ? Math.round(price * 1.65) : 0);
   const discountPercent =
-    estimatedOriginal > 0 ? Math.round(((estimatedOriginal - price) / estimatedOriginal) * 100) : 0;
+    estimatedOriginal > price ? Math.round(((estimatedOriginal - price) / estimatedOriginal) * 100) : 0;
 
   const handleToggleLike = async (e: any) => {
     e.stopPropagation();

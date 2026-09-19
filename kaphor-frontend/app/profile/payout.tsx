@@ -254,7 +254,13 @@ export default function PayoutAccountsScreen() {
           <View style={{ width: 24 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.formContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets={true}
+          keyboardDismissMode="on-drag"
+        >
           {/* Account Holder Name */}
           <Text style={styles.formLabel}>ACCOUNT HOLDER NAME *</Text>
           <TextInput
@@ -976,6 +982,6 @@ const styles = StyleSheet.create({
   },
   formContent: {
     padding: 20,
-    paddingBottom: 60,
+    paddingBottom: 160,
   },
 });

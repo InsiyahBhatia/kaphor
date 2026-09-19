@@ -50,6 +50,10 @@ export default function ConditionCheckScreen() {
   const [season, setSeason] = useState('');
   const [style, setStyle] = useState('');
 
+  // ── Price Confirmation state ──────────────────────────────────
+  const [resellPrice, setResellPrice] = useState('');
+  const [costPrice, setCostPrice] = useState('');
+
   // ── Result state ─────────────────────────────────────────────
   const [analyzing, setAnalyzing] = useState(false);
   const [glieStep, setGlieStep] = useState(0);
@@ -118,6 +122,13 @@ export default function ConditionCheckScreen() {
         (step) => setGlieStep(step), // progress callback
       );
       setResult(glieResult);
+      if (glieResult.suggested_price_inr) {
+        setResellPrice(String(glieResult.suggested_price_inr));
+      }
+      const initialCost = price || (glieResult as any)?.original_price_inr;
+      if (initialCost) {
+        setCostPrice(String(initialCost));
+      }
       if (glieResult.routing_decision === 'RECYCLE') {
         fetchRecyclingCenters();
       }
@@ -140,6 +151,8 @@ export default function ConditionCheckScreen() {
     setCategory('');
     setFiber('');
     setPrice('');
+    setResellPrice('');
+    setCostPrice('');
     setColor('');
     setSeason('');
     setStyle('');
@@ -156,6 +169,9 @@ export default function ConditionCheckScreen() {
     const displayTitle = (result as any)?.title || `${(fiber || (result as any)?.fiber_type || 'Heritage').toUpperCase()} ${catName.toUpperCase()}`;
     const displayDesc = (result as any)?.description || `Pre-loved ${catName} in ${conditionGrade(score).label} condition. Assessed by Kaphor Circular AI.`;
 
+    const finalSellingPrice = resellPrice.trim() || (result?.suggested_price_inr ? String(result.suggested_price_inr) : '');
+    const finalCostPrice = costPrice.trim() || price || ((result as any)?.original_price_inr ? String((result as any).original_price_inr) : '');
+
     router.push({
       pathname: '/(tabs)/shop/sell',
       params: {
@@ -169,6 +185,8 @@ export default function ConditionCheckScreen() {
         prefillColor: color || (result as any)?.color_family || '',
         prefillStyle: style || '',
         prefillListingType: 'SALE',
+        prefillPrice: finalSellingPrice,
+        prefillOriginalPrice: finalCostPrice,
       },
     });
   };
@@ -179,16 +197,26 @@ export default function ConditionCheckScreen() {
     const grade = conditionGrade(result.condition_score);
 
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={resetAssessment}>
-            <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>ASSESSMENT</Text>
-          <View style={{ width: 24 }} />
-        </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={resetAssessment}>
+              <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>ASSESSMENT</Text>
+            <View style={{ width: 24 }} />
+          </View>
 
-        <ScrollView contentContainerStyle={styles.resultContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.resultContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            automaticallyAdjustKeyboardInsets={true}
+            keyboardDismissMode="on-drag"
+          >
           {/* ── Routing Decision Hero ─────────────────────────────── */}
           <View style={[styles.heroCard, { backgroundColor: routeInfo.color }]}>
             <Text style={styles.heroEmoji}>{routeInfo.emoji}</Text>
@@ -210,20 +238,77 @@ export default function ConditionCheckScreen() {
           </View>
 
           {/* ── Route-Specific Action Card ────────────────────────── */}
-          {result.routing_decision === 'RESELL' && (
-            <View style={styles.actionCard}>
-              <Text style={styles.actionCardTitle}>Verified for Marketplace Resale</Text>
-              <Text style={styles.actionCardPlaceholder}>
-                Your garment is in good condition! Photo and details are ready to transfer directly. Set your own price on the next screen.
-              </Text>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={navigateToSell}
-              >
-                <Text style={styles.actionBtnText}>LIST FOR SALE (1-CLICK) →</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {result.routing_decision === 'RESELL' && (() => {
+            const numCost = parseFloat(costPrice) || 0;
+            const numSell = parseFloat(resellPrice) || 0;
+            const discountPct = (numCost > numSell && numCost > 0)
+              ? Math.round(((numCost - numSell) / numCost) * 100)
+              : 0;
+
+            return (
+              <View style={styles.actionCard}>
+                <Text style={styles.actionCardTitle}>VERIFIED FOR MARKETPLACE RESALE</Text>
+                
+                {result.suggested_price_inr ? (
+                  <View style={{ marginVertical: 8, padding: 12, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.25)' }}>
+                    <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.emerald, fontWeight: '700', letterSpacing: 0.5 }}>
+                      T3 RECOMMENDED RESALE: ₹{result.suggested_price_inr}
+                    </Text>
+                    <Text style={{ fontFamily: typography.body, fontSize: 11, color: colors.textMuted, marginTop: 4, lineHeight: 16 }}>
+                      Derived from FreeUp thrift data for {category || 'this category'} in {grade.label} condition. You can keep or adjust it below.
+                    </Text>
+                  </View>
+                ) : null}
+
+                {/* Confirm Dual Pricing */}
+                <View style={{ marginVertical: 10 }}>
+                  <Text style={{ fontFamily: typography.mono, fontSize: 10, color: colors.charcoal, fontWeight: '800', letterSpacing: 0.5, marginBottom: 4 }}>
+                    ORIGINAL RETAIL PRICE / MRP (₹)
+                  </Text>
+                  <TextInput
+                    style={[styles.textInput, { padding: 10, fontSize: 13, marginBottom: 12 }]}
+                    value={costPrice}
+                    onChangeText={setCostPrice}
+                    placeholder="e.g. 2499 (Original purchase price)"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="numeric"
+                  />
+
+                  <Text style={{ fontFamily: typography.mono, fontSize: 10, color: colors.charcoal, fontWeight: '800', letterSpacing: 0.5, marginBottom: 4 }}>
+                    CONFIRMED SELLING PRICE (₹)
+                  </Text>
+                  <TextInput
+                    style={[styles.textInput, { padding: 10, fontSize: 13 }]}
+                    value={resellPrice}
+                    onChangeText={setResellPrice}
+                    placeholder="e.g. 899 (Your resale price)"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="numeric"
+                  />
+
+                  {discountPct > 0 ? (
+                    <View style={{ marginTop: 10, padding: 10, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.2)' }}>
+                      <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.emerald, fontWeight: '800' }}>
+                        MARKETPLACE PREVIEW: -{discountPct}% OFF MRP
+                      </Text>
+                      <Text style={{ fontFamily: typography.body, fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                        Listed at ₹{numSell.toLocaleString('en-IN')} with strikethrough MRP ₹{numCost.toLocaleString('en-IN')}. Buyers save ₹{(numCost - numSell).toLocaleString('en-IN')}.
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.actionBtn, { marginTop: 6 }]}
+                  onPress={navigateToSell}
+                >
+                  <Text style={styles.actionBtnText}>
+                    {resellPrice ? `CONFIRM & LIST FOR ₹${resellPrice} →` : 'LIST FOR SALE (1-CLICK) →'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
 
           {result.routing_decision === 'UPCYCLE' && (
             <View style={styles.actionCard}>
@@ -467,8 +552,9 @@ export default function ConditionCheckScreen() {
           </TouchableOpacity>
         </ScrollView>
       </View>
-    );
-  }
+    </KeyboardAvoidingView>
+  );
+}
 
   // ── Loading View ─────────────────────────────────────────────
   if (analyzing) {
@@ -499,7 +585,13 @@ export default function ConditionCheckScreen() {
           <View style={{ width: 24 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.formContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.formContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets={true}
+          keyboardDismissMode="on-drag"
+        >
           {/* Upload Area */}
           <TouchableOpacity
             style={styles.uploadArea}
@@ -686,7 +778,7 @@ const styles = StyleSheet.create({
   },
 
   // ── Form ────────────────────────────────────────────────────
-  formContent: { padding: 20, paddingBottom: 100 },
+  formContent: { padding: 20, paddingBottom: 180 },
 
   // Upload
   uploadArea: {
@@ -797,7 +889,7 @@ const styles = StyleSheet.create({
   hintText: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 16 },
 
   // ── Result ──────────────────────────────────────────────────
-  resultContent: { padding: 20, paddingBottom: 100 },
+  resultContent: { padding: 20, paddingBottom: 180 },
 
   // Hero Card
   heroCard: {

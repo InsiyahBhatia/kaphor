@@ -44,13 +44,14 @@ export default function ForgotPasswordScreen() {
   return (
     <KeyboardAvoidingView 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView 
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
       >
         <TouchableOpacity 
           style={styles.backBtn} 
@@ -83,7 +84,7 @@ export default function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scrollContent: { padding: 24, flexGrow: 1, justifyContent: 'space-between' },
+  scrollContent: { padding: 24, paddingBottom: 160, flexGrow: 1, justifyContent: 'space-between' },
   backBtn: { marginTop: 36, width: 44, height: 44, justifyContent: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20, marginVertical: 20 },
   title: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, textAlign: 'center' },

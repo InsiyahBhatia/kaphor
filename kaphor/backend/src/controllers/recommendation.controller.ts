@@ -5,12 +5,9 @@ import { logger } from '../lib/logger';
 
 export async function getPersonalizedFeed(req: Request, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: 'UNAUTHORIZED' });
-      return;
-    }
     const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit || '20'), 10)));
-    const feed = await RecommendationService.getPersonalizedFeed(req.user.id, limit);
+    const userId = req.user?.id || 'guest';
+    const feed = await RecommendationService.getPersonalizedFeed(userId, limit);
     res.json({ data: feed });
   } catch (error: any) {
     logger.error('getPersonalizedFeed failed', { error: error.message });
@@ -36,12 +33,9 @@ export async function getSimilarGarments(req: Request, res: Response): Promise<v
 
 export async function getRentalRecommendations(req: Request, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: 'UNAUTHORIZED' });
-      return;
-    }
     const limit = Math.min(20, Math.max(1, parseInt(String(req.query.limit || '10'), 10)));
-    const rentals = await RecommendationService.getRentalRecommendations(req.user.id, limit);
+    const userId = req.user?.id || 'guest';
+    const rentals = await RecommendationService.getRentalRecommendations(userId, limit);
     res.json({ data: rentals });
   } catch (error: any) {
     logger.error('getRentalRecommendations failed', { error: error.message });
@@ -51,12 +45,9 @@ export async function getRentalRecommendations(req: Request, res: Response): Pro
 
 export async function getFairSwapRecommendations(req: Request, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: 'UNAUTHORIZED' });
-      return;
-    }
     const limit = Math.min(20, Math.max(1, parseInt(String(req.query.limit || '8'), 10)));
-    const swaps = await RecommendationService.getFairSwapRecommendations(req.user.id, limit);
+    const userId = req.user?.id || 'guest';
+    const swaps = await RecommendationService.getFairSwapRecommendations(userId, limit);
     res.json({ data: swaps });
   } catch (error: any) {
     logger.error('getFairSwapRecommendations failed', { error: error.message });

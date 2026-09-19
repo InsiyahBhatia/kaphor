@@ -94,7 +94,13 @@ export default function VerifyIdentityScreen() {
     >
       <Header title="IDENTITY VERIFICATION" showBack fallbackPath="/(tabs)/profile" />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
+      >
         {/* Status Card */}
         {isVerified ? (
           <View style={styles.verifiedCard}>
@@ -256,7 +262,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 60,
+    paddingBottom: 160,
   },
   verifiedCard: {
     backgroundColor: colors.white,

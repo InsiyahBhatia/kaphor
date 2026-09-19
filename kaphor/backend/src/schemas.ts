@@ -144,6 +144,8 @@ export const createGarmentSchema = z
     size: z.string().min(1),
     listingType: z.enum(['SALE', 'RENTAL', 'ACCESSORY_SWAP']),
     price: moneyField,
+    originalPrice: moneyField,
+    costPrice: moneyField,
     rentalPriceDay: moneyField,
     rentalPriceWeek: moneyField,
     isAccessory: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
@@ -211,6 +213,8 @@ export const updateGarmentSchema = z
     size: z.string().min(1).optional(),
     listingType: z.enum(['SALE', 'RENTAL', 'ACCESSORY_SWAP']).optional(),
     price: moneyField,
+    originalPrice: moneyField,
+    costPrice: moneyField,
     rentalPriceDay: moneyField,
     rentalPriceWeek: moneyField,
   })

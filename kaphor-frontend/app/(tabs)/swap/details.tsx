@@ -317,7 +317,13 @@ export default function SwapDetailsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
+      >
         {/* Partner Card & Chat CTA */}
         <View style={styles.partnerCard}>
           <View style={styles.partnerInfoRow}>
@@ -970,7 +976,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.md,
-    paddingBottom: 110,
+    paddingBottom: 180,
   },
 
   // Partner Card

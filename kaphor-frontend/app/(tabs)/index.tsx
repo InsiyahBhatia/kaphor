@@ -241,12 +241,14 @@ function OccasionRentalCard({
   onPress: () => void;
 }) {
   const [isLiked, setIsLiked] = useState<boolean>(Boolean((item as any).isLiked));
-  const assetValue = item.price ? Math.round(item.price) : 0;
+  const assetValue = (item as any).originalPrice && Number((item as any).originalPrice) > 0
+    ? Math.round(Number((item as any).originalPrice))
+    : (item.price ? Math.round(item.price) : 0);
   const dailyRate = item.rentalPriceDay && item.rentalPriceDay > 0
     ? Math.round(item.rentalPriceDay)
     : assetValue > 0
-    ? Math.round(assetValue * 0.05)
-    : 150;
+    ? Math.round(assetValue * 0.04)
+    : 160;
 
   const handleToggleLike = async (e: any) => {
     e.stopPropagation();
@@ -438,20 +440,61 @@ export default function HomeScreen() {
   const [fairSwaps, setFairSwaps] = useState<FairSwapRecommendation[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [forYouLoading, setForYouLoading] = useState<boolean>(true);
+  const [rentalsLoading, setRentalsLoading] = useState<boolean>(true);
 
   const loadData = useCallback(async () => {
     try {
+      setForYouLoading(true);
+      setRentalsLoading(true);
       fetchFeed({ listingType: 'SALE' });
-      const [forYou, rentals, swaps] = await Promise.all([
+      let [forYou, rentals, swaps] = await Promise.all([
         recommendationService.getPersonalizedFeed(8),
         recommendationService.getRentalPicks(8),
         recommendationService.getFairSwaps(8),
       ]);
+
+      // Cold-start fallback for Curated For You:
+      // If personalized feed is empty (new user / no history), gracefully serve top curated editorial pieces
+      if (!forYou || forYou.length === 0) {
+        try {
+          const res = await api.get('/garments?limit=10');
+          const fallbackCandidates = (res.data?.data || res.data?.garments || res.data || [])
+            .filter((g: any) => g.isActive !== false)
+            .map((g: any) => ({
+              ...g,
+              seller: g.seller || { id: g.sellerId, username: 'Curator' },
+            }));
+          if (fallbackCandidates.length > 0) {
+            forYou = fallbackCandidates;
+          }
+        } catch (err) {
+          console.warn('Fallback for-you fetch error', err);
+        }
+      }
+
+      // Robust fallback: If recommendation service returned 0 rentals, fetch directly from garments
+      if (!rentals || rentals.length === 0) {
+        try {
+          const res = await api.get('/garments?listingType=RENTAL&limit=10');
+          const fallbackRentals = (res.data?.data || res.data?.garments || res.data || [])
+            .filter((g: any) => g.listingType === 'RENTAL');
+          if (fallbackRentals.length > 0) {
+            rentals = fallbackRentals;
+          }
+        } catch (err) {
+          console.warn('Fallback rental fetch error', err);
+        }
+      }
+
       setForYouItems(forYou || []);
       setRentalPicks(rentals || []);
       setFairSwaps(swaps || []);
     } catch (e) {
       console.warn('Failed to load homepage feeds', e);
+    } finally {
+      setForYouLoading(false);
+      setRentalsLoading(false);
     }
   }, [fetchFeed]);
 
@@ -574,16 +617,21 @@ export default function HomeScreen() {
         {/* QUICK ATELIER PILLARS */}
         <QuickAtelierGrid onNavigate={(route) => navigateToRoute(route)} />
 
-        {/* 1. CURATED FOR YOU (AI EDIT) */}
-        {forYouItems.length > 0 && (
-          <View style={styles.sectionContainer}>
-            <SectionHeader
-              title="CURATED FOR YOU"
-              tag="AI EDIT"
-              tagBg={colors.charcoal}
-              tagColor={colors.gold}
-              onSeeAll={() => navigateToRoute('/(tabs)/shop')}
-            />
+        {/* 1. CURATED FOR YOU (AI EDIT - COLD-START RESILIENT) */}
+        <View style={styles.sectionContainer}>
+          <SectionHeader
+            title="CURATED FOR YOU"
+            tag="AI EDIT"
+            tagBg={colors.charcoal}
+            tagColor={colors.gold}
+            onSeeAll={() => navigateToRoute('/(tabs)/shop')}
+          />
+          <Text style={styles.sectionSubtitle}>
+            Personalized architectural & circular archive · Learns & refines as you explore.
+          </Text>
+          {forYouLoading && forYouItems.length === 0 ? (
+            <DossierLoading variant="home" compact />
+          ) : forYouItems.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
               {forYouItems.map((item) => (
                 <EditorialGarmentCard
@@ -594,22 +642,36 @@ export default function HomeScreen() {
                 />
               ))}
             </ScrollView>
-          </View>
-        )}
+          ) : (
+            <TouchableOpacity
+              style={styles.emptyPromptBox}
+              onPress={() => navigateToRoute('/(tabs)/shop')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="sparkles-outline" size={24} color={colors.gold} />
+              <Text style={styles.emptyPromptTitle}>DISCOVER YOUR STYLE DOSSIER</Text>
+              <Text style={styles.emptyPromptDesc}>
+                Browse the catalog to train your AI stylist and unlock bespoke recommendations.
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-        {/* 2. OCCASION LEASES (RENTALS WITH TRUE DAILY PRICING) */}
-        {rentalPicks.length > 0 && (
-          <View style={styles.sectionContainer}>
-            <SectionHeader
-              title="OCCASION LEASES"
-              tag="PER DAY"
-              tagBg={colors.copper}
-              tagColor={colors.white}
-              onSeeAll={() => navigateToRoute('/(tabs)/rental')}
-            />
-            <Text style={styles.sectionSubtitle}>
-              Designer eveningwear, bridal & couture available for 3, 7 or 14-day leases.
-            </Text>
+        {/* 2. OCCASION LEASES & RENTALS (GUARANTEED PRESENT) */}
+        <View style={styles.sectionContainer}>
+          <SectionHeader
+            title="OCCASION LEASES & RENTALS"
+            tag="PER DAY"
+            tagBg={colors.copper}
+            tagColor={colors.white}
+            onSeeAll={() => navigateToRoute('/(tabs)/rental')}
+          />
+          <Text style={styles.sectionSubtitle}>
+            Designer eveningwear, bridal & couture available for 3, 7 or 14-day leases with zero retail waste.
+          </Text>
+          {rentalsLoading && rentalPicks.length === 0 ? (
+            <DossierLoading variant="home" compact />
+          ) : rentalPicks.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
               {rentalPicks.map((item) => (
                 <OccasionRentalCard
@@ -619,8 +681,20 @@ export default function HomeScreen() {
                 />
               ))}
             </ScrollView>
-          </View>
-        )}
+          ) : (
+            <TouchableOpacity
+              style={styles.emptyPromptBox}
+              onPress={() => navigateToRoute('/(tabs)/rental')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="calendar-outline" size={24} color={colors.copper} />
+              <Text style={styles.emptyPromptTitle}>BROWSE OCCASION LEASE VAULT</Text>
+              <Text style={styles.emptyPromptDesc}>
+                Explore sarees, lehengas, and couture eveningwear available for short-term booking.
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* 3. FAIR ACCESSORY SWAPS (BARTER WITH PARITY PRICING) */}
         {fairSwaps.length > 0 && (
@@ -1342,5 +1416,32 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     zIndex: 10,
+  },
+
+  // ── Empty Prompt Box ─────────────────────────────────────────────
+  emptyPromptBox: {
+    marginHorizontal: 16,
+    padding: 24,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: 'rgba(30,31,34,0.12)',
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emptyPromptTitle: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.charcoal,
+    letterSpacing: 1,
+  },
+  emptyPromptDesc: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

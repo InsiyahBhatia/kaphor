@@ -85,6 +85,28 @@ const QUICK_COMMANDS = [
   { label: 'Casual everyday styles', prompt: 'Show me comfortable, stylish everyday tops and denims.' },
 ];
 
+function renderFormattedAgentText(text: string) {
+  if (!text) return null;
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <Text
+          key={idx}
+          style={{
+            fontFamily: typography.monoBold || typography.body,
+            fontWeight: '700',
+            color: colors.charcoal,
+          }}
+        >
+          {part.slice(2, -2)}
+        </Text>
+      );
+    }
+    return part;
+  });
+}
+
 export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fallbackPath?: string } = {}) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -270,7 +292,10 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
         <TouchableOpacity
@@ -327,6 +352,8 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
           { paddingBottom: isKeyboardVisible ? 20 : 100 },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         {messages.map((msg) => (
           <View key={msg.id} style={styles.messageContainer}>
@@ -361,7 +388,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
 
                 {/* 2. Main Assistant Speech Bubble */}
                 <View style={styles.agentBubble}>
-                  <Text style={styles.agentBubbleText}>{msg.content}</Text>
+                  <Text style={styles.agentBubbleText}>{renderFormattedAgentText(msg.content)}</Text>
                 </View>
 
                 {/* 3. Synthesized Outfit Look Card */}
@@ -570,7 +597,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

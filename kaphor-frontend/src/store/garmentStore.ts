@@ -10,6 +10,7 @@ export interface Garment {
   size: string;
   color: string[];
   price?: number | null;
+  originalPrice?: number | null;
   rentalPriceDay?: number | null;
   rentalPriceWeek?: number | null;
   images: string[];

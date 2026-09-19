@@ -37,13 +37,14 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView 
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardDismissMode="on-drag"
       >
         <TouchableOpacity 
           style={styles.backBtn} 
@@ -124,6 +125,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
+    paddingBottom: 160,
     flexGrow: 1,
   },
   backBtn: {
