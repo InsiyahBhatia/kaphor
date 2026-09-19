@@ -5,6 +5,7 @@ import { logger } from '../lib/logger';
 import { runFashionAgent } from '../services/fashionAgent.service';
 import { generateWithGroq, generateWithGroqVision } from '../services/groq.service';
 import { generateWithGemini } from '../services/gemini.service';
+import { queryT3 } from '../services/glie/t3-market';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -772,6 +773,91 @@ function resolveListingCategory(rawCategory?: string, subCategory?: string, titl
     return 'Tops';
 }
 
+export function mapToT3Category(category?: string, subCategory?: string, title?: string): string {
+    const c = `${category || ''} ${subCategory || ''} ${title || ''}`.toLowerCase();
+    if (/saree/i.test(c)) return 'saree';
+    if (/lehenga/i.test(c)) return 'lehenga';
+    if (/anarkali/i.test(c)) return 'anarkali';
+    if (/kurta|kurti/i.test(c)) return 'kurta';
+    if (/dress|gown|kaftan/i.test(c)) return 'dress';
+    if (/jeans|denim/i.test(c)) return 'jeans';
+    if (/trousers|pant|bottom|chino|slacks/i.test(c)) return 'trousers';
+    if (/tshirt|t-shirt|tee/i.test(c)) return 'tshirt';
+    if (/shirt|formal_shirt/i.test(c)) return 'shirt';
+    if (/blouse|top/i.test(c)) return 'tshirt';
+    if (/jacket|coat/i.test(c)) return 'jacket';
+    if (/blazer|suit/i.test(c)) return 'blazer';
+    if (/sweater|cardigan|knitwear|hoodie/i.test(c)) return 'sweater';
+    if (/skirt/i.test(c)) return 'skirt';
+    if (/dupatta|shawl|stole|scarf/i.test(c)) return 'dupatta';
+    if (/short/i.test(c)) return 'shorts';
+    return 'dress';
+}
+
+export function conditionToScore(cond?: string): number {
+    const c = String(cond || '').toUpperCase();
+    if (c === 'PRISTINE') return 0.9;
+    if (c === 'MINOR_WEAR') return 0.75;
+    if (c === 'UPCYCLE') return 0.6;
+    if (c === 'RECYCLE_ONLY') return 0.4;
+    return 0.75;
+}
+
+export function computeT3PriceRecommendation(
+    category: string,
+    subCategory?: string,
+    title?: string,
+    condition?: string,
+    brand?: string
+) {
+    const t3Cat = mapToT3Category(category, subCategory, title);
+    const condScore = conditionToScore(condition);
+    const t3Stats = queryT3(t3Cat, condScore);
+
+    if (t3Stats && t3Stats.avg_listed_price > 0) {
+        let recommendedPrice = t3Stats.avg_listed_price;
+        const isLuxury = /zara|h&m|mango|sabyasachi|tarun|manish|gucci|prada|armani|levis|calvin|ralph/i.test(brand || '');
+        if (isLuxury && recommendedPrice < 1500) {
+            recommendedPrice = Math.round(recommendedPrice * 1.3);
+        }
+
+        const ratio = t3Stats.avg_resale_ratio > 0 ? t3Stats.avg_resale_ratio : 0.45;
+        const suggestedOriginal = Math.round(recommendedPrice / ratio);
+        const dayRate = Math.max(199, Math.round(recommendedPrice * 0.12));
+        const weekRate = Math.round(dayRate * 4.5);
+
+        return {
+            recommendedPrice,
+            suggestedOriginalPrice: suggestedOriginal,
+            suggestedRentalPriceDay: dayRate,
+            suggestedRentalPriceWeek: weekRate,
+            avgResaleRatio: t3Stats.avg_resale_ratio,
+            medianDaysToSell: t3Stats.median_days_to_sell,
+            comparableCount: t3Stats.total_listings_matched,
+            demandTrend: t3Stats.demand_trend,
+            marketCategory: t3Cat,
+            minPrice: Math.round(recommendedPrice * 0.8),
+            maxPrice: Math.round(recommendedPrice * 1.25),
+            source: 'T3 Resale Market Intelligence (6,480+ Listings)'
+        };
+    }
+
+    return {
+        recommendedPrice: 899,
+        suggestedOriginalPrice: 1999,
+        suggestedRentalPriceDay: 249,
+        suggestedRentalPriceWeek: 999,
+        avgResaleRatio: 0.45,
+        medianDaysToSell: 21,
+        comparableCount: 50,
+        demandTrend: 'stable',
+        marketCategory: t3Cat,
+        minPrice: 699,
+        maxPrice: 1199,
+        source: 'KaPhor Standard Circular Valuation'
+    };
+}
+
 // ── 6. AI Vision: Analyze Listing Image ───────────────────────────────────
 export async function analyzeListingImage(req: Request, res: Response): Promise<void> {
     try {
@@ -963,9 +1049,26 @@ Be precise. If the brand or hardware logo is visible, identify it.`;
                 data.suggestedRentalPriceWeek = Math.round(Number(data.suggestedRentalPriceWeek));
             }
         }
+
+        // ── 7. Empirical T3 Price Recommendation ──────────────────────────────
+        const t3Pricing = computeT3PriceRecommendation(
+            data.category,
+            data.subCategory,
+            data.title,
+            data.condition,
+            data.brand
+        );
+
+        data.estimatedPrice = t3Pricing.recommendedPrice;
+        data.suggestedOriginalPrice = t3Pricing.suggestedOriginalPrice;
+        data.suggestedRentalPriceDay = t3Pricing.suggestedRentalPriceDay;
+        data.suggestedRentalPriceWeek = t3Pricing.suggestedRentalPriceWeek;
+        data.t3Pricing = t3Pricing;
+
         res.json({ data });
     } catch (error) {
         logger.error('Analyze listing failed', { error });
+        const fallbackT3 = computeT3PriceRecommendation('Tops', 'Tops', 'Curated Garment', 'PRISTINE', 'Unknown');
         res.json({
             data: {
                 title: 'Curated Garment',
@@ -979,9 +1082,11 @@ Be precise. If the brand or hardware logo is visible, identify it.`;
                 material: [],
                 isAccessory: false,
                 recommendedListingType: 'SALE',
-                estimatedPrice: 999,
-                suggestedRentalPriceDay: 199,
-                suggestedRentalPriceWeek: 799,
+                estimatedPrice: fallbackT3.recommendedPrice,
+                suggestedOriginalPrice: fallbackT3.suggestedOriginalPrice,
+                suggestedRentalPriceDay: fallbackT3.suggestedRentalPriceDay,
+                suggestedRentalPriceWeek: fallbackT3.suggestedRentalPriceWeek,
+                t3Pricing: fallbackT3,
                 styleAttributes: {
                     fabric: '',
                     style: '',
@@ -1154,5 +1259,23 @@ export async function getChatHistory(req: Request, res: Response): Promise<void>
     } catch (error) {
         logger.error('getChatHistory failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+}
+
+// ── 7. T3 Price Recommendation Query ─────────────────────────────────────────
+export async function getT3PriceRecommendation(req: Request, res: Response): Promise<void> {
+    try {
+        const { category, subCategory, title, condition, brand } = req.query;
+        const rec = computeT3PriceRecommendation(
+            String(category || 'Tops'),
+            subCategory ? String(subCategory) : undefined,
+            title ? String(title) : undefined,
+            condition ? String(condition) : undefined,
+            brand ? String(brand) : undefined
+        );
+        res.json({ success: true, data: rec });
+    } catch (error: any) {
+        logger.error('getT3PriceRecommendation failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
     }
 }

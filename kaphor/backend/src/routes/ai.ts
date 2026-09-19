@@ -10,6 +10,7 @@ import {
     getUpcycleSuggestions,
     assessCondition,
     analyzeListingImage,
+    getT3PriceRecommendation,
     skipStyleQuiz
 } from '../controllers/ai.controller';
 
@@ -20,6 +21,7 @@ router.get('/fit-score/:userId/:garmentId', authenticate, getFitScore);
 
 // All other routes require auth
 router.use(authenticate);
+router.get('/price-recommendation', getT3PriceRecommendation);
 router.get('/style-profile', getStyleProfile);
 router.post('/style-quiz', processStyleQuiz);
 router.post('/style-quiz/skip', skipStyleQuiz);
