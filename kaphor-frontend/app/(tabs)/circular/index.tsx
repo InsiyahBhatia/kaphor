@@ -32,44 +32,7 @@ export default function CircularScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── 1. EDITORIAL HERO (WARM IVORY & GOLD ATELIER) ── */}
-        <View style={styles.heroCard}>
-          <Text style={styles.heroWatermark}>K</Text>
-
-          {/* Top Row */}
-          <View style={styles.heroTopRow}>
-            <View style={styles.crownBadge}>
-              <Text style={styles.crownIcon}>♔</Text>
-              <Text style={styles.crownText}>KAPHOR ATELIER</Text>
-            </View>
-            <View style={styles.liveProtocolPill}>
-              <View style={styles.liveRadarDot} />
-              <Text style={styles.liveProtocolText}>CIRCULAR ACTIVE</Text>
-            </View>
-          </View>
-
-          {/* Headline */}
-          <Text style={styles.heroHeadline}>
-            CIRCULAR{'\n'}
-            <Text style={styles.heroHeadlineAccent}>INTELLIGENCE</Text>
-          </Text>
-
-          {/* Subtitle */}
-          <Text style={styles.heroQuote}>
-            "The most sustainable garment is the one already in existence."
-          </Text>
-
-          {/* Editorial Specs Tape */}
-          <View style={styles.heroTape}>
-            <Text style={styles.heroTapeText}>PROTOCOL: SS26</Text>
-            <Text style={styles.heroTapeDivider}>·</Text>
-            <Text style={styles.heroTapeText}>ZERO LANDFILL</Text>
-            <Text style={styles.heroTapeDivider}>·</Text>
-            <Text style={styles.heroTapeText}>100% CIRCULAR</Text>
-          </View>
-        </View>
-
-        {/* ── 2. SECTION 01: AI & INTELLIGENCE (WARM TERRACOTTA & GOLD) ── */}
+        {/* ── 1. SECTION 01: AI & INTELLIGENCE (WARM TERRACOTTA & GOLD) ── */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderLeft}>
             <Text style={[styles.sectionIndex, { color: colors.terracotta }]}>01</Text>
@@ -152,7 +115,7 @@ export default function CircularScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.ink} />
         </TouchableOpacity>
 
-        {/* ── 3. SECTION 02: SUSTAINABILITY & IMPACT (VIBRANT EMERALD) ── */}
+        {/* ── 2. SECTION 02: SUSTAINABILITY & IMPACT (VIBRANT EMERALD) ── */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderLeft}>
             <Text style={[styles.sectionIndex, { color: colors.emerald }]}>02</Text>
@@ -207,7 +170,7 @@ export default function CircularScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* ── 4. SECTION 03: UPCYCLE STUDIO (GOLD & CRAFT ACCENTS) ── */}
+        {/* ── 3. SECTION 03: UPCYCLE STUDIO (GOLD & CRAFT ACCENTS) ── */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderLeft}>
             <Text style={[styles.sectionIndex, { color: colors.goldDark }]}>03</Text>
@@ -271,7 +234,7 @@ export default function CircularScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* ── 5. SECTION 04: CIRCULAR MARKETPLACE (COLOR-CODED 2x2 GRID) ── */}
+        {/* ── 4. SECTION 04: CIRCULAR MARKETPLACE (COLOR-CODED GRID) ── */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderLeft}>
             <Text style={[styles.sectionIndex, { color: colors.ink }]}>04</Text>
@@ -340,7 +303,7 @@ export default function CircularScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Repair (Terracotta Accent) */}
+          {/* Repair & Refresh (Terracotta Accent) */}
           <TouchableOpacity
             style={[styles.pathwayCard, { borderTopColor: colors.terracotta, borderTopWidth: 4 }]}
             onPress={() => router.push('/(tabs)/studio/repair-refresh')}
@@ -352,10 +315,10 @@ export default function CircularScreen() {
               </View>
               <Text style={[styles.pathwayIndex, { color: colors.terracottaDark }]}>04</Text>
             </View>
-            <Text style={styles.pathwayName}>REPAIR</Text>
-            <Text style={styles.pathwayDesc}>Custom tailoring, mending & artisan rework</Text>
+            <Text style={styles.pathwayName}>REPAIR & REFRESH</Text>
+            <Text style={styles.pathwayDesc}>Guides to mend, revive & refresh your clothes yourself</Text>
             <View style={styles.pathwayFoot}>
-              <Text style={[styles.pathwayCta, { color: colors.terracottaDark }]}>BOOK REPAIR</Text>
+              <Text style={[styles.pathwayCta, { color: colors.terracottaDark }]}>VIEW GUIDES</Text>
               <Ionicons name="arrow-forward" size={12} color={colors.terracottaDark} />
             </View>
           </TouchableOpacity>
@@ -411,124 +374,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 64,
     gap: 16,
-  },
-
-  // ── HERO CARD ──
-  heroCard: {
-    backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.ink,
-    borderTopWidth: 5,
-    borderTopColor: colors.terracotta,
-    borderRadius: 2,
-    padding: 18,
-    position: 'relative',
-    overflow: 'hidden',
-    shadowColor: colors.ink,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
-  },
-  heroWatermark: {
-    position: 'absolute',
-    right: -10,
-    bottom: -30,
-    fontFamily: typography.headings,
-    fontSize: 160,
-    color: 'rgba(20, 20, 20, 0.04)',
-    fontWeight: '900',
-    zIndex: 0,
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    zIndex: 1,
-  },
-  crownBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.goldLight,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 2,
-    borderWidth: 1.5,
-    borderColor: colors.gold,
-  },
-  crownIcon: {
-    color: colors.goldDark,
-    fontSize: 14,
-  },
-  crownText: {
-    fontFamily: typography.monoBold,
-    fontSize: 9,
-    color: colors.goldDark,
-    letterSpacing: 1.2,
-  },
-  liveProtocolPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.crimsonLight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: colors.crimson,
-    borderRadius: 2,
-  },
-  liveRadarDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.crimson,
-  },
-  liveProtocolText: {
-    fontFamily: typography.monoBold,
-    fontSize: 8.5,
-    color: colors.crimsonDark,
-    letterSpacing: 1,
-  },
-  heroHeadline: {
-    fontFamily: typography.headings,
-    fontSize: 38,
-    lineHeight: 38,
-    color: colors.ink,
-    letterSpacing: 1.5,
-    zIndex: 1,
-  },
-  heroHeadlineAccent: {
-    color: colors.terracotta,
-  },
-  heroQuote: {
-    fontFamily: typography.accent,
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 6,
-    lineHeight: 18,
-    zIndex: 1,
-  },
-  heroTape: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 14,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight || '#ECE8DF',
-    zIndex: 1,
-  },
-  heroTapeText: {
-    fontFamily: typography.monoBold,
-    fontSize: 8.5,
-    color: colors.textMuted,
-    letterSpacing: 1,
-  },
-  heroTapeDivider: {
-    color: colors.gold,
-    fontSize: 12,
   },
 
   // ── SECTION HEADERS ──

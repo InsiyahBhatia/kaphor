@@ -886,7 +886,7 @@ export default function DirectChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Top Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
@@ -1953,7 +1953,7 @@ export default function DirectChatScreen() {
           styles.inputContainer,
           {
             paddingBottom: isKeyboardVisible
-              ? (Platform.OS === 'ios' ? 8 : 8)
+              ? 8
               : Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 8),
           },
         ]}
