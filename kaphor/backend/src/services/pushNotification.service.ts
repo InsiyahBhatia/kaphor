@@ -39,11 +39,11 @@ async function sendViaFirebaseAdmin(
   body: string,
   data: Record<string, any>,
   channelId: string
-): Promise<boolean> {
+): Promise<EngineResult> {
   try {
     if (!admin.apps.length) {
       logger.warn('Firebase Admin is not initialized; cannot dispatch FCM push');
-      return false;
+      return { success: false, reason: 'Firebase Admin is not initialized on the server' };
     }
 
     const stringData = serializeFcmData(data);
@@ -83,7 +83,7 @@ async function sendViaFirebaseAdmin(
       title,
       messageId: response,
     });
-    return true;
+    return { success: true };
   } catch (error: any) {
     const errorCode = error?.code || error?.errorInfo?.code;
     logger.error('Firebase Admin FCM dispatch failed', {
@@ -96,10 +96,15 @@ async function sendViaFirebaseAdmin(
       errorCode === 'messaging/registration-token-not-registered' ||
       errorCode === 'messaging/invalid-registration-token'
     ) {
-      return false;
+      return { success: false, reason: 'The device token is no longer registered on this phone' };
     }
-    return false;
+    return { success: false, reason: error?.message || 'Firebase Admin FCM dispatch failed' };
   }
+}
+
+interface EngineResult {
+  success: boolean;
+  reason?: string;
 }
 
 /**
@@ -111,7 +116,7 @@ async function sendViaExpoPush(
   body: string,
   data: Record<string, any>,
   channelId: string
-): Promise<boolean> {
+): Promise<EngineResult> {
   try {
     const payload: PushMessagePayload = {
       to: expoToken,
@@ -132,7 +137,11 @@ async function sendViaExpoPush(
       timeout: 8000,
     });
 
-    const ticket = response.data?.data?.[0];
+    // Expo may return a single ticket object or an array of tickets.
+    const dataField = response.data?.data;
+    const tickets = Array.isArray(dataField) ? dataField : dataField ? [dataField] : [];
+    const ticket = tickets[0];
+
     if (ticket && ticket.status === 'error') {
       logger.warn('Expo Push Ticket error returned', {
         expoToken: expoToken.slice(0, 20) + '...',
@@ -140,10 +149,19 @@ async function sendViaExpoPush(
         details: ticket.details,
       });
 
-      if (ticket.details?.error === 'DeviceNotRegistered') {
-        return false;
-      }
-      return false;
+      const reason =
+        typeof ticket.message === 'string'
+          ? ticket.message
+          : 'Expo push service returned an error ticket';
+      return { success: false, reason };
+    }
+
+    if (!ticket) {
+      logger.warn('Expo Push returned an unexpected response', {
+        expoToken: expoToken.slice(0, 20) + '...',
+        body: JSON.stringify(response.data).slice(0, 500),
+      });
+      return { success: false, reason: 'Expo push service returned an unexpected response' };
     }
 
     logger.info('Expo push notification dispatched successfully', {
@@ -152,14 +170,21 @@ async function sendViaExpoPush(
       ticketId: ticket?.id,
     });
 
-    return true;
+    return { success: true };
   } catch (error: any) {
     logger.error('Failed to send push notification via Expo Push API', {
       expoToken: expoToken.slice(0, 20) + '...',
       error: error.response?.data || error.message,
     });
-    return false;
+    return { success: false, reason: error.response?.data?.message || error.message || 'Expo Push API request failed' };
   }
+}
+
+export interface PushDispatchResult extends EngineResult {
+  tokenKind: 'expo-go' | 'expo' | 'native' | 'none';
+  engine: 'expo' | 'fcm' | 'none';
+  firebaseReady: boolean;
+  userHasToken: boolean;
 }
 
 /**
@@ -175,6 +200,17 @@ export async function sendPushNotificationToUser(
   data: Record<string, any> = {},
   channelId: string = 'default'
 ): Promise<boolean> {
+  const outcome = await sendPushWithDiagnostics(userId, title, body, data, channelId);
+  return outcome.success;
+}
+
+export async function sendPushWithDiagnostics(
+  userId: string,
+  title: string,
+  body: string,
+  data: Record<string, any> = {},
+  channelId: string = 'default'
+): Promise<PushDispatchResult> {
   try {
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -182,32 +218,66 @@ export async function sendPushNotificationToUser(
     });
 
     if (!user || !user.pushToken) {
-      return false;
+      return {
+        success: false,
+        reason: 'No push token registered for this account',
+        tokenKind: 'none',
+        engine: 'none',
+        firebaseReady: admin.apps.length > 0,
+        userHasToken: false,
+      };
     }
 
     const pushToken = user.pushToken.trim();
     if (!pushToken) {
-      return false;
+      return {
+        success: false,
+        reason: 'Push token is empty',
+        tokenKind: 'none',
+        engine: 'none',
+        firebaseReady: admin.apps.length > 0,
+        userHasToken: true,
+      };
     }
 
     // Determine token type and dispatch via appropriate engine
-    const isExpoToken =
-      pushToken.startsWith('ExponentPushToken[') || pushToken.startsWith('ExpoPushToken[');
+    const isExpoGoToken = pushToken.startsWith('ExponentPushToken[');
+    const isExpoToken = isExpoGoToken || pushToken.startsWith('ExpoPushToken[');
 
-    let success = false;
+    const firebaseReady = admin.apps.length > 0;
+
     if (isExpoToken) {
-      success = await sendViaExpoPush(pushToken, title, body, data, channelId);
-    } else {
-      // Native FCM token (Android standalone APK / iOS APNs device token)
-      success = await sendViaFirebaseAdmin(pushToken, title, body, data, channelId);
+      const engineResult = await sendViaExpoPush(pushToken, title, body, data, channelId);
+      return {
+        ...engineResult,
+        tokenKind: isExpoGoToken ? 'expo-go' : 'expo',
+        engine: 'expo',
+        firebaseReady,
+        userHasToken: true,
+      };
     }
 
-    return success;
+    // Native FCM token (Android standalone APK / iOS APNs device token)
+    const engineResult = await sendViaFirebaseAdmin(pushToken, title, body, data, channelId);
+    return {
+      ...engineResult,
+      tokenKind: 'native',
+      engine: 'fcm',
+      firebaseReady,
+      userHasToken: true,
+    };
   } catch (error: any) {
     logger.error('sendPushNotificationToUser failed', {
       userId,
       error: error?.message,
     });
-    return false;
+    return {
+      success: false,
+      reason: error?.message || 'Push dispatch failed',
+      tokenKind: 'none',
+      engine: 'none',
+      firebaseReady: admin.apps.length > 0,
+      userHasToken: false,
+    };
   }
 }

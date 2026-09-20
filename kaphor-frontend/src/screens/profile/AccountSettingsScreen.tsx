@@ -37,14 +37,21 @@ export function AccountSettingsScreen() {
     setTestingPush(true);
     try {
       const res = await api.post('/users/me/test-push');
-      Alert.alert(
-        'Phone Notification Dispatched',
-        res.data?.message || 'A heads-up test notification has been dispatched to your phone status bar!'
-      );
+      if (res.data?.success) {
+        Alert.alert(
+          'Notification Sent',
+          res.data?.message || 'Test notification dispatched to your phone!'
+        );
+      } else {
+        Alert.alert(
+          'Notification Not Delivered',
+          res.data?.message || 'Push could not be delivered to this device.'
+        );
+      }
     } catch (err: any) {
       Alert.alert(
-        'Notification Notice',
-        err?.response?.data?.message || 'Make sure notifications are enabled in your device system settings.'
+        'Notification Failed',
+        err?.response?.data?.message || 'Could not run the push test. Make sure the server is reachable.'
       );
     } finally {
       setTestingPush(false);

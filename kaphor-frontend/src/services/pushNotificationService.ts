@@ -96,23 +96,26 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
   let token: string | null = null;
 
-  // Try acquiring Expo Push Token first
-  try {
-    const tokenResponse = await Notifications.getExpoPushTokenAsync({
-      projectId,
-    });
-    token = tokenResponse.data;
-  } catch (expoErr) {
-    console.warn('[Push] Expo push token acquisition failed, attempting native device token:', expoErr);
-  }
-
-  // If Expo push token failed on Android, fallback to native FCM device push token
-  if (!token && Platform.OS === 'android') {
+  // Android: acquire the native FCM device token first so the backend can deliver
+  // directly via Firebase Admin. Only works in a real dev/production build, not Expo Go.
+  if (Platform.OS === 'android') {
     try {
       const deviceTokenRes = await Notifications.getDevicePushTokenAsync();
       token = typeof deviceTokenRes?.data === 'string' ? deviceTokenRes.data : null;
     } catch (fcmErr) {
       console.warn('[Push] Native device token acquisition failed:', fcmErr);
+    }
+  }
+
+  // Fallback: Expo Push token (iOS, or platforms where a native token is unavailable)
+  if (!token) {
+    try {
+      const tokenResponse = await Notifications.getExpoPushTokenAsync({
+        projectId,
+      });
+      token = tokenResponse.data;
+    } catch (expoErr) {
+      console.warn('[Push] Expo push token acquisition failed:', expoErr);
     }
   }
 

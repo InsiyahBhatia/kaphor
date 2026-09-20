@@ -41,9 +41,9 @@ const UPCYCLE_DATA: UpcycleCategory[] = [
     id: 'jeans',
     garment: 'JEANS',
     tagline: 'Turn denim into something extraordinary',
-    accentColor: '#3A6EA5',
-    accentLight: '#EAF1FA',
-    accentDark: '#1A3A5C',
+    accentColor: colors.ink,
+    accentLight: colors.bgMuted,
+    accentDark: colors.ink,
     icon: 'cut-outline',
     image: require('../../../assets/upcycle/jeans.png'),
     tutorials: [
@@ -264,7 +264,7 @@ export default function UpcycleScreen() {
           <UpcycleCard key={cat.id} category={cat} />
         ))}
         <View style={styles.bottomCallout}>
-          <Ionicons name="sparkles-sharp" size={18} color={colors.terracotta} />
+          <Ionicons name="sparkles-sharp" size={18} color={colors.gold} />
           <View style={{ flex: 1 }}>
             <Text style={styles.bottomCalloutTitle}>NEED PROFESSIONAL HELP?</Text>
             <Text style={styles.bottomCalloutDesc}>Our tailors & upcycling artists at Kaphor Studio can transform any garment for you.</Text>
@@ -313,11 +313,11 @@ const styles = StyleSheet.create({
   pillText: { fontFamily: typography.mono, fontSize: 8.5, fontWeight: '900', letterSpacing: 0.5 },
   repairCta: { flexDirection: 'row', alignItems: 'center', gap: 7, borderWidth: 1.5, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: colors.cream, marginTop: 4 },
   repairCtaText: { flex: 1, fontFamily: typography.mono, fontSize: 8.5, fontWeight: '900', letterSpacing: 0.5 },
-  bottomCallout: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.terracottaLight, borderWidth: 2, borderColor: colors.terracotta, padding: 14, marginTop: 4 },
-  bottomCalloutTitle: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.terracottaDark, letterSpacing: 0.8, marginBottom: 3 },
-  bottomCalloutDesc: { fontFamily: typography.mono, fontSize: 8.5, color: colors.terracottaDark, lineHeight: 13 },
-  bottomCalloutBtn: { backgroundColor: colors.terracotta, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1.5, borderColor: colors.terracottaDark },
-  bottomCalloutBtnText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
+  bottomCallout: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.ink, padding: 14, marginTop: 4, shadowColor: colors.ink, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3 },
+  bottomCalloutTitle: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.ink, letterSpacing: 0.8, marginBottom: 3 },
+  bottomCalloutDesc: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted, lineHeight: 13 },
+  bottomCalloutBtn: { backgroundColor: colors.ink, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1.5, borderColor: colors.ink },
+  bottomCalloutBtnText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '900', color: colors.cream, letterSpacing: 0.5 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center' },
   modalClose: { position: 'absolute', top: 50, right: 20, zIndex: 10, backgroundColor: 'rgba(255,255,255,0.1)', padding: 10, borderRadius: 50 },
   modalScroll: { alignItems: 'center', paddingVertical: 80, paddingHorizontal: 12 },

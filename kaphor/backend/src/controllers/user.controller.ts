@@ -4,7 +4,7 @@ import { redisDel } from '../lib/redis';
 import { logger } from '../lib/logger';
 import { uploadToCloudinary, getDownloadUrl } from '../lib/cloudinary';
 import { InsightService } from '../services/insight.service';
-import { sendPushNotificationToUser } from '../services/pushNotification.service';
+import { sendPushWithDiagnostics } from '../services/pushNotification.service';
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 async function resolveAvatar(avatar: string | null): Promise<string | null> {
@@ -716,7 +716,7 @@ export async function sendTestPushNotification(req: Request, res: Response): Pro
             return;
         }
 
-        const success = await sendPushNotificationToUser(
+        const outcome = await sendPushWithDiagnostics(
             req.user.id,
             'Kaphor Alert',
             'Phone out-of-app notification is active and working properly!',
@@ -724,11 +724,28 @@ export async function sendTestPushNotification(req: Request, res: Response): Pro
             'default'
         );
 
+        let message: string;
+        if (outcome.success) {
+            message = 'Test notification dispatched to your phone!';
+        } else if (!outcome.userHasToken) {
+            message = 'No push token registered for your account. Open the Kaphor app on your phone and sign in to register your device.';
+        } else if (outcome.tokenKind === 'expo-go') {
+            message = 'This device is running via Expo Go, which no longer receives Android push notifications (Expo SDK 53+). Install a development build and open the app once to re-register this phone.';
+        } else if (outcome.engine === 'fcm' && !outcome.firebaseReady) {
+            message = 'Firebase Admin is not configured on the server. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY, then redeploy.';
+        } else {
+            message = `Push failed: ${outcome.reason || 'unknown error'}`;
+        }
+
         res.json({
-            success,
-            message: success
-                ? 'Test notification dispatched to your phone!'
-                : 'Failed to dispatch test notification. Check server logs.',
+            success: outcome.success,
+            message,
+            diagnostics: {
+                tokenKind: outcome.tokenKind,
+                engine: outcome.engine,
+                firebaseReady: outcome.firebaseReady,
+                reason: outcome.reason || null,
+            },
             pushTokenSnippet: user.pushToken.slice(0, 20) + '...',
         });
     } catch (error) {
