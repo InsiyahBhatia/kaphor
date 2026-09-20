@@ -1,8 +1,11 @@
 import * as React from 'react';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useAuth } from '../context/AuthContext';
 import { Alert, Platform } from 'react-native';
 import axios, { AxiosError } from 'axios';
+
+async function loadGoogleModule() {
+  return import('@react-native-google-signin/google-signin');
+}
 
 const DEFAULT_WEB_CLIENT_ID = '1091661686962-8v9tqlipbm6jf3gom0bg4q8rj4q41m7v.apps.googleusercontent.com';
 
@@ -26,15 +29,26 @@ export function useGoogleAuth() {
 
   React.useEffect(() => {
     if (Platform.OS === 'web') return;
-    try {
-      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || DEFAULT_WEB_CLIENT_ID;
-      GoogleSignin.configure({
-        webClientId,
-        offlineAccess: true,
+    let cancelled = false;
+    loadGoogleModule()
+      .then(({ GoogleSignin }) => {
+        if (cancelled) return;
+        try {
+          const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || DEFAULT_WEB_CLIENT_ID;
+          GoogleSignin.configure({
+            webClientId,
+            offlineAccess: true,
+          });
+        } catch (e) {
+          console.error('Failed to configure GoogleSignin natively:', e);
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) console.error('Failed to load GoogleSignin natively:', e);
       });
-    } catch (e) {
-      console.error('Failed to configure GoogleSignin natively:', e);
-    }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   /**
@@ -45,6 +59,11 @@ export function useGoogleAuth() {
     inFlight.current = true;
     setLoading(true);
     try {
+      if (Platform.OS === 'web') {
+        Alert.alert('Google Sign-In', 'Web sign-in with Google is not configured. Use email + password instead.');
+        return false;
+      }
+      const { GoogleSignin, statusCodes } = await loadGoogleModule();
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       // Clear the SDK’s cached account so sign-in shows the account picker instead of
       // silently reusing the last Google session.

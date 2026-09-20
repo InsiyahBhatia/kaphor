@@ -75,7 +75,13 @@ export const RecommendationService = {
     let candidates = await db.garment.findMany({
       where: {
         isActive: true,
-        lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
+        lifecycleState: 'LISTED',
+        reservedOrderId: null,
+        rentals: {
+          none: {
+            status: { in: ['RESERVED', 'DISPATCHED', 'ACTIVE'] },
+          },
+        },
         ...(isRegisteredUser ? { sellerId: { not: userId } } : {}),
       },
       take: 120,
@@ -331,7 +337,13 @@ export const RecommendationService = {
       where: {
         listingType: 'RENTAL',
         isActive: true,
-        lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
+        lifecycleState: 'LISTED',
+        reservedOrderId: null,
+        rentals: {
+          none: {
+            status: { in: ['RESERVED', 'DISPATCHED', 'ACTIVE'] },
+          },
+        },
         ...(isRegisteredUser ? { sellerId: { not: userId } } : {}),
       },
       take: 60,
@@ -360,7 +372,13 @@ export const RecommendationService = {
         where: {
           listingType: 'RENTAL',
           isActive: true,
-          lifecycleState: { notIn: ['OWNERSHIP', 'RESERVED_SALE'] },
+          lifecycleState: 'LISTED',
+          reservedOrderId: null,
+          rentals: {
+            none: {
+              status: { in: ['RESERVED', 'DISPATCHED', 'ACTIVE'] },
+            },
+          },
         },
         take: 60,
         select: {
