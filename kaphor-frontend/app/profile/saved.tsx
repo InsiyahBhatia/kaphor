@@ -7,6 +7,7 @@ import { garmentService } from '../../src/services/garmentService';
 import { cartService } from '../../src/services/cartService';
 import { EditorialGarmentCard } from '../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
+import { GarmentGridSkeleton } from '../../src/components/common/CardLoadingScreen';
 import { colors, typography } from '../../src/theme';
 import {
   loadSavedRepairs,
@@ -209,8 +210,8 @@ export default function SavedAssetsScreen() {
       <Header title="THE VAULT" showBack fallbackPath="/(tabs)/profile" />
 
       {loading ? (
-        <View style={styles.loader}>
-          <DossierLoading variant="shop" compact />
+        <View style={{ flex: 1, paddingTop: 12 }}>
+          <GarmentGridSkeleton count={4} />
         </View>
       ) : bothEmpty ? (
         <View style={styles.emptyState}>

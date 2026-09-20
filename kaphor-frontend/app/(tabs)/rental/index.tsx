@@ -7,6 +7,7 @@ import { messageService } from '../../../src/services/messageService';
 import { cachedGet, fetchFresh } from '../../../src/services/api';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { colors, typography } from '../../../src/theme';
 import { useAuthStore } from '../../../src/store/authStore';
 
@@ -98,7 +99,7 @@ export default function RentalScreen() {
   };
 
   const renderMyRentals = () => {
-    if (myRentalsLoading && myRentals.length === 0) return <DossierLoading variant="rental" compact />;
+    if (myRentalsLoading && myRentals.length === 0) return <GarmentGridSkeleton count={4} />;
     if (myRentals.length === 0) {
       return (
         <View style={styles.emptyState}>
@@ -298,7 +299,7 @@ export default function RentalScreen() {
 
   const renderBrowseRentals = () => {
     if (loading && rentals.length === 0) {
-      return <DossierLoading variant="rental" />;
+      return <GarmentGridSkeleton count={6} />;
     }
 
     if (rentals.length === 0) {

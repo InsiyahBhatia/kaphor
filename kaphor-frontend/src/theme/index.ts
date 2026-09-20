@@ -27,6 +27,7 @@ export const colors = {
   bgMuted: '#EAE6DF',
   
   border: '#141414',      // Sharp ink structure borders
+  borderLight: '#ECE8DF', // Subtle hairline divider
   textPrimary: '#141414', // Ink text
   textSecond: '#383A40',
   textMuted: '#706C66',

@@ -589,6 +589,7 @@ interface DossierLoadingProps {
   compact?: boolean;
   title?: string;
   subtitle?: string;
+  showTips?: boolean;
   /** Custom progress step override (0-indexed) */
   step?: number;
   /** GLIE-specific legacy step prop */
@@ -602,6 +603,7 @@ export function DossierLoading({
   compact = false,
   title: customTitle,
   subtitle: customSubtitle,
+  showTips = false,
   step: customStep,
   glieStep,
   glieTotalSteps,
@@ -658,7 +660,7 @@ export function DossierLoading({
         <Text style={styles.compactTitle}>{displayTitle}</Text>
 
         {/* Fashion tip */}
-        <FashionTipCard tip={currentTip} compact />
+        {showTips && <FashionTipCard tip={currentTip} compact />}
 
         {/* Dots */}
         <View style={styles.dotsRow}>
@@ -691,7 +693,7 @@ export function DossierLoading({
       <StepProgressIndicators steps={steps} currentStep={currentStep} />
 
       {/* Fashion Tip Card */}
-      <FashionTipCard tip={currentTip} />
+      {showTips && <FashionTipCard tip={currentTip} />}
 
       {/* Dots */}
       <View style={styles.dotsRow}>

@@ -36,16 +36,6 @@ export const circularService = {
     });
     return data.data;
   },
-
-  async scheduleCollection(payload: {
-    garmentId: string;
-    address: string;
-    preferredSlot: string;
-    partnerId: string;
-  }) {
-    const { data } = await api.post('/circular/schedule-collection', payload);
-    return data.data;
-  },
 };
 
 

@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, radius } from '../../theme';
+import { colors, typography } from '../../theme';
 import { LEGAL_DOCUMENTS, LegalDocument } from '../../data/legalPolicies';
 
 interface LegalModalProps {
@@ -54,8 +54,8 @@ export const LegalModal: React.FC<LegalModalProps> = ({
           <View style={styles.grabber} />
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.modalTitle}>KAPHOR LEGAL & COMPLIANCE</Text>
-              <Text style={styles.modalSubtitle}>Indian Regulatory & Fair Trade Framework</Text>
+              <Text style={styles.modalTitle}>KAPHOR</Text>
+              <Text style={styles.modalSubtitle}>Legal & Compliance Documents</Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
@@ -105,43 +105,21 @@ export const LegalModal: React.FC<LegalModalProps> = ({
         >
           {/* Document Header Card */}
           <View style={styles.docHeaderCard}>
-            <View style={styles.badgeRow}>
-              <View style={styles.statuteBadge}>
-                <Ionicons name="shield-checkmark" size={12} color={colors.white} />
-                <Text style={styles.statuteBadgeText}>{activeDoc.badge}</Text>
-              </View>
-            </View>
-
             <Text style={styles.docTitle}>{activeDoc.title}</Text>
+            <Text style={styles.docMeta}>Last updated: 20 September 2026 · Version 1.0</Text>
+            <View style={styles.headerRule} />
             <Text style={styles.statutoryRef}>{activeDoc.statutoryReference}</Text>
           </View>
 
-          {/* Plain English Quick Take */}
-          <View style={styles.quickTakeCard}>
-            <View style={styles.quickTakeHeader}>
-              <Ionicons name="flash-outline" size={16} color={colors.gold || '#C9A84C'} />
-              <Text style={styles.quickTakeTitle}>PLAIN-LANGUAGE QUICK TAKE</Text>
-            </View>
-            <Text style={styles.quickTakeSub}>
-              A quick 30-second summary before reading the formal statutory clauses:
-            </Text>
-            {activeDoc.quickTake.map((point, pIdx) => (
-              <View key={pIdx} style={styles.quickTakeRow}>
-                <Ionicons name="checkmark-circle" size={16} color="#1E3B2F" style={{ marginTop: 2 }} />
-                <Text style={styles.quickTakeText}>{point}</Text>
-              </View>
-            ))}
-          </View>
-
           {/* Full Statutory Clauses */}
-          <Text style={styles.clausesSectionTitle}>FORMAL LEGAL PROVISIONS</Text>
+          <Text style={styles.clausesSectionTitle}>AGREEMENT CLAUSES</Text>
           {activeDoc.clauses.map((clause, cIdx) => (
             <View key={cIdx} style={styles.clauseCard}>
               <Text style={styles.clauseHeading}>{clause.heading}</Text>
               <Text style={styles.clauseBody}>{clause.content}</Text>
               {clause.legalBasis ? (
                 <View style={styles.legalBasisBox}>
-                  <Text style={styles.legalBasisLabel}>Statutory Authority:</Text>
+                  <Text style={styles.legalBasisLabel}>Statutory Basis</Text>
                   <Text style={styles.legalBasisText}>{clause.legalBasis}</Text>
                 </View>
               ) : null}
@@ -150,10 +128,10 @@ export const LegalModal: React.FC<LegalModalProps> = ({
 
           {/* Grievance Officer Quick Contact Footer */}
           <View style={styles.grievanceNotice}>
-            <Ionicons name="mail" size={16} color={colors.textSecond} />
+            <Ionicons name="mail-outline" size={16} color={colors.ink} />
             <Text style={styles.grievanceNoticeText}>
-              Questions or dispute escalations? Contact Grievance Officer at{' '}
-              <Text style={{ fontWeight: '700', color: colors.crimson }}>grievance@kaphor.com</Text>
+              For questions or dispute escalations, contact the Grievance Officer at{' '}
+              <Text style={{ fontWeight: '700', color: colors.ink }}>grievance@kaphor.com</Text>.
             </Text>
           </View>
         </ScrollView>
@@ -189,12 +167,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     paddingTop: Platform.OS === 'ios' ? 8 : 16,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
   grabber: {
     width: 40,
     height: 4,
-    borderRadius: 2,
+    borderRadius: 0,
     backgroundColor: colors.border,
     alignSelf: 'center',
     marginBottom: 8,
@@ -207,21 +185,24 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 1.5,
+    fontSize: 20,
+    fontFamily: typography.headings,
+    fontWeight: '400',
+    letterSpacing: 2.5,
     color: colors.textPrimary,
   },
   modalSubtitle: {
-    fontSize: 11,
+    fontSize: 10,
+    fontFamily: typography.mono,
     color: colors.textMuted,
     marginTop: 2,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 0,
     backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -231,30 +212,32 @@ const styles = StyleSheet.create({
   chipsContainer: {
     paddingHorizontal: 16,
     paddingBottom: 6,
-    gap: 8,
+    gap: 6,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.bg,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 0,
+    backgroundColor: colors.bgCard,
     borderWidth: 1,
     borderColor: colors.border,
   },
   chipActive: {
-    backgroundColor: colors.crimson,
-    borderColor: colors.crimson,
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 10.5,
+    fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   chipTextActive: {
-    color: colors.white,
+    color: colors.cream,
   },
   scroll: {
     flex: 1,
@@ -265,142 +248,105 @@ const styles = StyleSheet.create({
   },
   docHeaderCard: {
     backgroundColor: colors.bgCard,
-    borderRadius: 14,
-    padding: 18,
     borderWidth: 1,
+    borderTopWidth: 3,
     borderColor: colors.border,
-    marginBottom: 16,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  statuteBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E3B2F',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 6,
-  },
-  statuteBadgeText: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
+    padding: 20,
+    marginBottom: 24,
   },
   docTitle: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 24,
+    fontFamily: typography.headings,
+    fontWeight: '400',
     color: colors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: 1.2,
+    lineHeight: 28,
     marginBottom: 6,
   },
-  statutoryRef: {
-    fontSize: 12,
+  docMeta: {
+    fontSize: 10,
+    fontFamily: typography.mono,
     color: colors.textMuted,
-    lineHeight: 18,
-    fontStyle: 'italic',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 14,
   },
-  quickTakeCard: {
-    backgroundColor: '#FBF8F1',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E8DCB8',
-    marginBottom: 20,
-  },
-  quickTakeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  quickTakeTitle: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#8A6D1C',
-    letterSpacing: 1.2,
-  },
-  quickTakeSub: {
-    fontSize: 12,
-    color: colors.textSecond,
+  headerRule: {
+    height: 1,
+    backgroundColor: colors.border,
     marginBottom: 12,
   },
-  quickTakeRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    marginBottom: 8,
-  },
-  quickTakeText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.textPrimary,
+  statutoryRef: {
+    fontSize: 10.5,
+    fontFamily: typography.mono,
+    color: colors.textSecond,
+    lineHeight: 16,
   },
   clausesSectionTitle: {
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1.5,
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '700',
+    letterSpacing: 1.8,
     color: colors.textSecond,
-    marginBottom: 12,
+    marginBottom: 14,
+    textTransform: 'uppercase',
   },
   clauseCard: {
     backgroundColor: colors.bgCard,
-    borderRadius: 12,
-    padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 12,
+    padding: 18,
+    marginBottom: 16,
   },
   clauseHeading: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 13,
+    fontFamily: typography.monoBold,
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 10,
+    lineHeight: 19,
+    letterSpacing: 0.3,
   },
   clauseBody: {
     fontSize: 13,
-    lineHeight: 20,
+    fontFamily: typography.body,
+    lineHeight: 22,
     color: colors.textSecond,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   legalBasisBox: {
-    backgroundColor: colors.bg,
-    padding: 10,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.crimson,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 10,
   },
   legalBasisLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.crimson,
-    letterSpacing: 0.8,
+    fontSize: 9,
+    fontFamily: typography.mono,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 1.4,
+    marginBottom: 4,
     textTransform: 'uppercase',
-    marginBottom: 2,
   },
   legalBasisText: {
-    fontSize: 11,
+    fontSize: 11.5,
+    fontFamily: typography.mono,
     color: colors.textMuted,
-    fontStyle: 'italic',
+    lineHeight: 17,
   },
   grievanceNotice: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: colors.bgCard,
-    padding: 14,
-    borderRadius: 10,
+    padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
     gap: 10,
-    marginTop: 10,
+    marginTop: 8,
   },
   grievanceNoticeText: {
     flex: 1,
     fontSize: 12,
+    fontFamily: typography.body,
     color: colors.textSecond,
     lineHeight: 18,
   },
@@ -411,22 +357,18 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   acceptButton: {
-    backgroundColor: colors.crimson,
+    backgroundColor: colors.ink,
     height: 52,
-    borderRadius: 12,
+    borderRadius: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.crimson,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
   },
   acceptButtonText: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 1.5,
+    color: colors.cream,
+    fontSize: 13,
+    fontFamily: typography.mono,
+    fontWeight: '900',
+    letterSpacing: 2.2,
   },
 });

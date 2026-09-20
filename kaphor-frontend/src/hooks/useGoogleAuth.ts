@@ -7,6 +7,8 @@ async function loadGoogleModule() {
   return import('@react-native-google-signin/google-signin');
 }
 
+let googleStatusCodes: any = null;
+
 const DEFAULT_WEB_CLIENT_ID = '1091661686962-8v9tqlipbm6jf3gom0bg4q8rj4q41m7v.apps.googleusercontent.com';
 
 function googleBackendMessage(error: unknown): string {
@@ -64,6 +66,7 @@ export function useGoogleAuth() {
         return false;
       }
       const { GoogleSignin, statusCodes } = await loadGoogleModule();
+      googleStatusCodes = statusCodes;
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       // Clear the SDK’s cached account so sign-in shows the account picker instead of
       // silently reusing the last Google session.
@@ -95,10 +98,10 @@ export function useGoogleAuth() {
       await signInWithGoogle(idToken);
       return true;
     } catch (error: any) {
-      if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
+      if (error?.code === googleStatusCodes?.SIGN_IN_CANCELLED) {
         return false;
       }
-      if (error?.code === statusCodes.IN_PROGRESS) {
+      if (error?.code === googleStatusCodes?.IN_PROGRESS) {
         Alert.alert('Please Wait', 'Google sign-in is already in progress.');
         return false;
       }
@@ -111,9 +114,9 @@ export function useGoogleAuth() {
       }
 
       let diagnosticMsg = error?.message || 'Something went wrong during Google sign-in.';
-      if (error?.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      if (error?.code === googleStatusCodes?.PLAY_SERVICES_NOT_AVAILABLE) {
         diagnosticMsg = 'Google Play Services is not available or needs to be updated.';
-      } else if (error?.code === '10' || error?.code === statusCodes.SIGN_IN_REQUIRED || String(error).includes('10')) {
+      } else if (error?.code === '10' || error?.code === googleStatusCodes?.SIGN_IN_REQUIRED || String(error).includes('10')) {
         diagnosticMsg = 'Google Play Services Developer Error (10): The SHA-1 fingerprint of the build does not match the Android OAuth Client ID in Google Cloud / Firebase Console.';
       }
 

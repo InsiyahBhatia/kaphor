@@ -89,7 +89,7 @@ backend/
 │   │   └── index.ts          ← all shared types
 │   ├── utils/
 │   │   ├── jwt.ts            ← sign / verify helpers
-│   │   ├── hash.ts           ← bcrypt helpers
+│   │   ├── hash.ts           ← argon2 helpers
 │   │   ├── pagination.ts     ← cursor pagination helper
 │   │   ├── impact.ts         ← impact calculation helpers
 │   │   └── vectors.ts        ← cosine similarity

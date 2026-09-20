@@ -18,6 +18,7 @@ import { colors, typography } from '../../theme';
 import { KaphorImage } from '../../components/KaphorImage';
 import { Header } from '../../components/common/Header';
 import { DossierLoading } from '../../components/common/DossierLoading';
+import { GarmentGridSkeleton } from '../../components/common/CardLoadingScreen';
 import { RecyclingHubsModal } from '../../components/RecyclingHubsModal';
 import { cachedGet, fetchFresh, invalidateCache } from '../../services/api';
 import api from '../../services/api';
@@ -389,8 +390,8 @@ export function WardrobeScreen() {
       <Header title="DIGITAL CLOSET" showBack={true} fallbackPath="/(tabs)/profile" />
 
       {loading ? (
-        <View style={styles.center}>
-          <DossierLoading compact />
+        <View style={{ flex: 1, paddingTop: 12 }}>
+          <GarmentGridSkeleton count={4} />
         </View>
       ) : wardrobe.length === 0 ? (
         <View style={styles.center}>
@@ -466,7 +467,6 @@ export function WardrobeScreen() {
         visible={showRecyclingModal}
         onClose={() => setShowRecyclingModal(false)}
         garment={recyclingGarment}
-        onSuccess={loadWardrobe}
       />
     </SafeAreaView>
   );

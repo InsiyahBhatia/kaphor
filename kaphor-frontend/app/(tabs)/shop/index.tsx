@@ -8,6 +8,7 @@ import { cartService } from '../../../src/services/cartService';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { colors, typography } from '../../../src/theme';
 import { 
   MARKET_CATEGORIES, 
@@ -153,7 +154,7 @@ export default function ShopScreen() {
       </View>
 
       {showInitialLoader ? (
-        <DossierLoading variant="shop" />
+        <GarmentGridSkeleton count={6} />
       ) : (
         <View style={{ flex: 1 }}>
           {isLoading && garments.length > 0 && (

@@ -113,7 +113,7 @@ verifyRefreshToken(token: string): { userId: string }
 
 ```typescript
 hashPassword(password: string): Promise<string>
-  // bcrypt, rounds: 12
+  // argon2id, memoryCost 64MB, timeCost 3, parallelism 1
 
 comparePassword(plain: string, hash: string): Promise<boolean>
 ```

@@ -124,7 +124,7 @@ export default function AdminListingsScreen() {
                   <Chip color={g.isActive ? colors.emerald : colors.textMuted} bg="transparent">
                     {g.isActive ? 'ACTIVE' : 'INACTIVE'}
                   </Chip>
-                  <Chip color={colors.textMuted} bg="transparent">{g.lifecycleState.replace(/_/g, ' ')}</Chip>
+                  <Chip color={colors.textMuted} bg="transparent">{(g.lifecycleState || 'LISTED').replace(/_/g, ' ')}</Chip>
                   <Chip bg={colors.bgMuted}>{formatINR(g.price)}</Chip>
                 </View>
                 <Text style={styles.seller}>BY {g.seller?.displayName?.toUpperCase() ?? '—'}</Text>
@@ -146,38 +146,88 @@ export default function AdminListingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: colors.cream },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cream },
 
   searchBar: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 12,
-    paddingHorizontal: 12, height: 44, borderWidth: 1, borderColor: colors.border,
-    borderRadius: 4, backgroundColor: colors.bgCard, gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    backgroundColor: colors.white,
+    gap: 8,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 2.5, height: 2.5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
   },
   searchInput: { flex: 1, fontFamily: typography.mono, fontSize: 11, color: colors.textPrimary },
 
   toggRow: { paddingHorizontal: 16, paddingTop: 10 },
-  toggleChip: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: colors.border, borderRadius: 2, backgroundColor: colors.bgCard },
+  toggleChip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    backgroundColor: colors.white,
+  },
   toggleChipActive: { backgroundColor: colors.ink },
-  toggleText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '700', color: colors.textSecond },
-  toggleTextActive: { color: colors.white },
+  toggleText: { fontFamily: typography.monoBold, fontSize: 9, color: colors.ink },
+  toggleTextActive: { color: colors.cream },
 
   chipRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
-  statusChip: { paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: colors.border, borderRadius: 2, backgroundColor: colors.bgCard, marginRight: 8 },
+  statusChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    backgroundColor: colors.white,
+    marginRight: 8,
+  },
   statusChipActive: { backgroundColor: colors.ink },
-  statusChipText: { fontFamily: typography.mono, fontSize: 8, fontWeight: '700', color: colors.textSecond },
-  statusChipTextActive: { color: colors.white },
+  statusChipText: { fontFamily: typography.monoBold, fontSize: 8.5, color: colors.ink },
+  statusChipTextActive: { color: colors.cream },
 
-  list: { paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
+  list: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
   card: {
-    flexDirection: 'row', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
-    borderRadius: 4, padding: 14,
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    padding: 15,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
   },
   cardInfo: { flex: 1 },
-  cardTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.textPrimary },
-  cardMeta: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginTop: 3, letterSpacing: 0.5 },
+  cardTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
+  cardMeta: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  seller: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, marginTop: 8, letterSpacing: 1 },
-  actions: { justifyContent: 'center', gap: 8 },
-  iconBtn: { width: 32, height: 32, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  seller: { fontFamily: typography.monoBold, fontSize: 8.5, color: colors.textMuted, marginTop: 8, letterSpacing: 1 },
+  actions: { justifyContent: 'center', gap: 8, paddingLeft: 8 },
+  iconBtn: {
+    width: 34,
+    height: 34,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.ink,
+    shadowOffset: { width: 1.5, height: 1.5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
 });

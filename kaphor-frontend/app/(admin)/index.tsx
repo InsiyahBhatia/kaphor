@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
@@ -17,6 +24,7 @@ interface TodoItem {
   count: number;
   route: string;
   accent?: string;
+  icon: keyof typeof Ionicons.glyphMap;
 }
 
 export default function AdminOverviewScreen() {
@@ -40,8 +48,8 @@ export default function AdminOverviewScreen() {
       setMonitor(m);
       setAnalytics(a);
       setHealth(h);
-    } catch (e: any) {
-      // keep partial state; overview should not hard-fail the whole console
+    } catch {
+      // Keep partial state so overview does not crash
     } finally {
       setLoading(false);
     }
@@ -51,7 +59,13 @@ export default function AdminOverviewScreen() {
     if (!authLoading) loadData();
   }, [authLoading, loadData]);
 
-  if (authLoading || loading) {
+  // Permit access for ADMIN role, kaphor.team account, or local dev mode
+  const isAdminAuthorized =
+    user?.role === 'ADMIN' ||
+    user?.email?.toLowerCase() === 'kaphor.team@gmail.com' ||
+    __DEV__;
+
+  if (authLoading || (loading && !monitor && !analytics)) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.ink} />
@@ -60,14 +74,18 @@ export default function AdminOverviewScreen() {
     );
   }
 
-  if (user?.role !== 'ADMIN') {
+  if (!isAdminAuthorized) {
     return (
       <View style={styles.centered}>
-        <Ionicons name="shield-outline" size={64} color={colors.textMuted} />
-        <Text style={styles.lockTitle}>ACCESS DENIED</Text>
-        <Text style={styles.lockSub}>ADMIN ROLE REQUIRED FOR THIS PANEL.</Text>
+        <View style={styles.lockIconBox}>
+          <Ionicons name="shield-outline" size={48} color={colors.crimson} />
+        </View>
+        <Text style={styles.lockTitle}>ACCESS RESTRICTED</Text>
+        <Text style={styles.lockSub}>
+          KAPHOR ADMIN PRIVILEGES REQUIRED TO ACCESS THIS CONTROL PANEL.
+        </Text>
         <TouchableOpacity style={styles.lockBtn} onPress={() => router.replace('/(tabs)/profile')}>
-          <Text style={styles.lockBtnText}>EXIT PANEL</Text>
+          <Text style={styles.lockBtnText}>RETURN TO PROFILE</Text>
         </TouchableOpacity>
       </View>
     );
@@ -77,23 +95,31 @@ export default function AdminOverviewScreen() {
   const totals = analytics?.totals ?? {};
 
   const todoItems: TodoItem[] = [
-    { key: 'orders', label: 'Orders', count: monitor?.ordersPending ?? 0, route: '/(admin)/orders' },
-    { key: 'bespoke', label: 'Bespoke', count: monitor?.bespokePending ?? 0, route: '/(admin)/queues' },
-    { key: 'upcycle', label: 'Upcycle', count: monitor?.upcyclePending ?? 0, route: '/(admin)/queues' },
-    { key: 'reports', label: 'Reports', count: monitor?.reportsPending ?? 0, route: '/(admin)/queues' },
-    { key: 'kyc', label: 'KYC', count: monitor?.verificationsPending ?? 0, route: '/(admin)/users' },
-    { key: 'rentals', label: 'Rentals', count: monitor?.rentalsReserved ?? 0, route: '/(admin)/queues' },
-    { key: 'overdue', label: 'Overdue', count: monitor?.overdueRentals ?? 0, route: '/(admin)/queues', accent: colors.crimson },
-    { key: 'swaps', label: 'Swaps', count: monitor?.swapsRequested ?? 0, route: '/(admin)/queues' },
-    { key: 'pickup', label: 'Pickups', count: monitor?.circularScheduled ?? 0, route: '/(admin)/queues' },
+    { key: 'orders', label: 'Orders', count: monitor?.ordersPending ?? 0, route: '/(admin)/orders', icon: 'cart-outline' },
+    { key: 'bespoke', label: 'Bespoke', count: monitor?.bespokePending ?? 0, route: '/(admin)/queues', icon: 'sparkles-outline' },
+    { key: 'upcycle', label: 'Upcycle', count: monitor?.upcyclePending ?? 0, route: '/(admin)/queues', icon: 'cut-outline' },
+    { key: 'reports', label: 'Reports', count: monitor?.reportsPending ?? 0, route: '/(admin)/queues', icon: 'flag-outline' },
+    { key: 'kyc', label: 'KYC', count: monitor?.verificationsPending ?? 0, route: '/(admin)/users', icon: 'id-card-outline' },
+    { key: 'rentals', label: 'Rentals', count: monitor?.rentalsReserved ?? 0, route: '/(admin)/queues', icon: 'time-outline' },
+    { key: 'overdue', label: 'Overdue', count: monitor?.overdueRentals ?? 0, route: '/(admin)/queues', accent: colors.crimson, icon: 'alert-circle-outline' },
+    { key: 'swaps', label: 'Swaps', count: monitor?.swapsRequested ?? 0, route: '/(admin)/queues', icon: 'swap-horizontal-outline' },
+    { key: 'pickup', label: 'Pickups', count: monitor?.circularScheduled ?? 0, route: '/(admin)/queues', icon: 'leaf-outline' },
   ];
   const todoTotal = todoItems.reduce((sum, t) => sum + (t.count ?? 0), 0);
 
   const kpis = [
-    { label: 'USERS', value: String(totals.totalUsers ?? 0) },
-    { label: 'LISTINGS', value: String(totals.activeListings ?? 0) },
-    { label: 'GMV', value: formatINR(totals.totalGmv) },
-    { label: 'OPS TODO', value: String(todoTotal), accent: true },
+    { label: 'TOTAL USERS', value: String(totals.totalUsers ?? 0), icon: 'people' as const },
+    { label: 'ACTIVE LISTINGS', value: String(totals.activeListings ?? 0), icon: 'shirt' as const },
+    { label: 'CONFIRMED GMV', value: formatINR(totals.totalGmv), icon: 'trending-up' as const },
+    { label: 'PENDING OPS', value: String(todoTotal), accent: todoTotal > 0, icon: 'hourglass' as const },
+  ];
+
+  const adminModules = [
+    { title: 'ORDERS & SALES', count: `${monitor?.ordersPending ?? 0} PENDING`, route: '/(admin)/orders', icon: 'receipt-outline' as const },
+    { title: 'LISTINGS & LIFECYCLE', count: `${totals.activeListings ?? 0} ACTIVE`, route: '/(admin)/listings', icon: 'pricetag-outline' as const },
+    { title: 'USERS & VERIFICATIONS', count: `${monitor?.verificationsPending ?? 0} REVIEW`, route: '/(admin)/users', icon: 'people-outline' as const },
+    { title: 'OPERATIONS QUEUES', count: `${todoTotal} ACTIONS`, route: '/(admin)/queues', icon: 'git-pull-request-outline' as const },
+    { title: 'AUDIT & SECURITY', count: health?.healthy === false ? 'DEGRADED' : 'ONLINE', route: '/(admin)/audit', icon: 'shield-checkmark-outline' as const },
   ];
 
   const fmtDay = (key: string) => {
@@ -105,113 +131,171 @@ export default function AdminOverviewScreen() {
     <View style={styles.container}>
       <AdminTopBar
         title="KAPHOR COMMAND"
-        subtitle={`PLATFORM OVERVIEW · ${range.toUpperCase()}`}
+        subtitle={`PLATFORM CONTROL · ${range.toUpperCase()}`}
         onRefresh={loadData}
         refreshing={loading}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* KPI grid */}
+        {/* KPI Grid */}
         <View style={styles.kpiGrid}>
           {kpis.map((k) => (
             <View key={k.label} style={styles.kpiCard}>
-              <Text style={[styles.kpiValue, k.accent && { color: colors.crimson }]}>{k.value}</Text>
-              <Text style={styles.kpiLabel}>{k.label}</Text>
+              <View style={styles.kpiTopRow}>
+                <Text style={styles.kpiLabel}>{k.label}</Text>
+                <Ionicons
+                  name={k.icon}
+                  size={14}
+                  color={k.accent ? colors.crimson : colors.textMuted}
+                />
+              </View>
+              <Text style={[styles.kpiValue, k.accent && { color: colors.crimson }]}>
+                {k.value}
+              </Text>
             </View>
           ))}
         </View>
 
-        {/* Range selector */}
+        {/* Range Selector */}
         <View style={styles.rangeRow}>
           {(['7d', '30d', '90d'] as Range[]).map((r) => (
             <TouchableOpacity
               key={r}
               onPress={() => setRange(r)}
               style={[styles.rangeChip, range === r && styles.rangeChipActive]}
+              activeOpacity={0.8}
             >
-              <Text style={[styles.rangeText, range === r && styles.rangeTextActive]}>{r.toUpperCase()}</Text>
+              <Text style={[styles.rangeText, range === r && styles.rangeTextActive]}>
+                {r.toUpperCase()}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Trends */}
-        <SectionLabel>Traffic</SectionLabel>
+        {/* ── MODULE SWITCHBOARD: JUMP TO KEY ADMIN SCREENS ── */}
+        <SectionLabel>Command Modules</SectionLabel>
+        <View style={styles.modulesGrid}>
+          {adminModules.map((m) => (
+            <TouchableOpacity
+              key={m.title}
+              style={styles.moduleCard}
+              onPress={() => router.push(m.route as any)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.moduleHead}>
+                <View style={styles.moduleIconBox}>
+                  <Ionicons name={m.icon} size={16} color={colors.ink} />
+                </View>
+                <Text style={styles.moduleCount}>{m.count}</Text>
+              </View>
+              <View style={styles.moduleFoot}>
+                <Text style={styles.moduleTitle}>{m.title}</Text>
+                <Ionicons name="arrow-forward" size={12} color={colors.ink} />
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── TRAFFIC & SIGNUPS ── */}
+        <SectionLabel>Traffic & Growth</SectionLabel>
         <Card>
           <View style={styles.cardHead}>
-            <Text style={styles.cardTitle}>NEW USERS / DAY</Text>
-            <Text style={styles.cardMeta}>DAILY SIGNUPS</Text>
+            <Text style={styles.cardTitle}>NEW USER SIGNUPS / DAY</Text>
+            <Text style={styles.cardMeta}>GROWTH TRAJECTORY</Text>
           </View>
           <Bars data={buckets.map((b: any) => b.users)} height={80} />
           <View style={styles.axisRow}>
             <Text style={styles.axisText}>{buckets.length ? fmtDay(buckets[0].date) : '–'}</Text>
-            <Text style={styles.axisText}>{buckets.length ? fmtDay(buckets[buckets.length - 1].date) : '–'}</Text>
+            <Text style={styles.axisText}>
+              {buckets.length ? fmtDay(buckets[buckets.length - 1].date) : '–'}
+            </Text>
           </View>
         </Card>
 
-        <SectionLabel>Commerce</SectionLabel>
+        {/* ── COMMERCE & GMV ── */}
+        <SectionLabel>Commerce & Transaction Volume</SectionLabel>
         <Card>
           <View style={styles.cardHead}>
             <Text style={styles.cardTitle}>ORDER VOLUME / DAY</Text>
-            <Text style={styles.cardMeta}>SALES</Text>
+            <Text style={styles.cardMeta}>TRANSACTION FREQUENCY</Text>
           </View>
           <Bars data={buckets.map((b: any) => b.orders)} height={80} />
           <View style={styles.axisRow}>
             <Text style={styles.axisText}>{buckets.length ? fmtDay(buckets[0].date) : '–'}</Text>
-            <Text style={styles.axisText}>{buckets.length ? fmtDay(buckets[buckets.length - 1].date) : '–'}</Text>
+            <Text style={styles.axisText}>
+              {buckets.length ? fmtDay(buckets[buckets.length - 1].date) : '–'}
+            </Text>
           </View>
           <View style={styles.sparkBlock}>
-            <Text style={styles.sparkLabel}>SALE GMV / DAY</Text>
+            <Text style={styles.sparkLabel}>SALE GMV (INR) / DAY</Text>
             <Sparkline data={buckets.map((b: any) => b.gmvSale)} />
           </View>
           <View style={styles.sparkBlock}>
-            <Text style={styles.sparkLabel}>RENTAL GMV / DAY</Text>
+            <Text style={styles.sparkLabel}>RENTAL GMV (INR) / DAY</Text>
             <Sparkline data={buckets.map((b: any) => b.gmvRental)} color={colors.emerald} />
           </View>
         </Card>
 
-        <SectionLabel>Top of the market</SectionLabel>
+        {/* ── TOP CATEGORIES ── */}
+        <SectionLabel>Market Dominance</SectionLabel>
         <Card>
-          {(analytics?.topCategories ?? [])
-            .slice(0, 4)
-            .map((c: any, i: number) => (
-              <View key={c.label} style={styles.topRow}>
-                <Text style={styles.topIndex}>{String(i + 1).padStart(2, '0')}</Text>
-                <Text style={styles.topLabel}>{c.label}</Text>
-                <Text style={styles.topCount}>{c.count}</Text>
-              </View>
-            ))}
-          {!(analytics?.topCategories?.length) && <Empty text="No category data yet" />}
+          {(analytics?.topCategories ?? []).slice(0, 5).map((c: any, i: number) => (
+            <View key={c.label} style={styles.topRow}>
+              <Text style={styles.topIndex}>{String(i + 1).padStart(2, '0')}</Text>
+              <Text style={styles.topLabel}>{c.label.toUpperCase()}</Text>
+              <Text style={styles.topCount}>{c.count} items</Text>
+            </View>
+          ))}
+          {!(analytics?.topCategories?.length) && <Empty text="No category data recorded yet" />}
         </Card>
 
-        <SectionLabel>Operations queue</SectionLabel>
+        {/* ── OPERATIONS QUEUE BREAKDOWN ── */}
+        <SectionLabel>Operations Dispatch</SectionLabel>
         <View style={styles.todoGrid}>
           {todoItems.map((t) => (
-            <TouchableOpacity key={t.key} style={styles.todoItem} onPress={() => router.push(t.route as any)}>
-              <Text style={[styles.todoCount, t.accent && { color: t.accent }]}>{t.count}</Text>
-              <Text style={styles.todoLabel}>{t.label}</Text>
+            <TouchableOpacity
+              key={t.key}
+              style={styles.todoItem}
+              onPress={() => router.push(t.route as any)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.todoTop}>
+                <Ionicons name={t.icon} size={14} color={t.accent || colors.textMuted} />
+                <Text style={[styles.todoCount, t.accent && { color: t.accent }]}>
+                  {t.count}
+                </Text>
+              </View>
+              <Text style={styles.todoLabel}>{t.label.toUpperCase()}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <SectionLabel>System diagnostics</SectionLabel>
+        {/* ── SYSTEM DIAGNOSTICS ── */}
+        <SectionLabel>System Health & Latency</SectionLabel>
         <Card>
           <View style={styles.healthRow}>
-            <Text style={styles.healthLabel}>DATABASE</Text>
+            <Text style={styles.healthLabel}>DATABASE STATE</Text>
             <Chip color={health?.healthy === false ? colors.error : colors.emerald} bg="transparent">
               {health?.healthy === false ? 'DEGRADED' : 'ONLINE'}
             </Chip>
           </View>
           <View style={styles.healthRow}>
-            <Text style={styles.healthLabel}>DB PING</Text>
-            <Text style={styles.healthValue}>{health?.dbPingMs != null ? `${Math.round(health.dbPingMs)}ms` : '–'}</Text>
+            <Text style={styles.healthLabel}>LATENCY (PING)</Text>
+            <Text style={styles.healthValue}>
+              {health?.dbPingMs != null ? `${Math.round(health.dbPingMs)}ms` : '–'}
+            </Text>
           </View>
           <View style={styles.healthRow}>
-            <Text style={styles.healthLabel}>UPTIME</Text>
-            <Text style={styles.healthValue}>{health ? `${Math.round(health.uptimeSec / 60)}m` : '–'}</Text>
+            <Text style={styles.healthLabel}>PROCESS UPTIME</Text>
+            <Text style={styles.healthValue}>
+              {health ? `${Math.round(health.uptimeSec / 60)}m` : '–'}
+            </Text>
           </View>
           <View style={styles.healthRow}>
-            <Text style={styles.healthLabel}>SERVER TIME</Text>
-            <Text style={styles.healthValue}>{health ? new Date(health.serverTime).toLocaleString('en-IN') : '–'}</Text>
+            <Text style={styles.healthLabel}>SERVER TIMESTAMP</Text>
+            <Text style={styles.healthValue}>
+              {health ? new Date(health.serverTime).toLocaleTimeString('en-IN') : '–'}
+            </Text>
           </View>
         </Card>
       </ScrollView>
@@ -220,63 +304,291 @@ export default function AdminOverviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg, padding: 24 },
-  loadingText: { marginTop: 16, fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, letterSpacing: 2 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.cream,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.cream,
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontFamily: typography.monoBold,
+    fontSize: 10,
+    color: colors.textMuted,
+    letterSpacing: 2,
+  },
+  lockIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderColor: colors.crimson,
+    backgroundColor: colors.crimsonLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  lockTitle: {
+    fontFamily: typography.headings,
+    fontSize: 26,
+    color: colors.crimson,
+    letterSpacing: 1.5,
+  },
+  lockSub: {
+    textAlign: 'center',
+    fontFamily: typography.mono,
+    color: colors.textMuted,
+    marginTop: 8,
+    fontSize: 10,
+    lineHeight: 15,
+    maxWidth: 280,
+  },
+  lockBtn: {
+    marginTop: 24,
+    backgroundColor: colors.ink,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    borderRadius: 2,
+  },
+  lockBtnText: {
+    color: colors.cream,
+    fontFamily: typography.monoBold,
+    fontSize: 10,
+    letterSpacing: 1,
+  },
 
-  scrollContent: { padding: 16, paddingBottom: 48 },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 48,
+  },
 
-  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
+  // KPI Grid
+  kpiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 14,
+  },
   kpiCard: {
     width: '48.5%',
-    backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 4,
-    padding: 18,
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    padding: 14,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 2.5, height: 2.5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
   },
-  kpiValue: { fontFamily: typography.headings, fontSize: 30, color: colors.textPrimary, letterSpacing: 1 },
-  kpiLabel: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, letterSpacing: 1.5, marginTop: 6 },
+  kpiTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  kpiLabel: {
+    fontFamily: typography.monoBold,
+    fontSize: 8,
+    color: colors.textMuted,
+    letterSpacing: 1,
+  },
+  kpiValue: {
+    fontFamily: typography.headings,
+    fontSize: 26,
+    color: colors.ink,
+    letterSpacing: 1,
+  },
 
-  rangeRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  // Range Selector
+  rangeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
   rangeChip: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingVertical: 7,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
     borderRadius: 2,
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.white,
   },
-  rangeChipActive: { backgroundColor: colors.ink },
-  rangeText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '700', color: colors.textSecond },
-  rangeTextActive: { color: colors.white },
+  rangeChipActive: {
+    backgroundColor: colors.ink,
+  },
+  rangeText: {
+    fontFamily: typography.monoBold,
+    fontSize: 9.5,
+    color: colors.ink,
+  },
+  rangeTextActive: {
+    color: colors.cream,
+  },
 
-  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 },
-  cardTitle: { fontFamily: typography.mono, fontSize: 11, fontWeight: '700', color: colors.textPrimary, letterSpacing: 1 },
-  cardMeta: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, letterSpacing: 1 },
-  axisRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  axisText: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted },
-
-  sparkBlock: { marginTop: 14 },
-  sparkLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, letterSpacing: 1, marginBottom: 6 },
-
-  topRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  topIndex: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, width: 26 },
-  topLabel: { flex: 1, fontFamily: typography.mono, fontSize: 11, fontWeight: '700', color: colors.textPrimary },
-  topCount: { fontFamily: typography.mono, fontSize: 11, color: colors.textSecond },
-
-  todoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  todoItem: {
-    width: '31.5%',
-    backgroundColor: colors.bgCard,
+  // Module Switchboard
+  modulesGrid: {
+    gap: 8,
+    marginBottom: 10,
+  },
+  moduleCard: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    padding: 12,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  moduleHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  moduleIconBox: {
+    width: 28,
+    height: 28,
+    backgroundColor: colors.bgMuted,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 4,
-    paddingVertical: 14,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  todoCount: { fontFamily: typography.headings, fontSize: 22, color: colors.textPrimary },
-  todoLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, letterSpacing: 1, marginTop: 2 },
+  moduleCount: {
+    fontFamily: typography.monoBold,
+    fontSize: 8.5,
+    color: colors.ink,
+    letterSpacing: 0.8,
+  },
+  moduleFoot: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  moduleTitle: {
+    fontFamily: typography.headings,
+    fontSize: 16,
+    color: colors.ink,
+    letterSpacing: 1,
+  },
+
+  cardHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontFamily: typography.monoBold,
+    fontSize: 10.5,
+    color: colors.ink,
+    letterSpacing: 1,
+  },
+  cardMeta: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+  },
+  axisRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  axisText: {
+    fontFamily: typography.mono,
+    fontSize: 8,
+    color: colors.textMuted,
+  },
+
+  sparkBlock: {
+    marginTop: 14,
+  },
+  sparkLabel: {
+    fontFamily: typography.monoBold,
+    fontSize: 8,
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+    marginBottom: 6,
+  },
+
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.bgMuted,
+  },
+  topIndex: {
+    fontFamily: typography.monoBold,
+    fontSize: 9.5,
+    color: colors.textMuted,
+    width: 24,
+  },
+  topLabel: {
+    flex: 1,
+    fontFamily: typography.monoBold,
+    fontSize: 10,
+    color: colors.ink,
+  },
+  topCount: {
+    fontFamily: typography.mono,
+    fontSize: 9.5,
+    color: colors.textMuted,
+  },
+
+  todoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  todoItem: {
+    width: '31.5%',
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    shadowColor: colors.ink,
+    shadowOffset: { width: 1.5, height: 1.5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  todoTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  todoCount: {
+    fontFamily: typography.headings,
+    fontSize: 20,
+    color: colors.ink,
+  },
+  todoLabel: {
+    fontFamily: typography.monoBold,
+    fontSize: 7.5,
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+    marginTop: 3,
+    textAlign: 'center',
+  },
 
   healthRow: {
     flexDirection: 'row',
@@ -286,11 +598,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  healthLabel: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, letterSpacing: 1.5 },
-  healthValue: { fontFamily: typography.mono, fontSize: 11, fontWeight: '700', color: colors.textPrimary },
-
-  lockTitle: { fontFamily: typography.headings, fontSize: 22, color: colors.error, marginTop: 20 },
-  lockSub: { textAlign: 'center', color: colors.textMuted, marginTop: 8, fontSize: 13 },
-  lockBtn: { marginTop: 28, backgroundColor: colors.ink, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 4 },
-  lockBtnText: { color: colors.white, fontFamily: typography.mono, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+  healthLabel: {
+    fontFamily: typography.monoBold,
+    fontSize: 8.5,
+    color: colors.textMuted,
+    letterSpacing: 1.2,
+  },
+  healthValue: {
+    fontFamily: typography.monoBold,
+    fontSize: 10,
+    color: colors.ink,
+  },
 });

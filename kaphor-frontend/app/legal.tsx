@@ -7,11 +7,10 @@ import {
   TouchableOpacity,
   TextInput,
   SafeAreaView,
-  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../src/theme';
+import { colors, typography } from '../src/theme';
 import { Header } from '../src/components/common/Header';
 import { LEGAL_DOCUMENTS, LegalDocument } from '../src/data/legalPolicies';
 
@@ -103,40 +102,17 @@ export default function LegalCenterScreen() {
       >
         {/* Document Header */}
         <View style={styles.docHeaderCard}>
-          <View style={styles.badgeRow}>
-            <View style={styles.statuteBadge}>
-              <Ionicons name="shield-checkmark" size={12} color={colors.white} />
-              <Text style={styles.statuteBadgeText}>{activeDoc.badge}</Text>
-            </View>
-          </View>
           <Text style={styles.docTitle}>{activeDoc.title}</Text>
+          <Text style={styles.docMeta}>Last updated: 20 September 2026 · Version 1.0</Text>
+          <View style={styles.headerRule} />
           <Text style={styles.statutoryRef}>{activeDoc.statutoryReference}</Text>
         </View>
-
-        {/* Quick Take Card */}
-        {!searchQuery && (
-          <View style={styles.quickTakeCard}>
-            <View style={styles.quickTakeHeader}>
-              <Ionicons name="flash-outline" size={16} color="#8A6D1C" />
-              <Text style={styles.quickTakeTitle}>PLAIN-LANGUAGE QUICK TAKE</Text>
-            </View>
-            <Text style={styles.quickTakeSub}>
-              Summary of key points before formal statutory language:
-            </Text>
-            {activeDoc.quickTake.map((point, pIdx) => (
-              <View key={pIdx} style={styles.quickTakeRow}>
-                <Ionicons name="checkmark-circle" size={16} color="#1E3B2F" style={{ marginTop: 2 }} />
-                <Text style={styles.quickTakeText}>{point}</Text>
-              </View>
-            ))}
-          </View>
-        )}
 
         {/* Formal Provisions */}
         <Text style={styles.sectionHeader}>
           {searchQuery
             ? `SEARCH RESULTS (${filteredClauses.length} CLAUSES FOUND)`
-            : 'FORMAL LEGAL PROVISIONS'}
+            : 'AGREEMENT CLAUSES'}
         </Text>
 
         {filteredClauses.length === 0 ? (
@@ -154,7 +130,7 @@ export default function LegalCenterScreen() {
               <Text style={styles.clauseBody}>{clause.content}</Text>
               {clause.legalBasis ? (
                 <View style={styles.legalBasisBox}>
-                  <Text style={styles.legalBasisLabel}>Statutory Authority:</Text>
+                  <Text style={styles.legalBasisLabel}>Statutory Basis</Text>
                   <Text style={styles.legalBasisText}>{clause.legalBasis}</Text>
                 </View>
               ) : null}
@@ -165,18 +141,18 @@ export default function LegalCenterScreen() {
         {/* Grievance Redressal Card */}
         <View style={styles.grievanceCard}>
           <View style={styles.grievanceHeader}>
-            <Ionicons name="information-circle" size={20} color={colors.crimson} />
+            <Ionicons name="information-circle-outline" size={20} color={colors.ink} />
             <Text style={styles.grievanceTitle}>STATUTORY GRIEVANCE REDRESSAL</Text>
           </View>
           <Text style={styles.grievanceText}>
             Under Rule 3(2) of the IT Rules 2021 and the DPDP Act 2023, complaints are acknowledged within 24 hours and addressed within 15 days.
           </Text>
           <View style={styles.contactRow}>
-            <Text style={styles.contactLabel}>Grievance Officer:</Text>
-            <Text style={styles.contactValue}>Insiyah Bhatia (grievance@kaphor.com)</Text>
+            <Text style={styles.contactLabel}>Grievance Officer</Text>
+            <Text style={styles.contactValue}>grievance@kaphor.com</Text>
           </View>
           <View style={styles.contactRow}>
-            <Text style={styles.contactLabel}>National Consumer Helpline:</Text>
+            <Text style={styles.contactLabel}>National Consumer Helpline</Text>
             <Text style={styles.contactValue}>1915 / consumerhelpline.gov.in</Text>
           </View>
         </View>
@@ -192,206 +168,176 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: colors.bgCard,
+    paddingVertical: 12,
+    backgroundColor: colors.bg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.bg,
-    borderRadius: 10,
+    backgroundColor: colors.bgCard,
+    borderRadius: 0,
     paddingHorizontal: 12,
-    height: 44,
+    height: 46,
     borderWidth: 1,
     borderColor: colors.border,
     gap: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12.5,
+    fontFamily: typography.mono,
     color: colors.textPrimary,
   },
   chipsWrapper: {
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.bg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     paddingBottom: 10,
+    paddingTop: 10,
   },
   chipsScroll: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: 6,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.bg,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 0,
+    backgroundColor: colors.bgCard,
     borderWidth: 1,
     borderColor: colors.border,
   },
   chipActive: {
-    backgroundColor: colors.crimson,
-    borderColor: colors.crimson,
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 10.5,
+    fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   chipTextActive: {
-    color: colors.white,
+    color: colors.cream,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 40,
   },
   docHeaderCard: {
     backgroundColor: colors.bgCard,
-    borderRadius: 14,
-    padding: 18,
     borderWidth: 1,
+    borderTopWidth: 3,
     borderColor: colors.border,
-    marginBottom: 16,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  statuteBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E3B2F',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 6,
-  },
-  statuteBadgeText: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
+    padding: 20,
+    marginBottom: 24,
   },
   docTitle: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 26,
+    fontFamily: typography.headings,
+    fontWeight: '400',
     color: colors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: 1.2,
+    lineHeight: 30,
     marginBottom: 6,
   },
-  statutoryRef: {
-    fontSize: 12,
+  docMeta: {
+    fontSize: 10,
+    fontFamily: typography.mono,
     color: colors.textMuted,
-    lineHeight: 18,
-    fontStyle: 'italic',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 14,
   },
-  quickTakeCard: {
-    backgroundColor: '#FBF8F1',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E8DCB8',
-    marginBottom: 20,
-  },
-  quickTakeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  quickTakeTitle: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#8A6D1C',
-    letterSpacing: 1.2,
-  },
-  quickTakeSub: {
-    fontSize: 12,
-    color: colors.textSecond,
+  headerRule: {
+    height: 1,
+    backgroundColor: colors.border,
     marginBottom: 12,
   },
-  quickTakeRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    marginBottom: 8,
-  },
-  quickTakeText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.textPrimary,
+  statutoryRef: {
+    fontSize: 10.5,
+    fontFamily: typography.mono,
+    color: colors.textSecond,
+    lineHeight: 16,
   },
   sectionHeader: {
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1.5,
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '700',
+    letterSpacing: 1.8,
     color: colors.textSecond,
-    marginBottom: 12,
+    marginBottom: 14,
+    textTransform: 'uppercase',
   },
   clauseCard: {
     backgroundColor: colors.bgCard,
-    borderRadius: 12,
-    padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 12,
+    padding: 18,
+    marginBottom: 16,
   },
   clauseHeading: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 13,
+    fontFamily: typography.monoBold,
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 10,
+    lineHeight: 19,
+    letterSpacing: 0.3,
   },
   clauseBody: {
     fontSize: 13,
-    lineHeight: 20,
+    fontFamily: typography.body,
+    lineHeight: 22,
     color: colors.textSecond,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   legalBasisBox: {
-    backgroundColor: colors.bg,
-    padding: 10,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.crimson,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 10,
   },
   legalBasisLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.crimson,
-    letterSpacing: 0.8,
+    fontSize: 9,
+    fontFamily: typography.mono,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 1.4,
+    marginBottom: 4,
     textTransform: 'uppercase',
-    marginBottom: 2,
   },
   legalBasisText: {
-    fontSize: 11,
+    fontSize: 11.5,
+    fontFamily: typography.mono,
     color: colors.textMuted,
-    fontStyle: 'italic',
+    lineHeight: 17,
   },
   noResultsCard: {
     backgroundColor: colors.bgCard,
     padding: 30,
-    borderRadius: 12,
+    borderRadius: 0,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 16,
   },
   noResultsTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14,
+    fontFamily: typography.monoBold,
     color: colors.textPrimary,
     marginTop: 10,
   },
   noResultsSub: {
     fontSize: 12,
+    fontFamily: typography.body,
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: 4,
@@ -399,45 +345,51 @@ const styles = StyleSheet.create({
   },
   grievanceCard: {
     backgroundColor: colors.bgCard,
-    borderRadius: 14,
-    padding: 16,
+    padding: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    marginTop: 10,
+    marginTop: 8,
   },
   grievanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   grievanceTitle: {
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1.2,
+    fontSize: 11,
+    fontFamily: typography.mono,
+    fontWeight: '700',
+    letterSpacing: 1.6,
     color: colors.textPrimary,
   },
   grievanceText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 12.5,
+    fontFamily: typography.body,
+    lineHeight: 19,
     color: colors.textSecond,
     marginBottom: 12,
   },
   contactRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   contactLabel: {
-    fontSize: 11,
+    fontSize: 10,
+    fontFamily: typography.mono,
     fontWeight: '700',
-    color: colors.textSecond,
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   contactValue: {
     fontSize: 11,
-    color: colors.crimson,
-    fontWeight: '600',
+    fontFamily: typography.mono,
+    color: colors.textPrimary,
+    fontWeight: '700',
   },
 });

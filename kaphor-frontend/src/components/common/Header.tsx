@@ -9,6 +9,7 @@ import { safeBack, useBackHandler } from '../../utils/navigation';
 
 interface HeaderProps {
   title?: string;
+  subtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
   fallbackPath?: string;
@@ -19,6 +20,7 @@ interface HeaderProps {
 
 export function Header({
   title,
+  subtitle,
   showBack,
   onBack,
   fallbackPath,
@@ -103,8 +105,11 @@ export function Header({
           />
         </Pressable>
       ) : (
-        <View style={{ flex: 1, alignItems: 'center' }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={styles.title}>{title?.toUpperCase()}</Text>
+          {!!subtitle && (
+            <Text style={styles.subtitle}>{subtitle.toUpperCase()}</Text>
+          )}
         </View>
       )}
 
@@ -160,11 +165,19 @@ const styles = StyleSheet.create({
 
   iconBtn: { padding: 4, position: 'relative' },
   title: {
-    flex: 1,
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 18,
-    letterSpacing: 2,
+    fontSize: 20,
+    letterSpacing: 2.2,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  subtitle: {
+    color: colors.textMuted,
+    fontFamily: typography.mono,
+    fontSize: 8.5,
+    letterSpacing: 1.8,
+    marginTop: 2,
     textAlign: 'center',
   },
   logoContainer: {

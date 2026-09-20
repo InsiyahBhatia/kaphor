@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,9 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../theme';
 import { KaphorImage } from './KaphorImage';
 import { CenterCardsLoading } from './common/CardLoadingScreen';
-import { circularService, RecyclingCenter, RecyclingCentersResponse } from '../services/circularService';
-import api from '../services/api';
-import { invalidateCache } from '../services/api';
+import { circularService, RecyclingCentersResponse } from '../services/circularService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -25,19 +22,16 @@ interface RecyclingHubsModalProps {
   visible: boolean;
   onClose: () => void;
   garment: any | null;
-  onSuccess?: () => void;
 }
 
 export function RecyclingHubsModal({
   visible,
   onClose,
   garment,
-  onSuccess,
 }: RecyclingHubsModalProps) {
   const router = useRouter();
   const [data, setData] = useState<RecyclingCentersResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [bookingCenterId, setBookingCenterId] = useState<string | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -55,70 +49,6 @@ export function RecyclingHubsModal({
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleBookPickup = async (center: RecyclingCenter) => {
-    if (!garment) return;
-
-    Alert.alert(
-      'Confirm Doorstep Collection',
-      `Schedule a carbon-neutral doorstep collection with ${center.name} for "${garment.title}"?\n\nA courier will pick up the garment from your address for certified mechanical/chemical recycling.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm Pickup',
-          onPress: async () => {
-            setBookingCenterId(center.id);
-            try {
-              const tomorrow = new Date();
-              tomorrow.setDate(tomorrow.getDate() + 1);
-              const slot = `Tomorrow (${tomorrow.toLocaleDateString('en-IN', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-              })}) 10:00 AM - 1:00 PM`;
-
-              // 1. Mark garment for circular end
-              try {
-                await api.post(`/garments/${garment.id}/circular-end`);
-              } catch (lifecycleErr) {
-                // If already in circular end, continue
-              }
-
-              // 2. Schedule collection
-              await circularService.scheduleCollection({
-                garmentId: garment.id,
-                address: data?.userLocation?.city
-                  ? `Default Address in ${data.userLocation.city}`
-                  : 'Default Address',
-                preferredSlot: slot,
-                partnerId: center.id,
-              });
-
-              invalidateCache('/users/me/wardrobe');
-              invalidateCache('/impact');
-
-              Alert.alert(
-                'Collection Scheduled',
-                `Your doorstep collection with ${center.name} is booked for ${slot}.\n\n+450g textile waste diversion credited to your Impact Record!`
-              );
-
-              onSuccess?.();
-              onClose();
-            } catch (err: any) {
-              Alert.alert(
-                'Pickup Request Logged',
-                `Your doorstep collection request for ${center.name} has been received. Our circular logistics team will confirm pickup via SMS.`
-              );
-              onSuccess?.();
-              onClose();
-            } finally {
-              setBookingCenterId(null);
-            }
-          },
-        },
-      ]
-    );
   };
 
   const handleRunAiScan = () => {
@@ -183,7 +113,6 @@ export function RecyclingHubsModal({
             ) : (
               <View style={styles.centersList}>
                 {(data?.centers || []).slice(0, 3).map((center) => {
-                  const isBooking = bookingCenterId === center.id;
                   return (
                     <View key={center.id} style={styles.centerCard}>
                       <View style={styles.centerTopRow}>
@@ -478,22 +407,6 @@ const styles = StyleSheet.create({
     color: colors.copper,
     fontWeight: '700',
     marginTop: 2,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 6,
-  },
-  bookBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.charcoal,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    borderRadius: 3,
   },
   facilityDetailsBox: {
     backgroundColor: '#F7F5EE',

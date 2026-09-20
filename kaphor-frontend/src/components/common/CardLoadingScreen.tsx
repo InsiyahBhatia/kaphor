@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, DimensionValue, Text } from 'react-native';
+import { View, StyleSheet, Animated, DimensionValue, Text, ScrollView } from 'react-native';
 import { colors, typography } from '../../theme';
 
 interface SkeletonPulseProps {
@@ -244,6 +244,97 @@ export function CenterCardsLoading({ count = 3 }: { count?: number }) {
   );
 }
 
+/**
+ * Editorial Clothes Card Skeleton (Matches EditorialGarmentCard layout & brutalist borders)
+ */
+export function GarmentCardSkeleton({
+  width = 200,
+  style,
+}: {
+  width?: DimensionValue;
+  style?: any;
+}) {
+  return (
+    <View style={[styles.garmentCardSkeleton, { width }, style]}>
+      {/* Top Image Placeholder */}
+      <View style={styles.garmentImageSkeletonBox}>
+        <SkeletonPulse width="100%" height="100%" borderRadius={0} />
+        {/* Condition pill skeleton */}
+        <View style={styles.garmentPillSkeleton}>
+          <SkeletonPulse width={48} height={13} borderRadius={2} />
+        </View>
+        {/* Heart icon skeleton */}
+        <View style={styles.garmentHeartSkeleton}>
+          <SkeletonPulse width={26} height={26} borderRadius={13} />
+        </View>
+      </View>
+
+      {/* Info Section */}
+      <View style={styles.garmentInfoSkeleton}>
+        {/* Brand & Size Row */}
+        <View style={styles.rowBetween}>
+          <SkeletonPulse width="55%" height={10} borderRadius={2} />
+          <SkeletonPulse width={26} height={10} borderRadius={2} />
+        </View>
+
+        {/* Title Line */}
+        <SkeletonPulse width="82%" height={12} borderRadius={2} style={{ marginTop: 6 }} />
+
+        {/* Price & Quick Add Button Row */}
+        <View style={[styles.rowBetween, { marginTop: 10 }]}>
+          <View style={{ gap: 3 }}>
+            <SkeletonPulse width={68} height={15} borderRadius={2} />
+            <SkeletonPulse width={42} height={9} borderRadius={2} />
+          </View>
+          <SkeletonPulse width={28} height={28} borderRadius={14} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Horizontal Clothes Shelf Skeleton (For Home / Explore Shelves)
+ */
+export function GarmentShelfSkeleton({
+  count = 3,
+  cardWidth = 200,
+}: {
+  count?: number;
+  cardWidth?: number;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.shelfScrollSkeleton}
+    >
+      {Array.from({ length: count }).map((_, idx) => (
+        <GarmentCardSkeleton key={idx} width={cardWidth} />
+      ))}
+    </ScrollView>
+  );
+}
+
+/**
+ * 2-Column Clothes Grid Skeleton (For Shop / Rentals / Wardrobe / Swap)
+ */
+export function GarmentGridSkeleton({
+  count = 4,
+}: {
+  count?: number;
+}) {
+  return (
+    <View style={styles.garmentGridContainer}>
+      {Array.from({ length: count }).map((_, idx) => (
+        <View key={idx} style={styles.garmentGridCol}>
+          <GarmentCardSkeleton width="100%" />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 12,
@@ -402,5 +493,57 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 0,
     elevation: 2,
+  },
+
+  // Garment Clothes Card Skeletons
+  garmentCardSkeleton: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    borderRadius: 2,
+    overflow: 'hidden',
+    shadowColor: colors.ink,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  garmentImageSkeletonBox: {
+    width: '100%',
+    aspectRatio: 0.85,
+    backgroundColor: '#ECE8DF',
+    position: 'relative',
+  },
+  garmentPillSkeleton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    zIndex: 2,
+  },
+  garmentHeartSkeleton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 2,
+  },
+  garmentInfoSkeleton: {
+    padding: 10,
+    backgroundColor: colors.white,
+  },
+  shelfScrollSkeleton: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 14,
+  },
+  garmentGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 14,
+    gap: 10,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  garmentGridCol: {
+    width: '48.5%',
   },
 });

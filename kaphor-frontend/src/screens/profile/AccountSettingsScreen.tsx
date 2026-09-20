@@ -36,7 +36,7 @@ export function AccountSettingsScreen() {
   const handleTestPush = async () => {
     setTestingPush(true);
     try {
-      const res = await api.post('/users/test-push');
+      const res = await api.post('/users/me/test-push');
       Alert.alert(
         'Phone Notification Dispatched',
         res.data?.message || 'A heads-up test notification has been dispatched to your phone status bar!'

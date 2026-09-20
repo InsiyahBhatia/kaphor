@@ -7,6 +7,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useAuth } from '../../../src/context/AuthContext';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { messageService } from '../../../src/services/messageService';
 import { colors, typography } from '../../../src/theme';
@@ -177,7 +178,7 @@ export default function SwapFeedScreen() {
   };
 
   const renderSwapRequests = () => {
-    if (swapsLoading) return <DossierLoading variant="swap" compact />;
+    if (swapsLoading) return <GarmentGridSkeleton count={4} />;
     if (mySwaps.length === 0) {
       return (
         <View style={styles.emptyState}>
@@ -439,7 +440,7 @@ export default function SwapFeedScreen() {
         ) : (
           <>
             {isLoading ? (
-              <DossierLoading variant="swap" />
+              <GarmentGridSkeleton count={6} />
             ) : (
               <View style={styles.grid}>
                 {swappableItems.length === 0 ? (

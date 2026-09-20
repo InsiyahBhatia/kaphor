@@ -25,6 +25,7 @@ import {
 import { KaphorImage } from '../../src/components/KaphorImage';
 import { EditorialGarmentCard } from '../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
+import { GarmentShelfSkeleton } from '../../src/components/common/CardLoadingScreen';
 import { Header } from '../../src/components/common/Header';
 import api from '../../src/services/api';
 import { colors, typography, spacing, radius } from '../../src/theme';
@@ -630,7 +631,7 @@ export default function HomeScreen() {
             Personalized architectural & circular archive · Learns & refines as you explore.
           </Text>
           {forYouLoading && forYouItems.length === 0 ? (
-            <DossierLoading variant="home" compact />
+            <GarmentShelfSkeleton count={3} cardWidth={CARD_WIDTH} />
           ) : forYouItems.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
               {forYouItems.map((item) => (
@@ -670,7 +671,7 @@ export default function HomeScreen() {
             Designer eveningwear, bridal & couture available for 3, 7 or 14-day leases with zero retail waste.
           </Text>
           {rentalsLoading && rentalPicks.length === 0 ? (
-            <DossierLoading variant="home" compact />
+            <GarmentShelfSkeleton count={3} cardWidth={CARD_WIDTH} />
           ) : rentalPicks.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
               {rentalPicks.map((item) => (
@@ -761,7 +762,7 @@ export default function HomeScreen() {
             onSeeAll={() => navigateToRoute('/(tabs)/shop')}
           />
           {isLoading && newArrivals.length === 0 ? (
-            <DossierLoading variant="home" compact />
+            <GarmentShelfSkeleton count={3} cardWidth={CARD_WIDTH} />
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
               {newArrivals.map((item) => (

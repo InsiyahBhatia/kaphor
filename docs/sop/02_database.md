@@ -224,7 +224,7 @@ Sample posts (2 OUTFIT posts, 1 TRANSFORMATION).
 Sample follows: buyer follows seller.
 
 Password for all seed users: Kaphor2026!
-Hash with bcrypt rounds 12 before inserting.
+Hash with argon2id (memoryCost 64MB, timeCost 3) before inserting.
 ```
 
 Add to `package.json`:

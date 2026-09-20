@@ -64,7 +64,7 @@ Build every auth function with this exact logic:
 ```
 1. Check if email already exists → 409 "Email already registered"
 2. Check if username already exists → 409 "Username taken"
-3. Hash password with bcrypt (rounds: 12)
+3. Hash password with argon2id (memoryCost 64MB, timeCost 3)
 4. Create User in DB (role: BOTH, tier: BRONZE, isActive: true)
 5. Create ImpactRecord for user (all zeros)
 6. Send welcome email (non-blocking, don't await)

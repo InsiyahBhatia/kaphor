@@ -8,7 +8,7 @@
  * All garments use real S3 URLs: https://kaphor-media-uploads.s3.eu-north-1.amazonaws.com/<key>
  */
 const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
+const argon2 = require('argon2');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
@@ -823,7 +823,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   console.log('2. Creating primary platform users...');
-  const passwordHash = await bcrypt.hash('KaphorDemo123!', 10);
+  const passwordHash = await argon2.hash('KaphorDemo123!', { type: argon2.argon2id, memoryCost: 2 ** 16, timeCost: 3, parallelism: 1 });
 
   const [buyer, seller, admin, spider, insi] = await Promise.all([
     prisma.user.create({
