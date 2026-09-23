@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: colors.ink,
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 22,
     letterSpacing: 1.2,
   },
   saveBtn: {
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   saveText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     letterSpacing: 0.8,
   },
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
   changePhotoText: {
     color: colors.ink,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     letterSpacing: 0.8,
     fontWeight: '900',
     textDecorationLine: 'underline',
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   avatarSubText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
   },
 
   // Form Rows & Fields
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.ink,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     letterSpacing: 1,
     fontWeight: '900',
     marginBottom: 4,
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     color: colors.ink,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
   },
   usernameInputWrap: {
     flexDirection: 'row',
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   },
   usernameAt: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.ink,
     fontWeight: '900',
     marginRight: 2,
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     color: colors.ink,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
   },
   textArea: {
     height: 56,
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: colors.ink,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     letterSpacing: 1.2,
     fontWeight: '900',
   },
@@ -597,14 +597,14 @@ const styles = StyleSheet.create({
   compactActionTitle: {
     color: colors.ink,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '900',
     letterSpacing: 0.4,
   },
   compactActionSub: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     marginTop: 1,
   },
 });

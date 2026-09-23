@@ -180,7 +180,7 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.cream },
     center: { justifyContent: 'center', alignItems: 'center', gap: 12 },
-    loadingText: { fontFamily: typography.mono, fontSize: 12, color: colors.charcoal, letterSpacing: 1, fontWeight: '800' },
+    loadingText: { fontFamily: typography.mono, fontSize: 15.5, color: colors.charcoal, letterSpacing: 1, fontWeight: '800' },
     content: { padding: 24, paddingBottom: 160 },
     cartItem: { 
         flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, 
@@ -199,9 +199,9 @@ const styles = StyleSheet.create({
     },
     checkboxActive: { backgroundColor: colors.charcoal },
     itemInfo: { flex: 1, marginLeft: 10 },
-    brand: { color: colors.red, fontFamily: typography.mono, fontSize: 10, letterSpacing: 1, fontWeight: '800', textTransform: 'uppercase' },
-    title: { color: colors.charcoal, fontSize: 16, fontFamily: typography.headings, marginTop: 4 },
-    price: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 14, fontWeight: '800', marginTop: 4 },
+    brand: { color: colors.red, fontFamily: typography.mono, fontSize: 13.5, letterSpacing: 1, fontWeight: '800', textTransform: 'uppercase' },
+    title: { color: colors.charcoal, fontSize: 19.5, fontFamily: typography.headings, marginTop: 4 },
+    price: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 18, fontWeight: '800', marginTop: 4 },
     removeBtn: { padding: 8, borderWidth: 1, borderColor: colors.red, backgroundColor: 'rgba(204,17,17,0.05)', marginLeft: 8 },
     footer: { 
         position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -209,17 +209,17 @@ const styles = StyleSheet.create({
         borderTopWidth: 2, borderTopColor: colors.charcoal 
     },
     totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 },
-    totalLabel: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 12, letterSpacing: 1, fontWeight: '800' },
-    totalValue: { color: colors.charcoal, fontSize: 32, fontFamily: typography.headings },
+    totalLabel: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 15.5, letterSpacing: 1, fontWeight: '800' },
+    totalValue: { color: colors.charcoal, fontSize: 37, fontFamily: typography.headings },
     checkoutBtn: { 
         backgroundColor: colors.charcoal, height: 60, justifyContent: 'center', alignItems: 'center',
         borderWidth: 2, borderColor: colors.charcoal,
         shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4
     },
-    checkoutBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 14, fontWeight: '800', letterSpacing: 2 },
-    secureText: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 10, textAlign: 'center', marginTop: 16, letterSpacing: 2 },
+    checkoutBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 18, fontWeight: '800', letterSpacing: 2 },
+    secureText: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 13.5, textAlign: 'center', marginTop: 16, letterSpacing: 2 },
     emptyContainer: { alignItems: 'center', marginTop: 100 },
-    emptyText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 16, marginTop: 24, marginBottom: 24, fontWeight: '800' },
+    emptyText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 19.5, marginTop: 24, marginBottom: 24, fontWeight: '800' },
     shopBtn: { borderWidth: 2, borderColor: colors.charcoal, backgroundColor: colors.red, paddingVertical: 14, paddingHorizontal: 24 },
-    shopBtnText: { color: colors.white, fontFamily: typography.mono, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+    shopBtnText: { color: colors.white, fontFamily: typography.mono, fontSize: 15.5, fontWeight: '800', letterSpacing: 1 },
 });

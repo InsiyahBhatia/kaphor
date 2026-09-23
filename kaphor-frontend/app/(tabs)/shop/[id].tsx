@@ -184,7 +184,7 @@ export default function GarmentDetailScreen() {
   if (!garment) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Text style={{ color: colors.textPrimary, fontFamily: typography.headings, fontSize: 20 }}>
+        <Text style={{ color: colors.textPrimary, fontFamily: typography.headings, fontSize: 24.5 }}>
           GARMENT NOT FOUND
         </Text>
         <Text style={{ color: colors.textMuted, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 }}>
@@ -602,7 +602,7 @@ export default function GarmentDetailScreen() {
               <View style={{ marginTop: 24, marginBottom: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
                   <View style={{ width: 4, height: 16, backgroundColor: colors.gold }} />
-                  <Text style={{ fontFamily: typography.headings, fontSize: 13, color: colors.charcoal, letterSpacing: 1.5 }}>
+                  <Text style={{ fontFamily: typography.headings, fontSize: 17, color: colors.charcoal, letterSpacing: 1.5 }}>
                     YOU MIGHT ALSO COVET
                   </Text>
                 </View>
@@ -629,13 +629,13 @@ export default function GarmentDetailScreen() {
                         )}
                       </View>
                       <View style={{ padding: 8 }}>
-                        <Text style={{ fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted }} numberOfLines={1}>
+                        <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.textMuted }} numberOfLines={1}>
                           {item.brand.toUpperCase()}
                         </Text>
-                        <Text style={{ fontFamily: typography.body, fontSize: 12, fontWeight: '700', color: colors.charcoal, marginTop: 2 }} numberOfLines={1}>
+                        <Text style={{ fontFamily: typography.body, fontSize: 15.5, fontWeight: '700', color: colors.charcoal, marginTop: 2 }} numberOfLines={1}>
                           {item.title}
                         </Text>
-                        <Text style={{ fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.charcoal, marginTop: 4 }}>
+                        <Text style={{ fontFamily: typography.mono, fontSize: 15.5, fontWeight: '800', color: colors.charcoal, marginTop: 4 }}>
                           ₹{item.price.toLocaleString('en-IN')}
                         </Text>
                       </View>
@@ -796,7 +796,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: colors.crimson,
-    fontSize: 12,
+    fontSize: 15.5,
     letterSpacing: 2,
     fontWeight: '800',
     marginBottom: 2,
@@ -804,14 +804,14 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     color: colors.textMuted,
-    fontSize: 10,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     letterSpacing: 1.5,
     fontWeight: '800',
     marginBottom: 4,
   },
   title: {
-    fontSize: 26,
+    fontSize: 30,
     fontFamily: typography.headings,
     color: colors.textPrimary,
     textTransform: 'uppercase',
@@ -821,23 +821,23 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   price: {
-    fontSize: 22,
+    fontSize: 25.5,
     fontWeight: '900',
     color: colors.textPrimary,
   },
   swapPrice: {
     color: colors.crimson,
-    fontSize: 18,
+    fontSize: 22,
     fontFamily: typography.mono,
     letterSpacing: 0.5,
   },
   priceUnitText: {
-    fontSize: 13,
+    fontSize: 17,
     color: colors.textMuted,
     fontWeight: '600',
   },
   originalPrice: {
-    fontSize: 13,
+    fontSize: 17,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 2,
@@ -850,7 +850,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(155, 27, 48, 0.08)',
   },
   discountTagText: {
-    fontSize: 9,
+    fontSize: 12,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.crimson,
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   subtextText: {
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textSecond,
     fontFamily: typography.mono,
     letterSpacing: 0.3,
@@ -889,14 +889,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 14.5,
     letterSpacing: 2,
     fontWeight: '800',
     marginBottom: 12,
   },
   description: {
     color: colors.textSecond,
-    fontSize: 15,
+    fontSize: 18.5,
     lineHeight: 24,
   },
   sellerTrust: {
@@ -910,13 +910,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   sellerTrustTitle: {
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.textPrimary,
     letterSpacing: 0.8,
   },
   sellerTrustSub: {
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.textMuted,
     marginTop: 4,
   },
@@ -942,14 +942,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(46, 125, 50, 0.2)',
   },
   noticeTitle: {
-    fontSize: 11,
+    fontSize: 14.5,
     fontFamily: typography.mono,
     fontWeight: '900',
     color: colors.crimson,
     letterSpacing: 1,
   },
   noticeDesc: {
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.textSecond,
     marginTop: 4,
     lineHeight: 17,
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
   messageSellerText: {
     color: colors.crimson,
     fontWeight: '800',
-    fontSize: 11,
+    fontSize: 14.5,
     letterSpacing: 1,
   },
   center: {
@@ -1011,7 +1011,7 @@ const styles = StyleSheet.create({
   },
   aiDoubtText: {
     color: '#C9A84C',
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: 1,
   },
@@ -1029,7 +1029,7 @@ const styles = StyleSheet.create({
   },
   managerText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     fontWeight: '800',
     letterSpacing: 1,
@@ -1048,7 +1048,7 @@ const styles = StyleSheet.create({
   editTextSmall: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
   },
   deleteBtnSmall: {
@@ -1060,7 +1060,7 @@ const styles = StyleSheet.create({
   deleteTextSmall: {
     color: colors.crimson,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
   },
   cartButton: {
@@ -1084,13 +1084,13 @@ const styles = StyleSheet.create({
   },
   saleInfoText: {
     color: colors.success,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
   saleInfoSub: {
     color: colors.textSecond,
-    fontSize: 11,
+    fontSize: 14.5,
     marginTop: 2,
   },
   specGrid: {
@@ -1108,7 +1108,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(26,26,26,0.06)',
   },
   specLabel: {
-    fontSize: 8,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.textMuted,
     fontWeight: '800',
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   specValue: {
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.textPrimary,
     fontWeight: '700',
     lineHeight: 16,
@@ -1135,7 +1135,7 @@ const styles = StyleSheet.create({
   },
   zoomHintText: {
     color: '#FFFFFF',
-    fontSize: 9,
+    fontSize: 12,
     fontFamily: typography.mono,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -1220,14 +1220,14 @@ const styles = StyleSheet.create({
   sellerBannerTitle: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
   sellerBannerSub: {
     color: colors.textMuted,
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     marginTop: 1,
   },
   sellerBannerAction: {
@@ -1236,7 +1236,7 @@ const styles = StyleSheet.create({
   sellerBannerActionText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -1253,7 +1253,7 @@ const styles = StyleSheet.create({
   },
   insightsTextSmall: {
     color: colors.gold,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     fontFamily: typography.mono,
   },

@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     gap: 28,
   },
   suit: {
-    fontSize: 28,
+    fontSize: 32.5,
     color: colors.crimson,
     fontFamily: typography.headings,
   },
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   // Brand
   brandName: {
     fontFamily: typography.headings,
-    fontSize: 64,
+    fontSize: 68,
     color: colors.textPrimary,
     letterSpacing: 12,
     textAlign: 'center',
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   brandTagline: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textMuted,
     letterSpacing: 4,
     textAlign: 'center',
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   circularIcon: {
-    fontSize: 32,
+    fontSize: 37,
     color: colors.crimson,
   },
 
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   },
   cardSuit: {
     fontFamily: typography.headings,
-    fontSize: 28,
+    fontSize: 32.5,
     color: colors.crimson,
   },
 
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   // Message
   message: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.textMuted,
     letterSpacing: 1,
     marginTop: 16,

@@ -424,13 +424,13 @@ const styles = StyleSheet.create({
   headerSub: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     letterSpacing: 1.5,
   },
   headerTitle: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 22,
     letterSpacing: 1,
     marginTop: 2,
   },
@@ -453,20 +453,20 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     marginTop: spacing.md,
     letterSpacing: 0.5,
   },
   errorTitle: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 22,
     marginTop: spacing.md,
   },
   errorSubtitle: {
     color: colors.textMuted,
     fontFamily: typography.body,
-    fontSize: 13,
+    fontSize: 17,
     textAlign: 'center',
     marginTop: spacing.xs,
     maxWidth: 280,
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   retryBtnText: {
     color: colors.bg,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: 'bold',
   },
   content: {
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
   brandText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     maxWidth: 130,
@@ -532,13 +532,13 @@ const styles = StyleSheet.create({
   },
   demandText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   garmentTitle: {
     color: colors.textPrimary,
     fontFamily: typography.body,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
     lineHeight: 18,
   },
@@ -550,20 +550,20 @@ const styles = StyleSheet.create({
   priceText: {
     color: colors.textPrimary,
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: 'bold',
   },
   rentalRateText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
   },
   lifecyclePill: {
     marginLeft: 'auto',
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     color: colors.textSecond,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -578,14 +578,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   demandScoreText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: 'bold',
   },
   metricsGrid: {
@@ -615,19 +615,19 @@ const styles = StyleSheet.create({
   metricLabel: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     letterSpacing: 0.5,
   },
   metricValue: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
   },
   metricSub: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     marginTop: 2,
   },
   funnelSection: {
@@ -651,12 +651,12 @@ const styles = StyleSheet.create({
   stepTitle: {
     color: colors.textSecond,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
   },
   stepCount: {
     color: colors.textPrimary,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: 'bold',
   },
   progressBarBg: {
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   trendLegend: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
   },
   chartCard: {
     backgroundColor: colors.bgCard,
@@ -715,13 +715,13 @@ const styles = StyleSheet.create({
   dayViewsCount: {
     color: colors.textSecond,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     marginTop: 4,
   },
   dayLabel: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     marginTop: 2,
   },
   cartDot: {
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
   tipCategoryText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   impactBadge: {
@@ -780,20 +780,20 @@ const styles = StyleSheet.create({
   impactText: {
     color: colors.textSecond,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   tipHeadline: {
     color: colors.textPrimary,
     fontFamily: typography.body,
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   tipDesc: {
     color: colors.textSecond,
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     lineHeight: 17,
   },
   actionFooter: {
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
   editListingBtnText: {
     color: colors.bg,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: 'bold',
     letterSpacing: 1,
   },

@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   headerCenter: { alignItems: 'center' },
   headerTitle: {
     color: colors.charcoal,
-    fontSize: 15,
+    fontSize: 18.5,
     fontFamily: typography.mono,
     fontWeight: '900',
     letterSpacing: 2,
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     fontWeight: '700',
     letterSpacing: 1,
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   },
   quickCommandText: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     fontWeight: '600',
   },
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
   userBubbleText: {
     color: colors.cream,
     fontFamily: typography.body,
-    fontSize: 14,
+    fontSize: 18,
     lineHeight: 20,
   },
 
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   },
   actionLogText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: '#2E7D32',
     fontWeight: '700',
   },
@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
   agentBubbleText: {
     color: colors.charcoal,
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 17.5,
     lineHeight: 22,
   },
 
@@ -793,20 +793,20 @@ const styles = StyleSheet.create({
   outfitTagText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1,
   },
   outfitLookTitle: {
     fontFamily: typography.body,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.charcoal,
     flex: 1,
   },
   outfitVibeText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textMuted,
     marginBottom: 12,
   },
@@ -843,12 +843,12 @@ const styles = StyleSheet.create({
   outfitSourceText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     fontWeight: '800',
   },
   outfitPieceTitle: {
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '600',
     color: colors.charcoal,
     marginTop: 4,
@@ -856,14 +856,14 @@ const styles = StyleSheet.create({
   },
   outfitPieceRole: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   outfitEditorialNote: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     fontStyle: 'italic',
     lineHeight: 18,
@@ -879,7 +879,7 @@ const styles = StyleSheet.create({
   },
   cardsSectionLabel: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1.5,
@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
   cardBadgeText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -931,20 +931,20 @@ const styles = StyleSheet.create({
   },
   cardBrand: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
   },
   cardTitle: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '600',
     color: colors.charcoal,
   },
   cardPrice: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: '800',
     color: colors.charcoal,
     marginVertical: 2,
@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
   cardActionBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -988,7 +988,7 @@ const styles = StyleSheet.create({
   },
   followUpText: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     fontWeight: '500',
   },
@@ -1007,7 +1007,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontFamily: typography.body,
-    fontSize: 13,
+    fontSize: 17,
     color: colors.textMuted,
   },
 
@@ -1036,7 +1036,7 @@ const styles = StyleSheet.create({
   imageAttachedText: {
     flex: 1,
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
   },
   inputRow: {
@@ -1072,7 +1072,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontFamily: typography.body,
-    fontSize: 14,
+    fontSize: 18,
     color: colors.charcoal,
     maxHeight: 90,
   },

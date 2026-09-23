@@ -150,14 +150,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 25.5,
     color: colors.ink,
     letterSpacing: 1.5,
     lineHeight: 24,
   },
   subtitle: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     letterSpacing: 1.8,
     marginTop: 2,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   navChipText: {
     fontFamily: typography.monoBold,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.ink,
     letterSpacing: 0.8,
   },

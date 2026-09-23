@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   sectionRule: { position: 'absolute', top: 0, width: 28, height: 2, backgroundColor: colors.crimson },
   sectionLabel: {
     fontFamily: typography.headings,
-    fontSize: 16,
+    fontSize: 19.5,
     color: colors.ink,
     letterSpacing: 1.5,
   },
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: 'flex-start',
   },
-  chipText: { fontFamily: typography.monoBold, fontSize: 8.5, letterSpacing: 0.8 },
+  chipText: { fontFamily: typography.monoBold, fontSize: 11.5, letterSpacing: 0.8 },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight || '#ECE8DF',
   },
-  infoLabel: { fontFamily: typography.monoBold, fontSize: 9, color: colors.textMuted, letterSpacing: 1 },
-  infoValue: { fontFamily: typography.monoBold, fontSize: 11, color: colors.textPrimary, flexShrink: 1, textAlign: 'right' },
+  infoLabel: { fontFamily: typography.monoBold, fontSize: 12, color: colors.textMuted, letterSpacing: 1 },
+  infoValue: { fontFamily: typography.monoBold, fontSize: 14.5, color: colors.textPrimary, flexShrink: 1, textAlign: 'right' },
   empty: {
     paddingVertical: 36,
     paddingHorizontal: 16,
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginVertical: 10,
   },
-  emptyText: { fontFamily: typography.monoBold, fontSize: 10, color: colors.textMuted, letterSpacing: 1.2 },
+  emptyText: { fontFamily: typography.monoBold, fontSize: 13.5, color: colors.textMuted, letterSpacing: 1.2 },
   iconBtn: {
     width: 34,
     height: 34,

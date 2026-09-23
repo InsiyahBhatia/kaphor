@@ -80,9 +80,9 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
 
   textBase: { fontWeight: '700', letterSpacing: 1 },
-  smText: { fontSize: 12 },
-  mdText: { fontSize: 14 },
-  lgText: { fontSize: 16 },
+  smText: { fontSize: 15.5 },
+  mdText: { fontSize: 18 },
+  lgText: { fontSize: 19.5 },
 
   primaryText: { color: 'white' },
   secondaryText: { color: '#9B1B30' },

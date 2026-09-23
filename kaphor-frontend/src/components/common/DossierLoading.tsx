@@ -731,7 +731,7 @@ const styles = StyleSheet.create({
   },
   grandTitle: {
     fontFamily: typography.headings,
-    fontSize: 44,
+    fontSize: 48.5,
     color: colors.charcoal,
     letterSpacing: 6,
     marginTop: 8,
@@ -739,7 +739,7 @@ const styles = StyleSheet.create({
   },
   grandSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     letterSpacing: 2,
     marginBottom: 4,
@@ -757,14 +757,14 @@ const styles = StyleSheet.create({
   },
   glieTitle: {
     fontFamily: typography.headings,
-    fontSize: 48,
+    fontSize: 53,
     color: colors.charcoal,
     letterSpacing: 8,
     marginTop: 8,
   },
   glieSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 2,
     marginBottom: 4,
@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
   },
   compactTitle: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 22,
     color: colors.charcoal,
     letterSpacing: 2,
     textAlign: 'center',
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   dealingCardSuit: {
-    fontSize: 24,
+    fontSize: 28,
     color: colors.cream,
     fontFamily: typography.headings,
   },
@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   miniCardSuit: {
-    fontSize: 16,
+    fontSize: 19.5,
     color: colors.cream,
     fontFamily: typography.headings,
   },
@@ -870,25 +870,25 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   tipIcon: {
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.cream,
   },
   tipLabel: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 1.5,
   },
   tipLabelRight: {
     fontFamily: typography.mono,
-    fontSize: 7,
+    fontSize: 9.5,
     color: colors.textMuted,
     letterSpacing: 1,
   },
   tipText: {
     fontFamily: typography.body,
-    fontSize: 13,
+    fontSize: 17,
     color: colors.charcoal,
     lineHeight: 20,
     marginBottom: 12,
@@ -912,7 +912,7 @@ const styles = StyleSheet.create({
   },
   tipFooterText: {
     fontFamily: typography.mono,
-    fontSize: 6,
+    fontSize: 8,
     color: colors.textMuted,
     letterSpacing: 1,
   },
@@ -933,19 +933,19 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   tipIconCompact: {
-    fontSize: 8,
+    fontSize: 11,
     color: colors.red,
   },
   tipLabelCompact: {
     fontFamily: typography.mono,
-    fontSize: 7,
+    fontSize: 9.5,
     fontWeight: '900',
     color: colors.textMuted,
     letterSpacing: 1.5,
   },
   tipTextCompact: {
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.charcoal,
     lineHeight: 16,
   },
@@ -982,7 +982,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   progressCheck: {
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.cream,
     fontWeight: '900',
   },
@@ -994,7 +994,7 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontFamily: typography.mono,
-    fontSize: 7,
+    fontSize: 9.5,
     color: colors.textMuted,
     letterSpacing: 0.5,
     marginLeft: 6,

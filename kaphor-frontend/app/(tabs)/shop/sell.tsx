@@ -785,7 +785,7 @@ export default function SellScreen() {
               </>
             ) : listingType === 'SALE' ? (
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ fontFamily: typography.mono, fontSize: 9.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 }}>
+                <Text style={{ fontFamily: typography.mono, fontSize: 13, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 }}>
                   SELLING PRICE (₹) *
                 </Text>
                 <TextInput
@@ -797,7 +797,7 @@ export default function SellScreen() {
                   keyboardType="numeric"
                 />
 
-                <Text style={{ fontFamily: typography.mono, fontSize: 9.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 }}>
+                <Text style={{ fontFamily: typography.mono, fontSize: 13, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 }}>
                   ORIGINAL RETAIL PRICE / MRP (₹) (OPTIONAL)
                 </Text>
                 <TextInput
@@ -813,10 +813,10 @@ export default function SellScreen() {
                   <View style={{ marginTop: 8, padding: 10, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.25)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name="pricetag" size={15} color={colors.emerald} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: typography.mono, fontSize: 10.5, color: colors.emerald, fontWeight: '800' }}>
+                      <Text style={{ fontFamily: typography.mono, fontSize: 13.5, color: colors.emerald, fontWeight: '800' }}>
                         FEED PREVIEW: -{Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)}% OFF MRP
                       </Text>
-                      <Text style={{ fontFamily: typography.body, fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                      <Text style={{ fontFamily: typography.body, fontSize: 13.5, color: colors.textMuted, marginTop: 2 }}>
                         Listing at ₹{Number(price).toLocaleString('en-IN')} with strikethrough MRP ₹{Number(originalPrice).toLocaleString('en-IN')}.
                       </Text>
                     </View>
@@ -1018,14 +1018,14 @@ export default function SellScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  headerTitle: { color: colors.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerTitle: { color: colors.textPrimary, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   progressContainer: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 32 },
   progressDot: { width: 30, height: 4, backgroundColor: colors.bgCard, borderRadius: 2 },
   activeDot: { backgroundColor: colors.crimson },
   scrollContent: { padding: 24, paddingBottom: 220 },
   stepContainer: { gap: 16 },
-  stepTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, marginBottom: 4 },
-  stepSubtitle: { fontSize: 16, color: colors.textSecond, lineHeight: 22 },
+  stepTitle: { fontSize: 37, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, marginBottom: 4 },
+  stepSubtitle: { fontSize: 19.5, color: colors.textSecond, lineHeight: 22 },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   imageThumb: { width: 100, height: 133, borderRadius: 12, position: 'relative', overflow: 'hidden' }, // 3:4 ratio for thumb
   thumbImg: { width: '100%', height: '100%' },
@@ -1053,13 +1053,13 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   uploadBox: { width: 100, height: 100, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
-  uploadText: { color: colors.textMuted, fontSize: 10, marginTop: 4, letterSpacing: 2, fontWeight: '700' },
-  input: { height: 56, borderBottomWidth: 1, borderBottomColor: colors.border, color: colors.textPrimary, fontSize: 16, paddingHorizontal: 4 },
-  pickerLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 2, marginTop: 16, fontWeight: '700' },
+  uploadText: { color: colors.textMuted, fontSize: 13.5, marginTop: 4, letterSpacing: 2, fontWeight: '700' },
+  input: { height: 56, borderBottomWidth: 1, borderBottomColor: colors.border, color: colors.textPrimary, fontSize: 19.5, paddingHorizontal: 4 },
+  pickerLabel: { color: colors.textMuted, fontSize: 15.5, letterSpacing: 2, marginTop: 16, fontWeight: '700' },
   chipRow: { flexDirection: 'row', marginBottom: 4 },
   chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginRight: 8, backgroundColor: colors.bgCard },
   chipActive: { borderColor: colors.crimson, backgroundColor: 'rgba(155, 27, 48, 0.05)' },
-  chipText: { color: colors.textSecond, fontSize: 13, fontWeight: '600' },
+  chipText: { color: colors.textSecond, fontSize: 17, fontWeight: '600' },
   chipTextActive: { color: colors.crimson, fontWeight: '800' },
   mainButton: {
     backgroundColor: colors.crimson,
@@ -1073,7 +1073,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  mainButtonText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
+  mainButtonText: { color: colors.white, fontSize: 19.5, fontWeight: '800', letterSpacing: 2 },
   aiButton: {
     backgroundColor: colors.charcoal,
     height: 60,
@@ -1084,13 +1084,13 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 12,
   },
-  aiButtonText: { color: colors.white, fontSize: 14, fontWeight: '800', letterSpacing: 1 },
+  aiButtonText: { color: colors.white, fontSize: 18, fontWeight: '800', letterSpacing: 1 },
   secondaryButton: { flex: 1, height: 60, borderRadius: 16, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
-  secondaryButtonText: { color: colors.textSecond, fontSize: 14, letterSpacing: 2, fontWeight: '700' },
+  secondaryButtonText: { color: colors.textSecond, fontSize: 18, letterSpacing: 2, fontWeight: '700' },
   row: { flexDirection: 'row', marginTop: 12, gap: 12 },
   summaryCard: { padding: 24, backgroundColor: colors.bgCard, borderRadius: 20, gap: 14, borderWidth: 1, borderColor: colors.border },
-  summaryLabel: { color: colors.textSecond, fontSize: 12, fontWeight: '600' },
-  summaryValue: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
+  summaryLabel: { color: colors.textSecond, fontSize: 15.5, fontWeight: '600' },
+  summaryValue: { color: colors.textPrimary, fontSize: 19.5, fontWeight: '800' },
   payoutSection: {
     backgroundColor: 'rgba(28,43,74,0.04)',
     borderRadius: 16,
@@ -1101,14 +1101,14 @@ const styles = StyleSheet.create({
   },
   payoutSectionTitle: {
     color: colors.navy,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '800',
     letterSpacing: 1,
     fontFamily: typography.mono,
   },
   payoutSectionDesc: {
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 14.5,
     lineHeight: 16,
     fontWeight: '500',
   },
@@ -1126,11 +1126,11 @@ const styles = StyleSheet.create({
   payoutSetupText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: 1,
   },
-  policyText: { color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18, marginVertical: 16 },
+  policyText: { color: colors.textMuted, fontSize: 15.5, textAlign: 'center', lineHeight: 18, marginVertical: 16 },
   conditionDescBox: {
     backgroundColor: 'rgba(26,26,26,0.03)',
     borderRadius: 12,
@@ -1144,7 +1144,7 @@ const styles = StyleSheet.create({
   },
   conditionDescText: {
     color: colors.textSecond,
-    fontSize: 11,
+    fontSize: 14.5,
     flex: 1,
     lineHeight: 16,
     fontStyle: 'italic',
@@ -1162,7 +1162,7 @@ const styles = StyleSheet.create({
   },
   swapNoticeText: {
     color: colors.charcoal,
-    fontSize: 12,
+    fontSize: 15.5,
     flex: 1,
     lineHeight: 17,
     fontWeight: '600',
@@ -1184,7 +1184,7 @@ const styles = StyleSheet.create({
   },
   listingTypeTopLabel: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: 1.5,
     color: colors.charcoal,
@@ -1203,7 +1203,7 @@ const styles = StyleSheet.create({
   },
   listingTypeBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.8,
     color: colors.charcoal,
@@ -1230,7 +1230,7 @@ const styles = StyleSheet.create({
   },
   segmentedBtnLabel: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: 1,
     color: colors.charcoal,
@@ -1239,7 +1239,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   segmentedBtnSub: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -1257,7 +1257,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0,0,0,0.06)',
   },
   listingTypeDescText: {
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textSecond,
     fontFamily: typography.body,
     flex: 1,
@@ -1272,14 +1272,14 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: 1.5,
     color: colors.charcoal,
   },
   sectionHeadingSub: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.textMuted,
   },
@@ -1301,7 +1301,7 @@ const styles = StyleSheet.create({
   step2AiButtonText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: 1,
   },
@@ -1321,7 +1321,7 @@ const styles = StyleSheet.create({
   },
   t3RecTitle: {
     fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontWeight: '800',
     letterSpacing: 1,
     color: colors.emerald,
@@ -1340,7 +1340,7 @@ const styles = StyleSheet.create({
   },
   t3BadgeText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.emerald,
     letterSpacing: 0.5,
@@ -1353,14 +1353,14 @@ const styles = StyleSheet.create({
   },
   t3RecPrice: {
     fontFamily: typography.mono,
-    fontSize: 22,
+    fontSize: 25.5,
     fontWeight: '900',
     color: colors.white,
     letterSpacing: 0.5,
   },
   t3RecSub: {
     fontFamily: typography.body,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1375,14 +1375,14 @@ const styles = StyleSheet.create({
   },
   t3ApplyText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.white,
     letterSpacing: 0.5,
   },
   t3RecDetail: {
     fontFamily: typography.body,
-    fontSize: 9.5,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 14,
     borderTopWidth: 1,

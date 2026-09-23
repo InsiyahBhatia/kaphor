@@ -87,13 +87,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    fontSize: 54,
+    fontSize: 57,
     fontFamily: 'BebasNeue_400Regular',
     color: colors.textPrimary,
     letterSpacing: 10,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.crimson,
     letterSpacing: 4,
     marginTop: 12,
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 19.5,
     fontWeight: '800',
     letterSpacing: 2,
   },
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: colors.crimson,
-    fontSize: 14,
+    fontSize: 18,
     letterSpacing: 1,
     fontWeight: '700',
   },
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   legalNoticeText: {
-    fontSize: 11,
+    fontSize: 14.5,
     color: 'rgba(0, 0, 0, 0.65)',
     textAlign: 'center',
     lineHeight: 16,

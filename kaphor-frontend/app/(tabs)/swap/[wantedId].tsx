@@ -113,10 +113,10 @@ export default function SwapWithWantedScreen() {
               <Text style={styles.wantedTitle}>{garment.title}</Text>
               <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Archive').toUpperCase()}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' }}>
-                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.textMuted }}>
+                <Text style={{ fontSize: 13.5, fontFamily: typography.mono, color: colors.textMuted }}>
                   SIZE: {garment.size || 'OS'}
                 </Text>
-                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.crimson, fontWeight: '700' }}>
+                <Text style={{ fontSize: 13.5, fontFamily: typography.mono, color: colors.crimson, fontWeight: '700' }}>
                   {(garment.condition || 'PRISTINE').replace('_', ' ')}
                 </Text>
               </View>
@@ -224,30 +224,30 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { justifyContent: 'center', alignItems: 'center' },
   header: { paddingHorizontal: 24, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.cream },
-  headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
+  headerTitle: { color: colors.charcoal, fontSize: 19.5, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
   content: { padding: 20, paddingBottom: 200 },
   wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden' },
   wantedImage: { width: 100, height: 120 },
   wantedInfo: { flex: 1, padding: 16, justifyContent: 'center' },
-  label: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 9, letterSpacing: 1.5, marginBottom: 4, fontWeight: '800' },
-  wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 20 },
-  wantedBrand: { color: colors.red, fontFamily: typography.mono, fontSize: 11, marginTop: 4, fontWeight: '700' },
+  label: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 12, letterSpacing: 1.5, marginBottom: 4, fontWeight: '800' },
+  wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 24.5 },
+  wantedBrand: { color: colors.red, fontFamily: typography.mono, fontSize: 14.5, marginTop: 4, fontWeight: '700' },
   arrowContainer: { alignItems: 'center', marginVertical: 16 },
-  sectionTitle: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 16 },
+  sectionTitle: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 14.5, fontWeight: '900', letterSpacing: 2, marginBottom: 16 },
   messageInput: {
     backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal,
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
-    color: colors.charcoal, textAlignVertical: 'top', fontSize: 14,
+    color: colors.charcoal, textAlignVertical: 'top', fontSize: 18,
     marginBottom: 12,
   },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 12 },
-  linkText: { color: colors.red, fontFamily: typography.mono, fontSize: 11, fontWeight: '800', letterSpacing: 1, marginTop: 12 },
+  emptyText: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 15.5 },
+  linkText: { color: colors.red, fontFamily: typography.mono, fontSize: 14.5, fontWeight: '800', letterSpacing: 1, marginTop: 12 },
   offerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   offerCard: { width: '47%', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', position: 'relative' },
   offerCardSelected: { borderColor: colors.red, borderWidth: 3 },
   offerImage: { width: '100%', height: 150 },
-  offerTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 14, padding: 10 },
+  offerTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 18, padding: 10 },
   checkmark: { position: 'absolute', top: 8, right: 8 },
   footer: { 
     padding: 20, 
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4,
   },
-  swapBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 13, fontWeight: '900', letterSpacing: 2 },
+  swapBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 17, fontWeight: '900', letterSpacing: 2 },
   zoomModalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.95)',
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   },
   zoomInstructionText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 14.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     letterSpacing: 1,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   zoomPillSmallText: {
     color: '#FFFFFF',
-    fontSize: 9,
+    fontSize: 12,
     fontFamily: typography.mono,
     fontWeight: '800',
   },

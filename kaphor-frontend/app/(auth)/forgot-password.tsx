@@ -87,9 +87,9 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 24, paddingBottom: 160, flexGrow: 1, justifyContent: 'space-between' },
   backBtn: { marginTop: 36, width: 44, height: 44, justifyContent: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20, marginVertical: 20 },
-  title: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, textAlign: 'center' },
-  subtitle: { color: colors.textMuted, fontSize: 16, textAlign: 'center', lineHeight: 24, paddingHorizontal: 20, fontWeight: '500' },
-  input: { width: '100%', height: 60, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 20, color: colors.textPrimary, fontSize: 15, letterSpacing: 1, backgroundColor: colors.bgCard },
+  title: { fontSize: 37, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, textAlign: 'center' },
+  subtitle: { color: colors.textMuted, fontSize: 19.5, textAlign: 'center', lineHeight: 24, paddingHorizontal: 20, fontWeight: '500' },
+  input: { width: '100%', height: 60, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 20, color: colors.textPrimary, fontSize: 18.5, letterSpacing: 1, backgroundColor: colors.bgCard },
   mainBtn: { 
     width: '100%', 
     height: 60, 
@@ -103,6 +103,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  mainBtnText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
+  mainBtnText: { color: colors.white, fontSize: 19.5, fontWeight: '800', letterSpacing: 2 },
 });
 

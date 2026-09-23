@@ -109,7 +109,7 @@ export function ReviewsScreen() {
                         onPress={handleBack}
                         style={{ marginTop: 20, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: colors.charcoal, borderRadius: 6 }}
                     >
-                        <Text style={{ color: colors.white, fontFamily: typography.mono, fontSize: 12, letterSpacing: 1 }}>RETURN TO PROFILE</Text>
+                        <Text style={{ color: colors.white, fontFamily: typography.mono, fontSize: 15.5, letterSpacing: 1 }}>RETURN TO PROFILE</Text>
                     </Pressable>
                 </View>
             ) : (
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
     backBtn: { width: 40, height: 40, justifyContent: 'center' },
-    headerTitle: { color: colors.textPrimary, fontFamily: typography.headings, fontSize: 20 },
+    headerTitle: { color: colors.textPrimary, fontFamily: typography.headings, fontSize: 24.5 },
     
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
     emptyText: { color: colors.textMuted, fontFamily: typography.body, marginTop: spacing.md, textAlign: 'center' },
@@ -140,12 +140,12 @@ const styles = StyleSheet.create({
     headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
     avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgMuted },
     reviewerInfo: { flex: 1, marginLeft: spacing.sm },
-    reviewerName: { color: colors.textPrimary, fontFamily: typography.body, fontSize: 14, fontWeight: 'bold' },
-    reviewerUsername: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 12 },
+    reviewerName: { color: colors.textPrimary, fontFamily: typography.body, fontSize: 18, fontWeight: 'bold' },
+    reviewerUsername: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 15.5 },
     
     ratingBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
-    ratingText: { color: colors.gold, fontFamily: typography.mono, fontSize: 12, fontWeight: 'bold', marginLeft: 4 },
+    ratingText: { color: colors.gold, fontFamily: typography.mono, fontSize: 15.5, fontWeight: 'bold', marginLeft: 4 },
     
-    commentText: { color: colors.textPrimary, fontFamily: typography.body, fontSize: 14, lineHeight: 20, marginBottom: spacing.sm },
-    dateText: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 10, textAlign: 'right' }
+    commentText: { color: colors.textPrimary, fontFamily: typography.body, fontSize: 18, lineHeight: 20, marginBottom: spacing.sm },
+    dateText: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 13.5, textAlign: 'right' }
 });

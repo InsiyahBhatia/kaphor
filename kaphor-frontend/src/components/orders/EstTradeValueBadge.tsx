@@ -132,30 +132,30 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontWeight: '800',
   },
   labelSm: {
-    fontSize: 7,
+    fontSize: 9.5,
     letterSpacing: 0.5,
   },
   labelLg: {
-    fontSize: 9.5,
+    fontSize: 13,
     letterSpacing: 1,
   },
   valueText: {
     fontFamily: typography.headings,
-    fontSize: 14,
+    fontSize: 18,
     letterSpacing: 0.8,
     marginTop: 1,
   },
   valueTextSm: {
-    fontSize: 12,
+    fontSize: 15.5,
     letterSpacing: 0.5,
   },
   valueTextLg: {
-    fontSize: 17,
+    fontSize: 20.5,
     letterSpacing: 1,
   },
 

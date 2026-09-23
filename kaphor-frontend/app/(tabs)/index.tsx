@@ -825,7 +825,7 @@ const styles = StyleSheet.create({
   statusText: {
     color: 'rgba(255,255,255,0.92)',
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1.2,
   },
@@ -862,13 +862,13 @@ const styles = StyleSheet.create({
   heroBadgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1,
   },
   heroHeadline: {
     fontFamily: typography.headings,
-    fontSize: 34,
+    fontSize: 39.5,
     lineHeight: 36,
     color: colors.white,
     letterSpacing: 0.5,
@@ -876,7 +876,7 @@ const styles = StyleSheet.create({
   },
   heroTagline: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     lineHeight: 18,
     color: 'rgba(255,255,255,0.85)',
     marginBottom: 20,
@@ -902,7 +902,7 @@ const styles = StyleSheet.create({
   heroPrimaryBtnText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
   heroSecondaryBtnText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
   heroTrustText: {
     color: 'rgba(255,255,255,0.8)',
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
@@ -965,7 +965,7 @@ const styles = StyleSheet.create({
   },
   categoryPillText: {
     fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: 0.5,
@@ -1008,7 +1008,7 @@ const styles = StyleSheet.create({
   quickActionLabel: {
     fontFamily: typography.mono,
     color: colors.charcoal,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.8,
     textAlign: 'center',
@@ -1017,7 +1017,7 @@ const styles = StyleSheet.create({
   quickActionDesc: {
     fontFamily: typography.mono,
     color: colors.textMuted,
-    fontSize: 7,
+    fontSize: 9.5,
     fontWeight: '700',
     letterSpacing: 0.3,
     textAlign: 'center',
@@ -1042,13 +1042,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.headings,
-    fontSize: 21,
+    fontSize: 24.5,
     letterSpacing: 0.8,
     color: colors.charcoal,
   },
   sectionSubtitle: {
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textMuted,
     paddingHorizontal: 16,
     marginBottom: 12,
@@ -1060,13 +1060,13 @@ const styles = StyleSheet.create({
   },
   sectionTagText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   seeAllText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.crimson,
     letterSpacing: 0.5,
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
   matchPillText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
   },
   conditionPill: {
@@ -1131,7 +1131,7 @@ const styles = StyleSheet.create({
   conditionPillText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1146,7 +1146,7 @@ const styles = StyleSheet.create({
   },
   garmentBrand: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.6,
@@ -1154,13 +1154,13 @@ const styles = StyleSheet.create({
   },
   garmentSize: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     fontWeight: '600',
   },
   garmentTitle: {
     fontFamily: typography.body,
-    fontSize: 12.5,
+    fontSize: 16.5,
     fontWeight: '600',
     color: colors.charcoal,
     marginBottom: 8,
@@ -1177,7 +1177,7 @@ const styles = StyleSheet.create({
   },
   garmentPrice: {
     fontFamily: typography.mono,
-    fontSize: 15,
+    fontSize: 18.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1190,12 +1190,12 @@ const styles = StyleSheet.create({
   discountBadgeText: {
     color: colors.crimson,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
   },
   garmentOriginalPrice: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 1,
@@ -1249,7 +1249,7 @@ const styles = StyleSheet.create({
   rentalBadgePillText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1269,19 +1269,19 @@ const styles = StyleSheet.create({
   },
   rentalDayRate: {
     fontFamily: typography.mono,
-    fontSize: 16,
+    fontSize: 19.5,
     fontWeight: '900',
     color: colors.copper,
   },
   rentalPerDayUnit: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.textMuted,
   },
   rentalRetailVal: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1298,7 +1298,7 @@ const styles = StyleSheet.create({
   },
   rentalReserveText: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.6,
@@ -1339,7 +1339,7 @@ const styles = StyleSheet.create({
   swapParityText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1355,7 +1355,7 @@ const styles = StyleSheet.create({
   zeroCashBadgeText: {
     color: colors.forest,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
   },
   swapValuationRow: {
@@ -1369,14 +1369,14 @@ const styles = StyleSheet.create({
   },
   swapValuationLabel: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.forest,
     letterSpacing: 0.5,
   },
   swapValuationValue: {
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -1389,7 +1389,7 @@ const styles = StyleSheet.create({
   swapTradeActionText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
   },
   swapCounterpartBox: {
@@ -1397,7 +1397,7 @@ const styles = StyleSheet.create({
   },
   swapCounterpartText: {
     fontFamily: typography.body,
-    fontSize: 9.5,
+    fontSize: 13,
     color: colors.textMuted,
     fontStyle: 'italic',
   },
@@ -1433,14 +1433,14 @@ const styles = StyleSheet.create({
   },
   emptyPromptTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1,
   },
   emptyPromptDesc: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,

@@ -185,14 +185,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24.5,
     fontFamily: typography.headings,
     fontWeight: '400',
     letterSpacing: 2.5,
     color: colors.textPrimary,
   },
   modalSubtitle: {
-    fontSize: 10,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     color: colors.textMuted,
     marginTop: 2,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   chipText: {
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   docTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: typography.headings,
     fontWeight: '400',
     color: colors.textPrimary,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   docMeta: {
-    fontSize: 10,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     color: colors.textMuted,
     letterSpacing: 0.6,
@@ -277,13 +277,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statutoryRef: {
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     color: colors.textSecond,
     lineHeight: 16,
   },
   clausesSectionTitle: {
-    fontSize: 11,
+    fontSize: 14.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     letterSpacing: 1.8,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   clauseHeading: {
-    fontSize: 13,
+    fontSize: 17,
     fontFamily: typography.monoBold,
     color: colors.textPrimary,
     marginBottom: 10,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   clauseBody: {
-    fontSize: 13,
+    fontSize: 17,
     fontFamily: typography.body,
     lineHeight: 22,
     color: colors.textSecond,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   legalBasisLabel: {
-    fontSize: 9,
+    fontSize: 12,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textMuted,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   legalBasisText: {
-    fontSize: 11.5,
+    fontSize: 15,
     fontFamily: typography.mono,
     color: colors.textMuted,
     lineHeight: 17,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   grievanceNoticeText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 15.5,
     fontFamily: typography.body,
     color: colors.textSecond,
     lineHeight: 18,
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   },
   acceptButtonText: {
     color: colors.cream,
-    fontSize: 13,
+    fontSize: 17,
     fontFamily: typography.mono,
     fontWeight: '900',
     letterSpacing: 2.2,

@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.headings,
-    fontSize: 20,
+    fontSize: 24.5,
     color: colors.charcoal,
     letterSpacing: 1,
   },
@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
   },
   primaryTabText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1067,13 +1067,13 @@ const styles = StyleSheet.create({
   },
   summaryNum: {
     fontFamily: typography.mono,
-    fontSize: 16,
+    fontSize: 19.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
   summaryLbl: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 0.4,
     marginTop: 1,
@@ -1110,7 +1110,7 @@ const styles = StyleSheet.create({
   },
   rolePillText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1142,14 +1142,14 @@ const styles = StyleSheet.create({
   },
   orderIdLabel: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
   },
   orderDate: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1161,7 +1161,7 @@ const styles = StyleSheet.create({
   },
   statusTagText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.5,
@@ -1185,26 +1185,26 @@ const styles = StyleSheet.create({
   },
   garmentBrand: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   garmentTitle: {
     fontFamily: typography.headings,
-    fontSize: 16,
+    fontSize: 19.5,
     color: colors.charcoal,
     marginVertical: 2,
   },
   garmentPrice: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: '900',
     color: colors.red,
   },
   counterpartyText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.charcoal,
     fontWeight: '700',
     marginTop: 4,
@@ -1230,7 +1230,7 @@ const styles = StyleSheet.create({
   },
   escrowNoticeText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: '#2E7D32',
     letterSpacing: 0.5,
@@ -1253,7 +1253,7 @@ const styles = StyleSheet.create({
   },
   chatActionText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1269,7 +1269,7 @@ const styles = StyleSheet.create({
   },
   detailActionText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1286,7 +1286,7 @@ const styles = StyleSheet.create({
   },
   primaryActionText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.8,
@@ -1305,7 +1305,7 @@ const styles = StyleSheet.create({
   },
   trackActionText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.8,
@@ -1324,7 +1324,7 @@ const styles = StyleSheet.create({
   },
   reviewActionText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: '#C95F12',
     letterSpacing: 0.8,
@@ -1335,7 +1335,7 @@ const styles = StyleSheet.create({
   },
   itemInspectHint: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.red,
     marginTop: 4,
@@ -1365,13 +1365,13 @@ const styles = StyleSheet.create({
   },
   swapRoleLabel: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
     fontWeight: '800',
   },
   swapItemTitle: {
     fontFamily: typography.headings,
-    fontSize: 13,
+    fontSize: 17,
     color: colors.charcoal,
     textAlign: 'center',
   },
@@ -1384,7 +1384,7 @@ const styles = StyleSheet.create({
   },
   estValueText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1394,7 +1394,7 @@ const styles = StyleSheet.create({
   },
   swapCashlessBadge: {
     fontFamily: typography.mono,
-    fontSize: 7,
+    fontSize: 9.5,
     fontWeight: '900',
     color: colors.red,
     marginTop: 2,
@@ -1414,14 +1414,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 25.5,
     color: colors.charcoal,
     marginTop: 12,
     marginBottom: 6,
   },
   emptySub: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 16,
@@ -1435,7 +1435,7 @@ const styles = StyleSheet.create({
   },
   emptyBtnText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 1,

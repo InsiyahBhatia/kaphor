@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 12.5,
+    fontSize: 16.5,
     fontFamily: typography.mono,
     color: colors.textPrimary,
   },
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   chipText: {
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   docTitle: {
-    fontSize: 26,
+    fontSize: 30,
     fontFamily: typography.headings,
     fontWeight: '400',
     color: colors.textPrimary,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   docMeta: {
-    fontSize: 10,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     color: colors.textMuted,
     letterSpacing: 0.6,
@@ -264,13 +264,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statutoryRef: {
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     color: colors.textSecond,
     lineHeight: 16,
   },
   sectionHeader: {
-    fontSize: 11,
+    fontSize: 14.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     letterSpacing: 1.8,
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   clauseHeading: {
-    fontSize: 13,
+    fontSize: 17,
     fontFamily: typography.monoBold,
     color: colors.textPrimary,
     marginBottom: 10,
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   clauseBody: {
-    fontSize: 13,
+    fontSize: 17,
     fontFamily: typography.body,
     lineHeight: 22,
     color: colors.textSecond,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   legalBasisLabel: {
-    fontSize: 9,
+    fontSize: 12,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textMuted,
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   legalBasisText: {
-    fontSize: 11.5,
+    fontSize: 15,
     fontFamily: typography.mono,
     color: colors.textMuted,
     lineHeight: 17,
@@ -330,13 +330,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   noResultsTitle: {
-    fontSize: 14,
+    fontSize: 18,
     fontFamily: typography.monoBold,
     color: colors.textPrimary,
     marginTop: 10,
   },
   noResultsSub: {
-    fontSize: 12,
+    fontSize: 15.5,
     fontFamily: typography.body,
     color: colors.textMuted,
     textAlign: 'center',
@@ -357,14 +357,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   grievanceTitle: {
-    fontSize: 11,
+    fontSize: 14.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     letterSpacing: 1.6,
     color: colors.textPrimary,
   },
   grievanceText: {
-    fontSize: 12.5,
+    fontSize: 16.5,
     fontFamily: typography.body,
     lineHeight: 19,
     color: colors.textSecond,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   contactLabel: {
-    fontSize: 10,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textMuted,
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   contactValue: {
-    fontSize: 11,
+    fontSize: 14.5,
     fontFamily: typography.mono,
     color: colors.textPrimary,
     fontWeight: '700',

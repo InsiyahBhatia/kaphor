@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   },
   fallbackBrand: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: 'rgba(30,31,34,0.7)',
     letterSpacing: 1.5,
     marginTop: 6,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   },
   fallbackArchive: {
     fontFamily: typography.mono,
-    fontSize: 7,
+    fontSize: 9.5,
     color: 'rgba(30,31,34,0.4)',
     letterSpacing: 1,
     marginTop: 2,

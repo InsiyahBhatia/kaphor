@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   matcherTitle: {
     fontFamily: typography.headings,
-    fontSize: 13,
+    fontSize: 17,
     color: colors.charcoal,
     letterSpacing: 1,
   },
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   },
   meterLabel: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.textSecond,
     letterSpacing: 0.5,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   meterValText: {
     fontFamily: typography.headings,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
   },
   centerBalanceBadge: {
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   centerBalanceText: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   },
   recText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.charcoal,
     lineHeight: 13,
     flex: 1,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   accordionTitle: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -359,25 +359,25 @@ const styles = StyleSheet.create({
   },
   columnHeader: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.red,
     marginBottom: 2,
   },
   metricValBold: {
     fontFamily: typography.headings,
-    fontSize: 13,
+    fontSize: 17,
     color: colors.charcoal,
   },
   metricSub: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textSecond,
     marginTop: 1,
   },
   appraisalDisclaimer: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     color: colors.textMuted,
     fontStyle: 'italic',
     lineHeight: 10,

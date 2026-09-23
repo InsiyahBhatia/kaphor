@@ -664,14 +664,14 @@ const styles = StyleSheet.create({
   loadingText: {
     fontFamily: typography.mono,
     color: colors.charcoal,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '800',
     letterSpacing: 2,
   },
   emptyText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
   },
   backBtn: {
     borderWidth: 2,
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   backBtnText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '800',
   },
 
@@ -717,14 +717,14 @@ const styles = StyleSheet.create({
   },
   stepNumber: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: 'bold',
     color: colors.cream,
   },
   stepLabel: {
     marginTop: 6,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 1,
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.textMuted,
     letterSpacing: 1.5,
@@ -786,7 +786,7 @@ const styles = StyleSheet.create({
   itemBrand: {
     color: colors.red,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
@@ -795,14 +795,14 @@ const styles = StyleSheet.create({
   itemTitle: {
     color: colors.charcoal,
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 25.5,
     lineHeight: 24,
     marginBottom: 6,
   },
   itemPrice: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '800',
   },
 
@@ -827,19 +827,19 @@ const styles = StyleSheet.create({
   priceLabel: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   priceValue: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '800',
   },
   priceFree: {
     color: colors.forest,
-    fontSize: 12,
+    fontSize: 15.5,
   },
   freeDeliveryNote: {
     flexDirection: 'row',
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
   freeDeliveryText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
   },
   divider: {
     height: 2,
@@ -866,14 +866,14 @@ const styles = StyleSheet.create({
   totalLabel: {
     color: colors.red,
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '900',
     letterSpacing: 1,
   },
   totalValue: {
     color: colors.charcoal,
     fontFamily: typography.headings,
-    fontSize: 32,
+    fontSize: 37,
   },
 
   // Payment Methods Selector
@@ -885,7 +885,7 @@ const styles = StyleSheet.create({
   },
   sectionTitleSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.red,
     letterSpacing: 1,
@@ -962,7 +962,7 @@ const styles = StyleSheet.create({
   },
   methodTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -983,7 +983,7 @@ const styles = StyleSheet.create({
   },
   methodBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.5,
@@ -993,7 +993,7 @@ const styles = StyleSheet.create({
   },
   methodSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     lineHeight: 13,
   },
@@ -1010,7 +1010,7 @@ const styles = StyleSheet.create({
   },
   securityBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.forest,
     letterSpacing: 0.5,
@@ -1041,7 +1041,7 @@ const styles = StyleSheet.create({
   impactTitle: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1,
     marginBottom: 6,
@@ -1049,7 +1049,7 @@ const styles = StyleSheet.create({
   impactText: {
     color: 'rgba(247,245,240,0.85)',
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     lineHeight: 16,
   },
 
@@ -1075,7 +1075,7 @@ const styles = StyleSheet.create({
   disclaimerBarText: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     lineHeight: 12,
   },
@@ -1087,14 +1087,14 @@ const styles = StyleSheet.create({
   bottomTotalLabel: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: 1,
   },
   bottomTotalValue: {
     color: colors.charcoal,
     fontFamily: typography.headings,
-    fontSize: 28,
+    fontSize: 32.5,
   },
   payButton: {
     backgroundColor: colors.charcoal,
@@ -1117,7 +1117,7 @@ const styles = StyleSheet.create({
   payButtonText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '900',
     letterSpacing: 2,
   },
@@ -1125,7 +1125,7 @@ const styles = StyleSheet.create({
   // Address Section
   sectionActionText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.red,
     letterSpacing: 1,
@@ -1164,7 +1164,7 @@ const styles = StyleSheet.create({
   },
   addressRecipient: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 22,
     color: colors.charcoal,
   },
   defaultBadge: {
@@ -1174,14 +1174,14 @@ const styles = StyleSheet.create({
   },
   defaultBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,
   },
   addressPhone: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1192,13 +1192,13 @@ const styles = StyleSheet.create({
   },
   addressLine: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.charcoal,
     lineHeight: 16,
   },
   addressEmpty: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
     fontStyle: 'italic',
   },
@@ -1219,7 +1219,7 @@ const styles = StyleSheet.create({
   },
   deliveryProgressTitle: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1267,7 +1267,7 @@ const styles = StyleSheet.create({
   },
   addressModalTitle: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 22,
     color: colors.charcoal,
   },
   addressOptionCard: {
@@ -1290,13 +1290,13 @@ const styles = StyleSheet.create({
   },
   addressOptionName: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
   addressOptionText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
     lineHeight: 14,
   },

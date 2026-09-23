@@ -957,13 +957,13 @@ const styles = StyleSheet.create({
   },
   headerPre: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     letterSpacing: 1.5,
   },
   headerTitle: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 22,
     color: colors.charcoal,
     letterSpacing: 1,
   },
@@ -1016,14 +1016,14 @@ const styles = StyleSheet.create({
   },
   chatPartnerBannerTitle: {
     fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
   },
   chatPartnerBannerSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1055,20 +1055,20 @@ const styles = StyleSheet.create({
   },
   partnerDisplayName: {
     fontFamily: typography.headings,
-    fontSize: 16,
+    fontSize: 19.5,
     color: colors.charcoal,
     letterSpacing: 0.5,
   },
   partnerRole: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
     letterSpacing: 0.5,
   },
   partnerHandle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textSecond,
     marginTop: 1,
   },
@@ -1082,7 +1082,7 @@ const styles = StyleSheet.create({
   },
   directChatBtnText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.cream,
     fontWeight: '700',
     letterSpacing: 1,
@@ -1104,7 +1104,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
     letterSpacing: 1,
     fontWeight: '700',
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
   },
   statusTagText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1152,7 +1152,7 @@ const styles = StyleSheet.create({
   },
   stepNumber: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
   },
   stepNumberActive: {
@@ -1161,7 +1161,7 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     color: colors.textMuted,
     textAlign: 'center',
   },
@@ -1188,7 +1188,7 @@ const styles = StyleSheet.create({
   // Manifest
   sectionHeading: {
     fontFamily: typography.headings,
-    fontSize: 15,
+    fontSize: 18.5,
     color: colors.charcoal,
     letterSpacing: 1,
     marginBottom: spacing.sm,
@@ -1218,7 +1218,7 @@ const styles = StyleSheet.create({
   },
   cardBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.cream,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -1237,13 +1237,13 @@ const styles = StyleSheet.create({
   },
   garmentBrand: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     letterSpacing: 0.5,
   },
   garmentTitle: {
     fontFamily: typography.headings,
-    fontSize: 13,
+    fontSize: 17,
     color: colors.charcoal,
     marginVertical: 2,
     lineHeight: 16,
@@ -1256,18 +1256,18 @@ const styles = StyleSheet.create({
   },
   garmentSize: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textSecond,
   },
   garmentCondition: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.forest,
     fontWeight: '700',
   },
   garmentValue: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.charcoal,
     fontWeight: '700',
     marginTop: 4,
@@ -1301,14 +1301,14 @@ const styles = StyleSheet.create({
   },
   messageLabel: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     letterSpacing: 1,
     fontWeight: '700',
   },
   messageText: {
     fontFamily: typography.accent,
-    fontSize: 13,
+    fontSize: 17,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -1353,7 +1353,7 @@ const styles = StyleSheet.create({
   },
   photoIndexText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.cream,
   },
 
@@ -1373,14 +1373,14 @@ const styles = StyleSheet.create({
   },
   escrowNoticeTitle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: '#8C6D3B',
     fontWeight: '700',
     letterSpacing: 1,
   },
   escrowNoticeBody: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     color: colors.textSecond,
     lineHeight: 14,
     marginBottom: 8,
@@ -1415,7 +1415,7 @@ const styles = StyleSheet.create({
   },
   acceptBtnText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.cream,
     letterSpacing: 1,
@@ -1427,7 +1427,7 @@ const styles = StyleSheet.create({
   },
   declineBtnText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.red,
     letterSpacing: 1,
@@ -1439,7 +1439,7 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.textMuted,
     letterSpacing: 0.8,
@@ -1449,7 +1449,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.cream,
     letterSpacing: 1,
@@ -1461,7 +1461,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1471,7 +1471,7 @@ const styles = StyleSheet.create({
   },
   goldBtnText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.cream,
     letterSpacing: 1,
@@ -1481,7 +1481,7 @@ const styles = StyleSheet.create({
   },
   forestBtnText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.cream,
     letterSpacing: 1,
@@ -1495,7 +1495,7 @@ const styles = StyleSheet.create({
   },
   completedNoticeText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.forest,
     fontWeight: '700',
     letterSpacing: 1,
@@ -1518,7 +1518,7 @@ const styles = StyleSheet.create({
   },
   reviewCardTitle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.charcoal,
     fontWeight: '800',
     letterSpacing: 1,
@@ -1538,14 +1538,14 @@ const styles = StyleSheet.create({
   },
   reviewSubmittedLabel: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '700',
     color: '#8C6D3B',
     letterSpacing: 0.8,
   },
   reviewCommentText: {
     fontFamily: typography.accent,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     marginTop: 4,
     textAlign: 'center',
@@ -1555,7 +1555,7 @@ const styles = StyleSheet.create({
   },
   reviewInstruction: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     color: colors.textSecond,
     lineHeight: 14,
     marginBottom: 8,
@@ -1572,7 +1572,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 10,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.charcoal,
     textAlignVertical: 'top',
     minHeight: 60,
@@ -1588,7 +1588,7 @@ const styles = StyleSheet.create({
   },
   submitReviewBtnText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 1,
@@ -1626,7 +1626,7 @@ const styles = StyleSheet.create({
   },
   zoomInstructionText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 14.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     letterSpacing: 1,
@@ -1645,7 +1645,7 @@ const styles = StyleSheet.create({
   },
   zoomPillSmallText: {
     color: '#FFFFFF',
-    fontSize: 9,
+    fontSize: 12,
     fontFamily: typography.mono,
     fontWeight: '800',
   },

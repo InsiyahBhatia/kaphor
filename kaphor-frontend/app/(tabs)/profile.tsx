@@ -1225,13 +1225,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   displayName: {
-    fontSize: 20,
+    fontSize: 24.5,
     fontFamily: typography.headings,
     color: colors.charcoal,
     letterSpacing: 0.8,
   },
   emailText: {
-    fontSize: 10,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     color: colors.textSecond,
     marginTop: 2,
@@ -1251,7 +1251,7 @@ const styles = StyleSheet.create({
   rolePillText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.8,
   },
@@ -1281,7 +1281,7 @@ const styles = StyleSheet.create({
   },
   topQuickBtnText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.6,
@@ -1297,7 +1297,7 @@ const styles = StyleSheet.create({
   },
   topQuickBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.white,
   },
@@ -1312,7 +1312,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(30,31,34,0.15)',
   },
   establishedText: {
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontFamily: typography.mono,
     color: colors.charcoal,
     fontWeight: '700',
@@ -1342,14 +1342,14 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
   },
   metricLabel: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
     marginTop: 2,
@@ -1390,13 +1390,13 @@ const styles = StyleSheet.create({
   },
   impactCardTitle: {
     fontFamily: typography.headings,
-    fontSize: 15,
+    fontSize: 18.5,
     color: colors.forest,
     letterSpacing: 0.8,
   },
   impactTierSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.charcoal,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -1413,7 +1413,7 @@ const styles = StyleSheet.create({
   },
   impactActionText: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.forest,
     letterSpacing: 0.5,
@@ -1450,19 +1450,19 @@ const styles = StyleSheet.create({
   },
   impactMetricNum: {
     fontFamily: typography.headings,
-    fontSize: 16,
+    fontSize: 19.5,
     color: colors.charcoal,
     letterSpacing: 0.5,
   },
   impactUnit: {
-    fontSize: 10,
+    fontSize: 13.5,
     fontFamily: typography.mono,
     color: colors.forest,
     fontWeight: '800',
   },
   impactMetricLabel: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.textMuted,
     marginTop: 1,
@@ -1501,7 +1501,7 @@ const styles = StyleSheet.create({
   },
   segmentTabText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1544,14 +1544,14 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 15,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.6,
   },
   cardSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
     lineHeight: 13,
@@ -1564,7 +1564,7 @@ const styles = StyleSheet.create({
   badgePillActiveText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
@@ -1578,7 +1578,7 @@ const styles = StyleSheet.create({
   countBadgeNeutralText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1589,7 +1589,7 @@ const styles = StyleSheet.create({
   statusPillText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
@@ -1604,7 +1604,7 @@ const styles = StyleSheet.create({
   unreadBadgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '900',
   },
 
@@ -1628,7 +1628,7 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: colors.crimson,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -1671,14 +1671,14 @@ const styles = StyleSheet.create({
   aestheticCardLabel: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     letterSpacing: 1.2,
   },
   aestheticCardStatus: {
     color: 'rgba(245, 240, 232, 0.65)',
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -1693,7 +1693,7 @@ const styles = StyleSheet.create({
   retakeQuizText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
@@ -1708,7 +1708,7 @@ const styles = StyleSheet.create({
   },
   aestheticNameLarge: {
     fontFamily: typography.headings,
-    fontSize: 20,
+    fontSize: 24.5,
     color: colors.charcoal,
     letterSpacing: 1.5,
     flex: 1,
@@ -1722,19 +1722,19 @@ const styles = StyleSheet.create({
   matchScoreText: {
     color: colors.crimson,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
   },
   aestheticTagline: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.textMuted,
     lineHeight: 18,
     marginBottom: 8,
   },
   aestheticDescriptionText: {
     fontFamily: typography.body,
-    fontSize: 12.5,
+    fontSize: 16.5,
     color: 'rgba(30,31,34,0.78)',
     lineHeight: 19,
     marginBottom: 12,
@@ -1770,7 +1770,7 @@ const styles = StyleSheet.create({
   },
   profileTapToExpandText: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,
@@ -1785,7 +1785,7 @@ const styles = StyleSheet.create({
   },
   profileEssentialsHeading: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1801,13 +1801,13 @@ const styles = StyleSheet.create({
   },
   profileBulletDot: {
     color: colors.crimson,
-    fontSize: 13,
+    fontSize: 17,
     lineHeight: 18,
   },
   profileEssentialItemText: {
     flex: 1,
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -1827,7 +1827,7 @@ const styles = StyleSheet.create({
   },
   profileSecondaryBadge: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1838,19 +1838,19 @@ const styles = StyleSheet.create({
   },
   profileSecondaryMatch: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.crimson,
   },
   profileSecondaryName: {
     fontFamily: typography.headings,
-    fontSize: 14,
+    fontSize: 18,
     color: colors.charcoal,
     letterSpacing: 0.8,
   },
   profileSecondaryTagline: {
     fontFamily: typography.body,
-    fontSize: 10.5,
+    fontSize: 13.5,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1870,7 +1870,7 @@ const styles = StyleSheet.create({
   exploreAestheticBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -1888,7 +1888,7 @@ const styles = StyleSheet.create({
   profileFullscreenBtnText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.8,
   },
@@ -1912,13 +1912,13 @@ const styles = StyleSheet.create({
   },
   profileModalTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 25.5,
     color: colors.cream,
     letterSpacing: 1,
   },
   profileModalSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: 'rgba(245, 240, 232, 0.6)',
     marginTop: 2,
     letterSpacing: 0.5,
@@ -1961,7 +1961,7 @@ const styles = StyleSheet.create({
   },
   profileModalDoneText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1971,13 +1971,13 @@ const styles = StyleSheet.create({
   },
   pendingAestheticTitle: {
     fontFamily: typography.headings,
-    fontSize: 16,
+    fontSize: 19.5,
     color: colors.charcoal,
     marginBottom: 4,
   },
   pendingAestheticDesc: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.textMuted,
     lineHeight: 18,
     marginBottom: 12,
@@ -1992,7 +1992,7 @@ const styles = StyleSheet.create({
   startQuizCtaText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -2007,7 +2007,7 @@ const styles = StyleSheet.create({
   },
   avatarMonogramText: {
     fontFamily: typography.mono,
-    fontSize: 22,
+    fontSize: 25.5,
     fontWeight: '900',
     color: colors.cream || '#FAF8F5',
     letterSpacing: 1,
@@ -2023,7 +2023,7 @@ const styles = StyleSheet.create({
     borderColor: colors.gold || '#D4AF37',
   },
   tierText: {
-    fontSize: 8,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.charcoal,
     fontWeight: '800',
@@ -2036,7 +2036,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(30,31,34,0.08)',
   },
   bioText: {
-    fontSize: 10.5,
+    fontSize: 13.5,
     color: colors.textSecond,
     lineHeight: 15,
     fontStyle: 'italic',
@@ -2049,7 +2049,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   editBioBtnText: {
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.charcoal,
@@ -2067,13 +2067,13 @@ const styles = StyleSheet.create({
   },
   aestheticCollapsedName: {
     fontFamily: typography.headings,
-    fontSize: 15,
+    fontSize: 18.5,
     color: colors.charcoal,
     letterSpacing: 0.8,
   },
   aestheticCollapsedTagline: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -2085,7 +2085,7 @@ const styles = StyleSheet.create({
   },
   matchScoreTextCompact: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.white,
     letterSpacing: 0.5,
@@ -2099,7 +2099,7 @@ const styles = StyleSheet.create({
   expandDossierBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '900',
     letterSpacing: 0.8,
   },
@@ -2115,7 +2115,7 @@ const styles = StyleSheet.create({
   },
   collapseDossierBtnText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -2139,7 +2139,7 @@ const styles = StyleSheet.create({
   },
   bioModalTitle: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -2151,7 +2151,7 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 80,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.charcoal,
     textAlignVertical: 'top',
     backgroundColor: '#FAF8F5',
@@ -2171,7 +2171,7 @@ const styles = StyleSheet.create({
   },
   bioCancelText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -2185,7 +2185,7 @@ const styles = StyleSheet.create({
   },
   bioSaveText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.8,

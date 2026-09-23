@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 20,
+    fontSize: 24.5,
     letterSpacing: 2.2,
     textAlign: 'center',
     lineHeight: 22,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     letterSpacing: 1.8,
     marginTop: 2,
     textAlign: 'center',
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: 'white',
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     fontWeight: 'bold',
   },
 });

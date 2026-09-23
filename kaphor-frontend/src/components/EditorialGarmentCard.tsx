@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   conditionPillText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -219,20 +219,20 @@ const styles = StyleSheet.create({
   garmentBrand: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.4,
   },
   garmentSize: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     fontWeight: '700',
   },
   garmentTitle: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '600',
     color: colors.charcoal,
     marginBottom: 8,
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   garmentPrice: {
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -262,12 +262,12 @@ const styles = StyleSheet.create({
   discountBadgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
   },
   garmentOriginalPrice: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 1,

@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   },
   cancelledText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.red,
     letterSpacing: 0.8,

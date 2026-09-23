@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.red,
     fontWeight: '800',
     letterSpacing: 2,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   triggerText: {
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     color: colors.charcoal,
     fontWeight: '700',
   },
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 25.5,
     color: colors.charcoal,
     letterSpacing: 2,
   },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     color: colors.charcoal,
     fontWeight: '600',
   },
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   },
   optionDesc: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
     marginTop: 4,
   },
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.white,
     fontWeight: '800',
     letterSpacing: 2,

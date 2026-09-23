@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   toastText: {
     fontFamily: typography.mono,
     color: colors.white,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '800',
     letterSpacing: 1,
   },

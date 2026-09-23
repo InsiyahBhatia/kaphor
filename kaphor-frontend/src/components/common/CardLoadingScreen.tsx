@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   },
   syncText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.8,

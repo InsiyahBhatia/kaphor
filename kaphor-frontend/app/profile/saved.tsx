@@ -376,14 +376,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: typography.headings,
-    fontSize: 32,
+    fontSize: 37,
     color: colors.charcoal,
     marginTop: 20,
     textAlign: 'center',
   },
   emptySub: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: 8,
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   ctaText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '800',
   },
 
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -442,12 +442,12 @@ const styles = StyleSheet.create({
   },
   tabEmptyText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textMuted,
   },
   tabEmptyAction: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.charcoal,
     textDecorationLine: 'underline',
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   },
   vaultTitle: {
     fontFamily: typography.headings,
-    fontSize: 28,
+    fontSize: 32.5,
     color: colors.charcoal,
   },
   badgeLine: {
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
   },
 
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
   },
   repairSubTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1.5,
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   },
   repairTypeText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 1,
@@ -551,25 +551,25 @@ const styles = StyleSheet.create({
   },
   repairDiffText: {
     fontFamily: typography.mono,
-    fontSize: 7,
+    fontSize: 9.5,
     fontWeight: '700',
   },
   repairTitle: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 22,
     color: colors.charcoal,
     marginBottom: 4,
     lineHeight: 22,
   },
   repairTechnique: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     marginBottom: 8,
   },
   repairGarment: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     marginBottom: 8,
     fontStyle: 'italic',
@@ -585,19 +585,19 @@ const styles = StyleSheet.create({
   },
   repairStepBullet: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
   },
   repairStepText: {
     flex: 1,
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.charcoal,
     lineHeight: 16,
   },
   repairMoreSteps: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     marginLeft: 14,
   },
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
   },
   repairToolsLabel: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
   },
   repairRemoveBtn: {
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   },
   repairRemoveText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.red,
     letterSpacing: 1,
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
   },
   youtubeTitle: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '700',
     color: colors.charcoal,
     lineHeight: 16,
@@ -682,12 +682,12 @@ const styles = StyleSheet.create({
   },
   youtubeChannel: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
   },
   youtubeGarment: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
     fontStyle: 'italic',
     marginTop: 4,

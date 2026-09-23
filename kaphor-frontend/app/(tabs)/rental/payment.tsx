@@ -473,14 +473,14 @@ const styles = StyleSheet.create({
   stepActive: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
   stepNumber: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: 'bold',
     color: colors.cream,
   },
   stepLabel: {
     marginTop: 6,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 1,
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
   section: { marginBottom: 28 },
   sectionTitle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.textMuted,
     letterSpacing: 1.5,
@@ -527,13 +527,13 @@ const styles = StyleSheet.create({
   label: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '700',
   },
   value: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: '800',
   },
 
@@ -560,19 +560,19 @@ const styles = StyleSheet.create({
   insuranceInfo: { flex: 1 },
   insuranceLabel: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.forest,
   },
   insuranceDesc: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
   insurancePrice: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '800',
     color: colors.forest,
   },
@@ -590,14 +590,14 @@ const styles = StyleSheet.create({
   totalLabel: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: '900',
     letterSpacing: 1,
   },
   totalValue: {
     color: colors.charcoal,
     fontFamily: typography.headings,
-    fontSize: 30,
+    fontSize: 35,
   },
 
   depositNote: {
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
   depositNoteText: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.navy,
     lineHeight: 16,
   },
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   },
   sectionTitleSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.red,
     letterSpacing: 1,
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
   },
   methodTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
   },
   methodBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.5,
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
   },
   methodSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     lineHeight: 13,
   },
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   },
   securityBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.forest,
     letterSpacing: 0.5,
@@ -777,14 +777,14 @@ const styles = StyleSheet.create({
   bottomTotalLabel: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: 1,
   },
   bottomTotalValue: {
     color: colors.charcoal,
     fontFamily: typography.headings,
-    fontSize: 28,
+    fontSize: 32.5,
   },
   payBtn: {
     backgroundColor: colors.charcoal,
@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
   payBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '900',
     letterSpacing: 2,
   },

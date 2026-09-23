@@ -251,10 +251,10 @@ export default function ConditionCheckScreen() {
                 
                 {result.suggested_price_inr ? (
                   <View style={{ marginVertical: 8, padding: 12, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.25)' }}>
-                    <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.emerald, fontWeight: '700', letterSpacing: 0.5 }}>
+                    <Text style={{ fontFamily: typography.mono, fontSize: 14.5, color: colors.emerald, fontWeight: '700', letterSpacing: 0.5 }}>
                       MARKET RECOMMENDED RESALE: ₹{result.suggested_price_inr}
                     </Text>
-                    <Text style={{ fontFamily: typography.body, fontSize: 11, color: colors.textMuted, marginTop: 4, lineHeight: 16 }}>
+                    <Text style={{ fontFamily: typography.body, fontSize: 14.5, color: colors.textMuted, marginTop: 4, lineHeight: 16 }}>
                       Derived from comparable resale listings for {category || 'this category'} in {grade.label} condition. You can keep or adjust it below.
                     </Text>
                   </View>
@@ -262,11 +262,11 @@ export default function ConditionCheckScreen() {
 
                 {/* Confirm Dual Pricing */}
                 <View style={{ marginVertical: 10 }}>
-                  <Text style={{ fontFamily: typography.mono, fontSize: 10, color: colors.charcoal, fontWeight: '800', letterSpacing: 0.5, marginBottom: 4 }}>
+                  <Text style={{ fontFamily: typography.mono, fontSize: 13.5, color: colors.charcoal, fontWeight: '800', letterSpacing: 0.5, marginBottom: 4 }}>
                     ORIGINAL RETAIL PRICE / MRP (₹)
                   </Text>
                   <TextInput
-                    style={[styles.textInput, { padding: 10, fontSize: 13, marginBottom: 12 }]}
+                    style={[styles.textInput, { padding: 10, fontSize: 17, marginBottom: 12 }]}
                     value={costPrice}
                     onChangeText={setCostPrice}
                     placeholder="e.g. 2499 (Original purchase price)"
@@ -274,11 +274,11 @@ export default function ConditionCheckScreen() {
                     keyboardType="numeric"
                   />
 
-                  <Text style={{ fontFamily: typography.mono, fontSize: 10, color: colors.charcoal, fontWeight: '800', letterSpacing: 0.5, marginBottom: 4 }}>
+                  <Text style={{ fontFamily: typography.mono, fontSize: 13.5, color: colors.charcoal, fontWeight: '800', letterSpacing: 0.5, marginBottom: 4 }}>
                     CONFIRMED SELLING PRICE (₹)
                   </Text>
                   <TextInput
-                    style={[styles.textInput, { padding: 10, fontSize: 13 }]}
+                    style={[styles.textInput, { padding: 10, fontSize: 17 }]}
                     value={resellPrice}
                     onChangeText={setResellPrice}
                     placeholder="e.g. 899 (Your resale price)"
@@ -288,10 +288,10 @@ export default function ConditionCheckScreen() {
 
                   {discountPct > 0 ? (
                     <View style={{ marginTop: 10, padding: 10, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.2)' }}>
-                      <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.emerald, fontWeight: '800' }}>
+                      <Text style={{ fontFamily: typography.mono, fontSize: 14.5, color: colors.emerald, fontWeight: '800' }}>
                         MARKETPLACE PREVIEW: -{discountPct}% OFF MRP
                       </Text>
-                      <Text style={{ fontFamily: typography.body, fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                      <Text style={{ fontFamily: typography.body, fontSize: 14.5, color: colors.textMuted, marginTop: 2 }}>
                         Listed at ₹{numSell.toLocaleString('en-IN')} with strikethrough MRP ₹{numCost.toLocaleString('en-IN')}. Buyers save ₹{(numCost - numSell).toLocaleString('en-IN')}.
                       </Text>
                     </View>
@@ -520,7 +520,7 @@ export default function ConditionCheckScreen() {
             {result.description ? (
               <View style={[styles.summaryRow, { flexDirection: 'column', alignItems: 'flex-start', marginTop: 6 }]}>
                 <Text style={styles.summaryLabel}>VLM Description</Text>
-                <Text style={[styles.summaryValue, { marginTop: 4, fontSize: 13, color: colors.charcoal }]}>
+                <Text style={[styles.summaryValue, { marginTop: 4, fontSize: 17, color: colors.charcoal }]}>
                   {result.description}
                 </Text>
               </View>
@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.charcoal,
-    fontSize: 14,
+    fontSize: 18,
     fontFamily: typography.mono,
     fontWeight: '900',
     letterSpacing: 2,
@@ -794,16 +794,16 @@ const styles = StyleSheet.create({
   },
   uploadPreview: { width: '100%', height: '100%', resizeMode: 'cover' },
   uploadPlaceholder: { alignItems: 'center', gap: 8 },
-  uploadText: { fontFamily: typography.mono, fontSize: 13, fontWeight: '800', color: colors.charcoal },
-  uploadSubtext: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted },
+  uploadText: { fontFamily: typography.mono, fontSize: 17, fontWeight: '800', color: colors.charcoal },
+  uploadSubtext: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted },
   uploadActions: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 28 },
   uploadActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10 },
-  uploadActionText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '800', color: colors.charcoal },
+  uploadActionText: { fontFamily: typography.mono, fontSize: 13.5, fontWeight: '800', color: colors.charcoal },
 
   // Inputs
   inputLabel: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1.5,
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     padding: 14,
     fontFamily: typography.body,
-    fontSize: 14,
+    fontSize: 18,
     color: colors.charcoal,
     backgroundColor: colors.white,
   },
@@ -830,8 +830,8 @@ const styles = StyleSheet.create({
     padding: 14,
     backgroundColor: colors.white,
   },
-  pickerText: { fontFamily: typography.body, fontSize: 14, color: colors.charcoal },
-  pickerPlaceholder: { fontFamily: typography.body, fontSize: 14, color: colors.textMuted },
+  pickerText: { fontFamily: typography.body, fontSize: 18, color: colors.charcoal },
+  pickerPlaceholder: { fontFamily: typography.body, fontSize: 18, color: colors.textMuted },
   pickerGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -850,12 +850,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   pickerOptionActive: { backgroundColor: colors.charcoal },
-  pickerOptionText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '700', color: colors.charcoal },
+  pickerOptionText: { fontFamily: typography.mono, fontSize: 14.5, fontWeight: '700', color: colors.charcoal },
   pickerOptionTextActive: { color: colors.cream },
 
   // Chips (flat layout — no nested ScrollViews)
   chipSection: { marginBottom: 8 },
-  chipSectionLabel: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.5, marginBottom: 6 },
+  chipSectionLabel: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.5, marginBottom: 6 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     paddingHorizontal: 10,
@@ -865,7 +865,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   chipActive: { backgroundColor: colors.charcoal },
-  chipText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '700', color: colors.charcoal },
+  chipText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '700', color: colors.charcoal },
   chipTextActive: { color: colors.cream },
 
   // Submit
@@ -885,8 +885,8 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.5 },
   submitRow: { flexDirection: 'row', alignItems: 'center' },
-  submitText: { color: colors.cream, fontFamily: typography.mono, fontSize: 14, fontWeight: '900', letterSpacing: 2 },
-  hintText: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 16 },
+  submitText: { color: colors.cream, fontFamily: typography.mono, fontSize: 18, fontWeight: '900', letterSpacing: 2 },
+  hintText: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 16 },
 
   // ── Result ──────────────────────────────────────────────────
   resultContent: { padding: 20, paddingBottom: 180 },
@@ -904,9 +904,9 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginBottom: 20,
   },
-  heroEmoji: { fontSize: 48, marginBottom: 8 },
-  heroTitle: { fontFamily: typography.headings, fontSize: 40, color: colors.cream, letterSpacing: 2, marginBottom: 8 },
-  heroSubtitle: { fontFamily: typography.mono, fontSize: 11, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 18 },
+  heroEmoji: { fontSize: 53, marginBottom: 8 },
+  heroTitle: { fontFamily: typography.headings, fontSize: 44, color: colors.cream, letterSpacing: 2, marginBottom: 8 },
+  heroSubtitle: { fontFamily: typography.mono, fontSize: 14.5, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 18 },
 
   // Grade Row
   gradeRow: {
@@ -916,9 +916,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   gradeBadge: { paddingHorizontal: 20, paddingVertical: 10, borderWidth: 2, borderColor: colors.charcoal },
-  gradeText: { fontFamily: typography.mono, fontSize: 14, fontWeight: '900', color: colors.cream, letterSpacing: 1.5 },
+  gradeText: { fontFamily: typography.mono, fontSize: 18, fontWeight: '900', color: colors.cream, letterSpacing: 1.5 },
   gradeMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  gradeMetaLabel: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, letterSpacing: 0.5 },
+  gradeMetaLabel: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, letterSpacing: 0.5 },
   gradeThumb: { width: 44, height: 44, borderWidth: 1.5, borderColor: colors.charcoal },
 
   // Action Card
@@ -934,10 +934,10 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 20,
   },
-  actionCardTitle: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 12 },
-  actionCardPrice: { fontFamily: typography.headings, fontSize: 42, color: colors.charcoal, marginBottom: 16 },
-  actionCardTutorial: { fontFamily: typography.body, fontSize: 14, color: colors.charcoal, lineHeight: 22, marginBottom: 16 },
-  actionCardPlaceholder: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, lineHeight: 18, marginBottom: 16 },
+  actionCardTitle: { fontFamily: typography.mono, fontSize: 13.5, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 12 },
+  actionCardPrice: { fontFamily: typography.headings, fontSize: 46, color: colors.charcoal, marginBottom: 16 },
+  actionCardTutorial: { fontFamily: typography.body, fontSize: 18, color: colors.charcoal, lineHeight: 22, marginBottom: 16 },
+  actionCardPlaceholder: { fontFamily: typography.mono, fontSize: 14.5, color: colors.textMuted, lineHeight: 18, marginBottom: 16 },
   
   // Segregated Path Cards
   segregationBanner: {
@@ -959,14 +959,14 @@ const styles = StyleSheet.create({
   },
   segregationBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.8,
   },
   segregationSub: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     lineHeight: 18,
     marginTop: 2,
@@ -998,20 +998,20 @@ const styles = StyleSheet.create({
   },
   pathTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: '#1E3B2F',
     letterSpacing: 0.8,
   },
   pathSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
   },
   pathDescription: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     lineHeight: 17,
     marginBottom: 10,
@@ -1032,15 +1032,15 @@ const styles = StyleSheet.create({
   },
   pathTagText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.charcoal,
   },
 
   tutorialMeta: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   tutorialChip: { backgroundColor: colors.cream, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: colors.charcoal },
-  tutorialChipText: { fontFamily: typography.mono, fontSize: 8, fontWeight: '700', color: colors.charcoal },
-  toolsText: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginBottom: 16 },
+  tutorialChipText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '700', color: colors.charcoal },
+  toolsText: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, marginBottom: 16 },
   actionBtn: {
     backgroundColor: colors.charcoal,
     height: 50,
@@ -1054,7 +1054,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  actionBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
+  actionBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 15.5, fontWeight: '900', letterSpacing: 1.5 },
 
   // Impact Card
   impactCard: {
@@ -1069,12 +1069,12 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 20,
   },
-  impactTitle: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 16 },
+  impactTitle: { fontFamily: typography.mono, fontSize: 13.5, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 16 },
   impactGrid: { flexDirection: 'row', gap: 12 },
   impactStat: { flex: 1, backgroundColor: colors.cream, padding: 12, borderWidth: 1.5, borderColor: colors.charcoal, alignItems: 'center' },
-  impactStatValue: { fontFamily: typography.headings, fontSize: 28, color: colors.charcoal },
-  impactStatUnit: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginTop: 2 },
-  impactStatLabel: { fontFamily: typography.mono, fontSize: 8, fontWeight: '800', color: colors.charcoal, marginTop: 4, letterSpacing: 0.5, textAlign: 'center' },
+  impactStatValue: { fontFamily: typography.headings, fontSize: 32.5, color: colors.charcoal },
+  impactStatUnit: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  impactStatLabel: { fontFamily: typography.mono, fontSize: 11, fontWeight: '800', color: colors.charcoal, marginTop: 4, letterSpacing: 0.5, textAlign: 'center' },
 
   // Summary Card
   summaryCard: {
@@ -1084,10 +1084,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     marginBottom: 24,
   },
-  summaryTitle: { fontFamily: typography.mono, fontSize: 9, fontWeight: '900', color: colors.textMuted, letterSpacing: 1, marginBottom: 12 },
+  summaryTitle: { fontFamily: typography.mono, fontSize: 12, fontWeight: '900', color: colors.textMuted, letterSpacing: 1, marginBottom: 12 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  summaryLabel: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted },
-  summaryValue: { fontFamily: typography.mono, fontSize: 11, fontWeight: '800', color: colors.charcoal },
+  summaryLabel: { fontFamily: typography.mono, fontSize: 14.5, color: colors.textMuted },
+  summaryValue: { fontFamily: typography.mono, fontSize: 14.5, fontWeight: '800', color: colors.charcoal },
 
   // Recycling Centers UI
   recycleHeader: {
@@ -1106,7 +1106,7 @@ const styles = StyleSheet.create({
   },
   recycleHeaderBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.white,
     letterSpacing: 0.5,
@@ -1124,7 +1124,7 @@ const styles = StyleSheet.create({
   },
   locationDetectionText: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     color: colors.charcoal,
     flex: 1,
   },
@@ -1139,7 +1139,7 @@ const styles = StyleSheet.create({
   },
   recyclingLoadingText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
   },
   centersListContainer: {
@@ -1162,20 +1162,20 @@ const styles = StyleSheet.create({
   },
   centerItemName: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
   centerItemCity: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.forest,
     marginTop: 2,
   },
   centerDescriptionText: {
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.charcoal,
     lineHeight: 16,
     marginVertical: 2,
@@ -1191,7 +1191,7 @@ const styles = StyleSheet.create({
   },
   centerScoreText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '900',
     color: '#283618',
   },
@@ -1202,7 +1202,7 @@ const styles = StyleSheet.create({
   },
   centerMetaText: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     flex: 1,
   },
@@ -1220,13 +1220,13 @@ const styles = StyleSheet.create({
   },
   fiberTagText: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.charcoal,
   },
   certText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.copper,
     fontWeight: '700',
     marginTop: 2,
@@ -1247,13 +1247,13 @@ const styles = StyleSheet.create({
   },
   detailPhoneText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.forest,
   },
   dropOffInstructions: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.charcoal,
     lineHeight: 11,
   },
@@ -1270,13 +1270,13 @@ const styles = StyleSheet.create({
   },
   mailInTitle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: '#283618',
   },
   mailInSub: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.charcoal,
     marginTop: 2,
     lineHeight: 12,
@@ -1291,7 +1291,7 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     backgroundColor: colors.cream,
   },
-  scanAgainText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  scanAgainText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 15.5, fontWeight: '800', letterSpacing: 1 },
 
   // Hard Reject Banner (Part 4 PDF)
   hardRejectBanner: {
@@ -1307,7 +1307,7 @@ const styles = StyleSheet.create({
   },
   hardRejectTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.red,
     letterSpacing: 0.5,
@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
   },
   hardRejectText: {
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.charcoal,
     lineHeight: 16,
   },
@@ -1337,14 +1337,14 @@ const styles = StyleSheet.create({
   },
   prepCardTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
   },
   prepCardSub: {
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textMuted,
     marginBottom: 10,
     lineHeight: 16,
@@ -1359,7 +1359,7 @@ const styles = StyleSheet.create({
   },
   prepTaskText: {
     fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1369,7 +1369,7 @@ const styles = StyleSheet.create({
   },
   prepTaskDetail: {
     fontFamily: typography.body,
-    fontSize: 10.5,
+    fontSize: 13.5,
     color: colors.textMuted,
     marginTop: 2,
     lineHeight: 15,
@@ -1386,7 +1386,7 @@ const styles = StyleSheet.create({
   },
   verifyPrepBtnText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 1,
@@ -1405,13 +1405,13 @@ const styles = StyleSheet.create({
   },
   toggleTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
   toggleSub: {
     fontFamily: typography.body,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1433,14 +1433,14 @@ const styles = StyleSheet.create({
   },
   transparencyTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.forest,
     letterSpacing: 1,
   },
   transparencyText: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 15,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -1457,7 +1457,7 @@ const styles = StyleSheet.create({
   },
   informalSectorText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
     flex: 1,
@@ -1477,7 +1477,7 @@ const styles = StyleSheet.create({
   },
   onboardCalloutText: {
     fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -1508,14 +1508,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
   },
   modalSub: {
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textMuted,
     marginBottom: 16,
   },
@@ -1532,7 +1532,7 @@ const styles = StyleSheet.create({
   },
   modalPpeText: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     color: colors.charcoal,
     flex: 1,
     fontWeight: '700',
@@ -1546,7 +1546,7 @@ const styles = StyleSheet.create({
   },
   modalSubmitText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 1,

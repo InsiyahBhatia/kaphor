@@ -447,7 +447,7 @@ export default function SwapAgreementScreen() {
             <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
               {addresses.length === 0 ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, textAlign: 'center', marginBottom: 12 }}>
+                  <Text style={{ fontFamily: typography.mono, fontSize: 15.5, color: colors.textMuted, textAlign: 'center', marginBottom: 12 }}>
                     No addresses found in your address book.
                   </Text>
                     <TouchableOpacity
@@ -554,12 +554,12 @@ export default function SwapAgreementScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontFamily: typography.mono, fontSize: 14, color: colors.textMuted },
+  errorText: { fontFamily: typography.mono, fontSize: 18, color: colors.textMuted },
 
   content: { padding: 20, paddingBottom: 120 },
   sectionTitle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1.5,
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   },
   sectionDesc: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     lineHeight: 16,
     marginBottom: 20,
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   termText: {
     flex: 1,
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
   },
   acceptAllText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -675,13 +675,13 @@ const styles = StyleSheet.create({
   signatureLabel: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.charcoal,
   },
   signatureStatus: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.textMuted,
   },
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
   },
   bothSignedText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     color: colors.forest,
   },
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
   },
   depositNoteTitle: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.navy,
     letterSpacing: 1,
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   },
   depositNoteText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.navy,
     lineHeight: 14,
   },
@@ -741,13 +741,13 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.textMuted,
   },
   summaryValue: {
     fontFamily: typography.headings,
-    fontSize: 16,
+    fontSize: 19.5,
     color: colors.charcoal,
     flex: 1,
     textAlign: 'right',
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
   signBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
   },
   chatWithPartnerText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -818,14 +818,14 @@ const styles = StyleSheet.create({
   },
   sectionTitleNoMargin: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1,
   },
   changeAddressLink: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.charcoal,
     textDecorationLine: 'underline',
@@ -850,7 +850,7 @@ const styles = StyleSheet.create({
   },
   addressNameText: {
     fontFamily: typography.headings,
-    fontSize: 15,
+    fontSize: 18.5,
     color: colors.charcoal,
     fontWeight: '700',
   },
@@ -863,19 +863,19 @@ const styles = StyleSheet.create({
   },
   addressTypeBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
   },
   addressPhoneText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textMuted,
     marginBottom: 6,
   },
   addressFullText: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
   },
   selectAddressPlaceholderText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.charcoal,
     textAlign: 'center',
@@ -927,7 +927,7 @@ const styles = StyleSheet.create({
   },
   addressModalTitle: {
     fontFamily: typography.headings,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -940,7 +940,7 @@ const styles = StyleSheet.create({
   },
   addNewAddressBtnText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.8,
@@ -970,19 +970,19 @@ const styles = StyleSheet.create({
   },
   addressOptionName: {
     fontFamily: typography.headings,
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: '700',
     color: colors.charcoal,
   },
   addressOptionPhone: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.textMuted,
     marginBottom: 4,
   },
   addressOptionText: {
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.charcoal,
     lineHeight: 16,
   },
@@ -995,7 +995,7 @@ const styles = StyleSheet.create({
   },
   defaultBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1041,28 +1041,28 @@ const styles = StyleSheet.create({
   },
   disclaimerBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.white,
     letterSpacing: 0.8,
   },
   disclaimerStatuteRef: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.5,
   },
   protectionsTitle: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 22,
     color: colors.charcoal,
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   protectionsSubtitle: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.textMuted,
     lineHeight: 17,
     marginBottom: 16,
@@ -1092,7 +1092,7 @@ const styles = StyleSheet.create({
   },
   pillarTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1100,7 +1100,7 @@ const styles = StyleSheet.create({
   },
   pillarSummary: {
     fontFamily: typography.body,
-    fontSize: 11,
+    fontSize: 14.5,
     color: colors.textMuted,
     lineHeight: 16,
   },
@@ -1147,7 +1147,7 @@ const styles = StyleSheet.create({
   },
   agreementConsentTitle: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 15,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1155,7 +1155,7 @@ const styles = StyleSheet.create({
   },
   agreementConsentDesc: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 15,
     color: colors.charcoal,
     lineHeight: 17,
   },
@@ -1187,7 +1187,7 @@ const styles = StyleSheet.create({
   },
   legalBtnText: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.6,
@@ -1201,7 +1201,7 @@ const styles = StyleSheet.create({
   bottomDisclaimerNotice: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     lineHeight: 12,
   },
