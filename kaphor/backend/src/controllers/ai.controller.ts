@@ -803,59 +803,99 @@ export function conditionToScore(cond?: string): number {
     return 0.75;
 }
 
+// Per-category floor used when no market sample exists yet (rounded from
+// comparable India resale data), so predictions never collapse to a flat 899.
+const CATEGORY_DEFAULT_PRICE: Record<string, number> = {
+  saree: 499, lehenga: 599, anarkali: 599, kurta: 349, dress: 449, jeans: 449,
+  tshirt: 299, shirt: 349, trousers: 399, jacket: 549, skirt: 399, sweater: 349,
+  blazer: 599, shorts: 299, blouse: 349, dupatta: 249, coat: 449, activewear: 399,
+};
+
+const DESIGNER_BRAND_RE = /sabyasachi|tarun tahiliani|manish malhotra|anita dongre|payal singhal|falguni|itrh|raw mango|gucci|prada|armani|dolce|versace|burberry|chanel|dior|hermes|valentino|tom ford|givenchy|saint laurent/i;
+
+const PREMIUM_BRAND_RE = /zara|h&m|massimo dutti|mango|levi|calvin klein|ralph lauren|tommy hilfiger|vero moda|pepe jeans|wills lifestyle|ray ban|nike|adidas|puma|gucci|zudio|ethnix/i;
+
+// Condition scales the market baseline: pristine items sit above the average
+// listing, recycle-only sits well below.
+const CONDITION_BETA: Record<string, number> = {
+  PRISTINE: 1.15,
+  MINOR_WEAR: 1.0,
+  UPCYCLE: 0.85,
+  RECYCLE_ONLY: 0.65,
+};
+
 export function computeT3PriceRecommendation(
-    category: string,
-    subCategory?: string,
-    title?: string,
-    condition?: string,
-    brand?: string
+  category: string,
+  subCategory?: string,
+  title?: string,
+  condition?: string,
+  brand?: string,
+  opts?: { hintPrice?: number; originalPrice?: number },
 ) {
-    const t3Cat = mapToT3Category(category, subCategory, title);
-    const condScore = conditionToScore(condition);
-    const t3Stats = queryT3(t3Cat, condScore);
+  const t3Cat = mapToT3Category(category, subCategory, title);
+  const condScore = conditionToScore(condition);
+  const t3Stats = queryT3(t3Cat, condScore);
 
-    if (t3Stats && t3Stats.avg_listed_price > 0) {
-        let recommendedPrice = t3Stats.avg_listed_price;
-        const isLuxury = /zara|h&m|mango|sabyasachi|tarun|manish|gucci|prada|armani|levis|calvin|ralph/i.test(brand || '');
-        if (isLuxury && recommendedPrice < 1500) {
-            recommendedPrice = Math.round(recommendedPrice * 1.3);
-        }
+  const condKey = String(condition || '').toUpperCase();
+  const beta = CONDITION_BETA[condKey] ?? 1.0;
 
-        const ratio = t3Stats.avg_resale_ratio > 0 ? t3Stats.avg_resale_ratio : 0.45;
-        const suggestedOriginal = Math.round(recommendedPrice / ratio);
-        const dayRate = Math.max(199, Math.round(recommendedPrice * 0.12));
-        const weekRate = Math.round(dayRate * 4.5);
+  let tier = 1.0;
+  if (DESIGNER_BRAND_RE.test(brand || '')) tier = 2.4;
+  else if (PREMIUM_BRAND_RE.test(brand || '')) tier = 1.5;
 
-        return {
-            recommendedPrice,
-            suggestedOriginalPrice: suggestedOriginal,
-            suggestedRentalPriceDay: dayRate,
-            suggestedRentalPriceWeek: weekRate,
-            avgResaleRatio: t3Stats.avg_resale_ratio,
-            medianDaysToSell: t3Stats.median_days_to_sell,
-            comparableCount: t3Stats.total_listings_matched,
-            demandTrend: t3Stats.demand_trend,
-            marketCategory: t3Cat,
-            minPrice: Math.round(recommendedPrice * 0.8),
-            maxPrice: Math.round(recommendedPrice * 1.25),
-            source: 'T3 Resale Market Intelligence (6,480+ Listings)'
-        };
+  // Robust market baseline: median first (mean is skewed by outlier listings),
+  // fall back to the average when the median is unavailable.
+  const marketBaseline = t3Stats
+    ? (t3Stats.median_listed_price || t3Stats.avg_listed_price)
+    : 0;
+  const ratio = t3Stats && t3Stats.avg_resale_ratio > 0 ? t3Stats.avg_resale_ratio : 0.45;
+
+  let recommendedPrice: number;
+
+  if (opts?.originalPrice && opts.originalPrice > 0) {
+    // MRP-anchored estimate: what this exact garment should fetch today.
+    recommendedPrice = Math.round(opts.originalPrice * ratio * beta);
+    if (opts.originalPrice >= 200 && marketBaseline > 0) {
+      const floor = Math.round(marketBaseline * 0.5);
+      if (recommendedPrice < floor) recommendedPrice = floor;
     }
+  } else if (opts?.hintPrice && opts.hintPrice > 0) {
+    // Gemini saw the garment — trust its estimate, but never quote below the
+    // market floor for the category (avoids absurd sub-market values).
+    recommendedPrice = Math.round(opts.hintPrice);
+    if (marketBaseline > 0) {
+      const floor = Math.round(marketBaseline * 0.6 * beta);
+      if (recommendedPrice < floor) recommendedPrice = floor;
+    }
+  } else {
+    // No signal: empirical market median scaled by brand tier and condition.
+    recommendedPrice = marketBaseline > 0
+      ? Math.round(marketBaseline * tier * beta)
+      : (CATEGORY_DEFAULT_PRICE[t3Cat] ?? 449);
+  }
 
-    return {
-        recommendedPrice: 899,
-        suggestedOriginalPrice: 1999,
-        suggestedRentalPriceDay: 249,
-        suggestedRentalPriceWeek: 999,
-        avgResaleRatio: 0.45,
-        medianDaysToSell: 21,
-        comparableCount: 50,
-        demandTrend: 'stable',
-        marketCategory: t3Cat,
-        minPrice: 699,
-        maxPrice: 1199,
-        source: 'KaPhor Standard Circular Valuation'
-    };
+  const suggestedOriginal = opts?.originalPrice && opts.originalPrice > 0
+    ? Math.round(opts.originalPrice)
+    : Math.round(recommendedPrice / ratio);
+  const dayRate = Math.max(199, Math.round(recommendedPrice * 0.12));
+  const weekRate = Math.round(dayRate * 4.5);
+
+  return {
+    recommendedPrice,
+    suggestedOriginalPrice: suggestedOriginal,
+    suggestedRentalPriceDay: dayRate,
+    suggestedRentalPriceWeek: weekRate,
+    avgResaleRatio: t3Stats?.avg_resale_ratio ?? ratio,
+    medianDaysToSell: t3Stats?.median_days_to_sell ?? 21,
+    comparableCount: t3Stats?.total_listings_matched ?? 50,
+    demandTrend: t3Stats?.demand_trend ?? 'stable',
+    marketCategory: t3Cat,
+    minPrice: Math.round(recommendedPrice * 0.8),
+    maxPrice: Math.round(recommendedPrice * 1.25),
+    source: t3Stats
+      ? 'KaPhor Resale Market Intelligence (6,480+ comparable listings)'
+      : 'KaPhor Standard Circular Valuation',
+  };
 }
 
 // ── 6. AI Vision: Analyze Listing Image ───────────────────────────────────
@@ -1056,7 +1096,8 @@ Be precise. If the brand or hardware logo is visible, identify it.`;
             data.subCategory,
             data.title,
             data.condition,
-            data.brand
+            data.brand,
+            { hintPrice: data.estimatedPrice }
         );
 
         data.estimatedPrice = t3Pricing.recommendedPrice;
@@ -1265,13 +1306,14 @@ export async function getChatHistory(req: Request, res: Response): Promise<void>
 // ── 7. T3 Price Recommendation Query ─────────────────────────────────────────
 export async function getT3PriceRecommendation(req: Request, res: Response): Promise<void> {
     try {
-        const { category, subCategory, title, condition, brand } = req.query;
+        const { category, subCategory, title, condition, brand, originalPrice } = req.query;
         const rec = computeT3PriceRecommendation(
             String(category || 'Tops'),
             subCategory ? String(subCategory) : undefined,
             title ? String(title) : undefined,
             condition ? String(condition) : undefined,
-            brand ? String(brand) : undefined
+            brand ? String(brand) : undefined,
+            { originalPrice: originalPrice ? Number(originalPrice) : undefined }
         );
         res.json({ success: true, data: rec });
     } catch (error: any) {

@@ -111,7 +111,7 @@ export function queryT3(
   const csMax = Math.min(1, conditionScore + 0.15);
 
   // Filter by category + condition score range
-  const matched = marketRecords.filter(r => {
+  let matched = marketRecords.filter(r => {
     const rCat = normalize(r.garment_category);
     const rCs = r.condition_score_at_listing;
 
@@ -123,6 +123,16 @@ export function queryT3(
 
     return catMatch && csMatch;
   });
+
+  // If the condition-scoped window is empty, fall back to the whole category so
+  // the caller still gets a market signal instead of a hard null.
+  if (matched.length === 0) {
+    const anyCondition = marketRecords.filter(r => {
+      const rCat = normalize(r.garment_category);
+      return rCat === catKey || rCat.includes(catKey) || catKey.includes(rCat);
+    });
+    if (anyCondition.length > 0) matched = anyCondition;
+  }
 
   if (matched.length === 0) {
     logger.warn(`[GLIE/T3] No market matches for category="${category}" cs=${conditionScore}`);
@@ -140,6 +150,7 @@ export function queryT3(
   const trendScores = matched.map(r => r.trend_score_at_listing);
 
   const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
+  const medianPrice = prices.length > 0 ? median(prices) : 0;
   const medianDays = daysToSell.length > 0 ? median(daysToSell) : 21;
   const avgRatio = ratios.length > 0 ? ratios.reduce((a, b) => a + b, 0) / ratios.length : 0.45;
   const avgDemand = demandScores.length > 0 ? demandScores.reduce((a, b) => a + b, 0) / demandScores.length : 0.5;
@@ -154,6 +165,7 @@ export function queryT3(
 
   return {
     avg_listed_price: Math.round(avgPrice),
+    median_listed_price: Math.round(medianPrice),
     median_days_to_sell: Math.round(medianDays),
     avg_resale_ratio: Math.round(avgRatio * 1000) / 1000,
     avg_demand_score: Math.round(avgDemand * 1000) / 1000,

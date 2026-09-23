@@ -21,6 +21,7 @@ export interface T4Props {
 
 export interface T3Stats {
   avg_listed_price: number;
+  median_listed_price?: number;
   median_days_to_sell: number;
   avg_resale_ratio: number;
   avg_demand_score: number;

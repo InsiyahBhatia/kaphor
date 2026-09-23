@@ -252,10 +252,10 @@ export default function ConditionCheckScreen() {
                 {result.suggested_price_inr ? (
                   <View style={{ marginVertical: 8, padding: 12, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.25)' }}>
                     <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.emerald, fontWeight: '700', letterSpacing: 0.5 }}>
-                      T3 RECOMMENDED RESALE: ₹{result.suggested_price_inr}
+                      MARKET RECOMMENDED RESALE: ₹{result.suggested_price_inr}
                     </Text>
                     <Text style={{ fontFamily: typography.body, fontSize: 11, color: colors.textMuted, marginTop: 4, lineHeight: 16 }}>
-                      Derived from FreeUp thrift data for {category || 'this category'} in {grade.label} condition. You can keep or adjust it below.
+                      Derived from comparable resale listings for {category || 'this category'} in {grade.label} condition. You can keep or adjust it below.
                     </Text>
                   </View>
                 ) : null}

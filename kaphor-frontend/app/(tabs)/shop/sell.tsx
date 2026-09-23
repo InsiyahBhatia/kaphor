@@ -214,8 +214,9 @@ export default function SellScreen() {
   const fetchT3Recommendation = useCallback(async (cat: string, cond?: string, br?: string) => {
     if (!cat) return;
     try {
+      const mrp = Number(originalPrice);
       const res = await api.get('/ai/price-recommendation', {
-        params: { category: cat, condition: cond || condition, brand: br || brand }
+        params: { category: cat, condition: cond || condition, brand: br || brand, originalPrice: mrp > 0 ? mrp : undefined }
       });
       if (res.data?.data) {
         setT3Pricing(res.data.data);
@@ -223,7 +224,7 @@ export default function SellScreen() {
     } catch {
       // Non-blocking
     }
-  }, [condition, brand]);
+  }, [condition, brand, originalPrice]);
 
   const handleCategoryChange = (cat: string) => {
     setCategory(cat);
@@ -329,8 +330,8 @@ export default function SellScreen() {
         if (listingType === 'ACCESSORY_SWAP') {
           if (isAccessory) {
             Alert.alert(
-              'AI Magic Fill + T3 Pricing',
-              `Identified as "${matchedCat}". All item specs and T3 trade valuation (₹${priceVal}) filled from photo.`
+              'AI Magic Fill + Market Pricing',
+              `Identified as "${matchedCat}". All item specs and market valuation (₹${priceVal}) filled from photo.`
             );
           } else {
             Alert.alert(
@@ -340,14 +341,14 @@ export default function SellScreen() {
           }
         } else if (listingType === 'RENTAL') {
           Alert.alert(
-            'AI Magic Fill + T3 Pricing',
-            `Identified as "${matchedCat}". All garment specs and T3 rental rate recommendations filled from photo.`
+            'AI Magic Fill + Market Pricing',
+            `Identified as "${matchedCat}". All garment specs and rental rate recommendations filled from photo.`
           );
         } else {
           // SALE
           Alert.alert(
-            'AI Magic Fill + T3 Pricing',
-            `Identified as "${matchedCat}". All garment specs and T3 market price recommendation (₹${priceVal}) filled from photo.`
+            'AI Magic Fill + Market Pricing',
+            `Identified as "${matchedCat}". All garment specs and market price recommendation (₹${priceVal}) filled from photo.`
           );
         }
 
@@ -713,7 +714,7 @@ export default function SellScreen() {
                 <View style={styles.t3RecHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name="trending-up" size={15} color={colors.emerald} />
-                    <Text style={styles.t3RecTitle}>T3 MARKET PRICE VALUATION</Text>
+                    <Text style={styles.t3RecTitle}>MARKET PRICE VALUATION</Text>
                   </View>
                   {t3Pricing.demandTrend && (
                     <View style={[styles.t3Badge, t3Pricing.demandTrend === 'rising' && styles.t3BadgeRising]}>
@@ -751,12 +752,12 @@ export default function SellScreen() {
                     }}
                   >
                     <Ionicons name="checkmark-sharp" size={13} color={colors.white} />
-                    <Text style={styles.t3ApplyText}>APPLY T3 PRICE</Text>
+                    <Text style={styles.t3ApplyText}>APPLY PRICE</Text>
                   </TouchableOpacity>
                 </View>
 
                 <Text style={styles.t3RecDetail}>
-                  Derived from {t3Pricing.comparableCount || 500}+ empirical {t3Pricing.marketCategory || 'garment'} listings in T3 database. Turnaround: ~{t3Pricing.medianDaysToSell || 21} days.
+                  Derived from {t3Pricing.comparableCount || 500}+ comparable {t3Pricing.marketCategory || 'garment'} resale listings. Turnaround: ~{t3Pricing.medianDaysToSell || 21} days.
                   {t3Pricing.suggestedOriginalPrice ? ` Est. original retail MRP: ₹${t3Pricing.suggestedOriginalPrice.toLocaleString('en-IN')}.` : ''}
                 </Text>
               </View>

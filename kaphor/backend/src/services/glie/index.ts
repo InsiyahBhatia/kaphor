@@ -255,12 +255,15 @@ export async function assessGarment(input: AssessGarmentInput): Promise<AssessGa
     ? guides[0].technique_style || guides[0].title
     : 'Professional dry cleaning / gentle wash assessment';
 
-  const suggestedPrice = routing === 'RESELL' && cs > 0
-    ? Math.round(input.original_price_inr * (
-      marketStats && marketStats.avg_resale_ratio > 0
-        ? marketStats.avg_resale_ratio
-        : cs * 0.6
-    ))
+  const resaleRatio = marketStats && marketStats.avg_resale_ratio > 0
+    ? marketStats.avg_resale_ratio
+    : (cs > 0 ? cs * 0.6 : 0.45);
+  // Condition scales the resale estimate: pristine sits above the category
+  // average, recycle-only sits well below (mirrors the sell-flow pricing).
+  const condBeta = cs >= 0.85 ? 1.15 : cs >= 0.60 ? 1.0 : cs >= 0.40 ? 0.9 : 0.8;
+
+  const suggestedPrice = routing === 'RESELL' && cs > 0 && input.original_price_inr > 0
+    ? Math.round(input.original_price_inr * resaleRatio * condBeta)
     : undefined;
 
   // ── Confidence Flags (never hide what went wrong) ──────────────────────
