@@ -32,8 +32,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
     return null;
   }
 
-  // Enforce 5 tabs with Circular in the center
-  const mainTabs = ['index', 'shop/index', 'circular/index', 'cart', 'profile'];
+  const mainTabs = ['index', 'shop/index', 'swap/index', 'profile', 'rental/index'];
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 16) }]}>
@@ -56,10 +55,9 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
           switch (name) {
             case 'index': return { label: 'HOME', icon: 'home-sharp' as any };
             case 'shop/index': return { label: 'SHOP', icon: 'bag-handle-sharp' as any };
-            case 'circular/index': return { label: 'CIRCULAR', icon: 'infinite-sharp' as any };
             case 'swap/index': return { label: 'SWAP', icon: 'swap-horizontal-sharp' as any };
-            case 'cart': return { label: 'CART', icon: 'cart-sharp' as any };
             case 'profile': return { label: 'PROFILE', icon: 'person-sharp' as any };
+            case 'rental/index': return { label: 'RENTAL', icon: 'time-sharp' as any };
             default: return { label: name.toUpperCase(), icon: 'ellipse-sharp' as any };
           }
         };
@@ -106,7 +104,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '800',
     letterSpacing: 1,
   },

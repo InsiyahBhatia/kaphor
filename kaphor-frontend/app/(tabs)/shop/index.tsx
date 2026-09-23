@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AIStar } from '../../../src/components/AIStar';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { cartService } from '../../../src/services/cartService';
@@ -23,7 +25,7 @@ export default function ShopScreen() {
   const SIZES = MARKET_SIZES;
   const CONDITIONS = MARKET_CONDITIONS;
 
-  const { garments, isLoading, fetchFeed } = useGarmentStore();
+  const { garments, isLoading, fetchError, fetchFeed } = useGarmentStore();
 
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,6 +77,9 @@ export default function ShopScreen() {
         selectedCats = [...selectedCats, ...group.items];
       }
     });
+    // Strip group labels so only concrete market categories reach the API
+    const groupLabels = new Set(MARKET_CATEGORIES.map(g => g.group));
+    selectedCats = selectedCats.filter(cat => !groupLabels.has(cat));
 
     if (selectedCats.length > 0 && !selectedCats.includes('ALL')) {
       params.category = Array.from(new Set(selectedCats)).join(',');
@@ -125,14 +130,21 @@ export default function ShopScreen() {
         <View style={styles.topRow}>
           <Text style={styles.title}>THE DECK // BROWSE</Text>
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            <TouchableOpacity 
-              style={styles.aiHeaderBtn} 
-              onPress={() => router.push('/(tabs)/shop/ai-chat')}
-              activeOpacity={0.8}
+            <LinearGradient
+              colors={['#E4714A', '#C81E2C']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.aiHeaderBtn}
             >
-              <Ionicons name="sparkles" size={17} color="#E5D5A4" />
-              <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.aiHeaderBtnInner}
+                onPress={() => router.push('/(tabs)/shop/ai-chat')}
+                activeOpacity={0.85}
+              >
+                <AIStar size={13} color="#FFFFFF" />
+                <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
+              </TouchableOpacity>
+            </LinearGradient>
             <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)}>
               <Ionicons name="options-sharp" size={20} color={colors.white} />
             </TouchableOpacity>
@@ -207,9 +219,67 @@ export default function ShopScreen() {
                   (item as any).seller?.id !== currentUserId
               );
               if (saleItems.length === 0) {
+                const hasActiveFilters =
+                  searchQuery.trim().length > 0 ||
+                  selectedFilters.categories.length > 0 ||
+                  selectedFilters.sizes.length > 0 ||
+                  selectedFilters.conditions.length > 0;
+
+                if (fetchError) {
+                  return (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="cloud-offline-outline" size={30} color={colors.textMuted} />
+                      <Text style={styles.emptyText}>{fetchError}</Text>
+                      <TouchableOpacity style={styles.emptyActionBtn} onPress={applyFilters} activeOpacity={0.85}>
+                        <Text style={styles.emptyActionText}>RETRY</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                }
+
                 return (
                   <View style={styles.emptyState}>
-                    <Text style={styles.emptyText}>NO SALE ASSETS MATCHING QUERY</Text>
+                    <Ionicons
+                      name={hasActiveFilters ? 'funnel-outline' : 'bag-handle-outline'}
+                      size={30}
+                      color={colors.textMuted}
+                    />
+                    <Text style={styles.emptyText}>
+                      {hasActiveFilters
+                        ? 'NO SALE ASSETS MATCH YOUR FILTERS'
+                        : 'NO SALE ASSETS RIGHT NOW'}
+                    </Text>
+                    {(selectedFilters.categories.length > 0 ||
+                      selectedFilters.sizes.length > 0 ||
+                      selectedFilters.conditions.length > 0) && (
+                      <TouchableOpacity
+                        style={styles.emptyActionBtn}
+                        onPress={() =>
+                          setSelectedFilters({ categories: [], sizes: [], priceRange: [0, 1000000], conditions: [] })
+                        }
+                        activeOpacity={0.85}
+                      >
+                        <Text style={styles.emptyActionText}>CLEAR FILTERS</Text>
+                      </TouchableOpacity>
+                    )}
+                    <View style={styles.emptyFallbackRow}>
+                      <TouchableOpacity
+                        style={styles.emptyFallbackBtn}
+                        onPress={() => router.push('/(tabs)/swap' as any)}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="swap-horizontal" size={14} color={colors.emerald} />
+                        <Text style={[styles.emptyFallbackText, { color: colors.emeraldDark }]}>EXPLORE SWAP</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.emptyFallbackBtn}
+                        onPress={() => router.push('/(tabs)/rental' as any)}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="time-outline" size={14} color={colors.goldDark} />
+                        <Text style={[styles.emptyFallbackText, { color: colors.goldDark }]}>EXPLORE RENTAL</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 );
               }
@@ -325,7 +395,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 32,
+    fontSize: 37,
     fontFamily: typography.headings,
     color: colors.charcoal,
     letterSpacing: 2,
@@ -348,7 +418,7 @@ const styles = StyleSheet.create({
   },
   sellText: {
     color: colors.cream,
-    fontSize: 12,
+    fontSize: 15.5,
     fontFamily: typography.mono,
     fontWeight: '700',
   },
@@ -368,7 +438,7 @@ const styles = StyleSheet.create({
   },
   searchPrefix: {
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     color: colors.red,
     marginRight: 8,
     fontWeight: 'bold',
@@ -376,7 +446,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     color: colors.charcoal,
-    fontSize: 14,
+    fontSize: 18,
     fontFamily: typography.mono,
   },
   loader: {
@@ -387,7 +457,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     letterSpacing: 1,
   },
@@ -407,7 +477,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     color: colors.charcoal,
-    fontSize: 12,
+    fontSize: 15.5,
     fontFamily: typography.mono,
     fontWeight: '700',
   },
@@ -468,7 +538,7 @@ const styles = StyleSheet.create({
   conditionPillText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -485,20 +555,20 @@ const styles = StyleSheet.create({
   shopBrand: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.4,
   },
   shopSize: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     fontWeight: '700',
   },
   shopTitle: {
     fontFamily: typography.body,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '600',
     color: colors.charcoal,
     marginBottom: 8,
@@ -510,7 +580,7 @@ const styles = StyleSheet.create({
   },
   shopPrice: {
     fontFamily: typography.mono,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -537,7 +607,7 @@ const styles = StyleSheet.create({
   },
   swapBtnText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.charcoal,
     fontWeight: '700',
   },
@@ -565,9 +635,46 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     color: colors.charcoal,
     fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 16,
+    marginTop: 8,
+  },
+  emptyActionBtn: {
+    marginTop: 16,
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+  },
+  emptyActionText: {
+    fontFamily: typography.monoBold,
+    fontSize: 14.5,
+    color: colors.cream,
+    letterSpacing: 1.5,
+  },
+  emptyFallbackRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  emptyFallbackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: colors.charcoal,
+    backgroundColor: colors.white,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  emptyFallbackText: {
+    fontFamily: typography.monoBold,
+    fontSize: 13,
+    letterSpacing: 0.8,
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -590,7 +697,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: typography.headings,
-    fontSize: 24,
+    fontSize: 28,
     color: colors.charcoal,
     letterSpacing: 2,
   },
@@ -599,7 +706,7 @@ const styles = StyleSheet.create({
   },
   modalSectionLabel: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     color: colors.red,
     fontWeight: '800',
     letterSpacing: 2,
@@ -623,7 +730,7 @@ const styles = StyleSheet.create({
   },
   modalOptionText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.charcoal,
   },
@@ -647,7 +754,7 @@ const styles = StyleSheet.create({
   },
   resetBtnText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -661,13 +768,13 @@ const styles = StyleSheet.create({
   },
   applyBtnText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 15.5,
     fontWeight: '800',
     color: colors.white,
   },
   modalSubLabel: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
     fontWeight: '700',
     letterSpacing: 1.5,
@@ -675,49 +782,28 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   aiHeaderBtn: {
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: colors.charcoal,
+    shadowColor: '#5C0B12',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 5,
+  },
+  aiHeaderBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#1E1E1E',
-    paddingHorizontal: 12,
+    gap: 7,
+    paddingHorizontal: 13,
     paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#C9A84C',
   },
   aiHeaderBtnText: {
-    color: '#E5D5A4',
-    fontSize: 10,
+    color: '#FFFFFF',
+    fontSize: 10.5,
     fontWeight: '900',
-    fontFamily: typography.mono,
+    fontFamily: typography.monoBold,
     letterSpacing: 1,
-  },
-  floatingAiBtn: {
-    position: 'absolute',
-    bottom: 24,
-    right: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#181818',
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: 28,
-    borderWidth: 1.5,
-    borderColor: '#C9A84C',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 6,
-    zIndex: 99,
-  },
-  floatingAiText: {
-    color: '#F4E7C3',
-    fontSize: 12,
-    fontWeight: '900',
-    fontFamily: typography.mono,
-    letterSpacing: 1.5,
   },
 });
 

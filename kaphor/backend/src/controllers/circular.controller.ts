@@ -663,6 +663,12 @@ export async function getRecyclingCenters(req: Request, res: Response): Promise<
         distance: distanceStr,
         isClosestMatch: Boolean(city && facility.city.toLowerCase().includes(city.toLowerCase())),
       };
+    }).sort((a, b) => {
+      const rank = (c: { distance: string; isClosestMatch: boolean }) =>
+        c.distance === '3.5 km away' ? 0 : c.isClosestMatch ? 1 : 2;
+      const rankDiff = rank(a) - rank(b);
+      if (rankDiff !== 0) return rankDiff;
+      return b.zeroLandfillScore - a.zeroLandfillScore;
     });
 
     res.json({

@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 17,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -272,14 +272,14 @@ const styles = StyleSheet.create({
   },
   garmentBrand: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.copper,
     fontWeight: '800',
     textTransform: 'uppercase',
   },
   garmentTitle: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 14.5,
     fontWeight: '900',
     color: colors.charcoal,
     marginBottom: 4,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   },
   eolBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 10,
     fontWeight: '900',
     color: '#283618',
   },
@@ -312,9 +312,10 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 14.5,
     color: colors.charcoal,
     flex: 1,
+    lineHeight: 15,
   },
   locationBold: {
     fontWeight: '900',
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 13,
     color: colors.textMuted,
   },
   centersList: {
@@ -349,13 +350,13 @@ const styles = StyleSheet.create({
   },
   centerName: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 17,
     fontWeight: '900',
     color: colors.charcoal,
   },
   centerCityDist: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.forest,
     marginTop: 2,
@@ -368,7 +369,7 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 12,
     fontWeight: '900',
     color: '#283618',
   },
@@ -379,9 +380,10 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 13.5,
     color: colors.textMuted,
     flex: 1,
+    lineHeight: 15,
   },
   fiberTagRow: {
     flexDirection: 'row',
@@ -391,22 +393,23 @@ const styles = StyleSheet.create({
   },
   fiberTag: {
     backgroundColor: '#EFECE4',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 2,
   },
   fiberTagText: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.charcoal,
   },
   certText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 13.5,
     color: colors.copper,
     fontWeight: '700',
     marginTop: 2,
+    lineHeight: 14,
   },
   facilityDetailsBox: {
     backgroundColor: '#F7F5EE',
@@ -424,15 +427,15 @@ const styles = StyleSheet.create({
   },
   detailPhoneText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 14.5,
     fontWeight: '800',
     color: colors.forest,
   },
   dropOffInstructions: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 13.5,
     color: colors.charcoal,
-    lineHeight: 11,
+    lineHeight: 14,
   },
   aiScanCard: {
     flexDirection: 'row',
@@ -446,15 +449,15 @@ const styles = StyleSheet.create({
   },
   aiScanTitle: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 15.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
   aiScanSub: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 13.5,
     color: colors.textMuted,
-    lineHeight: 12,
+    lineHeight: 15,
     marginTop: 2,
   },
   mailInBanner: {
@@ -469,15 +472,15 @@ const styles = StyleSheet.create({
   },
   mailInTitle: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 15,
     fontWeight: '900',
     color: '#283618',
   },
   mailInSub: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 13.5,
     color: colors.charcoal,
-    lineHeight: 12,
+    lineHeight: 15,
     marginTop: 2,
   },
 });

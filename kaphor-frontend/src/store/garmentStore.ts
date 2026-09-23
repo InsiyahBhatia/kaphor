@@ -27,6 +27,7 @@ interface GarmentState {
   garments: Garment[];
   featured: Garment[];
   isLoading: boolean;
+  fetchError: string | null;
   pagination: { nextCursor: string | null };
   setGarments: (garments: Garment[]) => void;
   setFeatured: (featured: Garment[]) => void;
@@ -41,6 +42,7 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
   garments: [],
   featured: [],
   isLoading: false,
+  fetchError: null,
   pagination: { nextCursor: null },
   setGarments: (garments) => set({ garments }),
   setFeatured: (featured) => set({ featured }),
@@ -58,7 +60,7 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
     return get().fetchFeed();
   },
   fetchFeed: async (filters = {}) => {
-    set({ isLoading: true });
+    set({ isLoading: true, fetchError: null });
     try {
       const { garmentService } = await import('../services/garmentService');
       const response = await garmentService.getFeed(filters);
@@ -71,11 +73,22 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
       set({ 
         garments: filtered, 
         pagination: response.pagination || { nextCursor: null }, 
-        isLoading: false 
+        isLoading: false,
+        fetchError: null,
       });
     } catch (error) {
       set({ isLoading: false });
       console.error('Failed to fetch garment feed', error);
+      if (error instanceof Error) {
+        const isTimeout = error.message.includes('timeout') || error.message.includes('exceeded');
+        set({
+          fetchError: isTimeout
+            ? 'Request timed out. The marketplace may still be waking up — pull to refresh.'
+            : 'Could not load the marketplace. Check your connection and retry.',
+        });
+      } else {
+        set({ fetchError: 'Could not load the marketplace. Check your connection and retry.' });
+      }
     }
   },
 }));
