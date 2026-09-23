@@ -23,8 +23,80 @@ export interface YouTubeVideo {
   duration?: string;
 }
 
+// Tokens stripped from the query when extracting ranking keywords, so only the
+// discriminative terms (garment / fiber / damage) drive the re-ranking score.
+const YOUTUBE_TOPIC_STOPWORDS = new Set([
+  'the', 'a', 'an', 'and', 'for', 'to', 'of', 'in', 'on', 'with', 'old', 'step', 'by', 'from', 'your', 'at', 'as', 'into',
+  'how', 'fix', 'mend', 'repair', 'upcycle', 'rework', 'transformation', 'tutorial', 'guide', 'ideas',
+  'zero', 'waste', 'textile', 'recycling', 'clothing', 'diy', 'drop', 'off',
+]);
+
+const YOUTUBE_ACTION_RE = /(how to|\brepair\b|\bmend\b|\bfix(?:ing|ed)?\b|\bupcycle\b|\brework\b|\btransform(?:ing|ed)?\b|\bdiy\b|\bstain\b|\bholes?\b)/i;
+
+const YOUTUBE_IRRELEVANT_RE = /(official\s*(audio|music|video)|lyrics|music video|\btrailer\b|\bmovie\b|\bgameplay\b|\breaction\b|news live|podcast|full song|full album|clip compilation|\bnft\b|\bpoem\b|funniest|prank)/i;
+
 /**
- * Search YouTube for repair/upcycle tutorials based on garment + damage context
+ * Re-rank YouTube results so the most on-topic tutorials (matching the garment,
+ * fiber and/or damage from the query) float to the top and unrelated content
+ * (music, trailers, gameplay, reaction videos) is dropped entirely.
+ */
+export function rankYouTubeResults(
+  videos: YouTubeVideo[],
+  query: string,
+  maxResults: number = 6,
+): YouTubeVideo[] {
+  const keywords = (query || '')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 2 && !YOUTUBE_TOPIC_STOPWORDS.has(t));
+
+  const scored = videos.map((v) => {
+    const title = (v.title || '').toLowerCase();
+    if (YOUTUBE_IRRELEVANT_RE.test(title)) return { v, score: -1 };
+    let score = 0;
+    if (YOUTUBE_ACTION_RE.test(title)) score += 3;
+    if (/(tutorial|how-to|step[ -]by[ -]step|beginner)/.test(title)) score += 1;
+    let matched = 0;
+    for (const kw of keywords) {
+      if (title.includes(kw)) matched++;
+    }
+    score += matched * 1.5;
+    return { v, score };
+  });
+
+  const kept = scored
+    .filter((s) => s.score >= 4.5)
+    .sort((a, b) => b.score - a.score)
+    .map((s) => s.v);
+  const fill = scored
+    .filter((s) => s.score > 0 && s.score < 4.5)
+    .sort((a, b) => b.score - a.score)
+    .map((s) => s.v);
+
+  const seen = new Set<string>();
+  const dedupe = (list: YouTubeVideo[]) =>
+    list.filter((v) => {
+      if (!v.videoId || seen.has(v.videoId)) return false;
+      seen.add(v.videoId);
+      return true;
+    });
+
+  const combined = dedupe([...kept, ...fill]);
+  if (combined.length === 0) {
+    // Absolute fallback: return YouTube's relevance order, barring junk.
+    const leftovers = scored
+      .filter((s) => s.score !== -1)
+      .sort((a, b) => b.score - a.score)
+      .map((s) => s.v);
+    return dedupe(leftovers).slice(0, maxResults);
+  }
+  return combined.slice(0, maxResults);
+}
+
+/**
+ * Search YouTube for repair/upcycle tutorials based on garment + damage context.
+ * Pulls more candidates than needed, re-ranks them against the query keywords and
+ * narrows to the most relevant, on-topic tutorials.
  */
 async function searchYouTubeTutorials(
   query: string,
@@ -36,27 +108,38 @@ async function searchYouTubeTutorials(
   }
 
   try {
-    const url = new URL(YOUTUBE_SEARCH_URL);
-    url.searchParams.set('part', 'snippet');
-    url.searchParams.set('q', query);
-    url.searchParams.set('type', 'video');
-    url.searchParams.set('videoEmbeddable', 'true');
-    url.searchParams.set('maxResults', String(maxResults));
-    url.searchParams.set('relevanceLanguage', 'en');
-    url.searchParams.set('key', YOUTUBE_API_KEY);
+    const fetchResults = async (categoryFilter?: string) => {
+      const url = new URL(YOUTUBE_SEARCH_URL);
+      url.searchParams.set('part', 'snippet');
+      url.searchParams.set('q', query);
+      url.searchParams.set('type', 'video');
+      url.searchParams.set('videoEmbeddable', 'true');
+      url.searchParams.set('maxResults', String(maxResults * 3));
+      url.searchParams.set('relevanceLanguage', 'en');
+      url.searchParams.set('regionCode', 'IN');
+      url.searchParams.set('safeSearch', 'moderate');
+      url.searchParams.set('key', YOUTUBE_API_KEY);
+      if (categoryFilter) url.searchParams.set('videoCategoryId', categoryFilter);
 
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      logger.warn(`[Repair] YouTube search failed: ${response.status}`);
-      return [];
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        logger.warn(`[Repair] YouTube search failed: ${response.status}`);
+        return null;
+      }
+      return (await response.json()) as any;
+    };
+
+    // Prefer the "Howto & Style" category for precision; fall back to a general
+    // search when that bucket comes back empty.
+    let data = await fetchResults('26');
+    if (!data || (data?.items || []).length === 0) {
+      data = await fetchResults(undefined);
     }
 
-    const data = (await response.json()) as any;
-    const items = data?.items || [];
-
+    const items: any[] = data?.items || [];
     if (items.length === 0) return [];
 
-    return items
+    const videos = items
       .map((item: any) => ({
         videoId: item.id?.videoId || '',
         title: item.snippet?.title || '',
@@ -68,6 +151,8 @@ async function searchYouTubeTutorials(
         publishedAt: item.snippet?.publishedAt || '',
       }))
       .filter((v: YouTubeVideo) => v.videoId);
+
+    return rankYouTubeResults(videos, query, maxResults);
   } catch (err: any) {
     logger.error('[Repair] YouTube search error', { error: err.message });
     return [];
@@ -90,22 +175,32 @@ export function buildYouTubeQuery(
   const cleanFiber = fiberType && fiberType !== 'Cotton' ? fiberType : '';
   const damageList = (damageTypes?.filter(d => d && d !== 'none') || []).slice(0, 2);
 
+  const parts: string[] = [];
+
   if (decision === 'UPCYCLE') {
-    // For upcycling, do NOT search for damage types (hole, tear, etc.) because that returns mending/repair videos!
-    // Search strictly for creative transformation, rework, and DIY ideas.
-    return `how to upcycle old ${cleanCat} diy rework ideas transformation tutorial -repair -mending`.trim();
+    // Upcycling: never surface repair/mending videos — search only for creative
+    // transformation, keeping garment + fiber context to sharpen the results.
+    parts.push('upcycle');
+    if (cleanCat !== 'clothing') parts.push(cleanCat);
+    if (cleanFiber) parts.push(cleanFiber);
+    parts.push('diy rework ideas tutorial');
+    return parts.join(' ').replace(/\s+/g, ' ').trim();
   }
 
   if (decision === 'RECYCLE') {
-    return `how to textile recycling old ${cleanCat} drop off zero waste`.trim();
+    parts.push('how to textile recycling');
+    if (cleanCat !== 'clothing') parts.push(cleanCat);
+    if (cleanFiber) parts.push(cleanFiber);
+    parts.push('zero waste guide');
+    return parts.join(' ').replace(/\s+/g, ' ').trim();
   }
 
-  // REPAIR: target mending and restoring the specific damage
-  const parts = ['how to repair fix mend'];
+  // REPAIR (and any other decision): target mending the specific damage.
+  parts.push('how to repair fix mend');
   if (cleanFiber) parts.push(cleanFiber);
   if (cleanCat !== 'clothing') parts.push(cleanCat);
   if (damageList.length > 0) parts.push(damageList.join(' '));
-  parts.push('step by step tutorial');
+  parts.push('tutorial');
 
   return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
