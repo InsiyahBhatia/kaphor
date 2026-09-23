@@ -860,12 +860,16 @@ export function computeT3PriceRecommendation(
       if (recommendedPrice < floor) recommendedPrice = floor;
     }
   } else if (opts?.hintPrice && opts.hintPrice > 0) {
-    // Gemini saw the garment — trust its estimate, but never quote below the
-    // market floor for the category (avoids absurd sub-market values).
+    // Gemini saw the garment — keep its estimate, but keep it honest against
+    // the empirical market: never quote below the category floor and never let
+    // an inflated estimate exceed ~4x the market baseline (designer brands get
+    // extra headroom through the tier multiplier).
     recommendedPrice = Math.round(opts.hintPrice);
     if (marketBaseline > 0) {
-      const floor = Math.round(marketBaseline * 0.6 * beta);
+      const floor = Math.round(marketBaseline * tier * beta * 0.6);
+      const ceiling = Math.round(marketBaseline * tier * beta * 4);
       if (recommendedPrice < floor) recommendedPrice = floor;
+      if (recommendedPrice > ceiling) recommendedPrice = ceiling;
     }
   } else {
     // No signal: empirical market median scaled by brand tier and condition.

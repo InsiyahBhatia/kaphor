@@ -16,12 +16,28 @@ describe('computeT3PriceRecommendation', () => {
     expect(rec.suggestedRentalPriceDay).toBeGreaterThan(199);
   });
 
-  it('preserves the AI estimate instead of regressing to the thrift average', () => {
+  it('keeps the AI estimate when it sits within the market ceiling', () => {
     const rec = computeT3PriceRecommendation(
       'Sarees', undefined, 'Designer Saree', 'MINOR_WEAR', 'Sabyasachi',
+      { hintPrice: 1500 },
+    );
+    expect(rec.recommendedPrice).toBe(1500);
+  });
+
+  it('caps an AI estimate that overprices the market', () => {
+    const generic = computeT3PriceRecommendation(
+      'Sarees', undefined, 'Silk Saree', 'MINOR_WEAR', 'Unknown',
       { hintPrice: 5000 },
     );
-    expect(rec.recommendedPrice).toBe(5000);
+    // Designer tier gets headroom; generic gets reined in to the market band.
+    const designer = computeT3PriceRecommendation(
+      'Sarees', undefined, 'Silk Saree', 'MINOR_WEAR', 'Sabyasachi',
+      { hintPrice: 5000 },
+    );
+    expect(generic.recommendedPrice).toBeLessThan(5000);
+    expect(generic.recommendedPrice).toBeGreaterThanOrEqual(150);
+    expect(designer.recommendedPrice).toBeGreaterThan(generic.recommendedPrice);
+    expect(designer.recommendedPrice).toBeLessThanOrEqual(5000);
   });
 
   it('floors a low AI estimate to the category market floor', () => {
