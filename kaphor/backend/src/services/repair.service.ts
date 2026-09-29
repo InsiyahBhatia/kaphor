@@ -625,21 +625,40 @@ export async function assessRepair(
   }
 
   // ── Step 2: Get T5 repair & upcycle guides (segregated) ─────────
-  const damageTypes = glieResult.damage_breakdown.damage_types;
-  // Also add damage_description words as potential damage types
-  const extraTypes = input.damage_description
-    ? input.damage_description
-        .toLowerCase()
-        .split(/[\s,]+/)
-        .filter(w => RECOGNIZED_DAMAGE_KEYWORDS.includes(w))
-    : [];
+  const fullText = [
+    input.damage_description || '',
+    input.style_tags || '',
+    glieResult.description || '',
+    glieResult.suggested_repair_technique || '',
+    glieResult.repair_feasibility || '',
+  ].join(' ').toLowerCase();
+
+  let resolvedCat = (input.garment_category || '').toLowerCase();
+  if (!resolvedCat || resolvedCat === 'other' || resolvedCat === 'clothing') {
+    if (/\b(shirt|blouse|polo|button-down|top|tshirt|t-shirt|button|buttons|buttonhole|placket|collar|cuff)\b/i.test(fullText)) {
+      resolvedCat = 'shirt';
+    } else if (/\b(dress|gown|frock|skirt)\b/i.test(fullText)) {
+      resolvedCat = 'dress';
+    } else if (/\b(jeans|denim|pants|trousers)\b/i.test(fullText)) {
+      resolvedCat = 'jeans';
+    } else if (/\b(sweater|cardigan|knitwear|hoodie)\b/i.test(fullText)) {
+      resolvedCat = 'sweater';
+    }
+  }
+  (glieResult as any).garment_category = resolvedCat || input.garment_category;
+  (glieResult as any).fiber_type = input.fiber_type;
+
+  const damageTypes = glieResult.damage_breakdown.damage_types || [];
+  const extraTypes = fullText
+    .split(/[\s,.-]+/)
+    .filter(w => RECOGNIZED_DAMAGE_KEYWORDS.includes(w));
 
   const allDamageTypes = [...new Set([...damageTypes, ...extraTypes])];
   const queryDamage = allDamageTypes.length > 0 ? allDamageTypes : ['tear', 'stain', 'fading'];
 
-  const repairGuides = queryT5(input.fiber_type, queryDamage, input.garment_category, 'repair');
-  const upcycleGuides = queryT5(input.fiber_type, queryDamage, input.garment_category, 'upcycle');
-  const allGuides = queryT5(input.fiber_type, queryDamage, input.garment_category);
+  const repairGuides = queryT5(input.fiber_type, queryDamage, resolvedCat, 'repair');
+  const upcycleGuides = queryT5(input.fiber_type, queryDamage, resolvedCat, 'upcycle');
+  const allGuides = queryT5(input.fiber_type, queryDamage, resolvedCat);
 
   // ── Step 2b: Curated reading lists (real articles with URLs) ──
   const mapReadingList = (docs: any[]) =>
@@ -654,32 +673,32 @@ export async function assessRepair(
     }));
 
   const repairReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, input.garment_category, 4, 'repair')
+    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4, 'repair')
   );
   const upcycleReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, input.garment_category, 4, 'upcycle')
+    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4, 'upcycle')
   );
   const allReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, input.garment_category, 4)
+    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4)
   );
 
   // ── Step 3: Search YouTube for repair & upcycle tutorials (parallel) ──
   const repairQuery = buildYouTubeQuery(
-    input.garment_category,
+    resolvedCat,
     input.fiber_type,
     allDamageTypes.length > 0 ? allDamageTypes : ['repair'],
     'REPAIR',
   );
   const upcycleQuery = buildYouTubeQuery(
-    input.garment_category,
+    resolvedCat,
     input.fiber_type,
     allDamageTypes.length > 0 ? allDamageTypes : ['upcycle'],
     'UPCYCLE',
   );
 
   const [repairVideos, upcycleVideos] = await Promise.all([
-    searchYouTubeTutorials(repairQuery, 6, 'REPAIR', input.garment_category),
-    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE', input.garment_category),
+    searchYouTubeTutorials(repairQuery, 6, 'REPAIR', resolvedCat),
+    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE', resolvedCat),
   ]);
 
   return {
@@ -708,20 +727,37 @@ export async function lookupRepairFromAssessment(
 ): Promise<RepairAssessmentResult> {
   initGLIE();
 
+  const fullText = [
+    input.damage_description || '',
+    input.repair_feasibility || '',
+    (input as any).description || '',
+    (input as any).suggested_repair_technique || '',
+  ].join(' ').toLowerCase();
+
+  let resolvedCat = (input.garment_category || '').toLowerCase();
+  if (!resolvedCat || resolvedCat === 'other' || resolvedCat === 'clothing') {
+    if (/\b(shirt|blouse|polo|button-down|top|tshirt|t-shirt|button|buttons|buttonhole|placket|collar|cuff)\b/i.test(fullText)) {
+      resolvedCat = 'shirt';
+    } else if (/\b(dress|gown|frock|skirt)\b/i.test(fullText)) {
+      resolvedCat = 'dress';
+    } else if (/\b(jeans|denim|pants|trousers)\b/i.test(fullText)) {
+      resolvedCat = 'jeans';
+    } else if (/\b(sweater|cardigan|knitwear|hoodie)\b/i.test(fullText)) {
+      resolvedCat = 'sweater';
+    }
+  }
+
   const damageTypes = input.damage_types || [];
-  const extraTypes = input.damage_description
-    ? input.damage_description
-        .toLowerCase()
-        .split(/[\s,]+/)
-        .filter((w) => RECOGNIZED_DAMAGE_KEYWORDS.includes(w))
-    : [];
+  const extraTypes = fullText
+    .split(/[\s,.-]+/)
+    .filter((w) => RECOGNIZED_DAMAGE_KEYWORDS.includes(w));
 
   const allDamageTypes = [...new Set([...damageTypes, ...extraTypes])];
   const queryDamage = allDamageTypes.length > 0 ? allDamageTypes : ['tear', 'stain', 'fading'];
 
-  const repairGuides = queryT5(input.fiber_type, queryDamage, input.garment_category, 'repair');
-  const upcycleGuides = queryT5(input.fiber_type, queryDamage, input.garment_category, 'upcycle');
-  const allGuides = queryT5(input.fiber_type, queryDamage, input.garment_category);
+  const repairGuides = queryT5(input.fiber_type, queryDamage, resolvedCat, 'repair');
+  const upcycleGuides = queryT5(input.fiber_type, queryDamage, resolvedCat, 'upcycle');
+  const allGuides = queryT5(input.fiber_type, queryDamage, resolvedCat);
 
   const mapReadingList = (docs: any[]) =>
     docs.map((g) => ({
@@ -735,31 +771,31 @@ export async function lookupRepairFromAssessment(
     }));
 
   const repairReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, input.garment_category, 4, 'repair')
+    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4, 'repair')
   );
   const upcycleReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, input.garment_category, 4, 'upcycle')
+    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4, 'upcycle')
   );
   const allReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, input.garment_category, 4)
+    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4)
   );
 
   const repairQuery = buildYouTubeQuery(
-    input.garment_category,
+    resolvedCat,
     input.fiber_type,
     allDamageTypes.length > 0 ? allDamageTypes : ['repair'],
     'REPAIR',
   );
   const upcycleQuery = buildYouTubeQuery(
-    input.garment_category,
+    resolvedCat,
     input.fiber_type,
     allDamageTypes.length > 0 ? allDamageTypes : ['upcycle'],
     'UPCYCLE',
   );
 
   const [repairVideos, upcycleVideos] = await Promise.all([
-    searchYouTubeTutorials(repairQuery, 6, 'REPAIR', input.garment_category),
-    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE', input.garment_category),
+    searchYouTubeTutorials(repairQuery, 6, 'REPAIR', resolvedCat),
+    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE', resolvedCat),
   ]);
 
   const conditionScore = input.condition_score ?? 0.45;
@@ -785,7 +821,9 @@ export async function lookupRepairFromAssessment(
     repair_feasibility: feasibility,
     suggested_repair_technique: 'Visible mending & upcycling rework',
     suggested_price_inr: input.original_price_inr ? Math.round(input.original_price_inr * 0.4) : undefined,
-    description: `Assessed ${input.fiber_type} ${input.garment_category}. ${feasibility}`,
+    description: `Assessed ${input.fiber_type} ${resolvedCat || input.garment_category}. ${feasibility}`,
+    garment_category: resolvedCat || input.garment_category,
+    fiber_type: input.fiber_type,
     rag_context: {
       examples_used: 1,
       guides_matched: allGuides.length,

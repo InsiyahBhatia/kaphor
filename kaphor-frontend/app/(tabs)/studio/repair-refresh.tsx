@@ -49,6 +49,7 @@ export default function RepairRefreshScreen() {
     autoAssess?: string;
     useSharedAssessment?: string;
     damageTypes?: string;
+    damageDescription?: string;
     repairFeasibility?: string;
     conditionScore?: string;
   }>();
@@ -135,6 +136,7 @@ export default function RepairRefreshScreen() {
             garment_category: params.prefillCategory || 'other',
             fiber_type: params.prefillFiber || 'Cotton',
             damage_types: parsedDamages,
+            damage_description: params.damageDescription,
             repair_feasibility: params.repairFeasibility,
             condition_score: params.conditionScore ? parseFloat(params.conditionScore) : undefined,
             original_price_inr: parseFloat(params.prefillPrice || '0') || 0,
@@ -383,20 +385,25 @@ export default function RepairRefreshScreen() {
     const labelHead = sub.category ? sub.category.charAt(0).toUpperCase() + sub.category.slice(1) : 'Garment';
     const garmentLabel = sub.fiber ? `${labelHead} — ${sub.fiber}` : labelHead;
 
-    const resolvedCategory = (
-      sub.category ||
-      category ||
-      params.prefillCategory ||
-      (result.glie as any)?.garment_category ||
-      (result.glie as any)?.category ||
-      (result.glie as any)?.description ||
-      ''
-    ).toLowerCase();
+    const allClues = [
+      sub.category,
+      category,
+      params.prefillCategory,
+      (result.glie as any)?.garment_category,
+      (result.glie as any)?.category,
+      (result.glie as any)?.description,
+      (result.glie as any)?.suggested_repair_technique,
+      (result.glie as any)?.repair_feasibility,
+      params.damageDescription,
+      params.damageTypes,
+      params.prefillFiber,
+      (result.glie as any)?.fiber_type,
+    ].filter(Boolean).join(' ').toLowerCase();
 
-    const isDress = resolvedCategory.includes('dress') || resolvedCategory.includes('skirt') || resolvedCategory.includes('gown');
-    const isSweater = resolvedCategory.includes('sweater') || resolvedCategory.includes('knit') || resolvedCategory.includes('cardigan');
-    const isJeans = resolvedCategory.includes('jean') || resolvedCategory.includes('denim');
-    const isShirt = resolvedCategory.includes('shirt') || resolvedCategory.includes('top') || resolvedCategory.includes('blouse') || resolvedCategory.includes('polo');
+    const isShirt = /\b(shirt|button|buttons|buttonhole|placket|collar|cuff|cuffs|blouse|polo|button-down|top|tshirt|t-shirt)\b/i.test(allClues);
+    const isDress = !isShirt && /\b(dress|skirt|gown|frock|sundress|anarkali)\b/i.test(allClues);
+    const isSweater = !isShirt && !isDress && /\b(sweater|knit|cardigan|wool|pullover|jumper)\b/i.test(allClues);
+    const isJeans = !isShirt && !isDress && /\b(jean|jeans|denim)\b/i.test(allClues);
 
     // Filter incoming YouTube videos so conflicting garments never show up
     const filterConflictingVideos = (list: YouTubeVideo[]) =>
@@ -814,7 +821,7 @@ export default function RepairRefreshScreen() {
       ? (result.repair_guides && result.repair_guides.length > 0 ? result.repair_guides : (result.guides || []).filter(g => g.doc_type !== 'upcycle'))
       : (result.upcycle_guides && result.upcycle_guides.length > 0 ? result.upcycle_guides : (result.guides || []).filter(g => g.doc_type === 'upcycle'));
 
-    const activeGuides: T5GuideResult[] = rawActiveGuides.filter((g) => {
+    const filteredGuides: T5GuideResult[] = rawActiveGuides.filter((g) => {
       const lower = (g.title + ' ' + (g.pro_tip || '')).toLowerCase();
       if (isDress) {
         if (/\b(jeans|denim|sweater|hoodie|crotch blowout|socks|beanie)\b/i.test(lower) && !/\b(dress|skirt|gown)\b/i.test(lower)) {
@@ -835,6 +842,93 @@ export default function RepairRefreshScreen() {
       }
       return true;
     });
+
+    const SHIRT_FALLBACK_REPAIR_GUIDES: T5GuideResult[] = [
+      {
+        doc_type: 'repair',
+        title: 'Shirt Placket Tear & Hole Repair: Interfacing Reinforcement Behind Buttons',
+        difficulty: 'beginner',
+        time_minutes: 25,
+        technique_style: 'Interfacing Placket Reinforcement & Button Restitching',
+        tools_required: ['Fusible lightweight interfacing', 'Hand sewing needle', 'Matching thread', 'Iron', 'Tailor chalk'],
+        steps: [
+          'Fuse a 1.5-inch strip of lightweight interfacing directly behind the torn button placket to bridge the hole.',
+          'Bring torn fiber edges flush and anchor with tiny overcast whip stitches into the interfacing backing.',
+          'Re-align the button precisely over the reinforced zone and stitch firmly with 6-8 passes through all layers.',
+          'Create a 2mm thread shank under the button to eliminate strain on the repaired placket.',
+        ],
+        pro_tip: 'Always insert fusible interfacing behind button tears — stitching into torn fabric without reinforcement will immediately rip open under tension.',
+      },
+      {
+        doc_type: 'repair',
+        title: 'How to Repair a Torn or Frayed Buttonhole on a Shirt or Blouse',
+        difficulty: 'beginner',
+        time_minutes: 20,
+        technique_style: 'Buttonhole Stitch & Gimp Cord Reinforcement',
+        tools_required: ['Fine embroidery or sewing needle', 'Matching cotton thread', 'Fray check or clear fabric glue', 'Small embroidery scissors'],
+        steps: [
+          'Trim frayed thread tendrils around the torn buttonhole slit with fine scissors.',
+          'Apply a droplet of fabric stabilizer or fray check along the slit lips and let dry for 2 minutes.',
+          'Lay a strand of gimp or doubled thread along the buttonhole edge as internal cord reinforcement.',
+          'Work tight, dense buttonhole blanket stitches over the cord, securing both torn edges permanently.',
+        ],
+        pro_tip: 'Work the buttonhole stitches densely with the purl knot resting right on the opening edge for maximum wear resistance.',
+      },
+      {
+        doc_type: 'repair',
+        title: 'Invisible Underarm Seam & Blowout Repair for Shirts and Blouses',
+        difficulty: 'beginner',
+        time_minutes: 20,
+        technique_style: 'Ladder Stitch & Seam Reinforcement',
+        tools_required: ['Hand sewing needle', 'Matching thread', 'Pins'],
+        steps: [
+          'Turn shirt inside out and press open the torn seam allowance with fingers or warm iron.',
+          'Align the seam line and pin securely on either side of the tear.',
+          'Execute a reinforced backstitch along the original stitch line, overlapping 1 inch into sound stitching.',
+          'Finish seam edges with pinking shears or an overcast stitch to stop future unraveling.',
+        ],
+        pro_tip: 'Overlapping into intact stitching by at least 1 inch prevents the seam blowout from reappearing.',
+      },
+    ];
+
+    const SHIRT_FALLBACK_UPCYCLE_GUIDES: T5GuideResult[] = [
+      {
+        doc_type: 'upcycle',
+        title: 'Upcycle an Oversized Button-Down Shirt into a Modern Cropped Wrap Blouse',
+        difficulty: 'beginner',
+        time_minutes: 40,
+        technique_style: 'Crop & Waist Tie Reconstruction',
+        tools_required: ['Fabric shears', 'Sewing pins', 'Sewing needle or machine', 'Matching thread', 'Iron'],
+        steps: [
+          'Try on the shirt, mark your natural waistline with tailor chalk, and cut straight across with a 1-inch hem allowance.',
+          'Use the cut-off lower tail panels to slice two 3-inch wide tie bands for the wrap waist.',
+          'Hem the raw bottom edge of the cropped shirt with a clean 0.5-inch double-fold hem.',
+          'Attach the tie bands to the lower placket corners and press flat with a steam iron.',
+        ],
+        pro_tip: 'Keep the original front button placket and collar intact — they give the cropped wrap blouse structured designer appeal.',
+      },
+      {
+        doc_type: 'upcycle',
+        title: 'Convert an Old Flannel or Oxford Shirt into a Zero-Waste Artisan Chef Apron',
+        difficulty: 'beginner',
+        time_minutes: 35,
+        technique_style: 'Collar-Loop Apron Conversion',
+        tools_required: ['Fabric scissors', 'Measuring tape', 'Sewing pins', 'Thread', 'Sewing needle or machine'],
+        steps: [
+          'Cut away the back panel and sleeves of the shirt, keeping the collar band and entire front button panel intact.',
+          'The intact collar becomes the ready-made neck strap; unbuttoning allows effortless slip-on over the head.',
+          'Hem the raw side edges where sleeves were removed with a 0.5-inch rolled hem.',
+          'Cut two 20-inch waist ties from leftover back panel fabric and stitch to the apron sides.',
+        ],
+        pro_tip: 'Keep the original chest pockets — they become instant utensil and thermometer pockets on your artisan apron.',
+      },
+    ];
+
+    const activeGuides: T5GuideResult[] = filteredGuides.length > 0
+      ? filteredGuides
+      : (isShirt
+          ? (isRepair ? SHIRT_FALLBACK_REPAIR_GUIDES : SHIRT_FALLBACK_UPCYCLE_GUIDES)
+          : filteredGuides);
 
     const blogLinks = [
       ...apiBlogs.map((b) => ({

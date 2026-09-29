@@ -358,18 +358,33 @@ export default function ConditionCheckScreen() {
                     if ((result as any)?.rawRepairResult) {
                       setSharedRepairAssessment((result as any).rawRepairResult);
                     }
+                    const descText = (result?.description || '').toLowerCase();
+                    let deducedCat = category || (result as any)?.garment_category || '';
+                    if (!deducedCat || deducedCat === 'other') {
+                      if (/\b(shirt|blouse|polo|button|placket|collar|cuff|button-down)\b/i.test(descText)) {
+                        deducedCat = 'shirt';
+                      } else if (/\b(dress|gown|skirt)\b/i.test(descText)) {
+                        deducedCat = 'dress';
+                      } else if (/\b(jeans|denim|pants)\b/i.test(descText)) {
+                        deducedCat = 'jeans';
+                      } else if (/\b(sweater|cardigan|knitwear|hoodie)\b/i.test(descText)) {
+                        deducedCat = 'sweater';
+                      }
+                    }
+
                     router.push({
                       pathname: '/(tabs)/studio/repair-refresh',
                       params: {
-                        mode: 'upcycle',
+                        mode: result?.routing_decision === 'UPCYCLE' ? 'upcycle' : 'repair',
                         useSharedAssessment: 'true',
                         prefillImage: imageUri || '',
-                        prefillCategory: category || (result as any)?.garment_category || '',
+                        prefillCategory: deducedCat || category || '',
                         prefillFiber: fiber || (result as any)?.fiber_type || '',
                         prefillPrice: price || '',
-                        damageTypes: JSON.stringify(result.damage_breakdown?.damage_types || []),
-                        repairFeasibility: result.repair_feasibility || '',
-                        conditionScore: String(result.condition_score ?? 0.45),
+                        damageDescription: result?.description || '',
+                        damageTypes: JSON.stringify(result?.damage_breakdown?.damage_types || []),
+                        repairFeasibility: result?.repair_feasibility || '',
+                        conditionScore: String(result?.condition_score ?? 0.45),
                       },
                     });
                   }}
