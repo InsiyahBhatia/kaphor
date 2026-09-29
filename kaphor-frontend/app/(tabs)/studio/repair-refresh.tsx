@@ -94,10 +94,14 @@ export default function RepairRefreshScreen() {
     const shared = getSharedRepairAssessment();
     if ((params.useSharedAssessment === 'true' || params.autoAssess === 'true') && shared) {
       setResult(shared);
+      const cat = params.prefillCategory || (shared.glie as any)?.garment_category || (shared.glie as any)?.category || '';
+      const fib = params.prefillFiber || (shared.glie as any)?.fiber_type || '';
       submittedRef.current = {
-        category: params.prefillCategory || (shared.glie as any)?.garment_category || '',
-        fiber: params.prefillFiber || (shared.glie as any)?.fiber_type || '',
+        category: cat,
+        fiber: fib,
       };
+      if (cat) setCategory(cat);
+      if (fib) setFiber(fib);
       if (params.prefillImage) setImageUri(params.prefillImage);
       setLoading(false);
       return;
@@ -112,10 +116,14 @@ export default function RepairRefreshScreen() {
       autoAssessedRef.current = true;
       (async () => {
         setLoading(true);
+        const cat = params.prefillCategory || '';
+        const fib = params.prefillFiber || '';
         submittedRef.current = {
-          category: params.prefillCategory || '',
-          fiber: params.prefillFiber || '',
+          category: cat,
+          fiber: fib,
         };
+        if (cat) setCategory(cat);
+        if (fib) setFiber(fib);
         try {
           let parsedDamages: string[] = [];
           if (params.damageTypes) {
@@ -375,45 +383,148 @@ export default function RepairRefreshScreen() {
     const labelHead = sub.category ? sub.category.charAt(0).toUpperCase() + sub.category.slice(1) : 'Garment';
     const garmentLabel = sub.fiber ? `${labelHead} — ${sub.fiber}` : labelHead;
 
+    const resolvedCategory = (
+      sub.category ||
+      category ||
+      params.prefillCategory ||
+      (result.glie as any)?.garment_category ||
+      (result.glie as any)?.category ||
+      (result.glie as any)?.description ||
+      ''
+    ).toLowerCase();
+
+    const isDress = resolvedCategory.includes('dress') || resolvedCategory.includes('skirt') || resolvedCategory.includes('gown');
+    const isSweater = resolvedCategory.includes('sweater') || resolvedCategory.includes('knit') || resolvedCategory.includes('cardigan');
+    const isJeans = resolvedCategory.includes('jean') || resolvedCategory.includes('denim');
+
+    // Filter incoming YouTube videos so conflicting garments never show up
+    const filterConflictingVideos = (list: YouTubeVideo[]) =>
+      list.filter(v => {
+        const t = (v.title || '').toLowerCase();
+        if (isDress) {
+          if (/\b(jeans|denim|sweater|knitwear|hoodie|pants|trousers|crotch|socks|beanie)\b/i.test(t) && !/\b(dress|skirt|gown)\b/i.test(t)) {
+            return false;
+          }
+        } else if (isSweater) {
+          if (/\b(jeans|denim|dress|saree|shorts)\b/i.test(t) && !/\b(sweater|knit|cardigan|wool)\b/i.test(t)) {
+            return false;
+          }
+        } else if (isJeans) {
+          if (/\b(sweater|knitwear|dress|saree|silk)\b/i.test(t) && !/\b(jeans|denim|pants)\b/i.test(t)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
     // 1. YouTube videos for active tab (strictly filter out repair/mending from upcycle!)
     const rawActiveYouTube = isRepair
       ? (result.repair_youtube && result.repair_youtube.length > 0
-          ? result.repair_youtube
-          : (result.youtube || []).filter(v => {
+          ? filterConflictingVideos(result.repair_youtube)
+          : filterConflictingVideos(result.youtube || []).filter(v => {
               const t = v.title.toLowerCase();
               return t.includes('repair') || t.includes('mend') || t.includes('fix') || t.includes('stitch') || t.includes('darn') || !t.includes('upcycle');
             }))
       : (result.upcycle_youtube && result.upcycle_youtube.length > 0
-          ? result.upcycle_youtube.filter(v => {
+          ? filterConflictingVideos(result.upcycle_youtube).filter(v => {
               const t = v.title.toLowerCase();
               return !t.includes('repair') && !t.includes('mend') && !t.includes('darning') && !t.includes('fix hole') && !t.includes('ripped');
             })
-          : (result.youtube || []).filter(v => {
+          : filterConflictingVideos(result.youtube || []).filter(v => {
               const t = v.title.toLowerCase();
               const isUpcycle = t.includes('upcycle') || t.includes('rework') || t.includes('diy') || t.includes('transform') || t.includes('shorts') || t.includes('tote');
               const isRepairVideo = t.includes('repair') || t.includes('mend') || t.includes('darn');
               return isUpcycle && !isRepairVideo;
             }));
 
-    const upcycleFallbackVideos: YouTubeVideo[] = [
+    const DRESS_UPCYCLE_FALLBACKS: YouTubeVideo[] = [
+      {
+        videoId: 'k9LmP4sQ2wR',
+        title: 'DIY Two-Piece Matching Set from Old Dress (Crop Top & Wrap Skirt)',
+        channelTitle: 'Thrift Flip & Rework Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'x8_G4bB1s-8',
+        title: 'Transform a Long Maxi Dress into a Tiered Cottagecore Mini Sundress',
+        channelTitle: 'DIY Fashion Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
       {
         videoId: '7zU4yv9V-F4',
-        title: 'DIY Old Jeans into Cute Aesthetic Tote Bag Tutorial',
+        title: 'How to Upcycle an Outdated Formal Gown into a Modern Slip Skirt',
+        channelTitle: 'Upcycle Stitches & Reworks',
+        thumbnail: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ];
+
+    const DRESS_REPAIR_FALLBACKS: YouTubeVideo[] = [
+      {
+        videoId: 'x4rY5pL9w2M',
+        title: 'How to Hem a Dress by Hand (Invisible Blind Stitch Tutorial)',
+        channelTitle: 'Handmade Wardrobe & Sewing Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'Invisible Ladder Stitch Tutorial: How to Mend Torn Dress Seams by Hand',
+        channelTitle: 'Handmade Wardrobe & Mending',
+        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'P9kL2mQ4w1Z',
+        title: 'How to Fix an Invisible Dress Zipper That Wont Close or Splits',
+        channelTitle: 'Gear & Garment Repair Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ];
+
+    const DEFAULT_UPCYCLE_FALLBACKS: YouTubeVideo[] = [
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'DIY Upcycling Project: Transform Old Clothes into Stylish Essentials',
         channelTitle: 'Upcycle Stitches & Reworks',
         thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop',
         publishedAt: '2024-01-01',
       },
       {
-        videoId: 'x8_G4bB1s-8',
-        title: 'How to Cut & Distress Old Jeans into Summer Denim Shorts',
-        channelTitle: 'DIY Fashion Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?q=80&w=600&auto=format&fit=crop',
+        videoId: 'k9LmP4sQ2wR',
+        title: 'Transform Oversized Clothes into Modern Matching Tops & Accessories',
+        channelTitle: 'Thrift Flip & Rework Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=600&auto=format&fit=crop',
         publishedAt: '2024-01-01',
       },
     ];
 
-    const activeYouTube = (!isRepair && rawActiveYouTube.length === 0)
-      ? upcycleFallbackVideos
+    const DEFAULT_REPAIR_FALLBACKS: YouTubeVideo[] = [
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'Invisible Ladder Stitch Tutorial: How to Mend Torn Seams by Hand',
+        channelTitle: 'Handmade Wardrobe & Mending',
+        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'P9kL2mQ4w1Z',
+        title: 'How to Fix a Broken Zipper with Pliers in 2 Minutes (No Sewing)',
+        channelTitle: 'Gear & Garment Repair Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ];
+
+    const activeFallbackVideos = isRepair
+      ? (isDress ? DRESS_REPAIR_FALLBACKS : DEFAULT_REPAIR_FALLBACKS)
+      : (isDress ? DRESS_UPCYCLE_FALLBACKS : DEFAULT_UPCYCLE_FALLBACKS);
+
+    const activeYouTube = rawActiveYouTube.length === 0
+      ? activeFallbackVideos
       : rawActiveYouTube;
 
     // 2. Curated blog articles & pattern guides for active tab
@@ -558,20 +669,18 @@ export default function RepairRefreshScreen() {
       },
     ];
 
-    const currentGarmentCategory = (category || (result?.glie as any)?.garment_category || '').toLowerCase();
-
     const rawDefaultCurated = isRepair ? curatedRepairBlogs : curatedUpcycleBlogs;
     const defaultCurated = rawDefaultCurated.filter((b) => {
       const lower = (b.title + ' ' + (b.summary || '')).toLowerCase();
-      if (currentGarmentCategory === 'dress') {
-        if (/\b(jeans|denim|sweater|hoodie|socks|beanie)\b/i.test(lower) && !/\b(dress|skirt)\b/i.test(lower)) {
+      if (isDress) {
+        if (/\b(jeans|denim|sweater|hoodie|socks|beanie)\b/i.test(lower) && !/\b(dress|skirt|gown)\b/i.test(lower)) {
           return false;
         }
-      } else if (currentGarmentCategory === 'sweater') {
+      } else if (isSweater) {
         if (/\b(jeans|denim|dress|saree)\b/i.test(lower) && !/\b(sweater|knit|cardigan)\b/i.test(lower)) {
           return false;
         }
-      } else if (currentGarmentCategory === 'jeans') {
+      } else if (isJeans) {
         if (/\b(sweater|dress|saree|silk)\b/i.test(lower) && !/\b(jeans|denim|pants)\b/i.test(lower)) {
           return false;
         }
@@ -583,9 +692,27 @@ export default function RepairRefreshScreen() {
       ? (result.repair_reading_list || [])
       : (result.upcycle_reading_list || []);
 
-    const activeGuides: T5GuideResult[] = isRepair
+    const rawActiveGuides: T5GuideResult[] = isRepair
       ? (result.repair_guides && result.repair_guides.length > 0 ? result.repair_guides : (result.guides || []).filter(g => g.doc_type !== 'upcycle'))
       : (result.upcycle_guides && result.upcycle_guides.length > 0 ? result.upcycle_guides : (result.guides || []).filter(g => g.doc_type === 'upcycle'));
+
+    const activeGuides: T5GuideResult[] = rawActiveGuides.filter((g) => {
+      const lower = (g.title + ' ' + (g.pro_tip || '')).toLowerCase();
+      if (isDress) {
+        if (/\b(jeans|denim|sweater|hoodie|crotch blowout|socks|beanie)\b/i.test(lower) && !/\b(dress|skirt|gown)\b/i.test(lower)) {
+          return false;
+        }
+      } else if (isSweater) {
+        if (/\b(jeans|denim|dress|saree|shorts)\b/i.test(lower) && !/\b(sweater|knit|cardigan|wool)\b/i.test(lower)) {
+          return false;
+        }
+      } else if (isJeans) {
+        if (/\b(sweater|knitwear|dress|saree|silk)\b/i.test(lower) && !/\b(jeans|denim|pants)\b/i.test(lower)) {
+          return false;
+        }
+      }
+      return true;
+    });
 
     const blogLinks = [
       ...apiBlogs.map((b) => ({
@@ -598,7 +725,25 @@ export default function RepairRefreshScreen() {
         summary: b.summary || 'External blog tutorial with pattern guides, diagrams, and fabric recommendations.',
       })),
       ...defaultCurated,
-    ].filter((item, i, arr) => item.url && arr.findIndex((x) => x.url === item.url) === i);
+    ]
+      .filter((item, i, arr) => item.url && arr.findIndex((x) => x.url === item.url) === i)
+      .filter((b) => {
+        const lower = (b.title + ' ' + (b.summary || '')).toLowerCase();
+        if (isDress) {
+          if (/\b(jeans|denim|sweater|hoodie|socks|beanie)\b/i.test(lower) && !/\b(dress|skirt|gown)\b/i.test(lower)) {
+            return false;
+          }
+        } else if (isSweater) {
+          if (/\b(jeans|denim|dress|saree)\b/i.test(lower) && !/\b(sweater|knit|cardigan)\b/i.test(lower)) {
+            return false;
+          }
+        } else if (isJeans) {
+          if (/\b(sweater|dress|saree|silk)\b/i.test(lower) && !/\b(jeans|denim|pants)\b/i.test(lower)) {
+            return false;
+          }
+        }
+        return true;
+      });
 
     const hasGuides = activeGuides.length > 0;
     const hasYouTube = activeYouTube.length > 0;
