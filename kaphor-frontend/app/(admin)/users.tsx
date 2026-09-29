@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  searchInput: { flex: 1, fontFamily: typography.mono, fontSize: 14.5, color: colors.textPrimary },
+  searchInput: { flex: 1, fontFamily: typography.mono, fontSize: 11, color: colors.textPrimary },
 
   chipRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   toggleChip: {
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   toggleChipActive: { backgroundColor: colors.ink },
-  toggleText: { fontFamily: typography.monoBold, fontSize: 12, color: colors.ink },
+  toggleText: { fontFamily: typography.monoBold, fontSize: 9, color: colors.ink },
   toggleTextActive: { color: colors.cream },
 
   list: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
@@ -243,8 +243,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   userInfo: { flex: 1 },
-  userName: { fontFamily: typography.bodyBold, fontSize: 18, color: colors.ink },
-  userEmail: { fontFamily: typography.mono, fontSize: 13, color: colors.textMuted, marginTop: 3 },
+  userName: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
+  userEmail: { fontFamily: typography.mono, fontSize: 9.5, color: colors.textMuted, marginTop: 3 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   actions: { justifyContent: 'center', gap: 8, paddingLeft: 8 },
   iconBtn: {
@@ -275,6 +275,6 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  pagerText: { fontFamily: typography.monoBold, fontSize: 13, color: colors.ink, letterSpacing: 1 },
-  pagerInfo: { fontFamily: typography.monoBold, fontSize: 13.5, color: colors.textMuted },
+  pagerText: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.ink, letterSpacing: 1 },
+  pagerInfo: { fontFamily: typography.monoBold, fontSize: 10, color: colors.textMuted },
 });

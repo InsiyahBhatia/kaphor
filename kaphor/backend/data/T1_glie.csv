@@ -1,0 +1,110 @@
+garment_id,photo_id,image_url,photo_angle,garment_category,garment_subcategory,brand,original_price_inr,age_months,times_worn,damage_ratio,stain_ratio,wear_zone_ratio,fiber_degradation,damage_types,damage_location,condition_score,human_condition_label,glie_routing,annotator_id,annotation_confidence,split,formula_routing
+glie_0001,glie_0001,#downtowngirl #downtowngirloutfit #downtowngirlaesthetic #autumn #autumnoutfit #autumnaesthetic #fall #falloutfit #fallaesthetic #y2k_.jpg,flat,top,twist-front short-sleeve tee (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0002,glie_0002,#weddingoutfit #lehanga #bridesmaid.jpg,flat,saree,embroidered organza saree with blouse (silk organza),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0003,glie_0003,1139058930779358455.jpg,flat,tshirt,crew-neck tee (cotton),Unbranded,,,,0.05,0.6,0.3,0.2,stain fading,overall,0.35,poor,RECYCLE,glie_groq-vision,0.9,train,UPCYCLE
+glie_0004,glie_0004,120260252547079051.jpg,front,dress,draped maxi dress (silk),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0005,glie_0005,12736811443939985.jpg,front,jacket,bomber leather jacket (leather),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0006,glie_0006,128774870592324956.jpg,flat,trousers,cargo trousers (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,test,RESELL
+glie_0007,glie_0007,140806234630778.jpg,front,sweater,chunky knit pullover (acrylic),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0008,glie_0008,14636767536740314.jpg,flat,sweater,zip-up cable knit cardigan (wool blend),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0009,glie_0009,15 Cute Ways to Cut a Shirt (Trendy DIY Styles).jpg,flat,tshirt,distressed crew-neck tee (cotton),Unbranded,,,,0.15,0,0.4,0.3,loose_threads snag,hem,0.65,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0010,glie_0010,15199717492650613.jpg,front,dress,floral print slip dress (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0011,glie_0011,18718154696355111.jpg,front,hoodie,distressed zip-up hoodie (cotton),Unbranded,,,,0.35,0.15,0.6,0.4,tear hole stain loose_threads fading,overall,0.45,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0012,glie_0012,2040762329411242.jpg,front,blouse,"embroidered net blouse (net, silk, sequins)",Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,RESELL,train,
+glie_0013,glie_0013,26247610324616781.jpg,flat,dress,puff-sleeve pinstripe dress (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0014,glie_0014,281543727216682.jpg,flat,dress,ruffled high-neck midi dress (chiffon),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0015,glie_0015,326651779251066619.jpg,flat,sweater,striped polo-neck sweater (wool),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0016,glie_0016,50243352087848352.jpg,flat,trousers,camo cargo shorts (cotton),Unbranded,,,,0.05,0,0.15,0.1,fading loose_threads,hem,0.75,good,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0017,glie_0017,52002570694525864.jpg,flat,jacket,zip-up track jacket (polyester),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0018,glie_0018,534239574558929826.jpg,front,tshirt,distressed crew-neck tee (cotton),Unbranded,,,,0.15,0,0.1,0.3,hole tear,overall,0.55,fair,RESELL,glie_groq-vision,0.85,test,UPCYCLE
+glie_0019,glie_0019,602426887689067705.jpg,flat,jacket,bomber leather jacket (leather),Unbranded,,,,0.02,0,0.15,0.1,fading,overall,0.78,good,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0020,glie_0020,651473902397705364.jpg,flat,tshirt,graphic print tee (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0021,glie_0021,710794753734896504.jpg,flat,dress,floral print midi dress (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0022,glie_0022,7248049395433239.jpg,flat,dress,puff-sleeve mini dress (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0023,glie_0023,99501473018318672.jpg,flat,jacket,"cropped shearling-lined leather jacket (leather, shearling)",Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,RESELL,
+glie_0024,glie_0024,@refined_usa.jpg,flat,tshirt,distressed crew-neck tee (cotton),Unbranded,,,,0.15,0,0.4,0.3,hole fading loose_threads,sleeve,0.55,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0025,glie_0025,@shopsafehouse on Instagram_ _Super faded and repaired inside out tee - XXL - Sunday 25th 3pm est_.jpg,front,tshirt,distressed oversized tee (cotton),Unbranded,,,,0.15,0.2,0.3,0.4,hole stain loose_threads fading,front,0.45,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0026,glie_0026,@unfitforuse HOODIE.jpg,flat,hoodie,zip-up hoodie (cotton),Unbranded,,,,0.15,0.4,0.3,0.4,stain fading hole loose_threads,overall,0.35,poor,RECYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0027,glie_0027,"AI generated Vintage Dirty White Shirt, Stained, Torn, and Worn.jpg",flat,tshirt,crew-neck tee (cotton),Unbranded,,,,0.85,0.9,0.8,0.95,stain fading bleaching tear,overall,0.15,destroyed,RECYCLE,RECYCLE,0.95,train,
+glie_0028,glie_0028,BEST SELLERS – NA NIN.jpg,flat,socks,crew socks (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0029,glie_0029,BLUE SELENA SHIRT _ Keira Tong _ CULT MIA.jpg,front,blouse,peplum blouse (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0030,glie_0030,Banaras coded multicoloured threadwork kurti….jpg,flat,kurti,embroidered A-line kurti (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0031,glie_0031,Blue 💙 cotton kurta for women.jpg,front,kurti,long-sleeve printed kurti (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0032,glie_0032,Buna - Hand Painted Blooming Florals.jpg,front,dress,floral midi dress (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0033,glie_0033,Chic Short Dresses & Floral Evening Gowns.jpg,front,dress,off-shoulder polka dot dress (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,test,RESELL
+glie_0034,glie_0034,Chito Savage LS Sweatshirt - Black.jpg,back,sweatshirt,distressed crew-neck sweatshirt (cotton),Unbranded,,,,0.15,0.05,0.2,0.3,tear hole loose_threads fading,overall,0.55,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0035,glie_0035,Cozy Winter Aesthetic Sweater You Need This Season ❄️.jpg,flat,sweater,cable-knit crew-neck sweater (wool),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0036,glie_0036,Dirty white tee.jpg,front,tshirt,crew-neck tee (cotton),Unbranded,,,,0.05,0.6,0.1,0.2,stain hole fading,front,0.35,poor,RECYCLE,glie_groq-vision,0.9,train,UPCYCLE
+glie_0037,glie_0037,Distressed Hoodie.jpg,front,hoodie,distressed zip-up hoodie (cotton),Unbranded,,,,0.35,0.05,0.4,0.6,hole tear loose_threads snag,overall,0.35,poor,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0038,glie_0038,Dm!.jpg,flat,shirt,short-sleeve denim shirt (denim),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,test,RESELL
+glie_0039,glie_0039,Elegant Blue & Gold Saree on Mannequin _ Luxury Indian Wear Inspiration.jpg,front,saree,silk saree with embroidered border (silk),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0040,glie_0040,Fairy tops_.jpg,front,blouse,floral wrap blouse with bell sleeves (silk),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0041,glie_0041,Formal Dresses Homecoming Dress Hoco Dresses Knit….jpg,flat,dress,ruffled-strap midi dress (polyester),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0042,glie_0042,MILUMIA _ Women's Floral Puff Sleeve A Line Short mini Milkmaid dress.jpg,flat,dress,floral puff-sleeve dress (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0043,glie_0043,Muted Purple Tie Dyed Socks with Natural Dyes.jpg,flat,socks,crew athletic socks (cotton blend),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0044,glie_0044,Natural Floral Dyed Socks by American Trench at Free People in Tan.jpg,flat,socks,ribbed crew socks (cotton),Unbranded,,,,0.05,0.4,0.3,0.2,stain fading loose_threads,overall,0.35,poor,RECYCLE,glie_groq-vision,0.9,train,UPCYCLE
+glie_0045,glie_0045,Natural sun fade.jpg,flat,tshirt,distressed crew-neck tee (cotton),Unbranded,,,,0.35,0.25,0.4,0.5,tear hole stain loose_threads snag,front,0.45,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0046,glie_0046,Oatmeal Melange Socks.jpg,flat,socks,ribbed crew socks (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0047,glie_0047,Old Navy Soft Med Weight Wooly Blend Dk Blue Navy Vneck Sweater 2xl 2x 20 22 Xxl.jpg,front,sweater,V-neck pullover (wool),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0048,glie_0048,Out From Under Quinn Athletic Socks.jpg,flat,socks,ribbed crew socks (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0049,glie_0049,Pen stain.jpg,detail,shirt,button-down shirt (cotton),Unbranded,,,,0,0.15,0,0,stain,pocket,0.55,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0050,glie_0050,Printed ruffles dress 💕.jpg,front,dress,floral print maxi dress (silk),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0051,glie_0051,Rag & Bone Rag & Bone Shirt _ Grailed.jpg,front,shirt,long-sleeve check shirt (cotton),Unbranded,,,,0,0,0.05,0,none,overall,0.85,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0052,glie_0052,Samragni Women Silk Blend Kurta Palazzo Dupatta Set.jpg,flat,kurti,embellished flared-sleeve kurti (silk),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0053,glie_0053,Summer dress.jpg,flat,dress,tiered floral sundress (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0054,glie_0054,The 15 Worst Types of Stains and How to Clean Them.jpg,flat,tshirt,crew-neck tee (cotton),Unbranded,,,,0,0.15,0,0,stain,front,0.65,fair,UPCYCLE,glie_groq-vision,0.9,train,UPCYCLE
+glie_0055,glie_0055,The Sabyasachi x H&M Wanderlust Collection Sold….jpg,flat,kurti,long embroidered kurti (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0056,glie_0056,This Chart Will Change Your Life If You’re A Messy Eater.jpg,flat,tshirt,crew-neck tee (cotton),Unbranded,,,,0,0.05,0,0,stain,front,0.65,fair,UPCYCLE,glie_groq-vision,0.9,train,UPCYCLE
+glie_0057,glie_0057,32369691068414995.jpg,front,blouse,embroidered silk blouse (silk),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0058,glie_0058,This item is unavailable - Etsy.jpg,front,blouse,embroidered choli (silk),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0059,glie_0059,Verdusa Women's Polka Dots Dress.jpg,front,dress,polka-dot slip dress (silk),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0060,glie_0060,Vetements Turns an Iron Burn Mistake Into a €750___.jpg,front,shirt,button-down shirt (cotton),Unbranded,,,,0,0.15,0,0,stain,front,0.65,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0061,glie_0061,We have Vetemnts at home.jpg,flat,shirt,button-down shirt (cotton),Unbranded,,,,0,0.15,0,0,stain,front,0.65,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0062,glie_0062,WhatsApp Image 2026-09-23 at 3.31.29 PM (1).jpeg,detail,saree,silk saree with zari work (silk),Unbranded,,,,0.05,0.02,0,0.1,snag stain,overall,0.65,fair,UPCYCLE,glie_groq-vision,0.6,train,UPCYCLE
+glie_0063,glie_0063,WhatsApp Image 2026-09-23 at 3.31.29 PM (2).jpeg,flat,saree,silk saree with zari border (silk),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0064,glie_0064,WhatsApp Image 2026-09-23 at 3.31.29 PM.jpeg,flat,shirt,striped button-down shirt (cotton),Unbranded,,,,0,0.05,0,0,stain,front,0.75,good,RESELL,glie_groq-vision,0.85,test,RESELL
+glie_0065,glie_0065,WhatsApp Image 2026-09-23 at 3.31.30 PM (1).jpeg,flat,saree,blue cotton saree with silver border (cotton),Unbranded,,,,0,0,0,0,none,overall,0.9,like_new,RESELL,glie_groq-vision,0.85,train,RESELL
+glie_0066,glie_0066,WhatsApp Image 2026-09-23 at 3.31.30 PM (2).jpeg,detail,saree,embroidered silk saree (silk),Unbranded,,,,0.15,0,0.2,0.3,loose_threads snag,seam,0.65,fair,UPCYCLE,glie_groq-vision,0.6,train,UPCYCLE
+glie_0067,glie_0067,WhatsApp Image 2026-09-23 at 3.31.30 PM.jpeg,detail,saree,printed cotton saree (cotton),Unbranded,,,,0.02,0,0,0.05,snag,front,0.85,like_new,RESELL,glie_groq-vision,0.6,train,RESELL
+glie_0068,glie_0068,WhatsApp Image 2026-09-23 at 3.31.31 PM (1).jpeg,detail,shirt,button-down shirt (cotton),Unbranded,,,,0.15,0,0.2,0.3,tear loose_threads,front,0.45,fair,UPCYCLE,glie_groq-vision,0.85,test,UPCYCLE
+glie_0069,glie_0069,WhatsApp Image 2026-09-23 at 3.31.31 PM (2).jpeg,detail,shirt,casual shirt (cotton),Unbranded,,,,0.45,0.6,0.2,0.85,hole stain tear loose_threads,front,0.15,destroyed,RECYCLE,glie_groq-vision,0.95,train,RECYCLE
+glie_0070,glie_0070,WhatsApp Image 2026-09-23 at 3.31.31 PM.jpeg,detail,sweater,knit pullover (cotton),Unbranded,,,,0.45,0.05,0.6,0.85,hole tear loose_threads snag,front,0.2,destroyed,RECYCLE,glie_groq-vision,0.9,train,RECYCLE
+glie_0071,glie_0071,Willkommen bei SHEIN.jpg,flat,sweater,fair-isle crew-neck sweater (wool),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0072,glie_0072,Women’s Shimmer Silk Blend Saree with Golden Lace Border – Rose Pink.jpg,front,saree,silk saree with gold zari border (silk),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0073,glie_0073,Yurtdışından harika bir markanın kazağı….jpg,flat,sweater,cable-knit crew-neck sweater (wool),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0074,glie_0074,bleach treatment.jpg,flat,tshirt,v-neck pocket tee (cotton),Unbranded,,,,0.05,0.45,0.1,0.1,stain fading,overall,0.45,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0075,glie_0075,download (1).jpg,detail,jacket,mandarin collar jacket (cotton),Unbranded,,,,0,0.35,0.1,0.05,stain fading,front,0.45,fair,UPCYCLE,glie_groq-vision,0.85,test,UPCYCLE
+glie_0076,glie_0076,download (10).jpg,flat,top,button-front henley top (cotton),Unbranded,,,,0,0,0.05,0.05,none,overall,0.85,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0077,glie_0077,download (11).jpg,flat,jeans,bootcut jeans (denim),Unbranded,,,,0.02,0,0.15,0.05,fading,knee,0.75,good,RESELL,glie_groq-vision,0.9,test,RESELL
+glie_0078,glie_0078,download (12).jpg,flat,hoodie,full-zip pullover hoodie (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,test,RESELL
+glie_0079,glie_0079,download (13).jpg,flat,sweatshirt,raglan sleeve crew-neck sweatshirt (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,test,RESELL
+glie_0080,glie_0080,download (14).jpg,front,jeans,wide-leg jeans (denim),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0081,glie_0081,download (15).jpg,front,top,long-sleeve henley (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,test,RESELL
+glie_0082,glie_0082,download (16).jpg,flat,shirt,polo shirt (cotton),Unbranded,,,,0,0,0,0,none,overall,0.92,like_new,RESELL,glie_groq-vision,0.95,test,RESELL
+glie_0083,glie_0083,download (17).jpg,front,tshirt,off-shoulder graphic tee (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0084,glie_0084,download (18).jpg,front,tshirt,off-shoulder graphic tee (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0085,glie_0085,download (19).jpg,front,tshirt,off-shoulder graphic tee (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,test,RESELL
+glie_0086,glie_0086,download (2).jpg,flat,tshirt,women's sports jersey (polyester),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0087,glie_0087,download (20).jpg,flat,tshirt,distressed crew-neck tee (cotton),Unbranded,,,,0.15,0.05,0.1,0.2,hole fading loose_threads,front,0.55,fair,UPCYCLE,glie_groq-vision,0.85,test,UPCYCLE
+glie_0088,glie_0088,download (21).jpg,flat,trousers,cargo shorts (cotton),Unbranded,,,,0,0,0.05,0,none,overall,0.92,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0089,glie_0089,download (22).jpg,flat,tshirt,distressed crew-neck tee (cotton),Unbranded,,,,0.15,0,0.4,0.3,hole tear loose_threads,hem,0.45,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0090,glie_0090,download (23).jpg,back,jeans,distressed straight-leg jeans (denim),Unbranded,,,,0.35,0.05,0.6,0.4,tear hole fading loose_threads,hem,0.45,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0091,glie_0091,download (24).jpg,front,tshirt,distressed crew-neck tee (cotton),Unbranded,,,,0.15,0,0.2,0.3,hole tear,overall,0.55,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0092,glie_0092,download (25).jpg,flat,jeans,distressed wide-leg jeans (denim),Unbranded,,,,0.15,0,0.2,0.3,tear hole fading loose_threads,knee,0.65,fair,UPCYCLE,glie_groq-vision,0.85,test,UPCYCLE
+glie_0093,glie_0093,download (26).jpg,back,jeans,distressed wide-leg jeans (denim),Unbranded,,,,0.05,0,0.15,0.1,fading loose_threads,hem,0.75,good,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0094,glie_0094,download (27).jpg,flat,tshirt,distressed henley tee (cotton),Unbranded,,,,0.15,0,0.4,0.3,loose_threads snag,hem,0.65,fair,UPCYCLE,glie_groq-vision,0.9,test,UPCYCLE
+glie_0095,glie_0095,download (3).jpg,flat,tshirt,polo shirt (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0096,glie_0096,download (7).jpg,flat,top,long-sleeve collared top (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0097,glie_0097,download (8).jpg,flat,shirt,striped button-down shirt (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0098,glie_0098,download (9).jpg,flat,trousers,wide-leg pinstripe trousers (wool),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0099,glie_0099,download.jpg,flat,tshirt,crew-neck tee (cotton),Unbranded,,,,0,0.35,0,0,stain,front,0.55,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0100,glie_0100,for under the camouflage overalls.jpg,flat,tshirt,acid-wash crew-neck tee (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0101,glie_0101,for ur summer dress.jpg,flat,dress,asymmetric ruffled slip dress (silk),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0102,glie_0102,ktwo.jpg,flat,shirt,distressed grid-print button-down (cotton),Unbranded,,,,0.15,0,0.4,0.3,loose_threads fading,hem,0.65,fair,UPCYCLE,glie_groq-vision,0.85,train,UPCYCLE
+glie_0103,glie_0103,neck design.jpg,front,blouse,puff-sleeve embroidered blouse (silk),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0104,glie_0104,sienna potter.jpg,flat,jacket,biker jacket (leather),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0105,glie_0105,soft floral crop top asthetic white.jpg,front,top,floral print puff-sleeve crop top (cotton),Unbranded,,,,0,0,0,0,none,overall,1,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0106,glie_0106,tanktop by shineluxurystudios.jpg,flat,top,ribbed tank top (cotton),Unbranded,,,,0.45,0.15,0.6,0.85,hole tear stain loose_threads,hem,0.15,destroyed,RECYCLE,glie_groq-vision,0.95,train,RECYCLE
+glie_0107,glie_0107,✴︎.jpg,flat,hoodie,color-block zip-up hoodie (cotton),Unbranded,,,,0,0,0,0,none,overall,0.95,like_new,RESELL,glie_groq-vision,0.9,train,RESELL
+glie_0108,glie_0108,❌TODO VENDIDO❌ DROP LETHEAR JACKETS🔥 Se puede….jpg,front,jacket,leather bomber jacket (leather),Unbranded,,,,0,0,0.05,0,none,overall,0.92,like_new,RESELL,glie_groq-vision,0.95,train,RESELL
+glie_0109,glie_0109,모든 게시물 • Instagram.jpg,front,tshirt,ringer tee (cotton),Unbranded,,,,0.05,0.65,0.2,0.1,stain fading,overall,0.35,poor,RECYCLE,glie_groq-vision,0.9,train,UPCYCLE

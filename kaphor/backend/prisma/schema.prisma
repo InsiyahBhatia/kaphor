@@ -203,7 +203,6 @@ model User {
   orderMessages     OrderMessage[]
   peerReviewsWritten  PeerReview[] @relation("PeerReviewsWritten")
   peerReviewsReceived PeerReview[] @relation("PeerReviewsReceived")
-  cartItems           CartItem[]
   conversations       ChatConversation[]
   conversationsAsP1   Conversation[]  @relation("Participant1Conversations")
   conversationsAsP2   Conversation[]  @relation("Participant2Conversations")
@@ -304,7 +303,6 @@ model Garment {
   circSchedules    CirculationSchedule[]
   circularRequests CircularRequest[]
   reviews          Review[]
-  cartItems        CartItem[]
   conversations    ChatConversation[]
   inquiries        Conversation[]
   upcycleRequests  UpcycleRequest[]
@@ -353,20 +351,6 @@ model BehaviourSignal {
 
   @@unique([userId, garmentId])
   @@map("behaviour_signals")
-}
-
-model CartItem {
-  id        String   @id @default(uuid())
-  userId    String
-  garmentId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  garment   Garment  @relation(fields: [garmentId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, garmentId])
-  @@map("cart_items")
 }
 
 model CirculationSchedule {

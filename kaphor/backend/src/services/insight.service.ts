@@ -16,8 +16,6 @@ export interface GarmentDetailedInsights {
   // Core metrics
   views: number;
   uniqueViewers: number;
-  activeInCart: number;
-  totalCartAdds: number;
   saves: number;
   inquiries: number;
   intents: {
@@ -36,9 +34,6 @@ export interface GarmentDetailedInsights {
   // Funnel rates (in percentages, 0-100)
   funnel: {
     viewToSaveRate: number;
-    viewToCartRate: number;
-    cartToIntentRate: number;
-    cartToConversionRate: number;
     overallConversionRate: number;
   };
 
@@ -50,7 +45,6 @@ export interface GarmentDetailedInsights {
   dailyTrend: Array<{
     date: string; // YYYY-MM-DD
     views: number;
-    carts: number;
     saves: number;
     inquiries: number;
   }>;
@@ -66,7 +60,6 @@ export interface GarmentDetailedInsights {
 
 export interface GarmentSummaryInsights {
   views: number;
-  inCart: number;
   saves: number;
   inquiries: number;
 }
@@ -102,10 +95,9 @@ export class InsightService {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Parallel fetch of metric dimensions (consolidated into 6 queries to stay safely within connection pool)
+    // Parallel fetch of metric dimensions (consolidated into 5 queries to stay safely within connection pool)
     const [
       allGarmentEvents,
-      activeCartCount,
       inquiriesCount,
       completedOrders,
       completedRentals,
@@ -116,23 +108,19 @@ export class InsightService {
         where: { garmentId },
         select: { userId: true, eventType: true, createdAt: true },
       }),
-      // 2. Currently active items in carts
-      db.cartItem.count({
-        where: { garmentId },
-      }),
-      // 3. Inquiries / Conversations linked to this garment
+      // 2. Inquiries / Conversations linked to this garment
       db.conversation.count({
         where: { garmentId },
       }),
-      // 4. Order items completed/confirmed
+      // 3. Order items completed/confirmed
       db.orderItem.count({
         where: { garmentId, order: { status: { notIn: ['CANCELLED', 'REFUNDED'] } } },
       }),
-      // 5. Rentals reserved/active/returned
+      // 4. Rentals reserved/active/returned
       db.rental.count({
         where: { garmentId, status: { not: 'OVERDUE' } },
       }),
-      // 6. Swaps accepted or completed
+      // 5. Swaps accepted or completed
       db.swap.count({
         where: {
           OR: [{ garmentOffered: garmentId }, { garmentWanted: garmentId }],
@@ -143,7 +131,6 @@ export class InsightService {
 
     // Segment events in-memory
     const viewEvents = allGarmentEvents.filter((e: { eventType: EventType }) => e.eventType === EventType.VIEW);
-    const cartEvents = allGarmentEvents.filter((e: { eventType: EventType }) => e.eventType === EventType.ADD_TO_CART);
     const saveEvents = allGarmentEvents.filter(
       (e: { eventType: EventType }) => e.eventType === EventType.WISHLIST || e.eventType === EventType.SAVE
     );
@@ -168,34 +155,28 @@ export class InsightService {
     const uniqueUserIds = new Set(viewEvents.map((e: { userId: string }) => e.userId));
     const uniqueViewers = Math.max(uniqueUserIds.size, totalViews > 0 ? 1 : 0);
 
-    const totalCartAdds = cartEvents.length;
     const totalSaves = saveEvents.length;
     const totalIntents = purchaseIntents + rentalIntents + swapIntents;
     const totalConversions = completedOrders + completedRentals + completedSwaps;
 
     // Funnel rates
     const safeViews = totalViews > 0 ? totalViews : 1;
-    const safeCarts = totalCartAdds > 0 ? totalCartAdds : 1;
 
     const viewToSaveRate = Math.min(100, Math.round((totalSaves / safeViews) * 100));
-    const viewToCartRate = Math.min(100, Math.round((totalCartAdds / safeViews) * 100));
-    const cartToIntentRate = totalCartAdds > 0 ? Math.min(100, Math.round((totalIntents / safeCarts) * 100)) : 0;
-    const cartToConversionRate = totalCartAdds > 0 ? Math.min(100, Math.round((totalConversions / safeCarts) * 100)) : 0;
     const overallConversionRate = Math.min(100, Math.round((totalConversions / safeViews) * 100));
 
     // Calculate 7-day trend bucketed by YYYY-MM-DD
-    const trendMap: Record<string, { views: number; carts: number; saves: number; inquiries: number }> = {};
+    const trendMap: Record<string, { views: number; saves: number; inquiries: number }> = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = d.toISOString().split('T')[0];
-      trendMap[dateStr] = { views: 0, carts: 0, saves: 0, inquiries: 0 };
+      trendMap[dateStr] = { views: 0, saves: 0, inquiries: 0 };
     }
 
     recentEvents.forEach((ev: { eventType: EventType; createdAt: Date }) => {
       const dateStr = ev.createdAt.toISOString().split('T')[0];
       if (trendMap[dateStr]) {
         if (ev.eventType === EventType.VIEW) trendMap[dateStr].views++;
-        else if (ev.eventType === EventType.ADD_TO_CART) trendMap[dateStr].carts++;
         else if (ev.eventType === EventType.WISHLIST || ev.eventType === EventType.SAVE) trendMap[dateStr].saves++;
       }
     });
@@ -206,14 +187,14 @@ export class InsightService {
     }));
 
     // Demand Scoring
-    // Score formula based on views, carts, saves, and inquiries
-    const rawDemand = (totalViews * 1) + (totalSaves * 5) + (activeCartCount * 12) + (totalCartAdds * 8) + (inquiriesCount * 15) + (totalIntents * 20);
+    // Score formula based on views, saves, and inquiries
+    const rawDemand = (totalViews * 1) + (totalSaves * 5) + (inquiriesCount * 15) + (totalIntents * 20);
     const demandScore = Math.min(100, Math.round((rawDemand / 120) * 100));
 
     let demandTier: GarmentDetailedInsights['demandTier'] = 'EARLY DISCOVERY 🌱';
-    if (demandScore >= 75 || activeCartCount >= 3 || totalViews >= 60) {
+    if (demandScore >= 75 || totalViews >= 60) {
       demandTier = 'HOT ASSET 🔥';
-    } else if (demandScore >= 45 || totalCartAdds >= 2 || totalSaves >= 5) {
+    } else if (demandScore >= 45 || totalSaves >= 5) {
       demandTier = 'STRONG INTEREST ⭐';
     } else if (demandScore >= 20 || totalViews >= 15) {
       demandTier = 'STEADY MOMENTUM 📈';
@@ -222,20 +203,11 @@ export class InsightService {
     // AI Advisor Recommendations
     const advisorTips: GarmentDetailedInsights['advisorTips'] = [];
 
-    if (activeCartCount > 0 && totalConversions === 0) {
-      advisorTips.push({
-        category: 'PRICING',
-        headline: 'Active In-Cart Friction',
-        description: `${activeCartCount} shopper${activeCartCount > 1 ? 's currently have' : ' currently has'} this garment in their bag. Consider offering a 5-10% price concession to incentivize immediate checkout.`,
-        impact: 'HIGH',
-      });
-    }
-
-    if (totalViews > 25 && totalCartAdds === 0 && totalSaves > 3) {
+    if (totalViews > 25 && totalSaves > 3 && totalIntents === 0) {
       advisorTips.push({
         category: 'ENGAGEMENT',
         headline: 'High Covet, Hesitant Action',
-        description: 'Sholders are saving this piece to their wishlist but hesitating on carting. Ensure measurements, fabric quality, and condition details are clearly detailed.',
+        description: 'Sholders are saving this piece to their wishlist but not converting to a purchase request. Strengthen measurements, fabric quality, and condition details to close the sale.',
         impact: 'HIGH',
       });
     }
@@ -279,8 +251,6 @@ export class InsightService {
       lifecycleState: garment.lifecycleState,
       views: totalViews,
       uniqueViewers,
-      activeInCart: activeCartCount,
-      totalCartAdds,
       saves: totalSaves,
       inquiries: inquiriesCount,
       intents: {
@@ -297,9 +267,6 @@ export class InsightService {
       },
       funnel: {
         viewToSaveRate,
-        viewToCartRate,
-        cartToIntentRate,
-        cartToConversionRate,
         overallConversionRate,
       },
       demandTier,
@@ -320,7 +287,7 @@ export class InsightService {
     if (garmentIds.length === 0) return summary;
 
     garmentIds.forEach((id) => {
-      summary[id] = { views: 0, inCart: 0, saves: 0, inquiries: 0 };
+      summary[id] = { views: 0, saves: 0, inquiries: 0 };
     });
 
     try {
@@ -333,19 +300,7 @@ export class InsightService {
         if (summary[g.id]) summary[g.id].views = g.viewCount || 0;
       });
 
-      // 2. Active in-cart counts grouped by garmentId
-      const cartGroup = await db.cartItem.groupBy({
-        by: ['garmentId'],
-        where: { garmentId: { in: garmentIds } },
-        _count: { _all: true },
-      });
-      cartGroup.forEach((cg: { garmentId: string; _count: { _all: number } }) => {
-        if (summary[cg.garmentId]) {
-          summary[cg.garmentId].inCart = cg._count._all;
-        }
-      });
-
-      // 3. Wishlists / Saves grouped by garmentId
+      // 2. Wishlists / Saves grouped by garmentId
       const saveGroup = await db.behaviourEvent.groupBy({
         by: ['garmentId'],
         where: {
@@ -360,7 +315,7 @@ export class InsightService {
         }
       });
 
-      // 4. Inquiries grouped by garmentId
+      // 3. Inquiries grouped by garmentId
       const inquiriesGroup = await db.conversation.groupBy({
         by: ['garmentId'],
         where: {

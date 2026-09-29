@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  searchInput: { flex: 1, fontFamily: typography.mono, fontSize: 14.5, color: colors.textPrimary },
+  searchInput: { flex: 1, fontFamily: typography.mono, fontSize: 11, color: colors.textPrimary },
 
   toggRow: { paddingHorizontal: 16, paddingTop: 10 },
   toggleChip: {
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   toggleChipActive: { backgroundColor: colors.ink },
-  toggleText: { fontFamily: typography.monoBold, fontSize: 12, color: colors.ink },
+  toggleText: { fontFamily: typography.monoBold, fontSize: 9, color: colors.ink },
   toggleTextActive: { color: colors.cream },
 
   chipRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   statusChipActive: { backgroundColor: colors.ink },
-  statusChipText: { fontFamily: typography.monoBold, fontSize: 11.5, color: colors.ink },
+  statusChipText: { fontFamily: typography.monoBold, fontSize: 8.5, color: colors.ink },
   statusChipTextActive: { color: colors.cream },
 
   list: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
@@ -212,10 +212,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardInfo: { flex: 1 },
-  cardTitle: { fontFamily: typography.bodyBold, fontSize: 18, color: colors.ink },
-  cardMeta: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
+  cardTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
+  cardMeta: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  seller: { fontFamily: typography.monoBold, fontSize: 11.5, color: colors.textMuted, marginTop: 8, letterSpacing: 1 },
+  seller: { fontFamily: typography.monoBold, fontSize: 8.5, color: colors.textMuted, marginTop: 8, letterSpacing: 1 },
   actions: { justifyContent: 'center', gap: 8, paddingLeft: 8 },
   iconBtn: {
     width: 34,

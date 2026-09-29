@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
   },
   header: {
     flexDirection: 'row',
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
     color: colors.textPrimary,
     letterSpacing: 1,
   },
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: 'bold',
     color: colors.textPrimary,
   },
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.gold,
     letterSpacing: 1.5,
     marginBottom: spacing.sm,
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   },
   coverTagText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: 'bold',
     color: '#fff',
   },
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: 'bold',
     color: colors.textPrimary,
     marginBottom: 4,
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
   },
   typeDesc: {
     fontFamily: typography.body,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
     lineHeight: 14,
   },
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textSecond,
     marginBottom: 6,
     letterSpacing: 0.5,
@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
   },
   currencySymbol: {
     fontFamily: typography.mono,
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: colors.gold,
     marginRight: 6,
@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
     height: 48,
     color: colors.textPrimary,
     fontFamily: typography.mono,
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   rentalRow: {
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
   swapNoticeText: {
     flex: 1,
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textSecond,
     lineHeight: 18,
   },
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     color: colors.textPrimary,
     fontFamily: typography.body,
-    fontSize: 18,
+    fontSize: 14,
   },
   multilineInput: {
     height: 90,
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   },
   sizeText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: 'bold',
     color: colors.textPrimary,
   },
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
   },
   conditionLabel: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: 'bold',
     color: colors.textPrimary,
   },
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
   },
   conditionDesc: {
     fontFamily: typography.body,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -826,13 +826,13 @@ const styles = StyleSheet.create({
   },
   toggleTitle: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: 'bold',
     color: colors.textPrimary,
   },
   toggleSub: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 4,
     lineHeight: 16,
@@ -845,14 +845,14 @@ const styles = StyleSheet.create({
   },
   dangerTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.crimson,
     letterSpacing: 1,
     fontWeight: 'bold',
   },
   dangerSub: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
     marginBottom: spacing.sm,
@@ -870,7 +870,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: 'bold',
     color: colors.crimson,
     letterSpacing: 0.5,
@@ -895,7 +895,7 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: 'bold',
     color: colors.bg,
     letterSpacing: 1,

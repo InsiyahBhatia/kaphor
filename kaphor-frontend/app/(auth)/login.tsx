@@ -77,7 +77,7 @@ export default function LoginScreen() {
             onChangeText={setPassword}
           />
           <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 4 }} onPress={() => router.push('/(auth)/forgot-password')}>
-            <Text style={{ color: colors.gold, fontSize: 15.5, letterSpacing: 1, fontWeight: '700' }}>FORGOT PASSWORD?</Text>
+            <Text style={{ color: colors.gold, fontSize: 12, letterSpacing: 1, fontWeight: '700' }}>FORGOT PASSWORD?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -140,13 +140,13 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   title: {
-    fontSize: 44,
+    fontSize: 40,
     fontFamily: 'BebasNeue_400Regular',
     color: colors.textPrimary,
     letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 19.5,
+    fontSize: 16,
     color: colors.textSecond,
     marginTop: 8,
     lineHeight: 22,
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     color: colors.textPrimary,
-    fontSize: 19.5,
+    fontSize: 16,
     paddingHorizontal: 16,
     backgroundColor: colors.bgCard,
   },
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: colors.white,
-    fontSize: 19.5,
+    fontSize: 16,
     fontWeight: '700',
     letterSpacing: 2,
   },
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   dividerText: {
     color: colors.textMuted,
     paddingHorizontal: 16,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
   },
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     color: colors.textPrimary,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 1,
   },

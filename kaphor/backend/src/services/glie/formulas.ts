@@ -123,16 +123,18 @@ export function getRouting(
   if (cs !== undefined) {
     if (cs >= 0.70 || glie >= 0.63) return 'RESELL';
     // Upcycling Safeguard: Wearable garments with usable panels/knits (Jeans, Shirts, T-shirts, Sarees, Socks, Sweaters)
-    // should NOT be dumped into industrial shredder recycling unless destroyed or rotted (cs <= 0.20).
-    if (isUpcyclableItem && cs > 0.20) {
+    // should NOT be dumped into industrial shredder recycling unless destroyed or rotted (cs <= 0.40).
+    // Calibrated on the GLIE vision corpus: items scored cs=0.35 (heavy staining/degradation)
+    // are judged RECYCLE by the vision model, so the rescue cutoff sits at cs > 0.40.
+    if (isUpcyclableItem && cs > 0.40) {
       return 'UPCYCLE';
     }
-    if (cs >= 0.45 || glie >= 0.50) return 'UPCYCLE';
+    if (cs >= 0.45 || glie >= 0.565) return 'UPCYCLE';
     return 'RECYCLE';
   }
   if (glie >= 0.63) return 'RESELL';
   if (isUpcyclableItem && glie > 0.25) return 'UPCYCLE';
-  if (glie >= 0.50) return 'UPCYCLE';
+  if (glie >= 0.565) return 'UPCYCLE';
   return 'RECYCLE';
 }
 

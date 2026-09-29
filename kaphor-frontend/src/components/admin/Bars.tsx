@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   bar: { width: '100%', borderRadius: 1 },
   barValue: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.textMuted,
     marginBottom: 3,
   },

@@ -91,11 +91,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   logHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  logAction: { fontFamily: typography.monoBold, fontSize: 13.5, color: colors.ink, letterSpacing: 1, flex: 1 },
-  logTime: { fontFamily: typography.mono, fontSize: 11.5, color: colors.textMuted },
-  logActor: { fontFamily: typography.monoBold, fontSize: 13, color: colors.ink, marginTop: 6 },
-  logIp: { fontFamily: typography.mono, fontSize: 11.5, color: colors.textMuted, marginTop: 3 },
-  logMeta: { fontFamily: typography.mono, fontSize: 11.5, color: colors.textMuted, marginTop: 4 },
+  logAction: { fontFamily: typography.monoBold, fontSize: 10, color: colors.ink, letterSpacing: 1, flex: 1 },
+  logTime: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted },
+  logActor: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.ink, marginTop: 6 },
+  logIp: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted, marginTop: 3 },
+  logMeta: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted, marginTop: 4 },
 
   pager: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 12 },
   pagerBtn: {
@@ -111,6 +111,6 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  pagerText: { fontFamily: typography.monoBold, fontSize: 13, color: colors.ink, letterSpacing: 1 },
-  pagerInfo: { fontFamily: typography.monoBold, fontSize: 13.5, color: colors.textMuted },
+  pagerText: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.ink, letterSpacing: 1 },
+  pagerInfo: { fontFamily: typography.monoBold, fontSize: 10, color: colors.textMuted },
 });

@@ -963,9 +963,9 @@ export default function OrderThreadScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.cream },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cream, gap: 8 },
-  miss: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 18 },
+  miss: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 14 },
   goBackBtn: { borderWidth: 2, borderColor: colors.charcoal, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
-  goBackText: { fontFamily: typography.mono, fontSize: 14.5, fontWeight: '800', color: colors.charcoal, letterSpacing: 1 },
+  goBackText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '800', color: colors.charcoal, letterSpacing: 1 },
 
   // Header
   header: {
@@ -980,8 +980,8 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 6, marginRight: 4 },
   headerMid: { flex: 1 },
-  headerTitle: { fontFamily: typography.headings, fontSize: 22, color: colors.charcoal, letterSpacing: 0.5 },
-  headerSub: { fontFamily: typography.mono, fontSize: 13.5, color: colors.textMuted, marginTop: 3 },
+  headerTitle: { fontFamily: typography.headings, fontSize: 18, color: colors.charcoal, letterSpacing: 0.5 },
+  headerSub: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, marginTop: 3 },
   trustBtn: { padding: 8, borderWidth: 1.5, borderColor: colors.charcoal },
 
   // Status Bar
@@ -995,8 +995,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(30,31,34,0.1)',
     backgroundColor: colors.white,
   },
-  statusText: { fontFamily: typography.mono, fontSize: 14.5, fontWeight: '900', letterSpacing: 1 },
-  orderIdText: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, letterSpacing: 0.5 },
+  statusText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+  orderIdText: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, letterSpacing: 0.5 },
 
   // Action Buttons
   actionBar: {
@@ -1056,7 +1056,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
-  actionBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 14.5, fontWeight: '900', letterSpacing: 1 },
+  actionBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
 
   // List
   msgList: { flex: 1 },
@@ -1088,14 +1088,14 @@ const styles = StyleSheet.create({
   },
   chatActionTitle: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.forest,
     letterSpacing: 0.5,
   },
   chatActionSub: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.charcoal,
     lineHeight: 12,
     marginTop: 2,
@@ -1108,7 +1108,7 @@ const styles = StyleSheet.create({
   openChatBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
   // Section Title
   sectionTitle: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.textMuted,
     letterSpacing: 1.5,
@@ -1152,19 +1152,19 @@ const styles = StyleSheet.create({
   summaryLabel: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 1,
   },
   summaryValue: {
     fontFamily: typography.headings,
-    fontSize: 25.5,
+    fontSize: 22,
     color: colors.charcoal,
   },
   summaryDate: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.charcoal,
     fontWeight: '600',
   },
@@ -1189,20 +1189,20 @@ const styles = StyleSheet.create({
   },
   itemChipText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '700',
     color: colors.charcoal,
     maxWidth: 120,
   },
   itemChipQty: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.textMuted,
   },
   moreItems: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     alignSelf: 'center',
   },
@@ -1285,7 +1285,7 @@ const styles = StyleSheet.create({
   },
   timelineLabel: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.textMuted,
     letterSpacing: 0.5,
@@ -1296,14 +1296,14 @@ const styles = StyleSheet.create({
   },
   timelineHint: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.red,
     marginTop: 3,
     letterSpacing: 0.5,
   },
   timelineDate: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     marginTop: 3,
   },
@@ -1345,7 +1345,7 @@ const styles = StyleSheet.create({
   },
   addressLabelText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 1,
@@ -1360,7 +1360,7 @@ const styles = StyleSheet.create({
   },
   nameText: {
     fontFamily: typography.mono,
-    fontSize: 18.5,
+    fontSize: 15,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1370,7 +1370,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.charcoal,
     lineHeight: 18,
     flex: 1,
@@ -1382,7 +1382,7 @@ const styles = StyleSheet.create({
   },
 
   // Messages
-  hint: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 14.5, lineHeight: 18, textAlign: 'center', paddingHorizontal: 20, marginTop: 8 },
+  hint: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 11, lineHeight: 18, textAlign: 'center', paddingHorizontal: 20, marginTop: 8 },
   bubble: {
     maxWidth: '85%',
     padding: 14,
@@ -1398,10 +1398,10 @@ const styles = StyleSheet.create({
   },
   bubbleMine: { alignSelf: 'flex-end', backgroundColor: '#F7F5F0', borderColor: colors.charcoal },
   bubbleTheirs: { alignSelf: 'flex-start' },
-  bubbleMeta: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.textMuted, marginBottom: 6, letterSpacing: 0.5 },
-  bubbleText: { fontFamily: typography.body, fontSize: 18.5, color: colors.charcoal, lineHeight: 22 },
+  bubbleMeta: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.textMuted, marginBottom: 6, letterSpacing: 0.5 },
+  bubbleText: { fontFamily: typography.body, fontSize: 15, color: colors.charcoal, lineHeight: 22 },
   bubbleTextMine: { color: colors.charcoal },
-  time: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, marginTop: 8 },
+  time: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginTop: 8 },
 
   // Composer
   composer: {
@@ -1422,7 +1422,7 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     backgroundColor: colors.white,
     fontFamily: typography.body,
@@ -1454,14 +1454,14 @@ const styles = StyleSheet.create({
   },
   reviewTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
   },
   reviewHint: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     marginTop: 6,
     marginBottom: 10,
@@ -1476,7 +1476,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     marginBottom: 12,
     fontFamily: typography.body,
-    fontSize: 17,
+    fontSize: 13,
     backgroundColor: colors.cream,
   },
   reviewSubmit: {
@@ -1492,7 +1492,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
-  reviewSubmitText: { color: colors.cream, fontFamily: typography.mono, fontSize: 15.5, fontWeight: '900', letterSpacing: 1 },
+  reviewSubmitText: { color: colors.cream, fontFamily: typography.mono, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   disabled: { opacity: 0.6 },
 
   // Next Steps Guidance Banner
@@ -1511,14 +1511,14 @@ const styles = StyleSheet.create({
   },
   nextStepsTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
     color: colors.charcoal,
   },
   nextStepsBody: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     lineHeight: 18,
     color: colors.charcoal,
   },
@@ -1549,7 +1549,7 @@ const styles = StyleSheet.create({
   },
   itemsDossierTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -1576,14 +1576,14 @@ const styles = StyleSheet.create({
   },
   orderGarmentBrand: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.8,
   },
   orderGarmentTitle: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     marginVertical: 2,
   },
@@ -1595,13 +1595,13 @@ const styles = StyleSheet.create({
   },
   orderGarmentPrice: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.red,
   },
   orderGarmentQty: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
   },
   orderGarmentSizeChip: {
@@ -1612,7 +1612,7 @@ const styles = StyleSheet.create({
   },
   orderGarmentSizeText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1630,7 +1630,7 @@ const styles = StyleSheet.create({
   },
   viewItemPillText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1667,14 +1667,14 @@ const styles = StyleSheet.create({
   },
   reviewPromptTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: '#8A3E00',
     letterSpacing: 1,
   },
   reviewPromptSub: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.charcoal,
     marginTop: 2,
     lineHeight: 15,
@@ -1687,7 +1687,7 @@ const styles = StyleSheet.create({
   },
   reviewPromptBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 1,
@@ -1711,7 +1711,7 @@ const styles = StyleSheet.create({
   },
   completedReviewTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -1726,13 +1726,13 @@ const styles = StyleSheet.create({
   },
   reviewRatingScore: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: '#8A3E00',
   },
   completedReviewComment: {
     fontFamily: typography.body,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     lineHeight: 18,
     fontStyle: 'italic',
@@ -1748,7 +1748,7 @@ const styles = StyleSheet.create({
   },
   completedReviewMeta: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '700',
     color: colors.forest,
     letterSpacing: 0.5,
@@ -1789,13 +1789,13 @@ const styles = StyleSheet.create({
   },
   reviewModalTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
     color: colors.charcoal,
     letterSpacing: 1,
   },
   reviewModalSub: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     fontWeight: '800',
     marginTop: 2,
@@ -1810,7 +1810,7 @@ const styles = StyleSheet.create({
   },
   reviewRatingHelp: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1829,7 +1829,7 @@ const styles = StyleSheet.create({
   starLabel: {
     textAlign: 'center',
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: '#C95F12',
     letterSpacing: 1,
@@ -1845,7 +1845,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     color: colors.charcoal,
     fontFamily: typography.body,
-    fontSize: 17,
+    fontSize: 13,
     marginBottom: 16,
   },
   submitReviewBtn: {
@@ -1863,7 +1863,7 @@ const styles = StyleSheet.create({
   },
   submitReviewBtnText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 1,
@@ -1875,7 +1875,7 @@ const styles = StyleSheet.create({
   },
   cancelReviewBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.8,

@@ -21,7 +21,7 @@ export interface EditorialGarmentCardProps {
     [key: string]: any;
   };
   onPress: () => void;
-  onAddToCart?: () => void;
+  onBuyRequest?: () => void;
   style?: ViewStyle;
   imageAspectRatio?: number;
 }
@@ -34,7 +34,7 @@ function formatCurrency(amount?: number | null): string {
 export function EditorialGarmentCard({
   item,
   onPress,
-  onAddToCart,
+  onBuyRequest,
   style,
   imageAspectRatio = 0.85,
 }: EditorialGarmentCardProps) {
@@ -129,17 +129,17 @@ export function EditorialGarmentCard({
             )}
           </View>
 
-          {onAddToCart && (
+          {onBuyRequest && (
             <TouchableOpacity
-              style={styles.quickAddBtn}
+              style={styles.quickBuyBtn}
               onPress={(e) => {
                 e.stopPropagation();
                 hapticFeedback.light();
-                onAddToCart();
+                onBuyRequest();
               }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="cart-outline" size={17} color={colors.white} />
+              <Ionicons name="bag-add-outline" size={17} color={colors.white} />
             </TouchableOpacity>
           )}
         </View>
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   conditionPillText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -219,20 +219,20 @@ const styles = StyleSheet.create({
   garmentBrand: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.4,
   },
   garmentSize: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
     fontWeight: '700',
   },
   garmentTitle: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.charcoal,
     marginBottom: 8,
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   garmentPrice: {
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -262,17 +262,17 @@ const styles = StyleSheet.create({
   discountBadgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '800',
   },
   garmentOriginalPrice: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 1,
   },
-  quickAddBtn: {
+  quickBuyBtn: {
     width: 30,
     height: 30,
     borderRadius: 15,

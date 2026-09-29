@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   },
   formLabel: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.charcoal,
     marginBottom: 6,
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontFamily: typography.body,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     backgroundColor: colors.white,
   },
@@ -786,7 +786,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.red,
     fontWeight: '700',
   },
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
   },
   labelChipText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 1.5,
   },
@@ -856,7 +856,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
     color: colors.charcoal,
     letterSpacing: 1.5,
   },
@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
   },
   selectModeBannerText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.navy,
     flex: 1,
@@ -888,13 +888,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: typography.headings,
-    fontSize: 28,
+    fontSize: 24,
     color: colors.charcoal,
     textAlign: 'center',
   },
   emptySub: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 16,
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
   addFirstBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -989,7 +989,7 @@ const styles = StyleSheet.create({
   },
   cardLabelText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.5,
@@ -1001,14 +1001,14 @@ const styles = StyleSheet.create({
   },
   defaultBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.forest,
     letterSpacing: 0.5,
   },
   setDefaultText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.5,
@@ -1026,13 +1026,13 @@ const styles = StyleSheet.create({
   },
   cardName: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '900',
     color: colors.charcoal,
   },
   cardDetail: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.charcoal,
     lineHeight: 16,
     flex: 1,
@@ -1058,7 +1058,7 @@ const styles = StyleSheet.create({
   },
   selectBtnCtaText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
   },
   cardActionText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1107,7 +1107,7 @@ const styles = StyleSheet.create({
   },
   addMoreText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -1126,7 +1126,7 @@ const styles = StyleSheet.create({
   },
   inlineHeaderTitle: {
     fontFamily: typography.headings,
-    fontSize: 19.5,
+    fontSize: 16,
     color: colors.charcoal,
     letterSpacing: 1,
   },

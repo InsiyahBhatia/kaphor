@@ -297,7 +297,7 @@ export async function getMyListings(req: Request, res: Response): Promise<void> 
 
         const garmentsWithInsights = resolvedGarments.map((g: any) => ({
             ...g,
-            insights: insightsMap[g.id] || { views: g.viewCount || 0, inCart: 0, saves: 0, inquiries: 0 },
+            insights: insightsMap[g.id] || { views: g.viewCount || 0, saves: 0, inquiries: 0 },
         }));
 
         res.json({ data: garmentsWithInsights });

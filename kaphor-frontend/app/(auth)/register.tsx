@@ -268,13 +268,13 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   title: {
-    fontSize: 44,
+    fontSize: 40,
     fontFamily: 'BebasNeue_400Regular',
     color: colors.textPrimary,
     letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 19.5,
+    fontSize: 16,
     color: colors.textSecond,
     marginTop: 8,
     lineHeight: 22,
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     color: colors.textPrimary,
-    fontSize: 19.5,
+    fontSize: 16,
     paddingHorizontal: 16,
     backgroundColor: colors.bgCard,
   },
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   termsText: {
-    fontSize: 15.5,
+    fontSize: 12,
     lineHeight: 18,
     color: colors.textSecond,
   },
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: colors.white,
-    fontSize: 19.5,
+    fontSize: 16,
     fontWeight: '700',
     letterSpacing: 2,
   },
@@ -360,12 +360,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: colors.textSecond,
-    fontSize: 15.5,
+    fontSize: 12,
     letterSpacing: 1,
     fontWeight: '700',
   },
   strengthText: {
-    fontSize: 13.5,
+    fontSize: 10,
     letterSpacing: 1,
     marginTop: 4,
     fontWeight: '800',
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   dividerText: {
     color: colors.textMuted,
     paddingHorizontal: 16,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
   },
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     color: colors.textPrimary,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 1,
   },

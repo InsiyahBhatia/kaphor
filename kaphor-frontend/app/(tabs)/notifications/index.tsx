@@ -662,14 +662,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1.2,
   },
   subtitle: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
   },
   chipBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: typography.mono,
     color: colors.charcoal,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
     marginTop: 4,
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontFamily: typography.mono,
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 9.5,
     textAlign: 'center',
     lineHeight: 15,
   },
@@ -817,19 +817,19 @@ const styles = StyleSheet.create({
   },
   typeBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
   cardTime: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.textMuted,
     fontWeight: '700',
   },
   cardTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     color: 'rgba(30,31,34,0.78)',
     lineHeight: 14,
   },
@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
@@ -899,14 +899,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
   },
   modalSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -925,13 +925,13 @@ const styles = StyleSheet.create({
   },
   prefLabel: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
   },
   prefDesc: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
     marginTop: 2,
     maxWidth: '85%',
@@ -945,7 +945,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 1,

@@ -214,7 +214,7 @@ export default function PublicSellerProfileScreen() {
         </View>
         <View style={{ padding: 20, alignItems: 'center', justifyContent: 'center', flex: 1, gap: 12 }}>
           <ActivityIndicator color={colors.charcoal} size="small" />
-          <Text style={{ fontFamily: typography.mono, fontSize: 13.5, color: colors.textMuted, letterSpacing: 1 }}>
+          <Text style={{ fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, letterSpacing: 1 }}>
             RETRIEVING ATELIER PROFILE...
           </Text>
         </View>
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1.5,
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
   },
   miss: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     marginBottom: 14,
   },
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
   },
   backBtnText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -609,14 +609,14 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontFamily: typography.mono,
-    fontSize: 19.5,
+    fontSize: 16,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
   },
   username: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
     marginTop: 2,
     marginBottom: 10,
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   },
   tierBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -652,14 +652,14 @@ const styles = StyleSheet.create({
   },
   trustedBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,
   },
   bioText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.charcoal,
     textAlign: 'center',
     lineHeight: 15,
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   messageCtaText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -720,7 +720,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -738,13 +738,13 @@ const styles = StyleSheet.create({
   },
   ratingSummaryScore: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
   ratingSummaryCount: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.textMuted,
   },
   breakdownContainer: {
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
   },
   bigRatingText: {
     fontFamily: typography.headings,
-    fontSize: 37,
+    fontSize: 32,
     color: colors.charcoal,
   },
   starsRow: {
@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
   },
   totalReviewsText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
   },
   barsCol: {
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '700',
     color: colors.charcoal,
     width: 20,
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
   },
   barCount: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
     width: 16,
     textAlign: 'right',
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
   },
   compactEmptyText: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 14,
@@ -865,13 +865,13 @@ const styles = StyleSheet.create({
   },
   reviewerName: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
   },
   reviewDate: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
   },
   verifiedPurchaseBadge: {
@@ -887,13 +887,13 @@ const styles = StyleSheet.create({
   },
   verifiedPurchaseText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     color: colors.forest,
   },
   reviewComment: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.charcoal,
     lineHeight: 15,
   },
@@ -916,7 +916,7 @@ const styles = StyleSheet.create({
   },
   listingTabText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '700',
     color: colors.textMuted,
   },
@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
   },
   imageTileTypeBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     fontWeight: '900',
     color: colors.white,
     letterSpacing: 0.5,
@@ -978,7 +978,7 @@ const styles = StyleSheet.create({
   },
   imageTilePriceText: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,

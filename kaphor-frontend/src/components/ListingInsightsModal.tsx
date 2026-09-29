@@ -172,24 +172,6 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
                 <Text style={styles.metricSub}>{insights.uniqueViewers} unique shoppers</Text>
               </View>
 
-              {/* Active in Carts */}
-              <View style={[styles.metricBox, insights.activeInCart > 0 && styles.activeCartHighlight]}>
-                <View style={styles.metricIconRow}>
-                  <Ionicons
-                    name="cart-outline"
-                    size={18}
-                    color={insights.activeInCart > 0 ? '#00E5FF' : colors.textMuted}
-                  />
-                  <Text style={[styles.metricLabel, insights.activeInCart > 0 && { color: '#00E5FF' }]}>
-                    IN ACTIVE CARTS
-                  </Text>
-                </View>
-                <Text style={[styles.metricValue, insights.activeInCart > 0 && { color: '#00E5FF' }]}>
-                  {insights.activeInCart}
-                </Text>
-                <Text style={styles.metricSub}>{insights.totalCartAdds} total adds</Text>
-              </View>
-
               {/* Wishlists / Saves */}
               <View style={styles.metricBox}>
                 <View style={styles.metricIconRow}>
@@ -274,31 +256,10 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
                   </View>
                 </View>
 
-                {/* Step 3: In Cart */}
+                {/* Step 3: Conversions */}
                 <View style={styles.funnelStep}>
                   <View style={styles.funnelHeader}>
-                    <Text style={styles.stepTitle}>3. Cart Additions</Text>
-                    <Text style={styles.stepCount}>
-                      {insights.totalCartAdds} ({insights.funnel.viewToCartRate}%)
-                    </Text>
-                  </View>
-                  <View style={styles.progressBarBg}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        {
-                          width: `${Math.max(4, Math.min(100, insights.funnel.viewToCartRate))}%`,
-                          backgroundColor: '#00E5FF',
-                        },
-                      ]}
-                    />
-                  </View>
-                </View>
-
-                {/* Step 4: Conversions */}
-                <View style={styles.funnelStep}>
-                  <View style={styles.funnelHeader}>
-                    <Text style={styles.stepTitle}>4. Completed Purchases / Leases</Text>
+                    <Text style={styles.stepTitle}>3. Completed Purchases / Leases</Text>
                     <Text style={styles.stepCount}>
                       {insights.conversions.total} ({insights.funnel.overallConversionRate}%)
                     </Text>
@@ -343,9 +304,6 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
                         </View>
                         <Text style={styles.dayViewsCount}>{day.views}</Text>
                         <Text style={styles.dayLabel}>{dayLabel}</Text>
-                        {day.carts > 0 && (
-                          <View style={styles.cartDot} />
-                        )}
                       </View>
                     );
                   })}
@@ -424,13 +382,13 @@ const styles = StyleSheet.create({
   headerSub: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     letterSpacing: 1.5,
   },
   headerTitle: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
     letterSpacing: 1,
     marginTop: 2,
   },
@@ -453,20 +411,20 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     marginTop: spacing.md,
     letterSpacing: 0.5,
   },
   errorTitle: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
     marginTop: spacing.md,
   },
   errorSubtitle: {
     color: colors.textMuted,
     fontFamily: typography.body,
-    fontSize: 17,
+    fontSize: 13,
     textAlign: 'center',
     marginTop: spacing.xs,
     maxWidth: 280,
@@ -481,7 +439,7 @@ const styles = StyleSheet.create({
   retryBtnText: {
     color: colors.bg,
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   content: {
@@ -518,7 +476,7 @@ const styles = StyleSheet.create({
   brandText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     maxWidth: 130,
@@ -532,13 +490,13 @@ const styles = StyleSheet.create({
   },
   demandText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: 'bold',
   },
   garmentTitle: {
     color: colors.textPrimary,
     fontFamily: typography.body,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     lineHeight: 18,
   },
@@ -550,20 +508,20 @@ const styles = StyleSheet.create({
   priceText: {
     color: colors.textPrimary,
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   rentalRateText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
   },
   lifecyclePill: {
     marginLeft: 'auto',
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     color: colors.textSecond,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -578,14 +536,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   demandScoreText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   metricsGrid: {
@@ -602,10 +560,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.md,
   },
-  activeCartHighlight: {
-    borderColor: 'rgba(0, 229, 255, 0.4)',
-    backgroundColor: 'rgba(0, 229, 255, 0.04)',
-  },
   metricIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -615,19 +569,19 @@ const styles = StyleSheet.create({
   metricLabel: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     letterSpacing: 0.5,
   },
   metricValue: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
   },
   metricSub: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     marginTop: 2,
   },
   funnelSection: {
@@ -651,12 +605,12 @@ const styles = StyleSheet.create({
   stepTitle: {
     color: colors.textSecond,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
   },
   stepCount: {
     color: colors.textPrimary,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   progressBarBg: {
@@ -675,7 +629,7 @@ const styles = StyleSheet.create({
   trendLegend: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
   },
   chartCard: {
     backgroundColor: colors.bgCard,
@@ -724,13 +678,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  cartDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#00E5FF',
-    marginTop: 2,
-  },
   advisorSection: {
     marginBottom: spacing.lg,
   },
@@ -763,7 +710,7 @@ const styles = StyleSheet.create({
   tipCategoryText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: 'bold',
   },
   impactBadge: {
@@ -780,20 +727,20 @@ const styles = StyleSheet.create({
   impactText: {
     color: colors.textSecond,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: 'bold',
   },
   tipHeadline: {
     color: colors.textPrimary,
     fontFamily: typography.body,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   tipDesc: {
     color: colors.textSecond,
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     lineHeight: 17,
   },
   actionFooter: {
@@ -811,7 +758,7 @@ const styles = StyleSheet.create({
   editListingBtnText: {
     color: colors.bg,
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 1,
   },

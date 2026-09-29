@@ -240,14 +240,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '900',
     letterSpacing: 1.5,
     color: colors.textPrimary,
   },
   subtitle: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textSecond,
     marginTop: 2,
     maxWidth: 260,
@@ -290,14 +290,14 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.8,
     color: colors.textPrimary,
   },
   optionDesc: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textSecond,
     marginTop: 3,
     lineHeight: 15,
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.2,
     color: colors.cream,

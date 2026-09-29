@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import { colors, typography } from '../theme';
 import { AIStar } from './AIStar';
 
-const EMBER_GRADIENT = ['#E4714A', '#C81E2C'] as const;
 const INK_GRADIENT = ['#242424', '#141414'] as const;
 
 interface MenuItem {
@@ -24,7 +23,7 @@ const MENU_ITEMS: MenuItem[] = [
     sublabel: 'Style curation & care chat',
     icon: 'sparkles-sharp',
     route: '/(tabs)/shop/ai-chat',
-    accent: colors.terracotta,
+    accent: colors.ink,
     star: true,
   },
   {
@@ -96,12 +95,12 @@ export const AIFloatingButton: React.FC = () => {
         <View style={styles.menu}>
           <View style={styles.menuHead}>
             <LinearGradient
-              colors={EMBER_GRADIENT}
+              colors={INK_GRADIENT}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.menuHeadBar}
             />
-            <AIStar size={13} color={colors.terracotta} />
+            <AIStar size={13} color={colors.ink} />
             <Text style={styles.menuTitle}>CIRCULAR TOOLS</Text>
           </View>
 
@@ -137,7 +136,7 @@ export const AIFloatingButton: React.FC = () => {
         style={styles.fabShell}
       >
         <LinearGradient
-          colors={open ? INK_GRADIENT : EMBER_GRADIENT}
+          colors={INK_GRADIENT}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabBody}

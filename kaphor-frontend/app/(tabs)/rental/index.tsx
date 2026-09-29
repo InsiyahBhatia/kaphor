@@ -389,13 +389,13 @@ const styles = StyleSheet.create({
     paddingBottom: 16, backgroundColor: colors.cream,
   },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  title: { fontSize: 46, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
-  subtitle: { fontFamily: typography.mono, fontSize: 13.5, color: colors.red, fontWeight: '800', letterSpacing: 1 },
+  title: { fontSize: 42, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
+  subtitle: { fontFamily: typography.mono, fontSize: 10, color: colors.red, fontWeight: '800', letterSpacing: 1 },
 
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(26,26,26,0.1)' },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: colors.charcoal },
-  tabText: { fontFamily: typography.mono, fontSize: 14.5, color: colors.textMuted, fontWeight: '700', letterSpacing: 1 },
+  tabText: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, fontWeight: '700', letterSpacing: 1 },
   tabTextActive: { color: colors.charcoal, fontWeight: '900' },
   
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between', paddingTop: 16 },
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     borderColor: colors.forest || '#2A7B4C',
   },
   roleBadgeText: {
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontFamily: typography.mono,
     fontWeight: '900',
     letterSpacing: 0.5,
@@ -436,21 +436,21 @@ const styles = StyleSheet.create({
     color: colors.forest || '#2A7B4C',
   },
   myRentalCounterparty: {
-    fontSize: 13.5,
+    fontSize: 10,
     fontFamily: typography.mono,
     color: colors.textMuted,
     fontWeight: '700',
     marginTop: 2,
   },
-  myRentalTitle: { fontFamily: typography.headings, fontSize: 23, color: colors.charcoal, flex: 1 },
+  myRentalTitle: { fontFamily: typography.headings, fontSize: 19, color: colors.charcoal, flex: 1 },
   myRentalStatus: { paddingHorizontal: 8, paddingVertical: 3 },
-  myRentalStatusText: { color: colors.cream, fontFamily: typography.mono, fontSize: 11, fontWeight: '900' },
+  myRentalStatusText: { color: colors.cream, fontFamily: typography.mono, fontSize: 8, fontWeight: '900' },
   myRentalDates: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   myRentalDateBlock: { flex: 1 },
-  myRentalDateLabel: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, fontWeight: '700', marginBottom: 2 },
-  myRentalDateValue: { fontFamily: typography.mono, fontSize: 15.5, color: colors.charcoal, fontWeight: '700' },
-  myRentalPriceLabel: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, fontWeight: '700' },
-  myRentalPrice: { fontFamily: typography.mono, fontSize: 18, color: colors.red, fontWeight: '800' },
+  myRentalDateLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700', marginBottom: 2 },
+  myRentalDateValue: { fontFamily: typography.mono, fontSize: 12, color: colors.charcoal, fontWeight: '700' },
+  myRentalPriceLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700' },
+  myRentalPrice: { fontFamily: typography.mono, fontSize: 14, color: colors.red, fontWeight: '800' },
   myRentalActionRow: {
     flexDirection: 'row',
     gap: 8,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   myRentalDossierText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   myRentalChatText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.charcoal,
   },
-  myRentalReturnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 13.5, fontWeight: '900', letterSpacing: 1 },
+  myRentalReturnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
 
   // Role filter chips
   roleFilterRow: {
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   roleFilterChipText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -527,11 +527,11 @@ const styles = StyleSheet.create({
   },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', flex: 1, padding: 20, paddingTop: 60 },
-  emptyText: { color: colors.charcoal, fontSize: 15.5, fontFamily: typography.mono, fontWeight: '800', marginVertical: 24, letterSpacing: 2 },
+  emptyText: { color: colors.charcoal, fontSize: 12, fontFamily: typography.mono, fontWeight: '800', marginVertical: 24, letterSpacing: 2 },
   button: { 
     backgroundColor: colors.charcoal, paddingHorizontal: 28, paddingVertical: 14,
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0
   },
-  buttonText: { color: colors.cream, fontFamily: typography.mono, fontWeight: '800', fontSize: 15.5, letterSpacing: 1 },
+  buttonText: { color: colors.cream, fontFamily: typography.mono, fontWeight: '800', fontSize: 12, letterSpacing: 1 },
 });

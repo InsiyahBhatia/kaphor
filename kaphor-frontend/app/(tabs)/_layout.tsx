@@ -50,7 +50,6 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen name="circular/index" options={{ href: null }} />
-        <Tabs.Screen name="cart" options={{ href: null }} />
         <Tabs.Screen
           name="rental/index"
           options={{
@@ -86,7 +85,6 @@ export default function TabLayout() {
         <Tabs.Screen name="shop/[id]" options={{ href: null }} />
         <Tabs.Screen name="shop/edit/[id]" options={{ href: null }} />
         <Tabs.Screen name="shop/sell" options={{ href: null }} />
-        <Tabs.Screen name="shop/cart" options={{ href: null }} />
         <Tabs.Screen name="shop/payment-history" options={{ href: null }} />
         <Tabs.Screen name="shop/ai-chat" options={{ href: null, tabBarStyle: { display: 'none' } }} />
         <Tabs.Screen name="shop/order-confirmed" options={{ href: null }} />

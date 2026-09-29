@@ -1,0 +1,679 @@
+{
+  "total_test_rows": 23,
+  "gemini_judged": 23,
+  "gemini_failed": 0,
+  "gemini_vs_formula_agreement": 0.783,
+  "gemini_vs_groq_agreement": 0.739,
+  "condition_agreement_within_0_1": 0.87,
+  "condition_mae_gemini_vs_groq": 0.048,
+  "note": "Fresh Gemini judgment on unseen test fraction — Gemini never saw the Groq annotation",
+  "rows": [
+    {
+      "image": "128774870592324956.jpg",
+      "gemini": {
+        "condition_score": 0.85,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "trousers"
+      },
+      "groq_annotation": {
+        "condition_score": 0.95,
+        "routing": "RESELL",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "trousers"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.6214,
+        "ms": 0.63,
+        "mds": 0.2016,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 357
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "534239574558929826.jpg",
+      "gemini": {
+        "condition_score": 0.5,
+        "routing": "UPCYCLE",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "groq_annotation": {
+        "condition_score": 0.55,
+        "routing": "RESELL",
+        "confidence": 0.85,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "formula": {
+        "routing": "UPCYCLE",
+        "glie_score": 0.4828,
+        "ms": 0.63,
+        "mds": 0.2084,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 886
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": false,
+      "formula_agrees_groq": false
+    },
+    {
+      "image": "Chic Short Dresses & Floral Evening Gowns.jpg",
+      "gemini": {
+        "condition_score": 1,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "polyester",
+        "category": "dress"
+      },
+      "groq_annotation": {
+        "condition_score": 1,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "dress"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.6413,
+        "ms": 0.63,
+        "mds": 0.2133,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 1090
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "Dm!.jpg",
+      "gemini": {
+        "condition_score": 0.95,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "denim",
+        "category": "shirt"
+      },
+      "groq_annotation": {
+        "condition_score": 0.95,
+        "routing": "RESELL",
+        "confidence": 0.9,
+        "fiber": "denim",
+        "category": "shirt"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.7034,
+        "ms": 0.915,
+        "mds": 0.225,
+        "ss": 0.4856,
+        "fiber_resolved": "Denim",
+        "market_listings": 5
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "WhatsApp Image 2026-09-23 at 3.31.29 PM.jpeg",
+      "gemini": {
+        "condition_score": 0.65,
+        "routing": "UPCYCLE",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "kurta"
+      },
+      "groq_annotation": {
+        "condition_score": 0.75,
+        "routing": "RESELL",
+        "confidence": 0.85,
+        "fiber": "cotton",
+        "category": "shirt"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.5528,
+        "ms": 0.63,
+        "mds": 0.2084,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 993
+      },
+      "gemini_agrees_formula": false,
+      "gemini_agrees_groq": false,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "WhatsApp Image 2026-09-23 at 3.31.31 PM (1).jpeg",
+      "gemini": {
+        "condition_score": 0.45,
+        "routing": "UPCYCLE",
+        "confidence": 0.9,
+        "fiber": "linen",
+        "category": "top"
+      },
+      "groq_annotation": {
+        "condition_score": 0.45,
+        "routing": "UPCYCLE",
+        "confidence": 0.85,
+        "fiber": "cotton",
+        "category": "shirt"
+      },
+      "formula": {
+        "routing": "UPCYCLE",
+        "glie_score": 0.4478,
+        "ms": 0.63,
+        "mds": 0.2084,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 998
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (1).jpg",
+      "gemini": {
+        "condition_score": 0.6,
+        "routing": "UPCYCLE",
+        "confidence": 0.85,
+        "fiber": "cotton",
+        "category": "jacket"
+      },
+      "groq_annotation": {
+        "condition_score": 0.45,
+        "routing": "UPCYCLE",
+        "confidence": 0.85,
+        "fiber": "cotton",
+        "category": "jacket"
+      },
+      "formula": {
+        "routing": "UPCYCLE",
+        "glie_score": 0.4423,
+        "ms": 0.63,
+        "mds": 0.1809,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 322
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (11).jpg",
+      "gemini": {
+        "condition_score": 0.85,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "denim",
+        "category": "jeans"
+      },
+      "groq_annotation": {
+        "condition_score": 0.75,
+        "routing": "RESELL",
+        "confidence": 0.9,
+        "fiber": "denim",
+        "category": "jeans"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.6264,
+        "ms": 0.915,
+        "mds": 0.1899,
+        "ss": 0.4856,
+        "fiber_resolved": "Denim",
+        "market_listings": 706
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (12).jpg",
+      "gemini": {
+        "condition_score": 1,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "hoodie"
+      },
+      "groq_annotation": {
+        "condition_score": 1,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "hoodie"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.6786,
+        "ms": 0.63,
+        "mds": 0.4,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 0
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (13).jpg",
+      "gemini": {
+        "condition_score": 0.95,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "groq_annotation": {
+        "condition_score": 0.95,
+        "routing": "RESELL",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "sweatshirt"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.6261,
+        "ms": 0.63,
+        "mds": 0.225,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 5
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (15).jpg",
+      "gemini": {
+        "condition_score": 0.85,
+        "routing": "RESELL",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "groq_annotation": {
+        "condition_score": 1,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "top"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.6786,
+        "ms": 0.63,
+        "mds": 0.4,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 0
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (16).jpg",
+      "gemini": {
+        "condition_score": 0.95,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "groq_annotation": {
+        "condition_score": 0.92,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "shirt"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.6156,
+        "ms": 0.63,
+        "mds": 0.225,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 5
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (19).jpg",
+      "gemini": {
+        "condition_score": 1,
+        "routing": "RESELL",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "groq_annotation": {
+        "condition_score": 0.95,
+        "routing": "RESELL",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "formula": {
+        "routing": "RESELL",
+        "glie_score": 0.6261,
+        "ms": 0.63,
+        "mds": 0.225,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 5
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (20).jpg",
+      "gemini": {
+        "condition_score": 0.62,
+        "routing": "UPCYCLE",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "groq_annotation": {
+        "condition_score": 0.55,
+        "routing": "UPCYCLE",
+        "confidence": 0.85,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "formula": {
+        "routing": "UPCYCLE",
+        "glie_score": 0.4828,
+        "ms": 0.63,
+        "mds": 0.2084,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 886
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (25).jpg",
+      "gemini": {
+        "condition_score": 0.65,
+        "routing": "RESELL",
+        "confidence": 0.9,
+        "fiber": "denim",
+        "category": "jeans"
+      },
+      "groq_annotation": {
+        "condition_score": 0.65,
+        "routing": "UPCYCLE",
+        "confidence": 0.85,
+        "fiber": "denim",
+        "category": "jeans"
+      },
+      "formula": {
+        "routing": "UPCYCLE",
+        "glie_score": 0.5914,
+        "ms": 0.915,
+        "mds": 0.1899,
+        "ss": 0.4856,
+        "fiber_resolved": "Denim",
+        "market_listings": 706
+      },
+      "gemini_agrees_formula": false,
+      "gemini_agrees_groq": false,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "download (27).jpg",
+      "gemini": {
+        "condition_score": 0.55,
+        "routing": "UPCYCLE",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "groq_annotation": {
+        "condition_score": 0.65,
+        "routing": "UPCYCLE",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "formula": {
+        "routing": "UPCYCLE",
+        "glie_score": 0.5178,
+        "ms": 0.63,
+        "mds": 0.2084,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 881
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "stained&toned/296674694225978784.jpg",
+      "gemini": {
+        "condition_score": 0.25,
+        "routing": "RECYCLE",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "tshirt"
+      },
+      "groq_annotation": {
+        "condition_score": 0.2,
+        "routing": "RECYCLE",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "shirt"
+      },
+      "formula": {
+        "routing": "RECYCLE",
+        "glie_score": 0.3603,
+        "ms": 0.63,
+        "mds": 0.2084,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 998
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "stained&toned/531354456038013170.jpg",
+      "gemini": {
+        "condition_score": 0.55,
+        "routing": "RESELL",
+        "confidence": 0.9,
+        "fiber": "acrylic",
+        "category": "sweater"
+      },
+      "groq_annotation": {
+        "condition_score": 0.55,
+        "routing": "UPCYCLE",
+        "confidence": 0.85,
+        "fiber": "cotton",
+        "category": "sweater"
+      },
+      "formula": {
+        "routing": "UPCYCLE",
+        "glie_score": 0.4812,
+        "ms": 0.63,
+        "mds": 0.2003,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 290
+      },
+      "gemini_agrees_formula": false,
+      "gemini_agrees_groq": false,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "stained&toned/84724036736416577.jpg",
+      "gemini": {
+        "condition_score": 0.55,
+        "routing": "UPCYCLE",
+        "confidence": 0.9,
+        "fiber": "cotton",
+        "category": "sweater"
+      },
+      "groq_annotation": {
+        "condition_score": 0.45,
+        "routing": "UPCYCLE",
+        "confidence": 0.85,
+        "fiber": "wool",
+        "category": "sweater"
+      },
+      "formula": {
+        "routing": "UPCYCLE",
+        "glie_score": 0.5821,
+        "ms": 0.805,
+        "mds": 0.2003,
+        "ss": 0.9163,
+        "fiber_resolved": "Wool",
+        "market_listings": 290
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "stained&toned/Driftless Artifacts on Instagram_ _This is my….jpg",
+      "gemini": {
+        "condition_score": 0.12,
+        "routing": "RECYCLE",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "jacket"
+      },
+      "groq_annotation": {
+        "condition_score": 0.15,
+        "routing": "RECYCLE",
+        "confidence": 0.95,
+        "fiber": "cotton",
+        "category": "jacket"
+      },
+      "formula": {
+        "routing": "RECYCLE",
+        "glie_score": 0.3373,
+        "ms": 0.63,
+        "mds": 0.1809,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 322
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "stained&toned/How To Remove a Red Wine Stain.jpg",
+      "gemini": {
+        "condition_score": 0.58,
+        "routing": "UPCYCLE",
+        "confidence": 0.85,
+        "fiber": "cotton",
+        "category": "shirt"
+      },
+      "groq_annotation": {
+        "condition_score": 0.55,
+        "routing": "UPCYCLE",
+        "confidence": 0.85,
+        "fiber": "cotton",
+        "category": "shirt"
+      },
+      "formula": {
+        "routing": "UPCYCLE",
+        "glie_score": 0.4828,
+        "ms": 0.63,
+        "mds": 0.2084,
+        "ss": 0.4556,
+        "fiber_resolved": "Standard Cotton",
+        "market_listings": 998
+      },
+      "gemini_agrees_formula": true,
+      "gemini_agrees_groq": true,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "stained&toned/Look what I just found on Depop 👀.jpg",
+      "gemini": {
+        "condition_score": 0.15,
+        "routing": "UPCYCLE",
+        "confidence": 0.95,
+        "fiber": "wool",
+        "category": "sweater"
+      },
+      "groq_annotation": {
+        "condition_score": 0.15,
+        "routing": "RECYCLE",
+        "confidence": 0.95,
+        "fiber": "wool",
+        "category": "sweater"
+      },
+      "formula": {
+        "routing": "RECYCLE",
+        "glie_score": 0.4771,
+        "ms": 0.805,
+        "mds": 0.2003,
+        "ss": 0.9163,
+        "fiber_resolved": "Wool",
+        "market_listings": 290
+      },
+      "gemini_agrees_formula": false,
+      "gemini_agrees_groq": false,
+      "formula_agrees_groq": true
+    },
+    {
+      "image": "stained&toned/The Style.jpg",
+      "gemini": {
+        "condition_score": 0.15,
+        "routing": "UPCYCLE",
+        "confidence": 0.95,
+        "fiber": "denim",
+        "category": "jeans"
+      },
+      "groq_annotation": {
+        "condition_score": 0.15,
+        "routing": "RECYCLE",
+        "confidence": 0.95,
+        "fiber": "denim",
+        "category": "jeans"
+      },
+      "formula": {
+        "routing": "RECYCLE",
+        "glie_score": 0.4164,
+        "ms": 0.915,
+        "mds": 0.1899,
+        "ss": 0.4856,
+        "fiber_resolved": "Denim",
+        "market_listings": 706
+      },
+      "gemini_agrees_formula": false,
+      "gemini_agrees_groq": false,
+      "formula_agrees_groq": true
+    }
+  ]
+}

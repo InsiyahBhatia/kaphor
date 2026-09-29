@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 37,
+    fontSize: 32,
     fontFamily: 'BebasNeue_400Regular',
     color: colors.textPrimary,
     textAlign: 'center',
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: 18.5,
+    fontSize: 15,
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 16,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 18,
     color: colors.textPrimary,
-    fontSize: 18.5,
+    fontSize: 15,
     letterSpacing: 0.5,
     backgroundColor: colors.bgCard,
   },
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     color: colors.textPrimary,
-    fontSize: 18.5,
+    fontSize: 15,
     letterSpacing: 0.5,
   },
   eyeBtn: {
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   },
   mainBtnText: {
     color: colors.white,
-    fontSize: 18.5,
+    fontSize: 15,
     fontWeight: '800',
     letterSpacing: 2,
   },

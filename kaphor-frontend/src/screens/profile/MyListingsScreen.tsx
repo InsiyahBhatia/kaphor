@@ -113,7 +113,7 @@ export function MyListingsScreen() {
             {(() => {
               const p = getFormattedGarmentPrice(item);
               return (
-                <Text style={[styles.price, p.isSwap && { color: colors.crimson, fontSize: 14.5 }]}>
+                <Text style={[styles.price, p.isSwap && { color: colors.crimson, fontSize: 11 }]}>
                   {p.displayPrice}{p.priceUnit || ''}
                 </Text>
               );
@@ -134,22 +134,6 @@ export function MyListingsScreen() {
         <View style={styles.telemetryItem}>
           <Ionicons name="eye-outline" size={12} color={colors.gold} />
           <Text style={styles.telemetryText}>{item.insights?.views ?? item.viewCount ?? 0} views</Text>
-        </View>
-        <View style={styles.telemetryDivider} />
-        <View style={styles.telemetryItem}>
-          <Ionicons
-            name="cart-outline"
-            size={12}
-            color={item.insights?.inCart > 0 ? '#00E5FF' : colors.textMuted}
-          />
-          <Text
-            style={[
-              styles.telemetryText,
-              item.insights?.inCart > 0 && { color: '#00E5FF', fontWeight: 'bold' },
-            ]}
-          >
-            {item.insights?.inCart ?? 0} in cart
-          </Text>
         </View>
         <View style={styles.telemetryDivider} />
         <View style={styles.telemetryItem}>
@@ -327,7 +311,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
     letterSpacing: 1,
   },
   center: {
@@ -339,13 +323,13 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     marginTop: spacing.sm,
   },
   emptyTitle: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 24.5,
+    fontSize: 20,
     marginTop: spacing.md,
   },
   emptyText: {
@@ -368,7 +352,7 @@ const styles = StyleSheet.create({
   },
   listNowText: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: 'bold',
     color: colors.bg,
     letterSpacing: 0.5,
@@ -405,7 +389,7 @@ const styles = StyleSheet.create({
   brand: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     maxWidth: 140,
@@ -413,7 +397,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.textPrimary,
     fontFamily: typography.body,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     lineHeight: 18,
   },
@@ -423,13 +407,13 @@ const styles = StyleSheet.create({
   metaText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     marginBottom: 3,
   },
   price: {
     color: colors.textPrimary,
     fontFamily: typography.mono,
-    fontSize: 18.5,
+    fontSize: 15,
     fontWeight: 'bold',
   },
   statusBadge: {
@@ -447,7 +431,7 @@ const styles = StyleSheet.create({
   statusText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: 'bold',
   },
   inactiveStatusText: {
@@ -471,7 +455,7 @@ const styles = StyleSheet.create({
   telemetryText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
   },
   telemetryDivider: {
     width: 1,
@@ -486,7 +470,7 @@ const styles = StyleSheet.create({
   telemetryActionText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -512,7 +496,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: 'bold',
     color: colors.textSecond,
     letterSpacing: 0.5,

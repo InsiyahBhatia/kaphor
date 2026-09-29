@@ -4,7 +4,6 @@ export type InteractionEventType =
   | 'VIEW'
   | 'SAVE'
   | 'WISHLIST'
-  | 'ADD_TO_CART'
   | 'SEARCH'
   | 'FILTER_APPLY'
   | 'PURCHASE_INTENT'
@@ -52,13 +51,6 @@ class TelemetryService {
     this.sendEvent({
       garmentId,
       eventType: isSaved ? 'WISHLIST' : 'VIEW',
-    });
-  }
-
-  trackAddToCart(garmentId: string) {
-    this.sendEvent({
-      garmentId,
-      eventType: 'ADD_TO_CART',
     });
   }
 

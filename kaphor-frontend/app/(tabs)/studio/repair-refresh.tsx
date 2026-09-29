@@ -492,8 +492,8 @@ export default function RepairRefreshScreen() {
             <Text style={styles.garmentSummaryName}>{garmentLabel}</Text>
             <Text style={styles.garmentSummaryDesc}>{result.glie.description}</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
-              <Text style={{ fontSize: 15.5, color: colors.textMuted }}>Model: Gemini 3.1 Flash (Vision AI)</Text>
-              <Text style={{ fontSize: 15.5, fontWeight: '700', color: colors.forest }}>CS: {(result.glie.condition_score * 100).toFixed(1)}%</Text>
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>Model: Gemini 3.1 Flash (Vision AI)</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.forest }}>CS: {(result.glie.condition_score * 100).toFixed(1)}%</Text>
             </View>
 
             {/* ── Before / After Comparison ───────────────────────── */}
@@ -946,47 +946,47 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   headerBack: { width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: colors.charcoal, fontSize: 18, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
+  headerTitle: { color: colors.charcoal, fontSize: 14, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
 
   // ── Scroll ─────────────────────────────────────────────────────
   scrollContent: { padding: 20, paddingBottom: 180 },
 
   // ── Form Hero ──────────────────────────────────────────────────
   formHero: { alignItems: 'center', marginBottom: 28, gap: 12 },
-  formHeroTitle: { fontSize: 32.5, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 1 },
-  formHeroSub: { fontFamily: typography.mono, fontSize: 14.5, color: colors.textMuted, textAlign: 'center', lineHeight: 18, paddingHorizontal: 12 },
+  formHeroTitle: { fontSize: 28, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 1 },
+  formHeroSub: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, textAlign: 'center', lineHeight: 18, paddingHorizontal: 12 },
 
   // ── Upload ────────────────────────────────────────────────────
   uploadArea: { width: '100%', height: 200, borderWidth: 2, borderColor: colors.charcoal, borderStyle: 'dashed', backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   uploadPreview: { width: '100%', height: '100%', resizeMode: 'cover' },
   uploadPlaceholder: { alignItems: 'center', gap: 8 },
-  uploadText: { fontFamily: typography.mono, fontSize: 17, fontWeight: '800', color: colors.charcoal },
-  uploadSubtext: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted },
+  uploadText: { fontFamily: typography.mono, fontSize: 13, fontWeight: '800', color: colors.charcoal },
+  uploadSubtext: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted },
   uploadActions: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 16 },
   uploadActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10 },
-  uploadActionText: { fontFamily: typography.mono, fontSize: 13.5, fontWeight: '800', color: colors.charcoal },
+  uploadActionText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '800', color: colors.charcoal },
 
   // ── Inputs ────────────────────────────────────────────────────
-  inputLabel: { fontFamily: typography.mono, fontSize: 12, fontWeight: '900', color: colors.charcoal, letterSpacing: 1.5, marginBottom: 8, marginTop: 20 },
-  textInput: { borderWidth: 1.5, borderColor: colors.charcoal, padding: 14, fontFamily: typography.body, fontSize: 18, color: colors.charcoal, backgroundColor: colors.white },
+  inputLabel: { fontFamily: typography.mono, fontSize: 9, fontWeight: '900', color: colors.charcoal, letterSpacing: 1.5, marginBottom: 8, marginTop: 20 },
+  textInput: { borderWidth: 1.5, borderColor: colors.charcoal, padding: 14, fontFamily: typography.body, fontSize: 14, color: colors.charcoal, backgroundColor: colors.white },
   textArea: { minHeight: 80, textAlignVertical: 'top', marginTop: 8 },
 
   // ── Pickers ───────────────────────────────────────────────────
   pickerBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1.5, borderColor: colors.charcoal, padding: 14, backgroundColor: colors.white },
-  pickerText: { fontFamily: typography.body, fontSize: 18, color: colors.charcoal },
-  pickerPlaceholder: { fontFamily: typography.body, fontSize: 18, color: colors.textMuted },
+  pickerText: { fontFamily: typography.body, fontSize: 14, color: colors.charcoal },
+  pickerPlaceholder: { fontFamily: typography.body, fontSize: 14, color: colors.textMuted },
   pickerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 12, backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal, borderTopWidth: 0 },
   pickerOption: { paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1.5, borderColor: colors.charcoal, backgroundColor: colors.cream },
   pickerOptionActive: { backgroundColor: colors.charcoal },
-  pickerOptionText: { fontFamily: typography.mono, fontSize: 14.5, fontWeight: '700', color: colors.charcoal },
+  pickerOptionText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '700', color: colors.charcoal },
   pickerOptionTextActive: { color: colors.cream },
 
   // ── Submit ────────────────────────────────────────────────────
   submitBtn: { backgroundColor: colors.charcoal, height: 56, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.charcoal, shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4, marginTop: 32 },
   submitBtnDisabled: { opacity: 0.5 },
   submitRow: { flexDirection: 'row', alignItems: 'center' },
-  submitText: { color: colors.cream, fontFamily: typography.mono, fontSize: 18, fontWeight: '900', letterSpacing: 2 },
-  hintText: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 16 },
+  submitText: { color: colors.cream, fontFamily: typography.mono, fontSize: 14, fontWeight: '900', letterSpacing: 2 },
+  hintText: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 16 },
 
   // ── Result: Garment Summary ──────────────────────────────────
   garmentSummaryCard: {
@@ -1001,10 +1001,10 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginBottom: 24,
   },
-  garmentSummaryTitle: { fontFamily: typography.mono, fontSize: 13.5, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 8 },  
-  garmentSummaryName: { fontFamily: typography.headings, fontSize: 37, color: colors.charcoal, lineHeight: 36, marginBottom: 12 },
-  garmentSummaryDesc: { fontFamily: typography.body, fontSize: 17, color: colors.charcoal, lineHeight: 20, marginBottom: 12 },
-  garmentFeasibility: { fontFamily: typography.mono, fontSize: 13.5, color: colors.textMuted, lineHeight: 16, fontStyle: 'italic', marginTop: 8 },
+  garmentSummaryTitle: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 8 },  
+  garmentSummaryName: { fontFamily: typography.headings, fontSize: 32, color: colors.charcoal, lineHeight: 36, marginBottom: 12 },
+  garmentSummaryDesc: { fontFamily: typography.body, fontSize: 13, color: colors.charcoal, lineHeight: 20, marginBottom: 12 },
+  garmentFeasibility: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, lineHeight: 16, fontStyle: 'italic', marginTop: 8 },
 
   // ── Segregated Route Selector ───────────────────────────────
   tabContainer: {
@@ -1033,7 +1033,7 @@ const styles = StyleSheet.create({
   },
   tabBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1052,7 +1052,7 @@ const styles = StyleSheet.create({
   },
   tabBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -1068,7 +1068,7 @@ const styles = StyleSheet.create({
   },
   tabFocusTitle: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: '#1E3B2F',
     letterSpacing: 0.8,
@@ -1076,7 +1076,7 @@ const styles = StyleSheet.create({
   },
   tabFocusText: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -1084,51 +1084,51 @@ const styles = StyleSheet.create({
   // ── Result: Damage Tags ───────────────────────────────────────
   damageTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   damageTag: { backgroundColor: colors.cream, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: colors.charcoal },
-  damageTagText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '700', color: colors.charcoal },
+  damageTagText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '700', color: colors.charcoal },
 
   // ── Result: Section ───────────────────────────────────────────
   section: { marginBottom: 24 },
   sectionHeader: { flexDirection: 'row', gap: 8, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: colors.charcoal, paddingBottom: 10, marginBottom: 12 },
-  sectionTitle: { fontFamily: typography.mono, fontSize: 15.5, fontWeight: '900', color: colors.charcoal, letterSpacing: 1.5 },
-  sectionSubtitle: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, marginBottom: 16, lineHeight: 16 },
+  sectionTitle: { fontFamily: typography.mono, fontSize: 12, fontWeight: '900', color: colors.charcoal, letterSpacing: 1.5 },
+  sectionSubtitle: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginBottom: 16, lineHeight: 16 },
 
   // ── Result: Guide Card ────────────────────────────────────────
   guideCard: { backgroundColor: colors.white, padding: 20, borderWidth: 2, borderColor: colors.charcoal, shadowColor: colors.charcoal, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3, marginBottom: 16 },
   guideHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   guideTypeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: colors.charcoal },
-  guideTypeText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.cream, letterSpacing: 1 },
+  guideTypeText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.cream, letterSpacing: 1 },
   guideMeta: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   guideDiffBadge: { paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-  guideDiffText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '700' },
-  guideTime: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted },
-  guideTitle: { fontFamily: typography.headings, fontSize: 24.5, color: colors.charcoal, marginBottom: 6, lineHeight: 24 },
-  guideTechnique: { fontFamily: typography.mono, fontSize: 13.5, color: colors.textMuted, marginBottom: 16, letterSpacing: 0.5 },
+  guideDiffText: { fontFamily: typography.mono, fontSize: 8, fontWeight: '700' },
+  guideTime: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted },
+  guideTitle: { fontFamily: typography.headings, fontSize: 20, color: colors.charcoal, marginBottom: 6, lineHeight: 24 },
+  guideTechnique: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, marginBottom: 16, letterSpacing: 0.5 },
   guideSteps: { gap: 12, marginBottom: 16 },
   guideStepWrapper: { gap: 4 },
   guideStep: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   guideStepNum: { width: 22, height: 22, backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', marginTop: 2 },
-  guideStepNumText: { fontFamily: typography.mono, fontSize: 13.5, fontWeight: '800', color: colors.cream },
-  guideStepText: { flex: 1, fontFamily: typography.body, fontSize: 17, color: colors.charcoal, lineHeight: 20 },
+  guideStepNumText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '800', color: colors.cream },
+  guideStepText: { flex: 1, fontFamily: typography.body, fontSize: 13, color: colors.charcoal, lineHeight: 20 },
   stepTipBox: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 32, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(201, 95, 18, 0.08)', borderWidth: 1, borderColor: 'rgba(201, 95, 18, 0.2)' },
-  stepTipText: { fontFamily: typography.mono, fontSize: 13.5, color: colors.textSecond, flex: 1, fontStyle: 'italic' },
+  stepTipText: { fontFamily: typography.mono, fontSize: 10, color: colors.textSecond, flex: 1, fontStyle: 'italic' },
 
   proTipBox: { flexDirection: 'row', gap: 10, padding: 12, backgroundColor: '#FAF7EE', borderWidth: 1.5, borderColor: colors.gold, marginBottom: 12 },
-  proTipHeading: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.gold, letterSpacing: 0.8, marginBottom: 2 },
-  proTipText: { fontFamily: typography.body, fontSize: 15.5, color: colors.charcoal, lineHeight: 17 },
+  proTipHeading: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.gold, letterSpacing: 0.8, marginBottom: 2 },
+  proTipText: { fontFamily: typography.body, fontSize: 12, color: colors.charcoal, lineHeight: 17 },
 
   careBox: { flexDirection: 'row', gap: 10, padding: 12, backgroundColor: 'rgba(30, 59, 47, 0.06)', borderWidth: 1.5, borderColor: colors.forest, marginBottom: 12 },
-  careHeading: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.forest, letterSpacing: 0.8, marginBottom: 2 },
-  careText: { fontFamily: typography.body, fontSize: 15, color: colors.charcoal, lineHeight: 16 },
+  careHeading: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.forest, letterSpacing: 0.8, marginBottom: 2 },
+  careText: { fontFamily: typography.body, fontSize: 11.5, color: colors.charcoal, lineHeight: 16 },
 
   upcycleAltBox: { flexDirection: 'row', gap: 10, padding: 12, backgroundColor: 'rgba(201, 95, 18, 0.06)', borderWidth: 1.5, borderColor: colors.orange, marginBottom: 12 },
-  upcycleAltHeading: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.orange, letterSpacing: 0.8, marginBottom: 2 },
-  upcycleAltText: { fontFamily: typography.body, fontSize: 15, color: colors.charcoal, lineHeight: 16 },
+  upcycleAltHeading: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.orange, letterSpacing: 0.8, marginBottom: 2 },
+  upcycleAltText: { fontFamily: typography.body, fontSize: 11.5, color: colors.charcoal, lineHeight: 16 },
 
   guideTools: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
-  guideToolsLabel: { fontFamily: typography.mono, fontSize: 12, fontWeight: '700', color: colors.textMuted, marginBottom: 8 },
+  guideToolsLabel: { fontFamily: typography.mono, fontSize: 9, fontWeight: '700', color: colors.textMuted, marginBottom: 8 },
   guideToolsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   guideToolChip: { backgroundColor: colors.cream, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: colors.charcoal },
-  guideToolChipText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '600', color: colors.charcoal },
+  guideToolChipText: { fontFamily: typography.mono, fontSize: 8, fontWeight: '600', color: colors.charcoal },
 
   // ── Result: YouTube Video Card ─────────────────────────────────
   videoCard: { backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, shadowColor: colors.charcoal, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3, marginBottom: 16, overflow: 'hidden' },
@@ -1137,8 +1137,8 @@ const styles = StyleSheet.create({
   videoThumbPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cream },
   playOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)' },
   videoInfo: { padding: 14 },
-  videoTitle: { fontFamily: typography.body, fontSize: 18, fontWeight: '700', color: colors.charcoal, lineHeight: 20, marginBottom: 4 },
-  videoChannel: { fontFamily: typography.mono, fontSize: 13.5, color: colors.textMuted },
+  videoTitle: { fontFamily: typography.body, fontSize: 14, fontWeight: '700', color: colors.charcoal, lineHeight: 20, marginBottom: 4 },
+  videoChannel: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted },
 
   // ── Result: Video → Steps strip (from enriched youtube guides) ──
   videoStepsWrap: { borderTopWidth: 1.5, borderTopColor: colors.border },
@@ -1150,7 +1150,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#FAF7EE',
   },
-  videoStepsToggleText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '900', color: colors.charcoal, letterSpacing: 1 },
+  videoStepsToggleText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '900', color: colors.charcoal, letterSpacing: 1 },
   videoStepsCountBadge: {
     minWidth: 20,
     height: 20,
@@ -1160,14 +1160,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 6,
   },
-  videoStepsCountText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.cream },
+  videoStepsCountText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.cream },
   videoStepsMeta: { flex: 1, alignItems: 'flex-end' },
-  videoStepsMetaText: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, textTransform: 'capitalize' },
+  videoStepsMetaText: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, textTransform: 'capitalize' },
   videoStepsList: { paddingHorizontal: 14, paddingVertical: 12, gap: 10, backgroundColor: colors.white },
   videoStepRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   videoStepNum: { width: 20, height: 20, backgroundColor: colors.gold, justifyContent: 'center', alignItems: 'center', marginTop: 1 },
-  videoStepNumText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.charcoal },
-  videoStepText: { flex: 1, fontFamily: typography.body, fontSize: 17, color: colors.charcoal, lineHeight: 19 },
+  videoStepNumText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.charcoal },
+  videoStepText: { flex: 1, fontFamily: typography.body, fontSize: 13, color: colors.charcoal, lineHeight: 19 },
 
   // ── Result: Curated Reading List (blog articles) ──────────────
   readCard: {
@@ -1190,8 +1190,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   readInfo: { flex: 1 },
-  readTitle: { fontFamily: typography.body, fontSize: 17, fontWeight: '700', color: colors.charcoal, lineHeight: 18, marginBottom: 4 },
-  readSource: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, textTransform: 'capitalize' },
+  readTitle: { fontFamily: typography.body, fontSize: 13, fontWeight: '700', color: colors.charcoal, lineHeight: 18, marginBottom: 4 },
+  readSource: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, textTransform: 'capitalize' },
 
   // ── Result: Curated Blog Cards ─────────────────────────────────
   blogCard: {
@@ -1220,7 +1220,7 @@ const styles = StyleSheet.create({
   },
   blogTypeBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.white,
     letterSpacing: 0.8,
@@ -1234,7 +1234,7 @@ const styles = StyleSheet.create({
   },
   blogSourceBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1246,12 +1246,12 @@ const styles = StyleSheet.create({
   },
   blogDiffBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '800',
   },
   blogCardTitle: {
     fontFamily: typography.headings,
-    fontSize: 20.5,
+    fontSize: 17,
     fontWeight: '800',
     color: colors.charcoal,
     lineHeight: 22,
@@ -1259,7 +1259,7 @@ const styles = StyleSheet.create({
   },
   blogCardSummary: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textSecond,
     lineHeight: 18,
     marginBottom: 12,
@@ -1275,7 +1275,7 @@ const styles = StyleSheet.create({
   },
   blogTimeText: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.textMuted,
   },
   blogReadAction: {
@@ -1285,7 +1285,7 @@ const styles = StyleSheet.create({
   },
   blogReadActionText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: '#1E3B2F',
     letterSpacing: 0.8,
@@ -1293,24 +1293,24 @@ const styles = StyleSheet.create({
 
   // ── Result: Empty State ───────────────────────────────────────
   emptyCard: { alignItems: 'center', padding: 32, borderWidth: 2, borderColor: colors.charcoal, borderStyle: 'dashed', gap: 12, marginBottom: 24 },
-  emptyTitle: { fontFamily: typography.mono, fontSize: 15.5, fontWeight: '800', color: colors.charcoal },
-  emptyText: { fontFamily: typography.mono, fontSize: 13.5, color: colors.textMuted, textAlign: 'center', lineHeight: 16 },
+  emptyTitle: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.charcoal },
+  emptyText: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, textAlign: 'center', lineHeight: 16 },
 
   // ── Result: Before / After ────────────────────────────────────
   beforeAfterWrap: { marginTop: 20, marginBottom: 16, padding: 16, backgroundColor: colors.cream, borderWidth: 1.5, borderColor: colors.charcoal },
-  beforeAfterLabel: { fontFamily: typography.mono, fontSize: 11, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 12 },
+  beforeAfterLabel: { fontFamily: typography.mono, fontSize: 8, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 12 },
   beforeAfterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   beforeAfterCard: { flex: 1, alignItems: 'center' },
   beforeAfterImage: { width: '100%', height: 100, borderWidth: 1.5, borderColor: colors.charcoal, resizeMode: 'cover' },
   beforeAfterArrow: { paddingHorizontal: 8, paddingTop: 40 },
   beforeAfterTag: { backgroundColor: colors.red, paddingHorizontal: 6, paddingVertical: 2, marginTop: 6, borderWidth: 1, borderColor: colors.charcoal },
-  beforeAfterTagText: { fontFamily: typography.mono, fontSize: 9.5, fontWeight: '800', color: colors.cream, letterSpacing: 1 },
-  beforeAfterCaption: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4 },
+  beforeAfterTagText: { fontFamily: typography.mono, fontSize: 7, fontWeight: '800', color: colors.cream, letterSpacing: 1 },
+  beforeAfterCaption: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, marginTop: 4 },
   afterPreview: { width: '100%', height: 100, backgroundColor: '#F5F0E8', borderWidth: 1.5, borderColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', padding: 8, gap: 6 },
-  afterPreviewText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '700', color: colors.charcoal, textAlign: 'center', lineHeight: 14 },
+  afterPreviewText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '700', color: colors.charcoal, textAlign: 'center', lineHeight: 14 },
   afterPreviewMeta: { alignItems: 'center' },
-  afterPreviewMetaText: { fontFamily: typography.mono, fontSize: 9.5, color: colors.textMuted, textAlign: 'center', lineHeight: 10 },
-  afterPreviewImpact: { fontFamily: typography.mono, fontSize: 9.5, color: colors.forest, marginTop: 4, textAlign: 'center' },
+  afterPreviewMetaText: { fontFamily: typography.mono, fontSize: 7, color: colors.textMuted, textAlign: 'center', lineHeight: 10 },
+  afterPreviewImpact: { fontFamily: typography.mono, fontSize: 7, color: colors.forest, marginTop: 4, textAlign: 'center' },
 
   // ── Result: Save Button (on guide cards) ──────────────────────
   saveBtn: { position: 'absolute', top: 10, right: 10, zIndex: 10, width: 30, height: 30, borderRadius: 15, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: colors.charcoal, shadowColor: colors.charcoal, shadowOffset: { width: 1, height: 1 }, shadowOpacity: 0.3, shadowRadius: 0, elevation: 2 },
@@ -1325,7 +1325,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     flexWrap: 'wrap',
   },
-  filterLabel: { fontFamily: typography.mono, fontSize: 12, fontWeight: '900', color: colors.textMuted, letterSpacing: 1, marginRight: 4 },
+  filterLabel: { fontFamily: typography.mono, fontSize: 9, fontWeight: '900', color: colors.textMuted, letterSpacing: 1, marginRight: 4 },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1334,7 +1334,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   filterChipActive: { backgroundColor: colors.charcoal },
-  filterChipText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '700', color: colors.charcoal },
+  filterChipText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '700', color: colors.charcoal },
   filterChipTextActive: { color: colors.cream },
   filterClear: { padding: 4 },
 
@@ -1344,7 +1344,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 20,
   },
-  tabText: { fontFamily: typography.mono, fontSize: 13.5, fontWeight: '900', color: colors.charcoal, letterSpacing: 1 },
+  tabText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.charcoal, letterSpacing: 1 },
   tabTextActive: { color: colors.cream },
 
   // ── Result: Guide expand/collapse ───────────────────────────────
@@ -1359,17 +1359,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
     marginBottom: 12,
   },
-  guideExpandText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.charcoal, letterSpacing: 1 },
+  guideExpandText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.charcoal, letterSpacing: 1 },
 
   // ── Result: Section filter note ────────────────────────────────
-  sectionFilterNote: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, marginLeft: 'auto' },
+  sectionFilterNote: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginLeft: 'auto' },
 
   // ── Result: No filter results ──────────────────────────────────
   noFilterResults: { alignItems: 'center', padding: 24, gap: 8, borderWidth: 1.5, borderColor: colors.charcoal, borderStyle: 'dashed', backgroundColor: colors.white },
-  noFilterResultsText: { fontFamily: typography.mono, fontSize: 13.5, color: colors.textMuted, textAlign: 'center' },
-  noFilterResultsAction: { fontFamily: typography.mono, fontSize: 13.5, fontWeight: '700', color: colors.charcoal, textDecorationLine: 'underline' },
+  noFilterResultsText: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
+  noFilterResultsAction: { fontFamily: typography.mono, fontSize: 10, fontWeight: '700', color: colors.charcoal, textDecorationLine: 'underline' },
 
   // ── Result: Try Again ─────────────────────────────────────────
   tryAgainBtn: { height: 50, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.charcoal, backgroundColor: colors.cream },
-  tryAgainText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 15.5, fontWeight: '800', letterSpacing: 1 },
+  tryAgainText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
 });

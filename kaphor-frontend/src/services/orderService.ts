@@ -59,6 +59,21 @@ export const orderService = {
     return data.data;
   },
 
+  /**
+   * Submit a purchase request for a garment. The seller must approve before payment opens.
+   */
+  async requestPurchase(garmentId: string): Promise<{
+    orderId: string;
+    amount: number;
+    subtotal: number;
+    deliveryFee: number;
+    approvalStatus?: 'REQUESTED' | 'APPROVED';
+    isApproved: boolean;
+  }> {
+    const { data } = await api.post<{ data: any }>('/orders', { garmentId });
+    return data.data || data;
+  },
+
   async listTransactions(): Promise<TransactionOrder[]> {
     const { data } = await api.get<{ data: TransactionOrder[] }>('/orders/transactions');
     return data.data;

@@ -1316,12 +1316,12 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 1.5,
   },
   errorTitle: {
-    fontSize: 19.5,
+    fontSize: 16,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.textPrimary,
@@ -1329,7 +1329,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   errorSubtitle: {
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: 6,
@@ -1344,13 +1344,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.textPrimary,
-    fontSize: 19.5,
+    fontSize: 16,
     fontFamily: 'BebasNeue_400Regular',
     letterSpacing: 1.5,
   },
   headerSub: {
     color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 9,
     fontFamily: typography.mono,
     letterSpacing: 0.5,
     marginTop: 1,
@@ -1391,14 +1391,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimson,
   },
   statusTitle: {
-    fontSize: 15.5,
+    fontSize: 12,
     fontFamily: typography.mono,
     fontWeight: '900',
     color: colors.textPrimary,
     letterSpacing: 1,
   },
   statusDesc: {
-    fontSize: 15,
+    fontSize: 11.5,
     color: colors.textSecond,
     lineHeight: 16,
     marginTop: 2,
@@ -1414,7 +1414,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   cardSectionLabel: {
-    fontSize: 13,
+    fontSize: 9.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.textMuted,
@@ -1432,14 +1432,14 @@ const styles = StyleSheet.create({
   },
   garmentInfo: { flex: 1, justifyContent: 'center' },
   brandText: {
-    fontSize: 13.5,
+    fontSize: 10,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.crimson,
     letterSpacing: 1,
   },
   titleText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.textPrimary,
     marginTop: 2,
@@ -1454,18 +1454,18 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   tagText: {
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
   },
   garmentRate: {
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.textPrimary,
   },
   rateUnit: {
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '400',
     color: colors.textMuted,
   },
@@ -1480,13 +1480,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   counterpartyRoleLabel: {
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontFamily: typography.mono,
     color: colors.textMuted,
     fontWeight: '700',
   },
   counterpartyName: {
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.textPrimary,
     marginTop: 1,
@@ -1502,7 +1502,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   chatButtonText: {
-    fontSize: 13,
+    fontSize: 9.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.crimson,
@@ -1525,14 +1525,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   timelineDateLabel: {
-    fontSize: 11,
+    fontSize: 8,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.5,
   },
   timelineDateValue: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textPrimary,
     marginTop: 2,
@@ -1561,7 +1561,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   timelineDurationText: {
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.crimson,
@@ -1582,7 +1582,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   trackingTitle: {
-    fontSize: 13,
+    fontSize: 9.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.textPrimary,
@@ -1597,18 +1597,18 @@ const styles = StyleSheet.create({
   },
   trackingDetailRow: {},
   trackingDetailLabel: {
-    fontSize: 11,
+    fontSize: 8,
     fontFamily: typography.mono,
     color: colors.textMuted,
   },
   trackingDetailValue: {
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.textPrimary,
     marginTop: 1,
   },
   noTrackingText: {
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
     lineHeight: 16,
   },
@@ -1622,18 +1622,18 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   addressRecipient: {
-    fontSize: 16.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 2,
   },
   addressLine: {
-    fontSize: 15,
+    fontSize: 11.5,
     color: colors.textSecond,
     lineHeight: 16,
   },
   addressCity: {
-    fontSize: 15,
+    fontSize: 11.5,
     fontWeight: '600',
     color: colors.textPrimary,
     marginTop: 2,
@@ -1662,7 +1662,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(155, 27, 48, 0.08)',
   },
   escrowPillText: {
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.crimson,
@@ -1674,23 +1674,23 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   summaryLabel: {
-    fontSize: 13.5,
+    fontSize: 10,
     fontFamily: typography.mono,
     color: colors.textMuted,
   },
   summaryValue: {
-    fontSize: 15,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.textPrimary,
   },
   totalLabel: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '900',
     color: colors.textPrimary,
   },
   totalValue: {
-    fontSize: 18.5,
+    fontSize: 15,
     fontWeight: '900',
     color: colors.crimson,
   },
@@ -1708,7 +1708,7 @@ const styles = StyleSheet.create({
   },
   legalDisclaimerText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.textMuted,
     lineHeight: 14,
   },
@@ -1737,7 +1737,7 @@ const styles = StyleSheet.create({
   actionBtnText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -1756,7 +1756,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.mono,
     fontWeight: '800',
-    fontSize: 14.5,
+    fontSize: 11,
   },
 
   // Modals
@@ -1782,21 +1782,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalPre: {
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontFamily: typography.mono,
     color: colors.crimson,
     letterSpacing: 1,
     fontWeight: '800',
   },
   modalTitle: {
-    fontSize: 19.5,
+    fontSize: 16,
     fontWeight: '900',
     color: colors.textPrimary,
     marginTop: 2,
   },
   closeBtn: { padding: 4 },
   inputLabel: {
-    fontSize: 12,
+    fontSize: 9,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.textMuted,
@@ -1822,7 +1822,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(155, 27, 48, 0.08)',
   },
   carrierChipText: {
-    fontSize: 13.5,
+    fontSize: 10,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
@@ -1839,7 +1839,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     color: colors.textPrimary,
-    fontSize: 17,
+    fontSize: 13,
   },
   modalSubmitBtn: {
     backgroundColor: colors.crimson,
@@ -1851,7 +1851,7 @@ const styles = StyleSheet.create({
   modalSubmitBtnText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -1899,7 +1899,7 @@ const styles = StyleSheet.create({
     borderColor: colors.crimson,
   },
   stepperItemText: {
-    fontSize: 13,
+    fontSize: 9.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textMuted,
@@ -1966,7 +1966,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   trackOnlineBtnText: {
-    fontSize: 13,
+    fontSize: 9.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.crimson,
@@ -1981,7 +1981,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   historyLabel: {
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.textMuted,
@@ -2002,12 +2002,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   historyNote: {
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textPrimary,
     fontWeight: '600',
   },
   historyTime: {
-    fontSize: 13,
+    fontSize: 9.5,
     fontFamily: typography.mono,
     color: colors.textMuted,
     marginTop: 2,
@@ -2055,7 +2055,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   actionPromptTitle: {
-    fontSize: 15.5,
+    fontSize: 12,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: '#92400E',
@@ -2063,7 +2063,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   actionPromptSub: {
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textSecond,
     lineHeight: 16,
   },
@@ -2088,7 +2088,7 @@ const styles = StyleSheet.create({
     borderColor: colors.red || '#E53E3E',
   },
   actionPromptDeclineText: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.red || '#E53E3E',
@@ -2099,7 +2099,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimson,
   },
   actionPromptAcceptText: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.white,
@@ -2127,7 +2127,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   rentalReviewTitle: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.textPrimary,
@@ -2140,13 +2140,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   rentalReviewScore: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: '#92400E',
   },
   rentalReviewComment: {
-    fontSize: 15.5,
+    fontSize: 12,
     fontStyle: 'italic',
     color: colors.textSecond,
     lineHeight: 18,
@@ -2161,7 +2161,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   rentalReviewMeta: {
-    fontSize: 13.5,
+    fontSize: 10,
     fontFamily: typography.mono,
     color: colors.textMuted,
   },

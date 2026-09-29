@@ -169,6 +169,12 @@ function rankGuides(
       }) || categoryKey === 'other' || categoryKey === '';
       if (catMatch) score += 0.20;
 
+      // Only award quality bonus if at least one semantic criteria matched
+      const hasCriteriaMatch = fiberMatch || damageMatch || catMatch;
+      if (!hasCriteriaMatch) {
+        return { guide, score: 0 };
+      }
+
       // Quality bonus (weight: 10%)
       score += (guide.quality_score || 0) * 0.10;
 
@@ -222,9 +228,8 @@ export function queryT5(
   }
 
   const sorted = rankGuides(fiber, damageTypes, category, pool);
-  const relevant = sorted.filter(s => s.score >= 0.10);
-  const selected = relevant.length > 0 ? relevant : sorted.slice(0, 5);
-  const top5 = selected.slice(0, 5);
+  const relevant = sorted.filter(s => s.score > 0);
+  const top5 = relevant.slice(0, 5);
 
   return top5.map(({ guide }) => toCondensed(guide));
 }

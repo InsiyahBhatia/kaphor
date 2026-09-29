@@ -307,10 +307,6 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
 
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>KAPHOR STYLIST AGENT</Text>
-          <View style={styles.agentStatusRow}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>AUTONOMOUS STYLIST · ONLINE</Text>
-          </View>
         </View>
 
         <TouchableOpacity
@@ -616,29 +612,10 @@ const styles = StyleSheet.create({
   headerCenter: { alignItems: 'center' },
   headerTitle: {
     color: colors.charcoal,
-    fontSize: 18.5,
+    fontSize: 15,
     fontFamily: typography.mono,
     fontWeight: '900',
     letterSpacing: 2,
-  },
-  agentStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 3,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#2E7D32',
-  },
-  statusText: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    color: colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: 1,
   },
   wardrobeQuickBtn: {
     width: 38,
@@ -673,7 +650,7 @@ const styles = StyleSheet.create({
   },
   quickCommandText: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.charcoal,
     fontWeight: '600',
   },
@@ -707,7 +684,7 @@ const styles = StyleSheet.create({
   userBubbleText: {
     color: colors.cream,
     fontFamily: typography.body,
-    fontSize: 18,
+    fontSize: 14,
     lineHeight: 20,
   },
 
@@ -735,7 +712,7 @@ const styles = StyleSheet.create({
   },
   actionLogText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: '#2E7D32',
     fontWeight: '700',
   },
@@ -758,7 +735,7 @@ const styles = StyleSheet.create({
   agentBubbleText: {
     color: colors.charcoal,
     fontFamily: typography.body,
-    fontSize: 17.5,
+    fontSize: 14.5,
     lineHeight: 22,
   },
 
@@ -793,20 +770,20 @@ const styles = StyleSheet.create({
   outfitTagText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1,
   },
   outfitLookTitle: {
     fontFamily: typography.body,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.charcoal,
     flex: 1,
   },
   outfitVibeText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
     marginBottom: 12,
   },
@@ -843,12 +820,12 @@ const styles = StyleSheet.create({
   outfitSourceText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     fontWeight: '800',
   },
   outfitPieceTitle: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.charcoal,
     marginTop: 4,
@@ -856,14 +833,14 @@ const styles = StyleSheet.create({
   },
   outfitPieceRole: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   outfitEditorialNote: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.charcoal,
     fontStyle: 'italic',
     lineHeight: 18,
@@ -879,7 +856,7 @@ const styles = StyleSheet.create({
   },
   cardsSectionLabel: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1.5,
@@ -921,7 +898,7 @@ const styles = StyleSheet.create({
   cardBadgeText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -931,20 +908,20 @@ const styles = StyleSheet.create({
   },
   cardBrand: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.8,
   },
   cardTitle: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.charcoal,
   },
   cardPrice: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.charcoal,
     marginVertical: 2,
@@ -964,7 +941,7 @@ const styles = StyleSheet.create({
   cardActionBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -988,7 +965,7 @@ const styles = StyleSheet.create({
   },
   followUpText: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.charcoal,
     fontWeight: '500',
   },
@@ -1007,7 +984,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontFamily: typography.body,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
 
@@ -1036,7 +1013,7 @@ const styles = StyleSheet.create({
   imageAttachedText: {
     flex: 1,
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.charcoal,
   },
   inputRow: {
@@ -1072,7 +1049,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontFamily: typography.body,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     maxHeight: 90,
   },

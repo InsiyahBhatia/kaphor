@@ -253,9 +253,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   sectionHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sectionTitle: { fontFamily: typography.headings, fontSize: 19.5, color: colors.ink, letterSpacing: 1.2 },
+  sectionTitle: { fontFamily: typography.headings, fontSize: 16, color: colors.ink, letterSpacing: 1.2 },
   sectionCountBadge: { backgroundColor: colors.ink, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 2 },
-  sectionCount: { fontFamily: typography.monoBold, fontSize: 13, color: colors.cream },
+  sectionCount: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.cream },
   sectionBody: { gap: 10, paddingTop: 10 },
 
   rowCard: {
@@ -270,9 +270,9 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
-  rowTitle: { fontFamily: typography.bodyBold, fontSize: 18, color: colors.ink },
-  rowMeta: { fontFamily: typography.mono, fontSize: 13, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
-  rowExtra: { fontFamily: typography.body, fontSize: 15, color: colors.ink, marginTop: 6 },
+  rowTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
+  rowMeta: { fontFamily: typography.mono, fontSize: 9.5, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
+  rowExtra: { fontFamily: typography.body, fontSize: 11.5, color: colors.ink, marginTop: 6 },
   rowFoot: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight || '#ECE8DF' },
 
   actBtn: {
@@ -286,5 +286,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 0,
   },
-  actText: { fontFamily: typography.monoBold, fontSize: 11.5, letterSpacing: 1 },
+  actText: { fontFamily: typography.monoBold, fontSize: 8.5, letterSpacing: 1 },
 });

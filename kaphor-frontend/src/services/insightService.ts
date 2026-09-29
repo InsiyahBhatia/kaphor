@@ -3,7 +3,6 @@ import api from './api';
 export interface DailyTrendItem {
   date: string; // YYYY-MM-DD
   views: number;
-  carts: number;
   saves: number;
   inquiries: number;
 }
@@ -29,8 +28,6 @@ export interface GarmentDetailedInsights {
   // Core metrics
   views: number;
   uniqueViewers: number;
-  activeInCart: number;
-  totalCartAdds: number;
   saves: number;
   inquiries: number;
   intents: {
@@ -49,9 +46,6 @@ export interface GarmentDetailedInsights {
   // Funnel rates (0-100)
   funnel: {
     viewToSaveRate: number;
-    viewToCartRate: number;
-    cartToIntentRate: number;
-    cartToConversionRate: number;
     overallConversionRate: number;
   };
 
@@ -68,7 +62,6 @@ export interface GarmentDetailedInsights {
 
 export interface GarmentSummaryInsights {
   views: number;
-  inCart: number;
   saves: number;
   inquiries: number;
 }

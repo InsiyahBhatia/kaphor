@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { useGarmentStore } from '../../src/store/garmentStore';
 import { useAuthStore } from '../../src/store/authStore';
-import { cartService } from '../../src/services/cartService';
+import { orderService } from '../../src/services/orderService';
 import {
   recommendationService,
   RecommendedGarment,
@@ -509,18 +509,34 @@ export default function HomeScreen() {
     setIsRefreshing(false);
   }, [loadData]);
 
-  const handleAddToCart = useCallback(async (item: any) => {
+  const handleBuyRequest = useCallback(async (item: any) => {
     try {
-      await cartService.addToCart(item.id);
-      Alert.alert('✓ Added to Bag', `"${item.title}" added to your shopping bag.`);
-    } catch (error: any) {
-      if (error?.response?.status === 409 || error?.response?.data?.error === 'ALREADY_IN_CART') {
-        Alert.alert('Already in Bag', 'This unique circular piece is already in your shopping bag.');
-      } else {
-        Alert.alert('Notice', error?.response?.data?.message || 'Item could not be added. Please try again.');
+      const order = await orderService.requestPurchase(item.id);
+      const orderId = order?.orderId;
+      if (!orderId) {
+        throw new Error('Could not initiate purchase request');
       }
+      if (order?.isApproved) {
+        router.push({
+          pathname: '/(tabs)/shop/checkout/delivery',
+          params: { orderId },
+        } as any);
+      } else {
+        Alert.alert(
+          'Purchase Request Sent 🛍️',
+          'Your purchase request has been submitted to the seller for approval. No payment is taken until the seller approves.',
+          [
+            {
+              text: 'View Order Status',
+              onPress: () => router.push(`/(tabs)/shop/orders/${orderId}` as any),
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      Alert.alert('Notice', error?.response?.data?.message || error?.message || 'Could not submit purchase request. Please try again.');
     }
-  }, []);
+  }, [router]);
 
   const navigateToItem = useCallback((id: string) => {
     router.push(`/(tabs)/shop/${id}` as any);
@@ -639,7 +655,7 @@ export default function HomeScreen() {
                   key={item.id}
                   item={item}
                   onPress={() => navigateToItem(item.id)}
-                  onAddToCart={() => handleAddToCart(item)}
+                  onBuyRequest={() => handleBuyRequest(item)}
                 />
               ))}
             </ScrollView>
@@ -745,7 +761,7 @@ export default function HomeScreen() {
                     condition: item.condition || 'Pristine',
                   }}
                   onPress={() => navigateToItem(item.id)}
-                  onAddToCart={() => handleAddToCart(item)}
+                  onBuyRequest={() => handleBuyRequest(item)}
                 />
               ))}
             </ScrollView>
@@ -777,7 +793,7 @@ export default function HomeScreen() {
                     seller: (item as any).seller || { id: item.sellerId, username: 'Curator' },
                   } as RecommendedGarment}
                   onPress={() => navigateToItem(item.id)}
-                  onAddToCart={() => handleAddToCart(item)}
+                  onBuyRequest={() => handleBuyRequest(item)}
                 />
               ))}
             </ScrollView>
@@ -825,7 +841,7 @@ const styles = StyleSheet.create({
   statusText: {
     color: 'rgba(255,255,255,0.92)',
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 1.2,
   },
@@ -862,13 +878,13 @@ const styles = StyleSheet.create({
   heroBadgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1,
   },
   heroHeadline: {
     fontFamily: typography.headings,
-    fontSize: 39.5,
+    fontSize: 34,
     lineHeight: 36,
     color: colors.white,
     letterSpacing: 0.5,
@@ -876,7 +892,7 @@ const styles = StyleSheet.create({
   },
   heroTagline: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     lineHeight: 18,
     color: 'rgba(255,255,255,0.85)',
     marginBottom: 20,
@@ -902,7 +918,7 @@ const styles = StyleSheet.create({
   heroPrimaryBtnText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
@@ -917,7 +933,7 @@ const styles = StyleSheet.create({
   heroSecondaryBtnText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
@@ -938,7 +954,7 @@ const styles = StyleSheet.create({
   heroTrustText: {
     color: 'rgba(255,255,255,0.8)',
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
@@ -965,7 +981,7 @@ const styles = StyleSheet.create({
   },
   categoryPillText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10.5,
     fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: 0.5,
@@ -1008,7 +1024,7 @@ const styles = StyleSheet.create({
   quickActionLabel: {
     fontFamily: typography.mono,
     color: colors.charcoal,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     letterSpacing: 0.8,
     textAlign: 'center',
@@ -1017,7 +1033,7 @@ const styles = StyleSheet.create({
   quickActionDesc: {
     fontFamily: typography.mono,
     color: colors.textMuted,
-    fontSize: 9.5,
+    fontSize: 7,
     fontWeight: '700',
     letterSpacing: 0.3,
     textAlign: 'center',
@@ -1042,13 +1058,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.headings,
-    fontSize: 24.5,
+    fontSize: 21,
     letterSpacing: 0.8,
     color: colors.charcoal,
   },
   sectionSubtitle: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
     paddingHorizontal: 16,
     marginBottom: 12,
@@ -1060,13 +1076,13 @@ const styles = StyleSheet.create({
   },
   sectionTagText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   seeAllText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.crimson,
     letterSpacing: 0.5,
@@ -1116,7 +1132,7 @@ const styles = StyleSheet.create({
   matchPillText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
   },
   conditionPill: {
@@ -1131,7 +1147,7 @@ const styles = StyleSheet.create({
   conditionPillText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1146,7 +1162,7 @@ const styles = StyleSheet.create({
   },
   garmentBrand: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.6,
@@ -1154,13 +1170,13 @@ const styles = StyleSheet.create({
   },
   garmentSize: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     fontWeight: '600',
   },
   garmentTitle: {
     fontFamily: typography.body,
-    fontSize: 16.5,
+    fontSize: 12.5,
     fontWeight: '600',
     color: colors.charcoal,
     marginBottom: 8,
@@ -1177,7 +1193,7 @@ const styles = StyleSheet.create({
   },
   garmentPrice: {
     fontFamily: typography.mono,
-    fontSize: 18.5,
+    fontSize: 15,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1190,12 +1206,12 @@ const styles = StyleSheet.create({
   discountBadgeText: {
     color: colors.crimson,
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
   },
   garmentOriginalPrice: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 1,
@@ -1249,7 +1265,7 @@ const styles = StyleSheet.create({
   rentalBadgePillText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1269,19 +1285,19 @@ const styles = StyleSheet.create({
   },
   rentalDayRate: {
     fontFamily: typography.mono,
-    fontSize: 19.5,
+    fontSize: 16,
     fontWeight: '900',
     color: colors.copper,
   },
   rentalPerDayUnit: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.textMuted,
   },
   rentalRetailVal: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1298,7 +1314,7 @@ const styles = StyleSheet.create({
   },
   rentalReserveText: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.6,
@@ -1339,7 +1355,7 @@ const styles = StyleSheet.create({
   swapParityText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1355,7 +1371,7 @@ const styles = StyleSheet.create({
   zeroCashBadgeText: {
     color: colors.forest,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '800',
   },
   swapValuationRow: {
@@ -1369,14 +1385,14 @@ const styles = StyleSheet.create({
   },
   swapValuationLabel: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     fontWeight: '700',
     color: colors.forest,
     letterSpacing: 0.5,
   },
   swapValuationValue: {
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -1389,7 +1405,7 @@ const styles = StyleSheet.create({
   swapTradeActionText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '800',
   },
   swapCounterpartBox: {
@@ -1397,7 +1413,7 @@ const styles = StyleSheet.create({
   },
   swapCounterpartText: {
     fontFamily: typography.body,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.textMuted,
     fontStyle: 'italic',
   },
@@ -1433,14 +1449,14 @@ const styles = StyleSheet.create({
   },
   emptyPromptTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1,
   },
   emptyPromptDesc: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,

@@ -13,7 +13,6 @@ import api from '../../../src/services/api';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage, getCategoryFallbackImage } from '../../../src/components/KaphorImage';
-import { cartService } from '../../../src/services/cartService';
 import { messageService } from '../../../src/services/messageService';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
@@ -34,7 +33,6 @@ export default function GarmentDetailScreen() {
   useBackHandler('/(tabs)/shop');
   const [garment, setGarment] = useState<Garment | any>(null);
   const [loading, setLoading] = useState(true);
-  const [addingToCart, setAddingToCart] = useState(false);
   const [startingInquiry, setStartingInquiry] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [togglingLike, setTogglingLike] = useState(false);
@@ -73,21 +71,6 @@ export default function GarmentDetailScreen() {
   };
 
   const priceData = getFormattedGarmentPrice(garment);
-
-  const handleAddToCart = async () => {
-    if (!id) return;
-    hapticFeedback.light();
-    setAddingToCart(true);
-    try {
-      await cartService.addToCart(id as string);
-      telemetryService.trackAddToCart(id as string);
-      Alert.alert('Success', 'Item added to your cart.');
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Failed to add to cart');
-    } finally {
-      setAddingToCart(false);
-    }
-  };
 
   const handleBuyNow = async () => {
     if (!id || !garment) return;
@@ -184,7 +167,7 @@ export default function GarmentDetailScreen() {
   if (!garment) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Text style={{ color: colors.textPrimary, fontFamily: typography.headings, fontSize: 24.5 }}>
+        <Text style={{ color: colors.textPrimary, fontFamily: typography.headings, fontSize: 20 }}>
           GARMENT NOT FOUND
         </Text>
         <Text style={{ color: colors.textMuted, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 }}>
@@ -602,7 +585,7 @@ export default function GarmentDetailScreen() {
               <View style={{ marginTop: 24, marginBottom: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
                   <View style={{ width: 4, height: 16, backgroundColor: colors.gold }} />
-                  <Text style={{ fontFamily: typography.headings, fontSize: 17, color: colors.charcoal, letterSpacing: 1.5 }}>
+                  <Text style={{ fontFamily: typography.headings, fontSize: 13, color: colors.charcoal, letterSpacing: 1.5 }}>
                     YOU MIGHT ALSO COVET
                   </Text>
                 </View>
@@ -629,13 +612,13 @@ export default function GarmentDetailScreen() {
                         )}
                       </View>
                       <View style={{ padding: 8 }}>
-                        <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.textMuted }} numberOfLines={1}>
+                        <Text style={{ fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted }} numberOfLines={1}>
                           {item.brand.toUpperCase()}
                         </Text>
-                        <Text style={{ fontFamily: typography.body, fontSize: 15.5, fontWeight: '700', color: colors.charcoal, marginTop: 2 }} numberOfLines={1}>
+                        <Text style={{ fontFamily: typography.body, fontSize: 12, fontWeight: '700', color: colors.charcoal, marginTop: 2 }} numberOfLines={1}>
                           {item.title}
                         </Text>
-                        <Text style={{ fontFamily: typography.mono, fontSize: 15.5, fontWeight: '800', color: colors.charcoal, marginTop: 4 }}>
+                        <Text style={{ fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.charcoal, marginTop: 4 }}>
                           ₹{item.price.toLocaleString('en-IN')}
                         </Text>
                       </View>
@@ -693,25 +676,12 @@ export default function GarmentDetailScreen() {
 
         <View style={styles.buyRow}>
           {priceData.isSale ? (
-            <>
-              <TouchableOpacity
-                style={styles.cartButton}
-                onPress={handleAddToCart}
-                disabled={addingToCart || isOwner}
-              >
-                {addingToCart ? (
-                  <ActivityIndicator size="small" color={colors.crimson} />
-                ) : (
-                  <Ionicons name="cart-outline" size={24} color={colors.crimson} />
-                )}
-              </TouchableOpacity>
-              <Button
-                title={isOwner ? "OWNED BY YOU" : (buying ? "PREPARING..." : `BUY NOW · ${priceData.displayPrice}`)}
-                onPress={handleBuyNow}
-                style={{ flex: 1 }}
-                disabled={Boolean(isOwner) || buying}
-              />
-            </>
+            <Button
+              title={isOwner ? "OWNED BY YOU" : (buying ? "PREPARING..." : `BUY NOW · ${priceData.displayPrice}`)}
+              onPress={handleBuyNow}
+              style={{ flex: 1 }}
+              disabled={Boolean(isOwner) || buying}
+            />
           ) : priceData.isRental ? (
             <Button
               title={isOwner ? "OWNED BY YOU" : `RESERVE RENTAL · ${priceData.displayPrice}`}
@@ -796,7 +766,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: colors.crimson,
-    fontSize: 15.5,
+    fontSize: 12,
     letterSpacing: 2,
     fontWeight: '800',
     marginBottom: 2,
@@ -804,14 +774,14 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     color: colors.textMuted,
-    fontSize: 13.5,
+    fontSize: 10,
     fontFamily: typography.mono,
     letterSpacing: 1.5,
     fontWeight: '800',
     marginBottom: 4,
   },
   title: {
-    fontSize: 30,
+    fontSize: 26,
     fontFamily: typography.headings,
     color: colors.textPrimary,
     textTransform: 'uppercase',
@@ -821,23 +791,23 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   price: {
-    fontSize: 25.5,
+    fontSize: 22,
     fontWeight: '900',
     color: colors.textPrimary,
   },
   swapPrice: {
     color: colors.crimson,
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: typography.mono,
     letterSpacing: 0.5,
   },
   priceUnitText: {
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     fontWeight: '600',
   },
   originalPrice: {
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 2,
@@ -850,7 +820,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(155, 27, 48, 0.08)',
   },
   discountTagText: {
-    fontSize: 12,
+    fontSize: 9,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.crimson,
@@ -873,7 +843,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   subtextText: {
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textSecond,
     fontFamily: typography.mono,
     letterSpacing: 0.3,
@@ -889,14 +859,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.textMuted,
-    fontSize: 14.5,
+    fontSize: 11,
     letterSpacing: 2,
     fontWeight: '800',
     marginBottom: 12,
   },
   description: {
     color: colors.textSecond,
-    fontSize: 18.5,
+    fontSize: 15,
     lineHeight: 24,
   },
   sellerTrust: {
@@ -910,13 +880,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   sellerTrustTitle: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.textPrimary,
     letterSpacing: 0.8,
   },
   sellerTrustSub: {
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 4,
   },
@@ -942,14 +912,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(46, 125, 50, 0.2)',
   },
   noticeTitle: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '900',
     color: colors.crimson,
     letterSpacing: 1,
   },
   noticeDesc: {
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textSecond,
     marginTop: 4,
     lineHeight: 17,
@@ -990,7 +960,7 @@ const styles = StyleSheet.create({
   messageSellerText: {
     color: colors.crimson,
     fontWeight: '800',
-    fontSize: 14.5,
+    fontSize: 11,
     letterSpacing: 1,
   },
   center: {
@@ -1011,7 +981,7 @@ const styles = StyleSheet.create({
   },
   aiDoubtText: {
     color: '#C9A84C',
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
   },
@@ -1029,7 +999,7 @@ const styles = StyleSheet.create({
   },
   managerText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     fontWeight: '800',
     letterSpacing: 1,
@@ -1048,7 +1018,7 @@ const styles = StyleSheet.create({
   editTextSmall: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
   },
   deleteBtnSmall: {
@@ -1063,16 +1033,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
-  cartButton: {
-    width: 54,
-    height: 52,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.crimson,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-  },
   saleInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1084,13 +1044,13 @@ const styles = StyleSheet.create({
   },
   saleInfoText: {
     color: colors.success,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
   saleInfoSub: {
     color: colors.textSecond,
-    fontSize: 14.5,
+    fontSize: 11,
     marginTop: 2,
   },
   specGrid: {
@@ -1108,7 +1068,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(26,26,26,0.06)',
   },
   specLabel: {
-    fontSize: 11,
+    fontSize: 8,
     fontFamily: typography.mono,
     color: colors.textMuted,
     fontWeight: '800',
@@ -1116,7 +1076,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   specValue: {
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textPrimary,
     fontWeight: '700',
     lineHeight: 16,
@@ -1135,7 +1095,7 @@ const styles = StyleSheet.create({
   },
   zoomHintText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 9,
     fontFamily: typography.mono,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -1220,14 +1180,14 @@ const styles = StyleSheet.create({
   sellerBannerTitle: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
   sellerBannerSub: {
     color: colors.textMuted,
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     marginTop: 1,
   },
   sellerBannerAction: {
@@ -1236,7 +1196,7 @@ const styles = StyleSheet.create({
   sellerBannerActionText: {
     color: colors.gold,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -1253,7 +1213,7 @@ const styles = StyleSheet.create({
   },
   insightsTextSmall: {
     color: colors.gold,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
     fontFamily: typography.mono,
   },

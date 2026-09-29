@@ -410,20 +410,20 @@ const styles = StyleSheet.create({
   },
   summaryCardLabel: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     fontWeight: '900',
     color: colors.textMuted,
     letterSpacing: 0.5,
   },
   summaryCardAmount: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '900',
     marginBottom: 2,
   },
   summaryCardSub: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 7,
     color: colors.textMuted,
   },
 
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: colors.charcoal },
   filterChipText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.4,
@@ -464,14 +464,14 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 2,
   },
   clearFilter: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.red,
     fontWeight: '800',
     textDecorationLine: 'underline',
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1 },
   cardTitle: {
     fontFamily: typography.mono,
-    fontSize: 15,
+    fontSize: 11.5,
     fontWeight: '800',
     color: colors.charcoal,
     marginBottom: 2,
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   },
   cardType: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.copper,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   },
   cardRefText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     color: colors.textMuted,
     fontWeight: '700',
   },
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
   },
   cardDate: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
   },
   statusBadge: {
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.5,
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
   },
   cardAmount: {
     fontFamily: typography.mono,
-    fontSize: 17.5,
+    fontSize: 13.5,
     fontWeight: '900',
     marginBottom: 4,
   },
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   },
   receiptActionText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '800',
     color: colors.textMuted,
     textDecorationLine: 'underline',
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
   },
   modalHeaderTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -651,14 +651,14 @@ const styles = StyleSheet.create({
   },
   receiptAmountHero: {
     fontFamily: typography.mono,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
   },
   receiptStatusLabel: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.textMuted,
     letterSpacing: 1,
@@ -679,19 +679,19 @@ const styles = StyleSheet.create({
   },
   tableLabel: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     fontWeight: '700',
   },
   tableValue: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
   tableValueMono: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
   },
   escrowNoticeText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.forest,
     lineHeight: 12,
     flex: 1,
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
   },
   modalActionBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.8,
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   },
   modalCloseText: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 1,

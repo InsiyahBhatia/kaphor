@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   // ── Shared ──
   formLabel: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.textMuted,
     marginBottom: 6,
@@ -594,20 +594,20 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     padding: 14,
     fontFamily: typography.body,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     backgroundColor: colors.white,
   },
   inputError: { borderColor: colors.red, borderWidth: 2 },
   errorText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.red,
     marginTop: 4,
   },
   hintText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.textMuted,
     marginTop: 4,
     lineHeight: 14,
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   editSecurityNoteText: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.navy,
     lineHeight: 14,
   },
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
   securityNoteText: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.forest,
     lineHeight: 14,
   },
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   },
   methodChipText: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.headings,
-    fontSize: 25.5,
+    fontSize: 22,
     color: colors.charcoal,
     letterSpacing: 1,
   },
@@ -725,13 +725,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: typography.headings,
-    fontSize: 32.5,
+    fontSize: 28,
     color: colors.charcoal,
     textAlign: 'center',
   },
   emptySub: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,
@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
   addFirstBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
   infoBannerText: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.navy,
     lineHeight: 14,
   },
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
   },
   cardMethodText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 1,
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
   },
   defaultBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.forest,
     letterSpacing: 0.5,
@@ -843,13 +843,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '800',
     color: colors.charcoal,
   },
   cardDetail: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.charcoal,
     lineHeight: 18,
     flex: 1,
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
   },
   cardActionText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
   },
   addMoreText: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -912,7 +912,7 @@ const styles = StyleSheet.create({
   },
   historyToggleText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -923,7 +923,7 @@ const styles = StyleSheet.create({
   },
   emptyHistoryText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
   },
   historyCard: {
@@ -942,13 +942,13 @@ const styles = StyleSheet.create({
   },
   historyAmount: {
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '800',
     color: colors.charcoal,
   },
   historyDate: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
   },
   historyStatus: {
@@ -957,7 +957,7 @@ const styles = StyleSheet.create({
   },
   historyStatusText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.5,
@@ -976,7 +976,7 @@ const styles = StyleSheet.create({
   },
   inlineHeaderTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
     color: colors.charcoal,
     letterSpacing: 1,
   },

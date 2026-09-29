@@ -142,22 +142,22 @@ export default function AdminOrderDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cream },
-  notFound: { fontFamily: typography.monoBold, fontSize: 15.5, color: colors.textMuted, letterSpacing: 1 },
+  notFound: { fontFamily: typography.monoBold, fontSize: 12, color: colors.textMuted, letterSpacing: 1 },
   content: { padding: 16, paddingBottom: 48 },
 
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  refundNote: { fontFamily: typography.monoBold, fontSize: 13, color: colors.emerald, letterSpacing: 1 },
+  refundNote: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.emerald, letterSpacing: 1 },
 
-  itemTitle: { fontFamily: typography.bodyBold, fontSize: 18.5, color: colors.ink },
-  itemMeta: { fontFamily: typography.mono, fontSize: 13, color: colors.textMuted, marginTop: 4, letterSpacing: 1 },
+  itemTitle: { fontFamily: typography.bodyBold, fontSize: 15, color: colors.ink },
+  itemMeta: { fontFamily: typography.mono, fontSize: 9.5, color: colors.textMuted, marginTop: 4, letterSpacing: 1 },
   itemFoot: { marginTop: 8, flexDirection: 'row', justifyContent: 'flex-end' },
-  itemPrice: { fontFamily: typography.monoBold, fontSize: 17, color: colors.ink },
+  itemPrice: { fontFamily: typography.monoBold, fontSize: 13, color: colors.ink },
 
-  muted: { fontFamily: typography.mono, fontSize: 13.5, color: colors.textMuted },
+  muted: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted },
 
   msgRow: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight || '#ECE8DF' },
-  msgMeta: { fontFamily: typography.mono, fontSize: 11.5, color: colors.textMuted, letterSpacing: 0.5 },
-  msgBody: { fontFamily: typography.body, fontSize: 15.5, color: colors.ink, marginTop: 3 },
+  msgMeta: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted, letterSpacing: 0.5 },
+  msgBody: { fontFamily: typography.body, fontSize: 12, color: colors.ink, marginTop: 3 },
 
   refundBtn: {
     backgroundColor: colors.crimson,
@@ -173,5 +173,5 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
-  refundBtnText: { fontFamily: typography.monoBold, fontSize: 14.5, color: colors.white, letterSpacing: 2 },
+  refundBtnText: { fontFamily: typography.monoBold, fontSize: 11, color: colors.white, letterSpacing: 2 },
 });

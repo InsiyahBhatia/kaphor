@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  searchInput: { flex: 1, fontFamily: typography.mono, fontSize: 14.5, color: colors.textPrimary },
+  searchInput: { flex: 1, fontFamily: typography.mono, fontSize: 11, color: colors.textPrimary },
 
   chipRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   statusChip: {
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   statusChipActive: { backgroundColor: colors.ink },
-  statusChipText: { fontFamily: typography.monoBold, fontSize: 12, color: colors.ink, letterSpacing: 0.8 },
+  statusChipText: { fontFamily: typography.monoBold, fontSize: 9, color: colors.ink, letterSpacing: 0.8 },
   statusChipTextActive: { color: colors.cream },
 
   list: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
@@ -179,12 +179,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   orderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  orderId: { fontFamily: typography.monoBold, fontSize: 14.5, color: colors.ink, letterSpacing: 1 },
-  orderDate: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted },
-  orderTitle: { fontFamily: typography.bodyBold, fontSize: 18, color: colors.ink, marginTop: 6 },
-  orderParties: { fontFamily: typography.mono, fontSize: 13, color: colors.textMuted, marginTop: 4 },
+  orderId: { fontFamily: typography.monoBold, fontSize: 11, color: colors.ink, letterSpacing: 1 },
+  orderDate: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted },
+  orderTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink, marginTop: 6 },
+  orderParties: { fontFamily: typography.mono, fontSize: 9.5, color: colors.textMuted, marginTop: 4 },
   orderFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight || '#ECE8DF' },
-  orderAmount: { fontFamily: typography.monoBold, fontSize: 18, color: colors.ink },
+  orderAmount: { fontFamily: typography.monoBold, fontSize: 14, color: colors.ink },
 
   pager: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 12 },
   pagerBtn: {
@@ -200,6 +200,6 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  pagerText: { fontFamily: typography.monoBold, fontSize: 13, color: colors.ink, letterSpacing: 1 },
-  pagerInfo: { fontFamily: typography.monoBold, fontSize: 13.5, color: colors.textMuted },
+  pagerText: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.ink, letterSpacing: 1 },
+  pagerInfo: { fontFamily: typography.monoBold, fontSize: 10, color: colors.textMuted },
 });

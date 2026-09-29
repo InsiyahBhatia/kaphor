@@ -154,12 +154,43 @@ describe('T3 Market Demand', () => {
     expect(['rising', 'stable', 'declining', 'moderate']).toContain(stats!.demand_trend);
   });
 
-  it('handles different condition scores', () => {
+  it('handles different condition scores with condition-aware price scaling', () => {
     const highCondition = queryT3('saree', 0.9);
     const lowCondition = queryT3('saree', 0.2);
-    // Both should return results (different price ranges)
+    // Both should return valid stats
     expect(highCondition).not.toBeNull();
     expect(lowCondition).not.toBeNull();
+    // High condition garment should command higher median and avg prices than low condition
+    expect(highCondition!.median_listed_price!).toBeGreaterThan(lowCondition!.median_listed_price!);
+    expect(highCondition!.avg_listed_price).toBeGreaterThan(lowCondition!.avg_listed_price);
+    expect(highCondition!.avg_resale_ratio).toBeGreaterThan(lowCondition!.avg_resale_ratio);
+  });
+
+  it('accurately resolves synonyms to canonical categories', () => {
+    const teeStats = queryT3('tee', 0.8);
+    const tshirtStats = queryT3('tshirt', 0.8);
+    expect(teeStats).not.toBeNull();
+    expect(tshirtStats).not.toBeNull();
+    expect(teeStats!.total_listings_matched).toEqual(tshirtStats!.total_listings_matched);
+
+    const sariStats = queryT3('sari', 0.8);
+    const sareeStats = queryT3('saree', 0.8);
+    expect(sariStats).not.toBeNull();
+    expect(sareeStats).not.toBeNull();
+    expect(sariStats!.total_listings_matched).toEqual(sareeStats!.total_listings_matched);
+  });
+
+  it('applies brand tier multipliers to valuation', () => {
+    const baseStats = queryT3('saree', 0.9);
+    const luxuryStats = queryT3('saree', 0.9, { brand: 'Sabyasachi' });
+    const budgetStats = queryT3('saree', 0.9, { brandTier: 'budget' });
+
+    expect(baseStats).not.toBeNull();
+    expect(luxuryStats).not.toBeNull();
+    expect(budgetStats).not.toBeNull();
+
+    expect(luxuryStats!.median_listed_price!).toBeGreaterThan(baseStats!.median_listed_price!);
+    expect(baseStats!.median_listed_price!).toBeGreaterThan(budgetStats!.median_listed_price!);
   });
 
   it('may return null for very rare category', () => {

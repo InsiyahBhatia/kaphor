@@ -390,11 +390,11 @@ const styles = StyleSheet.create({
   },
   sectionIndex: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
   },
   sectionTitle: {
     fontFamily: typography.monoBold,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.ink,
     letterSpacing: 1.5,
   },
@@ -408,19 +408,19 @@ const styles = StyleSheet.create({
   },
   sectionTagTerracottaText: {
     fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.terracottaDark,
     letterSpacing: 0.8,
   },
   sectionActionEmerald: {
     fontFamily: typography.monoBold,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.emerald,
     letterSpacing: 1,
   },
   sectionActionGold: {
     fontFamily: typography.monoBold,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.goldDark,
     letterSpacing: 1,
   },
@@ -470,13 +470,13 @@ const styles = StyleSheet.create({
   },
   cardHeadline: {
     fontFamily: typography.headings,
-    fontSize: 28,
+    fontSize: 24,
     color: colors.ink,
     letterSpacing: 1.2,
   },
   cardSub: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
     marginTop: 3,
     lineHeight: 14.5,
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   },
   badgeTerracottaText: {
     fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.terracottaDark,
     letterSpacing: 1,
   },
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   },
   badgeGoldText: {
     fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.goldDark,
     letterSpacing: 1,
   },
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   },
   pillTerracottaText: {
     fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.terracottaDark,
     letterSpacing: 0.6,
   },
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   },
   actionBtnTerracottaText: {
     fontFamily: typography.monoBold,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.white,
     letterSpacing: 1,
   },
@@ -573,13 +573,13 @@ const styles = StyleSheet.create({
   },
   cardCompactTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
     color: colors.ink,
     letterSpacing: 1,
   },
   cardCompactSub: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
     lineHeight: 12,
     marginTop: 2,
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   },
   badgeGoldTinyText: {
     fontFamily: typography.monoBold,
-    fontSize: 10,
+    fontSize: 7.5,
     color: colors.goldDark,
     letterSpacing: 0.5,
   },
@@ -629,13 +629,13 @@ const styles = StyleSheet.create({
   },
   badgeEmeraldText: {
     fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.emeraldLight,
     letterSpacing: 1,
   },
   impactSubtitle: {
     fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.emeraldDark,
     letterSpacing: 1,
   },
@@ -651,20 +651,20 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontFamily: typography.headings,
-    fontSize: 39.5,
+    fontSize: 34,
     color: colors.emeraldDark,
     lineHeight: 34,
   },
   statUnits: {
     fontFamily: typography.monoBold,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.emeraldDark,
     letterSpacing: 1,
     marginTop: 2,
   },
   statSub: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     color: colors.emerald,
     letterSpacing: 0.5,
   },
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
   },
   garmentPillColoredText: {
     fontFamily: typography.monoBold,
-    fontSize: 11.5,
+    fontSize: 8.5,
     letterSpacing: 0.8,
   },
   actionBtnGold: {
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   },
   actionBtnGoldText: {
     fontFamily: typography.monoBold,
-    fontSize: 13,
+    fontSize: 9.5,
     color: colors.cream,
     letterSpacing: 1,
   },
@@ -752,18 +752,18 @@ const styles = StyleSheet.create({
   },
   pathwayIndex: {
     fontFamily: typography.headings,
-    fontSize: 19.5,
+    fontSize: 16,
   },
   pathwayName: {
     fontFamily: typography.headings,
-    fontSize: 24.5,
+    fontSize: 20,
     color: colors.ink,
     letterSpacing: 1,
     marginBottom: 4,
   },
   pathwayDesc: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     lineHeight: 13,
     minHeight: 38,
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   },
   pathwayCta: {
     fontFamily: typography.monoBold,
-    fontSize: 11.5,
+    fontSize: 8.5,
     letterSpacing: 0.8,
   },
 
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
   },
   recoveryHeadline: {
     fontFamily: typography.headings,
-    fontSize: 19.5,
+    fontSize: 16,
     color: colors.emeraldDark,
     letterSpacing: 0.8,
   },
@@ -832,13 +832,13 @@ const styles = StyleSheet.create({
   },
   badgeEmeraldTinyText: {
     fontFamily: typography.monoBold,
-    fontSize: 10,
+    fontSize: 7.5,
     color: colors.emeraldDark,
     letterSpacing: 0.5,
   },
   recoverySub: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.textMuted,
     marginTop: 2,
     lineHeight: 12,

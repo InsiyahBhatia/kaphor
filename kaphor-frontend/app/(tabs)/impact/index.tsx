@@ -285,14 +285,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerPre: {
-    fontSize: 12,
+    fontSize: 9,
     fontFamily: typography.mono,
     color: colors.red,
     letterSpacing: 1.5,
     fontWeight: '800',
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: typography.headings,
     color: colors.charcoal,
     letterSpacing: 1,
@@ -334,14 +334,14 @@ const styles = StyleSheet.create({
   },
   tierPillText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.cream,
     letterSpacing: 1,
     fontWeight: '800',
   },
   userCallout: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.charcoal,
     letterSpacing: 0.5,
     fontWeight: '700',
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   },
   milestoneText: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.charcoal,
     flex: 1,
     fontWeight: '600',
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
 
   sectionHeading: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1.5,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   metricLabel: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     letterSpacing: 1,
     fontWeight: '800',
@@ -418,19 +418,19 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   metricValue: {
-    fontSize: 42,
+    fontSize: 38,
     fontFamily: typography.headings,
     lineHeight: 40,
   },
   metricUnit: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.textMuted,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   metricSubtext: {
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.body,
     color: colors.charcoal,
     opacity: 0.7,
@@ -469,13 +469,13 @@ const styles = StyleSheet.create({
   },
   breakdownName: {
     fontFamily: typography.body,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     fontWeight: '600',
   },
   breakdownCount: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   barVal: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     marginBottom: 4,
   },
@@ -525,20 +525,20 @@ const styles = StyleSheet.create({
   },
   barMonth: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.charcoal,
     marginTop: 6,
   },
   barType: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.textMuted,
     marginTop: 2,
   },
   historyMessage: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     fontStyle: 'italic',
     color: colors.charcoal,
     textAlign: 'center',
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
   },
   footerNoteText: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
     lineHeight: 16,
     flex: 1,

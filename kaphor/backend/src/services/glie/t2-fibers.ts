@@ -241,12 +241,12 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-function rowToRecord(headers: string[], row: string[]): Record<string, string> {
-  const record: Record<string, string> = {};
+function rowToRecord(headers: string[], row: string[]): Record<string, any> {
+  const record: Record<string, any> = {};
   for (let i = 0; i < headers.length && i < row.length; i++) {
     const value = row[i].replace(/^"|"$/g, '').trim();
     const numVal = Number(value);
-    record[headers[i]] = isNaN(numVal) ? value : String(numVal);
+    record[headers[i]] = value === '' || isNaN(numVal) ? value : numVal;
   }
   return record;
 }

@@ -531,7 +531,7 @@ export default function StyleQuizScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text style={styles.heroRank}>A♠</Text>
           <TouchableOpacity onPress={handleSkip} disabled={submitting}>
-            <Text style={[styles.heroSubTitle, { color: colors.red, fontSize: 13.5 }]}>[ SKIP QUIZ ]</Text>
+            <Text style={[styles.heroSubTitle, { color: colors.red, fontSize: 10 }]}>[ SKIP QUIZ ]</Text>
           </TouchableOpacity>
         </View>
         <Text style={styles.heroTitle}>✦ DOSSIER ✦</Text>
@@ -843,13 +843,13 @@ const styles = StyleSheet.create({
   },
   heroRank: {
     fontFamily: typography.ranks,
-    fontSize: 24.5,
+    fontSize: 20,
     color: colors.cream,
     fontWeight: 'bold',
   },
   heroTitle: {
     fontFamily: typography.headings,
-    fontSize: 37,
+    fontSize: 32,
     color: colors.cream,
     textAlign: 'center',
     marginVertical: 12,
@@ -865,7 +865,7 @@ const styles = StyleSheet.create({
   },
   heroSubTitle: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.cream,
     fontWeight: 'bold',
     letterSpacing: 1,
@@ -873,12 +873,12 @@ const styles = StyleSheet.create({
   heroItalic: {
     fontFamily: typography.mono,
     color: 'rgba(245, 240, 232, 0.6)',
-    fontSize: 12,
+    fontSize: 9,
     marginTop: 2,
   },
   heroZero: {
     fontFamily: typography.ranks,
-    fontSize: 39.5,
+    fontSize: 36,
     color: colors.red,
     lineHeight: 40,
   },
@@ -901,7 +901,7 @@ const styles = StyleSheet.create({
   panelHeaderText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     letterSpacing: 1,
   },
   dotsContainer: {
@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.red,
     fontWeight: 'bold',
     marginBottom: 4,
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
   },
   questionText: {
     fontFamily: typography.headings,
-    fontSize: 24.5,
+    fontSize: 20,
     color: colors.charcoal,
     paddingHorizontal: 16,
     marginVertical: 14,
@@ -993,7 +993,7 @@ const styles = StyleSheet.create({
   },
   rankCircleText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
     fontWeight: '800',
   },
@@ -1002,7 +1002,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.charcoal,
     fontWeight: '700',
   },
@@ -1011,7 +1011,7 @@ const styles = StyleSheet.create({
   },
   optionSubText: {
     fontFamily: typography.body,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1047,7 +1047,7 @@ const styles = StyleSheet.create({
   },
   vibeCardTitle: {
     fontFamily: typography.headings,
-    fontSize: 19.5,
+    fontSize: 16,
     color: colors.charcoal,
     letterSpacing: 0.5,
   },
@@ -1071,7 +1071,7 @@ const styles = StyleSheet.create({
   },
   vibeRankBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -1091,7 +1091,7 @@ const styles = StyleSheet.create({
   },
   expandFullscreenText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1126,14 +1126,14 @@ const styles = StyleSheet.create({
   },
   tapToExpandText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,
   },
   vibeCardSubLarge: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textMuted,
     lineHeight: 17,
   },
@@ -1154,7 +1154,7 @@ const styles = StyleSheet.create({
   },
   vibeSelectPillText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1182,13 +1182,13 @@ const styles = StyleSheet.create({
   },
   fullscreenAestheticTitle: {
     fontFamily: typography.headings,
-    fontSize: 25.5,
+    fontSize: 22,
     color: colors.cream,
     letterSpacing: 1,
   },
   fullscreenAestheticSub: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: 'rgba(245, 240, 232, 0.6)',
     marginTop: 2,
     letterSpacing: 0.5,
@@ -1234,7 +1234,7 @@ const styles = StyleSheet.create({
   },
   fullscreenSelectBtnText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1275,7 +1275,7 @@ const styles = StyleSheet.create({
   },
   idkTitle: {
     fontFamily: typography.headings,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     fontWeight: '700',
   },
@@ -1285,7 +1285,7 @@ const styles = StyleSheet.create({
   },
   idkSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     marginTop: 2,
     lineHeight: 13,
@@ -1361,7 +1361,7 @@ const styles = StyleSheet.create({
   },
   backBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.charcoal,
     fontWeight: '800',
   },
@@ -1374,7 +1374,7 @@ const styles = StyleSheet.create({
   },
   nextBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.cream,
     fontWeight: '800',
   },
@@ -1395,19 +1395,19 @@ const styles = StyleSheet.create({
   },
   resultHeaderRank: {
     fontFamily: typography.ranks,
-    fontSize: 32.5,
+    fontSize: 28,
     color: colors.gold,
   },
   resultSubtitle: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.cream,
     letterSpacing: 1.5,
     marginTop: 4,
   },
   resultMainTitle: {
     fontFamily: typography.headings,
-    fontSize: 30,
+    fontSize: 26,
     color: colors.cream,
     letterSpacing: 2,
     marginTop: 6,
@@ -1435,34 +1435,34 @@ const styles = StyleSheet.create({
   },
   aestheticPillText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.cream,
     fontWeight: '800',
     letterSpacing: 1,
   },
   matchPercentBadge: {
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '900',
     color: colors.red,
   },
   aestheticNameTitle: {
     fontFamily: typography.headings,
-    fontSize: 28,
+    fontSize: 24,
     color: colors.charcoal,
     letterSpacing: 1.5,
     marginBottom: 4,
   },
   aestheticTagline: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.red,
     fontWeight: '700',
     marginBottom: 8,
   },
   aestheticDescription: {
     fontFamily: typography.body,
-    fontSize: 17,
+    fontSize: 13,
     color: 'rgba(30,31,34,0.75)',
     lineHeight: 20,
     marginBottom: 14,
@@ -1474,7 +1474,7 @@ const styles = StyleSheet.create({
   },
   essentialsHeading: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.charcoal,
     fontWeight: '900',
     letterSpacing: 1,
@@ -1490,13 +1490,13 @@ const styles = StyleSheet.create({
   },
   bulletDot: {
     color: colors.red,
-    fontSize: 18,
+    fontSize: 14,
     lineHeight: 18,
   },
   essentialItemText: {
     flex: 1,
     fontFamily: typography.body,
-    fontSize: 16.5,
+    fontSize: 12.5,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -1523,26 +1523,26 @@ const styles = StyleSheet.create({
   },
   closeSecondBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.charcoal,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   secondaryMatchPercent: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
   },
   secondaryName: {
     fontFamily: typography.headings,
-    fontSize: 19.5,
+    fontSize: 16,
     color: colors.charcoal,
     letterSpacing: 1,
   },
   secondaryTagline: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1558,7 +1558,7 @@ const styles = StyleSheet.create({
   },
   exploreBtnText: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 1.5,

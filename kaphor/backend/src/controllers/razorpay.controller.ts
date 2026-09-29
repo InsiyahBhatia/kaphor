@@ -148,7 +148,7 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
 }
 
 /**
- * Create a Razorpay order for an existing order (cart flow, direct checkout).
+ * Create a Razorpay order for an existing order (direct checkout).
  */
 export async function createRazorpayOrderForExistingOrder(req: Request, res: Response): Promise<void> {
   try {
@@ -363,25 +363,11 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
       // Immediately transfer garments to buyer so they appear in their wardrobe and are delisted
       await transferGarmentsToBuyer(orderId, order.buyerId);
 
-      // Clear purchased items from buyer's cart (they are now reserved for them)
       const orderItems = await db.orderItem.findMany({
         where: { orderId },
         include: { garment: true },
       });
       const purchasedGarmentIds = orderItems.map((item: any) => item.garmentId);
-
-      if (purchasedGarmentIds.length > 0) {
-        try {
-          await db.cartItem.deleteMany({
-            where: {
-              userId: req.user.id,
-              garmentId: { in: purchasedGarmentIds },
-            },
-          });
-        } catch (cartErr) {
-          logger.warn('Failed to clear cart items after purchase', { error: cartErr });
-        }
-      }
 
       // Notify Seller
       try {
@@ -612,20 +598,6 @@ export async function razorpayWebhook(req: Request, res: Response): Promise<void
           where: { orderId: order.id },
           include: { garment: true },
         });
-        const webhookGarmentIds: string[] = webhookItems.map((whItem: any) => whItem.garmentId);
-
-        if (webhookGarmentIds.length > 0) {
-          try {
-            await db.cartItem.deleteMany({
-              where: {
-                userId: order.buyerId,
-                garmentId: { in: webhookGarmentIds },
-              },
-            });
-          } catch (cartErr) {
-            logger.warn('Webhook failed to clear cart items', { error: cartErr });
-          }
-        }
 
         try {
           const firstTitle = webhookItems[0]?.garment?.title || 'item';

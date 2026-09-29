@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 2,
   },
@@ -207,14 +207,14 @@ const styles = StyleSheet.create({
   successBadgeText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     letterSpacing: 1,
   },
 
   heading: {
     fontFamily: typography.headings,
-    fontSize: 44,
+    fontSize: 40,
     color: colors.charcoal,
     letterSpacing: 2,
     marginBottom: 12,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   subheading: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   orderIdLabel: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 1,
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   },
   orderIdValue: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   orderIdHint: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
     lineHeight: 16,
   },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.textMuted,
     letterSpacing: 1.5,
@@ -307,14 +307,14 @@ const styles = StyleSheet.create({
   },
   timelineTitle: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.charcoal,
     marginBottom: 4,
   },
   timelineText: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textMuted,
     lineHeight: 18,
   },
@@ -348,14 +348,14 @@ const styles = StyleSheet.create({
   impactTitle: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     letterSpacing: 1,
   },
   impactText: {
     color: 'rgba(247,245,240,0.85)',
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     lineHeight: 17,
   },
 
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     color: colors.charcoal,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
   },
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   homeBtnText: {
     color: colors.textMuted,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     textDecorationLine: 'underline',
   },
 });

@@ -487,8 +487,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: colors.charcoal, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
   },
-  statValue: { fontSize: 37, fontFamily: typography.headings, color: colors.forest },
-  statLabel: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, fontWeight: '800', marginTop: 2, letterSpacing: 1 },
+  statValue: { fontSize: 32, fontFamily: typography.headings, color: colors.forest },
+  statLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '800', marginTop: 2, letterSpacing: 1 },
 
   // Recycling Guide Banner
   recycleBanner: {
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
   },
   recycleBannerTitle: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: '#283618',
     letterSpacing: 0.8,
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
   },
   recycleBannerSub: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.charcoal,
     lineHeight: 12,
   },
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   },
   impactBannerTitle: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.forest,
     letterSpacing: 1,
@@ -553,17 +553,17 @@ const styles = StyleSheet.create({
   },
   impactBannerSub: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     color: colors.charcoal,
     lineHeight: 12,
   },
 
   // Section header
   sectionHeader: { marginBottom: 16 },
-  sectionTitle: { fontFamily: typography.mono, fontSize: 14.5, color: colors.charcoal, fontWeight: '800', letterSpacing: 1, marginBottom: 8 },
+  sectionTitle: { fontFamily: typography.mono, fontSize: 11, color: colors.charcoal, fontWeight: '800', letterSpacing: 1, marginBottom: 8 },
   legendHint: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, fontWeight: '700' },
+  legendText: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700' },
 
   // Grid
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
@@ -585,13 +585,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 6, paddingVertical: 3,
   },
-  stateBadgeText: { color: colors.white, fontFamily: typography.mono, fontSize: 9.5, fontWeight: '900', letterSpacing: 0.5 },
+  stateBadgeText: { color: colors.white, fontFamily: typography.mono, fontSize: 7, fontWeight: '900', letterSpacing: 0.5 },
 
   // Card info
   cardInfo: { padding: 10 },
-  cardBrand: { fontFamily: typography.mono, fontSize: 11, color: colors.red, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
-  cardTitle: { fontFamily: typography.headings, fontSize: 19.5, color: colors.charcoal, marginTop: 2 },
-  cardStateDesc: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4 },
+  cardBrand: { fontFamily: typography.mono, fontSize: 8, color: colors.red, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
+  cardTitle: { fontFamily: typography.headings, fontSize: 16, color: colors.charcoal, marginTop: 2 },
+  cardStateDesc: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, marginTop: 4 },
 
   // Actions
   cardActions: { flexDirection: 'row', gap: 4, paddingHorizontal: 8, paddingBottom: 8 },
@@ -600,17 +600,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6, borderWidth: 1.5, borderColor: colors.charcoal,
     backgroundColor: colors.cream,
   },
-  actionBtnText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  actionBtnText: { fontFamily: typography.mono, fontSize: 7.5, fontWeight: '900', letterSpacing: 0.5 },
 
   // Empty state
-  emptyTitle: { fontFamily: typography.mono, fontSize: 18, color: colors.charcoal, fontWeight: '800', letterSpacing: 1, marginTop: 16, textAlign: 'center' },
-  emptySubtext: { fontFamily: typography.mono, fontSize: 13.5, color: colors.textMuted, lineHeight: 16, textAlign: 'center' },
+  emptyTitle: { fontFamily: typography.mono, fontSize: 14, color: colors.charcoal, fontWeight: '800', letterSpacing: 1, marginTop: 16, textAlign: 'center' },
+  emptySubtext: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, lineHeight: 16, textAlign: 'center' },
   shopBtn: {
     backgroundColor: colors.charcoal, paddingVertical: 12, paddingHorizontal: 24,
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
   },
-  shopBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 14.5, fontWeight: '800', letterSpacing: 1 },
+  shopBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
 
   // Empty State Actions
   emptyActionButtons: {
@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
   listEmptyBtnText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 15,
+    fontSize: 11.5,
     fontWeight: '900',
     letterSpacing: 1,
   },

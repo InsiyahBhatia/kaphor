@@ -466,7 +466,7 @@ export default function SwapShippingScreen() {
             <Text style={[styles.noAddressText, { color: colors.charcoal, fontWeight: '700' }]}>
               No delivery address shared with partner.
             </Text>
-            <Text style={[styles.noAddressText, { fontSize: 12 }]}>
+            <Text style={[styles.noAddressText, { fontSize: 9 }]}>
               Tap to choose a saved delivery address from your Address Book.
             </Text>
             <View style={styles.pickAddressBtn}>
@@ -530,7 +530,7 @@ export default function SwapShippingScreen() {
           <View style={styles.shipCard}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <Ionicons name="checkmark-circle" size={22} color={colors.forest} />
-              <Text style={[styles.sectionTitle, { marginBottom: 0, color: colors.charcoal, fontSize: 15.5 }]}>
+              <Text style={[styles.sectionTitle, { marginBottom: 0, color: colors.charcoal, fontSize: 12 }]}>
                 SHIPMENT DISPATCHED
               </Text>
             </View>
@@ -808,7 +808,7 @@ export default function SwapShippingScreen() {
             {sharingAddress ? (
               <View style={{ padding: 30, alignItems: 'center', gap: 12 }}>
                 <ActivityIndicator size="large" color={colors.charcoal} />
-                <Text style={{ fontFamily: typography.mono, fontSize: 14.5, color: colors.textMuted }}>
+                <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.textMuted }}>
                   Updating delivery coordinates...
                 </Text>
               </View>
@@ -819,7 +819,7 @@ export default function SwapShippingScreen() {
                     <Text
                       style={{
                         fontFamily: typography.mono,
-                        fontSize: 15.5,
+                        fontSize: 12,
                         color: colors.textMuted,
                         textAlign: 'center',
                         marginBottom: 12,
@@ -958,10 +958,10 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 180 },
   sectionTitle: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.textMuted,
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
     marginBottom: 12,
     marginTop: 20,
   },
@@ -976,17 +976,17 @@ const styles = StyleSheet.create({
   addressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#1C2B4A',
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 9,
   },
   addressHeaderText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 10.5,
     fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   addressBody: {
     padding: 16,
@@ -994,13 +994,13 @@ const styles = StyleSheet.create({
   },
   addressName: {
     fontFamily: typography.mono,
-    fontSize: 18.5,
+    fontSize: 16,
     fontWeight: '800',
     color: colors.charcoal,
   },
   addressLine: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 12,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
   noAddressCard: {
     alignItems: 'center',
     gap: 12,
-    padding: 24,
+    padding: 20,
     backgroundColor: colors.white,
     borderWidth: 2,
     borderStyle: 'dashed',
@@ -1021,7 +1021,7 @@ const styles = StyleSheet.create({
   },
   noAddressText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 16,
@@ -1044,12 +1044,13 @@ const styles = StyleSheet.create({
   depositHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    flexWrap: 'wrap',
   },
   depositIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1061,14 +1062,14 @@ const styles = StyleSheet.create({
   },
   depositTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.charcoal,
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
   depositAmountText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.textMuted,
     marginTop: 2,
@@ -1077,6 +1078,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
+    alignSelf: 'flex-start',
   },
   badgeUnpaid: {
     backgroundColor: 'rgba(201,95,18,0.12)',
@@ -1086,7 +1088,7 @@ const styles = StyleSheet.create({
   },
   depositStatusBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
@@ -1094,13 +1096,15 @@ const styles = StyleSheet.create({
   badgeTextPaid: { color: '#2E7D32' },
   depositExplainer: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     color: colors.charcoal,
-    lineHeight: 15,
+    lineHeight: 16,
   },
   payDepositBtn: {
     backgroundColor: colors.charcoal,
-    paddingVertical: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1112,28 +1116,28 @@ const styles = StyleSheet.create({
   payDepositBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11.5,
     fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
 
   shipCard: {
     backgroundColor: colors.white,
-    padding: 20,
+    padding: 18,
     borderWidth: 2,
     borderColor: colors.charcoal,
     marginBottom: 16,
   },
   shipCardDesc: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textMuted,
-    lineHeight: 14,
-    marginBottom: 16,
+    lineHeight: 16,
+    marginBottom: 14,
   },
   formLabel: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -1150,8 +1154,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 2,
+    paddingVertical: 9,
+    minHeight: 40,
+    borderWidth: 1.5,
     borderColor: colors.charcoal,
     backgroundColor: colors.white,
   },
@@ -1160,7 +1165,7 @@ const styles = StyleSheet.create({
   },
   courierChipText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1168,16 +1173,18 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1.5,
     borderColor: colors.charcoal,
-    padding: 14,
+    padding: 12,
     fontFamily: typography.body,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     backgroundColor: colors.white,
     marginBottom: 16,
+    minHeight: 48,
   },
   submitBtn: {
     backgroundColor: colors.charcoal,
-    height: 52,
+    height: 50,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1189,7 +1196,7 @@ const styles = StyleSheet.create({
   submitBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12.5,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -1205,32 +1212,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 10,
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(30,31,34,0.1)',
   },
   trackingLabel: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   trackingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
   },
   trackingField: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     color: colors.textMuted,
     fontWeight: '700',
   },
   trackingValue: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     color: colors.charcoal,
     fontWeight: '800',
     flex: 1,
@@ -1247,7 +1256,7 @@ const styles = StyleSheet.create({
   },
   deliveredText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.forest,
   },
@@ -1257,13 +1266,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     backgroundColor: '#1C2B4A',
-    paddingVertical: 10,
+    paddingVertical: 11,
+    minHeight: 44,
     marginTop: 10,
   },
   trackBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -1280,7 +1290,7 @@ const styles = StyleSheet.create({
   },
   chatWithPartnerText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -1301,15 +1311,16 @@ const styles = StyleSheet.create({
   },
   confirmReceiptTitle: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.forest,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
+    flex: 1,
   },
   confirmReceiptSub: {
     fontFamily: typography.mono,
-    fontSize: 12,
-    lineHeight: 14,
+    fontSize: 10.5,
+    lineHeight: 16,
     color: colors.charcoal,
     marginBottom: 14,
   },
@@ -1320,13 +1331,15 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: colors.forest,
     paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: 46,
   },
   confirmReceiptBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11.5,
     fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   completedBanner: {
     flexDirection: 'row',
@@ -1341,16 +1354,17 @@ const styles = StyleSheet.create({
   },
   completedBannerTitle: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.forest,
     letterSpacing: 0.8,
   },
   completedBannerSub: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 10,
     color: colors.charcoal,
     marginTop: 2,
+    lineHeight: 14,
   },
   reviewPartnerBtn: {
     backgroundColor: colors.charcoal,
@@ -1360,7 +1374,7 @@ const styles = StyleSheet.create({
   reviewPartnerBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
@@ -1370,30 +1384,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 8,
   },
   sectionTitleNoMargin: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.textMuted,
-    letterSpacing: 1.2,
+    letterSpacing: 1,
+    flexShrink: 1,
   },
   addressRoleBadge: {
     backgroundColor: '#1C2B4A',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 2,
+    alignSelf: 'flex-start',
   },
   addressRoleBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.8,
   },
   changeAddressLink: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
     textDecorationLine: 'underline',
@@ -1418,7 +1437,7 @@ const styles = StyleSheet.create({
   pickAddressBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10.5,
     fontWeight: '900',
     letterSpacing: 0.8,
   },
@@ -1440,7 +1459,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.charcoal,
     padding: 20,
     paddingBottom: 40,
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
   addressModalHeader: {
     flexDirection: 'row',
@@ -1453,20 +1472,23 @@ const styles = StyleSheet.create({
   },
   addressModalTitle: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '800',
     color: colors.charcoal,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
+    flex: 1,
   },
   modalAddBtn: {
     backgroundColor: colors.charcoal,
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 16,
+    minHeight: 44,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   modalAddBtnText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.8,
@@ -1496,21 +1518,21 @@ const styles = StyleSheet.create({
   },
   addressOptionName: {
     fontFamily: typography.headings,
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.charcoal,
   },
   addressOptionPhone: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     color: colors.textMuted,
     marginBottom: 4,
   },
   addressOptionText: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 12,
     color: colors.charcoal,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   defaultBadge: {
     backgroundColor: colors.cream,
@@ -1521,7 +1543,7 @@ const styles = StyleSheet.create({
   },
   defaultBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
@@ -1537,7 +1559,7 @@ const styles = StyleSheet.create({
   },
   reviewSectionTitle: {
     fontFamily: typography.headings,
-    fontSize: 19.5,
+    fontSize: 17,
     letterSpacing: 0.5,
     color: colors.charcoal,
   },
@@ -1556,7 +1578,7 @@ const styles = StyleSheet.create({
   },
   reviewedCardRole: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 10.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1568,15 +1590,15 @@ const styles = StyleSheet.create({
   },
   reviewedCardComment: {
     fontFamily: typography.body,
-    fontSize: 16.5,
+    fontSize: 13,
     color: colors.charcoal,
-    lineHeight: 18,
+    lineHeight: 19,
     fontStyle: 'italic',
     marginBottom: 10,
   },
   reviewedCardNoComment: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textMuted,
     fontStyle: 'italic',
     marginBottom: 8,
@@ -1591,7 +1613,7 @@ const styles = StyleSheet.create({
   },
   reviewedCardVerified: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 9.5,
     fontWeight: '900',
     color: colors.forest,
     letterSpacing: 0.5,
@@ -1605,16 +1627,16 @@ const styles = StyleSheet.create({
   },
   writeReviewHeading: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 15,
     color: colors.charcoal,
     marginBottom: 4,
   },
   writeReviewSub: {
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 12,
     color: colors.textMuted,
     marginBottom: 14,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   starPickerRow: {
     flexDirection: 'row',
@@ -1627,7 +1649,7 @@ const styles = StyleSheet.create({
   },
   starRatingNumber: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: '900',
     color: colors.charcoal,
     marginLeft: 6,
@@ -1637,9 +1659,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.charcoal,
     borderRadius: 4,
-    padding: 10,
+    padding: 12,
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 13,
     color: colors.charcoal,
     minHeight: 70,
     textAlignVertical: 'top',
@@ -1652,11 +1674,13 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: colors.charcoal,
     paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: 46,
     borderRadius: 4,
   },
   submitReviewBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.cream,
     letterSpacing: 0.8,
@@ -1675,9 +1699,9 @@ const styles = StyleSheet.create({
   awaitingPartnerText: {
     flex: 1,
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 10.5,
     color: colors.textMuted,
-    lineHeight: 14,
+    lineHeight: 15,
   },
   wardrobeLinkBtn: {
     flexDirection: 'row',
@@ -1687,13 +1711,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF7EE',
     borderWidth: 1.5,
     borderColor: colors.charcoal,
-    paddingVertical: 11,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: 46,
     marginTop: 16,
     borderRadius: 4,
   },
   wardrobeLinkBtnText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.6,

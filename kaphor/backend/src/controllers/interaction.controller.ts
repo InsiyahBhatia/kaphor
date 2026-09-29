@@ -55,7 +55,6 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
             VIEW: 0.05,
             SAVE: 0.15,
             WISHLIST: 0.20,
-            ADD_TO_CART: 0.30,
             PURCHASE_INTENT: 0.40,
             LOG_WEAR: 0.50,
         };

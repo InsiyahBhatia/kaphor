@@ -415,13 +415,13 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 7.5,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
   title: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     color: '#FFF',
     letterSpacing: 0.5,
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   },
   body: {
     fontFamily: typography.mono,
-    fontSize: 13,
+    fontSize: 9.5,
     color: 'rgba(255,255,255,0.75)',
     lineHeight: 14,
   },

@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AIStar } from '../../../src/components/AIStar';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
-import { cartService } from '../../../src/services/cartService';
+import { orderService } from '../../../src/services/orderService';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
@@ -102,13 +102,32 @@ export default function ShopScreen() {
     }
   };
 
-  const handleAddToCart = async (item: any) => {
+  const handleBuyRequest = async (item: any) => {
     try {
-      await cartService.addToCart(item.id);
-      Alert.alert('✓ Added', `${item.title} has been added to your cart.`);
-    } catch (error) {
-      Alert.alert('Error', 'Could not add to cart. Please try again.');
-      console.error(error);
+      const order = await orderService.requestPurchase(item.id);
+      const orderId = order?.orderId;
+      if (!orderId) {
+        throw new Error('Could not initiate purchase request');
+      }
+      if (order?.isApproved) {
+        router.push({
+          pathname: '/(tabs)/shop/checkout/delivery',
+          params: { orderId },
+        } as any);
+      } else {
+        Alert.alert(
+          'Purchase Request Sent 🛍️',
+          'Your purchase request has been submitted to the seller for approval. No payment is taken until the seller approves.',
+          [
+            {
+              text: 'View Order Status',
+              onPress: () => router.push(`/(tabs)/shop/orders/${orderId}` as any),
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error?.response?.data?.message || error?.message || 'Could not submit purchase request. Please try again.');
     }
   };
 
@@ -131,7 +150,7 @@ export default function ShopScreen() {
           <Text style={styles.title}>THE DECK // BROWSE</Text>
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
             <LinearGradient
-              colors={['#E4714A', '#C81E2C']}
+              colors={['#242424', '#141414']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.aiHeaderBtn}
@@ -147,9 +166,6 @@ export default function ShopScreen() {
             </LinearGradient>
             <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)}>
               <Ionicons name="options-sharp" size={20} color={colors.white} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cartHeaderButton} onPress={() => router.push('/(tabs)/cart')}>
-              <Ionicons name="briefcase" size={20} color={colors.white} />
             </TouchableOpacity>
           </View>
         </View>
@@ -290,7 +306,7 @@ export default function ShopScreen() {
                       <EditorialGarmentCard
                         item={item}
                         onPress={() => router.push(`/(tabs)/shop/${item.id}`)}
-                        onAddToCart={() => handleAddToCart(item)}
+                        onBuyRequest={() => handleBuyRequest(item)}
                         style={{ width: '100%', marginRight: 0 }}
                       />
                     </View>
@@ -404,15 +420,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-  },
-  cartHeaderButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: colors.red,
-    justifyContent: 'center',
-    alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.charcoal,
   },

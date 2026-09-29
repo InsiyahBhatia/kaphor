@@ -4,7 +4,7 @@ import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../src/services/garmentService';
-import { cartService } from '../../src/services/cartService';
+import { orderService } from '../../src/services/orderService';
 import { EditorialGarmentCard } from '../../src/components/EditorialGarmentCard';
 import { DossierLoading } from '../../src/components/common/DossierLoading';
 import { GarmentGridSkeleton } from '../../src/components/common/CardLoadingScreen';
@@ -61,17 +61,32 @@ export default function SavedAssetsScreen() {
     setRefreshing(false);
   }, [fetchSavedAssets, fetchSavedRepairs]);
 
-  const handleAddToCart = async (item: any) => {
+  const handleBuyRequest = async (item: any) => {
     try {
-      await cartService.addToCart(item.id);
-      Alert.alert('✓ Added', `${item.title} has been added to your cart.`);
-    } catch (error: any) {
-      if (error?.response?.status === 409 || error?.response?.data?.error === 'ALREADY_IN_CART') {
-        Alert.alert('Already in Bag', 'This unique circular piece is already in your shopping bag.');
-      } else {
-        Alert.alert('Notice', error?.response?.data?.message || 'Could not add to cart. Please try again.');
+      const order = await orderService.requestPurchase(item.id);
+      const orderId = order?.orderId;
+      if (!orderId) {
+        throw new Error('Could not initiate purchase request');
       }
-      console.error(error);
+      if (order?.isApproved) {
+        router.push({
+          pathname: '/(tabs)/shop/checkout/delivery',
+          params: { orderId },
+        } as any);
+      } else {
+        Alert.alert(
+          'Purchase Request Sent 🛍️',
+          'Your purchase request has been submitted to the seller for approval. No payment is taken until the seller approves.',
+          [
+            {
+              text: 'View Order Status',
+              onPress: () => router.push(`/(tabs)/shop/orders/${orderId}` as any),
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      Alert.alert('Notice', error?.response?.data?.message || error?.message || 'Could not submit purchase request. Please try again.');
     }
   };
 
@@ -196,7 +211,7 @@ export default function SavedAssetsScreen() {
       <EditorialGarmentCard
         item={item}
         onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
-        onAddToCart={() => handleAddToCart(item)}
+        onBuyRequest={() => handleBuyRequest(item)}
         style={{ width: '100%', marginRight: 0 }}
       />
     </View>
@@ -376,14 +391,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: typography.headings,
-    fontSize: 37,
+    fontSize: 32,
     color: colors.charcoal,
     marginTop: 20,
     textAlign: 'center',
   },
   emptySub: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: 8,
@@ -400,7 +415,7 @@ const styles = StyleSheet.create({
   ctaText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '800',
   },
 
@@ -425,7 +440,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -442,12 +457,12 @@ const styles = StyleSheet.create({
   },
   tabEmptyText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.textMuted,
   },
   tabEmptyAction: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.charcoal,
     textDecorationLine: 'underline',
@@ -474,7 +489,7 @@ const styles = StyleSheet.create({
   },
   vaultTitle: {
     fontFamily: typography.headings,
-    fontSize: 32.5,
+    fontSize: 28,
     color: colors.charcoal,
   },
   badgeLine: {
@@ -487,7 +502,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
   },
 
@@ -505,7 +520,7 @@ const styles = StyleSheet.create({
   },
   repairSubTitle: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1.5,
@@ -539,7 +554,7 @@ const styles = StyleSheet.create({
   },
   repairTypeText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 1,
@@ -551,25 +566,25 @@ const styles = StyleSheet.create({
   },
   repairDiffText: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 7,
     fontWeight: '700',
   },
   repairTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 18,
     color: colors.charcoal,
     marginBottom: 4,
     lineHeight: 22,
   },
   repairTechnique: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     marginBottom: 8,
   },
   repairGarment: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     marginBottom: 8,
     fontStyle: 'italic',
@@ -585,19 +600,19 @@ const styles = StyleSheet.create({
   },
   repairStepBullet: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     color: colors.charcoal,
   },
   repairStepText: {
     flex: 1,
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 11,
     color: colors.charcoal,
     lineHeight: 16,
   },
   repairMoreSteps: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
     marginLeft: 14,
   },
@@ -608,7 +623,7 @@ const styles = StyleSheet.create({
   },
   repairToolsLabel: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
   },
   repairRemoveBtn: {
@@ -620,7 +635,7 @@ const styles = StyleSheet.create({
   },
   repairRemoveText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '700',
     color: colors.red,
     letterSpacing: 1,
@@ -674,7 +689,7 @@ const styles = StyleSheet.create({
   },
   youtubeTitle: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.charcoal,
     lineHeight: 16,
@@ -682,12 +697,12 @@ const styles = StyleSheet.create({
   },
   youtubeChannel: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
   },
   youtubeGarment: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     color: colors.textMuted,
     fontStyle: 'italic',
     marginTop: 4,

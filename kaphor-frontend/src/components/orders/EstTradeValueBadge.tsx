@@ -110,13 +110,13 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderRadius: 2,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeSm: {
     paddingHorizontal: 6,
-    paddingVertical: 2.5,
+    paddingVertical: 3.5,
   },
   badgeLg: {
     paddingHorizontal: 12,
@@ -132,30 +132,31 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8.5,
     letterSpacing: 0.8,
     fontWeight: '800',
   },
   labelSm: {
-    fontSize: 9.5,
+    fontSize: 7.5,
     letterSpacing: 0.5,
   },
   labelLg: {
-    fontSize: 13,
+    fontSize: 10,
     letterSpacing: 1,
   },
   valueText: {
     fontFamily: typography.headings,
-    fontSize: 18,
+    fontSize: 14,
     letterSpacing: 0.8,
     marginTop: 1,
   },
   valueTextSm: {
-    fontSize: 15.5,
+    fontSize: 12,
+    lineHeight: 15,
     letterSpacing: 0.5,
   },
   valueTextLg: {
-    fontSize: 20.5,
+    fontSize: 17,
     letterSpacing: 1,
   },
 

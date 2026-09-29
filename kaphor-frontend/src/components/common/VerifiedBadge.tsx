@@ -82,11 +82,11 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#F7F5F0',
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   badgeTextLarge: {
-    fontSize: 13,
+    fontSize: 9.5,
   },
 });

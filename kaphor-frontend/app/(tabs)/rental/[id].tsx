@@ -133,24 +133,24 @@ export default function RentalDetailScreen() {
     return (
       <View style={[styles.container, styles.center, { paddingHorizontal: 24 }]}>
         <Ionicons name="calendar-outline" size={48} color={colors.textMuted} style={{ marginBottom: 16 }} />
-        <Text style={{ color: colors.charcoal, fontFamily: typography.mono, fontSize: 18, fontWeight: '700', textAlign: 'center' }}>
+        <Text style={{ color: colors.charcoal, fontFamily: typography.mono, fontSize: 14, fontWeight: '700', textAlign: 'center' }}>
           RENTAL LEASE DETAILS
         </Text>
-        <Text style={{ color: colors.textMuted, fontFamily: typography.mono, fontSize: 15.5, marginTop: 8, textAlign: 'center' }}>
+        <Text style={{ color: colors.textMuted, fontFamily: typography.mono, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
           This rental agreement is registered. You can view its full timeline and return status in My Rentals.
         </Text>
         <TouchableOpacity 
           onPress={() => router.replace('/(tabs)/rental?tab=my' as any)}
           style={{ marginTop: 24, backgroundColor: colors.charcoal, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 2 }}
         >
-          <Text style={{ color: colors.cream, fontFamily: typography.mono, fontSize: 15.5, fontWeight: '800' }}>VIEW MY RENTALS</Text>
+          <Text style={{ color: colors.cream, fontFamily: typography.mono, fontSize: 12, fontWeight: '800' }}>VIEW MY RENTALS</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={{ marginTop: 16 }}
         >
-          <Text style={{ color: colors.crimson, fontFamily: typography.mono, fontSize: 15.5 }}>GO BACK</Text>
+          <Text style={{ color: colors.crimson, fontFamily: typography.mono, fontSize: 12 }}>GO BACK</Text>
         </TouchableOpacity>
       </View>
     );
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   },
   zoomPillText: {
     color: '#FFFFFF',
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
     fontFamily: typography.mono,
@@ -550,9 +550,9 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   content: { padding: 24 },
-  brand: { color: colors.crimson, fontSize: 15.5, letterSpacing: 2, fontWeight: '800' },
-  title: { color: colors.textPrimary, fontSize: 37, fontFamily: 'BebasNeue_400Regular', marginTop: 4, marginBottom: 12 },
-  desc: { color: colors.textSecond, fontSize: 18.5, lineHeight: 24, marginBottom: 20 },
+  brand: { color: colors.crimson, fontSize: 12, letterSpacing: 2, fontWeight: '800' },
+  title: { color: colors.textPrimary, fontSize: 32, fontFamily: 'BebasNeue_400Regular', marginTop: 4, marginBottom: 12 },
+  desc: { color: colors.textSecond, fontSize: 15, lineHeight: 24, marginBottom: 20 },
   aiDoubtButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   aiDoubtText: {
     color: '#E5D5A4',
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.5,
   },
@@ -586,16 +586,16 @@ const styles = StyleSheet.create({
     shadowRadius: 10, 
     elevation: 2 
   },
-  rateTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '800', letterSpacing: 2, marginBottom: 20 },
+  rateTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: '800', letterSpacing: 2, marginBottom: 20 },
   rateRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
-  rateLabel: { color: colors.textMuted, fontSize: 15.5, letterSpacing: 1, fontWeight: '700' },
-  rateValue: { color: colors.textPrimary, fontSize: 22, fontWeight: '800' },
+  rateLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, fontWeight: '700' },
+  rateValue: { color: colors.textPrimary, fontSize: 18, fontWeight: '800' },
   details: { marginBottom: 24 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
-  detailLabel: { color: colors.textMuted, fontSize: 15.5, letterSpacing: 1, fontWeight: '700' },
-  detailValue: { color: colors.textPrimary, fontSize: 18.5, fontWeight: '700' },
+  detailLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, fontWeight: '700' },
+  detailValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   impactCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, backgroundColor: 'rgba(76,175,80,0.05)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(76,175,80,0.2)', marginBottom: 24 },
-  impactText: { color: '#2E7D32', fontSize: 17, flex: 1, lineHeight: 18, fontWeight: '600' },
+  impactText: { color: '#2E7D32', fontSize: 13, flex: 1, lineHeight: 18, fontWeight: '600' },
   footer: { 
     paddingHorizontal: 24, 
     paddingTop: 16,
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  reserveButtonText: { color: colors.white, fontSize: 19.5, fontWeight: '800', letterSpacing: 2 },
+  reserveButtonText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
   messageLenderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
   },
   messageLenderText: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 1.2,
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
   },
   chatIconLabel: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
   },
   zoomInstructionText: {
     color: '#FFFFFF',
-    fontSize: 14.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '800',
     letterSpacing: 1,
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
   },
   availabilityTitle: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -749,14 +749,14 @@ const styles = StyleSheet.create({
   },
   availabilityBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.5,
   },
   availabilitySubtext: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 12,
     lineHeight: 18,
     color: colors.textMuted,
     marginBottom: 12,
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
   },
   checkDatesBtnText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.8,

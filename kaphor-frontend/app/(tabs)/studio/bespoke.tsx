@@ -113,10 +113,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', alignItems: 'center', marginBottom: 24,
     paddingBottom: 20, borderBottomWidth: 2, borderBottomColor: colors.charcoal
   },
-  headerTitle: { color: colors.charcoal, fontSize: 19.5, fontFamily: typography.mono, letterSpacing: 2, fontWeight: '800' },
+  headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, letterSpacing: 2, fontWeight: '800' },
   content: { padding: 20, paddingBottom: 180 },
-  title: { fontSize: 53, fontFamily: typography.headings, color: colors.charcoal, marginBottom: 12 },
-  subtitle: { color: colors.textPrimary, fontFamily: typography.mono, fontSize: 15.5, lineHeight: 22, marginBottom: 32 },
+  title: { fontSize: 48, fontFamily: typography.headings, color: colors.charcoal, marginBottom: 12 },
+  subtitle: { color: colors.textPrimary, fontFamily: typography.mono, fontSize: 12, lineHeight: 22, marginBottom: 32 },
   
   infoCards: { flexDirection: 'row', gap: 16, marginBottom: 32 },
   infoCard: { 
@@ -124,13 +124,13 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4
   },
-  infoTitle: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 13.5, letterSpacing: 2, fontWeight: '800' },
-  infoText: { color: colors.white, fontFamily: typography.mono, fontSize: 19.5, fontWeight: '800' },
+  infoTitle: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 10, letterSpacing: 2, fontWeight: '800' },
+  infoText: { color: colors.white, fontFamily: typography.mono, fontSize: 16, fontWeight: '800' },
   
-  inputLabel: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 13.5, letterSpacing: 2, marginBottom: 8, marginTop: 16, fontWeight: '800' },
+  inputLabel: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 10, letterSpacing: 2, marginBottom: 8, marginTop: 16, fontWeight: '800' },
   input: { 
     height: 56, borderWidth: 2, borderColor: colors.charcoal, backgroundColor: colors.white, 
-    padding: 16, color: colors.charcoal, fontFamily: typography.mono, fontSize: 18, marginBottom: 24,
+    padding: 16, color: colors.charcoal, fontFamily: typography.mono, fontSize: 14, marginBottom: 24,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2
   },
   
@@ -146,5 +146,5 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4
   },
-  submitBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 18, fontWeight: '800', letterSpacing: 1 },
+  submitBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 14, fontWeight: '800', letterSpacing: 1 },
 });

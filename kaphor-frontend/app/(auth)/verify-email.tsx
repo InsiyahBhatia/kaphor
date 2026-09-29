@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 37,
+    fontSize: 32,
     fontFamily: 'BebasNeue_400Regular',
     color: colors.textPrimary,
     textAlign: 'center',
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: 18.5,
+    fontSize: 15,
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   mainBtnText: {
     color: colors.white,
-    fontSize: 18.5,
+    fontSize: 15,
     fontWeight: '800',
     letterSpacing: 2,
   },

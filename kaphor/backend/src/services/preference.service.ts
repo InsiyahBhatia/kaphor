@@ -220,9 +220,6 @@ export const PreferenceService = {
               case EventType.WISHLIST:
                 alpha = 0.09;
                 break;
-              case EventType.ADD_TO_CART:
-                alpha = 0.16;
-                break;
               case EventType.RENTAL_INTENT:
               case EventType.SWAP_INTENT:
               case EventType.PURCHASE_INTENT:

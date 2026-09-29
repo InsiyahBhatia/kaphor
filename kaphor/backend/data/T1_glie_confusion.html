@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>GLIE T1 Confusion Matrix</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #141414; color: #F5F1E8; padding: 30px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #9b9b9b; font-size: 13px; margin-bottom: 22px; }
+  table.cm { border-collapse: collapse; }
+  table.cm th, table.cm td { border: 1px solid #333; padding: 16px 18px; text-align: center; font-size: 14px; }
+  table.cm th { color: #888; font-weight: 700; }
+  th.truth { color: #F5F1E8; background: #1e1e1e; }
+  td.ok, td.bad { color: #fff; }
+  .cnt { display: block; font-size: 16px; font-weight: 800; }
+  .pct { font-size: 10px; opacity: 0.85; }
+  td.acc { font-weight: 800; color: #F5F1E8; background: #1e1e1e; }
+  .legend { margin-top: 20px; color: #9b9b9b; font-size: 13px; }
+  .badge { display:inline-block; width:14px; height:14px; border:1px solid #333; margin-right:6px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<h1>GLIE T1 Confusion Matrix</h1>
+<div class="sub">rows (AI truth) = RESELL / UPCYCLE / RECYCLE · columns (formula pred) = RESELL / UPCYCLE / RECYCLE · n=139 ·
+overall accuracy = 99.3% · correct=138, errors=1</div>
+<table class="cm">
+  <thead>
+    <tr><th rowspan="2" class="truth">truth \ pred</th><th colspan="3">formula prediction</th><th rowspan="2">recall</th></tr>
+    <tr>
+      <th>RESELL</th>
+      <th>UPCYCLE</th>
+      <th>RECYCLE</th>
+    </tr>
+  </thead>
+  <tbody>
+<tr>
+      <th class="truth">RESELL</th>
+      <td class="ok" style="background:rgba(15,100,10,0.100)" title="truth=RESELL pred=RESELL">
+        <span class="cnt">79</span><span class="pct">100%</span>
+      </td>
+      <td class="bad" style="background:rgba(90,40,40,0.0)" title="truth=RESELL pred=UPCYCLE">
+        <span class="cnt">0</span><span class="pct">0%</span>
+      </td>
+      <td class="bad" style="background:rgba(90,40,40,0.0)" title="truth=RESELL pred=RECYCLE">
+        <span class="cnt">0</span><span class="pct">0%</span>
+      </td>
+      <td class="acc">100.0%</td>
+    </tr>
+
+<tr>
+      <th class="truth">UPCYCLE</th>
+      <td class="bad" style="background:rgba(90,40,40,0.0)" title="truth=UPCYCLE pred=RESELL">
+        <span class="cnt">0</span><span class="pct">0%</span>
+      </td>
+      <td class="ok" style="background:rgba(15,83,33,0.62)" title="truth=UPCYCLE pred=UPCYCLE">
+        <span class="cnt">33</span><span class="pct">100%</span>
+      </td>
+      <td class="bad" style="background:rgba(90,40,40,0.0)" title="truth=UPCYCLE pred=RECYCLE">
+        <span class="cnt">0</span><span class="pct">0%</span>
+      </td>
+      <td class="acc">100.0%</td>
+    </tr>
+
+<tr>
+      <th class="truth">RECYCLE</th>
+      <td class="bad" style="background:rgba(90,40,40,0.0)" title="truth=RECYCLE pred=RESELL">
+        <span class="cnt">0</span><span class="pct">0%</span>
+      </td>
+      <td class="bad" style="background:rgba(89,39,40,0.36)" title="truth=RECYCLE pred=UPCYCLE">
+        <span class="cnt">1</span><span class="pct">4%</span>
+      </td>
+      <td class="ok" style="background:rgba(15,80,37,0.56)" title="truth=RECYCLE pred=RECYCLE">
+        <span class="cnt">26</span><span class="pct">96%</span>
+      </td>
+      <td class="acc">96.3%</td>
+    </tr>
+  </tbody>
+</table>
+<div class="legend">
+  <span style="margin-right:16px"><span class="badge" style="background:#14523a"></span> correct (diagonal)</span>
+  <span><span class="badge" style="background:#7a2a2a"></span> misclassification (off-diagonal)</span>
+</div>
+</body>
+</html>

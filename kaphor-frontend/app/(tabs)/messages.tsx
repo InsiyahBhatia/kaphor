@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
   },
   safetyBarText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.textMuted,
     letterSpacing: 0.3,
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   },
   tabUnreadBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '900',
     color: colors.white,
   },
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.charcoal,
   },
@@ -660,7 +660,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     color: colors.textMuted,
   },
   unifiedContextPill: {
@@ -676,13 +676,13 @@ const styles = StyleSheet.create({
   },
   unifiedContextText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 0.3,
   },
   messageSnippet: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
   unreadPillText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '900',
   },
   rightActionRow: {
@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: typography.mono,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 1,
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
   },
   emptyDesc: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 10,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 16,
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
   exploreBtnText: {
     color: colors.cream,
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
   },
