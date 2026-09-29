@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Garment {
   id: string;
@@ -38,10 +39,12 @@ interface GarmentState {
   fetchFeed: (filters?: any) => Promise<void>;
 }
 
+const CACHE_KEY = '@kaphor_shop_feed_cache';
+
 export const useGarmentStore = create<GarmentState>((set, get) => ({
   garments: [],
   featured: [],
-  isLoading: false,
+  isLoading: true, // Start in loading state until first cache read or fetch resolves
   fetchError: null,
   pagination: { nextCursor: null },
   setGarments: (garments) => set({ garments }),
@@ -67,7 +70,9 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
       const { useAuthStore } = await import('./authStore');
       const currentUserId = useAuthStore.getState().user?.id;
       const raw = Array.isArray(response.data) ? response.data : [];
-      const filtered = currentUserId
+      // Only filter out current user's items if other listings exist in marketplace
+      const hasOtherListings = currentUserId ? raw.some((g: any) => g.sellerId !== currentUserId && g.seller?.id !== currentUserId) : false;
+      const filtered = hasOtherListings
         ? raw.filter((g: any) => g.sellerId !== currentUserId && g.seller?.id !== currentUserId)
         : raw;
       set({ 
@@ -76,6 +81,11 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
         isLoading: false,
         fetchError: null,
       });
+
+      // Persist primary feed to offline disk cache so it displays instantaneously on subsequent visits
+      if (!filters.q && (!filters.category || filters.category === 'ALL') && (!filters.size && !filters.condition)) {
+        AsyncStorage.setItem(CACHE_KEY, JSON.stringify(filtered)).catch(() => {});
+      }
     } catch (error) {
       set({ isLoading: false });
       console.error('Failed to fetch garment feed', error);
@@ -92,6 +102,20 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
     }
   },
 }));
+
+// Immediately rehydrate cached feed from disk on launch for 0ms initial render
+AsyncStorage.getItem(CACHE_KEY)
+  .then((cached) => {
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0 && useGarmentStore.getState().garments.length === 0) {
+          useGarmentStore.setState({ garments: parsed, isLoading: false });
+        }
+      } catch {}
+    }
+  })
+  .catch(() => {});
 
 // Real-time live synchronization: remove delisted or paused garments instantly across all accounts
 (() => {

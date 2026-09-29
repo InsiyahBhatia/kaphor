@@ -10,7 +10,7 @@ import { getFeedGarments } from '../services/garment.service';
 import { generateGarmentVectorHybrid } from '../services/garmentVector.service';
 import { getEstimatedGarmentValue } from '../utils/pricing';
 import { InsightService } from '../services/insight.service';
-import { cacheClear } from '../lib/cache';
+import { cacheGet, cacheSet, cacheClear } from '../lib/cache';
 import { emitBroadcast } from '../lib/socket';
 
 /**
@@ -71,6 +71,13 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
   try {
     const { category, size, color, priceMin, priceMax, condition, listingType, after } = req.query;
 
+    const feedCacheKey = `feed:resolved:${JSON.stringify(req.query)}:${req.user?.id || 'anon'}`;
+    const cachedFeed = cacheGet<any>(feedCacheKey);
+    if (cachedFeed) {
+      res.status(200).json(cachedFeed);
+      return;
+    }
+
     const result = await getFeedGarments({
       userId: req.user?.id,
       cursor: after ? String(after) : undefined,
@@ -86,7 +93,10 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
     // Resolve image URLs (cached via S3 presign cache)
     const resolvedGarments = await resolveGarmentsImages(result.items, true);
 
-    res.status(200).json({ data: resolvedGarments, pagination: { nextCursor: result.nextCursor } });
+    const payload = { data: resolvedGarments, pagination: { nextCursor: result.nextCursor } };
+    cacheSet(feedCacheKey, payload, 30_000);
+
+    res.status(200).json(payload);
   } catch (err) {
     logger.error('getGarmentFeed failed', { error: err instanceof Error ? err.message : String(err) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Internal server error' });

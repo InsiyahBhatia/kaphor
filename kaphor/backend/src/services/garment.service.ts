@@ -3,7 +3,7 @@ import { computeFitScore } from './scoring.service';
 import { GarmentCondition, ListingType } from '@prisma/client';
 import { cacheGet, cacheSet } from '../lib/cache';
 
-const DEFAULT_FEED_LIMIT = 20;
+const DEFAULT_FEED_LIMIT = 40;
 
 interface FeedParams {
   userId?: string;
@@ -26,16 +26,20 @@ export async function getFeedGarments(params: FeedParams) {
   const limit = params.limit ?? DEFAULT_FEED_LIMIT;
   const where: Record<string, unknown> = {
     isActive: true,
-    lifecycleState: 'LISTED',
+    lifecycleState: { in: ['LISTED', 'INTEREST', 'CIRCULATION'] },
     reservedOrderId: null,
-    rentals: {
-      none: {
-        status: { in: ['RESERVED', 'DISPATCHED', 'ACTIVE'] },
-      },
-    },
+    ...(params.listingType === 'SALE'
+      ? {}
+      : {
+          rentals: {
+            none: {
+              status: { in: ['RESERVED', 'DISPATCHED', 'ACTIVE'] },
+            },
+          },
+        }),
   };
 
-  // Exclude current user's own listings from their feed
+  // Exclude current user's own listings from their feed if userId is provided
   if (params.userId) {
     where.sellerId = { not: params.userId };
   }
@@ -117,7 +121,9 @@ export async function getFeedGarments(params: FeedParams) {
     select: {
       id: true,
       title: true,
+      description: true,
       price: true,
+      originalPrice: true,
       images: true,
       brand: true,
       category: true,
@@ -129,6 +135,10 @@ export async function getFeedGarments(params: FeedParams) {
       pattern: true,
       listingType: true,
       garmentVector: true,
+      sellerId: true,
+      isActive: true,
+      lifecycleState: true,
+      reservedOrderId: true,
       seller: { select: { id: true, displayName: true, avatar: true } },
     },
   });
@@ -160,6 +170,10 @@ export async function getFeedGarments(params: FeedParams) {
   }
 
   const nextCursor = hasNextPage && results.length > 0 ? results[results.length - 1].id : null;
+  const feedResult = { items: results, nextCursor };
 
-  return { items: results, nextCursor };
+  // Cache feed result for fast responses
+  cacheSet(cacheKey, feedResult, 45_000);
+
+  return feedResult;
 }

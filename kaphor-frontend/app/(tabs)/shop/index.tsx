@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AIStar } from '../../../src/components/AIStar';
 import { useGarmentStore } from '../../../src/store/garmentStore';
@@ -20,7 +20,6 @@ import {
 
 export default function ShopScreen() {
   const router = useRouter();
-  const isFirstRender = React.useRef(true);
   const categories = ['ALL', ...MARKET_CATEGORIES.map(g => g.group)];
   const SIZES = MARKET_SIZES;
   const CONDITIONS = MARKET_CONDITIONS;
@@ -51,18 +50,12 @@ export default function ShopScreen() {
     }
   }, [filterCategory, openFilters]);
 
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+  // Revalidate feed whenever user focuses the Shop tab or when filters change
+  useFocusEffect(
+    useCallback(() => {
       applyFilters();
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      applyFilters();
-    }, 500); // 500ms debounce
-    return () => clearTimeout(timer);
-  }, [searchQuery, selectedFilters]);
+    }, [searchQuery, selectedFilters])
+  );
 
   const applyFilters = () => {
     const params: any = {};
@@ -225,15 +218,23 @@ export default function ShopScreen() {
 
             {(() => {
               const currentUserId = useAuthStore.getState().user?.id;
+              const hasOtherListings = currentUserId
+                ? garments.some((g) => g.sellerId !== currentUserId && (g as any).seller?.id !== currentUserId)
+                : false;
               const saleItems = garments.filter(
                 (item) =>
                   item.listingType === 'SALE' &&
                   item.isActive !== false &&
                   !['OWNERSHIP', 'RESERVED_SALE', 'PURCHASE_INTENT'].includes((item as any).lifecycleState || '') &&
                   !(item as any).reservedOrderId &&
-                  item.sellerId !== currentUserId &&
-                  (item as any).seller?.id !== currentUserId
+                  (hasOtherListings ? (item.sellerId !== currentUserId && (item as any).seller?.id !== currentUserId) : true)
               );
+
+              // Display loading skeleton while network fetch is in progress to avoid flashing empty state
+              if (isLoading && saleItems.length === 0) {
+                return <GarmentGridSkeleton count={6} />;
+              }
+
               if (saleItems.length === 0) {
                 const hasActiveFilters =
                   searchQuery.trim().length > 0 ||
