@@ -419,6 +419,24 @@ export default function RepairRefreshScreen() {
     // 2. Curated blog articles & pattern guides for active tab
     const curatedUpcycleBlogs = [
       {
+        id: 'blog-up-dress-1',
+        title: 'Transform a Long Maxi Dress into a Matching 2-Piece Crop Top & Skirt Co-Ord',
+        url: 'https://refashionista.net/dress-to-two-piece-set/',
+        source: 'Refashionista Studio',
+        difficulty: 'beginner',
+        time_minutes: 45,
+        summary: 'Separate a maxi or midi dress at the waistline to create a trendy crop top and elasticated skirt set.',
+      },
+      {
+        id: 'blog-up-dress-2',
+        title: 'Refashion a Thrifted Maxi Dress into a Tiered Summer Mini Dress',
+        url: 'https://mellysews.com/maxi-dress-to-mini-dress-refashion/',
+        source: 'Melly Sews',
+        difficulty: 'beginner',
+        time_minutes: 35,
+        summary: 'Crop the hem and add a gathered ruffle tier from leftover hem fabric for a chic cottagecore mini silhouette.',
+      },
+      {
         id: 'blog-up-1',
         title: 'How to Upcycle Old Jeans Into a Stylish Denim Tote Bag',
         url: 'https://heatherhandmade.com/upcycle-jeans-tote-bag/',
@@ -472,18 +490,27 @@ export default function RepairRefreshScreen() {
         time_minutes: 40,
         summary: 'Turn an oversized collared shirt into an artisan kitchen apron using the collar and front button placket.',
       },
-      {
-        id: 'blog-up-7',
-        title: '12 Creative Ways to Upcycle Lone or Worn Socks into Mug Cozies & Heat Packs',
-        url: 'https://thesprucecrafts.com/ways-to-upcycle-old-socks-4158434',
-        source: 'The Spruce Crafts',
-        difficulty: 'beginner',
-        time_minutes: 15,
-        summary: 'Repurpose single socks with worn heels into insulated coffee mug warmers, lavender microwave heat packs, and reusable floor dusters.',
-      },
     ];
 
     const curatedRepairBlogs = [
+      {
+        id: 'blog-rep-dress-1',
+        title: 'Dress Hemming Guide: How to Shorten Maxi, Midi & Silk Dresses by Hand',
+        url: 'https://sewguide.com/how-to-hem-a-dress/',
+        source: 'Sew Guide',
+        difficulty: 'beginner',
+        time_minutes: 30,
+        summary: 'Step-by-step tutorial on measuring dress floor clearance, trimming allowance, and sewing invisible catch stitches.',
+      },
+      {
+        id: 'blog-rep-dress-2',
+        title: 'Invisible Dress Zipper Fix: Repairing a Split or Separated Back Zipper',
+        url: 'https://www.thesprucecrafts.com/fix-a-broken-zipper-2977590',
+        source: 'The Spruce Crafts',
+        difficulty: 'intermediate',
+        time_minutes: 20,
+        summary: 'Realign invisible zipper teeth and crimp widened slider jaws with pliers to restore smooth zipping without replacing.',
+      },
       {
         id: 'blog-rep-1',
         title: 'Textile Triage: Fixing Pilling, Snags, Holes, and Seam Fraying',
@@ -531,11 +558,30 @@ export default function RepairRefreshScreen() {
       },
     ];
 
+    const currentGarmentCategory = (category || (result?.glie as any)?.garment_category || '').toLowerCase();
+
+    const rawDefaultCurated = isRepair ? curatedRepairBlogs : curatedUpcycleBlogs;
+    const defaultCurated = rawDefaultCurated.filter((b) => {
+      const lower = (b.title + ' ' + (b.summary || '')).toLowerCase();
+      if (currentGarmentCategory === 'dress') {
+        if (/\b(jeans|denim|sweater|hoodie|socks|beanie)\b/i.test(lower) && !/\b(dress|skirt)\b/i.test(lower)) {
+          return false;
+        }
+      } else if (currentGarmentCategory === 'sweater') {
+        if (/\b(jeans|denim|dress|saree)\b/i.test(lower) && !/\b(sweater|knit|cardigan)\b/i.test(lower)) {
+          return false;
+        }
+      } else if (currentGarmentCategory === 'jeans') {
+        if (/\b(sweater|dress|saree|silk)\b/i.test(lower) && !/\b(jeans|denim|pants)\b/i.test(lower)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
     const apiBlogs = isRepair
       ? (result.repair_reading_list || [])
       : (result.upcycle_reading_list || []);
-
-    const defaultCurated = isRepair ? curatedRepairBlogs : curatedUpcycleBlogs;
 
     const activeGuides: T5GuideResult[] = isRepair
       ? (result.repair_guides && result.repair_guides.length > 0 ? result.repair_guides : (result.guides || []).filter(g => g.doc_type !== 'upcycle'))

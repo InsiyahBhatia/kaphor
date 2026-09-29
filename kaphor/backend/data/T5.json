@@ -4643,8 +4643,7 @@
     "garment_categories": [
       "trousers",
       "jeans",
-      "skirt",
-      "dress"
+      "skirt"
     ],
     "damage_location": "hemline",
     "difficulty": "beginner",
@@ -5450,5 +5449,641 @@
     "upcycle_alternative": "Add two deep patch pockets to the skirt using scrap fabric cut from the top hem allowance.",
     "source": "blog",
     "source_url": "https://diycandy.com/t-shirt-tote-bag/"
+  },
+  {
+    "doc_id": "t5-enrich-021",
+    "doc_type": "repair",
+    "title": "Dress Hemming & Shortening: Invisible Hand Stitching for Maxi & Midi Dresses",
+    "fiber_types": [
+      "Cotton",
+      "Silk",
+      "Linen",
+      "Polyester",
+      "Rayon",
+      "Viscose",
+      "Georgette",
+      "Chiffon"
+    ],
+    "damage_types": [
+      "worn",
+      "fray",
+      "tear",
+      "loose"
+    ],
+    "garment_categories": [
+      "dress",
+      "skirt"
+    ],
+    "damage_location": "lower hem",
+    "difficulty": "beginner",
+    "time_minutes": 35,
+    "technique_style": [
+      "Blind Catch Stitch & Rolled Hemming"
+    ],
+    "quality_score": 0.98,
+    "tools_required": [
+      "Tailor chalk or pins",
+      "Measuring tape & ruler",
+      "Sharp fabric scissors",
+      "Fine hand needle & matching thread",
+      "Iron & pressing cloth"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Try on the dress with the shoes you plan to wear. Stand straight and have someone pin the hem at your desired floor or ankle clearance.",
+        "tip": "For bias-cut or circle dresses, let the garment hang on a hanger for 24 hours prior to marking so the fabric bias settles."
+      },
+      {
+        "step": 2,
+        "instruction": "Turn dress inside out and measure the turn-up with a clear ruler. Chalk an even line all the way around the circumference.",
+        "tip": "Leave 3.5 cm (1.5 in) of hem allowance and trim away excess fabric with sharp shears."
+      },
+      {
+        "step": 3,
+        "instruction": "Fold the raw edge in by 0.5 cm, press with a warm iron, then fold up the remaining hem allowance and press firmly.",
+        "tip": "For curved hems, sew a basting stitch 0.5 cm from the edge and pull slightly to ease the fullness before pressing."
+      },
+      {
+        "step": 4,
+        "instruction": "Work an invisible catch stitch or blind hem stitch from right to left, catching only 1-2 threads of the dress exterior.",
+        "tip": "Keep tension relaxed so stitches sink invisibly into the drape of the dress without creating exterior puckers."
+      }
+    ],
+    "pro_tip": "Invisible catch stitching allows the dress hem to flex with movement while walking, completely eliminating thread snaps and puckered dimples.",
+    "care_instructions": "Gentle cycle or hand wash cold. Press the hemline on the reverse side with a damp pressing cloth.",
+    "upcycle_alternative": "Shorten a floor-length maxi dress to knee length to instantly transform a formal gown into an everyday chic sundress.",
+    "source": "blog",
+    "source_url": "https://sewguide.com/how-to-hem-a-dress/"
+  },
+  {
+    "doc_id": "t5-enrich-022",
+    "doc_type": "repair",
+    "title": "Invisible Dress Zipper Repair: Fixing a Stuck, Splitting, or Separated Back Zipper",
+    "fiber_types": [
+      "Cotton",
+      "Silk",
+      "Polyester",
+      "Rayon",
+      "Viscose",
+      "Linen",
+      "Lace"
+    ],
+    "damage_types": [
+      "broken",
+      "loose",
+      "tear"
+    ],
+    "garment_categories": [
+      "dress",
+      "skirt"
+    ],
+    "damage_location": "back zipper / side zipper",
+    "difficulty": "intermediate",
+    "time_minutes": 25,
+    "technique_style": [
+      "Slider Realignment & Stop Crimp"
+    ],
+    "quality_score": 0.97,
+    "tools_required": [
+      "Needle nose pliers",
+      "Graphite pencil or beeswax",
+      "Replacement size 3 invisible slider",
+      "Hand needle & heavy duty thread"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Inspect the zipper teeth for debris or fabric caught in the mechanism. Rub a graphite pencil lead or beeswax along the coil teeth to lubricate.",
+        "tip": "Never force a stuck invisible zipper pull; gently wiggle it backward while freeing caught lining threads."
+      },
+      {
+        "step": 2,
+        "instruction": "If the zipper splits open behind the slider, the slider jaws have widened from tension. Slide it all the way to the bottom stop.",
+        "tip": "Use needle nose pliers to gently pinch both sides of the slider back together with light, even pressure."
+      },
+      {
+        "step": 3,
+        "instruction": "Test the closure. If teeth interlock smoothly, stitch a heavy thread bar-tack just above the bottom stop to prevent the slider from slipping off.",
+        "tip": "6-8 tight whipstitches across the coils create a permanent new bottom stop."
+      },
+      {
+        "step": 4,
+        "instruction": "If individual coil teeth are melted or missing, insert a matching hidden hook-and-eye clasp at the waist tension point to take strain off the zipper.",
+        "tip": "Hook-and-eyes at the waist waistline absorb 70% of breathing tension, doubling zipper longevity."
+      }
+    ],
+    "pro_tip": "90% of split dress zippers are simply loose slider jaws. A gentle 10-second crimp with pliers fixes the problem permanently without unpicking seams.",
+    "care_instructions": "Always zip dresses completely closed before machine washing to protect delicate coil teeth from snagging.",
+    "upcycle_alternative": "Replace a broken zipper entirely with an exposed vintage metal zip or a lace-up grommet corset back for a designer revamp.",
+    "source": "blog",
+    "source_url": "https://www.thesprucecrafts.com/fix-a-broken-zipper-2977590"
+  },
+  {
+    "doc_id": "t5-enrich-023",
+    "doc_type": "repair",
+    "title": "Dress Seam & Slit Tear Repair: Invisible Ladder Stitch for Delicate Fabrics",
+    "fiber_types": [
+      "Silk",
+      "Cotton",
+      "Rayon",
+      "Viscose",
+      "Linen",
+      "Chiffon",
+      "Georgette"
+    ],
+    "damage_types": [
+      "tear",
+      "hole",
+      "fray",
+      "worn"
+    ],
+    "garment_categories": [
+      "dress",
+      "skirt",
+      "blouse"
+    ],
+    "damage_location": "side seam / leg slit / underarm",
+    "difficulty": "beginner",
+    "time_minutes": 20,
+    "technique_style": [
+      "Slip Stitch & Ladder Seam Closure"
+    ],
+    "quality_score": 0.96,
+    "tools_required": [
+      "Fine milliner needle size 9 or 10",
+      "Matching silk or polyester sewing thread",
+      "Iron & pressing cloth",
+      "Fray Check or clear fabric sealant"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Press both sides of the torn seam flat from the right side, aligning the factory seam folds directly against one another.",
+        "tip": "Ironing the pressed fold first establishes the exact line of original stitching so the finished repair is undetectable."
+      },
+      {
+        "step": 2,
+        "instruction": "Anchor thread inside the seam allowance 1 cm before the start of the tear. Bring the needle out through the top of the folded crease.",
+        "tip": "Take a tiny horizontal stitch through the opposite crease, then cross over to take a parallel stitch on the starting crease."
+      },
+      {
+        "step": 3,
+        "instruction": "Continue alternating stitches like the rungs of a ladder for the entire length of the rip. Gently pull the thread taut every 4 stitches.",
+        "tip": "As you pull, the two fabric creases draw tightly together and the thread disappears completely inside the fold."
+      },
+      {
+        "step": 4,
+        "instruction": "If repairing a torn side walking slit, finish by sewing a dense 4 mm bar-tack horizontally across the slit apex.",
+        "tip": "The bar-tack redistributes walking stress across the fabric weave rather than a single thread point."
+      }
+    ],
+    "pro_tip": "The invisible ladder stitch (slip stitch) works entirely from the outside of the dress, eliminating the need to take apart linings or facings.",
+    "care_instructions": "Hand wash delicate dresses or place in a mesh laundry bag to prevent shear friction against other clothes.",
+    "upcycle_alternative": "Highlight a repaired slit by stitching contrasting ribbon trim or hand-embroidered floral vine along the slit edge.",
+    "source": "blog",
+    "source_url": "https://closetcorepatterns.com/blogs/blog/repair-torn-seams-ladder-stitch"
+  },
+  {
+    "doc_id": "t5-enrich-024",
+    "doc_type": "repair",
+    "title": "Spaghetti Strap & Neckline Repair: Shortening, Re-attaching & Securing Gaping Armholes",
+    "fiber_types": [
+      "Silk",
+      "Cotton",
+      "Rayon",
+      "Viscose",
+      "Polyester",
+      "Linen"
+    ],
+    "damage_types": [
+      "loose",
+      "broken",
+      "tear",
+      "worn"
+    ],
+    "garment_categories": [
+      "dress",
+      "top",
+      "blouse"
+    ],
+    "damage_location": "shoulder straps & neckline",
+    "difficulty": "beginner",
+    "time_minutes": 20,
+    "technique_style": [
+      "Strap Tucking & Invisible Bodice Anchoring"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "Tailor chalk",
+      "Sewing pins",
+      "Hand sewing needle & matching thread",
+      "Small seam ripper"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Put on the dress and pinch the excess strap length at the back shoulder until the neckline and armhole sit flush against your skin.",
+        "tip": "Pin the pinched excess securely and verify that the armhole does not cut into underarm skin when moving."
+      },
+      {
+        "step": 2,
+        "instruction": "Use a seam ripper to carefully open 2 cm of the bodice back seam right where the strap enters the lining.",
+        "tip": "Unpicking only the strap channel preserves the surrounding factory topstitching intact."
+      },
+      {
+        "step": 3,
+        "instruction": "Slide the strap deeper into the bodice interior by the measured excess amount and pin securely in place.",
+        "tip": "Trim off the excess strap end leaving 1.5 cm inside the lining for a solid anchor point."
+      },
+      {
+        "step": 4,
+        "instruction": "Stitch back and forth across the strap opening with a reinforced backstitch, closing the lining and locking the strap simultaneously.",
+        "tip": "Double stitch for straps bearing structural weight on heavier evening dresses."
+      }
+    ],
+    "pro_tip": "Shortening straps by just 1 to 2 cm automatically raises the armscye, instantly solving bra-band exposure and front chest gaping.",
+    "care_instructions": "Always hang spaghetti strap dresses on padded or notched velvet hangers to prevent shoulder stretching.",
+    "upcycle_alternative": "Replace frayed straps with decorative velvet ribbons or braided silk cord tied in delicate bows over the shoulders.",
+    "source": "blog",
+    "source_url": "https://heatherhandmade.com/shorten-dress-straps/"
+  },
+  {
+    "doc_id": "t5-enrich-025",
+    "doc_type": "repair",
+    "title": "Delicate Fabric Mending: Fixing Holes, Snags & Burns in Silk & Chiffon Dresses",
+    "fiber_types": [
+      "Silk",
+      "Rayon",
+      "Viscose",
+      "Chiffon",
+      "Georgette",
+      "Polyester"
+    ],
+    "damage_types": [
+      "hole",
+      "tear",
+      "burn",
+      "snag"
+    ],
+    "garment_categories": [
+      "dress",
+      "blouse",
+      "saree"
+    ],
+    "damage_location": "dress body or skirt drape",
+    "difficulty": "intermediate",
+    "time_minutes": 35,
+    "technique_style": [
+      "Fusible Mesh Backing & Hand Floral Appliqué"
+    ],
+    "quality_score": 0.96,
+    "tools_required": [
+      "Ultra-lightweight sheer fusible web or interfacing",
+      "Fine embroidery needle",
+      "Embroidery floss matching dress tones",
+      "Pressing cloth & dry iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "For pulled thread snags: never cut the pulled loop! Insert a fine needle or snag-repair tool from the back of the fabric, catch the loop, and pull it cleanly through to the wrong side.",
+        "tip": "Gently massage the surrounding weave horizontally and vertically to redistribute the slack thread into adjacent weave fibers."
+      },
+      {
+        "step": 2,
+        "instruction": "For small moth or burn holes: cut a circle of sheer featherweight fusible interfacing 1 cm larger than the hole.",
+        "tip": "Rounding the corners prevents the backing patch from peeling during washing."
+      },
+      {
+        "step": 3,
+        "instruction": "Position the patch on the reverse side of the dress over the hole. Cover with a clean dry cotton pressing cloth and press with a dry iron for 10 seconds.",
+        "tip": "The fusible adhesive bonds to the fiber ends, stabilizing the hole edges and preventing frayed ladders."
+      },
+      {
+        "step": 4,
+        "instruction": "On the exterior side, disguise the repaired spot by embroidering a tiny botanical flower, starburst, or daisy using tone-on-tone fine floss.",
+        "tip": "Visible artisan embroidery transforms a damaged blemish into an intentional bespoke design detail."
+      }
+    ],
+    "pro_tip": "Never apply steam to silk or rayon dresses during mending; moisture with high heat causes water spots and fiber shrinkage.",
+    "care_instructions": "Dry clean or gentle hand wash in lukewarm water with pH-neutral silk detergent. Dry flat away from direct sunlight.",
+    "upcycle_alternative": "Add matching botanical hand embroidery motifs in 2-3 other spots across the dress bodice for an intentional artistic motif.",
+    "source": "blog",
+    "source_url": "https://sewguide.com/mend-delicate-fabrics/"
+  },
+  {
+    "doc_id": "t5-enrich-026",
+    "doc_type": "repair",
+    "title": "Stain Removal Masterclass for Dresses: Makeup, Perfume, Red Wine & Deodorant Marks",
+    "fiber_types": [
+      "Cotton",
+      "Silk",
+      "Linen",
+      "Rayon",
+      "Viscose",
+      "Polyester"
+    ],
+    "damage_types": [
+      "stain",
+      "discolored"
+    ],
+    "garment_categories": [
+      "dress",
+      "blouse",
+      "top"
+    ],
+    "damage_location": "collar, armpit & skirt panels",
+    "difficulty": "beginner",
+    "time_minutes": 25,
+    "technique_style": [
+      "Solvent Blotting & Enzyme Spot Cleansing"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "White cotton cloths or paper towels",
+      "Rubbing alcohol or micellar water",
+      "Baking soda & liquid castile soap",
+      "Cold water"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "For foundation and lipstick stains on necklines: apply micellar water or a drop of clear dish soap directly to a dry cloth and blot firmly inward.",
+        "tip": "Oil-based cosmetics dissolve instantly in surfactant soap; never scrub aggressively as this drives pigments deeper into the weave."
+      },
+      {
+        "step": 2,
+        "instruction": "For underarm deodorant stiffness and yellow marks: mix 2 tbsp baking soda with 1 tbsp hydrogen peroxide into a paste. Work into the fabric with a soft toothbrush.",
+        "tip": "Let sit for 20 minutes to break down aluminum salt deposits, then rinse thoroughly in cold water."
+      },
+      {
+        "step": 3,
+        "instruction": "For red wine and juice spills: immediately blot with a dry cloth to absorb liquid. Sponge with cold club soda or white vinegar solution (1:2 water).",
+        "tip": "Never apply hot water or an iron to a fruit or wine stain, as heat permanently coagulates tannin proteins into the fiber."
+      },
+      {
+        "step": 4,
+        "instruction": "Flush treated areas thoroughly under cold running water from the back of the fabric to push residue out of the cloth.",
+        "tip": "Air dry completely before inspecting; repeat treatment if faint shadowing persists."
+      }
+    ],
+    "pro_tip": "Always work from the outer edges of a stain toward the center in a dab-and-lift motion to prevent creating a wider halo ring.",
+    "care_instructions": "Wash garment promptly after spot treatment according to fabric care label.",
+    "upcycle_alternative": "If an oil or dye stain remains stubborn, consider custom botanical tie-dye or block printing over the area to create an artisan printed pattern.",
+    "source": "blog",
+    "source_url": "https://www.cleanipedia.com/gb/laundry/remove-stains-delicate-dresses.html"
+  },
+  {
+    "doc_id": "t5-enrich-027",
+    "doc_type": "upcycle",
+    "title": "Rework a Maxi or Midi Dress into a Chic Tiered Summer Sundress or Mini Dress",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Rayon",
+      "Viscose",
+      "Silk"
+    ],
+    "damage_types": [
+      "stain",
+      "tear",
+      "worn",
+      "fading",
+      "none"
+    ],
+    "garment_categories": [
+      "dress"
+    ],
+    "damage_location": "lower hemline",
+    "difficulty": "beginner",
+    "time_minutes": 40,
+    "technique_style": [
+      "Proportional Cropping & Ruffled Hemline Rework"
+    ],
+    "quality_score": 0.98,
+    "tools_required": [
+      "Long maxi or midi dress",
+      "Fabric scissors",
+      "Pins",
+      "Sewing machine",
+      "Measuring tape"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Try on the dress and mark your desired mini hem length (typically mid-thigh or just above the knee). Chalk a line all the way around.",
+        "tip": "Add 2 cm seam allowance below the marked line and cut cleanly through front and back panels with sharp shears."
+      },
+      {
+        "step": 2,
+        "instruction": "Take the severed bottom section of the skirt. Cut a horizontal strip 15 cm wide to repurpose as a playful flouncy ruffle tier.",
+        "tip": "Press the lower edge of the strip with a 1 cm double-turned hem and topstitch."
+      },
+      {
+        "step": 3,
+        "instruction": "Sew two parallel lines of long gathering basting stitches (stitch length 4.5) along the top raw edge of the ruffle strip.",
+        "tip": "Gently pull the bobbin threads to gather the strip evenly until it matches the hem circumference of your cropped dress."
+      },
+      {
+        "step": 4,
+        "instruction": "Pin the gathered ruffle to the bottom of the dress with right sides together, stitch with a 1.5 cm seam allowance, finish edges, and press down.",
+        "tip": "Topstitch 3 mm above the seam on the dress body to keep the gathered ruffle laying flat and crisp."
+      }
+    ],
+    "pro_tip": "Cutting off stained or worn hem sections of a maxi dress and adding a gathered ruffle gives you a high-end designer cottagecore mini dress in under an hour.",
+    "care_instructions": "Machine wash gentle cold. Hang dry on a shaped hanger.",
+    "upcycle_alternative": "Use remaining fabric scraps to craft a matching knotted headwrap, waist tie belt, or oversized hair scrunchie.",
+    "source": "blog",
+    "source_url": "https://mellysews.com/maxi-dress-to-mini-dress-refashion/"
+  },
+  {
+    "doc_id": "t5-enrich-028",
+    "doc_type": "upcycle",
+    "title": "Transform an Outdated Formal Dress into an Everyday Corset Crop Top & Slip Skirt",
+    "fiber_types": [
+      "Silk",
+      "Satin",
+      "Cotton",
+      "Polyester",
+      "Lace"
+    ],
+    "damage_types": [
+      "worn",
+      "tear",
+      "stain",
+      "none"
+    ],
+    "garment_categories": [
+      "dress"
+    ],
+    "damage_location": "waistline",
+    "difficulty": "intermediate",
+    "time_minutes": 60,
+    "technique_style": [
+      "Waist Separation & Elastic Casing"
+    ],
+    "quality_score": 0.97,
+    "tools_required": [
+      "Formal evening or prom dress",
+      "Fabric scissors",
+      "Wide 3 cm elastic band",
+      "Safety pin",
+      "Sewing machine & iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Try on the dress and pin at your natural waist. Chalk a horizontal dividing line across the circumference.",
+        "tip": "Add 4 cm hem allowance for the top portion and 4.5 cm waistband casing allowance for the skirt."
+      },
+      {
+        "step": 2,
+        "instruction": "Cut carefully across the waistline, separating the dress into a distinct bodice crop top and a skirt.",
+        "tip": "If there is a long back zipper, stitch across the zipper teeth 1 cm above your cut line before cutting through the coil."
+      },
+      {
+        "step": 3,
+        "instruction": "For the crop top: fold the bottom raw edge under 1 cm, then fold again by 2 cm, press, and topstitch cleanly.",
+        "tip": "You can insert a 1 cm elastic band into the bottom hem if you want a gathered silhouette."
+      },
+      {
+        "step": 4,
+        "instruction": "For the skirt: fold the waist edge down 1 cm, then fold down 3.5 cm to form a casing. Stitch close to the fold, leaving a 5 cm gap.",
+        "tip": "Thread the 3 cm elastic through the casing with a safety pin, stitch elastic ends securely, and close the opening."
+      },
+      {
+        "step": 5,
+        "instruction": "Press both garments with a pressing cloth. You now have an ultra-versatile 2-piece co-ord set that can be styled together or apart!",
+        "tip": "Wear the crop top with high-waisted jeans and sneakers, or pair the skirt with an oversized chunky knit."
+      }
+    ],
+    "pro_tip": "A formal gown that sits unworn in your closet becomes two versatile, trend-forward pieces that mix effortlessly into daily rotation.",
+    "care_instructions": "Hand wash cold or gentle machine cycle. Dry flat away from direct heat.",
+    "upcycle_alternative": "Add two deep side-seam pockets into the skirt side seams using lining fabric scraps.",
+    "source": "blog",
+    "source_url": "https://refashionista.net/dress-to-two-piece-set/"
+  },
+  {
+    "doc_id": "t5-enrich-029",
+    "doc_type": "upcycle",
+    "title": "Add a Smocked Shirred Bodice to Reshape an Oversized or Boxy Dress",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Rayon",
+      "Viscose"
+    ],
+    "damage_types": [
+      "worn",
+      "loose",
+      "fading",
+      "none"
+    ],
+    "garment_categories": [
+      "dress",
+      "top"
+    ],
+    "damage_location": "bodice & waist",
+    "difficulty": "intermediate",
+    "time_minutes": 50,
+    "technique_style": [
+      "Elastic Thread Shirring & Body Hugging Smocking"
+    ],
+    "quality_score": 0.96,
+    "tools_required": [
+      "Elastic sewing thread (bobbin)",
+      "Matching regular top thread",
+      "Sewing machine",
+      "Steam iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Hand-wind elastic thread onto your machine bobbin with gentle, uniform tension — do not stretch the elastic while winding.",
+        "tip": "Insert regular thread into the needle and the elastic-wound bobbin into the lower bobbin case."
+      },
+      {
+        "step": 2,
+        "instruction": "Set your stitch length to 3.5 to 4.0. Chalk parallel horizontal guidelines 1.5 cm apart across the chest and waist section of the dress.",
+        "tip": "Sew from the right side of the fabric; the elastic thread on the underside creates natural gathers."
+      },
+      {
+        "step": 3,
+        "instruction": "Sew continuous horizontal rows along each chalk line. As you sew successive rows, pull the fabric gently taut behind the needle.",
+        "tip": "Sewing 8-12 parallel rows creates a gorgeous artisan smocked bodice that hugs your curves comfortably."
+      },
+      {
+        "step": 4,
+        "instruction": "Hover a steam iron 1 cm above the shirred rows with maximum steam. Watch the elastic immediately shrink by 30%, locking in elasticity.",
+        "tip": "Steam heat activates the elastic memory, giving you a custom-tailored silhouette that stretches comfortably."
+      }
+    ],
+    "pro_tip": "Shirring breathes modern cottagecore elegance into baggy tent dresses or oversized thrift finds with zero complicated tailoring cuts.",
+    "care_instructions": "Machine wash cold on delicate. Air dry to preserve elastic longevity; occasional steaming restores springiness.",
+    "upcycle_alternative": "Add ruffled elastic cuffs at the sleeve hems for matching puff sleeves.",
+    "source": "blog",
+    "source_url": "https://closetcorepatterns.com/blogs/blog/how-to-sew-shirring-elastic"
+  },
+  {
+    "doc_id": "t5-enrich-030",
+    "doc_type": "upcycle",
+    "title": "Convert an Unworn Printed or Floral Dress into an Artisan Apron & Scrunchies Set",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Rayon",
+      "Viscose"
+    ],
+    "damage_types": [
+      "tear",
+      "stain",
+      "worn",
+      "none"
+    ],
+    "garment_categories": [
+      "dress"
+    ],
+    "damage_location": "full garment",
+    "difficulty": "beginner",
+    "time_minutes": 30,
+    "technique_style": [
+      "Zero-Waste Pattern Cutting & Scraps Reclaim"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "Unworn or stained floral/printed dress",
+      "Fabric shears",
+      "Pins",
+      "Sewing machine",
+      "Elastic band for scrunchie"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Cut the skirt portion away from the bodice. Cut down one side seam to open the skirt into a single wide rectangular panel.",
+        "tip": "Use the widest unstained section for the apron skirt body (50 cm wide by 45 cm long)."
+      },
+      {
+        "step": 2,
+        "instruction": "Cut an apron bib (25 cm wide by 22 cm high) from the back bodice panel. Hem the top and sides of the bib with a neat 1 cm double-turned hem.",
+        "tip": "Stitch the bottom of the bib to the top center of the apron skirt panel."
+      },
+      {
+        "step": 3,
+        "instruction": "Cut three long strips 8 cm wide from the remaining skirt and bodice fabric. Fold lengthwise, stitch, turn right side out, and press for neck strap and waist ties.",
+        "tip": "Stitch neck strap to top bib corners and waist ties to the apron waistline."
+      },
+      {
+        "step": 4,
+        "instruction": "Take remaining leftover scraps, cut a 10 cm by 45 cm strip, fold in half lengthwise right sides together, stitch, feed 20 cm elastic through, and stitch closed for a matching hair scrunchie!",
+        "tip": "100% of the dress fabric is reclaimed with zero waste sent to landfill."
+      }
+    ],
+    "pro_tip": "Circular zero-waste upcycling repurposes every single scrap of printed textile into functional daily artisan kitchen and lifestyle accessories.",
+    "care_instructions": "Machine wash warm with like colors. Tumble dry low.",
+    "upcycle_alternative": "Add a deep front utility pocket with two compartments for wooden spoons and recipe cards.",
+    "source": "blog",
+    "source_url": "https://sewguide.com/how-to-sew-an-apron-from-dress/"
   }
 ]

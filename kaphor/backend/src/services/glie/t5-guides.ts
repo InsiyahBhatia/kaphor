@@ -131,6 +131,53 @@ interface GuideMatch {
 }
 
 /**
+ * Check if a guide is specifically dedicated to an incompatible garment type.
+ * e.g., if target is a dress, guides about denim crotch blowouts, sweater darning,
+ * or socks must never appear.
+ */
+function isConflictingCategory(guide: T5Guide, targetCat: string): boolean {
+  if (!targetCat || targetCat === 'other' || targetCat === 'clothing') return false;
+  const guideCats = (guide.garment_categories || []).map(c => normalize(c));
+  const title = (guide.title || '').toLowerCase();
+
+  if (targetCat === 'dress') {
+    const isDedicatedToOther = guideCats.some(c =>
+      ['jeans', 'sweater', 'hoodie', 'socks', 'leather_jacket', 'down_jacket', 'trousers', 'shorts', 'sweatshirt', 'beanie'].includes(c)
+    );
+    const hasDressOrCompatible = guideCats.some(c =>
+      ['dress', 'skirt', 'blouse', 'top', 'garment', 'all'].includes(c)
+    );
+    const titleMentionBad = /\b(jeans|denim|sweater|knitwear|hoodie|pants|trousers|crotch blowout|socks|beanie)\b/i.test(title);
+    if ((isDedicatedToOther && !hasDressOrCompatible) || (titleMentionBad && !/\b(dress|skirt|gown)\b/i.test(title))) {
+      return true;
+    }
+  } else if (targetCat === 'sweater') {
+    const isDedicatedToOther = guideCats.some(c =>
+      ['jeans', 'dress', 'saree', 'shorts', 'leather_jacket'].includes(c)
+    );
+    const hasSweater = guideCats.some(c =>
+      ['sweater', 'cardigan', 'knitwear', 'hoodie', 'sweatshirt', 'wool'].includes(c)
+    );
+    const titleMentionBad = /\b(jeans|denim|dress|saree|shorts)\b/i.test(title);
+    if ((isDedicatedToOther && !hasSweater) || (titleMentionBad && !/\b(sweater|knit|cardigan|wool)\b/i.test(title))) {
+      return true;
+    }
+  } else if (targetCat === 'jeans') {
+    const isDedicatedToOther = guideCats.some(c =>
+      ['sweater', 'dress', 'saree', 'silk', 'blouse'].includes(c)
+    );
+    const hasJeans = guideCats.some(c =>
+      ['jeans', 'denim', 'trousers', 'shorts', 'pants'].includes(c)
+    );
+    const titleMentionBad = /\b(sweater|knitwear|dress|saree|silk)\b/i.test(title);
+    if ((isDedicatedToOther && !hasJeans) || (titleMentionBad && !/\b(jeans|denim|pants)\b/i.test(title))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Score guides by fiber + damage + category overlap (skipping non-garment docs).
  * Returns matches sorted by relevance descending.
  */
@@ -147,31 +194,40 @@ function rankGuides(
   return guides
     .filter(g => g.is_garment !== false)
     .map(guide => {
+      // Immediate conflict exclusion (e.g. sweater/jeans for a dress)
+      if (isConflictingCategory(guide, categoryKey)) {
+        return { guide, score: -1 };
+      }
+
       let score = 0;
 
-      // Fiber match (weight: 40%)
-      const fiberMatch = guide.fiber_types.some(f => {
-        const fk = normalize(f);
-        return fk === fiberKey || fk.includes(fiberKey) || fiberKey.includes(fk);
+      // Category match (highest priority weight: 50%)
+      const catMatch = guide.garment_categories.some(gc => {
+        const gck = normalize(gc);
+        return gck === categoryKey || gck.includes(categoryKey) || categoryKey.includes(gck);
       });
-      if (fiberMatch) score += 0.40;
+      if (catMatch) {
+        score += 0.50;
+      } else if (categoryKey === 'other' || categoryKey === '' || categoryKey === 'clothing') {
+        score += 0.15;
+      }
 
-      // Damage type match (weight: 30%)
+      // Damage type match (weight: 25%)
       const damageMatch = guide.damage_types.some(gd => {
         const gdk = normalize(gd);
         return damageKeys.some(dk => dk && (gdk === dk || gdk.includes(dk) || dk.includes(gdk)));
       });
-      if (damageMatch) score += 0.30;
+      if (damageMatch) score += 0.25;
 
-      // Category match (weight: 20%)
-      const catMatch = guide.garment_categories.some(gc => {
-        const gck = normalize(gc);
-        return gck === categoryKey || gck.includes(categoryKey) || categoryKey.includes(gck);
-      }) || categoryKey === 'other' || categoryKey === '';
-      if (catMatch) score += 0.20;
+      // Fiber match (weight: 20%)
+      const fiberMatch = guide.fiber_types.some(f => {
+        const fk = normalize(f);
+        return fk === fiberKey || fk.includes(fiberKey) || fiberKey.includes(fk);
+      });
+      if (fiberMatch) score += 0.20;
 
       // Only award quality bonus if at least one semantic criteria matched
-      const hasCriteriaMatch = fiberMatch || damageMatch || catMatch;
+      const hasCriteriaMatch = catMatch || damageMatch || fiberMatch;
       if (!hasCriteriaMatch) {
         return { guide, score: 0 };
       }
@@ -233,9 +289,11 @@ export function queryT5(
   const relevant = sorted.filter(s => s.score > 0);
   const picked: T5Guide[] = relevant.map(s => s.guide);
 
-  // If fewer than 4 matches, pad with the highest quality guides from the pool
+  // If fewer than 4 matches, pad with the highest quality compatible guides from the pool
   if (picked.length < 4) {
-    const fallbackSorted = [...pool].sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
+    const fallbackSorted = pool
+      .filter(g => !isConflictingCategory(g, normalize(category)))
+      .sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
     for (const g of fallbackSorted) {
       if (!picked.some(p => p.doc_id === g.doc_id)) {
         picked.push(g);
@@ -283,9 +341,11 @@ export function queryBlogReads(
   const relevant = rankGuides(fiber, queryDamages, category, blogDocs);
   for (const { guide } of relevant) addDoc(guide);
 
-  // 2) Pad with general articles so we always return a curated reading set
+  // 2) Pad with compatible general articles so we always return a curated reading set
+  const normCat = normalize(category);
   for (const g of blogDocs) {
     if (picked.length >= limit) break;
+    if (isConflictingCategory(g, normCat)) continue;
     addDoc(g);
   }
 

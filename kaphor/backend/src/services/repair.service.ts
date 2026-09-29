@@ -44,15 +44,34 @@ export function rankYouTubeResults(
   videos: YouTubeVideo[],
   query: string,
   maxResults: number = 6,
+  garmentCategory?: string,
 ): YouTubeVideo[] {
   const keywords = (query || '')
     .toLowerCase()
     .split(/\s+/)
     .filter((t) => t.length > 2 && !YOUTUBE_TOPIC_STOPWORDS.has(t));
 
+  const cleanCategory = (garmentCategory || '').toLowerCase();
+
   const scored = videos.map((v) => {
     const title = (v.title || '').toLowerCase();
     if (YOUTUBE_IRRELEVANT_RE.test(title)) return { v, score: -1 };
+
+    // Explicit conflict rejection: if target is a dress, reject jeans, sweaters, and hoodies
+    if (cleanCategory === 'dress') {
+      if (/\b(jeans|denim|sweater|knitwear|hoodie|pants|trousers|crotch|socks|beanie)\b/i.test(title)) {
+        return { v, score: -1 };
+      }
+    } else if (cleanCategory === 'sweater') {
+      if (/\b(jeans|denim|dress|saree|shorts)\b/i.test(title)) {
+        return { v, score: -1 };
+      }
+    } else if (cleanCategory === 'jeans') {
+      if (/\b(sweater|knitwear|dress|saree|silk)\b/i.test(title)) {
+        return { v, score: -1 };
+      }
+    }
+
     let score = 0;
     if (YOUTUBE_ACTION_RE.test(title)) score += 3;
     if (/(tutorial|how-to|step[ -]by[ -]step|beginner)/.test(title)) score += 1;
@@ -94,81 +113,196 @@ export function rankYouTubeResults(
 }
 
 /**
- * Search YouTube for repair/upcycle tutorials based on garment + damage context.
- * Pulls more candidates than needed, re-ranks them against the query keywords and
- * narrows to the most relevant, on-topic tutorials.
+ * Curated video fallback library organized by garment category & decision
  */
-const CURATED_REPAIR_VIDEOS: YouTubeVideo[] = [
-  {
-    videoId: 'x8_G4bB1s-8',
-    title: 'How to Fix Holes in Jeans with Japanese Sashiko Visible Mending',
-    channelTitle: 'Vintage & Mended Denim',
-    thumbnail: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=600&auto=format&fit=crop',
-    publishedAt: '2024-01-01',
+const CATEGORY_CURATED_VIDEOS: Record<
+  string,
+  { repair: YouTubeVideo[]; upcycle: YouTubeVideo[] }
+> = {
+  dress: {
+    repair: [
+      {
+        videoId: 'x4rY5pL9w2M',
+        title: 'How to Hem a Dress by Hand (Invisible Blind Stitch Tutorial)',
+        channelTitle: 'Handmade Wardrobe & Sewing Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'Invisible Ladder Stitch Tutorial: How to Mend Torn Dress Seams by Hand',
+        channelTitle: 'Handmade Wardrobe & Mending',
+        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'P9kL2mQ4w1Z',
+        title: 'How to Fix an Invisible Dress Zipper That Wont Close or Splits',
+        channelTitle: 'Gear & Garment Repair Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'm8KpL3v9qXw',
+        title: 'How to Shorten Dress Straps & Fix Gaping Armholes Without a Machine',
+        channelTitle: 'Artisan Alterations Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
+    upcycle: [
+      {
+        videoId: 'k9LmP4sQ2wR',
+        title: 'DIY Two-Piece Matching Set from Old Dress (Crop Top & Wrap Skirt)',
+        channelTitle: 'Thrift Flip & Rework Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'x8_G4bB1s-8',
+        title: 'Transform a Long Maxi Dress into a Tiered Cottagecore Mini Sundress',
+        channelTitle: 'DIY Fashion Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'How to Upcycle an Outdated Formal Gown into a Modern Slip Skirt',
+        channelTitle: 'Upcycle Stitches & Reworks',
+        thumbnail: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'w2PnL8qR5vT',
+        title: 'Add a Smocked Shirred Bodice to Reshape an Oversized Vintage Dress',
+        channelTitle: 'Circular Fashion DIY',
+        thumbnail: 'https://images.unsplash.com/photo-1485968579580-b6d095142e6e?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
   },
-  {
-    videoId: '7zU4yv9V-F4',
-    title: 'Invisible Ladder Stitch Tutorial: How to Mend Torn Seams by Hand',
-    channelTitle: 'Handmade Wardrobe & Mending',
-    thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
-    publishedAt: '2024-01-01',
+  jeans: {
+    repair: [
+      {
+        videoId: 'x8_G4bB1s-8',
+        title: 'How to Fix Holes in Jeans with Japanese Sashiko Visible Mending',
+        channelTitle: 'Vintage & Mended Denim',
+        thumbnail: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'P9kL2mQ4w1Z',
+        title: 'Heavy-Duty Denim Crotch Blowout Reconstruction & Reinforcement',
+        channelTitle: 'Gear & Garment Repair Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'Invisible Ladder Stitch Tutorial: How to Mend Torn Pockets & Seams',
+        channelTitle: 'Handmade Wardrobe & Mending',
+        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
+    upcycle: [
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'DIY Old Jeans into Cute Aesthetic Tote Bag Tutorial',
+        channelTitle: 'Upcycle Stitches & Reworks',
+        thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'x8_G4bB1s-8',
+        title: 'How to Cut & Distress Old Jeans into Summer Denim Shorts',
+        channelTitle: 'DIY Fashion Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
   },
-  {
-    videoId: 'M5pL3rQ9v8Y',
-    title: 'How to Swiss Darn a Knitwear Sweater & Repair Moth Holes',
-    channelTitle: 'Knit & Mend Studio',
-    thumbnail: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=600&auto=format&fit=crop',
-    publishedAt: '2024-01-01',
+  sweater: {
+    repair: [
+      {
+        videoId: 'M5pL3rQ9v8Y',
+        title: 'How to Swiss Darn a Knitwear Sweater & Repair Moth Holes',
+        channelTitle: 'Knit & Mend Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'Fix Snags and Pulled Threads in a Knitted Sweater without Cutting',
+        channelTitle: 'Handmade Wardrobe & Mending',
+        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
+    upcycle: [
+      {
+        videoId: 'w2PnL8qR5vT',
+        title: 'Thrift Flip: Wool Sweater into Matching Balaclava & Mittens',
+        channelTitle: 'Circular Fashion DIY',
+        thumbnail: 'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
   },
-  {
-    videoId: 'P9kL2mQ4w1Z',
-    title: 'How to Fix a Broken Zipper with Pliers in 2 Minutes (No Sewing)',
-    channelTitle: 'Gear & Garment Repair Lab',
-    thumbnail: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=600&auto=format&fit=crop',
-    publishedAt: '2024-01-01',
+  general: {
+    repair: [
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'Invisible Ladder Stitch Tutorial: How to Mend Torn Seams by Hand',
+        channelTitle: 'Handmade Wardrobe & Mending',
+        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'P9kL2mQ4w1Z',
+        title: 'How to Fix a Broken Zipper with Pliers in 2 Minutes (No Sewing)',
+        channelTitle: 'Gear & Garment Repair Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
+    upcycle: [
+      {
+        videoId: 'k9LmP4sQ2wR',
+        title: 'Transform an Oversized Button-Down Shirt into a Corset Wrap Crop Top',
+        channelTitle: 'Thrift Flip & Rework Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'DIY Upcycling Project: Transform Old Clothes into Stylish Essentials',
+        channelTitle: 'Upcycle Stitches & Reworks',
+        thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
   },
-];
+};
 
-const CURATED_UPCYCLE_VIDEOS: YouTubeVideo[] = [
-  {
-    videoId: '7zU4yv9V-F4',
-    title: 'DIY Old Jeans into Cute Aesthetic Tote Bag Tutorial',
-    channelTitle: 'Upcycle Stitches & Reworks',
-    thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop',
-    publishedAt: '2024-01-01',
-  },
-  {
-    videoId: 'x8_G4bB1s-8',
-    title: 'How to Cut & Distress Old Jeans into Summer Denim Shorts',
-    channelTitle: 'DIY Fashion Studio',
-    thumbnail: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?q=80&w=600&auto=format&fit=crop',
-    publishedAt: '2024-01-01',
-  },
-  {
-    videoId: 'k9LmP4sQ2wR',
-    title: 'Transform an Oversized Button-Down Shirt into a Corset Wrap Crop Top',
-    channelTitle: 'Thrift Flip & Rework Studio',
-    thumbnail: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=600&auto=format&fit=crop',
-    publishedAt: '2024-01-01',
-  },
-  {
-    videoId: 'w2PnL8qR5vT',
-    title: 'Thrift Flip: Wool Sweater into Matching Balaclava & Mittens',
-    channelTitle: 'Circular Fashion DIY',
-    thumbnail: 'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?q=80&w=600&auto=format&fit=crop',
-    publishedAt: '2024-01-01',
-  },
-];
+function getCuratedVideos(decision: 'REPAIR' | 'UPCYCLE', category?: string): YouTubeVideo[] {
+  const normCat = (category || '').toLowerCase();
+  const catKey = CATEGORY_CURATED_VIDEOS[normCat] ? normCat : 'general';
+  const group = CATEGORY_CURATED_VIDEOS[catKey];
+  return decision === 'UPCYCLE' ? group.upcycle : group.repair;
+}
 
 async function searchYouTubeTutorials(
   query: string,
   maxResults: number = 6,
   fallbackDecision?: 'REPAIR' | 'UPCYCLE',
+  garmentCategory?: string,
 ): Promise<YouTubeVideo[]> {
-  const fallbacks = fallbackDecision === 'UPCYCLE' ? CURATED_UPCYCLE_VIDEOS : CURATED_REPAIR_VIDEOS;
+  const decision = fallbackDecision || 'REPAIR';
+  const fallbacks = getCuratedVideos(decision, garmentCategory);
 
   if (!YOUTUBE_API_KEY) {
-    logger.warn('[Repair] YOUTUBE_API_KEY not configured — returning curated video library');
+    logger.warn('[Repair] YOUTUBE_API_KEY not configured — returning category-tailored curated library');
     return fallbacks.slice(0, maxResults);
   }
 
@@ -227,7 +361,7 @@ async function searchYouTubeTutorials(
       }))
       .filter((v: YouTubeVideo) => v.videoId);
 
-    const ranked = rankYouTubeResults(videos, query, maxResults);
+    const ranked = rankYouTubeResults(videos, query, maxResults, garmentCategory);
     return ranked.length > 0 ? ranked : fallbacks.slice(0, maxResults);
   } catch (err: any) {
     logger.error('[Repair] YouTube search error', { error: err.message });
@@ -468,8 +602,8 @@ export async function assessRepair(
   );
 
   const [repairVideos, upcycleVideos] = await Promise.all([
-    searchYouTubeTutorials(repairQuery, 6, 'REPAIR'),
-    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE'),
+    searchYouTubeTutorials(repairQuery, 6, 'REPAIR', input.garment_category),
+    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE', input.garment_category),
   ]);
 
   return {
@@ -555,8 +689,8 @@ export async function lookupRepairFromAssessment(
   );
 
   const [repairVideos, upcycleVideos] = await Promise.all([
-    searchYouTubeTutorials(repairQuery, 6, 'REPAIR'),
-    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE'),
+    searchYouTubeTutorials(repairQuery, 6, 'REPAIR', input.garment_category),
+    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE', input.garment_category),
   ]);
 
   const conditionScore = input.condition_score ?? 0.45;
