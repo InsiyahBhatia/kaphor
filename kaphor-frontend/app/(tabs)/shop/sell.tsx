@@ -363,59 +363,79 @@ export default function SellScreen() {
     }
   };
 
+  const selectPhoto = (callback: (uri: string) => void) => {
+    Alert.alert('Add Garment Photo', 'Take a new photo with your camera or choose one from your gallery:', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Grant camera access to take garment photos.');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 0.7,
+            });
+            if (!result.canceled && result.assets[0]?.uri) {
+              callback(result.assets[0].uri);
+            }
+          } catch {
+            Alert.alert('Error', 'Failed to capture photo');
+          }
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Grant photo access to choose garment photos.');
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 0.7,
+            });
+            if (!result.canceled && result.assets[0]?.uri) {
+              callback(result.assets[0].uri);
+            }
+          } catch {
+            Alert.alert('Error', 'Failed to pick photo');
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   const pickAndRunAiFill = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Grant photo access to use AI Magic Fill.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.6,
-    });
-    if (!result.canceled && result.assets[0]?.uri) {
-      const uri = result.assets[0].uri;
+    selectPhoto(async (uri) => {
       setImages((prev) => [uri, ...prev.filter(u => u !== uri)].slice(0, 5));
       await executeAiFill(uri);
-    }
+    });
   };
 
   const handleAiFill = () => executeAiFill();
 
-  const pickImages = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Grant photo access to list garments.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.6,
+  const pickImages = () => {
+    selectPhoto((uri) => {
+      setImages((prev) => [...prev, uri].slice(0, 5));
     });
-    if (!result.canceled) {
-      setImages((prev) => [...prev, result.assets[0].uri].slice(0, 5));
-    }
   };
 
-  const editImage = async (idx: number) => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.6,
-    });
-
-    if (!result.canceled) {
+  const editImage = (idx: number) => {
+    selectPhoto((uri) => {
       setImages((prev) => {
         const next = [...prev];
-        next[idx] = result.assets[0].uri;
+        next[idx] = uri;
         return next;
       });
-    }
+    });
   };
 
   const removeImage = (idx: number) => {
@@ -632,7 +652,7 @@ export default function SellScreen() {
               {images.length < 5 && (
                 <TouchableOpacity style={styles.uploadBox} onPress={pickImages}>
                   <Ionicons name="camera-outline" size={32} color={colors.crimson} />
-                  <Text style={styles.uploadText}>ADD</Text>
+                  <Text style={styles.uploadText}>ADD PHOTO</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -686,7 +706,7 @@ export default function SellScreen() {
             >
               <Ionicons name="sparkles" size={16} color={colors.white} />
               <Text style={styles.step2AiButtonText}>
-                {images.length > 0 ? 'AI AUTO-FILL ALL DETAILS FROM PHOTO' : 'PICK PHOTO & AUTO-FILL DETAILS WITH AI'}
+                {images.length > 0 ? 'AI AUTO-FILL ALL DETAILS FROM PHOTO' : 'TAKE OR PICK PHOTO & AUTO-FILL WITH AI'}
               </Text>
             </TouchableOpacity>
 

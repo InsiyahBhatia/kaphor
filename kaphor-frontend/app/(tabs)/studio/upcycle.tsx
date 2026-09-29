@@ -50,15 +50,44 @@ export default function UpcycleSuggestionsScreen() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const pick = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.85,
-    });
-    if (!pick.canceled && pick.assets?.[0]) setImage(pick.assets[0].uri);
+  const pickImage = () => {
+    Alert.alert('Add Garment Photo', 'Take a new photo with your camera or choose one from your gallery:', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') { Alert.alert('Permission needed', 'Grant camera permission to take a photo.'); return; }
+            const pick = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 0.85,
+            });
+            if (!pick.canceled && pick.assets?.[0]) setImage(pick.assets[0].uri);
+          } catch {
+            Alert.alert('Error', 'Failed to capture photo');
+          }
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') { Alert.alert('Permission needed', 'Grant gallery permission to select a photo.'); return; }
+            const pick = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 0.85,
+            });
+            if (!pick.canceled && pick.assets?.[0]) setImage(pick.assets[0].uri);
+          } catch {
+            Alert.alert('Error', 'Failed to pick photo');
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const handleSubmit = async () => {
@@ -126,8 +155,8 @@ export default function UpcycleSuggestionsScreen() {
                   <View style={styles.cameraCircle}>
                     <Ionicons name="camera" size={28} color="#C9A84C" />
                   </View>
-                  <Text style={styles.imageText}>ADD GARMENT PHOTO</Text>
-                  <Text style={styles.imageSubtext}>Photos unlock AI vision analysis</Text>
+                  <Text style={styles.imageText}>TAKE OR UPLOAD PHOTO</Text>
+                  <Text style={styles.imageSubtext}>Camera or gallery (unlocks AI vision)</Text>
                 </View>
               )}
             </TouchableOpacity>

@@ -35,7 +35,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
   const mainTabs = ['index', 'shop/index', 'swap/index', 'profile', 'rental/index'];
 
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 6) }]}>
       {state.routes.filter(route => mainTabs.includes(route.name)).map((route) => {
         const isFocused = state.index === state.routes.findIndex(r => r.key === route.key);
 
@@ -62,8 +62,6 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
           }
         };
 
-
-
         const config = getTabConfig(route.name);
         const color = isFocused ? colors.crimson : colors.textMuted;
 
@@ -72,8 +70,9 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
             key={route.key}
             onPress={onPress}
             style={styles.tabItem}
+            activeOpacity={0.7}
           >
-            <Ionicons name={config.icon} size={20} color={color} style={styles.tabIcon} />
+            <Ionicons name={config.icon} size={18} color={color} style={styles.tabIcon} />
             <Text style={[styles.tabLabel, { color }]}>{config.label}</Text>
           </TouchableOpacity>
         );
@@ -88,7 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
     borderTopWidth: 1,
     borderTopColor: colors.charcoal,
-    paddingTop: 12,
+    paddingTop: 6,
     alignItems: 'center',
     justifyContent: 'space-around',
     elevation: 0,
@@ -98,14 +97,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
+    paddingVertical: 2,
   },
   tabIcon: {
-    marginBottom: 1,
+    marginBottom: 2,
   },
   tabLabel: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.6,
   },
 });

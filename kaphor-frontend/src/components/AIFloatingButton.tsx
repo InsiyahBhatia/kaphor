@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   fabShell: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 78,
     right: 16,
     width: 58,
     height: 58,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   menu: {
     position: 'absolute',
-    bottom: 176,
+    bottom: 150,
     right: 16,
     width: 258,
     backgroundColor: colors.white,

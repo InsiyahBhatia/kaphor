@@ -74,20 +74,54 @@ export default function SwapDetailScreen() {
     (garment.sellerId === effectiveUserId || garment.seller?.id === effectiveUserId)
   );
 
-  const pickConditionPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Grant photo access to add condition evidence.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.85,
-    });
-    if (!result.canceled) {
-      setConditionPhotos((prev) => [...prev, result.assets[0].uri].slice(0, 3));
-    }
+  const pickConditionPhoto = () => {
+    Alert.alert('Condition Evidence', 'Take a close-up photo with your camera or choose from your gallery:', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Grant camera access to take condition evidence photos.');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 0.85,
+            });
+            if (!result.canceled && result.assets[0]?.uri) {
+              setConditionPhotos((prev) => [...prev, result.assets[0].uri].slice(0, 3));
+            }
+          } catch {
+            Alert.alert('Error', 'Failed to capture photo');
+          }
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Grant photo access to add condition evidence.');
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 0.85,
+            });
+            if (!result.canceled && result.assets[0]?.uri) {
+              setConditionPhotos((prev) => [...prev, result.assets[0].uri].slice(0, 3));
+            }
+          } catch {
+            Alert.alert('Error', 'Failed to pick photo');
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const uploadPhoto = async (uri: string): Promise<string> => {

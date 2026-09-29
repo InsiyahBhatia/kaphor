@@ -129,12 +129,12 @@ export function getRouting(
     if (isUpcyclableItem && cs > 0.40) {
       return 'UPCYCLE';
     }
-    if (cs >= 0.45 || glie >= 0.565) return 'UPCYCLE';
+    if (cs >= 0.45 || glie >= 0.50) return 'UPCYCLE';
     return 'RECYCLE';
   }
   if (glie >= 0.63) return 'RESELL';
   if (isUpcyclableItem && glie > 0.25) return 'UPCYCLE';
-  if (glie >= 0.565) return 'UPCYCLE';
+  if (glie >= 0.50) return 'UPCYCLE';
   return 'RECYCLE';
 }
 

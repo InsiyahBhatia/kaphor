@@ -77,7 +77,7 @@ export default function ConditionCheckScreen() {
   const pickImage = async (useCamera = false) => {
     if (useCamera) {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Camera permission needed'); return; }
+      if (status !== 'granted') { Alert.alert('Camera permission needed', 'Grant camera permission to take a photo.'); return; }
       const pick = await ImagePicker.launchCameraAsync({
         quality: 0.85,
         base64: true,
@@ -86,7 +86,7 @@ export default function ConditionCheckScreen() {
       if (!pick.canceled && pick.assets[0]) { setImageUri(pick.assets[0].uri); setImageBase64(pick.assets[0].base64 || null); }
     } else {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Gallery permission needed'); return; }
+      if (status !== 'granted') { Alert.alert('Gallery permission needed', 'Grant gallery permission to select a photo.'); return; }
       const pick = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.85,
@@ -95,6 +95,14 @@ export default function ConditionCheckScreen() {
       });
       if (!pick.canceled && pick.assets[0]) { setImageUri(pick.assets[0].uri); setImageBase64(pick.assets[0].base64 || null); }
     }
+  };
+
+  const selectImageSource = () => {
+    Alert.alert('Add Garment Photo', 'Take a new photo with your camera or choose one from your gallery:', [
+      { text: 'Take Photo', onPress: () => pickImage(true) },
+      { text: 'Choose from Gallery', onPress: () => pickImage(false) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   // ── Submit assessment ─────────────────────────────────────────
@@ -595,7 +603,7 @@ export default function ConditionCheckScreen() {
           {/* Upload Area */}
           <TouchableOpacity
             style={styles.uploadArea}
-            onPress={() => pickImage(false)}
+            onPress={selectImageSource}
             activeOpacity={0.8}
           >
             {imageUri ? (
@@ -603,8 +611,8 @@ export default function ConditionCheckScreen() {
             ) : (
               <View style={styles.uploadPlaceholder}>
                 <Ionicons name="camera-outline" size={36} color={colors.charcoal} />
-                <Text style={styles.uploadText}>Tap to upload a photo</Text>
-                <Text style={styles.uploadSubtext}>JPG or PNG recommended</Text>
+                <Text style={styles.uploadText}>Take or upload a photo</Text>
+                <Text style={styles.uploadSubtext}>Camera or gallery (JPG / PNG)</Text>
               </View>
             )}
           </TouchableOpacity>

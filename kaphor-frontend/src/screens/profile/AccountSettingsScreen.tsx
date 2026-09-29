@@ -85,35 +85,68 @@ export function AccountSettingsScreen() {
     fetchProfile();
   }, []);
 
-  const handlePickAvatar = async () => {
+  const uploadAvatarUri = async (uri: string) => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Permission to access photos is needed.');
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-      });
-      if (!result.canceled && result.assets[0]?.uri) {
-        setUploadingAvatar(true);
-        const res = await userService.updateAvatar(result.assets[0].uri);
-        if (res?.avatar) {
-          setAvatar(res.avatar);
-          if (setUser) {
-            setUser((prev: any) => ({ ...prev, avatar: res.avatar }));
-          }
-          Alert.alert('Success', 'Profile photo updated!');
+      setUploadingAvatar(true);
+      const res = await userService.updateAvatar(uri);
+      if (res?.avatar) {
+        setAvatar(res.avatar);
+        if (setUser) {
+          setUser((prev: any) => ({ ...prev, avatar: res.avatar }));
         }
+        Alert.alert('Success', 'Profile photo updated!');
       }
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Failed to update photo.');
     } finally {
       setUploadingAvatar(false);
     }
+  };
+
+  const executeAvatarPick = async (useCamera = false) => {
+    try {
+      if (useCamera) {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Camera permission is needed to take a profile photo.');
+          return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.7,
+        });
+        if (!result.canceled && result.assets[0]?.uri) {
+          uploadAvatarUri(result.assets[0].uri);
+        }
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Permission to access photos is needed.');
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.7,
+        });
+        if (!result.canceled && result.assets[0]?.uri) {
+          uploadAvatarUri(result.assets[0].uri);
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to pick photo.');
+    }
+  };
+
+  const handlePickAvatar = () => {
+    Alert.alert('Update Profile Photo', 'Take a new photo with your camera or choose one from your gallery:', [
+      { text: 'Take Photo', onPress: () => executeAvatarPick(true) },
+      { text: 'Choose from Gallery', onPress: () => executeAvatarPick(false) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const handleSave = async () => {

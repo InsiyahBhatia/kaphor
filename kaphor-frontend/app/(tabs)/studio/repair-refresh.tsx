@@ -188,6 +188,14 @@ export default function RepairRefreshScreen() {
     }
   };
 
+  const selectImageSource = () => {
+    Alert.alert('Add Garment Photo', 'Take a new photo with your camera or choose one from your gallery:', [
+      { text: 'Take Photo', onPress: () => pickImage(true) },
+      { text: 'Choose from Gallery', onPress: () => pickImage(false) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   // ── Submit ─────────────────────────────────────────────────────
   const handleAssess = async () => {
     if (!imageUri) { Alert.alert('Photo required', 'Upload a photo of your garment.'); return; }
@@ -802,14 +810,14 @@ export default function RepairRefreshScreen() {
         </View>
 
         {/* Upload */}
-        <TouchableOpacity style={styles.uploadArea} onPress={() => pickImage(false)} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.uploadArea} onPress={selectImageSource} activeOpacity={0.8}>
           {imageUri ? (
             <Image source={{ uri: imageUri }} style={styles.uploadPreview} />
           ) : (
             <View style={styles.uploadPlaceholder}>
               <Ionicons name="camera-outline" size={36} color={colors.charcoal} />
-              <Text style={styles.uploadText}>Tap to upload a photo</Text>
-              <Text style={styles.uploadSubtext}>Show the damage clearly</Text>
+              <Text style={styles.uploadText}>Take or upload a photo</Text>
+              <Text style={styles.uploadSubtext}>Camera or gallery (show damage clearly)</Text>
             </View>
           )}
         </TouchableOpacity>
