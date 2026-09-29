@@ -12,8 +12,12 @@ async function resolveAvatar(avatar: string | null): Promise<string | null> {
   return getDownloadUrl(avatar);
 }
 
-async function resolveGarmentThumbnail(garment: any) {
+async function resolveGarmentThumbnail(garment: any, resolveAllImages: boolean = false) {
   if (!garment || !garment.images || !garment.images.length) return garment;
+  if (!resolveAllImages) {
+    const firstImage = garment.images[0] ? await getDownloadUrl(garment.images[0]) : null;
+    return { ...garment, image: firstImage, images: [firstImage, ...garment.images.slice(1)] };
+  }
   const resolvedImages = await Promise.all(garment.images.map((img: string) => getDownloadUrl(img)));
   const firstImage = resolvedImages[0] || null;
   return { ...garment, image: firstImage, images: resolvedImages };
@@ -67,100 +71,184 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
     }
     const uid = req.user.id;
 
-    const convs = await db.conversation.findMany({
-      where: {
-        OR: [{ participant1Id: uid }, { participant2Id: uid }],
-      },
-      orderBy: { lastMessageAt: 'desc' },
-      include: {
-        participant1: {
-          select: {
-            id: true,
-            displayName: true,
-            username: true,
-            avatar: true,
-            isVerified: true,
-            verificationStatus: true,
-            tier: true,
-          },
+    // Fetch conversations, unread counts, and active orders/swaps/rentals in parallel (eliminating N+1 queries)
+    const [convs, unreadCounts, activeOrders, activeSwaps, activeRentals] = await Promise.all([
+      db.conversation.findMany({
+        where: {
+          OR: [{ participant1Id: uid }, { participant2Id: uid }],
         },
-        participant2: {
-          select: {
-            id: true,
-            displayName: true,
-            username: true,
-            avatar: true,
-            isVerified: true,
-            verificationStatus: true,
-            tier: true,
-          },
-        },
-        garment: {
-          select: {
-            id: true,
-            title: true,
-            brand: true,
-            images: true,
-            price: true,
-            rentalPriceDay: true,
-            listingType: true,
-          },
-        },
-        messages: {
-          where: {
-            NOT: {
-              content: {
-                startsWith: '[[REACTION:',
-              },
+        orderBy: { lastMessageAt: 'desc' },
+        include: {
+          participant1: {
+            select: {
+              id: true,
+              displayName: true,
+              username: true,
+              avatar: true,
+              isVerified: true,
+              verificationStatus: true,
+              tier: true,
             },
           },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
+          participant2: {
+            select: {
+              id: true,
+              displayName: true,
+              username: true,
+              avatar: true,
+              isVerified: true,
+              verificationStatus: true,
+              tier: true,
+            },
+          },
+          garment: {
+            select: {
+              id: true,
+              title: true,
+              brand: true,
+              images: true,
+              price: true,
+              rentalPriceDay: true,
+              listingType: true,
+            },
+          },
+          order: {
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
+              currency: true,
+              createdAt: true,
+            },
+          },
+          swap: {
+            select: {
+              id: true,
+              status: true,
+              offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+              wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+            },
+          },
+          rental: {
+            select: {
+              id: true,
+              status: true,
+              totalPrice: true,
+              startDate: true,
+              endDate: true,
+            },
+          },
+          messages: {
+            where: {
+              NOT: {
+                content: {
+                  startsWith: '[[REACTION:',
+                },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
         },
-      },
-    });
+      }),
+      db.directMessage.groupBy({
+        by: ['conversationId'],
+        where: {
+          recipientId: uid,
+          readAt: null,
+        },
+        _count: {
+          id: true,
+        },
+      }),
+      db.order.findMany({
+        where: {
+          OR: [{ buyerId: uid }, { sellerId: uid }],
+          status: { in: ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          buyerId: true,
+          sellerId: true,
+          status: true,
+          totalAmount: true,
+          currency: true,
+          createdAt: true,
+          items: { select: { garmentId: true } },
+        },
+      }),
+      db.swap.findMany({
+        where: {
+          OR: [{ initiatorId: uid }, { receiverId: uid }],
+          status: { notIn: ['CANCELLED', 'REJECTED'] },
+        },
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          initiatorId: true,
+          receiverId: true,
+          garmentOffered: true,
+          garmentWanted: true,
+          status: true,
+          offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+          wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+        },
+      }),
+      db.rental.findMany({
+        where: {
+          OR: [{ renterId: uid }, { garment: { sellerId: uid } }],
+          status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'COMPLETED'] },
+        },
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          renterId: true,
+          garmentId: true,
+          garment: { select: { sellerId: true } },
+          status: true,
+          totalPrice: true,
+          startDate: true,
+          endDate: true,
+        },
+      }),
+    ]);
+
+    const unreadMap = new Map<string, number>(
+      unreadCounts.map((u: any) => [u.conversationId, u._count.id])
+    );
+
+    const avatarCache = new Map<string, Promise<string | null>>();
+    const getCachedAvatar = (avatar: string | null) => {
+      if (!avatar) return Promise.resolve(null);
+      if (!avatarCache.has(avatar)) {
+        avatarCache.set(avatar, resolveAvatar(avatar));
+      }
+      return avatarCache.get(avatar)!;
+    };
 
     const formatted = await Promise.all(
       convs.map(async (c: any) => {
         const otherUser = c.participant1Id === uid ? c.participant2 : c.participant1;
-        const otherAvatar = await resolveAvatar(otherUser.avatar);
+        const otherAvatar = await getCachedAvatar(otherUser.avatar);
 
         let garmentData = null;
         if (c.garment) {
-          garmentData = await resolveGarmentThumbnail(c.garment);
+          garmentData = await resolveGarmentThumbnail(c.garment, false);
         }
 
-        const unreadCount = await db.directMessage.count({
-          where: {
-            conversationId: c.id,
-            recipientId: uid,
-            readAt: null,
-          },
-        });
+        const unreadCount = unreadMap.get(c.id) || 0;
 
-        // Find associated active order if any exists between these participants
-        const activeOrder = await db.order.findFirst({
-          where: {
-            AND: [
-              {
-                OR: [
-                  { buyerId: c.participant1Id, sellerId: c.participant2Id },
-                  { buyerId: c.participant2Id, sellerId: c.participant1Id },
-                ],
-              },
-              ...(c.garmentId ? [{ items: { some: { garmentId: c.garmentId } } }] : []),
-            ],
-            status: { in: ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED'] },
-          },
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            status: true,
-            totalAmount: true,
-            currency: true,
-            createdAt: true,
-          },
-        });
+        // In-memory active order match without querying the database per conversation
+        const activeOrder =
+          c.order ||
+          activeOrders.find(
+            (o: any) =>
+              ((o.buyerId === c.participant1Id && o.sellerId === c.participant2Id) ||
+                (o.buyerId === c.participant2Id && o.sellerId === c.participant1Id)) &&
+              (!c.garmentId || o.items.some((i: any) => i.garmentId === c.garmentId))
+          ) ||
+          null;
 
         const isExplicitSale =
           c.garment?.listingType === 'SALE' ||
@@ -179,67 +267,41 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
             c.type === 'SWAP' ||
             Boolean(c.swapId));
 
-        // Only find associated active swap if this thread is explicitly related to a swap,
-        // or if it has a swapId, or if c.garment is a SWAP piece. NEVER for buy/sell or sale garments!
         let activeSwap: any = null;
         let swapGarments: any[] = [];
         if (isExplicitSwap) {
-          activeSwap = await db.swap.findFirst({
-            where: {
-              ...(c.swapId
-                ? { id: c.swapId }
-                : {
-                    OR: [
-                      { initiatorId: c.participant1Id, receiverId: c.participant2Id },
-                      { initiatorId: c.participant2Id, receiverId: c.participant1Id },
-                    ],
-                    ...(c.garmentId
-                      ? { OR: [{ garmentOffered: c.garmentId }, { garmentWanted: c.garmentId }] }
-                      : {}),
-                    status: { notIn: ['CANCELLED', 'REJECTED'] },
-                  }),
-            },
-            orderBy: { updatedAt: 'desc' },
-            select: {
-              id: true,
-              status: true,
-              offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
-              wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
-            },
-          });
+          activeSwap =
+            c.swap ||
+            (c.swapId
+              ? activeSwaps.find((s: any) => s.id === c.swapId)
+              : activeSwaps.find(
+                  (s: any) =>
+                    ((s.initiatorId === c.participant1Id && s.receiverId === c.participant2Id) ||
+                      (s.initiatorId === c.participant2Id && s.receiverId === c.participant1Id)) &&
+                    (!c.garmentId || s.garmentOffered === c.garmentId || s.garmentWanted === c.garmentId)
+                )) ||
+            null;
 
           if (activeSwap) {
-            const g1 = activeSwap.offeredGarment ? await resolveGarmentThumbnail(activeSwap.offeredGarment) : null;
-            const g2 = activeSwap.wantedGarment ? await resolveGarmentThumbnail(activeSwap.wantedGarment) : null;
+            const g1 = activeSwap.offeredGarment ? await resolveGarmentThumbnail(activeSwap.offeredGarment, false) : null;
+            const g2 = activeSwap.wantedGarment ? await resolveGarmentThumbnail(activeSwap.wantedGarment, false) : null;
             swapGarments = [g1, g2].filter(Boolean);
           }
         }
 
-        // Only find associated active rental if relevant
         let activeRental: any = null;
         if (isExplicitRental || (!isExplicitSale && !isExplicitSwap)) {
-          activeRental = await db.rental.findFirst({
-            where: {
-              ...(c.rentalId
-                ? { id: c.rentalId }
-                : {
-                    OR: [
-                      { renterId: c.participant1Id, garment: { sellerId: c.participant2Id } },
-                      { renterId: c.participant2Id, garment: { sellerId: c.participant1Id } },
-                    ],
-                    ...(c.garmentId ? { garmentId: c.garmentId } : {}),
-                    status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'COMPLETED'] },
-                  }),
-            },
-            orderBy: { updatedAt: 'desc' },
-            select: {
-              id: true,
-              status: true,
-              totalPrice: true,
-              startDate: true,
-              endDate: true,
-            },
-          });
+          activeRental =
+            c.rental ||
+            (c.rentalId
+              ? activeRentals.find((r: any) => r.id === c.rentalId)
+              : activeRentals.find(
+                  (r: any) =>
+                    ((r.renterId === c.participant1Id && r.garment?.sellerId === c.participant2Id) ||
+                      (r.renterId === c.participant2Id && r.garment?.sellerId === c.participant1Id)) &&
+                    (!c.garmentId || r.garmentId === c.garmentId)
+                )) ||
+            null;
         }
 
         let rawSnippet = c.lastMessageText || c.messages[0]?.content || '';
@@ -258,7 +320,6 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           formattedSnippet = formattedSnippet.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
         }
 
-        const snippet = formattedSnippet;
         let resolvedType = c.type || 'SALE';
         if (isExplicitSale) {
           resolvedType = 'SALE';
@@ -266,9 +327,9 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           resolvedType = 'RENTAL';
         } else if (isExplicitSwap || activeSwap) {
           resolvedType = 'SWAP';
-        } else if (/\b(rent|rental|lease|booking)\b/i.test(snippet)) {
+        } else if (/\b(rent|rental|lease|booking)\b/i.test(formattedSnippet)) {
           resolvedType = 'RENTAL';
-        } else if (/\b(swap|trade|proposal)\b/i.test(snippet)) {
+        } else if (/\b(swap|trade|proposal)\b/i.test(formattedSnippet)) {
           resolvedType = 'SWAP';
         } else if (!c.garment && !c.orderId && !c.swapId && !c.rentalId) {
           resolvedType = c.type === 'GENERAL' ? 'GENERAL' : 'SALE';
@@ -539,7 +600,15 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
       return;
     }
 
-    const messages = await db.directMessage.findMany({
+    const otherUserId = conv.participant1Id === uid ? conv.participant2Id : conv.participant1Id;
+    const otherUser = conv.participant1Id === uid ? conv.participant2 : conv.participant1;
+
+    // Resolve avatars for the two participants once upfront
+    const p1AvatarPromise = resolveAvatar(conv.participant1.avatar);
+    const p2AvatarPromise = resolveAvatar(conv.participant2.avatar);
+
+    // Fetch messages
+    const messagesPromise = db.directMessage.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'asc' },
       include: {
@@ -549,77 +618,92 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
       },
     });
 
-    // Mark unread messages sent to me as read
-    await db.directMessage.updateMany({
-      where: {
-        conversationId,
-        recipientId: uid,
-        readAt: null,
-      },
-      data: { readAt: new Date() },
-    });
-
-    const myRemainingUnread = await db.directMessage.count({
-      where: { recipientId: uid, readAt: null },
-    });
-    emitToUser(uid, 'unread_messages_count_updated', { unreadCount: myRemainingUnread });
-
-    const otherUser = conv.participant1Id === uid ? conv.participant2 : conv.participant1;
-    const resolvedOtherAvatar = await resolveAvatar(otherUser.avatar);
-
-    const resolvedMessages = await Promise.all(
-      messages.map(async (m: any) => ({
-        ...m,
-        imageUrl: m.imageUrl ? await getDownloadUrl(m.imageUrl) : null,
-        sender: {
-          ...m.sender,
-          avatar: await resolveAvatar(m.sender.avatar),
+    // Mark unread as read in background without blocking payload completion
+    db.directMessage
+      .updateMany({
+        where: {
+          conversationId,
+          recipientId: uid,
+          readAt: null,
         },
-      }))
-    );
+        data: { readAt: new Date() },
+      })
+      .then(async (result: any) => {
+        if (result.count > 0) {
+          const remaining = await db.directMessage.count({
+            where: { recipientId: uid, readAt: null },
+          });
+          emitToUser(uid, 'unread_messages_count_updated', { unreadCount: remaining });
+        }
+      })
+      .catch((err: any) => logger.warn('Failed to update directMessage read status', { err }));
 
-    // Find associated order between these users
-    const associatedOrder = await db.order.findFirst({
-      where: {
-        AND: [
-          {
-            OR: [
-              { buyerId: conv.participant1Id, sellerId: conv.participant2Id },
-              { buyerId: conv.participant2Id, sellerId: conv.participant1Id },
-            ],
-          },
-          ...(conv.garmentId ? [{ items: { some: { garmentId: conv.garmentId } } }] : []),
-        ],
-      },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        items: {
+    // Find associated order
+    const orderPromise = conv.orderId
+      ? db.order.findUnique({
+          where: { id: conv.orderId },
           include: {
-            garment: {
-              select: {
-                id: true,
-                title: true,
-                brand: true,
-                images: true,
-                price: true,
-                listingType: true,
-                category: true,
-                size: true,
-                condition: true,
-                description: true,
-                sellerId: true,
+            items: {
+              include: {
+                garment: {
+                  select: {
+                    id: true,
+                    title: true,
+                    brand: true,
+                    images: true,
+                    price: true,
+                    listingType: true,
+                    category: true,
+                    size: true,
+                    condition: true,
+                    description: true,
+                    sellerId: true,
+                  },
+                },
               },
             },
           },
-        },
-      },
-    });
+        })
+      : db.order.findFirst({
+          where: {
+            AND: [
+              {
+                OR: [
+                  { buyerId: conv.participant1Id, sellerId: conv.participant2Id },
+                  { buyerId: conv.participant2Id, sellerId: conv.participant1Id },
+                ],
+              },
+              ...(conv.garmentId ? [{ items: { some: { garmentId: conv.garmentId } } }] : []),
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+          include: {
+            items: {
+              include: {
+                garment: {
+                  select: {
+                    id: true,
+                    title: true,
+                    brand: true,
+                    images: true,
+                    price: true,
+                    listingType: true,
+                    category: true,
+                    size: true,
+                    condition: true,
+                    description: true,
+                    sellerId: true,
+                  },
+                },
+              },
+            },
+          },
+        });
 
-    // Find associated swap between these users ONLY if conversation is explicitly for a swap
     const isConvSale =
       conv.type === 'SALE' ||
       conv.garment?.listingType === 'SALE' ||
-      Boolean(associatedOrder);
+      Boolean(conv.orderId);
 
     const isConvSwap =
       !isConvSale &&
@@ -628,13 +712,14 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
         conv.garment?.listingType === 'SWAP' ||
         conv.garment?.listingType === 'ACCESSORY_SWAP');
 
-    let associatedSwap: any = null;
-    if (isConvSwap) {
-      associatedSwap = await db.swap.findFirst({
-        where: {
-          ...(conv.swapId
-            ? { id: conv.swapId }
-            : {
+    const swapPromise = isConvSwap
+      ? (conv.swapId
+          ? db.swap.findUnique({
+              where: { id: conv.swapId },
+              select: { id: true, status: true, createdAt: true },
+            })
+          : db.swap.findFirst({
+              where: {
                 AND: [
                   {
                     OR: [
@@ -647,18 +732,12 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
                     : []),
                   { status: { notIn: ['CANCELLED', 'REJECTED'] } },
                 ],
-              }),
-        },
-        orderBy: { updatedAt: 'desc' },
-        select: {
-          id: true,
-          status: true,
-          createdAt: true,
-        },
-      });
-    }
+              },
+              orderBy: { updatedAt: 'desc' },
+              select: { id: true, status: true, createdAt: true },
+            }))
+      : Promise.resolve(null);
 
-    // Find associated rental between these users ONLY if conversation is for rental
     const isConvRental =
       !isConvSale &&
       !isConvSwap &&
@@ -666,94 +745,74 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
         Boolean(conv.rentalId) ||
         conv.garment?.listingType === 'RENTAL');
 
-    let associatedRental: any = null;
-    if (isConvRental) {
-      associatedRental = await db.rental.findFirst({
-        where: {
-          ...(conv.rentalId
-            ? { id: conv.rentalId }
-            : {
+    const rentalPromise = isConvRental
+      ? (conv.rentalId
+          ? db.rental.findUnique({
+              where: { id: conv.rentalId },
+              include: {
+                garment: {
+                  select: {
+                    id: true,
+                    title: true,
+                    brand: true,
+                    images: true,
+                    price: true,
+                    rentalPriceDay: true,
+                    rentalPriceWeek: true,
+                    listingType: true,
+                    category: true,
+                    size: true,
+                    condition: true,
+                    description: true,
+                    sellerId: true,
+                  },
+                },
+              },
+            })
+          : db.rental.findFirst({
+              where: {
                 OR: [
                   { renterId: conv.participant1Id, garment: { sellerId: conv.participant2Id } },
                   { renterId: conv.participant2Id, garment: { sellerId: conv.participant1Id } },
                 ],
                 ...(conv.garmentId ? { garmentId: conv.garmentId } : {}),
-                status: { in: ['REQUESTED', 'APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED', 'OVERDUE'] },
-              }),
-        },
-        orderBy: { updatedAt: 'desc' },
-        include: {
-          garment: {
-          select: {
-            id: true,
-            title: true,
-            brand: true,
-            images: true,
-            price: true,
-            rentalPriceDay: true,
-            rentalPriceWeek: true,
-            listingType: true,
-            category: true,
-            size: true,
-            condition: true,
-            description: true,
-            sellerId: true,
-          },
-        },
-      },
-    });
-  }
+                status: {
+                  in: [
+                    'REQUESTED',
+                    'APPROVED',
+                    'RESERVED',
+                    'DISPATCHED',
+                    'ACTIVE',
+                    'RETURN_DISPATCHED',
+                    'RETURNED',
+                    'COMPLETED',
+                    'OVERDUE',
+                  ],
+                },
+              },
+              orderBy: { updatedAt: 'desc' },
+              include: {
+                garment: {
+                  select: {
+                    id: true,
+                    title: true,
+                    brand: true,
+                    images: true,
+                    price: true,
+                    rentalPriceDay: true,
+                    rentalPriceWeek: true,
+                    listingType: true,
+                    category: true,
+                    size: true,
+                    condition: true,
+                    description: true,
+                    sellerId: true,
+                  },
+                },
+              },
+            }))
+      : Promise.resolve(null);
 
-    let activeGarment = (isConvRental && associatedRental?.garment) ? (associatedRental.garment as any) : conv.garment;
-    if (!activeGarment && associatedRental?.garment) {
-      activeGarment = associatedRental.garment as any;
-    } else if (!activeGarment && associatedOrder?.items?.[0]?.garment) {
-      activeGarment = associatedOrder.items[0].garment as any;
-    } else if (!activeGarment) {
-      // Check if either user had a recent intent (rental, purchase, swap, view) on one of the other's garments
-      const recentIntent = await db.behaviourEvent.findFirst({
-        where: {
-          OR: [
-            { userId: conv.participant1Id, garment: { sellerId: conv.participant2Id } },
-            { userId: conv.participant2Id, garment: { sellerId: conv.participant1Id } },
-          ],
-          eventType: { in: ['RENTAL_INTENT', 'PURCHASE_INTENT', 'SWAP_INTENT', 'VIEW'] },
-        },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          garment: {
-            select: {
-              id: true,
-              title: true,
-              brand: true,
-              images: true,
-              price: true,
-              rentalPriceDay: true,
-              rentalPriceWeek: true,
-              listingType: true,
-              category: true,
-              size: true,
-              condition: true,
-              description: true,
-              sellerId: true,
-            },
-          },
-        },
-      });
-      if (recentIntent?.garment) {
-        activeGarment = recentIntent.garment as any;
-        await db.conversation.update({
-          where: { id: conv.id },
-          data: { garmentId: recentIntent.garment.id },
-        }).catch(() => {});
-      }
-    }
-
-    const resolvedGarment = activeGarment ? await resolveGarmentThumbnail(activeGarment) : null;
-
-    // Fetch active garments for BOTH participants so that whichever party has listings (or both),
-    // the chat can display them as selectable/attachable pieces
-    const otherUserId = conv.participant1Id === uid ? conv.participant2Id : conv.participant1Id;
     const garmentSelectFields = {
       id: true,
       title: true,
@@ -770,24 +829,95 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
       sellerId: true,
     };
 
-    const [otherUserGarments, myGarments] = await Promise.all([
-      db.garment.findMany({
-        where: { sellerId: otherUserId, isActive: true },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-        select: garmentSelectFields,
-      }),
-      db.garment.findMany({
-        where: { sellerId: uid, isActive: true },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-        select: garmentSelectFields,
-      }),
+    const otherUserGarmentsPromise = db.garment.findMany({
+      where: { sellerId: otherUserId, isActive: true },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: garmentSelectFields,
+    });
+
+    const myGarmentsPromise = db.garment.findMany({
+      where: { sellerId: uid, isActive: true },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: garmentSelectFields,
+    });
+
+    const [
+      p1Avatar,
+      p2Avatar,
+      messages,
+      associatedOrder,
+      associatedSwap,
+      associatedRental,
+      otherUserGarments,
+      myGarments,
+    ] = await Promise.all([
+      p1AvatarPromise,
+      p2AvatarPromise,
+      messagesPromise,
+      orderPromise,
+      swapPromise,
+      rentalPromise,
+      otherUserGarmentsPromise,
+      myGarmentsPromise,
     ]);
 
-    const [resolvedOtherGarments, resolvedMyGarments] = await Promise.all([
-      Promise.all(otherUserGarments.map((g: any) => resolveGarmentThumbnail(g))),
-      Promise.all(myGarments.map((g: any) => resolveGarmentThumbnail(g))),
+    const avatarMap: Record<string, string | null> = {
+      [conv.participant1Id]: p1Avatar,
+      [conv.participant2Id]: p2Avatar,
+    };
+    const resolvedOtherAvatar = avatarMap[otherUser.id] || null;
+
+    // Fast resolution: avatars are mapped synchronously, only message images need async resolution if present
+    const resolvedMessages = await Promise.all(
+      messages.map(async (m: any) => ({
+        ...m,
+        imageUrl: m.imageUrl ? await getDownloadUrl(m.imageUrl) : null,
+        sender: {
+          ...m.sender,
+          avatar: avatarMap[m.senderId] ?? null,
+        },
+      }))
+    );
+
+    let activeGarment = (isConvRental && associatedRental?.garment) ? (associatedRental.garment as any) : conv.garment;
+    if (!activeGarment && associatedRental?.garment) {
+      activeGarment = associatedRental.garment as any;
+    } else if (!activeGarment && associatedOrder?.items?.[0]?.garment) {
+      activeGarment = associatedOrder.items[0].garment as any;
+    } else if (!activeGarment) {
+      const recentIntent = await db.behaviourEvent.findFirst({
+        where: {
+          OR: [
+            { userId: conv.participant1Id, garment: { sellerId: conv.participant2Id } },
+            { userId: conv.participant2Id, garment: { sellerId: conv.participant1Id } },
+          ],
+          eventType: { in: ['RENTAL_INTENT', 'PURCHASE_INTENT', 'SWAP_INTENT', 'VIEW'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        include: {
+          garment: {
+            select: garmentSelectFields,
+          },
+        },
+      });
+      if (recentIntent?.garment) {
+        activeGarment = recentIntent.garment as any;
+        db.conversation
+          .update({
+            where: { id: conv.id },
+            data: { garmentId: recentIntent.garment.id },
+          })
+          .catch(() => {});
+      }
+    }
+
+    const [resolvedGarment, resolvedOtherGarments, resolvedMyGarments] = await Promise.all([
+      activeGarment ? resolveGarmentThumbnail(activeGarment, true) : null,
+      Promise.all(otherUserGarments.map((g: any) => resolveGarmentThumbnail(g, false))),
+      Promise.all(myGarments.map((g: any) => resolveGarmentThumbnail(g, false))),
     ]);
 
     res.json({

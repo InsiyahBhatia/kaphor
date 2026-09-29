@@ -363,6 +363,11 @@ export default function DirectChatScreen() {
     })();
   }, [conversationId]);
 
+  const messagesRef = useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   const loadConversation = useCallback(async () => {
     if (!conversationId) return;
     try {
@@ -374,7 +379,7 @@ export default function DirectChatScreen() {
       AsyncStorage.setItem(cacheChatKey, JSON.stringify({ detail: data, messages: data.messages })).catch(() => {});
     } catch (e: any) {
       console.error('Failed to load conversation', e);
-      if (messages.length === 0) {
+      if (messagesRef.current.length === 0) {
         Alert.alert('Error', 'Could not open conversation', [
           { text: 'Go Back', onPress: () => safeBack('/(tabs)/messages') },
         ]);
@@ -382,7 +387,7 @@ export default function DirectChatScreen() {
     } finally {
       setLoading(false);
     }
-  }, [conversationId, messages.length]);
+  }, [conversationId, cacheChatKey]);
 
   useEffect(() => {
     loadConversation();

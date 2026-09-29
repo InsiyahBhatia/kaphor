@@ -88,10 +88,7 @@ export default function MessagesScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadConversations();
-  }, [loadConversations]);
-
+  // useFocusEffect executes on initial mount and when the tab gains focus
   useFocusEffect(
     useCallback(() => {
       loadConversations();
