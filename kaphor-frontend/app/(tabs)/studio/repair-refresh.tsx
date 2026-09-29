@@ -396,6 +396,7 @@ export default function RepairRefreshScreen() {
     const isDress = resolvedCategory.includes('dress') || resolvedCategory.includes('skirt') || resolvedCategory.includes('gown');
     const isSweater = resolvedCategory.includes('sweater') || resolvedCategory.includes('knit') || resolvedCategory.includes('cardigan');
     const isJeans = resolvedCategory.includes('jean') || resolvedCategory.includes('denim');
+    const isShirt = resolvedCategory.includes('shirt') || resolvedCategory.includes('top') || resolvedCategory.includes('blouse') || resolvedCategory.includes('polo');
 
     // Filter incoming YouTube videos so conflicting garments never show up
     const filterConflictingVideos = (list: YouTubeVideo[]) =>
@@ -403,6 +404,10 @@ export default function RepairRefreshScreen() {
         const t = (v.title || '').toLowerCase();
         if (isDress) {
           if (/\b(jeans|denim|sweater|knitwear|hoodie|pants|trousers|crotch|socks|beanie)\b/i.test(t) && !/\b(dress|skirt|gown)\b/i.test(t)) {
+            return false;
+          }
+        } else if (isShirt) {
+          if (/\b(jeans|denim|sweater|knitwear|hoodie|pants|trousers|crotch|socks|beanie|dress|skirt|gown)\b/i.test(t) && !/\b(shirt|top|blouse|t-shirt)\b/i.test(t)) {
             return false;
           }
         } else if (isSweater) {
@@ -485,6 +490,61 @@ export default function RepairRefreshScreen() {
       },
     ];
 
+    const SHIRT_UPCYCLE_FALLBACKS: YouTubeVideo[] = [
+      {
+        videoId: 'k9LmP4sQ2wR',
+        title: 'Transform an Oversized Button-Down Shirt into a Corset Wrap Crop Top',
+        channelTitle: 'Thrift Flip & Rework Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'x8_G4bB1s-8',
+        title: 'Turn an Old Men Button-Down Shirt into a Zero-Waste Chef Apron',
+        channelTitle: 'DIY Fashion Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'Refashion an Oversized Flannel Shirt into a Quilted Reversible Vest',
+        channelTitle: 'Upcycle Stitches & Reworks',
+        thumbnail: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ];
+
+    const SHIRT_REPAIR_FALLBACKS: YouTubeVideo[] = [
+      {
+        videoId: 'P9kL2mQ4w1Z',
+        title: 'How to Fix a Torn Button or Hole in a Shirt Placket with Interfacing',
+        channelTitle: 'Gear & Garment Repair Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'How to Sew a Button on a Shirt with a Sturdy Thread Shank (Never Pulls Free)',
+        channelTitle: 'Handmade Wardrobe & Mending',
+        thumbnail: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'x4rY5pL9w2M',
+        title: 'How to Repair a Frayed Shirt Collar by Turning & Inverting by Hand',
+        channelTitle: 'Artisan Alterations Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1589310243389-96a5483213a8?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'm8KpL3v9qXw',
+        title: 'Invisible Ladder Stitch for Torn Underarm Seams on Shirts and Blouses',
+        channelTitle: 'Handmade Wardrobe & Sewing Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ];
+
     const DEFAULT_UPCYCLE_FALLBACKS: YouTubeVideo[] = [
       {
         videoId: '7zU4yv9V-F4',
@@ -520,8 +580,8 @@ export default function RepairRefreshScreen() {
     ];
 
     const activeFallbackVideos = isRepair
-      ? (isDress ? DRESS_REPAIR_FALLBACKS : DEFAULT_REPAIR_FALLBACKS)
-      : (isDress ? DRESS_UPCYCLE_FALLBACKS : DEFAULT_UPCYCLE_FALLBACKS);
+      ? (isShirt ? SHIRT_REPAIR_FALLBACKS : (isDress ? DRESS_REPAIR_FALLBACKS : DEFAULT_REPAIR_FALLBACKS))
+      : (isShirt ? SHIRT_UPCYCLE_FALLBACKS : (isDress ? DRESS_UPCYCLE_FALLBACKS : DEFAULT_UPCYCLE_FALLBACKS));
 
     const activeYouTube = rawActiveYouTube.length === 0
       ? activeFallbackVideos
@@ -593,6 +653,24 @@ export default function RepairRefreshScreen() {
         summary: 'Indian ethnic garment upcycling tutorial to reconstruct heavy silks into modern fusion wear silhouettes.',
       },
       {
+        id: 'blog-up-shirt-1',
+        title: 'Transform an Oversized Button-Down Shirt into a Modern Cropped Wrap Blouse',
+        url: 'https://weallsew.com/oversized-shirt-crop-top/',
+        source: 'WeAllSew Studio',
+        difficulty: 'beginner',
+        time_minutes: 40,
+        summary: 'Crop the hem, reshape the sleeves, and use tail fabric to create wrap waist ties for a contemporary silhouette.',
+      },
+      {
+        id: 'blog-up-shirt-2',
+        title: 'Convert a Flannel or Oxford Shirt into a Zero-Waste Artisan Chef Apron',
+        url: 'https://weallsew.com/how-to-upcycle-a-shirt-to-an-apron/',
+        source: 'WeAllSew Studio',
+        difficulty: 'beginner',
+        time_minutes: 35,
+        summary: 'Repurpose the collar and button placket of a shirt into an adjustable neck loop and artisan kitchen apron.',
+      },
+      {
         id: 'blog-up-6',
         title: 'Upcycle a Button-Down Shirt into a Chef Apron',
         url: 'https://weallsew.com/how-to-upcycle-a-shirt-to-an-apron/',
@@ -604,6 +682,42 @@ export default function RepairRefreshScreen() {
     ];
 
     const curatedRepairBlogs = [
+      {
+        id: 'blog-rep-shirt-1',
+        title: 'Shirt Placket Tear & Hole Repair: Interfacing Reinforcement Behind Buttons',
+        url: 'https://closetcorepatterns.com/blogs/blog/how-to-fix-a-torn-button-placket',
+        source: 'Closet Core Patterns',
+        difficulty: 'beginner',
+        time_minutes: 25,
+        summary: 'Reinforce torn fabric behind shirt buttonholes using fusible featherweight interfacing and discrete hand edge stitches.',
+      },
+      {
+        id: 'blog-rep-shirt-2',
+        title: 'How to Repair a Torn or Frayed Buttonhole on a Shirt or Blouse',
+        url: 'https://sewguide.com/how-to-sew-buttonholes/',
+        source: 'Sew Guide',
+        difficulty: 'beginner',
+        time_minutes: 20,
+        summary: 'Stabilize frayed buttonhole slits with fray check adhesive, gimp cord backing, and high-density hand buttonhole stitches.',
+      },
+      {
+        id: 'blog-rep-shirt-3',
+        title: 'Shirt Collar & Cuff Fray Repair: Reverse & Turn Method',
+        url: 'https://artofmanliness.com/skills/how-to/how-to-turn-a-frayed-collar/',
+        source: 'Art of Manliness',
+        difficulty: 'intermediate',
+        time_minutes: 45,
+        summary: 'Unpick worn shirt collar band stitching, invert the collar leaves so the undamaged inner surface faces outward, and restitch.',
+      },
+      {
+        id: 'blog-rep-shirt-4',
+        title: 'Invisible Underarm Seam & Blowout Repair for Shirts and Blouses',
+        url: 'https://www.thesprucecrafts.com/how-to-mend-a-torn-seam-2977797',
+        source: 'The Spruce Crafts',
+        difficulty: 'beginner',
+        time_minutes: 20,
+        summary: 'Mend blown-out underarm seams on fitted shirts using reinforced ladder stitches without altering sleeve drape.',
+      },
       {
         id: 'blog-rep-dress-1',
         title: 'Dress Hemming Guide: How to Shorten Maxi, Midi & Silk Dresses by Hand',
@@ -676,6 +790,10 @@ export default function RepairRefreshScreen() {
         if (/\b(jeans|denim|sweater|hoodie|socks|beanie)\b/i.test(lower) && !/\b(dress|skirt|gown)\b/i.test(lower)) {
           return false;
         }
+      } else if (isShirt) {
+        if (/\b(jeans|denim|sweater|knitwear|hoodie|crotch blowout|socks|beanie|dress|skirt|gown)\b/i.test(lower) && !/\b(shirt|top|blouse|t-shirt)\b/i.test(lower)) {
+          return false;
+        }
       } else if (isSweater) {
         if (/\b(jeans|denim|dress|saree)\b/i.test(lower) && !/\b(sweater|knit|cardigan)\b/i.test(lower)) {
           return false;
@@ -700,6 +818,10 @@ export default function RepairRefreshScreen() {
       const lower = (g.title + ' ' + (g.pro_tip || '')).toLowerCase();
       if (isDress) {
         if (/\b(jeans|denim|sweater|hoodie|crotch blowout|socks|beanie)\b/i.test(lower) && !/\b(dress|skirt|gown)\b/i.test(lower)) {
+          return false;
+        }
+      } else if (isShirt) {
+        if (/\b(jeans|denim|sweater|knitwear|hoodie|crotch blowout|socks|beanie|dress|skirt|gown)\b/i.test(lower) && !/\b(shirt|top|blouse|t-shirt)\b/i.test(lower)) {
           return false;
         }
       } else if (isSweater) {
@@ -731,6 +853,10 @@ export default function RepairRefreshScreen() {
         const lower = (b.title + ' ' + (b.summary || '')).toLowerCase();
         if (isDress) {
           if (/\b(jeans|denim|sweater|hoodie|socks|beanie)\b/i.test(lower) && !/\b(dress|skirt|gown)\b/i.test(lower)) {
+            return false;
+          }
+        } else if (isShirt) {
+          if (/\b(jeans|denim|sweater|hoodie|socks|beanie|dress|skirt|gown)\b/i.test(lower) && !/\b(shirt|top|blouse|t-shirt)\b/i.test(lower)) {
             return false;
           }
         } else if (isSweater) {

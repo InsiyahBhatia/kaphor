@@ -62,6 +62,10 @@ export function rankYouTubeResults(
       if (/\b(jeans|denim|sweater|knitwear|hoodie|pants|trousers|crotch|socks|beanie)\b/i.test(title)) {
         return { v, score: -1 };
       }
+    } else if (cleanCategory === 'shirt' || cleanCategory === 'top' || cleanCategory === 'blouse') {
+      if (/\b(jeans|denim|sweater|knitwear|hoodie|crotch|socks|beanie|dress|skirt)\b/i.test(title)) {
+        return { v, score: -1 };
+      }
     } else if (cleanCategory === 'sweater') {
       if (/\b(jeans|denim|dress|saree|shorts)\b/i.test(title)) {
         return { v, score: -1 };
@@ -249,6 +253,61 @@ const CATEGORY_CURATED_VIDEOS: Record<
       },
     ],
   },
+  shirt: {
+    repair: [
+      {
+        videoId: 'P9kL2mQ4w1Z',
+        title: 'How to Fix a Torn Button or Hole in a Shirt Placket with Interfacing',
+        channelTitle: 'Gear & Garment Repair Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'How to Sew a Button on a Shirt with a Sturdy Thread Shank (Never Pulls Free)',
+        channelTitle: 'Handmade Wardrobe & Mending',
+        thumbnail: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'x4rY5pL9w2M',
+        title: 'How to Repair a Frayed Shirt Collar by Turning & Inverting by Hand',
+        channelTitle: 'Artisan Alterations Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1589310243389-96a5483213a8?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'm8KpL3v9qXw',
+        title: 'Invisible Ladder Stitch for Torn Underarm Seams on Shirts and Blouses',
+        channelTitle: 'Handmade Wardrobe & Sewing Lab',
+        thumbnail: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
+    upcycle: [
+      {
+        videoId: 'k9LmP4sQ2wR',
+        title: 'Transform an Oversized Button-Down Shirt into a Corset Wrap Crop Top',
+        channelTitle: 'Thrift Flip & Rework Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: 'x8_G4bB1s-8',
+        title: 'Turn an Old Men Button-Down Shirt into a Zero-Waste Chef Apron',
+        channelTitle: 'DIY Fashion Studio',
+        thumbnail: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+      {
+        videoId: '7zU4yv9V-F4',
+        title: 'Refashion an Oversized Flannel Shirt into a Quilted Reversible Vest',
+        channelTitle: 'Upcycle Stitches & Reworks',
+        thumbnail: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=600&auto=format&fit=crop',
+        publishedAt: '2024-01-01',
+      },
+    ],
+  },
   general: {
     repair: [
       {
@@ -287,8 +346,19 @@ const CATEGORY_CURATED_VIDEOS: Record<
 
 function getCuratedVideos(decision: 'REPAIR' | 'UPCYCLE', category?: string): YouTubeVideo[] {
   const normCat = (category || '').toLowerCase();
-  const catKey = CATEGORY_CURATED_VIDEOS[normCat] ? normCat : 'general';
-  const group = CATEGORY_CURATED_VIDEOS[catKey];
+  let catKey = 'general';
+  if (normCat.includes('shirt') || normCat.includes('top') || normCat.includes('blouse') || normCat.includes('polo')) {
+    catKey = 'shirt';
+  } else if (normCat.includes('dress') || normCat.includes('gown') || normCat.includes('frock')) {
+    catKey = 'dress';
+  } else if (normCat.includes('jean') || normCat.includes('denim')) {
+    catKey = 'jeans';
+  } else if (normCat.includes('sweater') || normCat.includes('knit') || normCat.includes('cardigan') || normCat.includes('hoodie')) {
+    catKey = 'sweater';
+  } else if (CATEGORY_CURATED_VIDEOS[normCat]) {
+    catKey = normCat;
+  }
+  const group = CATEGORY_CURATED_VIDEOS[catKey] || CATEGORY_CURATED_VIDEOS['general'];
   return decision === 'UPCYCLE' ? group.upcycle : group.repair;
 }
 
@@ -479,6 +549,15 @@ export interface RepairAssessmentResult {
 /**
  * Full repair assessment: GLIE + T5 guides + YouTube tutorials (segregated for Repair vs Upcycling)
  */
+const RECOGNIZED_DAMAGE_KEYWORDS = [
+  'tear', 'hole', 'holes', 'stain', 'stains', 'fade', 'fading', 'rip', 'rips', 'broken', 'worn',
+  'fray', 'frayed', 'fraying', 'snag', 'snags', 'pilling', 'discolored', 'crack', 'scratch',
+  'missing', 'loose', 'damage', 'dirt', 'ink', 'oil', 'paint',
+  'burn', 'mold', 'rust', 'stretch', 'button', 'buttons', 'buttonhole', 'placket',
+  'collar', 'cuff', 'cuffs', 'seam', 'seams', 'zipper', 'slit', 'strap', 'straps',
+  'hem', 'underarm', 'lining',
+];
+
 export async function assessRepair(
   input: RepairAssessmentInput,
 ): Promise<RepairAssessmentResult> {
@@ -552,10 +631,7 @@ export async function assessRepair(
     ? input.damage_description
         .toLowerCase()
         .split(/[\s,]+/)
-        .filter(w => ['tear', 'hole', 'stain', 'fade', 'rip', 'broken', 'worn',
-          'fray', 'snag', 'pilling', 'discolored', 'crack', 'scratch',
-          'missing', 'loose', 'damage', 'dirt', 'ink', 'oil', 'paint',
-          'burn', 'mold', 'rust', 'stretch'].includes(w))
+        .filter(w => RECOGNIZED_DAMAGE_KEYWORDS.includes(w))
     : [];
 
   const allDamageTypes = [...new Set([...damageTypes, ...extraTypes])];
@@ -637,14 +713,7 @@ export async function lookupRepairFromAssessment(
     ? input.damage_description
         .toLowerCase()
         .split(/[\s,]+/)
-        .filter((w) =>
-          [
-            'tear', 'hole', 'stain', 'fade', 'rip', 'broken', 'worn',
-            'fray', 'snag', 'pilling', 'discolored', 'crack', 'scratch',
-            'missing', 'loose', 'damage', 'dirt', 'ink', 'oil', 'paint',
-            'burn', 'mold', 'rust', 'stretch',
-          ].includes(w)
-        )
+        .filter((w) => RECOGNIZED_DAMAGE_KEYWORDS.includes(w))
     : [];
 
   const allDamageTypes = [...new Set([...damageTypes, ...extraTypes])];

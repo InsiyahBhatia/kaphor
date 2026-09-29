@@ -151,6 +151,17 @@ function isConflictingCategory(guide: T5Guide, targetCat: string): boolean {
     if ((isDedicatedToOther && !hasDressOrCompatible) || (titleMentionBad && !/\b(dress|skirt|gown)\b/i.test(title))) {
       return true;
     }
+  } else if (targetCat === 'shirt' || targetCat === 'top' || targetCat === 'blouse') {
+    const isDedicatedToOther = guideCats.some(c =>
+      ['jeans', 'sweater', 'hoodie', 'socks', 'leather_jacket', 'down_jacket', 'trousers', 'shorts', 'sweatshirt', 'beanie', 'skirt', 'dress'].includes(c)
+    );
+    const hasShirtOrCompatible = guideCats.some(c =>
+      ['shirt', 'top', 'blouse', 'tshirt', 'garment', 'all'].includes(c)
+    );
+    const titleMentionBad = /\b(jeans|denim|sweater|knitwear|hoodie|crotch blowout|socks|beanie|dress|skirt)\b/i.test(title);
+    if ((isDedicatedToOther && !hasShirtOrCompatible) || (titleMentionBad && !/\b(shirt|top|blouse|t-shirt)\b/i.test(title))) {
+      return true;
+    }
   } else if (targetCat === 'sweater') {
     const isDedicatedToOther = guideCats.some(c =>
       ['jeans', 'dress', 'saree', 'shorts', 'leather_jacket'].includes(c)
@@ -194,7 +205,7 @@ function rankGuides(
   return guides
     .filter(g => g.is_garment !== false)
     .map(guide => {
-      // Immediate conflict exclusion (e.g. sweater/jeans for a dress)
+      // Immediate conflict exclusion (e.g. sweater/jeans for a dress or shirt)
       if (isConflictingCategory(guide, categoryKey)) {
         return { guide, score: -1 };
       }
@@ -212,12 +223,20 @@ function rankGuides(
         score += 0.15;
       }
 
-      // Damage type match (weight: 25%)
-      const damageMatch = guide.damage_types.some(gd => {
-        const gdk = normalize(gd);
-        return damageKeys.some(dk => dk && (gdk === dk || gdk.includes(dk) || dk.includes(gdk)));
-      });
-      if (damageMatch) score += 0.25;
+      // Damage type & location match (weight: 35%)
+      const guideText = (guide.title + ' ' + (guide.damage_types || []).join(' ') + ' ' + (guide.damage_location || '') + ' ' + (guide.technique_style || '')).toLowerCase();
+      let matchedDamages = 0;
+      for (const dk of damageKeys) {
+        if (!dk) continue;
+        const damageMatch = guide.damage_types.some(gd => {
+          const gdk = normalize(gd);
+          return gdk === dk || gdk.includes(dk) || dk.includes(gdk);
+        }) || guideText.includes(dk);
+        if (damageMatch) matchedDamages++;
+      }
+      if (matchedDamages > 0) {
+        score += Math.min(0.35, matchedDamages * 0.18);
+      }
 
       // Fiber match (weight: 20%)
       const fiberMatch = guide.fiber_types.some(f => {
@@ -227,7 +246,7 @@ function rankGuides(
       if (fiberMatch) score += 0.20;
 
       // Only award quality bonus if at least one semantic criteria matched
-      const hasCriteriaMatch = catMatch || damageMatch || fiberMatch;
+      const hasCriteriaMatch = catMatch || (matchedDamages > 0) || fiberMatch;
       if (!hasCriteriaMatch) {
         return { guide, score: 0 };
       }

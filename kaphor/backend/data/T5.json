@@ -6085,5 +6085,380 @@
     "upcycle_alternative": "Add a deep front utility pocket with two compartments for wooden spoons and recipe cards.",
     "source": "blog",
     "source_url": "https://sewguide.com/how-to-sew-an-apron-from-dress/"
+  },
+  {
+    "doc_id": "t5-enrich-031",
+    "doc_type": "repair",
+    "title": "Shirt Placket Tear & Hole Repair: Interfacing Reinforcement Behind Buttons",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Polyester",
+      "Rayon",
+      "Silk"
+    ],
+    "damage_types": [
+      "hole",
+      "tear",
+      "button",
+      "placket",
+      "loose",
+      "worn"
+    ],
+    "garment_categories": [
+      "shirt",
+      "top",
+      "blouse"
+    ],
+    "damage_location": "front placket / button line",
+    "difficulty": "beginner",
+    "time_minutes": 20,
+    "technique_style": [
+      "Interfacing Placket Reinforcement & Button Restitching"
+    ],
+    "quality_score": 0.98,
+    "tools_required": [
+      "Lightweight fusible interfacing patch (2x3 cm)",
+      "Sharp embroidery needle & matching thread",
+      "Original or matching shirt button",
+      "Pressing cloth & iron",
+      "Toothpick or matchstick for thread shank"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Cut away any loose frayed thread whiskers around the hole. Cut a piece of lightweight fusible interfacing 1.5 cm larger than the hole on all sides.",
+        "tip": "Rounding the corners of the interfacing patch ensures it will not peel back after repeated washing."
+      },
+      {
+        "step": 2,
+        "instruction": "Position the fusible interfacing patch on the reverse side of the placket directly behind the torn button area. Press with a dry iron for 10-15 seconds using a damp pressing cloth.",
+        "tip": "The fusible adhesive anchors the broken warp and weft fibers together, creating a structurally rigid foundation stronger than the original fabric."
+      },
+      {
+        "step": 3,
+        "instruction": "From the right side, sew small dense horizontal reinforcement stitches across the hole using thread that matches the shirt color to seamlessly close the tear.",
+        "tip": "Stitching through both the shirt fabric and the fused backing permanently locks the hole shut."
+      },
+      {
+        "step": 4,
+        "instruction": "Reattach the button on top of the repaired spot. Place a toothpick between the button and cloth while sewing 6-8 passes through the button holes.",
+        "tip": "Remove the toothpick, pull the button outward, and wrap thread tightly 4 times around the stitches underneath to build a thread shank. This prevents future button strain from tearing the fabric again!"
+      }
+    ],
+    "pro_tip": "Buttons tear holes in shirts when sewn flat against the fabric without a shank. A 2 mm thread shank allows the fabric placket to button smoothly without pulling or tension stress.",
+    "care_instructions": "Machine wash on warm or gentle cycle. Iron the placket flat on reverse side.",
+    "upcycle_alternative": "Replace all buttons along the placket with antique pearl or contrasting wooden buttons to give the shirt a custom bespoke tailored look.",
+    "source": "blog",
+    "source_url": "https://sewguide.com/how-to-fix-a-torn-button-on-a-shirt/"
+  },
+  {
+    "doc_id": "t5-enrich-032",
+    "doc_type": "repair",
+    "title": "How to Repair a Torn or Frayed Buttonhole on a Shirt or Blouse",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Polyester",
+      "Silk",
+      "Rayon"
+    ],
+    "damage_types": [
+      "hole",
+      "tear",
+      "button",
+      "fray",
+      "worn"
+    ],
+    "garment_categories": [
+      "shirt",
+      "top",
+      "blouse"
+    ],
+    "damage_location": "buttonhole placket",
+    "difficulty": "intermediate",
+    "time_minutes": 25,
+    "technique_style": [
+      "Buttonhole Stitch & Gimp Cord Reinforcement"
+    ],
+    "quality_score": 0.97,
+    "tools_required": [
+      "Fine hand needle",
+      "Matching topstitching or buttonhole thread",
+      "Small embroidery scissors",
+      "Fray Check or seam sealant"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Dab a tiny drop of clear fray sealant along the frayed buttonhole lips and let dry for 2 minutes to stabilize loose threads.",
+        "tip": "Sealing the raw threads first prevents the hole from widening during needle passes."
+      },
+      {
+        "step": 2,
+        "instruction": "Anchor thread inside the placket fold at one corner of the buttonhole slit.",
+        "tip": "Work from left to right along the bottom edge, then circle around to the top edge."
+      },
+      {
+        "step": 3,
+        "instruction": "Sew dense blanket stitches or classic buttonhole stitches (looping the thread under the needle tip before pulling taut) along the raw edge.",
+        "tip": "The knotted purl of the stitch forms along the inside edge of the slit, creating a rugged protective bumper."
+      },
+      {
+        "step": 4,
+        "instruction": "Stitch 3-4 heavy bar-tacks across both ends of the buttonhole slit to stop tears from extending down the placket.",
+        "tip": "The bar-tacks take 100% of the strain when the shirt is buttoned."
+      }
+    ],
+    "pro_tip": "Classic hand-worked buttonhole stitches look significantly more luxurious than machine-stitched buttonholes and last decades longer.",
+    "care_instructions": "Button all shirts completely before machine washing to reduce friction against other garments.",
+    "upcycle_alternative": "Use contrasting jewel-toned embroidery floss for the buttonhole stitch to turn functional repair into an intentional artistic detail.",
+    "source": "blog",
+    "source_url": "https://www.thesprucecrafts.com/hand-worked-buttonhole-tutorial-2977826"
+  },
+  {
+    "doc_id": "t5-enrich-033",
+    "doc_type": "repair",
+    "title": "Shirt Collar & Cuff Fray Repair: Reverse & Turn Method",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Polyester"
+    ],
+    "damage_types": [
+      "fray",
+      "worn",
+      "tear"
+    ],
+    "garment_categories": [
+      "shirt",
+      "blouse"
+    ],
+    "damage_location": "collar & cuffs",
+    "difficulty": "intermediate",
+    "time_minutes": 40,
+    "technique_style": [
+      "Collar Turning & Edge Binding"
+    ],
+    "quality_score": 0.96,
+    "tools_required": [
+      "Seam ripper",
+      "Pins",
+      "Sewing machine or hand needle",
+      "Matching thread & iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Carefully unpick the row of stitches connecting the collar to the neckband collar stand using a fine seam ripper.",
+        "tip": "Go slowly around the collar stand curve to avoid tearing the stand fabric."
+      },
+      {
+        "step": 2,
+        "instruction": "Detach the collar completely. Flip it upside down so the pristine, unworn underside becomes the visible top exterior collar face.",
+        "tip": "The worn, frayed edge is now hidden underneath where it rests invisibly against your neck."
+      },
+      {
+        "step": 3,
+        "instruction": "Slide the flipped collar back into the collar stand opening, pin securely from the center back outward, and press.",
+        "tip": "Verify both collar point lengths are completely symmetrical before stitching."
+      },
+      {
+        "step": 4,
+        "instruction": "Topstitch straight across the collar stand seam through all fabric layers, locking the newly flipped collar in place.",
+        "tip": "Your shirt instantly looks fresh and brand new from the outside."
+      }
+    ],
+    "pro_tip": "Turning a frayed dress shirt collar is a traditional Savile Row tailoring secret that doubles the lifespan of premium cotton shirts with zero visible patch work.",
+    "care_instructions": "Wash on delicate cycle and avoid over-starched dry cleaning which accelerates collar edge fraying.",
+    "upcycle_alternative": "Remove the collar entirely and stitch the stand closed to convert the shirt into a trendy minimalist mandarin/band collar shirt.",
+    "source": "blog",
+    "source_url": "https://www.artofmanliness.com/style/clothing/turn-a-frayed-shirt-collar/"
+  },
+  {
+    "doc_id": "t5-enrich-034",
+    "doc_type": "repair",
+    "title": "Invisible Underarm Seam & Blowout Repair for Shirts and Blouses",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Silk",
+      "Rayon",
+      "Polyester"
+    ],
+    "damage_types": [
+      "tear",
+      "hole",
+      "worn",
+      "loose"
+    ],
+    "garment_categories": [
+      "shirt",
+      "top",
+      "blouse"
+    ],
+    "damage_location": "underarm seam",
+    "difficulty": "beginner",
+    "time_minutes": 20,
+    "technique_style": [
+      "Underarm Gusset Insertion & French Seam Restitch"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "Hand needle or sewing machine",
+      "Matching thread",
+      "Fabric shears",
+      "Pins & iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Turn shirt inside out. Press the torn underarm seam flat, aligning raw seam edges.",
+        "tip": "Underarm rips usually occur when factory seam allowances pull free from tension."
+      },
+      {
+        "step": 2,
+        "instruction": "If the fabric is intact and only threads popped, pin the seam together 2 mm deeper into the seam allowance and sew with a reinforced stretch stitch.",
+        "tip": "Using a slight zigzag or triple-stitch provides flexibility when reaching and stretching."
+      },
+      {
+        "step": 3,
+        "instruction": "If fabric is shredded or missing, cut a 3 cm diamond gusset from scrap cotton, insert at the armpit crossroad seam, and topstitch.",
+        "tip": "Diamond underarm gussets were used in vintage work shirts to allow full 360-degree arm mobility without tearing."
+      },
+      {
+        "step": 4,
+        "instruction": "Finish raw edges with a clean zig-zag overlock to prevent future fraying, and press open with an iron.",
+        "tip": "The repair is completely hidden under the arm."
+      }
+    ],
+    "pro_tip": "Adding a 2 mm reinforcement bar-tack where the sleeve seam intersects the side body seam absorbs 80% of reaching tension.",
+    "care_instructions": "Avoid tumble drying shirts on high heat as thermal shrinkage weakens underarm seam threads.",
+    "upcycle_alternative": "Convert the shirt into a short-sleeve summer shirt if the underarm sleeve fabric is excessively worn.",
+    "source": "blog",
+    "source_url": "https://heatherhandmade.com/how-to-fix-underarm-hole-in-shirt/"
+  },
+  {
+    "doc_id": "t5-enrich-035",
+    "doc_type": "upcycle",
+    "title": "Upcycle an Oversized Button-Down Shirt into a Modern Cropped Wrap Blouse",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Rayon",
+      "Flannel"
+    ],
+    "damage_types": [
+      "worn",
+      "stain",
+      "tear",
+      "hole",
+      "none"
+    ],
+    "garment_categories": [
+      "shirt",
+      "top"
+    ],
+    "damage_location": "hem & lower buttons",
+    "difficulty": "beginner",
+    "time_minutes": 30,
+    "technique_style": [
+      "Cropped Hem & Front Tie Wrap Rework"
+    ],
+    "quality_score": 0.98,
+    "tools_required": [
+      "Oversized men button-down shirt",
+      "Fabric scissors",
+      "Pins",
+      "Sewing machine or hand needle",
+      "Measuring tape"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Put on the shirt and button up to chest level. Mark your natural waistline with tailor chalk.",
+        "tip": "Leave 2 cm hem allowance across the back and sides, but keep the front two placket panels 15 cm longer to form tie straps."
+      },
+      {
+        "step": 2,
+        "instruction": "Cut straight across the back and side panels at your waist mark. Angle cuts down toward the front placket tails.",
+        "tip": "The extra front fabric forms two chic ties that knot securely around your waist."
+      },
+      {
+        "step": 3,
+        "instruction": "Fold all raw cut edges under by 0.5 cm, then fold again by 1 cm, pin, and press with a hot iron.",
+        "tip": "Double-turned hems give a crisp professional factory finish that will never fray."
+      },
+      {
+        "step": 4,
+        "instruction": "Topstitch all around the bottom hem and tie tails with matching thread.",
+        "tip": "Cross the front tails and knot in a flirty bow at the front or wrap around to the back for a chic silhouette."
+      }
+    ],
+    "pro_tip": "Cropping an oversized thrifted shirt cuts away stained lower hems or damaged bottom buttons, turning dated formalwear into high-fashion street style in 30 minutes.",
+    "care_instructions": "Machine wash cold with like colors. Hang dry or tumble dry low.",
+    "upcycle_alternative": "Use leftover lower hem fabric to sew matching scrunchies or pocket linings.",
+    "source": "blog",
+    "source_url": "https://weallsew.com/oversized-shirt-crop-top/"
+  },
+  {
+    "doc_id": "t5-enrich-036",
+    "doc_type": "upcycle",
+    "title": "Convert an Old Flannel or Oxford Shirt into a Zero-Waste Artisan Chef Apron",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Flannel"
+    ],
+    "damage_types": [
+      "stain",
+      "tear",
+      "worn",
+      "none"
+    ],
+    "garment_categories": [
+      "shirt"
+    ],
+    "damage_location": "full garment",
+    "difficulty": "beginner",
+    "time_minutes": 35,
+    "technique_style": [
+      "Placket & Collar Reclaimed Kitchen Apron"
+    ],
+    "quality_score": 0.97,
+    "tools_required": [
+      "Button-down shirt",
+      "Fabric shears",
+      "Pins",
+      "Sewing machine",
+      "Iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Cut off both sleeves along the armhole seam. Cut off the back panel just below the shoulder yoke, keeping the front button placket and collar fully intact.",
+        "tip": "Keeping the original collar and button front intact gives the apron a built-in neck loop and front closures!"
+      },
+      {
+        "step": 2,
+        "instruction": "Hem the raw curved side edges with a double-folded 1 cm seam and press with an iron.",
+        "tip": "Topstitch cleanly down both sides."
+      },
+      {
+        "step": 3,
+        "instruction": "Take the severed sleeves, unpick the cuff, and cut four long 5 cm wide strips to create two sturdy 60 cm waist ties.",
+        "tip": "Fold strips in half lengthwise, stitch, turn right side out, and press."
+      },
+      {
+        "step": 4,
+        "instruction": "Stitch the waist ties firmly to the sides at waist level using an X-box stitch. The original chest pockets serve as instant utility utensil pockets!",
+        "tip": "You have a durable, machine-washable artisan apron created with 100% upcycled textile."
+      }
+    ],
+    "pro_tip": "The original front button placket allows you to easily step into the apron without messing up your hair, and the chest pockets hold spoons and thermometers perfectly.",
+    "care_instructions": "Machine wash warm with heavy towels. Tumble dry high.",
+    "upcycle_alternative": "Sew additional tool pockets on the lower front using the cuff placket sections.",
+    "source": "blog",
+    "source_url": "https://weallsew.com/how-to-upcycle-a-shirt-to-an-apron/"
   }
 ]
