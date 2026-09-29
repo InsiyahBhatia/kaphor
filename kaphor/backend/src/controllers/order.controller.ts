@@ -26,7 +26,7 @@ export async function createInquiryOrder(req: Request, res: Response): Promise<v
             where: { id: String(garmentId) },
         });
 
-        if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP' || garment.lifecycleState === 'RESERVED_SALE' || garment.reservedOrderId) {
+        if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP' || garment.lifecycleState === 'RESERVED_SALE') {
             res.status(400).json({ error: 'UNAVAILABLE', message: 'Garment is no longer available' });
             return;
         }
@@ -77,14 +77,6 @@ export async function createInquiryOrder(req: Request, res: Response): Promise<v
             },
         });
 
-        await db.garment.update({
-            where: { id: garment.id },
-            data: { 
-                lifecycleState: 'PURCHASE_INTENT',
-                reservedOrderId: order.id,
-            }
-        });
-
         res.status(201).json({ data: { orderId: order.id, existing: false } });
     } catch (error) {
         logger.error('createInquiryOrder failed', {
@@ -112,7 +104,7 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
             where: { id: String(garmentId) }
         });
 
-        if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP' || garment.lifecycleState === 'RESERVED_SALE' || garment.reservedOrderId) {
+        if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP' || garment.lifecycleState === 'RESERVED_SALE') {
             res.status(400).json({ error: 'UNAVAILABLE', message: 'Garment is no longer available' });
             return;
         }
@@ -162,17 +154,30 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
                 },
             });
 
-            await db.garment.update({
-                where: { id: garment.id },
-                data: { lifecycleState: 'PURCHASE_INTENT', reservedOrderId: order.id }
-            });
+            if (garment.lifecycleState === 'LISTED') {
+                await db.garment.update({
+                    where: { id: garment.id },
+                    data: { lifecycleState: 'PURCHASE_INTENT' }
+                });
+            }
 
-            // Isolate dedicated conversation thread for this purchase transaction
+            // Reuse or link existing conversation thread for this garment and purchase transaction
             try {
                 let conv = await db.conversation.findFirst({
-                    where: { orderId: order.id },
+                    where: {
+                        garmentId: garment.id,
+                        OR: [
+                            { participant1Id: req.user.id, participant2Id: garment.sellerId },
+                            { participant1Id: garment.sellerId, participant2Id: req.user.id },
+                        ],
+                    },
                 });
-                if (!conv) {
+                if (conv) {
+                    await db.conversation.update({
+                        where: { id: conv.id },
+                        data: { orderId: order.id, type: 'SALE' },
+                    });
+                } else {
                     conv = await db.conversation.create({
                         data: {
                             participant1Id: req.user.id,

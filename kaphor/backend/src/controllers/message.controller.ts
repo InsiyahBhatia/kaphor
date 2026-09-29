@@ -418,12 +418,62 @@ export async function getOrCreateConversation(req: AuthRequest, res: Response): 
     }
 
     // Context-specific conversation isolation:
-    // If a specific transaction (orderId, swapId, rentalId) is passed, find or create a dedicated thread for that transaction.
-    // If a garmentId is passed, find or create a thread for that garment.
-    // Otherwise, find or create a general DM thread.
+    // If a garmentId is present or can be resolved from a transaction (rentalId, orderId, swapId),
+    // always reuse the single conversation thread between the two participants for that garment.
+    let targetGarmentId = garmentId || null;
+    if (!targetGarmentId) {
+      if (rentalId) {
+        const r = await db.rental.findUnique({ where: { id: rentalId }, select: { garmentId: true } });
+        if (r?.garmentId) targetGarmentId = r.garmentId;
+      } else if (orderId) {
+        const o = await db.order.findUnique({ where: { id: orderId }, select: { orderItems: { select: { garmentId: true }, take: 1 } } });
+        if (o?.orderItems?.[0]?.garmentId) targetGarmentId = o.orderItems[0].garmentId;
+      } else if (swapId) {
+        const s = await db.swap.findUnique({ where: { id: swapId }, select: { wantedGarmentId: true, offeredGarmentId: true } });
+        if (s?.wantedGarmentId) targetGarmentId = s.wantedGarmentId;
+      }
+    }
+
     let conv: any = null;
 
-    if (orderId) {
+    if (targetGarmentId) {
+      conv = await db.conversation.findFirst({
+        where: {
+          garmentId: targetGarmentId,
+          OR: [
+            { participant1Id: uid, participant2Id: recipientId },
+            { participant1Id: recipientId, participant2Id: uid },
+          ],
+        },
+        include: {
+          participant1: { select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true } },
+          participant2: { select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true } },
+          garment: { select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true } },
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
+
+      if (conv) {
+        const updateData: any = {};
+        if (orderId && conv.orderId !== orderId) updateData.orderId = orderId;
+        if (rentalId && conv.rentalId !== rentalId) updateData.rentalId = rentalId;
+        if (swapId && conv.swapId !== swapId) updateData.swapId = swapId;
+        if (type && conv.type !== type) updateData.type = type;
+        else if (initialType && initialType !== 'GENERAL' && conv.type !== initialType) updateData.type = initialType;
+
+        if (Object.keys(updateData).length > 0) {
+          conv = await db.conversation.update({
+            where: { id: conv.id },
+            data: updateData,
+            include: {
+              participant1: { select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true } },
+              participant2: { select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true } },
+              garment: { select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true } },
+            },
+          });
+        }
+      }
+    } else if (orderId) {
       conv = await db.conversation.findFirst({
         where: {
           orderId,
@@ -468,24 +518,6 @@ export async function getOrCreateConversation(req: AuthRequest, res: Response): 
           garment: { select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true } },
         },
       });
-    } else if (garmentId) {
-      conv = await db.conversation.findFirst({
-        where: {
-          garmentId,
-          orderId: null,
-          swapId: null,
-          rentalId: null,
-          OR: [
-            { participant1Id: uid, participant2Id: recipientId },
-            { participant1Id: recipientId, participant2Id: uid },
-          ],
-        },
-        include: {
-          participant1: { select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true } },
-          participant2: { select: { id: true, displayName: true, username: true, avatar: true, isVerified: true, verificationStatus: true } },
-          garment: { select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true } },
-        },
-      });
     } else {
       // General peer DM (no specific garment or transaction)
       conv = await db.conversation.findFirst({
@@ -512,7 +544,7 @@ export async function getOrCreateConversation(req: AuthRequest, res: Response): 
         data: {
           participant1Id: uid,
           participant2Id: recipientId,
-          garmentId: garmentId || null,
+          garmentId: targetGarmentId || null,
           type: initialType,
           orderId: orderId || null,
           swapId: swapId || null,

@@ -456,10 +456,21 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
     let conversationId: string | undefined;
     try {
       let conv = await db.conversation.findFirst({
-        where: { swapId: swap.id },
+        where: {
+          garmentId: wantedGarment.id,
+          OR: [
+            { participant1Id: initiatorId, participant2Id: wantedGarment.sellerId },
+            { participant1Id: wantedGarment.sellerId, participant2Id: initiatorId },
+          ],
+        },
       });
 
-      if (!conv) {
+      if (conv) {
+        await db.conversation.update({
+          where: { id: conv.id },
+          data: { swapId: swap.id, type: 'SWAP' },
+        });
+      } else {
         conv = await db.conversation.create({
           data: {
             participant1Id: initiatorId,

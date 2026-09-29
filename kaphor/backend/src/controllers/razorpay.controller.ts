@@ -42,8 +42,7 @@ export async function createRazorpayOrder(req: Request, res: Response): Promise<
       !garment ||
       !garment.isActive ||
       garment.lifecycleState === 'OWNERSHIP' ||
-      garment.lifecycleState === 'RESERVED_SALE' ||
-      garment.reservedOrderId
+      garment.lifecycleState === 'RESERVED_SALE'
     ) {
       res.status(400).json({ error: 'UNAVAILABLE', message: 'Garment is no longer available' });
       return;

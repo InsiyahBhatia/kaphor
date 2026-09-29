@@ -254,11 +254,22 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             });
             emitToUser(garment.sellerId, 'rental:requested', { rentalId: rental.id, garmentId: garment.id });
 
-            // Create dedicated direct conversation thread for this rental transaction
+            // Reuse or link existing direct conversation thread for this garment and rental transaction
             let conv = await db.conversation.findFirst({
-                where: { rentalId: rental.id },
+                where: {
+                    garmentId: garment.id,
+                    OR: [
+                        { participant1Id: req.user.id, participant2Id: garment.sellerId },
+                        { participant1Id: garment.sellerId, participant2Id: req.user.id },
+                    ],
+                },
             });
-            if (!conv) {
+            if (conv) {
+                await db.conversation.update({
+                    where: { id: conv.id },
+                    data: { rentalId: rental.id, type: 'RENTAL' },
+                });
+            } else {
                 conv = await db.conversation.create({
                     data: {
                         participant1Id: req.user.id,
