@@ -56,6 +56,7 @@ export interface T5GuideCondensed {
   source?: string;
   source_id?: string;
   source_url?: string;
+  summary?: string;
 }
 
 let guideDocs: T5Guide[] | null = null;
@@ -205,6 +206,7 @@ function toCondensed(guide: T5Guide): T5GuideCondensed {
     source: guide.source || '',
     source_id: guide.source_id || '',
     source_url: guide.source_url || '',
+    summary: guide.pro_tip || (guide.steps && guide.steps[0] ? (typeof guide.steps[0] === 'string' ? guide.steps[0] : (guide.steps[0].instruction || guide.steps[0].tip || '')) : ''),
   };
 }
 
@@ -229,9 +231,20 @@ export function queryT5(
 
   const sorted = rankGuides(fiber, damageTypes, category, pool);
   const relevant = sorted.filter(s => s.score > 0);
-  const top5 = relevant.slice(0, 5);
+  const picked: T5Guide[] = relevant.map(s => s.guide);
 
-  return top5.map(({ guide }) => toCondensed(guide));
+  // If fewer than 4 matches, pad with the highest quality guides from the pool
+  if (picked.length < 4) {
+    const fallbackSorted = [...pool].sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
+    for (const g of fallbackSorted) {
+      if (!picked.some(p => p.doc_id === g.doc_id)) {
+        picked.push(g);
+      }
+      if (picked.length >= 4) break;
+    }
+  }
+
+  return picked.slice(0, 5).map(toCondensed);
 }
 
 /**
@@ -249,7 +262,7 @@ export function queryBlogReads(
   if (!guideDocs) loadT5();
   if (!guideDocs || guideDocs.length === 0) return [];
 
-  let blogDocs = guideDocs.filter(g => g.source === 'blog');
+  let blogDocs = guideDocs.filter(g => g.source === 'blog' || !!g.source_url);
   if (docType === 'repair') {
     blogDocs = blogDocs.filter(g => g.doc_type !== 'upcycle');
   } else if (docType === 'upcycle') {

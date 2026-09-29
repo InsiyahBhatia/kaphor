@@ -36,6 +36,8 @@ export interface BlogArticle {
   url: string;
   source: string;
   difficulty: string;
+  time_minutes?: number;
+  summary?: string;
 }
 
 export interface T5GuideResult {
@@ -144,12 +146,20 @@ export function clearSharedRepairAssessment() {
   _sharedRepairResult = null;
 }
 
-/**
- * Assess a garment for repair/upcycling: runs GLIE + T5 guides + YouTube search
- */
 export async function assessRepair(input: RepairInput): Promise<RepairResult> {
-  const { data } = await api.post('/repair/assess', input, { timeout: 60000 });
-  return data.data;
+  try {
+    const { data } = await api.post('/repair/assess', input, { timeout: 60000 });
+    return data.data;
+  } catch (err: any) {
+    console.warn('[RepairService] assessRepair network error, falling back to instant lookup:', err?.message);
+    // Instant metadata lookup fallback so users are never blocked by mobile upload timeouts
+    return await lookupRepairFromAssessment({
+      garment_category: input.garment_category,
+      fiber_type: input.fiber_type,
+      damage_description: input.damage_description,
+      original_price_inr: input.original_price_inr,
+    });
+  }
 }
 
 /**

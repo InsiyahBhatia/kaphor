@@ -4063,5 +4063,1392 @@
     "upcycle_alternative": "Remaining body panels can be stuffed with polyfill or fabric scraps to create pet beds or couch throw pillows.",
     "source": "blog",
     "source_url": "https://mellysews.com/thrift-flip-sweater-upcycle-to-beanie-and-mittens/"
+  },
+  {
+    "doc_id": "t5-enrich-001",
+    "doc_type": "repair",
+    "title": "Japanese Sashiko Visible Mending for Denim Jeans & Heavy Cotton",
+    "fiber_types": [
+      "Denim",
+      "Cotton",
+      "Linen",
+      "Hemp"
+    ],
+    "damage_types": [
+      "tear",
+      "hole",
+      "worn",
+      "fray",
+      "rip"
+    ],
+    "garment_categories": [
+      "jeans",
+      "jacket",
+      "trousers",
+      "shorts"
+    ],
+    "damage_location": "knee, thigh, or pocket",
+    "difficulty": "beginner",
+    "time_minutes": 45,
+    "technique_style": [
+      "Sashiko Visible Mending"
+    ],
+    "quality_score": 0.98,
+    "tools_required": [
+      "Sashiko or embroidery needle",
+      "White or contrast cotton sashiko thread",
+      "Backing fabric patch (cotton or denim scrap)",
+      "Fabric chalk or water-soluble pen",
+      "Fabric scissors",
+      "Sewing pins"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Cut a backing patch from denim or sturdy cotton that extends at least 1.5 cm (0.6 in) beyond the damaged hole on all sides.",
+        "tip": "Use a slightly lighter weight cotton scrap for the backing patch so the mended area remains soft and pliable against the skin."
+      },
+      {
+        "step": 2,
+        "instruction": "Turn the jeans inside out and pin or baste the backing patch securely behind the tear, ensuring the denim grain lines match.",
+        "tip": "Basting with loose temporary running stitches prevents the patch from bunching when you work the visible stitches."
+      },
+      {
+        "step": 3,
+        "instruction": "Flip the garment to the right side and draw a geometric grid (crosses, parallel lines, or diamond waves) over the damaged area with fabric chalk.",
+        "tip": "Standard sashiko stitches are usually 3 mm long with 1.5 mm spaces between stitches."
+      },
+      {
+        "step": 4,
+        "instruction": "Thread your needle with a double strand of Sashiko cotton and sew continuous running stitches across the tear, catching both the denim and backing patch.",
+        "tip": "Load multiple stitches onto the needle before pulling the thread through for perfectly straight lines."
+      },
+      {
+        "step": 5,
+        "instruction": "Work perpendicular running stitches across your first rows to lock the raw frayed denim edges securely under the thread matrix, then knot on the reverse side.",
+        "tip": "Press the finished mend with a steam iron to flatten the stitches into the denim weave."
+      }
+    ],
+    "pro_tip": "Visible mending embraces the Japanese philosophy of Wabi-Sabi — perfection in imperfection. A vibrant cream, indigo, or ochre sashiko thread elevates a common rip into a bespoke designer accent.",
+    "care_instructions": "Wash inside-out on a gentle cold cycle (30°C) with eco-friendly detergent. Air dry flat away from direct blazing sunlight to preserve thread tension.",
+    "upcycle_alternative": "Extend the sashiko embroidery across the entire thigh or back pocket to turn the jeans into an artisan streetwear statement piece.",
+    "source": "blog",
+    "source_url": "https://heatherhandmade.com/sashiko-style-mending-tutorial/"
+  },
+  {
+    "doc_id": "t5-enrich-002",
+    "doc_type": "repair",
+    "title": "Swiss Darning & Duplicate Stitch: Seamless Knitwear & Sweater Restoration",
+    "fiber_types": [
+      "Wool",
+      "Cashmere",
+      "Acrylic",
+      "Cotton"
+    ],
+    "damage_types": [
+      "hole",
+      "snag",
+      "worn",
+      "pilling"
+    ],
+    "garment_categories": [
+      "sweater",
+      "hoodie",
+      "sweatshirt",
+      "activewear"
+    ],
+    "damage_location": "elbow, chest, or collar",
+    "difficulty": "intermediate",
+    "time_minutes": 40,
+    "technique_style": [
+      "Swiss Darning Duplicate Stitch"
+    ],
+    "quality_score": 0.96,
+    "tools_required": [
+      "Blunt darning/tapestry needle",
+      "Color-matched darning wool or embroidery floss",
+      "Fine contrast guide thread",
+      "Darning mushroom, tennis ball, or embroidery hoop",
+      "Small thread snips"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Slip a darning mushroom or smooth round ball under the hole to keep the knit fabric at its natural resting tension without stretching.",
+        "tip": "Never stretch the sweater tight over the tool, or the finished patch will pucker and cup when removed."
+      },
+      {
+        "step": 2,
+        "instruction": "Anchor laddered stitches along the bottom of the hole by catching each live loop with a thin contrast basting thread.",
+        "tip": "Securing the loops immediately halts horizontal run-outs and moth-hole expansion."
+      },
+      {
+        "step": 3,
+        "instruction": "Using your blunt needle and matching yarn, trace the \"V\" shapes of the intact knit row immediately below the hole.",
+        "tip": "Pass behind the two legs of the stitch above, then dive back into the center of the originating \"V\"."
+      },
+      {
+        "step": 4,
+        "instruction": "Span the hole row by row, recreating each knit stitch over the foundation threads until the breach is entirely rewoven.",
+        "tip": "Keep your tension light and elastic so the repaired patch stretches seamlessly alongside the sweater."
+      },
+      {
+        "step": 5,
+        "instruction": "Weave the yarn tail invisibly through 4-5 purl bumps on the reverse side of the sweater and snip cleanly.",
+        "tip": "Gently steam block the repaired section with a pressing cloth to set the new wool fibers."
+      }
+    ],
+    "pro_tip": "If you do not have an exact yarn match, pull a matching strand from the sweater's inside hem seam allowance for a 100% invisible repair.",
+    "care_instructions": "Always hand wash fine wool and cashmere in lukewarm water using delicate wool wash. Squeeze gently in a towel and dry flat.",
+    "upcycle_alternative": "Use bright contrasting neon or pastel mohair yarn to transform the hole into a deliberate modern Swiss-darn patch.",
+    "source": "blog",
+    "source_url": "https://www.flockworkshop.uk/journal/how-to-swiss-darn"
+  },
+  {
+    "doc_id": "t5-enrich-003",
+    "doc_type": "repair",
+    "title": "Heavy-Duty Denim Crotch Blowout Reconstruction & Reinforcement",
+    "fiber_types": [
+      "Denim",
+      "Cotton",
+      "Spandex"
+    ],
+    "damage_types": [
+      "tear",
+      "hole",
+      "worn",
+      "rip"
+    ],
+    "garment_categories": [
+      "jeans",
+      "shorts",
+      "trousers"
+    ],
+    "damage_location": "crotch and inner thigh seam",
+    "difficulty": "intermediate",
+    "time_minutes": 50,
+    "technique_style": [
+      "Fusible Interfacing & Multi-Directional Darning"
+    ],
+    "quality_score": 0.97,
+    "tools_required": [
+      "Sewing machine with reverse stitch (or strong hand needle)",
+      "Medium-weight fusible interfacing (woven cotton)",
+      "Denim-matched thread (2 shades: light and dark)",
+      "Sharp fabric shears",
+      "Iron and pressing cloth"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Trim away excessive frayed white threads inside the blowout, leaving clean, aligned edges.",
+        "tip": "Do not cut away actual denim fabric — just trim the loose web of lint that obstructs flat adhesion."
+      },
+      {
+        "step": 2,
+        "instruction": "Turn jeans inside out and cut an oval piece of fusible interfacing that overlaps the damaged area by at least 2.5 cm (1 inch).",
+        "tip": "Round all corners of the interfacing so it does not peel up during subsequent washing cycles."
+      },
+      {
+        "step": 3,
+        "instruction": "Press the fusible interfacing firmly onto the inside of the crotch blowout using a hot iron with steam for 15 seconds.",
+        "tip": "Use a damp pressing cloth to protect the denim and ensure deep glue penetration into the denim twill."
+      },
+      {
+        "step": 4,
+        "instruction": "Flip to the right side. Thread your machine with denim thread matching the prevailing wash tone.",
+        "tip": "Wind a bobbin with thread that matches the darker inside denim weft."
+      },
+      {
+        "step": 5,
+        "instruction": "Stitch back and forth parallel to the denim twill diagonal grain lines, covering the entire blowout area in close passes.",
+        "tip": "Stitching parallel to the diagonal twill lines blends the thread invisibly into the fabric texture."
+      }
+    ],
+    "pro_tip": "Use two slightly different shades of blue thread in alternating passes — one matching the highlights and one matching the indigo valleys. This creates the optical illusion of real woven denim.",
+    "care_instructions": "Machine wash on cold inside-out. Hang to air dry. Avoid tumble drying on high heat as it degrades elastane and fusible adhesive.",
+    "upcycle_alternative": "If the crotch wear is too extensive, cut off the legs to craft high-waisted denim cutoff shorts with raw frayed hems.",
+    "source": "blog",
+    "source_url": "https://sewguide.com/how-to-fix-a-hole-in-jeans/"
+  },
+  {
+    "doc_id": "t5-enrich-004",
+    "doc_type": "repair",
+    "title": "Invisible Ladder Stitch (Slip Stitch) for Torn Seams, Linings & Pockets",
+    "fiber_types": [
+      "Cotton",
+      "Silk",
+      "Linen",
+      "Polyester",
+      "Rayon",
+      "Viscose",
+      "Wool"
+    ],
+    "damage_types": [
+      "tear",
+      "loose",
+      "broken"
+    ],
+    "garment_categories": [
+      "shirt",
+      "blouse",
+      "dress",
+      "trousers",
+      "jacket",
+      "skirt"
+    ],
+    "damage_location": "side seam, lining, hem, or pocket",
+    "difficulty": "beginner",
+    "time_minutes": 20,
+    "technique_style": [
+      "Invisible Hand Ladder Stitch"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "Fine hand sewing needle",
+      "Matching all-purpose polyester or silk thread",
+      "Thread beeswax or conditioner (optional)",
+      "Small scissors",
+      "Iron (optional)"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Fold the seam allowance of both separated edges inward along the original factory fold line and press lightly with fingers or an iron.",
+        "tip": "Crisp pressed edges make the ladder stitch completely disappear once pulled tight."
+      },
+      {
+        "step": 2,
+        "instruction": "Thread your needle with a single strand of thread and tie a small knot. Hide the knot by bringing the needle out from inside one fold.",
+        "tip": "Single strand thread leaves zero bulk and glides more smoothly through delicate silk or cotton seams."
+      },
+      {
+        "step": 3,
+        "instruction": "Directly opposite your exit point, take a 3-4 mm horizontal stitch through the fold of the opposing fabric edge.",
+        "tip": "Keep your needle parallel to the folded edge, catching only the very crest of the fold."
+      },
+      {
+        "step": 4,
+        "instruction": "Move back across to the first side and take an identical 3-4 mm stitch. Your stitches will look like rungs on a ladder.",
+        "tip": "Leave the stitches slightly loose while sewing 4 to 6 rungs."
+      },
+      {
+        "step": 5,
+        "instruction": "Gently pull the working thread taut. Watch the two folded edges pull together and the stitches completely vanish.",
+        "tip": "Lock with a tiny backstitch buried in the seam and bring the needle out 1 cm away before cutting the thread tail."
+      }
+    ],
+    "pro_tip": "Waxing your thread with beeswax prevents twists and tangles, allowing you to pull the ladder stitch seamlessly tight without snapping.",
+    "care_instructions": "Reinforced ladder stitches are fully machine-washable. For silk and delicate rayons, hand wash in cool water.",
+    "upcycle_alternative": "Instead of hiding the seam, use contrasting neon embroidery floss with an exposed whipstitch for an intentional deconstructed aesthetic.",
+    "source": "blog",
+    "source_url": "https://www.thesprucecrafts.com/how-to-mend-a-torn-seam-2977797"
+  },
+  {
+    "doc_id": "t5-enrich-005",
+    "doc_type": "repair",
+    "title": "Broken Zipper Slider Fix & Stopper Repair Without Replacing the Zipper",
+    "fiber_types": [
+      "Denim",
+      "Cotton",
+      "Polyester",
+      "Nylon",
+      "Leather"
+    ],
+    "damage_types": [
+      "broken",
+      "loose",
+      "missing"
+    ],
+    "garment_categories": [
+      "jacket",
+      "jeans",
+      "hoodie",
+      "trousers",
+      "skirt"
+    ],
+    "damage_location": "zipper placket",
+    "difficulty": "beginner",
+    "time_minutes": 15,
+    "technique_style": [
+      "Zipper Mechanical Re-alignment & Crimp Fix"
+    ],
+    "quality_score": 0.94,
+    "tools_required": [
+      "Needle-nose pliers",
+      "Fork or zipper pull replacement tool",
+      "Lubricant (candle wax, graphite pencil, or lip balm)",
+      "Hand needle & heavy duty thread (for zipper stopper)"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Identify the issue: If teeth separate behind the slider as you pull, the metal slider mouth has flared open over time.",
+        "tip": "Over 85% of zipper failures are caused by loose slider tension, not damaged teeth."
+      },
+      {
+        "step": 2,
+        "instruction": "Move the slider all the way down to the bottom of the zipper track.",
+        "tip": "If teeth are misaligned, use pliers to gently ease teeth back into sequential order."
+      },
+      {
+        "step": 3,
+        "instruction": "Take needle-nose pliers and apply gentle, even pressure to the top and bottom plates on each side of the slider.",
+        "tip": "Crimp very gently in tiny increments; compressing too firmly will lock the slider onto the track."
+      },
+      {
+        "step": 4,
+        "instruction": "Rub a candle, wax crayon, or graphite pencil lead along the teeth on both sides of the zipper track.",
+        "tip": "Graphite and paraffin wax provide dry lubrication that allows metal and plastic teeth to interlock smoothly."
+      },
+      {
+        "step": 5,
+        "instruction": "Test the zip. If the bottom stopper is missing or frayed, wrap heavy-duty thread 10-12 times around the bottom teeth to form a permanent stop.",
+        "tip": "Coat the thread stopper with a drop of clear fabric glue or clear nail polish to lock it permanently."
+      }
+    ],
+    "pro_tip": "Replacing a complete jacket zipper can cost more than the garment itself. A 2-minute slider crimp and wax lubrication saves the zipper with zero sewing machine involvement.",
+    "care_instructions": "Always zip jackets and pants completely shut before placing them in the washing machine to protect teeth from snagging other garments.",
+    "upcycle_alternative": "If a zipper track is genuinely missing multiple teeth, replace it with vintage bronze snap buttons or a button placket.",
+    "source": "blog",
+    "source_url": "https://closetcorepatterns.com/blogs/blog/textile-triage-pilling-snags-holes-and-fraying"
+  },
+  {
+    "doc_id": "t5-enrich-006",
+    "doc_type": "repair",
+    "title": "Button Shank Reconstruction & Reinforced Interfacing Placket Backing",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Wool",
+      "Denim",
+      "Polyester"
+    ],
+    "damage_types": [
+      "missing",
+      "loose",
+      "tear"
+    ],
+    "garment_categories": [
+      "shirt",
+      "jacket",
+      "blazer",
+      "coat",
+      "kurta"
+    ],
+    "damage_location": "front placket or cuff",
+    "difficulty": "beginner",
+    "time_minutes": 15,
+    "technique_style": [
+      "Thread Shank Sewing with Anchor Backing"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "Hand sewing needle",
+      "Heavy duty or waxed button thread",
+      "Matchstick, toothpick, or thick needle (for shank spacer)",
+      "Small anchor button or scrap felt for backing",
+      "Scissors"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "If the fabric behind the missing button has torn through, place a small square of iron-on interfacing or felt on the inside.",
+        "tip": "Reinforcing the tear prevents the new button from ripping out an even larger hole under tension."
+      },
+      {
+        "step": 2,
+        "instruction": "Thread your needle with double thread and anchor into the fabric from the reverse side, placing an anchor button on the inside for heavy coats.",
+        "tip": "An interior backing button distributes stress over a wide surface area and prevents fabric strain."
+      },
+      {
+        "step": 3,
+        "instruction": "Place a matchstick or toothpick across the face of the top button between the holes before pulling your stitches through.",
+        "tip": "The spacer creates slack in the thread, ensuring space for the thick fabric layers of the buttonhole placket."
+      },
+      {
+        "step": 4,
+        "instruction": "Sew through the holes 6-8 times, then remove the spacer. Bring the needle out between the button and the fabric.",
+        "tip": "Tightly wrap the thread around the exposed thread columns 5-6 times to form a firm cylindrical shank."
+      },
+      {
+        "step": 5,
+        "instruction": "Push needle through to the back side, knot firmly through the backing anchor, and snip thread.",
+        "tip": "Add a tiny dab of clear nail polish or fray-check to the wrapped shank for lifetime durability."
+      }
+    ],
+    "pro_tip": "Coat and jacket buttons must NEVER sit flush against the fabric. A thread shank provides the exact height needed so the button lies flat without puckering the buttonhole.",
+    "care_instructions": "Buttons with wrapped shanks easily withstand heavy commercial laundering and dry cleaning.",
+    "upcycle_alternative": "Swap plain boring factory plastic buttons for mismatched vintage tortoiseshell, mother-of-pearl, or brass buttons.",
+    "source": "blog",
+    "source_url": "https://weallsew.com/how-to-sew-on-a-button-with-a-shank/"
+  },
+  {
+    "doc_id": "t5-enrich-007",
+    "doc_type": "repair",
+    "title": "Textile Stain Removal Matrix: Oil, Grease, Wine, Ink & Rust",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Silk",
+      "Wool",
+      "Polyester",
+      "Rayon",
+      "Denim"
+    ],
+    "damage_types": [
+      "stain",
+      "discolored"
+    ],
+    "garment_categories": [
+      "shirt",
+      "tshirt",
+      "dress",
+      "kurta",
+      "trousers",
+      "blouse"
+    ],
+    "damage_location": "front, collar, or underarms",
+    "difficulty": "beginner",
+    "time_minutes": 25,
+    "technique_style": [
+      "Enzymatic Spot Treatment & Absorbent Degreasing"
+    ],
+    "quality_score": 0.96,
+    "tools_required": [
+      "Cornstarch or baking soda (for grease)",
+      "Liquid dish soap (degreaser)",
+      "White vinegar & 3% hydrogen peroxide",
+      "Rubbing alcohol or hand sanitizer (for ink)",
+      "Clean white cotton cloth or cotton swabs"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "For grease and oil stains, dust immediately with cornstarch or baking soda and let sit for 20 minutes to draw out oil molecules.",
+        "tip": "Never apply hot water to an oil stain first — heat permanently sets oil into synthetic and cotton fibers."
+      },
+      {
+        "step": 2,
+        "instruction": "Shake off powder, apply a drop of clear liquid dish soap directly to the spot, and gently massage with your fingertips.",
+        "tip": "Dish soap is chemically formulated to break surfactant bonds in cooking and skin oils."
+      },
+      {
+        "step": 3,
+        "instruction": "For pen and marker ink, place a folded paper towel behind the stain and dab with rubbing alcohol using a cotton ball.",
+        "tip": "Always dab from the outside perimeter of the stain inward toward the center to avoid spreading the halo."
+      },
+      {
+        "step": 4,
+        "instruction": "For yellowed underarm perspiration or wine stains, mix equal parts hydrogen peroxide, baking soda, and cold water into a paste.",
+        "tip": "For colored or delicate silk items, test on an inside seam first to ensure color fastness."
+      },
+      {
+        "step": 5,
+        "instruction": "Let paste sit for 15 minutes, then flush thoroughly with cold running water from the back of the fabric.",
+        "tip": "Flushing from behind pushes the trapped particles out of the fabric weave rather than through it."
+      }
+    ],
+    "pro_tip": "Never put a stained garment in the clothes dryer until you are 100% sure the stain is completely gone. Dryer heat bakes protein and oil stains permanently into the fiber core.",
+    "care_instructions": "Wash with enzyme detergent on cold. Sun dry white cottons — natural UV light acts as a mild, safe bleach.",
+    "upcycle_alternative": "If a stubborn stain simply will not budge, camouflage it with custom block printing, botanical embroidery, or an artisan tie-dye wash.",
+    "source": "blog",
+    "source_url": "https://closetcorepatterns.com/blogs/blog/textile-triage-pilling-snags-holes-and-fraying"
+  },
+  {
+    "doc_id": "t5-enrich-008",
+    "doc_type": "repair",
+    "title": "Wool & Cashmere Knitwear De-Pilling & Shaving Masterclass",
+    "fiber_types": [
+      "Wool",
+      "Cashmere",
+      "Acrylic",
+      "Cotton",
+      "Polyester"
+    ],
+    "damage_types": [
+      "pilling",
+      "worn",
+      "snag"
+    ],
+    "garment_categories": [
+      "sweater",
+      "hoodie",
+      "blazer",
+      "coat",
+      "sweatshirt"
+    ],
+    "damage_location": "underarms, side panels, and chest",
+    "difficulty": "beginner",
+    "time_minutes": 20,
+    "technique_style": [
+      "Mechanical De-Bobbling & Fiber Conditioning"
+    ],
+    "quality_score": 0.93,
+    "tools_required": [
+      "Battery fabric shaver (lint remover) OR sweater comb OR clean safety razor",
+      "Flat hard tabletop surface",
+      "Steam iron or garment steamer",
+      "Lint roller"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Spread the garment out completely flat on a hard, firm surface like a table or iron board.",
+        "tip": "Never de-pill while wearing the sweater or draped over your lap — uneven folds can get caught in blades."
+      },
+      {
+        "step": 2,
+        "instruction": "Smooth out wrinkles with your hands to keep the fabric taut.",
+        "tip": "Focus first on high-friction friction zones: underarms, inner elbows, and where bag straps rub."
+      },
+      {
+        "step": 3,
+        "instruction": "If using an electric fabric shaver, glide the head in gentle circular motions without pushing down into the knit.",
+        "tip": "Let the rotating razor shear the protruding pills at surface level without cutting structural threads."
+      },
+      {
+        "step": 4,
+        "instruction": "If using a manual razor or sweater comb, hold the blade at a 30-degree angle and shave in short, light, downward strokes.",
+        "tip": "Keep the fabric stretched taut with your non-dominant hand ahead of the blade stroke."
+      },
+      {
+        "step": 5,
+        "instruction": "Hold a steam iron 2 cm above the sweater surface and steam generously without pressing down.",
+        "tip": "The steam allows relaxed wool and cashmere fibers to bounce back into their original plump loft."
+      }
+    ],
+    "pro_tip": "Pilling occurs when loose fiber ends migrate to the surface and tangle during wear. De-pilling every 4-6 months restores an old thrifted sweater to look store-brand new.",
+    "care_instructions": "Wash woolens inside out in a mesh laundry bag on the woolens cycle with gentle detergent to minimize future friction pilling.",
+    "upcycle_alternative": "Heavily felted wool sweaters can be hot-washed to intentionally shrink and turned into warm winter mittens or hot water bottle covers.",
+    "source": "blog",
+    "source_url": "https://www.thesprucecrafts.com/how-to-remove-fuzz-and-pilling-from-clothes-2146462"
+  },
+  {
+    "doc_id": "t5-enrich-009",
+    "doc_type": "repair",
+    "title": "Trouser & Jean Blind Hemming: Shortening Pants to Perfect Length",
+    "fiber_types": [
+      "Cotton",
+      "Wool",
+      "Polyester",
+      "Linen",
+      "Denim"
+    ],
+    "damage_types": [
+      "worn",
+      "fray",
+      "tear"
+    ],
+    "garment_categories": [
+      "trousers",
+      "jeans",
+      "skirt",
+      "dress"
+    ],
+    "damage_location": "hemline",
+    "difficulty": "beginner",
+    "time_minutes": 30,
+    "technique_style": [
+      "Catch Stitch Blind Hemming"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "Tailor's chalk or pins",
+      "Measuring tape & ruler",
+      "Sharp fabric scissors",
+      "Hand sewing needle & matching thread",
+      "Iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Try on the pants with the shoes you plan to wear. Fold up the hem until it rests at your desired length and pin securely.",
+        "tip": "For classic trousers, aim for a \"slight break\" where the front rests gently atop the shoe instep."
+      },
+      {
+        "step": 2,
+        "instruction": "Remove trousers, turn inside out, and measure the turn-up depth with a ruler. Chalk an even line all the way around both legs.",
+        "tip": "Unpick the old factory hem if needed, or cut away excess fabric leaving 4 cm (1.5 in) of hem allowance."
+      },
+      {
+        "step": 3,
+        "instruction": "Fold the raw edge in by 1 cm, press with a hot iron, then fold up the remaining 3 cm hem allowance and press firmly.",
+        "tip": "A crisp pressed fold makes the subsequent hand stitching twice as fast and completely invisible."
+      },
+      {
+        "step": 4,
+        "instruction": "Using a single strand of color-matched thread, work a catch stitch (herringbone stitch) from left to right.",
+        "tip": "Take a tiny stitch catching just 1 or 2 threads of the outer trouser leg, then take a stitch through the folded hem allowance."
+      },
+      {
+        "step": 5,
+        "instruction": "Keep stitches loose — pulling taut creates dimples visible on the outside of the trouser leg.",
+        "tip": "Press with a pressing cloth on the reverse side to embed the stitches into the fabric weave."
+      }
+    ],
+    "pro_tip": "The catch stitch has natural horizontal elasticity, meaning the hem will stretch and move with your stride without snapping threads or puckering.",
+    "care_instructions": "Machine wash on delicate. Re-press the hemline periodically after washing to maintain sharp drape.",
+    "upcycle_alternative": "For casual denim, keep the raw frayed hem by trimming to ankle length and washing once with towels to create natural bohemian fringe.",
+    "source": "blog",
+    "source_url": "https://sewguide.com/how-to-hem-pants/"
+  },
+  {
+    "doc_id": "t5-enrich-010",
+    "doc_type": "upcycle",
+    "title": "Transform Worn Jeans into a Structured Everyday Denim Tote Bag",
+    "fiber_types": [
+      "Denim",
+      "Cotton"
+    ],
+    "damage_types": [
+      "worn",
+      "tear",
+      "hole",
+      "fray",
+      "rip",
+      "none"
+    ],
+    "garment_categories": [
+      "jeans",
+      "trousers",
+      "shorts"
+    ],
+    "damage_location": "whole garment",
+    "difficulty": "beginner",
+    "time_minutes": 50,
+    "technique_style": [
+      "Denim Reconstruction & Pocket Repurposing"
+    ],
+    "quality_score": 0.98,
+    "tools_required": [
+      "Old pair of jeans (any wash)",
+      "Fabric scissors",
+      "Sewing machine with denim needle (size 90/14 or 100/16)",
+      "Sewing pins",
+      "Ruler or tape measure",
+      "Lining fabric (cotton scrap or old pillowcase)"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Lay the jeans flat on a table and cut straight across both legs approximately 5 cm (2 inches) below the crotch seam.",
+        "tip": "The upper torso section containing waistband, fly, and back pockets forms the main body of your tote."
+      },
+      {
+        "step": 2,
+        "instruction": "Unpick the inner crotch seam curve and lay the front and back flat, overlapping the curved edges so the bottom edge is completely straight.",
+        "tip": "Pin the overlapped crotch pieces and topstitch with matching gold denim thread."
+      },
+      {
+        "step": 3,
+        "instruction": "Turn the jeans section inside out. Pin the bottom opening together and sew a heavy double seam straight across the bottom.",
+        "tip": "To give the tote a flat base, pinch the bottom corners into 5 cm triangles and stitch across the base."
+      },
+      {
+        "step": 4,
+        "instruction": "Take the severed pant legs, cut two long strips 8 cm wide by 60 cm long, fold in half lengthwise with right sides together, stitch, and turn right-side out for durable handles.",
+        "tip": "Topstitch down both long edges of each handle for extra rigidity and weight-bearing strength."
+      },
+      {
+        "step": 5,
+        "instruction": "Pin the ends of the handles securely inside the front and back waistband and stitch with a reinforced box-and-cross (X) pattern.",
+        "tip": "The original denim back pockets remain fully functional exterior pockets for your phone, keys, and lip balm!"
+      }
+    ],
+    "pro_tip": "Denim is one of the sturdiest, most durable fabrics on earth. A tote upcycled from old jeans will easily support 10-15 kg of groceries and lasts for over a decade.",
+    "care_instructions": "Machine wash on cold cycle. The tote will soften and develop authentic denim vintage fade lines over time.",
+    "upcycle_alternative": "Add an inner zipper pocket from an old pocket lining, or line with vintage floral cotton for a designer contrast interior.",
+    "source": "blog",
+    "source_url": "https://heatherhandmade.com/upcycle-jeans-tote-bag/"
+  },
+  {
+    "doc_id": "t5-enrich-011",
+    "doc_type": "upcycle",
+    "title": "Wide-Leg Jeans to Split-Seam Denim Maxi Skirt Transformation",
+    "fiber_types": [
+      "Denim",
+      "Cotton"
+    ],
+    "damage_types": [
+      "worn",
+      "fray",
+      "tear",
+      "stain",
+      "none"
+    ],
+    "garment_categories": [
+      "jeans",
+      "trousers"
+    ],
+    "damage_location": "legs and hem",
+    "difficulty": "intermediate",
+    "time_minutes": 60,
+    "technique_style": [
+      "Split-Seam Triangle Inset & Front Slit"
+    ],
+    "quality_score": 0.97,
+    "tools_required": [
+      "Pair of straight or wide-leg jeans",
+      "Seam ripper",
+      "Fabric scissors",
+      "Sewing machine with denim needle",
+      "Pins",
+      "Iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Using your seam ripper, unpick the inseam of both legs completely from the bottom cuff all the way up through the crotch curve.",
+        "tip": "Take care not to stretch the denim fabric as you unpick the chain stitching."
+      },
+      {
+        "step": 2,
+        "instruction": "Unpick the center front crotch curve up to the base of the metal zipper fly so the front panels can lie completely flat and overlap.",
+        "tip": "Do the same for the center back seam up to the back yoke to eliminate the crotch curve hollow."
+      },
+      {
+        "step": 3,
+        "instruction": "Lay the jeans flat with right side up. Overlap the front right panel over the left, pin into a clean straight vertical seam, and topstitch down to your desired slit height.",
+        "tip": "Leaving the bottom 30-40 cm open creates a chic, functional front walking slit."
+      },
+      {
+        "step": 4,
+        "instruction": "At the back, overlap the two center edges into a clean line and topstitch with gold denim thread.",
+        "tip": "If the legs create a triangle gap at the back, insert a denim triangular panel cut from leftover leg scrap."
+      },
+      {
+        "step": 5,
+        "instruction": "Try on the skirt, level the bottom hem with a ruler and chalk, cut cleanly across, and let the edge fray or sew a double fold hem.",
+        "tip": "Wash the skirt once with jeans to produce an on-trend frayed raw hemline."
+      }
+    ],
+    "pro_tip": "The denim maxi skirt is one of fashion's most enduring runway trends. Upcycling an authentic vintage pair of Levi's or Wrangler jeans creates a better silhouette than mass-market fast fashion.",
+    "care_instructions": "Wash in cold water inside-out. Hang dry to maintain the crisp line of the front walking slit.",
+    "upcycle_alternative": "Add contrast white sashiko stitching down the center front overlap for an artisanal runway touch.",
+    "source": "blog",
+    "source_url": "https://diycandy.com/upcycle-jeans-into-maxi-skirt/"
+  },
+  {
+    "doc_id": "t5-enrich-012",
+    "doc_type": "upcycle",
+    "title": "Oversized Men's Button-Down Shirt into a Cropped Wrap Corset Top",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Polyester"
+    ],
+    "damage_types": [
+      "worn",
+      "stain",
+      "fray",
+      "none"
+    ],
+    "garment_categories": [
+      "shirt",
+      "blouse",
+      "top"
+    ],
+    "damage_location": "hem, collar, or sleeves",
+    "difficulty": "intermediate",
+    "time_minutes": 60,
+    "technique_style": [
+      "Tailored Darting & Wrap Tie Construction"
+    ],
+    "quality_score": 0.96,
+    "tools_required": [
+      "Oversized collared button-down shirt",
+      "Fabric shears",
+      "Tailor's chalk",
+      "Sewing machine",
+      "Pins",
+      "Measuring tape",
+      "Iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Try on the shirt, button it up, and mark your natural waistline with chalk (typically 3-5 cm above the navel). Add 3 cm for hem allowance and cut off the excess shirt tail.",
+        "tip": "Save the cut-off lower shirt tail — this fabric will be used to make the wrap ties and waist binding."
+      },
+      {
+        "step": 2,
+        "instruction": "Pinch four vertical darts: two at the front bust and two at the back waist to cinch the boxy silhouette into a fitted hourglass bodice.",
+        "tip": "Pin the darts while wearing the shirt inside-out for a bespoke tailored fit to your body shape."
+      },
+      {
+        "step": 3,
+        "instruction": "Stitch the four darts, tapering gently to zero at both ends, and press the dart folds toward the side seams with an iron.",
+        "tip": "Tapering to zero prevents unsightly puckering at the apex of the darts."
+      },
+      {
+        "step": 4,
+        "instruction": "Cut two long 8 cm wide strips from the discarded lower shirt tail, fold into 3 cm straps, and sew into waist wrap ties.",
+        "tip": "Long ties can be wrapped around the ribcage twice and tied into a front or side bow."
+      },
+      {
+        "step": 5,
+        "instruction": "Hem the cropped bottom edge with a neat 1 cm double-fold hem, enclosing the tie ends into the side seams, and cut sleeves to 3/4 or puff style.",
+        "tip": "Cuff the sleeves or gather with 1 cm elastic for romantic cottagecore puff sleeves."
+      }
+    ],
+    "pro_tip": "Oversized thrifted men's shirts have superior high-thread-count poplin and oxford cotton that drapes beautifully when tailored into structured cropped silhouettes.",
+    "care_instructions": "Machine wash on cool, gentle cycle. Iron on medium heat with light steam for crisp tailored lines.",
+    "upcycle_alternative": "Leave the collar intact for a structured preppy look, or cut off the collar band for a clean sweetheart neckline.",
+    "source": "blog",
+    "source_url": "https://weallsew.com/how-to-upcycle-a-shirt-to-an-apron/"
+  },
+  {
+    "doc_id": "t5-enrich-013",
+    "doc_type": "upcycle",
+    "title": "Vintage Saree or Dupatta into a Bohemian Kimono Robe & Beach Shrug",
+    "fiber_types": [
+      "Silk",
+      "Georgette",
+      "Chiffon",
+      "Cotton",
+      "Rayon",
+      "Viscose"
+    ],
+    "damage_types": [
+      "fray",
+      "tear",
+      "stain",
+      "none"
+    ],
+    "garment_categories": [
+      "saree",
+      "dress",
+      "kurta"
+    ],
+    "damage_location": "whole garment",
+    "difficulty": "beginner",
+    "time_minutes": 45,
+    "technique_style": [
+      "Zero-Waste Kimono Draping & Border Preservation"
+    ],
+    "quality_score": 0.97,
+    "tools_required": [
+      "Vintage silk/georgette saree or dupatta",
+      "Fabric scissors",
+      "Sewing machine with fine microtex needle (size 70/10)",
+      "French curve or ruler",
+      "Silk pins"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Cut a rectangular back panel (100 cm long by 60 cm wide) and two front panels (100 cm long by 30 cm wide), orienting the decorative zari border along the front opening.",
+        "tip": "Using the existing ornate saree border for the front collar eliminates the need for separate neck binding!"
+      },
+      {
+        "step": 2,
+        "instruction": "Sew the two front panels to the back panel at the shoulder seams using French seams to enclose all raw edges invisibly.",
+        "tip": "French seams are essential for sheer chiffon and delicate silks to prevent edge fraying."
+      },
+      {
+        "step": 3,
+        "instruction": "Cut two sleeve rectangles (40 cm wide by 30 cm long) from the saree body, align sleeve centers to the shoulder seam, and stitch flat.",
+        "tip": "Wide rectangular drop sleeves give the authentic relaxed bohemian kimono drape."
+      },
+      {
+        "step": 4,
+        "instruction": "Sew continuous side and underarm seams in a single pass from sleeve cuff down to the bottom hem.",
+        "tip": "Leave a 15 cm open slit at the bottom of both side seams for breezy movement."
+      },
+      {
+        "step": 5,
+        "instruction": "Finish the bottom hem with a tiny 0.5 cm rolled hem or baby hem using fine thread.",
+        "tip": "Steam gently on silk setting to relax the draped silhouette."
+      }
+    ],
+    "pro_tip": "A single vintage 6-yard saree yields enough fabric to create both a full-length kimono shrug AND a matching silk scarf or slip top, making it the ultimate zero-waste Indian circular craft.",
+    "care_instructions": "Hand wash in cold water with mild shampoo or silk wash. Roll in a clean towel to absorb moisture and hang in the shade to dry.",
+    "upcycle_alternative": "Add a tie belt cut from the saree pallu to wear closed as an elegant evening wrap dress.",
+    "source": "blog",
+    "source_url": "https://herzindagi.com/fashion/old-saree-designer-anarkali-kurti-article-289532"
+  },
+  {
+    "doc_id": "t5-enrich-014",
+    "doc_type": "upcycle",
+    "title": "Botanical Indigo & Turmeric Natural Tie-Dye for Stained/Discolored Cotton",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Hemp",
+      "Silk",
+      "Rayon"
+    ],
+    "damage_types": [
+      "stain",
+      "discolored",
+      "fading",
+      "none"
+    ],
+    "garment_categories": [
+      "tshirt",
+      "shirt",
+      "kurta",
+      "dress",
+      "top"
+    ],
+    "damage_location": "front, collar, or all over",
+    "difficulty": "beginner",
+    "time_minutes": 40,
+    "technique_style": [
+      "Shibori Folding & Organic Botanical Dyeing"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "Stained or faded white/light cotton garment",
+      "Natural powdered indigo or culinary turmeric powder (50g)",
+      "Natural mordant (alum or soy milk)",
+      "Rubber bands, wooden craft sticks, or string",
+      "Large stainless steel or glass dye pot",
+      "Rubber gloves"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Wash the garment thoroughly to strip away residual fabric softeners or sizing starch; leave damp.",
+        "tip": "Damp fabric absorbs botanical dye molecules evenly throughout the cotton weave."
+      },
+      {
+        "step": 2,
+        "instruction": "Fold the garment using the Japanese Itajime Shibori method: accordion fold into a long strip, then fold into triangles, clamping with wooden sticks and rubber bands.",
+        "tip": "Areas pressed tightly between wood and rubber bands resist dye, creating mesmerizing geometric starbursts."
+      },
+      {
+        "step": 3,
+        "instruction": "In a large pot of hot water (60°C), dissolve 3 tablespoons of ground turmeric with 1 tablespoon of salt and 1 cup of white vinegar as a fixer.",
+        "tip": "Turmeric creates rich marigold yellow tones; pairing with indigo creates vibrant jade greens."
+      },
+      {
+        "step": 4,
+        "instruction": "Submerge the bound garment into the dye bath for 20-30 minutes, stirring occasionally for even saturation.",
+        "tip": "Wear gloves and submerge slowly to avoid air bubble resist pockets."
+      },
+      {
+        "step": 5,
+        "instruction": "Remove, rinse under cold running water until the water runs clear, snip away the rubber bands, and hang to air dry in the shade.",
+        "tip": "Watch the brilliant white geometric patterns emerge against the rich botanical gold wash!"
+      }
+    ],
+    "pro_tip": "Botanical over-dyeing is the ultimate eco-friendly antidote to yellow sweat stains, coffee splatters, or collar discoloration that detergent cannot remove.",
+    "care_instructions": "Wash separately in cold water with plant-based pH-neutral detergent. Keep out of direct harsh sunlight to protect organic pigments.",
+    "upcycle_alternative": "For dark or black garments with bleach spots, use bleach tie-dye (reverse shibori) to create aesthetic bronze/copper marble street patterns.",
+    "source": "blog",
+    "source_url": "https://fashionrevolution.org/diy-botanical-dyeing-guide/"
+  },
+  {
+    "doc_id": "t5-enrich-015",
+    "doc_type": "upcycle",
+    "title": "Old T-Shirt into a Zero-Waste Grocery Tote Bag (No-Sew Method)",
+    "fiber_types": [
+      "Cotton",
+      "Polyester"
+    ],
+    "damage_types": [
+      "worn",
+      "tear",
+      "stain",
+      "none"
+    ],
+    "garment_categories": [
+      "tshirt",
+      "top"
+    ],
+    "damage_location": "whole garment",
+    "difficulty": "beginner",
+    "time_minutes": 15,
+    "technique_style": [
+      "No-Sew Fringe Knotting & Slit Straps"
+    ],
+    "quality_score": 0.94,
+    "tools_required": [
+      "Old cotton t-shirt",
+      "Sharp fabric scissors",
+      "Ruler or tape measure"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Lay the t-shirt flat. Cut off both sleeves along the shoulder seams to create the bag's handle openings.",
+        "tip": "Cutting just outside the seam line leaves the handles sturdy without rolling."
+      },
+      {
+        "step": 2,
+        "instruction": "Cut out the neckline in a wide oval or scoop neck curve to form the main top opening of the tote.",
+        "tip": "The deeper you cut the neckline, the larger the bag opening will be."
+      },
+      {
+        "step": 3,
+        "instruction": "Decide the depth of the tote and cut vertical fringe slits (2 cm wide by 8-10 cm long) along the entire bottom hem of the shirt.",
+        "tip": "Ensure you cut through both the front and back layers together so the fringe pairs match up."
+      },
+      {
+        "step": 4,
+        "instruction": "Take each pair of front and back fringe pieces and tie them in tight double square knots.",
+        "tip": "To close small gaps between knots, tie neighboring fringes together in a secondary criss-cross knot row."
+      },
+      {
+        "step": 5,
+        "instruction": "Turn the t-shirt right side out to hide the fringe inside for a clean bottom seam, or leave fringe exposed for a bohemian fringe look!",
+        "tip": "The natural stretch of cotton jersey allows the bag to expand comfortably to hold vegetables, books, or beach gear."
+      }
+    ],
+    "pro_tip": "Zero-waste upcycling transforms stretched-out, unwearable t-shirts that would otherwise end up in landfills into sturdy reusable shopping bags that replace hundreds of single-use plastic bags.",
+    "care_instructions": "Toss directly into your standard cold machine wash whenever soiled; jersey cotton cleans easily.",
+    "upcycle_alternative": "Cut the remaining sleeve scraps into 2 cm strips to make soft jersey stretch scrunchies or plant hangers.",
+    "source": "blog",
+    "source_url": "https://diycandy.com/t-shirt-tote-bag/"
+  },
+  {
+    "doc_id": "t5-enrich-016",
+    "doc_type": "upcycle",
+    "title": "Upcycle a Shrunken Wool Sweater into an Artisan Cable-Knit Balaclava & Mittens",
+    "fiber_types": [
+      "Wool",
+      "Cashmere",
+      "Acrylic"
+    ],
+    "damage_types": [
+      "worn",
+      "hole",
+      "stain",
+      "none"
+    ],
+    "garment_categories": [
+      "sweater",
+      "hoodie"
+    ],
+    "damage_location": "whole garment",
+    "difficulty": "intermediate",
+    "time_minutes": 55,
+    "technique_style": [
+      "Ribbed Knit Construction & Pattern Cutting"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "Shrunken or damaged wool sweater",
+      "Fabric shears",
+      "Ballpoint sewing machine needle or yarn needle",
+      "Pins",
+      "Chalk or paper pattern"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "If the wool sweater is not yet felted, wash in warm water with agitation so the wool fibers lock together, preventing edge unraveling when cut.",
+        "tip": "Felted wool can be cut with scissors like sheet fabric without needing overlocking stitches."
+      },
+      {
+        "step": 2,
+        "instruction": "Cut off the two lower sleeves including the ribbed wrist cuffs. These wrist cuffs will serve as the snug cuffs of your mittens.",
+        "tip": "Place your hand over the sleeve, trace an arched mitten shape 2 cm wider than your hand, and cut."
+      },
+      {
+        "step": 3,
+        "instruction": "Stitch around the mitten curved perimeter using a stretch zigzag stitch (or overcast hand stitch), leaving the ribbed cuff open for your wrist.",
+        "tip": "Zigzag stitches maintain the stretchiness of the knit so your hand slides in effortlessly."
+      },
+      {
+        "step": 4,
+        "instruction": "For the balaclava, use the sweater torso: cut a hood profile (40 cm high by 28 cm deep) incorporating the bottom ribbed hem as the neck collar.",
+        "tip": "The bottom sweater ribbing creates a cozy draft-proof turtleneck around your neck."
+      },
+      {
+        "step": 5,
+        "instruction": "Sew the top curved crown seam, cut an oval face window opening, and hem with a zigzag stitch.",
+        "tip": "Pair with the matching mittens for a high-fashion Scandi-chic winter accessory set."
+      }
+    ],
+    "pro_tip": "Shrinking a wool sweater in hot water is often seen as a tragedy — but felted pure wool is actually one of the warmest, most wind-resistant natural textiles available.",
+    "care_instructions": "Hand wash gently in cool water with wool detergent. Dry flat on a towel.",
+    "upcycle_alternative": "Cut the remaining center panel into thermal cup cozies or padded wool insoles for winter boots.",
+    "source": "blog",
+    "source_url": "https://mellysews.com/thrift-flip-sweater-upcycle-to-beanie-and-mittens/"
+  },
+  {
+    "doc_id": "t5-enrich-017",
+    "doc_type": "upcycle",
+    "title": "Transform Boxy Trousers into Tailored High-Waist Bermuda Shorts",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Wool",
+      "Polyester"
+    ],
+    "damage_types": [
+      "worn",
+      "tear",
+      "stain",
+      "fray",
+      "none"
+    ],
+    "garment_categories": [
+      "trousers",
+      "jeans"
+    ],
+    "damage_location": "knees, shins, or hem",
+    "difficulty": "beginner",
+    "time_minutes": 35,
+    "technique_style": [
+      "Precision Cropping & Folded French Cuffed Hem"
+    ],
+    "quality_score": 0.94,
+    "tools_required": [
+      "Pair of pleated or tailored trousers",
+      "Fabric shears",
+      "Ruler",
+      "Chalk",
+      "Pins",
+      "Iron",
+      "Sewing machine or needle and thread"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Try on the trousers and mark a chalk line 5-7 cm above the top of your knee for a sophisticated Bermuda short silhouette.",
+        "tip": "Add 6 cm below your mark to account for a double-turned tailored cuff."
+      },
+      {
+        "step": 2,
+        "instruction": "Take off the pants, lay flat, and use a ruler to draw a clean cutting line straight across both legs.",
+        "tip": "Angle the cut slightly upward by 1 cm at the inner thigh to prevent the inner hem from sagging when walking."
+      },
+      {
+        "step": 3,
+        "instruction": "Cut through both legs smoothly with sharp fabric shears.",
+        "tip": "Save the lower leg fabric to make matching belt loops, a scrunchie, or patch pockets."
+      },
+      {
+        "step": 4,
+        "instruction": "Fold the raw edge up by 3 cm and press with a hot iron, then fold up another 3 cm to create a double cuff that completely conceals raw edges.",
+        "tip": "Press with plenty of steam to lock the crisp trouser crease through the cuff."
+      },
+      {
+        "step": 5,
+        "instruction": "Tack the cuff in place with four hidden stitches at the inseam, outer seam, front crease, and back crease.",
+        "tip": "Tacking at the four compass points keeps the cuff permanently anchored without visible topstitching lines."
+      }
+    ],
+    "pro_tip": "Tailored knee-length Bermuda shorts are an effortless quiet-luxury staple. Upcycling trousers with worn knee fabric gives the garment another 5+ years of active rotation.",
+    "care_instructions": "Wash according to fabric care on gentle. Re-press creases with an iron to maintain sharp tailoring.",
+    "upcycle_alternative": "For casual denim trousers, skip the fold and run a wire brush over the raw edge for an edgy frayed cutoff look.",
+    "source": "blog",
+    "source_url": "https://sewguide.com/diy-cut-off-jean-shorts/"
+  },
+  {
+    "doc_id": "t5-enrich-018",
+    "doc_type": "upcycle",
+    "title": "Vintage Silk Saree into a Paneled Anarkali Kurti & Peplum Top",
+    "fiber_types": [
+      "Silk",
+      "Georgette",
+      "Cotton",
+      "Chiffon",
+      "Rayon"
+    ],
+    "damage_types": [
+      "worn",
+      "tear",
+      "stain",
+      "none"
+    ],
+    "garment_categories": [
+      "saree",
+      "dress",
+      "kurta"
+    ],
+    "damage_location": "whole garment",
+    "difficulty": "intermediate",
+    "time_minutes": 75,
+    "technique_style": [
+      "Kali Paneled Flared Skirt & Fitted Yoke Assembly"
+    ],
+    "quality_score": 0.97,
+    "tools_required": [
+      "Traditional Silk Saree (5.5m)",
+      "Cotton lining fabric (2m)",
+      "Tailor's chalk & measuring tape",
+      "Fabric scissors",
+      "Sewing machine",
+      "Pins",
+      "Matching thread"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Separate the saree into three sections: the ornate pallu (for the front bodice and yoke), the zari border (for sleeves and hem), and the plain saree body (for the kalis/panels).",
+        "tip": "Using the rich pallu fabric for the chest yoke creates a luxurious focal point."
+      },
+      {
+        "step": 2,
+        "instruction": "Cut 12 to 16 trapezoidal panels (kalis) from the body fabric: 6 cm wide at the top waist, tapering out to 25 cm wide at the bottom flare.",
+        "tip": "Stack 4 layers of fabric together to cut multiple identical kalis in a single pass."
+      },
+      {
+        "step": 3,
+        "instruction": "Stitch the kalis together side by side, pressing seams open, to form an ultra-flared flowing skirt with incredible volume.",
+        "tip": "Interlocking 16 kalis creates a royal 360-degree twirl circle."
+      },
+      {
+        "step": 4,
+        "instruction": "Construct a fitted bodice from the pallu piece lined with breathable cotton, sewing bust darts and shoulder seams.",
+        "tip": "Lining the silk with soft mulmul cotton makes the kurti comfortable against skin in hot weather."
+      },
+      {
+        "step": 5,
+        "instruction": "Attach the flared kali skirt to the bodice waistline, attach the zari-bordered sleeves, and hem the bottom sweep.",
+        "tip": "Topstitch the golden saree border along the hemline for authentic weight and drape."
+      }
+    ],
+    "pro_tip": "Grandmothers' heavy silk Kanjeevarams or Banarasi sarees often have intact, pristine borders even if the saree body is worn. Re-engineering into an Anarkali kurti honors heritage while modernizing the silhouette.",
+    "care_instructions": "Dry clean recommended for heavy zari silks, or gentle hand wash in cold water with gentle silk liquid.",
+    "upcycle_alternative": "If there is remaining fabric, create a matching potli bag with golden drawstrings to complete the festive ethnic ensemble.",
+    "source": "blog",
+    "source_url": "https://herzindagi.com/fashion/old-saree-designer-anarkali-kurti-article-289532"
+  },
+  {
+    "doc_id": "t5-enrich-019",
+    "doc_type": "upcycle",
+    "title": "Upcycle a Flannel Shirt into a Quilted Reversible Layering Vest",
+    "fiber_types": [
+      "Cotton",
+      "Wool",
+      "Polyester"
+    ],
+    "damage_types": [
+      "worn",
+      "tear",
+      "stain",
+      "fray",
+      "none"
+    ],
+    "garment_categories": [
+      "shirt",
+      "jacket",
+      "top"
+    ],
+    "damage_location": "sleeves or collar",
+    "difficulty": "intermediate",
+    "time_minutes": 50,
+    "technique_style": [
+      "Sleeve Removal & Bias Tape Armhole Binding"
+    ],
+    "quality_score": 0.95,
+    "tools_required": [
+      "Oversized plaid/flannel shirt",
+      "Seam ripper or shears",
+      "Double-fold bias tape (cotton or twill)",
+      "Sewing machine",
+      "Pins",
+      "Iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Using a seam ripper or scissors, remove both sleeves cleanly right along the armhole seam line.",
+        "tip": "Save the flannel sleeves — cut into squares to sew matching patchwork pocket flaps or hand warmers."
+      },
+      {
+        "step": 2,
+        "instruction": "Try on the sleeveless shirt. If the armhole feels tight over a sweater, deepen the lower armhole curve by 2 cm.",
+        "tip": "A slightly deepened armhole accommodates chunky winter knitwear layered underneath."
+      },
+      {
+        "step": 3,
+        "instruction": "Unfold one side of double-fold bias tape and pin it along the armhole raw edge with right sides together.",
+        "tip": "Stitch along the crease of the bias tape all the way around the armhole opening."
+      },
+      {
+        "step": 4,
+        "instruction": "Fold the bias tape over to the inside of the garment, encasing the raw flannel edge completely, and pin.",
+        "tip": "Press with an iron before topstitching to ensure the binding lies completely flat without ripples."
+      },
+      {
+        "step": 5,
+        "instruction": "Topstitch the bias binding from the right side 2 mm from the edge, locking the binding cleanly.",
+        "tip": "Layer over a neutral hoodie or turtleneck for effortless street-style autumnal layering."
+      }
+    ],
+    "pro_tip": "Flannel sleeve elbows are usually the first part of a work shirt to rip or wear thin. Converting into an insulated vest discards the damaged sleeves while preserving the cozy flannel torso for years.",
+    "care_instructions": "Machine wash warm with like colors. Tumble dry low or air dry.",
+    "upcycle_alternative": "Add an interior layer of cotton batting and quilt the front panels in 5 cm diamonds for a heritage chore-vest look.",
+    "source": "blog",
+    "source_url": "https://weallsew.com/how-to-upcycle-a-shirt-to-an-apron/"
+  },
+  {
+    "doc_id": "t5-enrich-020",
+    "doc_type": "upcycle",
+    "title": "Transform a Midi Dress into a Two-Piece Matching Co-Ord Set (Crop Top & Skirt)",
+    "fiber_types": [
+      "Cotton",
+      "Linen",
+      "Rayon",
+      "Viscose",
+      "Polyester",
+      "Silk"
+    ],
+    "damage_types": [
+      "stain",
+      "tear",
+      "worn",
+      "none"
+    ],
+    "garment_categories": [
+      "dress",
+      "skirt",
+      "top"
+    ],
+    "damage_location": "waist or lower hem",
+    "difficulty": "beginner",
+    "time_minutes": 45,
+    "technique_style": [
+      "Waist Splitting & Elastic Casing Insertion"
+    ],
+    "quality_score": 0.96,
+    "tools_required": [
+      "One-piece midi or maxi dress",
+      "Fabric scissors",
+      "2.5 cm (1 in) wide elastic band",
+      "Safety pin",
+      "Sewing machine",
+      "Pins",
+      "Iron"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Try on the dress and mark your natural waistline. Chalk a cut line 4 cm below this point for the top's hem, and mark the skirt start 4 cm above.",
+        "tip": "Leaving 4 cm of overlap on both sides allows ample fabric for elastic casings without exposing midriff unless desired."
+      },
+      {
+        "step": 2,
+        "instruction": "Cut cleanly across the waistline, separating the dress into a distinct top half and skirt bottom half.",
+        "tip": "If the dress has a side zipper, unpick or shorten the zipper stop before cutting."
+      },
+      {
+        "step": 3,
+        "instruction": "For the top: fold the raw bottom edge under 1 cm, then fold again by 2 cm, press, and topstitch to create a clean hem.",
+        "tip": "Insert a thin 1 cm elastic inside the top hem if you want a gathered blouson crop top."
+      },
+      {
+        "step": 4,
+        "instruction": "For the skirt: fold the top raw edge down by 1 cm, then fold down 3.5 cm to form a casing for the wide elastic.",
+        "tip": "Stitch close to the lower folded edge, leaving a 4 cm opening to thread the elastic."
+      },
+      {
+        "step": 5,
+        "instruction": "Attach a safety pin to the end of your elastic, feed through the waistband casing, overlap elastic ends by 2 cm, stitch securely, and close the casing gap.",
+        "tip": "You now have a versatile matching two-piece set that can be worn together as an outfit or styled separately with jeans and tees!"
+      }
+    ],
+    "pro_tip": "Matching co-ord sets are 3x more versatile than a single dress because the top and skirt can be remixed independently with your existing wardrobe.",
+    "care_instructions": "Machine wash gentle cold. Hang dry to maintain elastic memory.",
+    "upcycle_alternative": "Add two deep patch pockets to the skirt using scrap fabric cut from the top hem allowance.",
+    "source": "blog",
+    "source_url": "https://diycandy.com/t-shirt-tote-bag/"
   }
 ]

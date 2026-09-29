@@ -26,6 +26,7 @@ import {
   getSharedRepairAssessment,
   RepairResult,
   YouTubeVideo,
+  T5GuideResult,
   GARMENT_CATEGORIES,
   FIBER_TYPES,
   youTubeUrl,
@@ -34,6 +35,7 @@ import {
 import {
   isRepairSaved,
   toggleSaveYouTube,
+  toggleSaveGuide,
 } from '../../../src/services/savedRepairService';
 
 export default function RepairRefreshScreen() {
@@ -151,17 +153,28 @@ export default function RepairRefreshScreen() {
   ]);
 
 
-  // ── Saved state ───────────────────────────────────────────────
+  // ── Saved state & Expansion ───────────────────────────────────
   const [savedVideoIds, setSavedVideoIds] = useState<Set<string>>(new Set());
+  const [savedGuideIds, setSavedGuideIds] = useState<Set<string>>(new Set());
+  const [expandedGuideIds, setExpandedGuideIds] = useState<Set<string>>(new Set());
 
-  // ── Image picker ──────────────────────────────────────────────
+  const toggleExpandGuide = (guideId: string) => {
+    setExpandedGuideIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(guideId)) next.delete(guideId);
+      else next.add(guideId);
+      return next;
+    });
+  };
+
+  // ── Image picker (0.6 quality for fast upload and zero timeouts) ─
   const pickImage = async (useCamera = false) => {
     try {
       if (useCamera) {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') { Alert.alert('Camera permission needed'); return; }
         const pick = await ImagePicker.launchCameraAsync({
-          quality: 0.85,
+          quality: 0.6,
           base64: true,
           allowsEditing: true,
         });
@@ -174,7 +187,7 @@ export default function RepairRefreshScreen() {
         if (status !== 'granted') { Alert.alert('Gallery permission needed'); return; }
         const pick = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
-          quality: 0.85,
+          quality: 0.6,
           base64: true,
           allowsEditing: true,
         });
@@ -213,7 +226,19 @@ export default function RepairRefreshScreen() {
       });
       setResult(data);
     } catch (e: any) {
-      Alert.alert('Assessment Failed', e?.message || 'Could not connect to the server.');
+      // If image assessment failed (e.g. timeout on mobile), fall back to metadata lookup
+      try {
+        const fallbackData = await lookupRepairFromAssessment({
+          garment_category: category || 'other',
+          fiber_type: fiber || 'Cotton',
+          damage_description: damageDesc || 'Garment wear analysis requested.',
+          original_price_inr: parseFloat(price) || 0,
+        });
+        setResult(fallbackData);
+        Alert.alert('Offline Mode Active', 'Loaded curated repair & upcycle masterclass guides for your garment.');
+      } catch (fallbackErr: any) {
+        Alert.alert('Assessment Failed', e?.message || 'Could not connect to the server.');
+      }
     } finally {
       setLoading(false);
     }
@@ -230,6 +255,8 @@ export default function RepairRefreshScreen() {
     setPrice('');
     setDamageDesc('');
     setSavedVideoIds(new Set());
+    setSavedGuideIds(new Set());
+    setExpandedGuideIds(new Set());
   };
 
   // ── Load saved state when result comes in ──────────────────────
@@ -237,16 +264,60 @@ export default function RepairRefreshScreen() {
     if (!result) return;
     const loadSavedState = async () => {
       const videoIds = new Set<string>();
+      const guideIds = new Set<string>();
 
       for (const video of result.youtube || []) {
         const id = `yt-${video.videoId}`;
         if (await isRepairSaved(id)) videoIds.add(id);
       }
 
+      const allResultGuides = [
+        ...(result.repair_guides || []),
+        ...(result.upcycle_guides || []),
+        ...(result.guides || []),
+      ];
+      for (const guide of allResultGuides) {
+        const id = `guide-${guide.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48)}`;
+        if (await isRepairSaved(id)) guideIds.add(id);
+      }
+
       setSavedVideoIds(videoIds);
+      setSavedGuideIds(guideIds);
+
+      // Auto-expand the first guide for active tab
+      const currentList = activeTab === 'repair' ? result.repair_guides : result.upcycle_guides;
+      const first = (currentList && currentList.length > 0) ? currentList[0] : (result.guides && result.guides[0]);
+      if (first) {
+        const firstId = `guide-${first.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48)}`;
+        setExpandedGuideIds(new Set([firstId]));
+      }
     };
     loadSavedState();
-  }, [result]);
+  }, [result, activeTab]);
+
+  // ── Toggle save for a Guide ────────────────────────────────────
+  const handleToggleSaveGuide = useCallback(
+    async (guide: T5GuideResult) => {
+      try {
+        const garmentLabel = `${category.charAt(0).toUpperCase() + category.slice(1)} — ${fiber}`;
+        const damageTypes = (result?.glie?.damage_breakdown?.damage_types || []).filter(d => d !== 'none') || [];
+        const { saved, id } = await toggleSaveGuide(guide, garmentLabel, damageTypes);
+        setSavedGuideIds((prev) => {
+          const next = new Set(prev);
+          if (saved) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+        Alert.alert(
+          saved ? '✓ Saved' : '✓ Removed',
+          saved ? 'Tutorial saved to your Vault.' : 'Tutorial removed from your Vault.'
+        );
+      } catch {
+        Alert.alert('Error', 'Could not update saved tutorials.');
+      }
+    },
+    [category, fiber, result]
+  );
 
   // ── Toggle save for a YouTube video ────────────────────────────
   const handleToggleSaveYouTube = useCallback(
@@ -466,6 +537,10 @@ export default function RepairRefreshScreen() {
 
     const defaultCurated = isRepair ? curatedRepairBlogs : curatedUpcycleBlogs;
 
+    const activeGuides: T5GuideResult[] = isRepair
+      ? (result.repair_guides && result.repair_guides.length > 0 ? result.repair_guides : (result.guides || []).filter(g => g.doc_type !== 'upcycle'))
+      : (result.upcycle_guides && result.upcycle_guides.length > 0 ? result.upcycle_guides : (result.guides || []).filter(g => g.doc_type === 'upcycle'));
+
     const blogLinks = [
       ...apiBlogs.map((b) => ({
         id: b.id || b.url || b.title,
@@ -473,14 +548,15 @@ export default function RepairRefreshScreen() {
         url: b.url,
         source: b.source || 'Curated Sewing Blog',
         difficulty: (b.difficulty || 'beginner').toLowerCase(),
-        time_minutes: 30,
-        summary: 'External blog tutorial with pattern guides, diagrams, and fabric recommendations.',
+        time_minutes: b.time_minutes || 30,
+        summary: b.summary || 'External blog tutorial with pattern guides, diagrams, and fabric recommendations.',
       })),
       ...defaultCurated,
     ].filter((item, i, arr) => item.url && arr.findIndex((x) => x.url === item.url) === i);
 
+    const hasGuides = activeGuides.length > 0;
     const hasYouTube = activeYouTube.length > 0;
-    const hasAnyContent = hasYouTube || blogLinks.length > 0;
+    const hasAnyContent = hasGuides || hasYouTube || blogLinks.length > 0;
 
     return (
       <View style={styles.container}>
@@ -635,6 +711,183 @@ export default function RepairRefreshScreen() {
                 : 'Creative DIY tutorials, transformation guides, and blogs curated to convert this piece into tote bags, crop tops, or reworked patchwork.'}
             </Text>
           </View>
+
+          {/* ── Step-by-Step Masterclass Tutorials ─────────────────── */}
+          {hasGuides && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons
+                  name={isRepair ? 'construct-outline' : 'color-wand-outline'}
+                  size={20}
+                  color={isRepair ? '#1E3B2F' : '#C95F12'}
+                />
+                <Text style={styles.sectionTitle}>
+                  {isRepair
+                    ? 'STEP-BY-STEP REPAIR & MENDING MASTERCLASSES'
+                    : 'STEP-BY-STEP UPCYCLING & TRANSFORMATION MASTERCLASSES'}
+                </Text>
+              </View>
+              <Text style={styles.sectionSubtitle}>
+                {isRepair
+                  ? 'Hands-on artisan mending tutorials with tools required, numbered steps, and pro-tips'
+                  : 'Creative pattern blueprints to reconstruct this garment into modern designer pieces'}
+              </Text>
+
+              {activeGuides.map((guide, idx) => {
+                const guideId = `guide-${guide.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48)}`;
+                const isSaved = savedGuideIds.has(guideId);
+                const isExpanded = expandedGuideIds.has(guideId);
+                const steps = guide.detailed_steps && guide.detailed_steps.length > 0
+                  ? guide.detailed_steps
+                  : (guide.steps || []).map((st, sIdx) => ({
+                      step: sIdx + 1,
+                      instruction: typeof st === 'string' ? st : (st as any).instruction || '',
+                      tip: typeof st === 'object' ? (st as any).tip : undefined,
+                    }));
+
+                return (
+                  <View key={guideId || idx} style={styles.guideCard}>
+                    {/* Bookmark Save */}
+                    <TouchableOpacity
+                      style={styles.saveBtn}
+                      onPress={() => handleToggleSaveGuide(guide)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons
+                        name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                        size={16}
+                        color={isSaved ? colors.gold : colors.charcoal}
+                      />
+                    </TouchableOpacity>
+
+                    {/* Header */}
+                    <View style={styles.guideHeader}>
+                      <View style={[styles.guideTypeBadge, !isRepair && { backgroundColor: '#C95F12' }]}>
+                        <Text style={styles.guideTypeText}>
+                          {isRepair ? '🧵 ARTISAN MEND' : '✂️ UPCYCLE REWORK'}
+                        </Text>
+                      </View>
+                      <View style={styles.guideMeta}>
+                        <View style={[styles.guideDiffBadge, { borderColor: difficultyColor(guide.difficulty) }]}>
+                          <Text style={[styles.guideDiffText, { color: difficultyColor(guide.difficulty) }]}>
+                            {guide.difficulty.toUpperCase()}
+                          </Text>
+                        </View>
+                        <Text style={styles.guideTime}>⏱️ {guide.time_minutes || 30}m</Text>
+                      </View>
+                    </View>
+
+                    {/* Title */}
+                    <Text style={styles.guideTitle}>{guide.title}</Text>
+                    {guide.technique_style && (
+                      <Text style={styles.guideTechnique}>
+                        TECHNIQUE: {guide.technique_style.toUpperCase()}
+                      </Text>
+                    )}
+
+                    {/* Tools Required */}
+                    {guide.tools_required && guide.tools_required.length > 0 && (
+                      <View style={[styles.guideTools, { marginBottom: 14 }]}>
+                        <Text style={styles.guideToolsLabel}>TOOLS & MATERIALS NEEDED</Text>
+                        <View style={styles.guideToolsRow}>
+                          {guide.tools_required.map((tool, tIdx) => (
+                            <View key={tIdx} style={styles.guideToolChip}>
+                              <Text style={styles.guideToolChipText}>🪡 {tool}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Expand/Collapse Toggle Button */}
+                    <TouchableOpacity
+                      style={styles.guideExpandBtn}
+                      onPress={() => toggleExpandGuide(guideId)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color={colors.charcoal}
+                      />
+                      <Text style={styles.guideExpandText}>
+                        {isExpanded
+                          ? 'HIDE STEP-BY-STEP INSTRUCTIONS'
+                          : `VIEW STEP-BY-STEP INSTRUCTIONS (${steps.length} STEPS)`}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* Steps List */}
+                    {isExpanded && (
+                      <View style={styles.guideSteps}>
+                        {steps.map((st, sIdx) => (
+                          <View key={sIdx} style={styles.guideStepWrapper}>
+                            <View style={styles.guideStep}>
+                              <View style={[styles.guideStepNum, !isRepair && { backgroundColor: '#C95F12' }]}>
+                                <Text style={styles.guideStepNumText}>{st.step || sIdx + 1}</Text>
+                              </View>
+                              <Text style={styles.guideStepText}>{st.instruction}</Text>
+                            </View>
+                            {st.tip ? (
+                              <View style={styles.stepTipBox}>
+                                <Ionicons name="bulb-outline" size={13} color={colors.textSecond} />
+                                <Text style={styles.stepTipText}>{st.tip}</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* Pro Tip Callout */}
+                    {guide.pro_tip ? (
+                      <View style={styles.proTipBox}>
+                        <Ionicons name="sparkles" size={18} color={colors.gold} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.proTipHeading}>ARTISAN PRO TIP</Text>
+                          <Text style={styles.proTipText}>{guide.pro_tip}</Text>
+                        </View>
+                      </View>
+                    ) : null}
+
+                    {/* Care Instructions */}
+                    {guide.care_instructions ? (
+                      <View style={styles.careBox}>
+                        <Ionicons name="shield-checkmark-outline" size={18} color={colors.forest} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.careHeading}>LONGEVITY & CARE</Text>
+                          <Text style={styles.careText}>{guide.care_instructions}</Text>
+                        </View>
+                      </View>
+                    ) : null}
+
+                    {/* Upcycle Alternative */}
+                    {guide.upcycle_alternative ? (
+                      <View style={styles.upcycleAltBox}>
+                        <Ionicons name="cut-outline" size={18} color={colors.orange} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.upcycleAltHeading}>CREATIVE VARIATION</Text>
+                          <Text style={styles.upcycleAltText}>{guide.upcycle_alternative}</Text>
+                        </View>
+                      </View>
+                    ) : null}
+
+                    {/* Source Article Link */}
+                    {guide.source_url ? (
+                      <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8, alignSelf: 'flex-start' }}
+                        onPress={() => openArticle(guide.source_url!)}
+                      >
+                        <Text style={{ fontFamily: typography.mono, fontSize: 10, fontWeight: '800', color: isRepair ? '#1E3B2F' : '#C95F12' }}>
+                          VIEW ORIGINAL PATTERN / TUTORIAL ↗
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          )}
 
           {/* ── YouTube Tutorials ──────────────────────────────────── */}
           {hasYouTube && (
