@@ -6,6 +6,7 @@ import { impactService } from '../../../src/services/impactService';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import { RecyclingHubsModal } from '../../../src/components/RecyclingHubsModal';
+import { EditorialIcon } from '../../../src/components/editorial/EditorialIcon';
 
 export default function CircularScreen() {
   const router = useRouter();
@@ -60,8 +61,8 @@ export default function CircularScreen() {
           </View>
 
           <View style={styles.cardBodyRow}>
-            <View style={styles.iconBoxTerracotta}>
-              <Ionicons name="sparkles-sharp" size={22} color={colors.white} />
+            <View style={[styles.iconBoxTerracotta, { backgroundColor: '#FAF6EE', borderColor: colors.goldDark, borderWidth: 1 }]}>
+              <EditorialIcon name="sparkle" size={24} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardHeadline}>KAPHOR AI ADVISOR</Text>
@@ -97,8 +98,8 @@ export default function CircularScreen() {
           activeOpacity={0.88}
         >
           <View style={styles.cardCompactLeft}>
-            <View style={styles.iconBoxInk}>
-              <Ionicons name="scan-sharp" size={20} color={colors.white} />
+            <View style={[styles.iconBoxInk, { backgroundColor: '#FAF6EE', borderColor: colors.crimson, borderWidth: 1 }]}>
+              <EditorialIcon name="search" size={24} />
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -198,8 +199,8 @@ export default function CircularScreen() {
           </View>
 
           <View style={styles.cardBodyRow}>
-            <View style={styles.iconBoxInk}>
-              <Ionicons name="cut-sharp" size={22} color={colors.white} />
+            <View style={[styles.iconBoxInk, { backgroundColor: '#FAF6EE', borderColor: colors.goldDark, borderWidth: 1 }]}>
+              <EditorialIcon name="scissors" size={24} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardHeadline}>UPCYCLE ATELIER</Text>
@@ -250,8 +251,8 @@ export default function CircularScreen() {
             activeOpacity={0.88}
           >
             <View style={styles.pathwayHead}>
-              <View style={[styles.pathwayIconWrap, { backgroundColor: colors.crimsonLight }]}>
-                <Ionicons name="pricetag-sharp" size={16} color={colors.crimson} />
+              <View style={[styles.pathwayIconWrap, { backgroundColor: '#FAF6EE', borderColor: colors.crimsonLight, borderWidth: 1 }]}>
+                <EditorialIcon name="tag" size={20} />
               </View>
               <Text style={[styles.pathwayIndex, { color: colors.crimson }]}>01</Text>
             </View>
@@ -270,8 +271,8 @@ export default function CircularScreen() {
             activeOpacity={0.88}
           >
             <View style={styles.pathwayHead}>
-              <View style={[styles.pathwayIconWrap, { backgroundColor: colors.goldLight }]}>
-                <Ionicons name="time-sharp" size={16} color={colors.goldDark} />
+              <View style={[styles.pathwayIconWrap, { backgroundColor: '#FAF6EE', borderColor: colors.goldLight, borderWidth: 1 }]}>
+                <EditorialIcon name="rental" size={20} />
               </View>
               <Text style={[styles.pathwayIndex, { color: colors.goldDark }]}>02</Text>
             </View>
@@ -290,8 +291,8 @@ export default function CircularScreen() {
             activeOpacity={0.88}
           >
             <View style={styles.pathwayHead}>
-              <View style={[styles.pathwayIconWrap, { backgroundColor: colors.emeraldLight }]}>
-                <Ionicons name="swap-horizontal-sharp" size={16} color={colors.emerald} />
+              <View style={[styles.pathwayIconWrap, { backgroundColor: '#FAF6EE', borderColor: colors.emeraldLight, borderWidth: 1 }]}>
+                <EditorialIcon name="swap" size={20} />
               </View>
               <Text style={[styles.pathwayIndex, { color: colors.emerald }]}>03</Text>
             </View>
@@ -310,8 +311,8 @@ export default function CircularScreen() {
             activeOpacity={0.88}
           >
             <View style={styles.pathwayHead}>
-              <View style={[styles.pathwayIconWrap, { backgroundColor: colors.terracottaLight }]}>
-                <Ionicons name="color-palette-sharp" size={16} color={colors.terracottaDark} />
+              <View style={[styles.pathwayIconWrap, { backgroundColor: '#FAF6EE', borderColor: colors.terracottaLight, borderWidth: 1 }]}>
+                <EditorialIcon name="thread" size={20} />
               </View>
               <Text style={[styles.pathwayIndex, { color: colors.terracottaDark }]}>04</Text>
             </View>
@@ -331,8 +332,8 @@ export default function CircularScreen() {
           activeOpacity={0.88}
         >
           <View style={styles.recoveryLeft}>
-            <View style={styles.recoveryIconBox}>
-              <Ionicons name="leaf" size={20} color={colors.white} />
+            <View style={[styles.recoveryIconBox, { backgroundColor: '#FAF6EE', borderColor: colors.emerald, borderWidth: 1 }]}>
+              <EditorialIcon name="recycle" size={24} />
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

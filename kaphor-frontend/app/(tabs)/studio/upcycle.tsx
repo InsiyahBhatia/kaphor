@@ -3,9 +3,12 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image,
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { promptPhotoSelection } from '../../../src/utils/imagePicker';
 import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { EditorialPageHeader, HandwrittenNote, IllustrationLayer } from '../../../src/components/editorial/IllustrationLayer';
+import { colors, typography } from '../../../src/theme';
 
 const UPCYCLE_YOUTUBE_TUTORIALS = [
   {
@@ -51,43 +54,17 @@ export default function UpcycleSuggestionsScreen() {
   const [loading, setLoading] = useState(false);
 
   const pickImage = () => {
-    Alert.alert('Add Garment Photo', 'Take a new photo with your camera or choose one from your gallery:', [
-      {
-        text: 'Take Photo',
-        onPress: async () => {
-          try {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') { Alert.alert('Permission needed', 'Grant camera permission to take a photo.'); return; }
-            const pick = await ImagePicker.launchCameraAsync({
-              mediaTypes: ['images'],
-              allowsEditing: true,
-              quality: 0.85,
-            });
-            if (!pick.canceled && pick.assets?.[0]) setImage(pick.assets[0].uri);
-          } catch {
-            Alert.alert('Error', 'Failed to capture photo');
-          }
-        },
+    promptPhotoSelection({
+      title: 'Add Garment Photo',
+      quality: 0.85,
+      base64: true,
+      onImagePicked: (res) => {
+        if (res.uri) setImage(res.uri);
       },
-      {
-        text: 'Choose from Gallery',
-        onPress: async () => {
-          try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') { Alert.alert('Permission needed', 'Grant gallery permission to select a photo.'); return; }
-            const pick = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ['images'],
-              allowsEditing: true,
-              quality: 0.85,
-            });
-            if (!pick.canceled && pick.assets?.[0]) setImage(pick.assets[0].uri);
-          } catch {
-            Alert.alert('Error', 'Failed to pick photo');
-          }
-        },
+      onError: (err) => {
+        Alert.alert('Error', err?.message || 'Failed to capture or pick photo');
       },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    });
   };
 
   const handleSubmit = async () => {
@@ -126,11 +103,21 @@ export default function UpcycleSuggestionsScreen() {
           onPress={() => safeBack('/(tabs)/studio')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={28} color="white" />
+          <Ionicons name="chevron-back" size={28} color={colors.cream} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>UPCYCLE STUDIO</Text>
         <View style={{ width: 28 }} />
       </View>
+
+      <EditorialPageHeader
+        title="UPCYCLE STUDIO"
+        subtitle="OLD GARMENT // CUT // REWORK // NEW PIECE"
+        eyebrow="DIGITAL ATELIER"
+        variant="upcycle"
+        style={styles.editorialHeader}
+      >
+        <HandwrittenNote>old garments, new possibilities.</HandwrittenNote>
+      </EditorialPageHeader>
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -142,9 +129,20 @@ export default function UpcycleSuggestionsScreen() {
         {!result ? (
           <>
             <View style={styles.heroSection}>
-              <Ionicons name="color-palette" size={40} color="#C9A84C" />
+              <IllustrationLayer variant="upcycle" muted />
+              <View style={styles.atelierIcon}>
+                <Ionicons name="cut-outline" size={30} color={colors.goldDark} />
+              </View>
               <Text style={styles.title}>AI Upcycle Ideas</Text>
               <Text style={styles.subtitle}>Upload a photo or describe a garment and our AI will suggest creative ways to transform it.</Text>
+              <View style={styles.processRow}>
+                {['OLD GARMENT', 'CUT', 'REWORK', 'NEW PIECE'].map((step, index) => (
+                  <React.Fragment key={step}>
+                    <Text style={styles.processStep}>{step}</Text>
+                    {index < 3 && <Ionicons name="arrow-forward" size={13} color={colors.textMuted} />}
+                  </React.Fragment>
+                ))}
+              </View>
             </View>
 
             <TouchableOpacity style={styles.imageArea} onPress={pickImage}>
@@ -153,7 +151,7 @@ export default function UpcycleSuggestionsScreen() {
               ) : (
                 <View style={styles.imagePlaceholder}>
                   <View style={styles.cameraCircle}>
-                    <Ionicons name="camera" size={28} color="#C9A84C" />
+                    <Ionicons name="camera" size={28} color={colors.goldDark} />
                   </View>
                   <Text style={styles.imageText}>TAKE OR UPLOAD PHOTO</Text>
                   <Text style={styles.imageSubtext}>Camera or gallery (unlocks AI vision)</Text>
@@ -170,7 +168,7 @@ export default function UpcycleSuggestionsScreen() {
             <TextInput
               style={styles.input}
               placeholder="Describe the garment (fabric, style, condition)..."
-              placeholderTextColor="#6B5C52"
+              placeholderTextColor={colors.textMuted}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -183,12 +181,12 @@ export default function UpcycleSuggestionsScreen() {
             >
               {loading ? (
                 <View style={styles.loadingRow}>
-                  <ActivityIndicator color="#1A0C10" />
+                  <ActivityIndicator color={colors.goldDark} />
                   <Text style={styles.mainBtnText}>  {image ? 'ANALYZING IMAGE...' : 'GETTING IDEAS...'}</Text>
                 </View>
               ) : (
                 <View style={styles.loadingRow}>
-                  <Ionicons name="sparkles" size={18} color="#1A0C10" />
+                  <Ionicons name="sparkles" size={18} color={colors.goldDark} />
                   <Text style={styles.mainBtnText}>  GET AI SUGGESTIONS</Text>
                 </View>
               )}
@@ -198,7 +196,7 @@ export default function UpcycleSuggestionsScreen() {
             <View style={{ marginTop: 32, marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <Ionicons name="logo-youtube" size={20} color="#FF0000" />
-                <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 18, color: '#C9A84C', letterSpacing: 1.5 }}>
+                <Text style={{ fontFamily: typography.headings, fontSize: 18, color: colors.charcoal, letterSpacing: 1.5 }}>
                   UPCYCLING VIDEO TUTORIALS
                 </Text>
               </View>
@@ -208,10 +206,10 @@ export default function UpcycleSuggestionsScreen() {
                     key={yt.id}
                     style={{
                       width: 210,
-                      backgroundColor: '#1A0C10',
-                      borderRadius: 12,
+                      backgroundColor: '#FAF7F0',
+                      borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: '#3A2C30',
+                      borderColor: 'rgba(20,20,20,0.16)',
                       overflow: 'hidden',
                     }}
                     onPress={async () => {
@@ -238,21 +236,21 @@ export default function UpcycleSuggestionsScreen() {
                         position: 'absolute',
                         top: 8,
                         left: 8,
-                        backgroundColor: '#C9A84C',
+                        backgroundColor: colors.gold,
                         paddingHorizontal: 6,
                         paddingVertical: 2,
                         borderRadius: 3,
                       }}>
-                        <Text style={{ color: '#1A0C10', fontSize: 8, fontWeight: '900', letterSpacing: 0.5 }}>
+                        <Text style={{ color: colors.goldDark, fontSize: 8, fontWeight: '900', letterSpacing: 0.5 }}>
                           {yt.vibe}
                         </Text>
                       </View>
                     </View>
                     <View style={{ padding: 10 }}>
-                      <Text style={{ color: '#E0D6C8', fontSize: 12, fontWeight: '700', lineHeight: 16 }} numberOfLines={2}>
+                      <Text style={{ color: colors.charcoal, fontSize: 12, fontWeight: '700', lineHeight: 16 }} numberOfLines={2}>
                         {yt.title}
                       </Text>
-                      <Text style={{ color: '#6B5C52', fontSize: 10, marginTop: 4 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 10, marginTop: 4 }}>
                         Channel: {yt.channel}
                       </Text>
                     </View>
@@ -303,39 +301,43 @@ export default function UpcycleSuggestionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F0609' },
-  header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, backgroundColor: '#1A0C10', paddingBottom: 16 },
-  headerTitle: { color: '#C9A84C', fontSize: 14, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  container: { flex: 1, backgroundColor: colors.cream },
+  header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.charcoal, paddingBottom: 16 },
+  headerTitle: { color: colors.cream, fontSize: 14, fontFamily: typography.headings, letterSpacing: 2 },
+  editorialHeader: { marginBottom: 0 },
   content: { padding: 24, paddingBottom: 180 },
-  heroSection: { alignItems: 'center', marginBottom: 28 },
-  title: { fontSize: 26, fontFamily: 'BebasNeue_400Regular', color: '#C9A84C', marginTop: 12, marginBottom: 8 },
-  subtitle: { color: '#6B5C52', fontSize: 14, lineHeight: 22, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4 },
-  imageArea: { width: '100%', height: 200, borderWidth: 1.5, borderColor: '#3A2C30', borderStyle: 'dashed', borderRadius: 16, overflow: 'hidden', marginBottom: 12, backgroundColor: '#1A0C10' },
+  heroSection: { alignItems: 'center', marginBottom: 28, position: 'relative', overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(20,20,20,0.16)', backgroundColor: '#FAF7F0', padding: 20 },
+  atelierIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.goldLight, justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(184,145,47,0.25)' },
+  title: { fontSize: 26, fontFamily: typography.headings, color: colors.charcoal, marginTop: 4, marginBottom: 8 },
+  subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 22, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4 },
+  processRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 16 },
+  processStep: { fontFamily: typography.monoBold, fontSize: 9, color: colors.charcoal, letterSpacing: 0.8, backgroundColor: colors.cream, borderWidth: 1, borderColor: 'rgba(20,20,20,0.14)', paddingHorizontal: 7, paddingVertical: 4 },
+  imageArea: { width: '100%', height: 200, borderWidth: 1.5, borderColor: colors.charcoal, borderStyle: 'dashed', borderRadius: 8, overflow: 'hidden', marginBottom: 12, backgroundColor: '#FAF7F0' },
   previewImage: { width: '100%', height: '100%' },
   imagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  cameraCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(201, 168, 76, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(201, 168, 76, 0.2)' },
-  imageText: { color: '#C9A84C', fontSize: 12, fontWeight: '700', letterSpacing: 2 },
-  imageSubtext: { color: '#6B5C52', fontSize: 11, marginTop: 4 },
+  cameraCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.goldLight, justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(184,145,47,0.22)' },
+  imageText: { color: colors.goldDark, fontSize: 12, fontWeight: '700', letterSpacing: 2 },
+  imageSubtext: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
   removeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', marginBottom: 16 },
   removeBtnText: { color: '#F44336', fontSize: 12 },
-  input: { borderWidth: 1, borderColor: '#3A2C30', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, color: 'white', fontSize: 14, minHeight: 80, textAlignVertical: 'top', marginBottom: 24 },
-  mainBtn: { width: '100%', height: 56, backgroundColor: '#C9A84C', borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  mainBtnText: { color: '#1A0C10', fontSize: 15, fontWeight: '800', letterSpacing: 1 },
+  input: { borderWidth: 1.5, borderColor: colors.charcoal, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, color: colors.charcoal, backgroundColor: '#FAF7F0', fontSize: 14, minHeight: 80, textAlignVertical: 'top', marginBottom: 24 },
+  mainBtn: { width: '100%', height: 56, backgroundColor: colors.gold, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: colors.charcoal },
+  mainBtnText: { color: colors.goldDark, fontSize: 15, fontWeight: '800', letterSpacing: 1 },
   loadingRow: { flexDirection: 'row', alignItems: 'center' },
   suggestionsContainer: { gap: 16, marginBottom: 24, marginTop: 16 },
-  suggestionCard: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 20, borderLeftWidth: 3, borderLeftColor: '#C9A84C' },
+  suggestionCard: { backgroundColor: '#FAF7F0', borderRadius: 8, padding: 20, borderLeftWidth: 3, borderLeftColor: colors.gold, borderWidth: 1, borderColor: 'rgba(20,20,20,0.12)' },
   suggestionHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
-  numberBadge: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#C9A84C', justifyContent: 'center', alignItems: 'center' },
-  numberText: { color: '#1A0C10', fontSize: 14, fontWeight: '800' },
-  suggestionTitle: { color: 'white', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  numberBadge: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.gold, justifyContent: 'center', alignItems: 'center' },
+  numberText: { color: colors.goldDark, fontSize: 14, fontWeight: '800' },
+  suggestionTitle: { color: colors.charcoal, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   metaRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   diffBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6, backgroundColor: 'rgba(201, 168, 76, 0.1)', borderWidth: 1, borderColor: 'rgba(201, 168, 76, 0.2)' },
-  diffText: { color: '#C9A84C', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  timeText: { color: '#6B5C52', fontSize: 12 },
-  suggestionText: { color: '#E0D6C8', fontSize: 14, lineHeight: 22, marginBottom: 10 },
-  materialsText: { color: '#6B5C52', fontSize: 12, marginBottom: 8 },
+  diffText: { color: colors.goldDark, fontSize: 10, fontWeight: '700', letterSpacing: 1 },
+  timeText: { color: colors.textMuted, fontSize: 12 },
+  suggestionText: { color: colors.textSecond, fontSize: 14, lineHeight: 22, marginBottom: 10 },
+  materialsText: { color: colors.textMuted, fontSize: 12, marginBottom: 8 },
   impactRow: { flexDirection: 'row', gap: 6, alignItems: 'center', paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.04)' },
   impactText: { color: '#4CAF50', fontSize: 12, flex: 1 },
-  secondaryBtn: { width: '100%', height: 56, borderWidth: 1, borderColor: '#3A2C30', borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  secondaryBtnText: { color: '#6B5C52', fontSize: 14, fontWeight: '700', letterSpacing: 2 },
+  secondaryBtn: { width: '100%', height: 56, borderWidth: 1.5, borderColor: colors.charcoal, borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAF7F0' },
+  secondaryBtnText: { color: colors.charcoal, fontSize: 14, fontWeight: '700', letterSpacing: 2 },
 });

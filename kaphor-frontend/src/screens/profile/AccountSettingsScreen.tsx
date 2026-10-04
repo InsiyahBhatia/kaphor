@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { promptPhotoSelection } from '../../utils/imagePicker';
 import { useAuth } from '../../context/AuthContext';
 import { userService } from '../../services/userService';
 import api from '../../services/api';

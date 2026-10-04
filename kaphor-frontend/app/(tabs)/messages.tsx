@@ -13,6 +13,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../src/theme';
 import { Header } from '../../src/components/common/Header';
+import { EditorialPageHeader } from '../../src/components/editorial/IllustrationLayer';
 import { KaphorImage } from '../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 import { messageService, ConversationSummary } from '../../src/services/messageService';
@@ -339,7 +340,12 @@ export default function MessagesScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="MESSAGES" showBack={false} />
+      <EditorialPageHeader
+        title="CORRESPONDENCE"
+        subtitle="ARCHIVAL INBOX // PEER EXCHANGE"
+        eyebrow="MESSAGES"
+        variant="messages"
+      />
 
       {/* Categories: ALL, SELL, SWAP, RENT */}
       <View style={styles.tabsContainer}>

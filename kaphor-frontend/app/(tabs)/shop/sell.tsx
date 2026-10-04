@@ -21,6 +21,7 @@ import { DropdownPicker } from '../../../src/components/DropdownPicker';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { promptPhotoSelection } from '../../../src/utils/imagePicker';
 
 export { matchMarketCategory };
 
@@ -364,53 +365,9 @@ export default function SellScreen() {
   };
 
   const selectPhoto = (callback: (uri: string) => void) => {
-    Alert.alert('Add Garment Photo', 'Take a new photo with your camera or choose one from your gallery:', [
-      {
-        text: 'Take Photo',
-        onPress: async () => {
-          try {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission needed', 'Grant camera access to take garment photos.');
-              return;
-            }
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ['images'],
-              allowsEditing: true,
-              quality: 0.7,
-            });
-            if (!result.canceled && result.assets[0]?.uri) {
-              callback(result.assets[0].uri);
-            }
-          } catch {
-            Alert.alert('Error', 'Failed to capture photo');
-          }
-        },
-      },
-      {
-        text: 'Choose from Gallery',
-        onPress: async () => {
-          try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission needed', 'Grant photo access to choose garment photos.');
-              return;
-            }
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ['images'],
-              allowsEditing: true,
-              quality: 0.7,
-            });
-            if (!result.canceled && result.assets[0]?.uri) {
-              callback(result.assets[0].uri);
-            }
-          } catch {
-            Alert.alert('Error', 'Failed to pick photo');
-          }
-        },
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    promptPhotoSelection('Add Garment Photo', (res) => {
+      callback(res.uri);
+    });
   };
 
   const pickAndRunAiFill = async () => {

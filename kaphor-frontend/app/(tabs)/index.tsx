@@ -5,13 +5,11 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   Alert,
   Dimensions,
   Pressable,
   RefreshControl,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { useGarmentStore } from '../../src/store/garmentStore';
@@ -24,7 +22,7 @@ import {
 } from '../../src/services/recommendationService';
 import { KaphorImage } from '../../src/components/KaphorImage';
 import { EditorialGarmentCard } from '../../src/components/EditorialGarmentCard';
-import { DossierLoading } from '../../src/components/common/DossierLoading';
+import { EditorialIcon, HandwrittenNote, IllustrationLayer } from '../../src/components/editorial/IllustrationLayer';
 import { GarmentShelfSkeleton } from '../../src/components/common/CardLoadingScreen';
 import { Header } from '../../src/components/common/Header';
 import api from '../../src/services/api';
@@ -51,20 +49,23 @@ const QUICK_PILLARS = [
     label: 'BUY & SELL',
     sub: 'Pre-owned luxury',
     icon: 'pricetag-sharp' as const,
+    assetIcon: 'bag' as const,
     route: '/(tabs)/shop',
-    accent: colors.red,
+    accent: colors.rose,
   },
   {
-    label: 'OCCASION LEASE',
+    label: 'RENTALS',
     sub: 'From ₹500/day',
     icon: 'calendar-sharp' as const,
+    assetIcon: 'dress' as const,
     route: '/(tabs)/rental',
-    accent: colors.copper,
+    accent: colors.gold,
   },
   {
-    label: 'FAIR SWAPS',
+    label: 'SWAP',
     sub: 'Zero-cash trades',
     icon: 'swap-horizontal-sharp' as const,
+    assetIcon: 'swap' as const,
     route: '/(tabs)/swap',
     accent: colors.forest,
   },
@@ -72,8 +73,9 @@ const QUICK_PILLARS = [
     label: 'DIGITAL ATELIER',
     sub: 'AI scan & repair',
     icon: 'construct-sharp' as const,
+    assetIcon: 'sewing' as const,
     route: '/(tabs)/studio/repair-refresh',
-    accent: colors.navy,
+    accent: colors.ink,
   },
 ];
 
@@ -110,27 +112,24 @@ function HeroShowcase({
 }) {
   return (
     <View style={styles.heroContainer}>
-      <Image
-        source={{
-          uri: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1600&auto=format&fit=crop',
-        }}
-        style={StyleSheet.absoluteFillObject}
-        resizeMode="cover"
-      />
-      <View style={styles.heroGradientOverlay} />
+      <IllustrationLayer variant="home" />
 
       <View style={styles.heroContent}>
         <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>EDITORIAL ARCHIVE · SS26</Text>
+          <Text style={styles.heroBadgeText}>EDITORIAL ARCHIVE // SS26</Text>
         </View>
 
         <Text style={styles.heroHeadline}>
-          CIRCULAR{'\n'}MARKETPLACE
+          CIRCULAR{'\n'}FASHION{'\n'}LIVES LONGER
         </Text>
 
         <Text style={styles.heroTagline}>
-          Curated pre-loved designer archives, occasion leases and fine barter with zero retail waste.
+          Buy, sell, swap and rent pre-loved fashion with zero retail waste.
         </Text>
+
+        <HandwrittenNote style={styles.heroNote}>
+          pre-loved pieces, new beginnings.
+        </HandwrittenNote>
 
         <View style={styles.heroActionRow}>
           <TouchableOpacity
@@ -139,7 +138,7 @@ function HeroShowcase({
             activeOpacity={0.88}
           >
             <Text style={styles.heroPrimaryBtnText}>EXPLORE ARCHIVE</Text>
-            <Ionicons name="arrow-forward" size={15} color={colors.white} />
+            <Text style={styles.inlineArrow}>→</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -147,21 +146,21 @@ function HeroShowcase({
             onPress={onRentals}
             activeOpacity={0.88}
           >
-            <Text style={styles.heroSecondaryBtnText}>OCCASION LEASES</Text>
+            <Text style={styles.heroSecondaryBtnText}>RENTALS</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.heroTrustRow}>
           <View style={styles.heroTrustItem}>
-            <Ionicons name="shield-checkmark-outline" size={13} color="rgba(255,255,255,0.85)" />
+            <EditorialIcon name="verified" size={17} />
             <Text style={styles.heroTrustText}>VERIFIED CONDITION</Text>
           </View>
           <View style={styles.heroTrustItem}>
-            <Ionicons name="lock-closed-outline" size={13} color="rgba(255,255,255,0.85)" />
+            <EditorialIcon name="shield" size={17} />
             <Text style={styles.heroTrustText}>ESCROW PROTECTION</Text>
           </View>
           <View style={styles.heroTrustItem}>
-            <Ionicons name="repeat-outline" size={13} color="rgba(255,255,255,0.85)" />
+            <EditorialIcon name="swap" size={17} />
             <Text style={styles.heroTrustText}>CASHLESS SWAP</Text>
           </View>
         </View>
@@ -188,7 +187,7 @@ function QuickAtelierGrid({ onNavigate }: { onNavigate: (route: string) => void 
           }}
         >
           <View style={[styles.quickActionIconWrap, { backgroundColor: pillar.accent + '14' }]}>
-            <Ionicons name={pillar.icon} size={22} color={pillar.accent} />
+            <EditorialIcon name={pillar.assetIcon} size={28} />
           </View>
           <Text style={styles.quickActionLabel} numberOfLines={2}>{pillar.label}</Text>
           <Text style={styles.quickActionDesc} numberOfLines={1}>{pillar.sub}</Text>
@@ -288,11 +287,7 @@ function OccasionRentalCard({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.8}
         >
-          <Ionicons
-            name={isLiked ? 'heart' : 'heart-outline'}
-            size={18}
-            color={isLiked ? colors.crimson : colors.charcoal}
-          />
+          <EditorialIcon name={isLiked ? 'heartFilled' : 'heart'} size={22} />
         </TouchableOpacity>
       </View>
 
@@ -320,7 +315,7 @@ function OccasionRentalCard({
 
         <View style={styles.rentalReserveCta}>
           <Text style={styles.rentalReserveText}>REQUEST RENTAL • CHECK DATES</Text>
-          <Ionicons name="arrow-forward" size={13} color={colors.charcoal} />
+          <Text style={styles.cardArrow}>→</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -376,15 +371,11 @@ function FairSwapCard({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.8}
         >
-          <Ionicons
-            name={isLiked ? 'heart' : 'heart-outline'}
-            size={18}
-            color={isLiked ? colors.crimson : colors.charcoal}
-          />
+          <EditorialIcon name={isLiked ? 'heartFilled' : 'heart'} size={22} />
         </TouchableOpacity>
 
         <View style={styles.swapParityPill}>
-          <Ionicons name="swap-horizontal" size={11} color={colors.white} />
+          <EditorialIcon name="swap" size={14} />
           <Text style={styles.swapParityText}>
             {item.isFairSwap ? 'EQUAL VALUE TRADE' : `±${item.variancePercent}% PARITY`}
           </Text>
@@ -665,7 +656,7 @@ export default function HomeScreen() {
               onPress={() => navigateToRoute('/(tabs)/shop')}
               activeOpacity={0.85}
             >
-              <Ionicons name="sparkles-outline" size={24} color={colors.gold} />
+              <EditorialIcon name="sparkle" size={28} />
               <Text style={styles.emptyPromptTitle}>DISCOVER YOUR STYLE DOSSIER</Text>
               <Text style={styles.emptyPromptDesc}>
                 Browse the catalog to train your AI stylist and unlock bespoke recommendations.
@@ -704,7 +695,7 @@ export default function HomeScreen() {
               onPress={() => navigateToRoute('/(tabs)/rental')}
               activeOpacity={0.85}
             >
-              <Ionicons name="calendar-outline" size={24} color={colors.copper} />
+              <EditorialIcon name="dress" size={30} />
               <Text style={styles.emptyPromptTitle}>BROWSE OCCASION LEASE VAULT</Text>
               <Text style={styles.emptyPromptDesc}>
                 Explore sarees, lehengas, and couture eveningwear available for short-term booking.
@@ -850,53 +841,58 @@ const styles = StyleSheet.create({
   heroContainer: {
     marginHorizontal: 16,
     marginTop: 14,
-    minHeight: 330,
+    minHeight: 390,
     borderRadius: radius.md,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: colors.charcoal,
-    borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.12)',
+    backgroundColor: '#FAF7F0',
+    borderWidth: 2,
+    borderColor: colors.charcoal,
   },
   heroGradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(18, 19, 23, 0.48)',
+    backgroundColor: 'rgba(245, 241, 232, 0.72)',
   },
   heroContent: {
     padding: 22,
     justifyContent: 'flex-end',
     flex: 1,
+    maxWidth: '76%',
   },
   heroBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.gold,
+    backgroundColor: colors.goldLight,
+    borderWidth: 1,
+    borderColor: 'rgba(184,145,47,0.38)',
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 2,
     marginBottom: 12,
   },
   heroBadgeText: {
-    color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1,
+    color: colors.goldDark,
+    fontFamily: typography.monoBold,
+    fontSize: 9.5,
+    letterSpacing: 1.2,
   },
   heroHeadline: {
     fontFamily: typography.headings,
-    fontSize: 34,
-    lineHeight: 36,
-    color: colors.white,
-    letterSpacing: 0.5,
+    fontSize: 40,
+    lineHeight: 42,
+    color: colors.charcoal,
+    letterSpacing: 0.6,
     marginBottom: 8,
   },
   heroTagline: {
     fontFamily: typography.body,
-    fontSize: 12,
-    lineHeight: 18,
-    color: 'rgba(255,255,255,0.85)',
-    marginBottom: 20,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textSecond,
+    marginBottom: 10,
     maxWidth: '92%',
+  },
+  heroNote: {
+    marginBottom: 18,
   },
   heroActionRow: {
     flexDirection: 'row',
@@ -909,33 +905,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.charcoal,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderColor: colors.charcoal,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
     borderRadius: radius.sm,
     gap: 8,
   },
   heroPrimaryBtnText: {
-    color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
+    color: colors.cream,
+    fontFamily: typography.bodyBold,
+    fontSize: 11.5,
+    letterSpacing: 1.2,
+  },
+  inlineArrow: {
+    color: colors.cream,
+    fontFamily: typography.bodyBold,
+    fontSize: 15,
+    lineHeight: 16,
   },
   heroSecondaryBtn: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: colors.cream,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderColor: colors.charcoal,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
     borderRadius: radius.sm,
   },
   heroSecondaryBtnText: {
-    color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
+    color: colors.charcoal,
+    fontFamily: typography.bodyBold,
+    fontSize: 11.5,
+    letterSpacing: 1.2,
   },
   heroTrustRow: {
     flexDirection: 'row',
@@ -944,19 +944,18 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.15)',
+    borderTopColor: 'rgba(20,20,20,0.14)',
   },
   heroTrustItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
   heroTrustText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    color: colors.textSecond,
+    fontFamily: typography.bodyMedium,
+    fontSize: 9.5,
+    letterSpacing: 0.8,
   },
 
   // ── Categories ──────────────────────────────────────────────────
@@ -980,14 +979,14 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   categoryPillText: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '700',
+    fontFamily: typography.bodyMedium,
+    fontSize: 12,
     color: colors.textPrimary,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   categoryPillTextActive: {
     color: colors.white,
+    fontFamily: typography.bodyBold,
   },
 
   // ── Quick Action Pillars (Classic Kaphor Brutalist 4-column Grid) ───────
@@ -1000,17 +999,17 @@ const styles = StyleSheet.create({
   quickActionCard: {
     flex: 1,
     backgroundColor: colors.white,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: colors.charcoal,
-    borderRadius: 2,
+    borderRadius: radius.md,
     paddingVertical: 14,
     paddingHorizontal: 4,
     alignItems: 'center',
     gap: 6,
     shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
     elevation: 3,
   },
   quickActionIconWrap: {
@@ -1022,20 +1021,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   quickActionLabel: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     color: colors.charcoal,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontSize: 9.5,
+    letterSpacing: 0.6,
     textAlign: 'center',
-    lineHeight: 11,
+    lineHeight: 12,
   },
   quickActionDesc: {
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     color: colors.textMuted,
-    fontSize: 7,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontSize: 8,
+    letterSpacing: 0.2,
     textAlign: 'center',
     marginTop: 1,
   },
@@ -1318,6 +1315,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.charcoal,
     letterSpacing: 0.6,
+  },
+  cardArrow: {
+    fontFamily: typography.monoBold,
+    fontSize: 13,
+    color: colors.charcoal,
   },
 
   // ── Swap Card ───────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { KaphorImage } from './KaphorImage';
+import { EditorialIcon, IllustrationLayer } from './editorial/IllustrationLayer';
 import { colors, typography } from '../theme';
 import { hapticFeedback } from '../utils/haptics';
 import api from '../services/api';
@@ -92,15 +92,12 @@ export function EditorialGarmentCard({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.8}
         >
-          <Ionicons
-            name={isLiked ? 'heart' : 'heart-outline'}
-            size={18}
-            color={isLiked ? colors.crimson : colors.charcoal}
-          />
+          <EditorialIcon name={isLiked ? 'heartFilled' : 'heart'} size={22} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.garmentInfo}>
+        <IllustrationLayer variant="card" />
         <View style={styles.garmentMetaRow}>
           <Text style={styles.garmentBrand} numberOfLines={1}>
             {(item.brand || 'ARCHIVE ATELIER').toUpperCase()}
@@ -139,7 +136,7 @@ export function EditorialGarmentCard({
               }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="bag-add-outline" size={17} color={colors.white} />
+              <EditorialIcon name="bag" size={22} />
             </TouchableOpacity>
           )}
         </View>
@@ -152,10 +149,10 @@ const styles = StyleSheet.create({
   garmentCard: {
     width: 220,
     marginRight: 14,
-    backgroundColor: colors.white,
+    backgroundColor: '#FAF7F0',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.08)',
+    borderColor: 'rgba(20,20,20,0.16)',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
@@ -208,6 +205,9 @@ const styles = StyleSheet.create({
   },
   garmentInfo: {
     padding: 10,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#FAF7F0',
   },
   garmentMetaRow: {
     flexDirection: 'row',
@@ -276,7 +276,9 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: colors.charcoal,
+    backgroundColor: colors.cream,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
     alignItems: 'center',
     justifyContent: 'center',
   },

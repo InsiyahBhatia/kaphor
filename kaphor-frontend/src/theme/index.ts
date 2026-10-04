@@ -1,63 +1,95 @@
 /**
- * Kaphor design system — Editorial Archive / Circular Fashion Palette
- * Strict 5-Role Color Palette
+ * Kaphor Design System — Editorial Fashion Illustration × Circular Fashion
+ * Based on DESIGN.md
  */
-export const colors = {
-  // Core 5-Role Color System (Each color has exactly ONE job)
-  cream: '#F5F1E8',       // Base/paper surface
-  ink: '#141414',         // Text, structure, primary buttons, AI features
-  crimson: '#C81E2C',     // Urgency/live states only — active nav tab, ending soon, live counters
-  emerald: '#0F5C46',     // Sustainability data only — CO2 saved, water saved, circular impact metrics
-  gold: '#B8912F',        // Status/prestige only — membership tier badges + "Curated Match" tags
 
-  // Dark & Light Family Shades (Rule: Text on colored fill uses darkest shade from same family)
-  emeraldDark: '#072B20',
-  emeraldLight: '#E6F4EF',
+export const colors = {
+  // Editorial Paper Surfaces
+  paper: '#F5F0E6',
+  paperLight: '#FAF7F0',
+  paperDark: '#E8DFD1',
+  cream: '#F5F0E6',
+  bg: '#F5F0E6',
+  bgCard: '#FAF7F0',
+  bgMuted: '#E8DFD1',
+
+  // Ink & Typography
+  ink: '#171717',
+  inkSoft: '#4B4843',
+  charcoal: '#171717',
+  black: '#171717',
+  textPrimary: '#171717',
+  textSecond: '#4B4843',
+  textMuted: '#7A756D',
+  border: '#171717',
+  borderLight: '#D8CEBE',
+  white: '#FFFFFF',
+
+  // Fashion Editorial Accents
+  rose: '#C92745',
+  dustyRose: '#D98991',
+  blush: '#EAB8B5',
+  mauve: '#A88C9C',
+  crimson: '#C92745',
   crimsonDark: '#5C0B12',
   crimsonLight: '#FCEBEF',
+
+  // Sustainability & Circularity (Emerald / Forest / Sage)
+  forest: '#176451',
+  emerald: '#176451',
+  sage: '#819B83',
+  emeraldDark: '#072B20',
+  emeraldLight: '#E6F4EF',
+
+  // Prestige & Heritage (Gold / Brass)
+  gold: '#B89A3E',
   goldDark: '#4A3A13',
   goldLight: '#FDF9EE',
+  copper: '#B89A3E',
 
-  // Structure / Utility aliases
-  white: '#FFFFFF',
-  black: '#141414',
-  charcoal: '#141414',    // Mapped to ink
-  bg: '#F5F1E8',          // Cream paper surface
-  bgCard: '#FFFFFF',
-  bgMuted: '#EAE6DF',
-  
-  border: '#141414',      // Sharp ink structure borders
-  borderLight: '#ECE8DF', // Subtle hairline divider
-  textPrimary: '#141414', // Ink text
-  textSecond: '#383A40',
-  textMuted: '#706C66',
-  
-  // Backward compatibility alias mappings
-  red: '#C81E2C',         // Mapped to crimson
-  forest: '#0F5C46',      // Mapped to emerald
-  terracotta: '#C85A32',  // Warm orange/terracotta for AI features
+  // Semantic mappings
+  success: '#176451',
+  error: '#C92745',
+  warning: '#B89A3E',
+  red: '#C92745',
+  navy: '#171717',
+  orange: '#C95F12',
+  terracotta: '#C85A32',
   terracottaDark: '#8B3617',
   terracottaLight: '#FCEEE8',
-
-  orange: '#C95F12',
-  copper: '#B8912F',
-  navy: '#141414',
-  teal: '#0F5C46',
-  purple: '#141414',
-
-  success: '#0F5C46',
-  error: '#C81E2C',
-  warning: '#B8912F',
+  purple: '#171717',
+  teal: '#176451',
 } as const;
 
 export const typography = {
-  headings: 'BebasNeue_400Regular',
-  mono: 'IBMPlexMono_400Regular',
-  monoBold: 'IBMPlexMono_700Bold',
-  body: 'IBMPlexMono_400Regular',
-  bodyBold: 'IBMPlexMono_700Bold',
+  // Editorial Headlines & Titles (High-Fashion Editorial Masthead)
+  headings: 'PlayfairDisplay_700Bold',
+  editorialDisplay: 'CormorantGaramond_700Bold',
+  displaySerif: 'PlayfairDisplay_700Bold',
+  
+  // Editorial High-Fashion Serif & Heritage
+  editorialSerif: 'CormorantGaramond_600SemiBold',
+  serif: 'CormorantGaramond_600SemiBold',
+  serifRegular: 'CormorantGaramond_400Regular',
+  serifItalic: 'PlayfairDisplay_400Regular_Italic',
   accent: 'PlayfairDisplay_400Regular_Italic',
   ranks: 'IMFellEnglish_400Regular',
+
+  // Modern Clean Luxury Body Copy (High readability, elegant geometric sans)
+  body: 'PlusJakartaSans_400Regular',
+  bodyMedium: 'PlusJakartaSans_500Medium',
+  bodyBold: 'PlusJakartaSans_700Bold',
+
+  // Monospace & Editorial Metadata (Stamps, SKUs, Technical Tags)
+  mono: 'IBMPlexMono_400Regular',
+  monoBold: 'IBMPlexMono_700Bold',
+
+  // Bold Capsule / Poster Condensed
+  condensed: 'BebasNeue_400Regular',
+
+  // Handwritten Editorial Annotations & Signatures
+  script: 'Caveat_400Regular',
+  handwritten: 'Caveat_400Regular',
 } as const;
 
 export const spacing = {
@@ -70,11 +102,10 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 0,   // Brutalist sharp edges
-  md: 4,   // Slightly rounded
+  sm: 2,
+  md: 4,
   lg: 8,
   xl: 12,
-  card: 20,
+  card: 10,
   full: 999,
 } as const;
-

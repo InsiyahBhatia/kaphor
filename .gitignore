@@ -59,3 +59,13 @@ ios/Pods/
 
 # Website (separate project, not part of this repo)
 website_extracted/
+
+# Temporary logs & script artifacts
+logs/
+kaphor-frontend/assets/extracted/
+kaphor-frontend/assets/extracted_elements/
+kaphor-frontend/assets/new_icons/
+kaphor-frontend/scripts/*.png
+kaphor-frontend/scripts/labeled_*/
+kaphor-frontend/scripts/preview_*/
+kaphor-frontend/scripts/slices/

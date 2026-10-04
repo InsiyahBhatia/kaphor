@@ -6,7 +6,7 @@ import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useAuth } from '../../../src/context/AuthContext';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { EditorialPageHeader, HandwrittenNote } from '../../../src/components/editorial/IllustrationLayer';
 import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { messageService } from '../../../src/services/messageService';
@@ -405,10 +405,15 @@ export default function SwapFeedScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.topRow}>
-          <Text style={styles.title}>SWAP</Text>
+      <EditorialPageHeader
+        title="SWAP"
+        subtitle="PEER-TO-PEER EXCHANGE"
+        eyebrow="CASHLESS BARTER"
+        variant="swap"
+        style={styles.header}
+      >
+        <View style={styles.headerActions}>
+          <HandwrittenNote>trade value, not waste.</HandwrittenNote>
           <TouchableOpacity
             style={styles.sellBtn}
             onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { prefillListingType: 'ACCESSORY_SWAP', listingType: 'ACCESSORY_SWAP', fresh: Date.now().toString() } } as any)}
@@ -416,8 +421,7 @@ export default function SwapFeedScreen() {
             <Ionicons name="add" size={20} color={colors.cream} />
           </TouchableOpacity>
         </View>
-        <Text style={styles.subtitle}>PEER-TO-PEER EXCHANGE</Text>
-      </View>
+      </EditorialPageHeader>
 
       {renderTabBar()}
 
@@ -476,10 +480,9 @@ export default function SwapFeedScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   header: {
-    paddingTop: 24, paddingHorizontal: 20,
-    borderBottomWidth: 2, borderBottomColor: colors.charcoal,
-    paddingBottom: 16, backgroundColor: colors.cream,
+    marginBottom: 0,
   },
+  headerActions: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   title: { fontSize: 42, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
   subtitle: { fontFamily: typography.mono, fontSize: 10, color: colors.red, fontWeight: '800', letterSpacing: 1 },

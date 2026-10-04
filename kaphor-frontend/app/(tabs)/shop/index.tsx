@@ -1,15 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, RefreshControl } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { AIStar } from '../../../src/components/AIStar';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { orderService } from '../../../src/services/orderService';
-import { KaphorImage } from '../../../src/components/KaphorImage';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { EditorialIcon, EditorialPageHeader, HandwrittenNote } from '../../../src/components/editorial/IllustrationLayer';
 import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { colors, typography } from '../../../src/theme';
 import { 
@@ -138,27 +134,26 @@ export default function ShopScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.topRow}>
-          <Text style={styles.title}>THE DECK // BROWSE</Text>
+      <EditorialPageHeader
+        title="THE ARCHIVE"
+        subtitle="PRE-LOVED PIECES, NEW BEGINNINGS."
+        eyebrow="BUY & SELL"
+        variant="archive"
+        style={styles.header}
+      >
+        <HandwrittenNote>every piece keeps a story moving.</HandwrittenNote>
+        <View style={styles.headerActionRow}>
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            <LinearGradient
-              colors={['#242424', '#141414']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <TouchableOpacity
               style={styles.aiHeaderBtn}
+              onPress={() => router.push('/(tabs)/shop/ai-chat')}
+              activeOpacity={0.85}
             >
-              <TouchableOpacity
-                style={styles.aiHeaderBtnInner}
-                onPress={() => router.push('/(tabs)/shop/ai-chat')}
-                activeOpacity={0.85}
-              >
-                <AIStar size={13} color="#FFFFFF" />
-                <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
-              </TouchableOpacity>
-            </LinearGradient>
+              <EditorialIcon name="sparkle" size={20} />
+              <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)}>
-              <Ionicons name="options-sharp" size={20} color={colors.white} />
+              <EditorialIcon name="filter" size={24} />
             </TouchableOpacity>
           </View>
         </View>
@@ -172,7 +167,7 @@ export default function ShopScreen() {
             onChangeText={setSearchQuery}
           />
         </View>
-      </View>
+      </EditorialPageHeader>
 
       {showInitialLoader ? (
         <GarmentGridSkeleton count={6} />
@@ -245,7 +240,7 @@ export default function ShopScreen() {
                 if (fetchError) {
                   return (
                     <View style={styles.emptyState}>
-                      <Ionicons name="cloud-offline-outline" size={30} color={colors.textMuted} />
+                      <EditorialIcon name="mail" size={32} />
                       <Text style={styles.emptyText}>{fetchError}</Text>
                       <TouchableOpacity style={styles.emptyActionBtn} onPress={applyFilters} activeOpacity={0.85}>
                         <Text style={styles.emptyActionText}>RETRY</Text>
@@ -256,11 +251,7 @@ export default function ShopScreen() {
 
                 return (
                   <View style={styles.emptyState}>
-                    <Ionicons
-                      name={hasActiveFilters ? 'funnel-outline' : 'bag-handle-outline'}
-                      size={30}
-                      color={colors.textMuted}
-                    />
+                    <EditorialIcon name={hasActiveFilters ? 'filter' : 'bag'} size={34} />
                     <Text style={styles.emptyText}>
                       {hasActiveFilters
                         ? 'NO SALE ASSETS MATCH YOUR FILTERS'
@@ -285,7 +276,7 @@ export default function ShopScreen() {
                         onPress={() => router.push('/(tabs)/swap' as any)}
                         activeOpacity={0.85}
                       >
-                        <Ionicons name="swap-horizontal" size={14} color={colors.emerald} />
+                        <EditorialIcon name="swap" size={18} />
                         <Text style={[styles.emptyFallbackText, { color: colors.emeraldDark }]}>EXPLORE SWAP</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -293,7 +284,7 @@ export default function ShopScreen() {
                         onPress={() => router.push('/(tabs)/rental' as any)}
                         activeOpacity={0.85}
                       >
-                        <Ionicons name="time-outline" size={14} color={colors.goldDark} />
+                        <EditorialIcon name="dress" size={18} />
                         <Text style={[styles.emptyFallbackText, { color: colors.goldDark }]}>EXPLORE RENTAL</Text>
                       </TouchableOpacity>
                     </View>
@@ -324,7 +315,7 @@ export default function ShopScreen() {
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>FILTERS // REFINEMENT</Text>
                   <TouchableOpacity onPress={() => setShowFilters(false)}>
-                    <Ionicons name="close-sharp" size={24} color={colors.charcoal} />
+                    <EditorialIcon name="close" size={26} />
                   </TouchableOpacity>
                 </View>
 
@@ -397,19 +388,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   header: {
-    paddingTop: 24,
-    paddingHorizontal: 20,
     marginBottom: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.charcoal,
-    paddingBottom: 20,
-    backgroundColor: colors.cream,
   },
-  topRow: {
+  headerActionRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    marginBottom: 24,
+    marginTop: 14,
+    marginBottom: 14,
   },
   title: {
     fontSize: 37,
@@ -814,4 +800,3 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 });
-

@@ -16,6 +16,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { promptPhotoSelection, capturePhotoFromCamera, pickPhotoFromGallery } from '../../../src/utils/imagePicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../../../src/theme';
 import { DossierLoading } from '../../../src/components/common/DossierLoading';
@@ -177,46 +178,34 @@ export default function RepairRefreshScreen() {
     });
   };
 
-  // ── Image picker (0.6 quality for fast upload and zero timeouts) ─
+  // ── Image picker with reliable Web and Native camera support ───
   const pickImage = async (useCamera = false) => {
     try {
-      if (useCamera) {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') { Alert.alert('Camera permission needed'); return; }
-        const pick = await ImagePicker.launchCameraAsync({
-          quality: 0.6,
-          base64: true,
-          allowsEditing: true,
-        });
-        if (!pick.canceled && pick.assets[0]) {
-          setImageUri(pick.assets[0].uri);
-          setImageBase64(pick.assets[0].base64 || null);
-        }
-      } else {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') { Alert.alert('Gallery permission needed'); return; }
-        const pick = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          quality: 0.6,
-          base64: true,
-          allowsEditing: true,
-        });
-        if (!pick.canceled && pick.assets[0]) {
-          setImageUri(pick.assets[0].uri);
-          setImageBase64(pick.assets[0].base64 || null);
-        }
+      const res = useCamera
+        ? await capturePhotoFromCamera({ quality: 0.7, base64: true })
+        : await pickPhotoFromGallery({ quality: 0.7, base64: true });
+      if (res?.uri) {
+        setImageUri(res.uri);
+        setImageBase64(res.base64 || null);
       }
-    } catch (e: any) {
-      Alert.alert('Error', 'Could not open image picker.');
+    } catch (err: any) {
+      Alert.alert('Upload Error', err?.message || 'Could not pick image.');
     }
   };
 
   const selectImageSource = () => {
-    Alert.alert('Add Garment Photo', 'Take a new photo with your camera or choose one from your gallery:', [
-      { text: 'Take Photo', onPress: () => pickImage(true) },
-      { text: 'Choose from Gallery', onPress: () => pickImage(false) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    promptPhotoSelection({
+      title: 'Add Garment Photo',
+      quality: 0.7,
+      base64: true,
+      onImagePicked: (result) => {
+        setImageUri(result.uri);
+        setImageBase64(result.base64 || null);
+      },
+      onError: (err) => {
+        Alert.alert('Upload Error', err?.message || 'Could not pick image.');
+      },
+    });
   };
 
   // ── Submit ─────────────────────────────────────────────────────

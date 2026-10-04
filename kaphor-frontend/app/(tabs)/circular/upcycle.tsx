@@ -15,6 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
+import {
+  EditorialPageHeader,
+  HandwrittenNote,
+  EditorialIcon,
+} from '../../../src/components/editorial/IllustrationLayer';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -232,30 +237,53 @@ function UpcycleCard({ category }: { category: UpcycleCategory }) {
 export default function UpcycleScreen() {
   const router = useRouter();
   return (
-    <View style={{ flex: 1, backgroundColor: colors.cream }}>
-      <Header title="UPCYCLE STUDIO" showBack fallbackPath="/(tabs)/circular" />
+    <View style={{ flex: 1, backgroundColor: colors.paper }}>
+      <EditorialPageHeader
+        title="UPCYCLE STUDIO"
+        subtitle="OLD GARMENTS, NEW POSSIBILITIES"
+        eyebrow="ZERO WASTE ATELIER"
+        variant="upcycle"
+      >
+        <HandwrittenNote style={{ marginTop: 10 }}>
+          old garments, new possibilities.
+        </HandwrittenNote>
+      </EditorialPageHeader>
+
       <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.heroBanner}>
-          <View style={styles.heroBannerLeft}>
-            <View style={styles.heroBannerBadge}>
-              <Ionicons name="leaf-sharp" size={10} color="#FFF" />
-              <Text style={styles.heroBannerBadgeText}>ZERO WASTE FASHION</Text>
+        {/* Visual Narrative: OLD GARMENT -> CUT -> REWORK -> NEW PIECE */}
+        <View style={styles.narrativeCard}>
+          <Text style={styles.narrativeTitle}>THE ATELIER CYCLE</Text>
+          <View style={styles.narrativeRow}>
+            <View style={styles.narrativeStep}>
+              <View style={styles.narrativeIconWrap}>
+                <EditorialIcon name="hanger" size={20} />
+              </View>
+              <Text style={styles.narrativeStepLabel}>OLD GARMENT</Text>
             </View>
-            <Text style={styles.heroBannerTitle}>UPCYCLE{'\n'}YOUR{'\n'}CLOTHES</Text>
-            <Text style={styles.heroBannerSub}>Breathe new life into old garments.{'\n'}Watch tutorials, get inspired &{'\n'}book a Kaphor upcycle session.</Text>
-          </View>
-          <View style={styles.heroBannerRight}>
-            <View style={styles.heroBannerStat}>
-              <Text style={styles.heroBannerStatNum}>5</Text>
-              <Text style={styles.heroBannerStatLabel}>GARMENT{'\n'}TYPES</Text>
+            <Text style={styles.narrativeArrow}>→</Text>
+            <View style={styles.narrativeStep}>
+              <View style={styles.narrativeIconWrap}>
+                <EditorialIcon name="scissors" size={20} />
+              </View>
+              <Text style={styles.narrativeStepLabel}>CUT</Text>
             </View>
-            <View style={styles.heroBannerDivider} />
-            <View style={styles.heroBannerStat}>
-              <Text style={styles.heroBannerStatNum}>15+</Text>
-              <Text style={styles.heroBannerStatLabel}>VIDEO{'\n'}GUIDES</Text>
+            <Text style={styles.narrativeArrow}>→</Text>
+            <View style={styles.narrativeStep}>
+              <View style={styles.narrativeIconWrap}>
+                <EditorialIcon name="sewing" size={20} />
+              </View>
+              <Text style={styles.narrativeStepLabel}>REWORK</Text>
+            </View>
+            <Text style={styles.narrativeArrow}>→</Text>
+            <View style={styles.narrativeStep}>
+              <View style={styles.narrativeIconWrap}>
+                <EditorialIcon name="sparkle" size={20} />
+              </View>
+              <Text style={styles.narrativeStepLabel}>NEW PIECE</Text>
             </View>
           </View>
         </View>
+
         <View style={styles.sectionHeader}>
           <View style={styles.sectionDot} />
           <Text style={styles.sectionTitle}>CHOOSE YOUR GARMENT</Text>
@@ -270,7 +298,58 @@ export default function UpcycleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100 },
+  content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 100 },
+  narrativeCard: {
+    backgroundColor: '#FAF7F0',
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    padding: 14,
+    marginBottom: 20,
+    shadowColor: '#171717',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  narrativeTitle: {
+    fontFamily: typography.monoBold,
+    fontSize: 9.5,
+    color: colors.ink,
+    letterSpacing: 1.2,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  narrativeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  narrativeStep: {
+    alignItems: 'center',
+  },
+  narrativeIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.paper,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 23, 23, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  narrativeStepLabel: {
+    fontFamily: typography.monoBold,
+    fontSize: 8,
+    color: colors.inkSoft,
+    letterSpacing: 0.5,
+  },
+  narrativeArrow: {
+    fontFamily: typography.monoBold,
+    fontSize: 14,
+    color: colors.rose,
+    marginBottom: 16,
+  },
   heroBanner: { flexDirection: 'row', backgroundColor: colors.ink, padding: 16, marginBottom: 18, borderWidth: 2, borderColor: colors.ink, shadowColor: colors.ink, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.18, shadowRadius: 0, elevation: 4 },
   heroBannerLeft: { flex: 1, paddingRight: 12 },
   heroBannerBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.emerald, alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 3, marginBottom: 8 },

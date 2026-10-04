@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../theme';
 import { useNotificationStore } from '../../store/notificationStore';
 import { safeBack, useBackHandler } from '../../utils/navigation';
+import { EditorialIcon } from '../editorial/IllustrationLayer';
 
 interface HeaderProps {
   title?: string;
@@ -121,7 +122,7 @@ export function Header({
               style={styles.iconBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
+              <EditorialIcon name="bell" size={23} />
               {notifUnread > 0 && (
                 <View style={[styles.badge, styles.notifBadge]}>
                   <Text style={styles.badgeText}>{notifUnread > 9 ? '9+' : notifUnread}</Text>
@@ -134,7 +135,7 @@ export function Header({
               style={styles.iconBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.textPrimary} />
+              <EditorialIcon name="mail" size={28} />
               {activeMessageUnread > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{activeMessageUnread > 9 ? '9+' : activeMessageUnread}</Text>

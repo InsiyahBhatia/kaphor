@@ -6,7 +6,7 @@ import { rentalService } from '../../../src/services/rentalService';
 import { messageService } from '../../../src/services/messageService';
 import { cachedGet, fetchFresh } from '../../../src/services/api';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { EditorialPageHeader, HandwrittenNote } from '../../../src/components/editorial/IllustrationLayer';
 import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { colors, typography } from '../../../src/theme';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -355,12 +355,15 @@ export default function RentalScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.topRow}>
-          <Text style={styles.title}>RENTALS</Text>
-        </View>
-        <Text style={styles.subtitle}>SHORT-TERM LEASING // ARCHIVE PIECES</Text>
-      </View>
+      <EditorialPageHeader
+        title="RENTALS"
+        subtitle="SHORT-TERM LEASING // OCCASION WEAR"
+        eyebrow="LEASE THE LOOK"
+        variant="rental"
+        style={styles.header}
+      >
+        <HandwrittenNote>occasion pieces without permanent closets.</HandwrittenNote>
+      </EditorialPageHeader>
 
       {renderTabBar()}
 
@@ -384,19 +387,17 @@ export default function RentalScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   header: {
-    paddingTop: 24, paddingHorizontal: 20,
-    borderBottomWidth: 2, borderBottomColor: colors.charcoal,
-    paddingBottom: 16, backgroundColor: colors.cream,
+    marginBottom: 0,
   },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   title: { fontSize: 42, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
-  subtitle: { fontFamily: typography.mono, fontSize: 10, color: colors.red, fontWeight: '800', letterSpacing: 1 },
+  subtitle: { fontFamily: typography.bodyBold, fontSize: 10, color: colors.red, letterSpacing: 1.2 },
 
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(26,26,26,0.1)' },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: colors.charcoal },
-  tabText: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, fontWeight: '700', letterSpacing: 1 },
-  tabTextActive: { color: colors.charcoal, fontWeight: '900' },
+  tabText: { fontFamily: typography.bodyBold, fontSize: 11.5, color: colors.textMuted, letterSpacing: 1.2 },
+  tabTextActive: { color: colors.charcoal },
   
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between', paddingTop: 16 },
   cardWrapper: { width: '48%', marginBottom: 24 },

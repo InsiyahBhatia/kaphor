@@ -23,6 +23,11 @@ import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { hapticFeedback } from '../../../src/utils/haptics';
+import {
+  HandwrittenNote,
+  EditorialIcon,
+} from '../../../src/components/editorial/IllustrationLayer';
+import { promptPhotoSelection } from '../../../src/utils/imagePicker';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -153,43 +158,9 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
   }, [initialMessage]);
 
   const pickImage = async () => {
-    Alert.alert('Attach Garment Photo', 'Select an outfit photo or garment for KaPhor AI to analyze:', [
-      {
-        text: 'Take Photo',
-        onPress: async () => {
-          try {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') return;
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ['images'],
-              allowsEditing: true,
-              quality: 0.85,
-            });
-            if (!result.canceled && result.assets && result.assets[0]) {
-              setImageUri(result.assets[0].uri);
-            }
-          } catch { }
-        },
-      },
-      {
-        text: 'Choose from Library',
-        onPress: async () => {
-          try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') return;
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ['images'],
-              allowsEditing: true,
-              quality: 0.85,
-            });
-            if (!result.canceled && result.assets && result.assets[0]) {
-              setImageUri(result.assets[0].uri);
-            }
-          } catch { }
-        },
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    promptPhotoSelection('Attach Garment Photo', (res) => {
+      setImageUri(res.uri);
+    });
   };
 
   const handleSendPrompt = async (promptToSend: string, imageToSend?: string | null) => {
@@ -306,7 +277,8 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>KAPHOR STYLIST AGENT</Text>
+          <Text style={styles.headerDeckEyebrow}>THE DECK</Text>
+          <Text style={styles.headerTitle}>AI STYLIST</Text>
         </View>
 
         <TouchableOpacity
@@ -314,7 +286,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
           onPress={() => router.push('/(tabs)/shop' as any)}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="bag-handle-outline" size={20} color={colors.charcoal} />
+          <EditorialIcon name="shop" size={20} />
         </TouchableOpacity>
       </View>
 
@@ -433,7 +405,9 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
                     </View>
 
                     {Boolean(msg.outfitLook.editorialNote) && (
-                      <Text style={styles.outfitEditorialNote}>{msg.outfitLook.editorialNote}</Text>
+                      <HandwrittenNote hasTape style={styles.deckNote}>
+                        "{msg.outfitLook.editorialNote}"
+                      </HandwrittenNote>
                     )}
                   </View>
                 )}
@@ -550,14 +524,14 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
             onPress={pickImage}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="camera-outline" size={22} color={colors.charcoal} />
+            <EditorialIcon name="camera" size={22} tintColor={colors.charcoal} />
           </TouchableOpacity>
 
           <View style={[styles.inputWrapper, isFocused && styles.inputWrapperFocused]}>
             <TextInput
               style={styles.textInput}
-              placeholder="Ask KaPhor AI: outfit, rental, swap..."
-              placeholderTextColor="rgba(30,31,34,0.4)"
+              placeholder="> QUERY_DATABASE // Ask KaPhor Stylist..."
+              placeholderTextColor="rgba(30,31,34,0.45)"
               value={input}
               onChangeText={setInput}
               onFocus={() => {
@@ -610,12 +584,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   headerCenter: { alignItems: 'center' },
+  headerDeckEyebrow: {
+    fontFamily: typography.monoBold,
+    fontSize: 9,
+    letterSpacing: 2,
+    color: colors.gold,
+    marginBottom: 2,
+  },
   headerTitle: {
     color: colors.charcoal,
-    fontSize: 15,
-    fontFamily: typography.mono,
-    fontWeight: '900',
+    fontSize: 16,
+    fontFamily: typography.headings,
     letterSpacing: 2,
+  },
+  deckNote: {
+    marginTop: 8,
+    marginBottom: 4,
+    alignSelf: 'stretch',
   },
   wardrobeQuickBtn: {
     width: 38,

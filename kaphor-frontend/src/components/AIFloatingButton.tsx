@@ -4,53 +4,51 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '../theme';
-import { AIStar } from './AIStar';
+import { EditorialIcon, EditorialIconName } from './editorial/EditorialIcon';
 
 const INK_GRADIENT = ['#242424', '#141414'] as const;
 
 interface MenuItem {
   label: string;
   sublabel: string;
-  icon: string;
+  icon: EditorialIconName;
   route: string;
   accent: string;
-  star?: boolean;
 }
 
 const MENU_ITEMS: MenuItem[] = [
   {
     label: 'AI STYLIST',
     sublabel: 'Style curation & care chat',
-    icon: 'sparkles-sharp',
+    icon: 'sparkle',
     route: '/(tabs)/shop/ai-chat',
-    accent: colors.ink,
-    star: true,
+    accent: colors.goldDark,
   },
   {
     label: 'CONDITION CHECK',
     sublabel: 'GLIE wear & tear scan',
-    icon: 'scan-sharp',
+    icon: 'search',
     route: '/(tabs)/circular/condition-check',
     accent: colors.crimson,
   },
   {
     label: 'UPCYCLE',
     sublabel: 'Transform pieces yourself',
-    icon: 'cut-sharp',
+    icon: 'scissors',
     route: '/(tabs)/circular/upcycle',
     accent: colors.goldDark,
   },
   {
     label: 'REPAIR & REFRESH',
     sublabel: 'Mend, revive & refresh',
-    icon: 'color-palette-sharp',
+    icon: 'thread',
     route: '/(tabs)/studio/repair-refresh',
     accent: colors.emerald,
   },
   {
     label: 'RECYCLING CENTERS',
     sublabel: 'Certified textile drop-off hubs',
-    icon: 'leaf-sharp',
+    icon: 'recycle',
     route: '/(tabs)/circular/recycling-centers',
     accent: colors.emerald,
   },
@@ -100,7 +98,7 @@ export const AIFloatingButton: React.FC = () => {
               end={{ x: 1, y: 1 }}
               style={styles.menuHeadBar}
             />
-            <AIStar size={13} color={colors.ink} />
+            <EditorialIcon name="sparkle" size={15} />
             <Text style={styles.menuTitle}>CIRCULAR TOOLS</Text>
           </View>
 
@@ -111,12 +109,8 @@ export const AIFloatingButton: React.FC = () => {
               onPress={() => navigate(item.route)}
               activeOpacity={0.85}
             >
-              <View style={[styles.menuIconWrap, { borderColor: item.accent, backgroundColor: item.star ? item.accent : colors.bg }]}>
-                {item.star ? (
-                  <AIStar size={15} color={colors.white} />
-                ) : (
-                  <Ionicons name={item.icon as any} size={15} color={item.star ? colors.white : item.accent} />
-                )}
+              <View style={[styles.menuIconWrap, { borderColor: item.accent + '35', backgroundColor: '#FAF6EE' }]}>
+                <EditorialIcon name={item.icon} size={22} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.menuItemLabel}>{item.label}</Text>
@@ -141,10 +135,9 @@ export const AIFloatingButton: React.FC = () => {
           end={{ x: 1, y: 1 }}
           style={styles.fabBody}
         >
-          <Ionicons
-            name="sparkles-sharp"
-            size={open ? 24 : 28}
-            color={open ? '#F4E7C3' : '#FFFFFF'}
+          <EditorialIcon
+            name="sparkle"
+            size={open ? 26 : 30}
           />
         </LinearGradient>
       </TouchableOpacity>
@@ -236,13 +229,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   menuIconWrap: {
-    width: 34,
-    height: 34,
-    borderWidth: 1.5,
+    width: 36,
+    height: 36,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 2,
-    backgroundColor: colors.bg,
+    borderRadius: 8,
   },
   menuItemLabel: {
     fontFamily: typography.headings,

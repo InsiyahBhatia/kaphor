@@ -27,6 +27,7 @@ import { KaphorImage, normalizeImageUri } from '../../src/components/KaphorImage
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 import { ConversationChatLoading } from '../../src/components/common/CardLoadingScreen';
 import * as ImagePicker from 'expo-image-picker';
+import { promptPhotoSelection } from '../../src/utils/imagePicker';
 import * as FileSystem from 'expo-file-system/legacy';
 import {
   messageService,

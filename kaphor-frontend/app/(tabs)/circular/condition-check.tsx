@@ -22,6 +22,7 @@ import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { CenterCardsLoading } from '../../../src/components/common/CardLoadingScreen';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { circularService, RecyclingCenter, RecyclingCentersResponse } from '../../../src/services/circularService';
+import { capturePhotoFromCamera, pickPhotoFromGallery, promptPhotoSelection } from '../../../src/utils/imagePicker';
 
 import {
   assessGarment,
@@ -75,34 +76,26 @@ export default function ConditionCheckScreen() {
 
   // ── Image picker ──────────────────────────────────────────────
   const pickImage = async (useCamera = false) => {
-    if (useCamera) {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Camera permission needed', 'Grant camera permission to take a photo.'); return; }
-      const pick = await ImagePicker.launchCameraAsync({
-        quality: 0.85,
-        base64: true,
-        allowsEditing: true,
-      });
-      if (!pick.canceled && pick.assets[0]) { setImageUri(pick.assets[0].uri); setImageBase64(pick.assets[0].base64 || null); }
-    } else {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Gallery permission needed', 'Grant gallery permission to select a photo.'); return; }
-      const pick = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.85,
-        base64: true,
-        allowsEditing: true,
-      });
-      if (!pick.canceled && pick.assets[0]) { setImageUri(pick.assets[0].uri); setImageBase64(pick.assets[0].base64 || null); }
+    try {
+      const res = useCamera
+        ? await capturePhotoFromCamera({ quality: 0.85, base64: true })
+        : await pickPhotoFromGallery({ quality: 0.85, base64: true });
+
+      if (res && res.uri) {
+        setImageUri(res.uri);
+        setImageBase64(res.base64 || null);
+      }
+    } catch (err) {
+      console.warn('Image capture error:', err);
+      Alert.alert('Upload Error', 'Could not open camera or gallery. Please try again.');
     }
   };
 
   const selectImageSource = () => {
-    Alert.alert('Add Garment Photo', 'Take a new photo with your camera or choose one from your gallery:', [
-      { text: 'Take Photo', onPress: () => pickImage(true) },
-      { text: 'Choose from Gallery', onPress: () => pickImage(false) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    promptPhotoSelection('Add Garment Photo', (res) => {
+      setImageUri(res.uri);
+      setImageBase64(res.base64 || null);
+    });
   };
 
   // ── Submit assessment ─────────────────────────────────────────

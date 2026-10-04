@@ -15,6 +15,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { capturePhotoFromCamera, pickPhotoFromGallery } from '../../src/utils/imagePicker';
 
 import { useAuth } from '../../src/context/AuthContext';
 import { userService } from '../../src/services/userService';
@@ -29,6 +30,11 @@ import { Header } from '../../src/components/common/Header';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 import { colors, typography } from '../../src/theme';
 import { hapticFeedback } from '../../src/utils/haptics';
+import {
+  FloralDecoration,
+  HandwrittenNote,
+  MagazineDivider,
+} from '../../src/components/editorial/IllustrationLayer';
 import { AESTHETIC_PROFILES, AestheticId } from '../../src/services/aestheticRecommendationService';
 import { AESTHETIC_IMAGES } from '../(auth)/style-quiz';
 
@@ -151,40 +157,15 @@ export default function ProfileScreen() {
 
   const executeAvatarPick = async (useCamera = false) => {
     try {
-      if (useCamera) {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Camera permission is required to take profile picture.');
-          return;
-        }
-        const result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ['images'],
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 0.7,
-        });
-        if (!result.canceled && result.assets[0]?.uri) {
-          await uploadAvatarUri(result.assets[0].uri);
-        }
-      } else {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Photos permission is required to update profile picture.');
-          return;
-        }
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 0.7,
-        });
-        if (!result.canceled && result.assets[0]?.uri) {
-          await uploadAvatarUri(result.assets[0].uri);
-        }
+      const result = useCamera
+        ? await capturePhotoFromCamera({ quality: 0.8, base64: true })
+        : await pickPhotoFromGallery({ quality: 0.8, base64: true });
+      if (result?.uri) {
+        await uploadAvatarUri(result.uri);
       }
     } catch (e: any) {
-      console.error('Failed to pick avatar', e);
-      Alert.alert('Error', e?.message || 'Could not pick photo.');
+      console.error('Failed to update avatar image:', e);
+      Alert.alert('Upload Error', 'Could not open camera or photo gallery.');
     }
   };
 
@@ -286,6 +267,7 @@ export default function ProfileScreen() {
       >
         {/* ── 1. USER IDENTITY ATELIER HERO CARD ─────────────────────── */}
         <View style={styles.identityHeroCard}>
+          <FloralDecoration variant="sprig08" size={38} opacity={0.35} position="top-right" />
           {/* Accent top rule */}
           <View style={styles.heroTopAccent} />
 
