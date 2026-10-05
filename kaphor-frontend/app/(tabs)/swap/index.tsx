@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Platform, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useAuth } from '../../../src/context/AuthContext';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
@@ -247,9 +246,6 @@ const CARD_STYLE = { width: '100%', marginRight: 0 } as const;
 
 export default function SwapFeedScreen() {
   const router = useRouter();
-  const garments = useGarmentStore((st) => st.garments);
-  const isLoading = useGarmentStore((st) => st.isLoading);
-  const fetchFeed = useGarmentStore((st) => st.fetchFeed);
   const { user } = useAuth();
   const authStoreUserId = useAuthStore((s) => s.user?.id);
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
@@ -304,7 +300,6 @@ export default function SwapFeedScreen() {
     hapticFeedback.light();
     await Promise.all([
       fetchBrowseItems(),
-      fetchFeed({ listingType: 'ACCESSORY_SWAP' }),
       fetchMySwaps(),
     ]);
     setRefreshing(false);
@@ -313,14 +308,13 @@ export default function SwapFeedScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchBrowseItems();
-      fetchFeed({ listingType: 'ACCESSORY_SWAP' });
       fetchMySwaps();
     }, [])
   );
 
-  // Use items from /swaps/feed first; fallback to store garments.
+  // Use items from /swaps/feed.
   // ALWAYS strictly filter out any item that belongs to the current user!
-  const rawCandidateItems = browseItems.length > 0 ? browseItems : (browseLoading ? [] : garments);
+  const rawCandidateItems = browseItems;
   const swappableItems = useMemo(() => rawCandidateItems.filter((g) => {
     const isAcc = isAccessoryCategory(g.category, g.subCategory) || g.listingType === 'ACCESSORY_SWAP';
     if (!isAcc) return false;
@@ -417,7 +411,7 @@ export default function SwapFeedScreen() {
   };
 
   const renderBrowseEmpty = () =>
-    isLoading || browseLoading ? (
+    browseLoading && browseItems.length === 0 ? (
       <GarmentGridSkeleton count={6} />
     ) : (
       <View style={styles.emptyState}>

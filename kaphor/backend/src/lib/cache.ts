@@ -102,6 +102,8 @@ export async function cacheWrap<T>(key: string, ttlMs: number, loader: () => Pro
 export const CacheKeys = {
   feed: 'feed:', // garment feed pages (service-level and resolved responses)
   garments: 'garments:', // browse/search/detail responses
+  rentals: 'rentals:', // rental browse and available listings
+  swaps: 'swaps:', // swap feed and accessory discovery
   stats: 'stats:', // platform impact stats
   reco: 'reco:', // per-user recommendations
   market: 'market:', // static category / market lookups
@@ -111,5 +113,7 @@ export const CacheKeys = {
 export function invalidateGarmentCaches(): void {
   cacheClear(CacheKeys.feed);
   cacheClear(CacheKeys.garments);
+  cacheClear(CacheKeys.rentals);
+  cacheClear(CacheKeys.swaps);
   cacheClear(CacheKeys.reco);
 }

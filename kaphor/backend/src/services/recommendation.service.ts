@@ -80,7 +80,7 @@ export const RecommendationService = {
         },
         ...(isRegisteredUser ? { sellerId: { not: userId } } : {}),
       },
-      take: 120,
+      take: 40,
       select: {
         id: true,
         title: true,
@@ -342,7 +342,7 @@ export const RecommendationService = {
         },
         ...(isRegisteredUser ? { sellerId: { not: userId } } : {}),
       },
-      take: 60,
+      take: 30,
       select: {
         id: true,
         title: true,

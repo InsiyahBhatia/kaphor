@@ -5,6 +5,8 @@ import { logger } from '../lib/logger';
 import { emitToUser, emitToConversation } from '../lib/socket';
 import { getDownloadUrl } from '../lib/cloudinary';
 import { createNotification } from '../services/notification.service';
+import { cacheWrap } from '../lib/cache';
+import { setPublicCache } from '../lib/httpCache';
 import Razorpay from 'razorpay';
 import {
   getSwapMetadata,
@@ -290,45 +292,68 @@ export async function getSwapFeed(req: Request, res: Response): Promise<void> {
     const { category, limit = '20' } = req.query;
     const take = Math.min(Math.max(1, Number(limit) || 20), 50);
 
-    const where: any = {
-      listingType: 'ACCESSORY_SWAP',
-      isActive: true,
-      lifecycleState: 'LISTED',
-    };
+    const cacheKey = `swaps:feed:${category || 'all'}:${take}:${req.user?.id || 'anon'}`;
+    const payload = await cacheWrap(cacheKey, 30_000, async () => {
+      const where: any = {
+        listingType: 'ACCESSORY_SWAP',
+        isActive: true,
+        lifecycleState: 'LISTED',
+      };
 
-    if (req.user) {
-      where.sellerId = { not: req.user.id };
-    }
+      if (req.user) {
+        where.sellerId = { not: req.user.id };
+      }
 
-    if (category) {
-      where.category = String(category);
-    }
+      if (category) {
+        where.category = String(category);
+      }
 
-    const garments = await db.garment.findMany({
-      where,
-      include: {
-        seller: { select: { id: true, displayName: true, avatar: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take,
+      const garments = await db.garment.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          brand: true,
+          category: true,
+          subCategory: true,
+          size: true,
+          color: true,
+          condition: true,
+          images: true,
+          price: true,
+          listingType: true,
+          lifecycleState: true,
+          sellerId: true,
+          createdAt: true,
+          seller: { select: { id: true, displayName: true, avatar: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take,
+      });
+
+      const accessoryGarments = garments.filter((g: any) => isAccessoryGarment(g));
+
+      const resolved = await Promise.all(
+        accessoryGarments.map(async (g: any) => {
+          const img = g.images?.length ? await getDownloadUrl(g.images[0]) : null;
+          const avatar = g.seller?.avatar ? await getDownloadUrl(g.seller.avatar) : g.seller?.avatar;
+          const price = g.price && g.price > 0 ? g.price : getEstimatedGarmentValue(g.category, g.brand);
+          return {
+            ...g,
+            price,
+            estimatedValue: price,
+            images: img ? [img, ...g.images.slice(1)] : g.images,
+            seller: g.seller ? { ...g.seller, avatar } : g.seller,
+          };
+        })
+      );
+
+      return { data: resolved };
     });
 
-    const accessoryGarments = garments.filter((g: any) => isAccessoryGarment(g));
-
-    const resolved = await Promise.all(
-      accessoryGarments.map(async (g: any) => {
-        const img = g.images?.length ? await getDownloadUrl(g.images[0]) : null;
-        const price = g.price && g.price > 0 ? g.price : getEstimatedGarmentValue(g.category, g.brand);
-        return {
-          ...g,
-          price,
-          estimatedValue: price,
-          images: img ? [img, ...g.images.slice(1)] : g.images,
-        };
-      })
-    );
-
-    res.json({ data: resolved });
+    setPublicCache(req, res, 30);
+    res.json(payload);
   } catch (error) {
     logger.error('getSwapFeed failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR' });

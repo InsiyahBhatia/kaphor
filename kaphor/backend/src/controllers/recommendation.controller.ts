@@ -2,12 +2,14 @@ import { Request, Response } from 'express';
 import { RecommendationService } from '../services/recommendation.service';
 import { PreferenceService } from '../services/preference.service';
 import { logger } from '../lib/logger';
+import { setPublicCache } from '../lib/httpCache';
 
 export async function getPersonalizedFeed(req: Request, res: Response): Promise<void> {
   try {
     const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit || '20'), 10)));
     const userId = req.user?.id || 'guest';
     const feed = await RecommendationService.getPersonalizedFeed(userId, limit);
+    setPublicCache(req, res, 30);
     res.json({ data: feed });
   } catch (error: any) {
     logger.error('getPersonalizedFeed failed', { error: error.message });
@@ -24,6 +26,7 @@ export async function getSimilarGarments(req: Request, res: Response): Promise<v
     }
     const limit = Math.min(20, Math.max(1, parseInt(String(req.query.limit || '8'), 10)));
     const similar = await RecommendationService.getSimilarGarments(garmentId, limit);
+    setPublicCache(req, res, 60);
     res.json({ data: similar });
   } catch (error: any) {
     logger.error('getSimilarGarments failed', { error: error.message });
@@ -36,6 +39,7 @@ export async function getRentalRecommendations(req: Request, res: Response): Pro
     const limit = Math.min(20, Math.max(1, parseInt(String(req.query.limit || '10'), 10)));
     const userId = req.user?.id || 'guest';
     const rentals = await RecommendationService.getRentalRecommendations(userId, limit);
+    setPublicCache(req, res, 30);
     res.json({ data: rentals });
   } catch (error: any) {
     logger.error('getRentalRecommendations failed', { error: error.message });
@@ -48,6 +52,7 @@ export async function getFairSwapRecommendations(req: Request, res: Response): P
     const limit = Math.min(20, Math.max(1, parseInt(String(req.query.limit || '8'), 10)));
     const userId = req.user?.id || 'guest';
     const swaps = await RecommendationService.getFairSwapRecommendations(userId, limit);
+    setPublicCache(req, res, 30);
     res.json({ data: swaps });
   } catch (error: any) {
     logger.error('getFairSwapRecommendations failed', { error: error.message });

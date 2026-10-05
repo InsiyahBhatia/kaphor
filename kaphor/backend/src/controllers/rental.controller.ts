@@ -3,6 +3,8 @@ import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { createNotification } from '../services/notification.service';
 import { emitToUser, emitToConversation } from '../lib/socket';
+import { cacheWrap } from '../lib/cache';
+import { setPublicCache } from '../lib/httpCache';
 
 const BLOCKING_RENTAL_STATUSES = ['APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED'];
 
@@ -44,95 +46,104 @@ async function findRentalByRef(ref: string, uid: string, include: any): Promise<
 export async function getAvailableRentals(req: Request, res: Response): Promise<void> {
     try {
         const { category, startDate, endDate, priceMax, excludeMine } = req.query;
-
-        // Basic query for garments
-        const query: any = {
-            listingType: 'RENTAL',
-            isActive: true,
-            lifecycleState: 'LISTED'
-        };
-
-        if (category && typeof category === 'string') {
-            query.category = category.slice(0, 100);
-        }
-
-        if (priceMax && Number.isFinite(Number(priceMax))) {
-            query.rentalPriceDay = { lte: Math.round(Number(priceMax)) };
-        }
-
-        // Exclude garments listed by the requesting user only if explicitly requested
         const currentUserId = (req as any).user?.id;
-        if (currentUserId && excludeMine === 'true') {
-            query.sellerId = { not: currentUserId };
-        }
 
-        // OPTIMIZATION: Only include rentals (N+1) when date filter is provided
-        const hasDateFilter = Boolean(startDate && endDate) &&
-            !Number.isNaN(new Date(String(startDate)).getTime()) &&
-            !Number.isNaN(new Date(String(endDate)).getTime());
+        const cacheKey = `rentals:available:${JSON.stringify({ category, startDate, endDate, priceMax, excludeMine })}:${currentUserId || 'anon'}`;
 
-        let garments;
+        const payload = await cacheWrap(cacheKey, 30_000, async () => {
+            // Basic query for garments
+            const query: any = {
+                listingType: 'RENTAL',
+                isActive: true,
+                lifecycleState: 'LISTED'
+            };
 
-        if (hasDateFilter) {
-            const reqStart = new Date(String(startDate));
-            const reqEnd = new Date(String(endDate));
+            if (category && typeof category === 'string') {
+                query.category = category.slice(0, 100);
+            }
 
-            const allGarments = await db.garment.findMany({
-                where: query,
-                include: {
-                    rentals: {
-                        where: { status: { in: ['APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED'] } },
-                        select: { startDate: true, endDate: true },
+            if (priceMax && Number.isFinite(Number(priceMax))) {
+                query.rentalPriceDay = { lte: Math.round(Number(priceMax)) };
+            }
+
+            // Exclude garments listed by the requesting user only if explicitly requested
+            if (currentUserId && excludeMine === 'true') {
+                query.sellerId = { not: currentUserId };
+            }
+
+            // OPTIMIZATION: Only include rentals (N+1) when date filter is provided
+            const hasDateFilter = Boolean(startDate && endDate) &&
+                !Number.isNaN(new Date(String(startDate)).getTime()) &&
+                !Number.isNaN(new Date(String(endDate)).getTime());
+
+            let garments;
+
+            const RENTAL_GARMENT_SELECT = {
+                id: true, title: true, description: true, brand: true,
+                category: true, subCategory: true, size: true, color: true,
+                material: true, fabric: true, style: true, pattern: true,
+                condition: true, images: true, price: true,
+                rentalPriceDay: true, rentalPriceWeek: true,
+                listingType: true, lifecycleState: true,
+                sellerId: true,
+                createdAt: true,
+                seller: { select: { id: true, displayName: true, avatar: true } },
+            };
+
+            if (hasDateFilter) {
+                const reqStart = new Date(String(startDate));
+                const reqEnd = new Date(String(endDate));
+
+                const allGarments = await db.garment.findMany({
+                    where: query,
+                    select: {
+                        ...RENTAL_GARMENT_SELECT,
+                        rentals: {
+                            where: { status: { in: ['APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED'] } },
+                            select: { startDate: true, endDate: true },
+                        },
                     },
-                    seller: { select: { id: true, displayName: true, avatar: true } },
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 50
-            });
+                    orderBy: { createdAt: 'desc' },
+                    take: 50
+                });
 
-            // Filter out garments with date conflicts
-            garments = allGarments
-                .filter((g: any) => !g.rentals.some((r: any) => reqStart <= r.endDate && reqEnd >= r.startDate))
-                .map((g: any) => ({ ...g, rentals: undefined, isLastPiece: true }));
-        } else {
-            // No date filter — simpler query without the N+1 rentals include
-            garments = await db.garment.findMany({
-                where: query,
-                select: {
-                    id: true, title: true, description: true, brand: true,
-                    category: true, subCategory: true, size: true, color: true,
-                    material: true, fabric: true, style: true, pattern: true,
-                    condition: true, images: true, price: true,
-                    rentalPriceDay: true, rentalPriceWeek: true,
-                    listingType: true, lifecycleState: true,
-                    sellerId: true,
-                    createdAt: true,
-                    seller: { select: { id: true, displayName: true, avatar: true } },
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 50
-            });
+                // Filter out garments with date conflicts
+                garments = allGarments
+                    .filter((g: any) => !g.rentals.some((r: any) => reqStart <= r.endDate && reqEnd >= r.startDate))
+                    .map((g: any) => ({ ...g, rentals: undefined, isLastPiece: true }));
+            } else {
+                // No date filter — simpler query without the N+1 rentals include
+                garments = await db.garment.findMany({
+                    where: query,
+                    select: RENTAL_GARMENT_SELECT,
+                    orderBy: { createdAt: 'desc' },
+                    take: 50
+                });
 
-            garments = garments.map((g: any) => ({ ...g, isLastPiece: true }));
-        }
+                garments = garments.map((g: any) => ({ ...g, isLastPiece: true }));
+            }
 
-        // Presign images + seller avatar (bucket is private; raw URLs would 403)
-        const { getDownloadUrl } = await import('../lib/cloudinary');
-        garments = await Promise.all(
-            garments.map(async (g: any) => {
-                const images = Array.isArray(g.images) && g.images.length > 0
-                    ? await Promise.all(g.images.map((img: string) => getDownloadUrl(img)))
-                    : g.images;
-                const avatar = g.seller?.avatar ? await getDownloadUrl(g.seller.avatar) : g.seller?.avatar;
-                return {
-                    ...g,
-                    images,
-                    seller: g.seller ? { ...g.seller, avatar } : g.seller,
-                };
-            })
-        );
+            // Presign images + seller avatar (bucket is private; raw URLs would 403)
+            const { getDownloadUrl } = await import('../lib/cloudinary');
+            garments = await Promise.all(
+                garments.map(async (g: any) => {
+                    const images = Array.isArray(g.images) && g.images.length > 0
+                        ? await Promise.all(g.images.slice(0, 3).map((img: string) => getDownloadUrl(img)))
+                        : g.images;
+                    const avatar = g.seller?.avatar ? await getDownloadUrl(g.seller.avatar) : g.seller?.avatar;
+                    return {
+                        ...g,
+                        images,
+                        seller: g.seller ? { ...g.seller, avatar } : g.seller,
+                    };
+                })
+            );
 
-        res.json({ data: garments });
+            return { data: garments };
+        });
+
+        setPublicCache(req, res, 30);
+        res.json(payload);
     } catch (error) {
         logger.error('Failed to fetch available rentals', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
