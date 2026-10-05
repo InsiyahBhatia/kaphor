@@ -10,12 +10,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { colors } from '../../../../src/theme';
 import { useAuth } from '../../../../src/context/AuthContext';
 import { orderService, TransactionOrder } from '../../../../src/services/orderService';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 import { Loader } from '../../../../src/components/common/Loader';
+import { typography } from '../../../../src/theme';
 
 function statusLabel(s: string) {
   switch (s) {
@@ -98,7 +99,7 @@ export default function OrdersInboxScreen() {
             </Text>
           ) : null}
         </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        <SolarIcon name="chevron-forward" size={20} color={colors.textMuted} />
       </TouchableOpacity>
     );
   };
@@ -117,7 +118,7 @@ export default function OrdersInboxScreen() {
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
+          <SolarIcon name="chevron-back" size={26} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ORDERS & MESSAGES</Text>
         <View style={{ width: 26 }} />
@@ -166,6 +167,7 @@ const styles = StyleSheet.create({
     color: colors.textSecond,
     fontSize: 13,
     lineHeight: 18,
+      fontFamily: typography.body,
   },
   list: { padding: 16, paddingBottom: 100 },
   emptyList: { flexGrow: 1, padding: 24 },
@@ -182,11 +184,23 @@ const styles = StyleSheet.create({
   thumb: { width: 56, height: 72, borderRadius: 8, backgroundColor: colors.bgMuted },
   thumbPlaceholder: { justifyContent: 'center', alignItems: 'center' },
   cardBody: { flex: 1, marginLeft: 12 },
-  itemTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  counterparty: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  itemTitle: {
+ fontSize: 15, fontWeight: '700', color: colors.textPrimary, fontFamily: typography.bodyBold,
+  },
+  counterparty: {
+ fontSize: 12, color: colors.textMuted, marginTop: 2, fontFamily: typography.body,
+  },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  status: { fontSize: 11, fontWeight: '800', color: colors.crimson, letterSpacing: 0.5 },
-  reviewed: { fontSize: 11, fontWeight: '800', color: colors.gold },
-  preview: { fontSize: 12, color: colors.textSecond, marginTop: 4 },
-  empty: { textAlign: 'center', color: colors.textMuted, marginTop: 48, fontSize: 14 },
+  status: {
+ fontSize: 11, fontWeight: '800', color: colors.crimson, letterSpacing: 0.5, fontFamily: typography.bodyBold,
+  },
+  reviewed: {
+ fontSize: 11, fontWeight: '800', color: colors.gold, fontFamily: typography.bodyBold,
+  },
+  preview: {
+ fontSize: 12, color: colors.textSecond, marginTop: 4, fontFamily: typography.body,
+  },
+  empty: {
+ textAlign: 'center', color: colors.textMuted, marginTop: 48, fontSize: 14, fontFamily: typography.body,
+  },
 });

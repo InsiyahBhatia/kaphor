@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, Keyboard, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from './common/SolarIcon';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '../theme';
 import { EditorialIcon, EditorialIconName } from './editorial/EditorialIcon';
 
 const INK_GRADIENT = [colors.ink, colors.ink] as const;
+const FAB_GRADIENT = [colors.rose, colors.rose] as const;
 
 interface MenuItem {
   label: string;
@@ -116,7 +117,7 @@ export const AIFloatingButton: React.FC = () => {
                 <Text style={styles.menuItemLabel}>{item.label}</Text>
                 <Text style={styles.menuItemSub}>{item.sublabel}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={14} color={colors.textMuted} />
             </TouchableOpacity>
           ))}
         </View>
@@ -130,14 +131,15 @@ export const AIFloatingButton: React.FC = () => {
         style={styles.fabShell}
       >
         <LinearGradient
-          colors={INK_GRADIENT}
+          colors={FAB_GRADIENT}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabBody}
         >
           <EditorialIcon
-            name="sparkle"
+            name={open ? 'close' : 'sparkle'}
             size={open ? 26 : 30}
+            tintColor={colors.white}
           />
         </LinearGradient>
       </TouchableOpacity>
@@ -167,7 +169,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     borderColor: colors.ink,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rose,
     padding: 3,
     shadowColor: colors.crimsonDark,
     shadowOffset: { width: 3, height: 3 },
@@ -216,7 +218,7 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.goldDark,
   },
   menuItem: {
@@ -238,15 +240,15 @@ const styles = StyleSheet.create({
   },
   menuItemLabel: {
     fontFamily: typography.headings,
-    fontSize: 20.5,
+    fontSize: 14,
     color: colors.ink,
-    letterSpacing: 0.8,
+    letterSpacing: 0.4,
   },
   menuItemSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
-    marginTop: 1,
+    marginTop: 0,
   },
 });

@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../src/services/api';
@@ -74,7 +74,7 @@ export default function ResetPasswordScreen() {
         <StatusBar style="dark" />
         <View style={styles.center}>
           <View style={[styles.iconCircle, { backgroundColor: colors.emeraldLight, borderColor: colors.forest }]}>
-            <Ionicons name="checkmark-circle-outline" size={44} color={colors.forest} />
+            <SolarIcon name="checkmark-circle-outline" size={44} color={colors.forest} />
           </View>
           <Text style={styles.title}>Password reset</Text>
           <Squiggle width={90} />
@@ -88,7 +88,7 @@ export default function ResetPasswordScreen() {
             accessibilityRole="button"
             accessibilityLabel="Go to sign in"
           >
-            <Text style={styles.mainBtnText}>Back to Sign In</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainBtnText}>Back to Sign In</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -119,7 +119,7 @@ export default function ResetPasswordScreen() {
             onPress={() => safeBack('/(auth)/login')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="chevron-back" size={26} color={colors.ink} />
+            <SolarIcon name="chevron-back" size={26} color={colors.ink} />
           </TouchableOpacity>
 
           <View style={styles.brandRow}>
@@ -132,7 +132,7 @@ export default function ResetPasswordScreen() {
 
         <View style={styles.center}>
           <View style={styles.iconCircle}>
-            <Ionicons name="key-outline" size={40} color={colors.rose} />
+            <SolarIcon name="key-outline" size={40} color={colors.rose} />
           </View>
           <Text style={styles.title}>Reset password</Text>
           <Squiggle width={90} />
@@ -175,7 +175,7 @@ export default function ResetPasswordScreen() {
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeBtn}
               >
-                <Ionicons
+                <SolarIcon
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
                   color={colors.textMuted}
@@ -209,7 +209,7 @@ export default function ResetPasswordScreen() {
             {loading ? (
               <Spinner color={colors.white} />
             ) : (
-              <Text style={styles.mainBtnText}>Update Password</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainBtnText}>Update Password</Text>
             )}
           </TouchableOpacity>
         </View>

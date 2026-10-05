@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import { safeBack } from '../../../src/utils/navigation';
@@ -385,24 +385,24 @@ export default function SwapShippingScreen() {
         {/* Quick Chat With Partner Bar */}
         <TouchableOpacity style={styles.chatWithPartnerBar} onPress={handleChatWithPartner} activeOpacity={0.8}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="chatbubbles-outline" size={16} color={colors.charcoal} />
+            <SolarIcon name="chatbubbles-outline" size={16} color={colors.charcoal} />
             <Text style={styles.chatWithPartnerText}>Chat with swap partner</Text>
           </View>
-          <Ionicons name="chevron-forward" size={14} color={colors.charcoal} />
+          <SolarIcon name="chevron-forward" size={14} color={colors.charcoal} />
         </TouchableOpacity>
 
         {/* 1. SHIP TO (PARTNER'S ADDRESS) */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitleNoMargin}>Ship to (partner's address)</Text>
           <View style={styles.addressRoleBadge}>
-            <Text style={styles.addressRoleBadgeText}>Shipping destination</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.addressRoleBadgeText}>Shipping destination</Text>
           </View>
         </View>
 
         {partnerAddress ? (
           <View style={styles.addressCard}>
             <View style={styles.addressHeader}>
-              <Ionicons name="location" size={14} color={colors.cream} />
+              <SolarIcon name="location" size={14} color={colors.cream} />
               <Text style={styles.addressHeaderText}>Send your package to:</Text>
             </View>
             <View style={styles.addressBody}>
@@ -418,7 +418,7 @@ export default function SwapShippingScreen() {
           </View>
         ) : (
           <View style={styles.noAddressCard}>
-            <Ionicons name="hourglass-outline" size={24} color={colors.textMuted} />
+            <SolarIcon name="hourglass-outline" size={24} color={colors.textMuted} />
             <Text style={styles.noAddressText}>
               Partner hasn't shared their delivery address yet. You can ship once they add it.
             </Text>
@@ -441,7 +441,7 @@ export default function SwapShippingScreen() {
         {myAddress ? (
           <View style={styles.addressCard}>
             <View style={[styles.addressHeader, { backgroundColor: colors.charcoal }]}>
-              <Ionicons name="home" size={14} color={colors.cream} />
+              <SolarIcon name="home" size={14} color={colors.cream} />
               <Text style={styles.addressHeaderText}>Partner will ship to you at:</Text>
             </View>
             <View style={styles.addressBody}>
@@ -461,7 +461,7 @@ export default function SwapShippingScreen() {
             onPress={() => setShowAddressPicker(true)}
             activeOpacity={0.8}
           >
-            <Ionicons name="location-outline" size={24} color={colors.red} />
+            <SolarIcon name="location-outline" size={24} color={colors.red} />
             <Text style={[styles.noAddressText, { color: colors.charcoal, fontWeight: '700' }]}>
               No delivery address shared with partner.
             </Text>
@@ -469,7 +469,7 @@ export default function SwapShippingScreen() {
               Tap to choose a saved delivery address from your Address Book.
             </Text>
             <View style={styles.pickAddressBtn}>
-              <Text style={styles.pickAddressBtnText}>+ SELECT DELIVERY ADDRESS</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pickAddressBtnText}>+ SELECT DELIVERY ADDRESS</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -478,7 +478,7 @@ export default function SwapShippingScreen() {
         <View style={[styles.depositCard, depositPaid ? styles.depositCardPaid : styles.depositCardUnpaid]}>
           <View style={styles.depositHeader}>
             <View style={[styles.depositIconWrap, depositPaid ? styles.depositIconWrapPaid : styles.depositIconWrapUnpaid]}>
-              <Ionicons
+              <SolarIcon
                 name={depositPaid ? 'shield-checkmark' : 'shield'}
                 size={22}
                 color={depositPaid ? colors.forest : colors.copper}
@@ -493,7 +493,7 @@ export default function SwapShippingScreen() {
               </Text>
             </View>
             <View style={[styles.depositStatusBadge, depositPaid ? styles.badgePaid : styles.badgeUnpaid]}>
-              <Text style={[styles.depositStatusBadgeText, depositPaid ? styles.badgeTextPaid : styles.badgeTextUnpaid]}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.depositStatusBadgeText, depositPaid ? styles.badgeTextPaid : styles.badgeTextUnpaid]}>
                 {depositPaid ? 'PROTECTED' : 'Action required'}
               </Text>
             </View>
@@ -516,8 +516,8 @@ export default function SwapShippingScreen() {
                 <Spinner color={colors.cream} size="small" />
               ) : (
                 <>
-                  <Ionicons name="lock-closed" size={16} color={colors.cream} />
-                  <Text style={styles.payDepositBtnText}>Deposit ₹500 via Razorpay / UPI</Text>
+                  <SolarIcon name="lock-closed" size={16} color={colors.cream} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.payDepositBtnText}>Deposit ₹500 via Razorpay / UPI</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -528,7 +528,7 @@ export default function SwapShippingScreen() {
         {isShipped ? (
           <View style={styles.shipCard}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <Ionicons name="checkmark-circle" size={22} color={colors.forest} />
+              <SolarIcon name="checkmark-circle" size={22} color={colors.forest} />
               <Text style={[styles.sectionTitle, { marginBottom: 0, color: colors.charcoal, fontSize: 12 }]}>
                 Shipment sent
               </Text>
@@ -554,12 +554,12 @@ export default function SwapShippingScreen() {
                     style={[styles.courierChip, courier === opt.id && styles.courierChipActive]}
                     onPress={() => setCourier(opt.id)}
                   >
-                    <Ionicons
+                    <SolarIcon
                       name={opt.icon as any}
                       size={16}
                       color={courier === opt.id ? colors.cream : colors.charcoal}
                     />
-                    <Text style={[styles.courierChipText, courier === opt.id && styles.courierChipTextActive]}>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.courierChipText, courier === opt.id && styles.courierChipTextActive]}>
                       {opt.name}
                     </Text>
                   </TouchableOpacity>
@@ -587,8 +587,8 @@ export default function SwapShippingScreen() {
                   <Spinner color={colors.cream} />
                 ) : (
                   <>
-                    <Ionicons name="cube" size={18} color={colors.cream} />
-                    <Text style={styles.submitBtnText}>Mark as shipped</Text>
+                    <SolarIcon name="cube" size={18} color={colors.cream} />
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.submitBtnText}>Mark as shipped</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -611,7 +611,7 @@ export default function SwapShippingScreen() {
         {(theirTracking || swap?.status === 'SHIPPED' || swap?.status === 'BOTH_SHIPPED' || swap?.status === 'DELIVERED') && swap?.status !== 'COMPLETED' && (
           <View style={styles.confirmReceiptCard}>
             <View style={styles.confirmReceiptHeader}>
-              <Ionicons name="shield-checkmark" size={18} color={colors.forest} />
+              <SolarIcon name="shield-checkmark" size={18} color={colors.forest} />
               <Text style={styles.confirmReceiptTitle}>Delivery & condition verification</Text>
             </View>
             <Text style={styles.confirmReceiptSub}>
@@ -627,8 +627,8 @@ export default function SwapShippingScreen() {
                 <Spinner color={colors.cream} />
               ) : (
                 <>
-                  <Ionicons name="checkmark-done" size={18} color={colors.cream} />
-                  <Text style={styles.confirmReceiptBtnText}>Confirm package received</Text>
+                  <SolarIcon name="checkmark-done" size={18} color={colors.cream} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.confirmReceiptBtnText}>Confirm package received</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -638,7 +638,7 @@ export default function SwapShippingScreen() {
         {swap?.status === 'COMPLETED' && (
           <>
             <View style={styles.completedBanner}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.forest} />
+              <SolarIcon name="checkmark-circle" size={24} color={colors.forest} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.completedBannerTitle}>Swap transaction completed</Text>
                 <Text style={styles.completedBannerSub}>
@@ -650,7 +650,7 @@ export default function SwapShippingScreen() {
             {/* MUTUAL REVIEWS SECTION */}
             <View style={styles.reviewSectionContainer}>
               <View style={styles.reviewSectionHeader}>
-                <Ionicons name="star" size={16} color={colors.gold} />
+                <SolarIcon name="star" size={16} color={colors.gold} />
                 <Text style={styles.reviewSectionTitle}>Mutual peer reviews</Text>
               </View>
 
@@ -661,7 +661,7 @@ export default function SwapShippingScreen() {
                     <Text style={styles.reviewedCardRole}>Your review of partner</Text>
                     <View style={styles.starsRow}>
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <Ionicons
+                        <SolarIcon
                           key={star}
                           name={star <= myReview.rating ? 'star' : 'star-outline'}
                           size={14}
@@ -676,7 +676,7 @@ export default function SwapShippingScreen() {
                     <Text style={styles.reviewedCardNoComment}>No written comment provided.</Text>
                   )}
                   <View style={styles.reviewedCardFooter}>
-                    <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
+                    <SolarIcon name="shield-checkmark" size={12} color={colors.forest} />
                     <Text style={styles.reviewedCardVerified}>Verified peer exchange</Text>
                   </View>
                 </View>
@@ -699,7 +699,7 @@ export default function SwapShippingScreen() {
                         style={styles.starTouch}
                         activeOpacity={0.7}
                       >
-                        <Ionicons
+                        <SolarIcon
                           name={star <= reviewRating ? 'star' : 'star-outline'}
                           size={28}
                           color={colors.gold}
@@ -731,8 +731,8 @@ export default function SwapShippingScreen() {
                       <Spinner color={colors.cream} />
                     ) : (
                       <>
-                        <Ionicons name="star" size={16} color={colors.cream} />
-                        <Text style={styles.submitReviewBtnText}>Submit verified review</Text>
+                        <SolarIcon name="star" size={16} color={colors.cream} />
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.submitReviewBtnText}>Submit verified review</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -748,7 +748,7 @@ export default function SwapShippingScreen() {
                     </Text>
                     <View style={styles.starsRow}>
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <Ionicons
+                        <SolarIcon
                           key={star}
                           name={star <= partnerReview.rating ? 'star' : 'star-outline'}
                           size={14}
@@ -763,13 +763,13 @@ export default function SwapShippingScreen() {
                     <Text style={styles.reviewedCardNoComment}>No written comment provided.</Text>
                   )}
                   <View style={styles.reviewedCardFooter}>
-                    <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
+                    <SolarIcon name="shield-checkmark" size={12} color={colors.forest} />
                     <Text style={styles.reviewedCardVerified}>Verified peer exchange</Text>
                   </View>
                 </View>
               ) : (
                 <View style={styles.awaitingPartnerCard}>
-                  <Ionicons name="time-outline" size={16} color={colors.textMuted} />
+                  <SolarIcon name="time-outline" size={16} color={colors.textMuted} />
                   <Text style={styles.awaitingPartnerText}>
                     Awaiting partner's review. Once submitted, it will appear here and update your trust score.
                   </Text>
@@ -782,8 +782,8 @@ export default function SwapShippingScreen() {
                 onPress={() => router.push('/(tabs)/profile' as any)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="shirt-outline" size={16} color={colors.charcoal} />
-                <Text style={styles.wardrobeLinkBtnText}>View received item in wardrobe →</Text>
+                <SolarIcon name="shirt-outline" size={16} color={colors.charcoal} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.wardrobeLinkBtnText}>View received item in wardrobe →</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -800,7 +800,7 @@ export default function SwapShippingScreen() {
                 onPress={() => setShowAddressPicker(false)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="close" size={22} color={colors.charcoal} />
+                <SolarIcon name="close" size={22} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
 
@@ -830,7 +830,7 @@ export default function SwapShippingScreen() {
                         router.push('/profile/addresses?selectMode=true' as any);
                       }}
                     >
-                      <Text style={styles.modalAddBtnText}>+ ADD NEW ADDRESS</Text>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.modalAddBtnText}>+ ADD NEW ADDRESS</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -853,7 +853,7 @@ export default function SwapShippingScreen() {
                           <View style={styles.addressOptionHeader}>
                             <Text style={styles.addressOptionName}>{addr.fullName}</Text>
                             <View style={styles.defaultBadge}>
-                              <Text style={styles.defaultBadgeText}>
+                              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.defaultBadgeText}>
                                 {addr.label?.toUpperCase() ||
                                   (addr.isDefault ? 'DEFAULT' : 'SAVED')}
                               </Text>
@@ -889,7 +889,7 @@ export default function SwapShippingScreen() {
                         router.push('/profile/addresses?selectMode=true' as any);
                       }}
                     >
-                      <Text style={[styles.modalAddBtnText, { color: colors.charcoal }]}>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.modalAddBtnText, { color: colors.charcoal }]}>
                         + MANAGE / ADD NEW ADDRESS
                       </Text>
                     </TouchableOpacity>
@@ -907,7 +907,7 @@ export default function SwapShippingScreen() {
     return (
       <View style={styles.trackingCard}>
         <View style={styles.trackingHeader}>
-          <Ionicons name="cube" size={16} color={colors.charcoal} />
+          <SolarIcon name="cube" size={16} color={colors.charcoal} />
           <Text style={styles.trackingLabel}>{label}</Text>
         </View>
         <View style={styles.trackingRow}>
@@ -926,7 +926,7 @@ export default function SwapShippingScreen() {
         </View>
         {track.deliveredAt ? (
           <View style={styles.deliveredBadge}>
-            <Ionicons name="checkmark-circle" size={14} color={colors.forest} />
+            <SolarIcon name="checkmark-circle" size={14} color={colors.forest} />
             <Text style={styles.deliveredText}>
               Delivered {new Date(track.deliveredAt).toLocaleDateString()}
             </Text>
@@ -937,8 +937,8 @@ export default function SwapShippingScreen() {
               style={styles.trackBtn}
               onPress={() => openTracking(track.trackingUrl)}
             >
-              <Ionicons name="open-outline" size={14} color={colors.cream} />
-              <Text style={styles.trackBtnText}>Track package</Text>
+              <SolarIcon name="open-outline" size={14} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.trackBtnText}>Track package</Text>
             </TouchableOpacity>
           )
         )}

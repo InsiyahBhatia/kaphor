@@ -8,7 +8,7 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from './common/SolarIcon';
 import { colors, typography, spacing, radius } from '../theme';
 import { hapticFeedback } from '../utils/haptics';
 import { Spinner } from './common/Loader';
@@ -117,7 +117,7 @@ export function DelistOptionsModal({
               <Text style={styles.subtitle} numberOfLines={1}>{item.title}</Text>
             </View>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close" size={20} color={colors.textPrimary} />
+              <SolarIcon name="close" size={20} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -131,7 +131,7 @@ export function DelistOptionsModal({
               activeOpacity={0.7}
             >
               <View style={[styles.iconWrap, { backgroundColor: isPaused ? colors.emeraldLight : colors.goldLight }]}>
-                <Ionicons
+                <SolarIcon
                   name={isPaused ? 'play-circle-outline' : 'pause-circle-outline'}
                   size={24}
                   color={isPaused ? colors.forest : colors.orange}
@@ -150,7 +150,7 @@ export function DelistOptionsModal({
               {loadingAction === 'pause' ? (
                 <Spinner size="small" color={colors.charcoal} />
               ) : (
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                <SolarIcon name="chevron-forward" size={18} color={colors.textMuted} />
               )}
             </TouchableOpacity>
 
@@ -162,7 +162,7 @@ export function DelistOptionsModal({
               activeOpacity={0.7}
             >
               <View style={[styles.iconWrap, { backgroundColor: colors.overlayLight }]}>
-                <Ionicons name="shirt-outline" size={22} color={colors.navy} />
+                <SolarIcon name="shirt-outline" size={22} color={colors.navy} />
               </View>
               <View style={styles.optionTextContainer}>
                 <Text style={styles.optionTitle}>MOVE TO WARDROBE</Text>
@@ -173,7 +173,7 @@ export function DelistOptionsModal({
               {loadingAction === 'wardrobe' ? (
                 <Spinner size="small" color={colors.navy} />
               ) : (
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                <SolarIcon name="chevron-forward" size={18} color={colors.textMuted} />
               )}
             </TouchableOpacity>
 
@@ -185,7 +185,7 @@ export function DelistOptionsModal({
               activeOpacity={0.7}
             >
               <View style={[styles.iconWrap, { backgroundColor: colors.crimsonLight }]}>
-                <Ionicons name="trash-outline" size={22} color={colors.crimson} />
+                <SolarIcon name="trash-outline" size={22} color={colors.crimson} />
               </View>
               <View style={styles.optionTextContainer}>
                 <Text style={[styles.optionTitle, { color: colors.crimson }]}>DELETE LISTING</Text>
@@ -196,14 +196,14 @@ export function DelistOptionsModal({
               {loadingAction === 'delete' ? (
                 <Spinner size="small" color={colors.crimson} />
               ) : (
-                <Ionicons name="chevron-forward" size={18} color={colors.crimson} />
+                <SolarIcon name="chevron-forward" size={18} color={colors.crimson} />
               )}
             </TouchableOpacity>
           </View>
 
           {/* Cancel Button */}
           <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-            <Text style={styles.cancelBtnText}>CANCEL</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.cancelBtnText}>CANCEL</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>

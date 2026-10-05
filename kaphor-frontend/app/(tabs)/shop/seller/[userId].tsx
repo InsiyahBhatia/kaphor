@@ -1,14 +1,16 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  FlatList,
+  Platform,
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { colors, typography } from '../../../../src/theme';
 import { userService } from '../../../../src/services/userService';
 import { messageService } from '../../../../src/services/messageService';
@@ -18,6 +20,7 @@ import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../../src/components/common/VerifiedBadge';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 import { Loader, Spinner } from '../../../../src/components/common/Loader';
+import { peek, remember, hydrate } from '../../../../src/utils/swrCache';
 
 interface ReviewItem {
   id: string;
@@ -39,14 +42,116 @@ interface ReviewItem {
   } | null;
 }
 
+const reviewKey = (r: ReviewItem) => r.id;
+const listingKey = (g: any) => g.id;
+
+const ReviewCard = React.memo(function ReviewCard({ rev }: { rev: ReviewItem }) {
+  return (
+    <View style={styles.reviewCarouselCard}>
+      <View style={styles.reviewHeader}>
+        <KaphorImage uri={rev.reviewer?.avatar || ''} style={styles.reviewerAvatar} contentFit="cover" width={40} recyclingKey={rev.id} />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={styles.reviewerNameRow}>
+            <Text style={styles.reviewerName} numberOfLines={1}>{rev.reviewer.displayName}</Text>
+            {rev.reviewer.isVerified && <VerifiedBadge size="compact" />}
+          </View>
+          <Text style={styles.reviewDate}>
+            {new Date(rev.createdAt).toLocaleDateString('en-IN', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </Text>
+        </View>
+
+        <View style={styles.starsRow}>
+          {[1, 2, 3, 4, 5].map((s) => (
+            <SolarIcon
+              key={s}
+              name={s <= rev.rating ? 'star' : 'star-outline'}
+              size={11}
+              color={colors.gold}
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* Garment Tag */}
+      {rev.garment && (
+        <View style={styles.verifiedPurchaseBadge}>
+          <SolarIcon name="checkmark-circle" size={10} color={colors.forest} />
+          <Text style={styles.verifiedPurchaseText} numberOfLines={1}>
+            {rev.garment.title}
+          </Text>
+        </View>
+      )}
+
+      {/* Comment */}
+      {rev.comment && (
+        <Text style={styles.reviewComment} numberOfLines={3}>
+          "{rev.comment}"
+        </Text>
+      )}
+    </View>
+  );
+});
+
+const ListingTile = React.memo(function ListingTile({ item, onPress }: { item: any; onPress: (g: any) => void }) {
+  const isRental = item.listingType === 'RENTAL' || (item.rentalPriceDay && Number(item.rentalPriceDay) > 0);
+  const isSwap = item.listingType === 'ACCESSORY_SWAP' || item.listingType === 'SWAP';
+  const thumbUri = item.images?.[0] || item.image;
+  const priceTag = isRental
+    ? `₹${Math.round(item.rentalPriceDay || item.price || 0)}/d`
+    : isSwap
+    ? 'SWAP'
+    : `₹${Math.round(item.price || 0)}`;
+  const handlePress = useCallback(() => onPress(item), [onPress, item]);
+
+  return (
+    <TouchableOpacity style={styles.imageTile} onPress={handlePress} activeOpacity={0.88}>
+      {thumbUri ? (
+        <KaphorImage uri={thumbUri} style={styles.imageTileImg} contentFit="cover" width={160} recyclingKey={item.id} />
+      ) : (
+        <View style={[styles.imageTileImg, styles.imagePlaceholder]}>
+          <SolarIcon name="shirt-outline" size={28} color={colors.textMuted} />
+        </View>
+      )}
+
+      {/* Minimal Top Corner Type Badge */}
+      <View style={[
+        styles.imageTileTypeBadge,
+        isRental ? { backgroundColor: colors.ink } : isSwap ? { backgroundColor: colors.goldDark } : { backgroundColor: colors.charcoal }
+      ]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.imageTileTypeBadgeText}>{isRental ? 'RENT' : isSwap ? 'SWAP' : 'BUY'}</Text>
+      </View>
+
+      {/* Clean Bottom Overlay for Price */}
+      <View style={styles.imageTilePriceOverlay}>
+        <Text style={styles.imageTilePriceText} numberOfLines={1}>
+          {priceTag}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 export default function PublicSellerProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const router = useRouter();
   const { user } = useAuth();
   useBackHandler('/(tabs)/shop');
-  const [profile, setProfile] = useState<Awaited<ReturnType<typeof userService.getPublicProfile>> | null>(null);
-  const [reviews, setReviews] = useState<ReviewItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `seller:${userId}`;
+  const cached = peek<{ profile: any; reviews: ReviewItem[] }>(cacheKey);
+  const [profile, setProfile] = useState<Awaited<ReturnType<typeof userService.getPublicProfile>> | null>(cached?.profile ?? null);
+  const [reviews, setReviews] = useState<ReviewItem[]>(cached?.reviews ?? []);
+  const [loading, setLoading] = useState(!cached);
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
   const [startingChat, setStartingChat] = useState(false);
   const [activeListingsTab, setActiveListingsTab] = useState<'ALL' | 'RENTAL' | 'SWAP' | 'SALE'>('ALL');
   const [showBreakdown, setShowBreakdown] = useState(false);
@@ -64,7 +169,7 @@ export default function PublicSellerProfileScreen() {
     return listings.filter((g: any) => g.listingType === 'SALE');
   }, [listings, activeListingsTab]);
 
-  const handleNavigateToGarment = (g: any) => {
+  const handleNavigateToGarment = useCallback((g: any) => {
     if (!g?.id) return;
     if (g.listingType === 'RENTAL' || (g.rentalPriceDay && Number(g.rentalPriceDay) > 0)) {
       router.push(`/(tabs)/rental/${g.id}` as any);
@@ -73,11 +178,26 @@ export default function PublicSellerProfileScreen() {
     } else {
       router.push(`/(tabs)/shop/${g.id}` as any);
     }
-  };
+  }, [router]);
+
+  const renderReview = useCallback(({ item }: { item: ReviewItem }) => <ReviewCard rev={item} />, []);
+  const renderListing = useCallback(
+    ({ item }: { item: any }) => <ListingTile item={item} onPress={handleNavigateToGarment} />,
+    [handleNavigateToGarment]
+  );
 
   useEffect(() => {
     if (!userId) return;
+    // Cache-first: paint any persisted copy right away, then refresh in the background
+    hydrate<{ profile: any; reviews: ReviewItem[] }>(`seller:${userId}`).then((c) => {
+      if (c && aliveRef.current) {
+        setProfile((cur) => cur ?? c.profile);
+        setReviews((cur) => (cur.length ? cur : c.reviews || []));
+        setLoading(false);
+      }
+    });
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const loadData = async () => {
@@ -85,15 +205,15 @@ export default function PublicSellerProfileScreen() {
       let pData: any = null;
       let rData: any = [];
 
-      try {
-        pData = await userService.getPublicProfile(userId as string);
-      } catch (err) {
-        console.warn('Public profile fetch failed, attempting fallback', err);
-      }
-
-      try {
-        rData = await userService.getUserReviews(userId as string);
-      } catch (err) {}
+      // Independent requests run in parallel
+      const [pRes, rRes] = await Promise.allSettled([
+        userService.getPublicProfile(userId as string),
+        userService.getUserReviews(userId as string),
+      ]);
+      if (pRes.status === 'fulfilled') pData = pRes.value;
+      else console.warn('Public profile fetch failed, attempting fallback', pRes.reason);
+      if (rRes.status === 'fulfilled') rData = rRes.value;
+      if (!aliveRef.current) return;
 
       const cleanParam = String(userId || '').replace(/^@/, '');
       const isMe = user?.id === pData?.id || user?.id === userId || user?.username === cleanParam;
@@ -148,17 +268,17 @@ export default function PublicSellerProfileScreen() {
         }
       }
 
+      if (!aliveRef.current) return;
       if (pData) {
-        setProfile({
-          ...pData,
-          listings: sellerListings || [],
-        });
+        const full = { ...pData, listings: sellerListings || [] };
+        setProfile(full);
+        remember(`seller:${userId}`, { profile: full, reviews: rData || [] });
       }
       setReviews(rData || []);
     } catch (e) {
       console.error('Failed to load seller profile', e);
     } finally {
-      setLoading(false);
+      if (aliveRef.current) setLoading(false);
     }
   };
 
@@ -207,7 +327,7 @@ export default function PublicSellerProfileScreen() {
             onPress={() => safeBack('/(tabs)/shop')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
+            <SolarIcon name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
           <Text style={styles.topBarTitle}>SELLER SCORECARD</Text>
           <View style={{ width: 24 }} />
@@ -226,7 +346,7 @@ export default function PublicSellerProfileScreen() {
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={styles.backBtnText}>GO BACK</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.backBtnText}>GO BACK</Text>
         </TouchableOpacity>
       </View>
     );
@@ -245,11 +365,11 @@ export default function PublicSellerProfileScreen() {
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
+          <SolarIcon name="chevron-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>SELLER SCORECARD</Text>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Shield" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.topBarReport} onPress={handleReport}>
-          <Ionicons name="shield-outline" size={20} color={colors.charcoal} />
+          <SolarIcon name="shield-outline" size={20} color={colors.charcoal} />
         </TouchableOpacity>
       </View>
 
@@ -259,7 +379,7 @@ export default function PublicSellerProfileScreen() {
           <KaphorImage uri={profile.avatar || ''} style={styles.avatar} contentFit="cover" />
           {profile.isVerified && (
             <View style={styles.verifiedShieldCorner}>
-              <Ionicons name="shield-checkmark" size={16} color={colors.gold} />
+              <SolarIcon name="shield-checkmark" size={16} color={colors.gold} />
             </View>
           )}
         </View>
@@ -272,14 +392,14 @@ export default function PublicSellerProfileScreen() {
             <VerifiedBadge type="seller" size="large" />
           ) : (
             <View style={styles.tierBadge}>
-              <Text style={styles.tierBadgeText}>{profile.tier || 'MEMBER'} TIER</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tierBadgeText}>{profile.tier || 'MEMBER'} TIER</Text>
             </View>
           )}
 
           {profile.trustedSeller && (
             <View style={styles.trustedBadge}>
-              <Ionicons name="ribbon" size={12} color={colors.cream} />
-              <Text style={styles.trustedBadgeText}>TOP RATED</Text>
+              <SolarIcon name="ribbon" size={12} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.trustedBadgeText}>TOP RATED</Text>
             </View>
           )}
         </View>
@@ -299,8 +419,8 @@ export default function PublicSellerProfileScreen() {
             <Spinner color={colors.cream} size="small" />
           ) : (
             <>
-              <Ionicons name="chatbubbles" size={16} color={colors.cream} />
-              <Text style={styles.messageCtaText}>MESSAGE SELLER DIRECTLY</Text>
+              <SolarIcon name="chatbubbles" size={16} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.messageCtaText}>MESSAGE SELLER DIRECTLY</Text>
             </>
           )}
         </TouchableOpacity>
@@ -310,7 +430,7 @@ export default function PublicSellerProfileScreen() {
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeaderBetween}>
           <View style={styles.sectionCardHeaderNoMargin}>
-            <Ionicons name="star" size={16} color={colors.gold} />
+            <SolarIcon name="star" size={16} color={colors.gold} />
             <Text style={styles.sectionTitle}>REPUTATION & REVIEWS ({reviews.length})</Text>
           </View>
 
@@ -319,10 +439,10 @@ export default function PublicSellerProfileScreen() {
             onPress={() => setShowBreakdown((prev) => !prev)}
             activeOpacity={0.7}
           >
-            <Ionicons name="star" size={12} color={colors.gold} />
+            <SolarIcon name="star" size={12} color={colors.gold} />
             <Text style={styles.ratingSummaryScore}>{avgRating}</Text>
             <Text style={styles.ratingSummaryCount}>({totalReviews})</Text>
-            <Ionicons
+            <SolarIcon
               name={showBreakdown ? 'chevron-up' : 'chevron-down'}
               size={12}
               color={colors.charcoal}
@@ -338,7 +458,7 @@ export default function PublicSellerProfileScreen() {
                 <Text style={styles.bigRatingText}>{avgRating}</Text>
                 <View style={styles.starsRow}>
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Ionicons key={s} name="star" size={13} color={colors.gold} />
+                    <SolarIcon key={s} name="star" size={13} color={colors.gold} />
                   ))}
                 </View>
                 <Text style={styles.totalReviewsText}>
@@ -368,66 +488,24 @@ export default function PublicSellerProfileScreen() {
         {/* Scrollable Reviews Row */}
         {reviews.length === 0 ? (
           <View style={styles.compactEmptyCard}>
-            <Ionicons name="chatbox-ellipses-outline" size={22} color={colors.textMuted} />
+            <SolarIcon name="chatbox-ellipses-outline" size={22} color={colors.textMuted} />
             <Text style={styles.compactEmptyText}>
               No peer reviews recorded yet. Verified reviews appear here after completed transactions.
             </Text>
           </View>
         ) : (
-          <ScrollView
+          <FlatList
             horizontal
+            data={reviews}
+            keyExtractor={reviewKey}
+            renderItem={renderReview}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalReviewsScroll}
-          >
-            {reviews.map((rev) => (
-              <View key={rev.id} style={styles.reviewCarouselCard}>
-                <View style={styles.reviewHeader}>
-                  <KaphorImage uri={rev.reviewer?.avatar || ''} style={styles.reviewerAvatar} contentFit="cover" />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <View style={styles.reviewerNameRow}>
-                      <Text style={styles.reviewerName} numberOfLines={1}>{rev.reviewer.displayName}</Text>
-                      {rev.reviewer.isVerified && <VerifiedBadge size="compact" />}
-                    </View>
-                    <Text style={styles.reviewDate}>
-                      {new Date(rev.createdAt).toLocaleDateString('en-IN', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </Text>
-                  </View>
-
-                  <View style={styles.starsRow}>
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Ionicons
-                        key={s}
-                        name={s <= rev.rating ? 'star' : 'star-outline'}
-                        size={11}
-                        color={colors.gold}
-                      />
-                    ))}
-                  </View>
-                </View>
-
-                {/* Garment Tag */}
-                {rev.garment && (
-                  <View style={styles.verifiedPurchaseBadge}>
-                    <Ionicons name="checkmark-circle" size={10} color={colors.forest} />
-                    <Text style={styles.verifiedPurchaseText} numberOfLines={1}>
-                      {rev.garment.title}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Comment */}
-                {rev.comment && (
-                  <Text style={styles.reviewComment} numberOfLines={3}>
-                    "{rev.comment}"
-                  </Text>
-                )}
-              </View>
-            ))}
-          </ScrollView>
+            initialNumToRender={4}
+            maxToRenderPerBatch={6}
+            windowSize={7}
+            removeClippedSubviews={Platform.OS === 'android'}
+          />
         )}
       </View>
 
@@ -435,7 +513,7 @@ export default function PublicSellerProfileScreen() {
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeaderBetween}>
           <View style={styles.sectionCardHeaderNoMargin}>
-            <Ionicons name="shirt-outline" size={16} color={colors.charcoal} />
+            <SolarIcon name="shirt-outline" size={16} color={colors.charcoal} />
             <Text style={styles.sectionTitle}>CLOSET ({listings.length})</Text>
           </View>
         </View>
@@ -448,7 +526,7 @@ export default function PublicSellerProfileScreen() {
               style={[styles.listingTabBtn, activeListingsTab === t && styles.listingTabBtnActive]}
               onPress={() => setActiveListingsTab(t)}
             >
-              <Text style={[styles.listingTabText, activeListingsTab === t && styles.listingTabTextActive]}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.listingTabText, activeListingsTab === t && styles.listingTabTextActive]}>
                 {t}
               </Text>
             </TouchableOpacity>
@@ -457,60 +535,24 @@ export default function PublicSellerProfileScreen() {
 
         {filteredListings.length === 0 ? (
           <View style={styles.compactEmptyCard}>
-            <Ionicons name="sparkles-outline" size={22} color={colors.textMuted} />
+            <SolarIcon name="sparkles-outline" size={22} color={colors.textMuted} />
             <Text style={styles.compactEmptyText}>
               No active {activeListingsTab === 'ALL' ? '' : activeListingsTab.toLowerCase()} pieces listed.
             </Text>
           </View>
         ) : (
-          <ScrollView
+          <FlatList
             horizontal
+            data={filteredListings}
+            keyExtractor={listingKey}
+            renderItem={renderListing}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.imageGalleryScroll}
-          >
-            {filteredListings.map((item: any) => {
-              const isRental = item.listingType === 'RENTAL' || (item.rentalPriceDay && Number(item.rentalPriceDay) > 0);
-              const isSwap = item.listingType === 'ACCESSORY_SWAP' || item.listingType === 'SWAP';
-              const thumbUri = item.images?.[0] || item.image;
-              const priceTag = isRental
-                ? `₹${Math.round(item.rentalPriceDay || item.price || 0)}/d`
-                : isSwap
-                ? 'SWAP'
-                : `₹${Math.round(item.price || 0)}`;
-
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.imageTile}
-                  onPress={() => handleNavigateToGarment(item)}
-                  activeOpacity={0.88}
-                >
-                  {thumbUri ? (
-                    <KaphorImage uri={thumbUri} style={styles.imageTileImg} contentFit="cover" />
-                  ) : (
-                    <View style={[styles.imageTileImg, styles.imagePlaceholder]}>
-                      <Ionicons name="shirt-outline" size={28} color={colors.textMuted} />
-                    </View>
-                  )}
-
-                  {/* Minimal Top Corner Type Badge */}
-                  <View style={[
-                    styles.imageTileTypeBadge,
-                    isRental ? { backgroundColor: colors.ink } : isSwap ? { backgroundColor: colors.goldDark } : { backgroundColor: colors.charcoal }
-                  ]}>
-                    <Text style={styles.imageTileTypeBadgeText}>{isRental ? 'RENT' : isSwap ? 'SWAP' : 'BUY'}</Text>
-                  </View>
-
-                  {/* Clean Bottom Overlay for Price */}
-                  <View style={styles.imageTilePriceOverlay}>
-                    <Text style={styles.imageTilePriceText} numberOfLines={1}>
-                      {priceTag}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+            initialNumToRender={6}
+            maxToRenderPerBatch={6}
+            windowSize={7}
+            removeClippedSubviews={Platform.OS === 'android'}
+          />
         )}
       </View>
     </ScrollView>

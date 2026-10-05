@@ -1,6 +1,7 @@
 import React from 'react';
 import { colors } from '../theme';
 import { View, Text, StyleSheet } from 'react-native';
+import { typography } from '../theme';
 
 type BadgeVariant = 'tier' | 'fitScore' | 'condition' | 'status';
 
@@ -65,5 +66,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
+      fontFamily: typography.bodyBold,
   },
 });

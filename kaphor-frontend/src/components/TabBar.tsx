@@ -56,11 +56,11 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
 
         const getTabConfig = (name: string): { label: string; icon: EditorialIconName } => {
           switch (name) {
-            case 'index': return { label: 'HOME', icon: 'home' };
-            case 'shop/index': return { label: 'SHOP', icon: 'bag' };
-            case 'swap/index': return { label: 'SWAP', icon: 'swap' };
-            case 'profile': return { label: 'PROFILE', icon: 'profile' };
-            case 'rental/index': return { label: 'RENTAL', icon: 'rental' };
+            case 'index': return { label: 'Home', icon: 'home' };
+            case 'shop/index': return { label: 'Shop', icon: 'bag' };
+            case 'swap/index': return { label: 'Swap', icon: 'swap' };
+            case 'profile': return { label: 'Profile', icon: 'profile' };
+            case 'rental/index': return { label: 'Rent', icon: 'rental' };
             default: return { label: name.toUpperCase(), icon: 'sparkle' };
           }
         };
@@ -78,11 +78,11 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
             <View style={{ opacity: isFocused ? 1 : 0.65, transform: [{ scale: isFocused ? 1.06 : 0.95 }] }}>
               <EditorialIcon
                 name={config.icon}
-                size={config.icon === 'rental' ? 26 : 24}
+                size={32}
                 style={styles.tabIcon}
               />
             </View>
-            <Text style={[styles.tabLabel, { color: textColor }]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabLabel, { color: textColor }]}>
               {config.label}
             </Text>
             {isFocused && <View style={styles.activeDot} />}
@@ -113,12 +113,13 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   tabIcon: {
-    marginBottom: 4,
+    marginBottom: 2,
   },
   tabLabel: {
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyMedium,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11.5,
+    letterSpacing: 0.2,
   },
   activeDot: {
     width: 4,

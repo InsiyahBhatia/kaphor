@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, TextInput, Modal, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
@@ -80,7 +80,7 @@ export default function SwapWithWantedScreen() {
           onPress={() => safeBack('/(tabs)/swap')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+          <SolarIcon name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Swap request</Text>
         <View style={{ width: 28 }} />
@@ -105,8 +105,8 @@ export default function SwapWithWantedScreen() {
             >
               <KaphorImage uri={(garment as any)?.primaryImage || garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
               <View style={styles.zoomPillSmall}>
-                <Ionicons name="scan-outline" size={10} color={colors.white} />
-                <Text style={styles.zoomPillSmallText}>Zoom</Text>
+                <SolarIcon name="scan-outline" size={10} color={colors.white} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.zoomPillSmallText}>Zoom</Text>
               </View>
             </TouchableOpacity>
             <View style={styles.wantedInfo}>
@@ -126,7 +126,7 @@ export default function SwapWithWantedScreen() {
         )}
 
         <View style={styles.arrowContainer}>
-          <Ionicons name="swap-vertical" size={32} color={colors.red} />
+          <SolarIcon name="swap-vertical" size={32} color={colors.red} />
         </View>
 
         <Text style={styles.sectionTitle}>Select an accessory to offer</Text>
@@ -148,7 +148,7 @@ export default function SwapWithWantedScreen() {
                 <KaphorImage uri={g.images?.[0]} style={styles.offerImage} contentFit="cover" />
                 <Text style={styles.offerTitle} numberOfLines={1}>{g.title}</Text>
                 {selectedOffer === g.id && (
-                  <View style={styles.checkmark}><Ionicons name="checkmark-circle" size={24} color={colors.red} /></View>
+                  <View style={styles.checkmark}><SolarIcon name="checkmark-circle" size={24} color={colors.red} /></View>
                 )}
               </TouchableOpacity>
             ))}
@@ -172,7 +172,7 @@ export default function SwapWithWantedScreen() {
           onPress={handleSwap}
           disabled={!selectedOffer || submitting}
         >
-          {submitting ? <Spinner color={colors.cream} /> : <Text style={styles.swapBtnText}>Send swap request</Text>}
+          {submitting ? <Spinner color={colors.cream} /> : <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.swapBtnText}>Send swap request</Text>}
         </TouchableOpacity>
       </View>
 
@@ -190,11 +190,11 @@ export default function SwapWithWantedScreen() {
             onPress={() => setZoomImageUri(null)}
             hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           >
-            <Ionicons name="close" size={28} color={colors.white} />
+            <SolarIcon name="close" size={28} color={colors.white} />
           </TouchableOpacity>
 
           <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
-            <Ionicons name="scan-outline" size={13} color={colors.paperGlass} />
+            <SolarIcon name="scan-outline" size={13} color={colors.paperGlass} />
             <Text style={styles.zoomInstructionText}>Pinch to zoom</Text>
           </View>
 
@@ -240,6 +240,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
     color: colors.charcoal, textAlignVertical: 'top', fontSize: 14,
     marginBottom: 12,
+      fontFamily: typography.body,
   },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
   emptyText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 13, includeFontPadding: false, },

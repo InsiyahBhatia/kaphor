@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import { safeBack } from '../../../src/utils/navigation';
@@ -209,15 +209,15 @@ export default function SwapAgreementScreen() {
         {/* Quick Chat With Partner Bar */}
         <TouchableOpacity style={styles.chatWithPartnerBar} onPress={handleChatWithPartner} activeOpacity={0.8}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="chatbubbles-outline" size={16} color={colors.charcoal} />
+            <SolarIcon name="chatbubbles-outline" size={16} color={colors.charcoal} />
             <Text style={styles.chatWithPartnerText}>Chat with swap partner</Text>
           </View>
-          <Ionicons name="chevron-forward" size={14} color={colors.charcoal} />
+          <SolarIcon name="chevron-forward" size={14} color={colors.charcoal} />
         </TouchableOpacity>
 
         {/* Status Header */}
         <View style={styles.statusBar}>
-          <Ionicons name="document-text" size={20} color={colors.charcoal} />
+          <SolarIcon name="document-text" size={20} color={colors.charcoal} />
           <Text style={styles.statusText}>
             Step 2 of 5: Review & Sign Agreement
           </Text>
@@ -227,8 +227,8 @@ export default function SwapAgreementScreen() {
         <View style={styles.protectionsCard}>
           <View style={styles.disclaimerBadgeRow}>
             <View style={styles.disclaimerBadge}>
-              <Ionicons name="shield-checkmark" size={12} color={colors.white} />
-              <Text style={styles.disclaimerBadgeText}>INDIAN CONTRACT ACT • BARTER</Text>
+              <SolarIcon name="shield-checkmark" size={12} color={colors.white} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.disclaimerBadgeText}>INDIAN CONTRACT ACT • BARTER</Text>
             </View>
             <Text style={styles.disclaimerStatuteRef}>IT ACT 2000 § 79</Text>
           </View>
@@ -243,11 +243,11 @@ export default function SwapAgreementScreen() {
             {KEY_SWAP_PROTECTIONS.map((prot, pIdx) => (
               <View key={pIdx} style={styles.pillarItem}>
                 <View style={styles.pillarIconWrap}>
-                  <Ionicons name={prot.icon as any} size={16} color={colors.charcoal} />
+                  <SolarIcon name={prot.icon as any} size={16} color={colors.charcoal} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.pillarTitle}>{prot.title}</Text>
-                  <Text style={styles.pillarSummary}>{prot.summary}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pillarTitle}>{prot.title}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pillarSummary}>{prot.summary}</Text>
                 </View>
               </View>
             ))}
@@ -270,7 +270,7 @@ export default function SwapAgreementScreen() {
                 termsAccepted && styles.masterCheckboxActive,
               ]}
             >
-              {termsAccepted && <Ionicons name="checkmark" size={16} color={colors.cream} />}
+              {termsAccepted && <SolarIcon name="checkmark" size={16} color={colors.cream} />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.agreementConsentTitle}>
@@ -288,8 +288,8 @@ export default function SwapAgreementScreen() {
               onPress={() => setLegalModalVisible(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name="document-text-outline" size={14} color={colors.charcoal} />
-              <Text style={styles.legalBtnText}>Read statutory terms (5 clauses)</Text>
+              <SolarIcon name="document-text-outline" size={14} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.legalBtnText}>Read statutory terms (5 clauses)</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -297,8 +297,8 @@ export default function SwapAgreementScreen() {
               onPress={() => router.push('/legal?doc=swap-agreement' as any)}
               activeOpacity={0.7}
             >
-              <Ionicons name="shield-outline" size={14} color={colors.charcoal} />
-              <Text style={styles.legalBtnText}>LEGAL CENTER ↗</Text>
+              <SolarIcon name="shield-outline" size={14} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.legalBtnText}>LEGAL CENTER ↗</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -329,7 +329,7 @@ export default function SwapAgreementScreen() {
 
           {initiatorAccepted && receiverAccepted && (
             <View style={styles.bothSignedBanner}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.forest} />
+              <SolarIcon name="checkmark-circle" size={16} color={colors.forest} />
               <Text style={styles.bothSignedText}>Both parties have signed</Text>
             </View>
           )}
@@ -337,7 +337,7 @@ export default function SwapAgreementScreen() {
 
         {/* Security Deposit Notice */}
         <View style={styles.depositNote}>
-          <Ionicons name="shield-checkmark" size={18} color={colors.navy} />
+          <SolarIcon name="shield-checkmark" size={18} color={colors.navy} />
           <View style={{ flex: 1 }}>
             <Text style={styles.depositNoteTitle}>Security deposit</Text>
             <Text style={styles.depositNoteText}>
@@ -374,7 +374,7 @@ export default function SwapAgreementScreen() {
         <View style={styles.addressSection}>
           <View style={styles.addressSectionHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="location" size={16} color={colors.charcoal} />
+              <SolarIcon name="location" size={16} color={colors.charcoal} />
               <Text style={styles.sectionTitleNoMargin}>Your delivery address</Text>
             </View>
             <TouchableOpacity
@@ -396,7 +396,7 @@ export default function SwapAgreementScreen() {
               <View style={styles.addressBadgeRow}>
                 <Text style={styles.addressNameText}>{selectedAddress.fullName}</Text>
                 <View style={styles.addressTypeBadge}>
-                  <Text style={styles.addressTypeBadgeText}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.addressTypeBadgeText}>
                     {selectedAddress.label?.toUpperCase() || 'HOME'}
                   </Text>
                 </View>
@@ -420,8 +420,8 @@ export default function SwapAgreementScreen() {
               onPress={() => setShowAddressPicker(true)}
               activeOpacity={0.8}
             >
-              <Ionicons name="add-circle-outline" size={24} color={colors.red} />
-              <Text style={styles.selectAddressPlaceholderText}>
+              <SolarIcon name="add-circle-outline" size={24} color={colors.red} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.selectAddressPlaceholderText}>
                 Select delivery address from address book
               </Text>
             </TouchableOpacity>
@@ -439,7 +439,7 @@ export default function SwapAgreementScreen() {
                 onPress={() => setShowAddressPicker(false)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="close" size={22} color={colors.charcoal} />
+                <SolarIcon name="close" size={22} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
@@ -455,7 +455,7 @@ export default function SwapAgreementScreen() {
                         router.push('/profile/addresses?selectMode=true' as any);
                       }}
                     >
-                    <Text style={styles.addNewAddressBtnText}>+ ADD NEW ADDRESS</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.addNewAddressBtnText}>+ ADD NEW ADDRESS</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -476,7 +476,7 @@ export default function SwapAgreementScreen() {
                         <View style={styles.addressOptionHeader}>
                           <Text style={styles.addressOptionName}>{addr.fullName}</Text>
                           <View style={styles.defaultBadge}>
-                            <Text style={styles.defaultBadgeText}>
+                            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.defaultBadgeText}>
                               {addr.label?.toUpperCase() || 'SAVED'}
                             </Text>
                           </View>
@@ -495,7 +495,7 @@ export default function SwapAgreementScreen() {
                         router.push('/profile/addresses?selectMode=true' as any);
                       }}
                     >
-                    <Text style={[styles.addNewAddressBtnText, { color: colors.charcoal }]}>+ MANAGE / ADD NEW ADDRESS</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.addNewAddressBtnText, { color: colors.charcoal }]}>+ MANAGE / ADD NEW ADDRESS</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -507,7 +507,7 @@ export default function SwapAgreementScreen() {
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomBarNoticeRow}>
-          <Ionicons name="shield-checkmark" size={13} color={colors.charcoal} />
+          <SolarIcon name="shield-checkmark" size={13} color={colors.charcoal} />
           <Text style={styles.bottomDisclaimerNotice}>
             Intermediary Safe Harbour: Kaphor is not liable for transactions across swapping, rental, buying, or selling (IT Act §79).
           </Text>
@@ -525,8 +525,8 @@ export default function SwapAgreementScreen() {
             <Spinner color={colors.cream} />
           ) : (
             <>
-              <Ionicons name="document-text" size={18} color={colors.cream} />
-              <Text style={styles.signBtnText}>
+              <SolarIcon name="document-text" size={18} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.signBtnText}>
                 {termsAccepted
                   ? 'Sign agreement & share address'
                   : 'Agree to swap terms to sign'}

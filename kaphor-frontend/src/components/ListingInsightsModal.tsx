@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from './common/SolarIcon';
 import { useRouter } from 'expo-router';
 import { KaphorImage } from './KaphorImage';
 import { colors, typography, spacing, radius } from '../theme';
@@ -95,7 +95,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
             }}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="close" size={22} color={colors.textPrimary} />
+            <SolarIcon name="close" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
 
@@ -105,11 +105,11 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
           </View>
         ) : error ? (
           <View style={styles.centerContainer}>
-            <Ionicons name="alert-circle-outline" size={48} color={colors.crimson} />
+            <SolarIcon name="alert-circle-outline" size={48} color={colors.crimson} />
             <Text style={styles.errorTitle}>Insights unavailable</Text>
             <Text style={styles.errorSubtitle}>{error}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={() => garmentId && loadInsights(garmentId)}>
-              <Text style={styles.retryBtnText}>RETRY</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.retryBtnText}>RETRY</Text>
             </TouchableOpacity>
           </View>
         ) : !insights ? null : (
@@ -150,7 +150,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
                       · ₹{insights.rentalPriceDay.toLocaleString('en-IN')}/day
                     </Text>
                   ) : null}
-                  <Text style={styles.lifecyclePill}>{insights.lifecycleState || 'LIVE'}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.lifecyclePill}>{insights.lifecycleState || 'LIVE'}</Text>
                 </View>
               </View>
             </View>
@@ -165,7 +165,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
               {/* Total Views */}
               <View style={styles.metricBox}>
                 <View style={styles.metricIconRow}>
-                  <Ionicons name="eye-outline" size={18} color={colors.gold} />
+                  <SolarIcon name="eye-outline" size={18} color={colors.gold} />
                   <Text style={styles.metricLabel}>TOTAL VIEWS</Text>
                 </View>
                 <Text style={styles.metricValue}>{insights.views}</Text>
@@ -175,7 +175,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
               {/* Wishlists / Saves */}
               <View style={styles.metricBox}>
                 <View style={styles.metricIconRow}>
-                  <Ionicons name="heart-outline" size={18} color={colors.crimson} />
+                  <SolarIcon name="heart-outline" size={18} color={colors.crimson} />
                   <Text style={styles.metricLabel}>SAVES</Text>
                 </View>
                 <Text style={styles.metricValue}>{insights.saves}</Text>
@@ -185,7 +185,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
               {/* Direct Inquiries */}
               <View style={styles.metricBox}>
                 <View style={styles.metricIconRow}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.gold} />
+                  <SolarIcon name="chatbubble-ellipses-outline" size={18} color={colors.gold} />
                   <Text style={styles.metricLabel}>INQUIRIES</Text>
                 </View>
                 <Text style={styles.metricValue}>{insights.inquiries}</Text>
@@ -195,7 +195,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
               {/* Checkout / Circular Intents */}
               <View style={styles.metricBox}>
                 <View style={styles.metricIconRow}>
-                  <Ionicons name="flash-outline" size={18} color={colors.gold} />
+                  <SolarIcon name="flash-outline" size={18} color={colors.gold} />
                   <Text style={styles.metricLabel}>INTENTS</Text>
                 </View>
                 <Text style={styles.metricValue}>{insights.intents.total}</Text>
@@ -207,7 +207,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
               {/* Overall Conversions */}
               <View style={styles.metricBox}>
                 <View style={styles.metricIconRow}>
-                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />
+                  <SolarIcon name="checkmark-circle-outline" size={18} color={colors.success} />
                   <Text style={styles.metricLabel}>CONVERSIONS</Text>
                 </View>
                 <Text style={[styles.metricValue, { color: colors.success }]}>
@@ -315,7 +315,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
             <View style={styles.advisorSection}>
               <View style={styles.sectionHeader}>
                 <View style={styles.aiHeaderRow}>
-                  <Ionicons name="sparkles" size={16} color={colors.gold} />
+                  <SolarIcon name="sparkles" size={16} color={colors.gold} />
                   <Text style={styles.sectionTitle}>TIPS FROM KAPHOR AI</Text>
                 </View>
               </View>
@@ -344,8 +344,8 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
             {/* Quick Action Footer */}
             <View style={styles.actionFooter}>
               <TouchableOpacity style={styles.editListingBtn} onPress={handleEditPress}>
-                <Ionicons name="create-outline" size={17} color={colors.bg} />
-                <Text style={styles.editListingBtnText}>IMPROVE LISTING</Text>
+                <SolarIcon name="create-outline" size={17} color={colors.bg} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.editListingBtnText}>IMPROVE LISTING</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { aiService } from '../../src/services/aiService';
 import { userService } from '../../src/services/userService';
 import { useToastStore } from '../../src/store/toastStore';
@@ -196,7 +196,7 @@ const QUESTIONS: QuestionDef[] = [
 export default function StyleQuizScreen() {
   const router = useRouter();
   const { user, setUser } = useAuth();
-  const { showToast } = useToastStore();
+  const showToast = useToastStore((s) => s.showToast);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string[]>>({});
@@ -383,12 +383,12 @@ export default function StyleQuizScreen() {
           <View style={styles.primaryAestheticCard}>
             <View style={styles.primaryBadgeRow}>
               <View style={styles.aestheticPill}>
-                <Text style={styles.aestheticPillText}>Primary archetype</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.aestheticPillText}>Primary archetype</Text>
               </View>
             </View>
 
             <Text style={styles.aestheticNameTitle}>{primary.aesthetic.name.toUpperCase()}</Text>
-            <Text style={styles.aestheticTagline}>{primary.aesthetic.tagline}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.aestheticTagline}>{primary.aesthetic.tagline}</Text>
             <Text style={styles.aestheticDescription}>{primary.aesthetic.description}</Text>
 
             {/* High-Resolution Style Guide Moodboard Poster (Tap for Full Screen) */}
@@ -404,7 +404,7 @@ export default function StyleQuizScreen() {
                   contentFit="contain"
                 />
                 <View style={styles.tapToExpandOverlay}>
-                  <Ionicons name="expand" size={13} color={colors.cream} />
+                  <SolarIcon name="expand" size={13} color={colors.cream} />
                   <Text style={styles.tapToExpandText}>Tap to expand full screen</Text>
                 </View>
               </TouchableOpacity>
@@ -429,11 +429,11 @@ export default function StyleQuizScreen() {
             <View style={styles.secondaryAestheticCard}>
               <View style={styles.secondaryHeaderRow}>
                 <View style={styles.closeSecondBadge}>
-                  <Text style={styles.closeSecondBadgeText}>Close second</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.closeSecondBadgeText}>Close second</Text>
                 </View>
               </View>
               <Text style={styles.secondaryName}>{closeSecond.aesthetic.name.toUpperCase()}</Text>
-              <Text style={styles.secondaryTagline}>{closeSecond.aesthetic.tagline}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.secondaryTagline}>{closeSecond.aesthetic.tagline}</Text>
 
               {AESTHETIC_IMAGES[closeSecond.aesthetic.id] && (
                 <TouchableOpacity
@@ -447,7 +447,7 @@ export default function StyleQuizScreen() {
                     contentFit="contain"
                   />
                   <View style={styles.tapToExpandOverlay}>
-                    <Ionicons name="expand" size={13} color={colors.cream} />
+                    <SolarIcon name="expand" size={13} color={colors.cream} />
                     <Text style={styles.tapToExpandText}>Tap for full screen</Text>
                   </View>
                 </TouchableOpacity>
@@ -461,7 +461,7 @@ export default function StyleQuizScreen() {
             onPress={handleProceedToApp}
             activeOpacity={0.85}
           >
-            <Text style={styles.exploreBtnText}>Explore selected closet →</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.exploreBtnText}>Explore selected closet →</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -489,7 +489,7 @@ export default function StyleQuizScreen() {
                 onPress={() => setFullscreenAesthetic(null)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="close" size={26} color={colors.cream} />
+                <SolarIcon name="close" size={26} color={colors.cream} />
               </TouchableOpacity>
             </View>
 
@@ -511,8 +511,8 @@ export default function StyleQuizScreen() {
                 onPress={() => setFullscreenAesthetic(null)}
                 activeOpacity={0.85}
               >
-                <Ionicons name="checkmark-circle" size={18} color={colors.charcoal} />
-                <Text style={styles.fullscreenSelectBtnText}>Close full screen view</Text>
+                <SolarIcon name="checkmark-circle" size={18} color={colors.charcoal} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.fullscreenSelectBtnText}>Close full screen view</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -591,7 +591,7 @@ export default function StyleQuizScreen() {
                     activeOpacity={0.85}
                   >
                     <View style={[styles.idkIconCircle, isSelected && styles.idkIconCircleActive]}>
-                      <Ionicons
+                      <SolarIcon
                         name={isSelected ? 'checkmark' : 'help-outline'}
                         size={18}
                         color={isSelected ? colors.cream : colors.charcoal}
@@ -625,7 +625,7 @@ export default function StyleQuizScreen() {
                       activeOpacity={0.8}
                     >
                       <View style={[styles.vibeRankBadge, isSelected && styles.vibeRankBadgeActive]}>
-                        <Text style={[styles.vibeRankBadgeText, isSelected && styles.vibeRankBadgeTextActive]}>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.vibeRankBadgeText, isSelected && styles.vibeRankBadgeTextActive]}>
                           {isSelected ? `#${rankIndex + 1}` : '○'}
                         </Text>
                       </View>
@@ -639,7 +639,7 @@ export default function StyleQuizScreen() {
                       onPress={() => setFullscreenAesthetic(opt.key)}
                       activeOpacity={0.7}
                     >
-                      <Ionicons name="scan-outline" size={13} color={colors.charcoal} />
+                      <SolarIcon name="scan-outline" size={13} color={colors.charcoal} />
                       <Text style={styles.expandFullscreenText}>Full screen</Text>
                     </TouchableOpacity>
                   </View>
@@ -657,7 +657,7 @@ export default function StyleQuizScreen() {
                         contentFit="contain"
                       />
                       <View style={styles.tapToExpandOverlay}>
-                        <Ionicons name="expand" size={13} color={colors.cream} />
+                        <SolarIcon name="expand" size={13} color={colors.cream} />
                         <Text style={styles.tapToExpandText}>Tap to expand full screen</Text>
                       </View>
                     </TouchableOpacity>
@@ -674,12 +674,12 @@ export default function StyleQuizScreen() {
                     onPress={() => handleToggleOption(opt.key)}
                     activeOpacity={0.8}
                   >
-                    <Ionicons
+                    <SolarIcon
                       name={isSelected ? 'checkmark-circle' : 'add-circle-outline'}
                       size={15}
                       color={isSelected ? colors.white : colors.charcoal}
                     />
-                    <Text style={[styles.vibeSelectPillText, isSelected && styles.vibeSelectPillTextActive]}>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.vibeSelectPillText, isSelected && styles.vibeSelectPillTextActive]}>
                       {isSelected
                         ? `SELECTED AS VIBE #${rankIndex + 1} (TAP TO REMOVE)`
                         : 'Select as aesthetic vibe'}
@@ -713,7 +713,7 @@ export default function StyleQuizScreen() {
                 </View>
 
                 {isSelected && (
-                  <Ionicons name="checkmark" size={16} color={colors.red} />
+                  <SolarIcon name="checkmark" size={16} color={colors.red} />
                 )}
               </TouchableOpacity>
             );
@@ -723,14 +723,14 @@ export default function StyleQuizScreen() {
         {/* Nav Buttons */}
         <View style={styles.navButtonsRow}>
           <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-            <Text style={styles.backBtnText}>Prev</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.backBtnText}>Prev</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.nextBtn} onPress={handleNext} disabled={submitting}>
             {submitting ? (
               <Spinner color={colors.cream} size="small" />
             ) : (
-              <Text style={styles.nextBtnText}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.nextBtnText}>
                 {currentIndex === QUESTIONS.length - 1 ? 'Generate style profile →' : 'Next step →'}
               </Text>
             )}
@@ -763,7 +763,7 @@ export default function StyleQuizScreen() {
             onPress={() => setFullscreenAesthetic(null)}
             activeOpacity={0.8}
           >
-            <Ionicons name="close" size={26} color={colors.cream} />
+            <SolarIcon name="close" size={26} color={colors.cream} />
           </TouchableOpacity>
         </View>
 
@@ -793,7 +793,7 @@ export default function StyleQuizScreen() {
               }}
               activeOpacity={0.85}
             >
-              <Ionicons
+              <SolarIcon
                 name={
                   rankedVibes.includes(fullscreenAesthetic as AestheticId)
                     ? 'checkmark-circle'
@@ -806,7 +806,7 @@ export default function StyleQuizScreen() {
                     : colors.charcoal
                 }
               />
-              <Text
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                 style={[
                   styles.fullscreenSelectBtnText,
                   rankedVibes.includes(fullscreenAesthetic as AestheticId) &&
@@ -1454,6 +1454,7 @@ const styles = StyleSheet.create({
     color: colors.red,
     fontSize: 14,
     lineHeight: 18,
+      fontFamily: typography.body,
   },
   essentialItemText: {
     flex: 1,

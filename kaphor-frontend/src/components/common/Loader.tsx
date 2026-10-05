@@ -328,7 +328,9 @@ const styles = StyleSheet.create({
     color: colors.ink,
     textAlign: 'center',
   },
-  messageCompact: { marginTop: spacing.md, fontSize: 16 },
+  messageCompact: {
+ marginTop: spacing.md, fontSize: 16, fontFamily: typography.body,
+  },
   dotRow: { flexDirection: 'row', gap: 6, marginTop: spacing.md },
   stepRow: { flexDirection: 'row', gap: 6, marginTop: spacing.lg },
   stepBar: { width: 28, height: 3, borderRadius: 2, backgroundColor: colors.borderLight },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Image, ImageStyle } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from './common/SolarIcon';
 import { radius, colors, typography } from '../theme';
 import { api } from '../services/api';
 
@@ -9,7 +9,7 @@ interface KaphorImageProps {
   uri?: string | string[] | null;
   style?: ImageStyle;
   contentFit?: 'cover' | 'contain';
-  fallbackIcon?: keyof typeof Ionicons.glyphMap;
+  fallbackIcon?: keyof typeof SolarIcon.glyphMap;
   category?: string | null;
   brand?: string | null;
   fallbackUri?: string | null;
@@ -169,7 +169,7 @@ export function KaphorImage({
   if (!currentUri || hasFailedAll) {
     return (
       <View style={[styles.fallbackContainer, style]}>
-        <Ionicons
+        <SolarIcon
           name={fallbackIcon}
           size={Math.min(32, typeof style?.height === 'number' ? style.height * 0.35 : 28)}
           color={colors.textMuted}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../components/common/SolarIcon';
 import { userService } from '../../services/userService';
 import { colors, typography, spacing, radius } from '../../theme';
 import { safeBack, useBackHandler } from '../../utils/navigation';
@@ -24,7 +24,7 @@ const ReviewCard = React.memo(function ReviewCard({ item }: { item: any }) {
                     <Text style={styles.reviewerUsername}>@{reviewer?.username || 'member'}</Text>
                 </View>
                 <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={12} color={colors.gold} />
+                    <SolarIcon name="star" size={12} color={colors.gold} />
                     <Text style={styles.ratingText}>{item.rating}</Text>
                 </View>
             </View>
@@ -94,7 +94,7 @@ export function ReviewsScreen() {
                     style={styles.backBtn}
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                    <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+                    <SolarIcon name="arrow-back" size={24} color={colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>COMMUNITY REVIEWS</Text>
                 <View style={{ width: 40 }} />
@@ -104,7 +104,7 @@ export function ReviewsScreen() {
                 <Loader variant="default" />
             ) : reviews.length === 0 ? (
                 <View style={styles.center}>
-                    <Ionicons name="star-outline" size={48} color={colors.textMuted} />
+                    <SolarIcon name="star-outline" size={48} color={colors.textMuted} />
                     <Text style={styles.emptyText}>No verified reviews yet.</Text>
                     <Pressable
                         onPress={handleBack}

@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { colors, typography } from '../../src/theme';
 import { Header } from '../../src/components/common/Header';
 import { EditorialPageHeader } from '../../src/components/editorial/IllustrationLayer';
@@ -20,7 +20,7 @@ import { messageService, ConversationSummary } from '../../src/services/messageS
 import { getSocket, connectSocket } from '../../src/services/socket';
 import { useNotificationStore } from '../../src/store/notificationStore';
 import { MessageCardsLoading } from '../../src/components/common/CardLoadingScreen';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useListStore, hydrateLists, refreshInbox, loadMoreInbox, seedConversation } from '../../src/store/listStore';
 import { getErrorMessage } from '../../src/utils/errors';
 
 type FilterTab = 'ALL' | 'SELL' | 'SWAP' | 'RENT';
@@ -60,12 +60,17 @@ export function formatConversationSnippet(text: string | null | undefined): stri
   return text.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
 }
 
-const INBOX_CACHE_KEY = '@kaphor_inbox_cache';
+const EMPTY_INBOX: ConversationSummary[] = [];
 
 export default function MessagesScreen() {
   const router = useRouter();
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Cache-first: the inbox lives in a persisted store that is warmed after login
+  const inbox = useListStore((s) => s.inbox);
+  const hydrated = useListStore((s) => s.hydrated);
+  const hasMore = useListStore((s) => s.inboxCursor !== null);
+  const conversations = inbox ?? EMPTY_INBOX;
+  const [fetchSettled, setFetchSettled] = useState(false);
+  const loading = inbox === null && (!hydrated || !fetchSettled);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
 
@@ -74,54 +79,33 @@ export default function MessagesScreen() {
     setActiveTab(tab);
   };
 
-  // Show the last known inbox instantly, then refresh in the background
-  useEffect(() => {
-    let alive = true;
-    AsyncStorage.getItem(INBOX_CACHE_KEY)
-      .then((raw) => {
-        if (!alive || !raw) return;
-        const cached = JSON.parse(raw);
-        if (Array.isArray(cached) && cached.length > 0) {
-          setConversations((prev) => (prev.length === 0 ? cached : prev));
-          setLoading(false);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const loadConversations = useCallback(async () => {
+  const loadConversations = useCallback(async (force = false) => {
     try {
-      const list = await messageService.listConversations();
-      setConversations(list);
-      AsyncStorage.setItem(INBOX_CACHE_KEY, JSON.stringify(list.slice(0, 50))).catch(() => {});
-      const totalUnread = list.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-      useNotificationStore.getState().setUnreadMessageCount(totalUnread);
+      await hydrateLists();
+      await refreshInbox(force);
     } catch (e) {
-      console.error('Failed to load conversations', e);
+      // keep whatever is on screen
     } finally {
-      setLoading(false);
+      setFetchSettled(true);
       setRefreshing(false);
     }
   }, []);
 
-  // useFocusEffect executes on initial mount and when the tab gains focus
+  // Runs on mount and when the tab gains focus; refreshInbox skips when data is < 30s old
   useFocusEffect(
     useCallback(() => {
       loadConversations();
 
       // Listen for incoming live socket events to update inbox instantly in real time
-      const socket = connectSocket() || getSocket();
+      const socket = getSocket() || connectSocket();
       if (socket) {
         let debounce: ReturnType<typeof setTimeout> | null = null;
         const handler = () => {
           if (debounce) clearTimeout(debounce);
-          debounce = setTimeout(() => loadConversations(), 400);
+          debounce = setTimeout(() => loadConversations(true), 400);
         };
         const handleDeleted = ({ conversationId }: { conversationId: string }) => {
-          setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+          useListStore.getState().setInbox((prev) => prev.filter((c) => c.id !== conversationId));
         };
         socket.on('new_direct_message', handler);
         socket.on('direct_message', handler);
@@ -150,7 +134,7 @@ export default function MessagesScreen() {
           onPress: async () => {
             try {
               await messageService.deleteConversation(item.id);
-              setConversations((prev) => prev.filter((c) => c.id !== item.id));
+              useListStore.getState().setInbox((prev) => prev.filter((c) => c.id !== item.id));
               const remainingUnread = conversations
                 .filter((c) => c.id !== item.id)
                 .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
@@ -166,7 +150,7 @@ export default function MessagesScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadConversations();
+    loadConversations(true);
   };
 
   const filteredConversations = useMemo(() => {
@@ -256,7 +240,10 @@ export default function MessagesScreen() {
           isUnread && styles.convCardUnread,
           hasOrder && styles.convCardOrder,
         ]}
-        onPress={() => router.push(`/messages/${item.id}` as any)}
+        onPress={() => {
+          seedConversation(item);
+          router.push(`/messages/${item.id}` as any);
+        }}
         onLongPress={() => handleDeleteConversation(item)}
         delayLongPress={350}
         activeOpacity={0.8}
@@ -274,7 +261,7 @@ export default function MessagesScreen() {
           />
           {item.otherUser.isVerified && (
             <View style={styles.verifiedDot}>
-              <Ionicons name="shield-checkmark" size={11} color={colors.gold} />
+              <SolarIcon name="shield-checkmark" size={11} color={colors.gold} />
             </View>
           )}
         </TouchableOpacity>
@@ -293,7 +280,7 @@ export default function MessagesScreen() {
 
           {/* Unified single context pill */}
           <View style={[styles.unifiedContextPill, { backgroundColor: contextBg }]}>
-            <Ionicons name={contextIcon} size={11} color={contextColor} />
+            <SolarIcon name={contextIcon} size={11} color={contextColor} />
             <Text style={[styles.unifiedContextText, { color: contextColor }]} numberOfLines={1}>
               {contextLabel}
             </Text>
@@ -323,7 +310,7 @@ export default function MessagesScreen() {
                 contentFit="cover"
               />
               <View style={styles.swapThumbBadge}>
-                <Ionicons name="swap-horizontal" size={8} color={colors.white} />
+                <SolarIcon name="swap-horizontal" size={8} color={colors.white} />
               </View>
             </View>
           ) : category === 'SWAP' && (item.garment?.image || item.garment?.images?.[0]) ? (
@@ -342,7 +329,7 @@ export default function MessagesScreen() {
           <View style={styles.rightActionRow}>
             {isUnread && (
               <View style={styles.unreadPill}>
-                <Text style={styles.unreadPillText}>{item.unreadCount}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.unreadPillText}>{item.unreadCount}</Text>
               </View>
             )}
             <TouchableOpacity
@@ -351,7 +338,7 @@ export default function MessagesScreen() {
               style={styles.delIconBtn}
               accessibilityLabel="Delete Conversation"
             >
-              <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
+              <SolarIcon name="trash-outline" size={14} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
         </View>
@@ -376,12 +363,12 @@ export default function MessagesScreen() {
           activeOpacity={0.8}
         >
           <View style={styles.tabContentRow}>
-            <Text style={[styles.tabText, activeTab === 'ALL' && styles.tabTextActive]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'ALL' && styles.tabTextActive]}>
               ALL ({conversations.length})
             </Text>
             {allUnread > 0 && (
               <View style={[styles.tabUnreadBadge, activeTab === 'ALL' && styles.tabUnreadBadgeActive]}>
-                <Text style={[styles.tabUnreadBadgeText, activeTab === 'ALL' && styles.tabUnreadBadgeTextActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabUnreadBadgeText, activeTab === 'ALL' && styles.tabUnreadBadgeTextActive]}>
                   {allUnread}
                 </Text>
               </View>
@@ -395,12 +382,12 @@ export default function MessagesScreen() {
           activeOpacity={0.8}
         >
           <View style={styles.tabContentRow}>
-            <Text style={[styles.tabText, activeTab === 'SELL' && styles.tabTextActive]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'SELL' && styles.tabTextActive]}>
               SELL ({sellCount})
             </Text>
             {sellUnread > 0 && (
               <View style={[styles.tabUnreadBadge, activeTab === 'SELL' && styles.tabUnreadBadgeActive]}>
-                <Text style={[styles.tabUnreadBadgeText, activeTab === 'SELL' && styles.tabUnreadBadgeTextActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabUnreadBadgeText, activeTab === 'SELL' && styles.tabUnreadBadgeTextActive]}>
                   {sellUnread}
                 </Text>
               </View>
@@ -414,12 +401,12 @@ export default function MessagesScreen() {
           activeOpacity={0.8}
         >
           <View style={styles.tabContentRow}>
-            <Text style={[styles.tabText, activeTab === 'SWAP' && styles.tabTextActive]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'SWAP' && styles.tabTextActive]}>
               SWAP ({swapCount})
             </Text>
             {swapUnread > 0 && (
               <View style={[styles.tabUnreadBadge, activeTab === 'SWAP' && styles.tabUnreadBadgeActive]}>
-                <Text style={[styles.tabUnreadBadgeText, activeTab === 'SWAP' && styles.tabUnreadBadgeTextActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabUnreadBadgeText, activeTab === 'SWAP' && styles.tabUnreadBadgeTextActive]}>
                   {swapUnread}
                 </Text>
               </View>
@@ -433,12 +420,12 @@ export default function MessagesScreen() {
           activeOpacity={0.8}
         >
           <View style={styles.tabContentRow}>
-            <Text style={[styles.tabText, activeTab === 'RENT' && styles.tabTextActive]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'RENT' && styles.tabTextActive]}>
               RENT ({rentCount})
             </Text>
             {rentUnread > 0 && (
               <View style={[styles.tabUnreadBadge, activeTab === 'RENT' && styles.tabUnreadBadgeActive]}>
-                <Text style={[styles.tabUnreadBadgeText, activeTab === 'RENT' && styles.tabUnreadBadgeTextActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabUnreadBadgeText, activeTab === 'RENT' && styles.tabUnreadBadgeTextActive]}>
                   {rentUnread}
                 </Text>
               </View>
@@ -457,6 +444,8 @@ export default function MessagesScreen() {
           initialNumToRender={10}
           maxToRenderPerBatch={8}
           windowSize={7}
+          onEndReached={hasMore ? loadMoreInbox : undefined}
+          onEndReachedThreshold={0.5}
           removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={
             filteredConversations.length === 0 ? styles.emptyContainer : styles.listContent
@@ -467,7 +456,7 @@ export default function MessagesScreen() {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <View style={styles.emptyIconCircle}>
-                <Ionicons
+                <SolarIcon
                   name={
                     activeTab === 'SWAP'
                       ? 'swap-horizontal-outline'
@@ -512,7 +501,7 @@ export default function MessagesScreen() {
                 }
                 activeOpacity={0.8}
               >
-                <Text style={styles.exploreBtnText}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.exploreBtnText}>
                   {activeTab === 'SWAP'
                     ? 'EXPLORE SWAPS →'
                     : activeTab === 'RENT'

@@ -151,7 +151,7 @@ export async function deleteItem(key: string): Promise<void> {
 
 /** Remove cached personal data (feeds, chats, saved items) when someone signs out. */
 export async function clearUserCaches(): Promise<void> {
-  const prefixes = ['@kaphor_cache_', '@kaphor_chat_', '@kaphor_shop_feed_cache'];
+  const prefixes = ['@kaphor_cache_', '@kaphor_chat_', '@kaphor_inbox_cache', '@kaphor_shop_feed_cache'];
   try {
     if (isWeb) {
       const store = webStore();

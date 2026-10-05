@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -536,7 +536,7 @@ export default function SellScreen() {
         <View style={styles.listingTypeTopHeader}>
           <Text style={styles.listingTypeTopLabel}>LISTING TYPE</Text>
           <View style={[styles.listingTypeBadge, listingType === 'ACCESSORY_SWAP' && styles.listingTypeBadgeSwap]}>
-            <Text style={styles.listingTypeBadgeText}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.listingTypeBadgeText}>
               {listingType === 'ACCESSORY_SWAP' ? 'ACCESSORIES ONLY' : listingType}
             </Text>
           </View>
@@ -552,15 +552,15 @@ export default function SellScreen() {
                 onPress={() => handleListingTypeChange(t.id)}
                 activeOpacity={0.8}
               >
-                <Ionicons
+                <SolarIcon
                   name={t.icon as any}
                   size={16}
                   color={isActive ? colors.white : colors.charcoal}
                 />
-                <Text style={[styles.segmentedBtnLabel, isActive && styles.segmentedBtnLabelActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.segmentedBtnLabel, isActive && styles.segmentedBtnLabelActive]}>
                   {t.label}
                 </Text>
-                <Text style={[styles.segmentedBtnSub, isActive && styles.segmentedBtnSubActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.segmentedBtnSub, isActive && styles.segmentedBtnSubActive]}>
                   {t.sub}
                 </Text>
               </TouchableOpacity>
@@ -569,7 +569,7 @@ export default function SellScreen() {
         </View>
 
         <View style={styles.listingTypeDescRow}>
-          <Ionicons name="information-circle-outline" size={14} color={colors.textSecond} />
+          <SolarIcon name="information-circle-outline" size={14} color={colors.textSecond} />
           <Text style={styles.listingTypeDescText}>{currentInfo}</Text>
         </View>
       </View>
@@ -599,17 +599,17 @@ export default function SellScreen() {
                   <Image source={{ uri }} style={styles.thumbImg} />
                   <View style={styles.thumbActions}>
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel="Edit" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.editBtn} onPress={() => editImage(i)}>
-                      <Ionicons name="pencil-sharp" size={14} color={colors.white} />
+                      <SolarIcon name="pencil-sharp" size={14} color={colors.white} />
                     </TouchableOpacity>
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.removeBtn} onPress={() => removeImage(i)}>
-                      <Ionicons name="close-sharp" size={14} color={colors.white} />
+                      <SolarIcon name="close-sharp" size={14} color={colors.white} />
                     </TouchableOpacity>
                   </View>
                 </View>
               ))}
               {images.length < 5 && (
                 <TouchableOpacity style={styles.uploadBox} onPress={pickImages}>
-                  <Ionicons name="camera-outline" size={32} color={colors.crimson} />
+                  <SolarIcon name="camera-outline" size={32} color={colors.crimson} />
                   <Text style={styles.uploadText}>ADD PHOTO</Text>
                 </TouchableOpacity>
               )}
@@ -626,8 +626,8 @@ export default function SellScreen() {
                 <Spinner color={colors.white} />
               ) : (
                 <>
-                  <Ionicons name="sparkles" size={20} color={colors.white} />
-                  <Text style={styles.aiButtonText}>
+                  <SolarIcon name="sparkles" size={20} color={colors.white} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.aiButtonText}>
                     {listingType === 'RENTAL'
                       ? 'AI MAGIC FILL (RENTAL SPECS)'
                       : listingType === 'ACCESSORY_SWAP'
@@ -644,7 +644,7 @@ export default function SellScreen() {
               onPress={nextStep}
               disabled={images.length === 0}
             >
-              <Text style={styles.mainButtonText}>MANUAL ENTRY / CONTINUE</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainButtonText}>MANUAL ENTRY / CONTINUE</Text>
             </TouchableOpacity>
           </View>
         );
@@ -662,8 +662,8 @@ export default function SellScreen() {
               onPress={images.length > 0 ? () => executeAiFill(images[0]) : pickAndRunAiFill}
               disabled={aiLoading}
             >
-              <Ionicons name="sparkles" size={16} color={colors.white} />
-              <Text style={styles.step2AiButtonText}>
+              <SolarIcon name="sparkles" size={16} color={colors.white} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.step2AiButtonText}>
                 {images.length > 0 ? 'AI AUTO-FILL ALL DETAILS FROM PHOTO' : 'TAKE OR PICK PHOTO & AUTO-FILL WITH AI'}
               </Text>
             </TouchableOpacity>
@@ -691,12 +691,12 @@ export default function SellScreen() {
               <View style={styles.t3RecCard}>
                 <View style={styles.t3RecHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="trending-up" size={15} color={colors.emerald} />
+                    <SolarIcon name="trending-up" size={15} color={colors.emerald} />
                     <Text style={styles.t3RecTitle}>MARKET PRICE VALUATION</Text>
                   </View>
                   {t3Pricing.demandTrend && (
                     <View style={[styles.t3Badge, t3Pricing.demandTrend === 'rising' && styles.t3BadgeRising]}>
-                      <Text style={styles.t3BadgeText}>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.t3BadgeText}>
                         {t3Pricing.demandTrend.toUpperCase()} DEMAND
                       </Text>
                     </View>
@@ -729,7 +729,7 @@ export default function SellScreen() {
                       }
                     }}
                   >
-                    <Ionicons name="checkmark-sharp" size={13} color={colors.white} />
+                    <SolarIcon name="checkmark-sharp" size={13} color={colors.white} />
                     <Text style={styles.t3ApplyText}>APPLY PRICE</Text>
                   </TouchableOpacity>
                 </View>
@@ -789,7 +789,7 @@ export default function SellScreen() {
 
                 {Number(originalPrice) > Number(price) && Number(price) > 0 ? (
                   <View style={{ marginTop: 8, padding: 10, backgroundColor: colors.emeraldLight, borderRadius: 6, borderWidth: 1, borderColor: colors.emeraldLight, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Ionicons name="pricetag" size={15} color={colors.emerald} />
+                    <SolarIcon name="pricetag" size={15} color={colors.emerald} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.emerald, fontWeight: '800' }}>
                         FEED PREVIEW: -{Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)}% OFF MRP
@@ -812,7 +812,7 @@ export default function SellScreen() {
                   keyboardType="numeric"
                 />
                 <View style={styles.swapNoticeBox}>
-                  <Ionicons name="scale-outline" size={16} color={colors.crimson} />
+                  <SolarIcon name="scale-outline" size={16} color={colors.crimson} />
                   <Text style={styles.swapNoticeText}>
                     1:1 PEER SWAP: Cash price is completely optional. Swapping on KaPhor is an exchange of accessories. Any valuation you enter is purely optional to guide fair balance matching.
                   </Text>
@@ -846,7 +846,7 @@ export default function SellScreen() {
             />
 
             <View style={styles.conditionDescBox}>
-              <Ionicons name="information-circle-outline" size={16} color={colors.textSecond} />
+              <SolarIcon name="information-circle-outline" size={16} color={colors.textSecond} />
               <Text style={styles.conditionDescText}>
                 {MARKET_CONDITIONS.find(c => c.id === condition)?.desc}
               </Text>
@@ -862,10 +862,10 @@ export default function SellScreen() {
 
             <View style={styles.row}>
               <TouchableOpacity style={styles.secondaryButton} onPress={prevStep}>
-                <Text style={styles.secondaryButtonText}>BACK</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.secondaryButtonText}>BACK</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.mainButton, { flex: 2, marginLeft: 12 }]} onPress={nextStep}>
-                <Text style={styles.mainButtonText}>CONTINUE</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainButtonText}>CONTINUE</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -923,7 +923,7 @@ export default function SellScreen() {
                   style={styles.payoutSetupBtn}
                   onPress={() => router.push('/profile/payout' as any)}
                 >
-                  <Ionicons name="wallet-outline" size={18} color={colors.charcoal} />
+                  <SolarIcon name="wallet-outline" size={18} color={colors.charcoal} />
                   <Text style={styles.payoutSetupText}>SET UP PAYOUT</Text>
                 </TouchableOpacity>
               </View>
@@ -936,7 +936,7 @@ export default function SellScreen() {
               {submitting ? (
                 <Spinner color={colors.white} />
               ) : (
-                <Text style={styles.mainButtonText}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainButtonText}>
                   {listingType === 'ACCESSORY_SWAP'
                     ? 'PUBLISH TO SWAP'
                     : listingType === 'RENTAL'
@@ -965,7 +965,7 @@ export default function SellScreen() {
           onPress={handleBackNavigation}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name={step > 1 ? "chevron-back" : "close"} size={28} color={colors.textPrimary} />
+          <SolarIcon name={step > 1 ? "chevron-back" : "close"} size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SECURE LISTING</Text>
         <View style={{ width: 28 }} />
@@ -1003,7 +1003,9 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 24, paddingBottom: 220 },
   stepContainer: { gap: 16 },
   stepTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, marginBottom: 4 },
-  stepSubtitle: { fontSize: 16, color: colors.textSecond, lineHeight: 22 },
+  stepSubtitle: {
+ fontSize: 16, color: colors.textSecond, lineHeight: 22, fontFamily: typography.body,
+  },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   imageThumb: { width: 100, height: 133, borderRadius: 12, position: 'relative', overflow: 'hidden' }, // 3:4 ratio for thumb
   thumbImg: { width: '100%', height: '100%' },
@@ -1031,13 +1033,21 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   uploadBox: { width: 100, height: 100, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
-  uploadText: { color: colors.textMuted, fontSize: 11, marginTop: 4, letterSpacing: 2, fontWeight: '700' },
-  input: { height: 56, borderBottomWidth: 1, borderBottomColor: colors.border, color: colors.textPrimary, fontSize: 16, paddingHorizontal: 4 },
-  pickerLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 2, marginTop: 16, fontWeight: '700' },
+  uploadText: {
+ color: colors.textMuted, fontSize: 11, marginTop: 4, letterSpacing: 2, fontWeight: '700', fontFamily: typography.bodyBold,
+  },
+  input: {
+ height: 56, borderBottomWidth: 1, borderBottomColor: colors.border, color: colors.textPrimary, fontSize: 16, paddingHorizontal: 4, fontFamily: typography.body,
+  },
+  pickerLabel: {
+ color: colors.textMuted, fontSize: 12, letterSpacing: 2, marginTop: 16, fontWeight: '700', fontFamily: typography.bodyBold,
+  },
   chipRow: { flexDirection: 'row', marginBottom: 4 },
   chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginRight: 8, backgroundColor: colors.bgCard },
   chipActive: { borderColor: colors.crimson, backgroundColor: colors.crimsonLight },
-  chipText: { color: colors.textSecond, fontSize: 13, fontWeight: '600' },
+  chipText: {
+ color: colors.textSecond, fontSize: 13, fontWeight: '600', fontFamily: typography.bodyMedium,
+  },
   chipTextActive: { color: colors.crimson, fontWeight: '800' },
   mainButton: {
     backgroundColor: colors.crimson,
@@ -1051,7 +1061,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  mainButtonText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
+  mainButtonText: {
+ color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2, fontFamily: typography.bodyBold,
+  },
   aiButton: {
     backgroundColor: colors.charcoal,
     height: 60,
@@ -1062,13 +1074,21 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 12,
   },
-  aiButtonText: { color: colors.white, fontSize: 14, fontWeight: '800', letterSpacing: 1 },
+  aiButtonText: {
+ color: colors.white, fontSize: 14, fontWeight: '800', letterSpacing: 1, fontFamily: typography.bodyBold,
+  },
   secondaryButton: { flex: 1, height: 60, borderRadius: 16, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
-  secondaryButtonText: { color: colors.textSecond, fontSize: 14, letterSpacing: 2, fontWeight: '700' },
+  secondaryButtonText: {
+ color: colors.textSecond, fontSize: 14, letterSpacing: 2, fontWeight: '700', fontFamily: typography.bodyBold,
+  },
   row: { flexDirection: 'row', marginTop: 12, gap: 12 },
   summaryCard: { padding: 24, backgroundColor: colors.bgCard, borderRadius: 20, gap: 14, borderWidth: 1, borderColor: colors.border },
-  summaryLabel: { color: colors.textSecond, fontSize: 12, fontWeight: '600' },
-  summaryValue: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
+  summaryLabel: {
+ color: colors.textSecond, fontSize: 12, fontWeight: '600', fontFamily: typography.bodyMedium,
+  },
+  summaryValue: {
+ color: colors.textPrimary, fontSize: 16, fontWeight: '800', fontFamily: typography.bodyBold,
+  },
   payoutSection: {
     backgroundColor: colors.overlayLight,
     borderRadius: 16,
@@ -1088,6 +1108,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '500',
+      fontFamily: typography.bodyMedium,
   },
   payoutSetupBtn: {
     flexDirection: 'row',
@@ -1106,7 +1127,9 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     fontSize: 17,
   },
-  policyText: { color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18, marginVertical: 16 },
+  policyText: {
+ color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18, marginVertical: 16, fontFamily: typography.body,
+  },
   conditionDescBox: {
     backgroundColor: colors.overlayLight,
     borderRadius: 12,
@@ -1124,6 +1147,7 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 16,
     fontStyle: 'italic',
+      fontFamily: typography.body,
   },
   swapNoticeBox: {
     backgroundColor: colors.crimsonLight,
@@ -1216,6 +1240,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
+      fontFamily: typography.bodyMedium,
   },
   segmentedBtnSubActive: {
     color: colors.paperGlass,

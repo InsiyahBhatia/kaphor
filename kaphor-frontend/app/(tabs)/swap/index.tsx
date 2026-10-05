@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Platform, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useAuth } from '../../../src/context/AuthContext';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
@@ -25,7 +25,7 @@ function statusBadge(status: string) {
   };
   return (
     <View style={[styles.statusBadge, { backgroundColor: colors_map[status] || colors.textMuted }]}>
-      <Text style={styles.statusBadgeText}>{status}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.statusBadgeText}>{status}</Text>
     </View>
   );
 }
@@ -99,7 +99,7 @@ const SwapRequestCard = React.memo(function SwapRequestCard({
                 <KaphorImage uri={partner.avatar} style={styles.partnerAvatar} contentFit="cover" fallbackIcon="person" />
               ) : (
                 <View style={styles.partnerAvatarPlaceholder}>
-                  <Ionicons name="person" size={14} color={colors.textMuted} />
+                  <SolarIcon name="person" size={14} color={colors.textMuted} />
                 </View>
               )}
               <View>
@@ -113,7 +113,7 @@ const SwapRequestCard = React.memo(function SwapRequestCard({
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               {statusBadge(swap.status)}
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </View>
           </View>
 
@@ -129,7 +129,7 @@ const SwapRequestCard = React.memo(function SwapRequestCard({
                 </Text>
               </View>
             </View>
-            <Ionicons name="repeat" size={18} color={colors.charcoal} />
+            <SolarIcon name="repeat" size={18} color={colors.charcoal} />
             <View style={styles.swapItem}>
               <View style={styles.itemThumbWrap}>
                 <KaphorImage uri={offeredImg} style={styles.itemThumb} contentFit="cover" />
@@ -153,8 +153,8 @@ const SwapRequestCard = React.memo(function SwapRequestCard({
               style={[styles.swapActionBtn, styles.messageBtn]}
               onPress={() => handleMessagePartner(swap)}
             >
-              <Ionicons name="chatbubbles-outline" size={14} color={colors.charcoal} />
-              <Text style={styles.messageBtnText}>Message</Text>
+              <SolarIcon name="chatbubbles-outline" size={14} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.messageBtnText}>Message</Text>
             </TouchableOpacity>
 
             {swap.status === 'REQUESTED' && isIncoming && (
@@ -163,14 +163,14 @@ const SwapRequestCard = React.memo(function SwapRequestCard({
                   style={[styles.swapActionBtn, { backgroundColor: colors.forest, borderColor: colors.forest }]}
                   onPress={() => handleRespond(swap.id, true)}
                 >
-                  <Ionicons name="checkmark" size={14} color={colors.cream} />
+                  <SolarIcon name="checkmark" size={14} color={colors.cream} />
                   <Text style={styles.swapActionText}>Accept</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.swapActionBtn, { backgroundColor: colors.red, borderColor: colors.red }]}
                   onPress={() => handleRespond(swap.id, false)}
                 >
-                  <Ionicons name="close" size={14} color={colors.cream} />
+                  <SolarIcon name="close" size={14} color={colors.cream} />
                   <Text style={styles.swapActionText}>Reject</Text>
                 </TouchableOpacity>
               </>
@@ -182,14 +182,14 @@ const SwapRequestCard = React.memo(function SwapRequestCard({
                   style={[styles.swapActionBtn, { backgroundColor: colors.charcoal }]}
                   onPress={() => router.push(`/(tabs)/swap/agreement?swapId=${swap.id}` as any)}
                 >
-                  <Ionicons name="document-text" size={12} color={colors.cream} />
+                  <SolarIcon name="document-text" size={12} color={colors.cream} />
                   <Text style={styles.swapActionText}>Agreement</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.swapActionBtn, { backgroundColor: colors.goldDark }]}
                   onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
                 >
-                  <Ionicons name="cube" size={12} color={colors.cream} />
+                  <SolarIcon name="cube" size={12} color={colors.cream} />
                   <Text style={styles.swapActionText}>Deposit</Text>
                 </TouchableOpacity>
               </>
@@ -200,7 +200,7 @@ const SwapRequestCard = React.memo(function SwapRequestCard({
                 style={[styles.swapActionBtn, { backgroundColor: colors.charcoal }]}
                 onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
               >
-                <Ionicons name="cube" size={14} color={colors.cream} />
+                <SolarIcon name="cube" size={14} color={colors.cream} />
                 <Text style={styles.swapActionText}>Track & deliver</Text>
               </TouchableOpacity>
             )}
@@ -210,7 +210,7 @@ const SwapRequestCard = React.memo(function SwapRequestCard({
                 style={[styles.swapActionBtn, { backgroundColor: colors.forest, borderColor: colors.forest }]}
                 onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
               >
-                <Ionicons name="star" size={12} color={colors.cream} />
+                <SolarIcon name="star" size={12} color={colors.cream} />
                 <Text style={styles.swapActionText}>Review</Text>
               </TouchableOpacity>
             )}
@@ -219,7 +219,7 @@ const SwapRequestCard = React.memo(function SwapRequestCard({
               style={[styles.swapActionBtn, styles.detailsBtn]}
               onPress={() => router.push(`/(tabs)/swap/details?swapId=${swap.id}` as any)}
             >
-              <Text style={styles.detailsBtnText}>Details</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.detailsBtnText}>Details</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -403,7 +403,7 @@ export default function SwapFeedScreen() {
     if (swapsLoading) return <GarmentGridSkeleton count={4} />;
     return (
       <View style={styles.emptyState}>
-        <Ionicons name="swap-horizontal-outline" size={40} color={colors.charcoal} />
+        <SolarIcon name="swap-horizontal-outline" size={40} color={colors.charcoal} />
         <Text style={styles.emptyText}>No swap requests</Text>
         <Text style={styles.emptySubtext}>Go to Browse to find items to swap</Text>
       </View>
@@ -415,7 +415,7 @@ export default function SwapFeedScreen() {
       <GarmentGridSkeleton count={6} />
     ) : (
       <View style={styles.emptyState}>
-        <Ionicons name="swap-horizontal-outline" size={40} color={colors.charcoal} />
+        <SolarIcon name="swap-horizontal-outline" size={40} color={colors.charcoal} />
         <Text style={styles.emptyText}>No swappable assets</Text>
       </View>
     );
@@ -427,7 +427,7 @@ export default function SwapFeedScreen() {
         style={[styles.tab, activeTab === 'browse' && styles.tabActive]}
         onPress={() => setActiveTab('browse')}
       >
-        <Text style={[styles.tabText, activeTab === 'browse' && styles.tabTextActive]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'browse' && styles.tabTextActive]}>
           Browse
         </Text>
       </TouchableOpacity>
@@ -435,7 +435,7 @@ export default function SwapFeedScreen() {
         style={[styles.tab, activeTab === 'requests' && styles.tabActive]}
         onPress={() => setActiveTab('requests')}
       >
-        <Text style={[styles.tabText, activeTab === 'requests' && styles.tabTextActive]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'requests' && styles.tabTextActive]}>
           MY SWAPS {mySwaps.length > 0 ? `(${mySwaps.length})` : ''}
         </Text>
       </TouchableOpacity>
@@ -443,7 +443,7 @@ export default function SwapFeedScreen() {
         style={styles.tab}
         onPress={() => router.push('/(tabs)/orders?tab=swaps' as any)}
       >
-        <Text style={[styles.tabText, { color: colors.copper, fontWeight: '800' }]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, { color: colors.copper, fontWeight: '800' }]}>
           TRACK SWAPS ➔
         </Text>
       </TouchableOpacity>
@@ -465,7 +465,7 @@ export default function SwapFeedScreen() {
             style={styles.sellBtn}
             onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { prefillListingType: 'ACCESSORY_SWAP', listingType: 'ACCESSORY_SWAP', fresh: Date.now().toString() } } as any)}
           >
-            <Ionicons name="add" size={20} color={colors.cream} />
+            <SolarIcon name="add" size={20} color={colors.cream} />
           </TouchableOpacity>
         </View>
       </EditorialPageHeader>

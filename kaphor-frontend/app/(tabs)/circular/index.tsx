@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useRouter } from 'expo-router';
 import { impactService } from '../../../src/services/impactService';
 import { colors, typography } from '../../../src/theme';
@@ -40,7 +40,7 @@ export default function CircularScreen() {
             <Text style={styles.sectionTitle}>Ai intelligence engines</Text>
           </View>
           <View style={styles.sectionTagTerracotta}>
-            <Text style={styles.sectionTagTerracottaText}>V2.4 model</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.sectionTagTerracottaText}>V2.4 model</Text>
           </View>
         </View>
 
@@ -52,11 +52,11 @@ export default function CircularScreen() {
         >
           <View style={styles.cardTopRow}>
             <View style={styles.badgeTerracotta}>
-              <Ionicons name="sparkles" size={11} color={colors.terracottaDark} />
-              <Text style={styles.badgeTerracottaText}>Neural stylist</Text>
+              <SolarIcon name="sparkles" size={11} color={colors.terracottaDark} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeTerracottaText}>Neural stylist</Text>
             </View>
             <View style={styles.badgeGold}>
-              <Text style={styles.badgeGoldText}>♔ TOP MATCH</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeGoldText}>♔ TOP MATCH</Text>
             </View>
           </View>
 
@@ -75,19 +75,19 @@ export default function CircularScreen() {
           {/* Micro-Pills */}
           <View style={styles.pillRow}>
             <View style={styles.pillTerracotta}>
-              <Text style={styles.pillTerracottaText}>✦ REMIX</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pillTerracottaText}>✦ REMIX</Text>
             </View>
             <View style={styles.pillTerracotta}>
-              <Text style={styles.pillTerracottaText}>◈ VALUATION</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pillTerracottaText}>◈ VALUATION</Text>
             </View>
             <View style={styles.pillTerracotta}>
-              <Text style={styles.pillTerracottaText}>◆ FABRIC CARE</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pillTerracottaText}>◆ FABRIC CARE</Text>
             </View>
           </View>
 
           <View style={styles.actionBtnTerracotta}>
-            <Text style={styles.actionBtnTerracottaText}>Launch ai stylist & care chat</Text>
-            <Ionicons name="arrow-forward" size={14} color={colors.white} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnTerracottaText}>Launch ai stylist & care chat</Text>
+            <SolarIcon name="arrow-forward" size={14} color={colors.white} />
           </View>
         </TouchableOpacity>
 
@@ -105,7 +105,7 @@ export default function CircularScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={styles.cardCompactTitle}>Ai condition scan</Text>
                 <View style={styles.badgeGoldTiny}>
-                  <Text style={styles.badgeGoldTinyText}>Glie scanner</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeGoldTinyText}>Glie scanner</Text>
                 </View>
               </View>
               <Text style={styles.cardCompactSub}>
@@ -113,7 +113,7 @@ export default function CircularScreen() {
               </Text>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.ink} />
+          <SolarIcon name="chevron-forward" size={18} color={colors.ink} />
         </TouchableOpacity>
 
         {/* ── 2. SECTION 02: SUSTAINABILITY & IMPACT (VIBRANT EMERALD) ── */}
@@ -135,8 +135,8 @@ export default function CircularScreen() {
         >
           <View style={styles.impactHeader}>
             <View style={styles.badgeEmerald}>
-              <Ionicons name="leaf" size={11} color={colors.emeraldLight} />
-              <Text style={styles.badgeEmeraldText}>Verified conservation</Text>
+              <SolarIcon name="leaf" size={11} color={colors.emeraldLight} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeEmeraldText}>Verified conservation</Text>
             </View>
             <Text style={styles.impactSubtitle}>Live circular ledger</Text>
           </View>
@@ -190,11 +190,11 @@ export default function CircularScreen() {
         >
           <View style={styles.cardTopRow}>
             <View style={styles.badgeEmerald}>
-              <Ionicons name="leaf-sharp" size={10} color={colors.emeraldLight} />
-              <Text style={styles.badgeEmeraldText}>Zero waste fashion</Text>
+              <SolarIcon name="leaf-sharp" size={10} color={colors.emeraldLight} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeEmeraldText}>Zero waste fashion</Text>
             </View>
             <View style={styles.badgeGold}>
-              <Text style={styles.badgeGoldText}>15+ DIY VIDEOS</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeGoldText}>15+ DIY VIDEOS</Text>
             </View>
           </View>
 
@@ -213,25 +213,25 @@ export default function CircularScreen() {
           {/* Color-Coded Garment Project Pills */}
           <View style={styles.pillRow}>
             <View style={[styles.garmentPillColored, { backgroundColor: colors.cream, borderColor: colors.ink }]}>
-              <Text style={[styles.garmentPillColoredText, { color: colors.ink }]}>✂ JEANS (6)</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.garmentPillColoredText, { color: colors.ink }]}>✂ JEANS (6)</Text>
             </View>
             <View style={[styles.garmentPillColored, { backgroundColor: colors.terracottaLight, borderColor: colors.terracotta }]}>
-              <Text style={[styles.garmentPillColoredText, { color: colors.terracottaDark }]}>✂ SHIRT (5)</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.garmentPillColoredText, { color: colors.terracottaDark }]}>✂ SHIRT (5)</Text>
             </View>
             <View style={[styles.garmentPillColored, { backgroundColor: colors.bgMuted, borderColor: colors.ink }]}>
-              <Text style={[styles.garmentPillColoredText, { color: colors.ink }]}>✂ T-SHIRT (4)</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.garmentPillColoredText, { color: colors.ink }]}>✂ T-SHIRT (4)</Text>
             </View>
             <View style={[styles.garmentPillColored, { backgroundColor: colors.goldLight, borderColor: colors.gold }]}>
-              <Text style={[styles.garmentPillColoredText, { color: colors.goldDark }]}>✂ SAREE (5)</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.garmentPillColoredText, { color: colors.goldDark }]}>✂ SAREE (5)</Text>
             </View>
             <View style={[styles.garmentPillColored, { backgroundColor: colors.emeraldLight, borderColor: colors.emerald }]}>
-              <Text style={[styles.garmentPillColoredText, { color: colors.emeraldDark }]}>✂ SOCKS (4)</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.garmentPillColoredText, { color: colors.emeraldDark }]}>✂ SOCKS (4)</Text>
             </View>
           </View>
 
           <View style={styles.actionBtnGold}>
-            <Text style={styles.actionBtnGoldText}>Explore 5 upcycle workshops</Text>
-            <Ionicons name="arrow-forward" size={14} color={colors.white} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnGoldText}>Explore 5 upcycle workshops</Text>
+            <SolarIcon name="arrow-forward" size={14} color={colors.white} />
           </View>
         </TouchableOpacity>
 
@@ -259,8 +259,8 @@ export default function CircularScreen() {
             <Text style={styles.pathwayName}>Sell</Text>
             <Text style={styles.pathwayDesc}>List pre-loved designer pieces for direct P2P sale</Text>
             <View style={styles.pathwayFoot}>
-              <Text style={[styles.pathwayCta, { color: colors.crimson }]}>List piece</Text>
-              <Ionicons name="arrow-forward" size={12} color={colors.crimson} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.pathwayCta, { color: colors.crimson }]}>List piece</Text>
+              <SolarIcon name="arrow-forward" size={12} color={colors.crimson} />
             </View>
           </TouchableOpacity>
 
@@ -279,8 +279,8 @@ export default function CircularScreen() {
             <Text style={styles.pathwayName}>Rent</Text>
             <Text style={styles.pathwayDesc}>Borrow fashion & occasion wear for short-term leases</Text>
             <View style={styles.pathwayFoot}>
-              <Text style={[styles.pathwayCta, { color: colors.goldDark }]}>Explore leases</Text>
-              <Ionicons name="arrow-forward" size={12} color={colors.goldDark} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.pathwayCta, { color: colors.goldDark }]}>Explore leases</Text>
+              <SolarIcon name="arrow-forward" size={12} color={colors.goldDark} />
             </View>
           </TouchableOpacity>
 
@@ -299,8 +299,8 @@ export default function CircularScreen() {
             <Text style={styles.pathwayName}>Swap</Text>
             <Text style={styles.pathwayDesc}>Trade fashion items cashless with deposit protection</Text>
             <View style={styles.pathwayFoot}>
-              <Text style={[styles.pathwayCta, { color: colors.emeraldDark }]}>Barter saved</Text>
-              <Ionicons name="arrow-forward" size={12} color={colors.emeraldDark} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.pathwayCta, { color: colors.emeraldDark }]}>Barter saved</Text>
+              <SolarIcon name="arrow-forward" size={12} color={colors.emeraldDark} />
             </View>
           </TouchableOpacity>
 
@@ -319,8 +319,8 @@ export default function CircularScreen() {
             <Text style={styles.pathwayName}>Repair & refresh</Text>
             <Text style={styles.pathwayDesc}>Guides to mend, revive & refresh your clothes yourself</Text>
             <View style={styles.pathwayFoot}>
-              <Text style={[styles.pathwayCta, { color: colors.terracottaDark }]}>View guides</Text>
-              <Ionicons name="arrow-forward" size={12} color={colors.terracottaDark} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.pathwayCta, { color: colors.terracottaDark }]}>View guides</Text>
+              <SolarIcon name="arrow-forward" size={12} color={colors.terracottaDark} />
             </View>
           </TouchableOpacity>
         </View>
@@ -339,7 +339,7 @@ export default function CircularScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={styles.recoveryHeadline}>Recycling hubs</Text>
                 <View style={styles.badgeEmeraldTiny}>
-                  <Text style={styles.badgeEmeraldTinyText}>Verified</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeEmeraldTinyText}>Verified</Text>
                 </View>
               </View>
               <Text style={styles.recoverySub}>
@@ -347,7 +347,7 @@ export default function CircularScreen() {
               </Text>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.emeraldDark} />
+          <SolarIcon name="chevron-forward" size={18} color={colors.emeraldDark} />
         </TouchableOpacity>
       </ScrollView>
 

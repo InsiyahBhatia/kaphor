@@ -1,6 +1,6 @@
 import { Tabs, usePathname } from 'expo-router';
 import { TabBar } from '../../src/components/TabBar';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { View } from 'react-native';
 
 import { AIFloatingButton } from '../../src/components/AIFloatingButton';
@@ -32,21 +32,21 @@ export default function TabLayout() {
           name="index"
           options={{
             title: 'Home',
-            tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={24} color={color} />,
+            tabBarIcon: ({ color }) => <SolarIcon name="home-outline" size={24} color={color} />,
           }}
         />
         <Tabs.Screen
           name="shop/index"
           options={{
             title: 'Shop',
-            tabBarIcon: ({ color }) => <Ionicons name="bag-handle-outline" size={24} color={color} />,
+            tabBarIcon: ({ color }) => <SolarIcon name="bag-handle-outline" size={24} color={color} />,
           }}
         />
         <Tabs.Screen
           name="swap/index"
           options={{
             title: 'Swap',
-            tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal-outline" size={24} color={color} />,
+            tabBarIcon: ({ color }) => <SolarIcon name="swap-horizontal-outline" size={24} color={color} />,
           }}
         />
         <Tabs.Screen name="circular/index" options={{ href: null }} />
@@ -54,14 +54,14 @@ export default function TabLayout() {
           name="rental/index"
           options={{
             title: 'Rental',
-            tabBarIcon: ({ color }) => <Ionicons name="time-outline" size={24} color={color} />,
+            tabBarIcon: ({ color }) => <SolarIcon name="time-outline" size={24} color={color} />,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
-            tabBarIcon: ({ color }) => <Ionicons name="person-outline" size={24} color={color} />,
+            tabBarIcon: ({ color }) => <SolarIcon name="person-outline" size={24} color={color} />,
           }}
         />
 

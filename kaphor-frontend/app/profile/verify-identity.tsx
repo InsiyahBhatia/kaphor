@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { colors, typography } from '../../src/theme';
 import { Header } from '../../src/components/common/Header';
 import { verificationService, VerificationData } from '../../src/services/verificationService';
@@ -106,7 +106,7 @@ export default function VerifyIdentityScreen() {
           <View style={styles.verifiedCard}>
             <View style={styles.verifiedHeader}>
               <View style={styles.verifiedIconWrap}>
-                <Ionicons name="shield-checkmark" size={32} color={colors.gold} />
+                <SolarIcon name="shield-checkmark" size={32} color={colors.gold} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.verifiedTitle}>VERIFIED MEMBER</Text>
@@ -133,7 +133,7 @@ export default function VerifyIdentityScreen() {
           </View>
         ) : isPending ? (
           <View style={styles.pendingCard}>
-            <Ionicons name="time-outline" size={28} color={colors.gold} />
+            <SolarIcon name="time-outline" size={28} color={colors.gold} />
             <Text style={styles.pendingTitle}>VERIFICATION IN PROGRESS</Text>
             <Text style={styles.pendingText}>
               Your document submission is being processed by the Kaphor Trust & Safety team. Verification typically completes within 24 hours.
@@ -144,7 +144,7 @@ export default function VerifyIdentityScreen() {
             {/* Trust Intro */}
             <View style={styles.introCard}>
               <View style={styles.introHeader}>
-                <Ionicons name="shield-checkmark" size={20} color={colors.gold} />
+                <SolarIcon name="shield-checkmark" size={20} color={colors.gold} />
                 <Text style={styles.introTitle}>KAPHOR TRUST & VERIFICATION</Text>
               </View>
               <Text style={styles.introBody}>
@@ -155,12 +155,12 @@ export default function VerifyIdentityScreen() {
             {/* Perks Grid */}
             <View style={styles.perksGrid}>
               <View style={styles.perkItem}>
-                <Ionicons name="ribbon-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="ribbon-outline" size={18} color={colors.charcoal} />
                 <Text style={styles.perkTitle}>Gold Trust Badge</Text>
                 <Text style={styles.perkDesc}>Featured prominently across your profile and products</Text>
               </View>
               <View style={styles.perkItem}>
-                <Ionicons name="lock-closed-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="lock-closed-outline" size={18} color={colors.charcoal} />
                 <Text style={styles.perkTitle}>Bank-Grade Privacy</Text>
                 <Text style={styles.perkDesc}>256-bit encrypted; ID numbers are never stored in full</Text>
               </View>
@@ -179,7 +179,7 @@ export default function VerifyIdentityScreen() {
                       onPress={() => setSelectedDocType(doc.id)}
                       activeOpacity={0.7}
                     >
-                      <Ionicons
+                      <SolarIcon
                         name={doc.icon}
                         size={18}
                         color={isSelected ? colors.cream : colors.charcoal}
@@ -190,7 +190,7 @@ export default function VerifyIdentityScreen() {
                         {doc.label}
                       </Text>
                       {isSelected && (
-                        <Ionicons name="checkmark-circle" size={16} color={colors.gold} />
+                        <SolarIcon name="checkmark-circle" size={16} color={colors.gold} />
                       )}
                     </TouchableOpacity>
                   );
@@ -238,8 +238,8 @@ export default function VerifyIdentityScreen() {
                   <Spinner color={colors.cream} size="small" />
                 ) : (
                   <>
-                    <Text style={styles.submitButtonText}>ACTIVATE VERIFIED STATUS</Text>
-                    <Ionicons name="shield-checkmark" size={18} color={colors.gold} />
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.submitButtonText}>ACTIVATE VERIFIED STATUS</Text>
+                    <SolarIcon name="shield-checkmark" size={18} color={colors.gold} />
                   </>
                 )}
               </TouchableOpacity>

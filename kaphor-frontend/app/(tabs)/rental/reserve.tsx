@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../../src/services/api';
 import { addressService, Address } from '../../../src/services/addressService';
@@ -338,7 +338,7 @@ export default function RentalReserveScreen() {
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
+          <SolarIcon name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Request rental & dates</Text>
         <View style={{ width: 28 }} />
@@ -354,7 +354,7 @@ export default function RentalReserveScreen() {
         {/* Owner Restriction Notice */}
         {isOwner && (
           <View style={styles.ownerWarningCard}>
-            <Ionicons name="information-circle" size={20} color={colors.orange} />
+            <SolarIcon name="information-circle" size={20} color={colors.orange} />
             <View style={{ flex: 1 }}>
               <Text style={styles.ownerWarningTitle}>Your listed closet item</Text>
               <Text style={styles.ownerWarningDesc}>
@@ -367,13 +367,13 @@ export default function RentalReserveScreen() {
         {/* Dynamic Reservation Error Notice */}
         {errorMessage && (
           <View style={styles.errorBannerCard}>
-            <Ionicons name="alert-circle" size={20} color={colors.red} />
+            <SolarIcon name="alert-circle" size={20} color={colors.red} />
             <View style={{ flex: 1 }}>
               <Text style={styles.errorBannerTitle}>Reservation notice</Text>
               <Text style={styles.errorBannerDesc}>{errorMessage}</Text>
             </View>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={() => setErrorMessage(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="close" size={18} color={colors.red} />
+              <SolarIcon name="close" size={18} color={colors.red} />
             </TouchableOpacity>
           </View>
         )}
@@ -388,7 +388,7 @@ export default function RentalReserveScreen() {
               {availabilityState.checking ? (
                 <Spinner size="small" color={colors.charcoal} />
               ) : (
-                <Ionicons
+                <SolarIcon
                   name={availabilityState.isAvailable ? 'checkmark-circle' : 'alert-circle'}
                   size={18}
                   color={availabilityState.isAvailable ? colors.forest : colors.red}
@@ -409,7 +409,7 @@ export default function RentalReserveScreen() {
               styles.availabilityPill,
               availabilityState.isAvailable ? styles.availabilityPillOk : styles.availabilityPillWarn
             ]}>
-              <Text style={[
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[
                 styles.availabilityPillText,
                 { color: availabilityState.isAvailable ? colors.forest : colors.red }
               ]}>
@@ -434,21 +434,21 @@ export default function RentalReserveScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.colHeader}>
-              <Ionicons name="calendar" size={13} color={colors.crimson} />
+              <SolarIcon name="calendar" size={13} color={colors.crimson} />
               <Text style={styles.timelineColLabel}>Delivery / start</Text>
             </View>
             <Text style={styles.timelineColValue}>
               {startDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', weekday: 'short' })}
             </Text>
             <View style={styles.editBadge}>
-              <Ionicons name="pencil" size={10} color={colors.crimson} />
-              <Text style={styles.editBadgeText}>Edit</Text>
+              <SolarIcon name="pencil" size={10} color={colors.crimson} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.editBadgeText}>Edit</Text>
             </View>
           </TouchableOpacity>
 
           {/* Center Duration Indicator */}
           <View style={styles.timelineArrow}>
-            <Ionicons name="arrow-forward" size={16} color={colors.crimson} />
+            <SolarIcon name="arrow-forward" size={16} color={colors.crimson} />
             <Text style={styles.timelineDaysCount}>{days} DAYS</Text>
           </View>
 
@@ -459,15 +459,15 @@ export default function RentalReserveScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.colHeader}>
-              <Ionicons name="calendar" size={13} color={colors.forest || colors.forest} />
+              <SolarIcon name="calendar" size={13} color={colors.forest || colors.forest} />
               <Text style={styles.timelineColLabel}>Return / end</Text>
             </View>
             <Text style={styles.timelineColValue}>
               {endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', weekday: 'short' })}
             </Text>
             <View style={[styles.editBadge, { backgroundColor: colors.emeraldLight }]}>
-              <Ionicons name="pencil" size={10} color={colors.forest || colors.forest} />
-              <Text style={[styles.editBadgeText, { color: colors.forest || colors.forest }]}>Edit</Text>
+              <SolarIcon name="pencil" size={10} color={colors.forest || colors.forest} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.editBadgeText, { color: colors.forest || colors.forest }]}>Edit</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -484,7 +484,7 @@ export default function RentalReserveScreen() {
               onPress={() => handleAdjustDays(-1)}
               disabled={days <= 1}
             >
-              <Ionicons name="remove" size={18} color={colors.textPrimary} />
+              <SolarIcon name="remove" size={18} color={colors.textPrimary} />
             </TouchableOpacity>
             <Text style={styles.stepperValue}>{days} {days === 1 ? 'DAY' : 'DAYS'}</Text>
             <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Add"
@@ -492,7 +492,7 @@ export default function RentalReserveScreen() {
               onPress={() => handleAdjustDays(1)}
               disabled={days >= 30}
             >
-              <Ionicons name="add" size={18} color={colors.textPrimary} />
+              <SolarIcon name="add" size={18} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -515,7 +515,7 @@ export default function RentalReserveScreen() {
                   </Text>
                   {p.badge && (
                     <View style={[styles.presetBadge, isSelected && styles.presetBadgeActive]}>
-                      <Text style={[styles.presetBadgeText, isSelected && styles.presetBadgeTextActive]}>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.presetBadgeText, isSelected && styles.presetBadgeTextActive]}>
                         {p.badge}
                       </Text>
                     </View>
@@ -540,7 +540,7 @@ export default function RentalReserveScreen() {
           <View style={styles.summaryRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={styles.summaryLabel}>100% REFUNDABLE DEPOSIT</Text>
-              <Ionicons name="shield-checkmark" size={13} color={colors.forest || colors.forest} />
+              <SolarIcon name="shield-checkmark" size={13} color={colors.forest || colors.forest} />
             </View>
             <Text style={[styles.summaryValue, { color: colors.forest || colors.forest }]}>
               +₹{refundableDeposit}
@@ -577,8 +577,8 @@ export default function RentalReserveScreen() {
             <View>
               <View style={styles.addressHeaderRow}>
                 <View style={styles.addressLabelBadge}>
-                  <Ionicons name="location-sharp" size={11} color={colors.crimson} />
-                  <Text style={styles.addressLabelBadgeText}>{selectedAddress.label.toUpperCase()}</Text>
+                  <SolarIcon name="location-sharp" size={11} color={colors.crimson} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.addressLabelBadgeText}>{selectedAddress.label.toUpperCase()}</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => {
@@ -588,8 +588,8 @@ export default function RentalReserveScreen() {
                   style={styles.changeAddressBtn}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.changeAddressBtnText}>Change</Text>
-                  <Ionicons name="chevron-forward" size={12} color={colors.crimson} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.changeAddressBtnText}>Change</Text>
+                  <SolarIcon name="chevron-forward" size={12} color={colors.crimson} />
                 </TouchableOpacity>
               </View>
 
@@ -605,7 +605,7 @@ export default function RentalReserveScreen() {
             </View>
           ) : (
             <View style={styles.emptyAddressBox}>
-              <Ionicons name="location-outline" size={26} color={colors.crimson} />
+              <SolarIcon name="location-outline" size={26} color={colors.crimson} />
               <Text style={styles.emptyAddressTitle}>No delivery address selected</Text>
               <Text style={styles.emptyAddressSub}>Please add the delivery destination for this rental</Text>
               <TouchableOpacity
@@ -613,8 +613,8 @@ export default function RentalReserveScreen() {
                 onPress={() => router.push('/profile/addresses?selectMode=true' as any)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="add" size={16} color={colors.white} />
-                <Text style={styles.addAddressCtaText}>Add delivery address</Text>
+                <SolarIcon name="add" size={16} color={colors.white} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.addAddressCtaText}>Add delivery address</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -622,7 +622,7 @@ export default function RentalReserveScreen() {
 
         {/* Protection & Trust Policy */}
         <View style={styles.policyCard}>
-          <Ionicons name="shield-checkmark" size={22} color={colors.crimson} />
+          <SolarIcon name="shield-checkmark" size={22} color={colors.crimson} />
           <View style={{ flex: 1 }}>
             <Text style={styles.policyTitle}>Kaphor circular payment protection</Text>
             <Text style={styles.policyText}>
@@ -671,7 +671,7 @@ export default function RentalReserveScreen() {
                 onPress={() => setPickerVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="close" size={22} color={colors.textPrimary} />
+                <SolarIcon name="close" size={22} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -694,13 +694,13 @@ export default function RentalReserveScreen() {
             {/* Month Header */}
             <View style={styles.monthHeader}>
               <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Go back" onPress={prevMonth} style={styles.monthNavBtn}>
-                <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
+                <SolarIcon name="chevron-back" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
               <Text style={styles.monthLabel}>
                 {viewDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }).toUpperCase()}
               </Text>
               <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Next" onPress={nextMonth} style={styles.monthNavBtn}>
-                <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
+                <SolarIcon name="chevron-forward" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -801,7 +801,7 @@ export default function RentalReserveScreen() {
                 onPress={() => setAddressModalVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="close" size={22} color={colors.textPrimary} />
+                <SolarIcon name="close" size={22} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -823,7 +823,7 @@ export default function RentalReserveScreen() {
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <Text style={styles.addressItemLabel}>{addr.label.toUpperCase()}</Text>
-                        {addr.isDefault && <Text style={styles.defaultBadge}>Default</Text>}
+                        {addr.isDefault && <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.defaultBadge}>Default</Text>}
                       </View>
                       <Text style={styles.addressItemName}>{addr.fullName} • {addr.phone}</Text>
                       <Text style={styles.addressItemDetails} numberOfLines={2}>
@@ -851,8 +851,8 @@ export default function RentalReserveScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Ionicons name="add-circle-outline" size={16} color={colors.crimson} />
-              <Text style={styles.manageAddressBtnText}>Add / manage addresses</Text>
+              <SolarIcon name="add-circle-outline" size={16} color={colors.crimson} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.manageAddressBtnText}>Add / manage addresses</Text>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -869,13 +869,13 @@ export default function RentalReserveScreen() {
         }
       ]}>
         <View style={styles.approvalNoticeBox}>
-          <Ionicons name="hourglass-outline" size={13} color={colors.crimson} />
+          <SolarIcon name="hourglass-outline" size={13} color={colors.crimson} />
           <Text style={styles.approvalNoticeText}>
             Lender Approval Step: No payment taken today. The owner has 24 hours to accept your request.
           </Text>
         </View>
         <View style={styles.legalNoticeContainer}>
-          <Ionicons name="shield-checkmark" size={11} color={colors.textMuted} />
+          <SolarIcon name="shield-checkmark" size={11} color={colors.textMuted} />
           <Text style={styles.legalNoticeText}>
             Direct P2P Rental: Kaphor acts strictly as an intermediary under Sec. 79 of IT Act, 2000 and is not liable for item condition or transactions.
           </Text>
@@ -892,11 +892,11 @@ export default function RentalReserveScreen() {
           {submitting ? (
             <Spinner color={colors.white} />
           ) : isOwner ? (
-            <Text style={styles.reserveBtnText}>Cannot rent own item</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.reserveBtnText}>Cannot rent own item</Text>
           ) : !availabilityState.isAvailable ? (
-            <Text style={styles.reserveBtnText}>Dates conflict with lease</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.reserveBtnText}>Dates conflict with lease</Text>
           ) : (
-            <Text style={styles.reserveBtnText}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.reserveBtnText}>
               REQUEST RENTAL LEASE • ₹{grandTotal.toLocaleString()}
             </Text>
           )}
@@ -954,7 +954,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: typography.handBold,
     color: colors.textMuted, includeFontPadding: false, },
-  timelineColValue: { fontSize: 13, fontWeight: '800', color: colors.textPrimary, marginTop: 2 },
+  timelineColValue: {
+ fontSize: 13, fontWeight: '800', color: colors.textPrimary, marginTop: 2, fontFamily: typography.bodyBold,
+  },
   editBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -998,6 +1000,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
+      fontFamily: typography.body,
   },
   stepperControls: {
     flexDirection: 'row',
@@ -1049,7 +1052,9 @@ const styles = StyleSheet.create({
   presetBadgeActive: { backgroundColor: colors.crimson },
   presetBadgeText: { fontSize: 16, fontFamily: typography.handBold, color: colors.textMuted, includeFontPadding: false, },
   presetBadgeTextActive: { color: colors.white },
-  presetSubtitle: { fontSize: 11, color: colors.textMuted, marginBottom: 8, fontWeight: '500' },
+  presetSubtitle: {
+ fontSize: 11, color: colors.textMuted, marginBottom: 8, fontWeight: '500', fontFamily: typography.bodyMedium,
+  },
   presetPrice: { fontFamily: typography.bodyBold, fontSize: 15, color: colors.textPrimary },
   presetPriceActive: { color: colors.crimson },
 
@@ -1068,12 +1073,18 @@ const styles = StyleSheet.create({
     fontFamily: typography.handBold,
     marginBottom: 16, includeFontPadding: false, },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  summaryLabel: { color: colors.textMuted, fontSize: 11, letterSpacing: 0.5, fontWeight: '600', flex: 1 },
+  summaryLabel: {
+ color: colors.textMuted, fontSize: 11, letterSpacing: 0.5, fontWeight: '600', flex: 1, fontFamily: typography.bodyMedium,
+  },
   summaryValue: { color: colors.textPrimary, fontSize: 14, fontFamily: typography.bodyBold },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 14 },
-  totalLabel: { color: colors.textPrimary, fontSize: 12, fontWeight: '800', letterSpacing: 1, flex: 1 },
+  totalLabel: {
+ color: colors.textPrimary, fontSize: 12, fontWeight: '800', letterSpacing: 1, flex: 1, fontFamily: typography.bodyBold,
+  },
   totalValue: { color: colors.crimson, fontSize: 22, fontFamily: typography.bodyBold },
-  depositReturnNotice: { fontSize: 11, color: colors.textMuted, fontStyle: 'italic', marginTop: 10, lineHeight: 14 },
+  depositReturnNotice: {
+ fontSize: 11, color: colors.textMuted, fontStyle: 'italic', marginTop: 10, lineHeight: 14, fontFamily: typography.body,
+  },
 
   policyCard: {
     flexDirection: 'row',
@@ -1085,7 +1096,9 @@ const styles = StyleSheet.create({
     borderColor: colors.crimsonLight
   },
   policyTitle: { color: colors.crimson, fontSize: 16, fontFamily: typography.handBold, marginBottom: 4, includeFontPadding: false, },
-  policyText: { color: colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16, fontWeight: '500' },
+  policyText: {
+ color: colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16, fontWeight: '500', fontFamily: typography.bodyMedium,
+  },
 
   messageInput: {
     marginTop: 10,
@@ -1100,6 +1113,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     fontSize: 13,
     fontWeight: '500',
+      fontFamily: typography.bodyMedium,
   },
   footer: {
     padding: 20,
@@ -1136,7 +1150,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  reserveBtnText: { color: colors.white, fontSize: 14, fontWeight: '800', letterSpacing: 1.5 },
+  reserveBtnText: {
+ color: colors.white, fontSize: 14, fontWeight: '800', letterSpacing: 1.5, fontFamily: typography.bodyBold,
+  },
 
   // Modal Styles
   modalBackdrop: {
@@ -1312,17 +1328,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 4,
+      fontFamily: typography.bodyBold,
   },
   addressLinesText: {
     fontSize: 12,
     color: colors.textSecond,
     lineHeight: 17,
+      fontFamily: typography.body,
   },
   addressCityStateText: {
     fontSize: 12,
     color: colors.textPrimary,
     fontWeight: '600',
     marginTop: 2,
+      fontFamily: typography.bodyMedium,
   },
   emptyAddressBox: {
     alignItems: 'center',
@@ -1339,6 +1358,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
     marginBottom: 12,
+      fontFamily: typography.body,
   },
   addAddressCta: {
     flexDirection: 'row',
@@ -1388,11 +1408,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 2,
+      fontFamily: typography.bodyBold,
   },
   addressItemDetails: {
     fontSize: 11,
     color: colors.textMuted,
     lineHeight: 15,
+      fontFamily: typography.body,
   },
   radioCircle: {
     width: 20,

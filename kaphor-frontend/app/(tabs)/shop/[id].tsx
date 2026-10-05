@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../../src/components/common/Button';
 import { Badge } from '../../../src/components/Badge';
@@ -227,7 +227,7 @@ export default function GarmentDetailScreen() {
               priority="high"
             />
             <View style={styles.zoomHintBadge}>
-              <Ionicons name="expand-outline" size={14} color={colors.white} />
+              <SolarIcon name="expand-outline" size={14} color={colors.white} />
               <Text style={styles.zoomHintText}>TAP TO ZOOM</Text>
             </View>
           </TouchableOpacity>
@@ -237,7 +237,7 @@ export default function GarmentDetailScreen() {
             onPress={() => safeBack('/(tabs)/shop')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
+            <SolarIcon name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
 
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Button" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} 
@@ -245,7 +245,7 @@ export default function GarmentDetailScreen() {
             onPress={handleToggleLike}
             disabled={togglingLike}
           >
-            <Ionicons 
+            <SolarIcon 
               name={isLiked ? "heart" : "heart-outline"} 
               size={24} 
               color={isLiked ? colors.crimson : colors.charcoal} 
@@ -295,7 +295,7 @@ export default function GarmentDetailScreen() {
               onPress={() => setZoomVisible(false)}
               hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
             >
-              <Ionicons name="close" size={28} color={colors.white} />
+              <SolarIcon name="close" size={28} color={colors.white} />
             </TouchableOpacity>
             <View style={styles.zoomImageContainer}>
               <KaphorImage
@@ -333,7 +333,7 @@ export default function GarmentDetailScreen() {
               ) : null}
               {priceData.discountTag ? (
                 <View style={[styles.discountTagBadge, priceData.isSwap ? styles.swapDiscountBadge : null]}>
-                  <Text style={[styles.discountTagText, priceData.isSwap ? styles.swapDiscountText : null]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.discountTagText, priceData.isSwap ? styles.swapDiscountText : null]}>
                     {priceData.discountTag}
                   </Text>
                 </View>
@@ -353,7 +353,7 @@ export default function GarmentDetailScreen() {
             >
               <View style={styles.sellerBannerLeft}>
                 <View style={styles.sellerCrownBadge}>
-                  <Ionicons name="stats-chart" size={13} color={colors.gold} />
+                  <SolarIcon name="stats-chart" size={13} color={colors.gold} />
                 </View>
                 <View>
                   <Text style={styles.sellerBannerTitle}>YOUR LISTING TELEMETRY</Text>
@@ -370,7 +370,7 @@ export default function GarmentDetailScreen() {
 
           {/* Subtext description banner */}
           <View style={styles.subtextRow}>
-            <Ionicons 
+            <SolarIcon 
               name={priceData.isSwap ? "repeat" : priceData.isRental ? "calendar-outline" : "shield-checkmark-outline"} 
               size={14} 
               color={priceData.isSwap ? colors.crimson : priceData.isRental ? colors.forest : colors.charcoal} 
@@ -408,7 +408,7 @@ export default function GarmentDetailScreen() {
                 params: { garmentId: id, initialMessage: `I have questions about this ${garment.title}. Can you explain its material, styling, and condition?` }
               })}
             >
-              <Ionicons name="sparkles" size={18} color={colors.gold} />
+              <SolarIcon name="sparkles" size={18} color={colors.gold} />
               <Text style={styles.aiDoubtText}>DOUBTS? ASK KAPHOR AI ASSISTANT</Text>
             </TouchableOpacity>
           </View>
@@ -515,7 +515,7 @@ export default function GarmentDetailScreen() {
             }}
             activeOpacity={0.85}
           >
-            <Ionicons name="shield-checkmark-outline" size={22} color={colors.crimson} />
+            <SolarIcon name="shield-checkmark-outline" size={22} color={colors.crimson} />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={styles.sellerTrustTitle}>
@@ -527,7 +527,7 @@ export default function GarmentDetailScreen() {
                 Verified circular peer · Peer ratings from completed transactions
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            <SolarIcon name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
           {/* MESSAGE SELLER CTA */}
@@ -541,7 +541,7 @@ export default function GarmentDetailScreen() {
                 <Spinner size="small" color={colors.crimson} />
               ) : (
                 <>
-                  <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.crimson} />
+                  <SolarIcon name="chatbubble-ellipses-outline" size={20} color={colors.crimson} />
                   <Text style={styles.messageSellerText}>MESSAGE SELLER ABOUT ITEM</Text>
                 </>
               )}
@@ -552,7 +552,7 @@ export default function GarmentDetailScreen() {
           <View style={styles.actionGrid}>
             {priceData.isSwap && (
               <View style={styles.swapNoticeCard}>
-                <Ionicons name="repeat" size={24} color={colors.crimson} />
+                <SolarIcon name="repeat" size={24} color={colors.crimson} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={styles.noticeTitle}>CIRCULAR SWAP ACTIVE</Text>
                   <Text style={styles.noticeDesc}>
@@ -564,7 +564,7 @@ export default function GarmentDetailScreen() {
 
             {priceData.isRental && (
               <View style={styles.rentalNoticeCard}>
-                <Ionicons name="calendar-outline" size={24} color={colors.forest} />
+                <SolarIcon name="calendar-outline" size={24} color={colors.forest} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[styles.noticeTitle, { color: colors.forest }]}>RENTAL AVAILABLE</Text>
                   <Text style={styles.noticeDesc}>
@@ -576,7 +576,7 @@ export default function GarmentDetailScreen() {
 
             {priceData.isSale && (
               <View style={styles.saleInfoCard}>
-                <Ionicons name="shield-checkmark" size={22} color={colors.success} />
+                <SolarIcon name="shield-checkmark" size={22} color={colors.success} />
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={styles.saleInfoText}>AUTHENTICATED SALE · FULL OWNERSHIP</Text>
                   <Text style={styles.saleInfoSub}>
@@ -650,14 +650,14 @@ export default function GarmentDetailScreen() {
                   setInsightsModalVisible(true);
                 }}
               >
-                <Ionicons name="stats-chart-outline" size={12} color={colors.gold} />
+                <SolarIcon name="stats-chart-outline" size={12} color={colors.gold} />
                 <Text style={styles.insightsTextSmall}>INSIGHTS</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.editBtnSmall}
                 onPress={() => router.push(`/(tabs)/shop/edit/${id}` as any)}
               >
-                <Ionicons name="create-outline" size={12} color={colors.gold} />
+                <SolarIcon name="create-outline" size={12} color={colors.gold} />
                 <Text style={styles.editTextSmall}>EDIT</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -777,6 +777,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 2,
     textTransform: 'uppercase',
+      fontFamily: typography.bodyBold,
   },
   categoryLabel: {
     color: colors.textMuted,
@@ -799,6 +800,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '900',
     color: colors.textPrimary,
+      fontFamily: typography.bodyBold,
   },
   swapPrice: {
     color: colors.crimson,
@@ -810,12 +812,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     fontWeight: '600',
+      fontFamily: typography.bodyMedium,
   },
   originalPrice: {
     fontSize: 13,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 2,
+      fontFamily: typography.body,
   },
   discountTagBadge: {
     marginTop: 4,
@@ -867,11 +871,13 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     fontWeight: '800',
     marginBottom: 12,
+      fontFamily: typography.bodyBold,
   },
   description: {
     color: colors.textSecond,
     fontSize: 15,
     lineHeight: 24,
+      fontFamily: typography.body,
   },
   sellerTrust: {
     flexDirection: 'row',
@@ -888,11 +894,13 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.textPrimary,
     letterSpacing: 0.8,
+      fontFamily: typography.bodyBold,
   },
   sellerTrustSub: {
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 4,
+      fontFamily: typography.body,
   },
   actionGrid: {
     marginBottom: 40,
@@ -926,6 +934,7 @@ const styles = StyleSheet.create({
     color: colors.textSecond,
     marginTop: 4,
     lineHeight: 17,
+      fontFamily: typography.body,
   },
   footer: {
     paddingHorizontal: 20,
@@ -965,6 +974,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 11,
     letterSpacing: 1,
+      fontFamily: typography.bodyBold,
   },
   center: {
     justifyContent: 'center',
@@ -987,6 +997,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
+      fontFamily: typography.bodyBold,
   },
   listingManagerBar: {
     flexDirection: 'row',
@@ -1049,11 +1060,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
+      fontFamily: typography.bodyBold,
   },
   saleInfoSub: {
     color: colors.textSecond,
     fontSize: 11,
     marginTop: 2,
+      fontFamily: typography.body,
   },
   specGrid: {
     flexDirection: 'row',
@@ -1081,6 +1094,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontWeight: '700',
     lineHeight: 16,
+      fontFamily: typography.bodyBold,
   },
   zoomHintBadge: {
     position: 'absolute',

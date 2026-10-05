@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
@@ -275,7 +275,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
           onPress={() => safeBack(fallbackPath)}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={26} color={colors.charcoal} />
+          <SolarIcon name="chevron-back" size={26} color={colors.charcoal} />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
@@ -306,7 +306,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
               onPress={() => handleSendPrompt(cmd.prompt)}
               activeOpacity={0.75}
             >
-              <Ionicons name="sparkles" size={12} color={colors.charcoal} style={{ marginRight: 5 }} />
+              <SolarIcon name="sparkles" size={12} color={colors.charcoal} style={{ marginRight: 5 }} />
               <Text style={styles.quickCommandText}>{cmd.label}</Text>
             </TouchableOpacity>
           ))}
@@ -349,7 +349,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
                   <View style={styles.actionExecutionLogs}>
                     {msg.actionsExecuted.map((act, aIdx) => (
                       <View key={aIdx} style={styles.actionLogPill}>
-                        <Ionicons name="checkmark-circle" size={13} color={colors.success} />
+                        <SolarIcon name="checkmark-circle" size={13} color={colors.success} />
                         <Text style={styles.actionLogText}>{act.description}</Text>
                       </View>
                     ))}
@@ -366,8 +366,8 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
                   <View style={styles.outfitLookCard}>
                     <View style={styles.outfitHeaderRow}>
                       <View style={styles.outfitTagPill}>
-                        <Ionicons name="sparkles" size={11} color={colors.cream} />
-                        <Text style={styles.outfitTagText}>OUTFIT IDEA</Text>
+                        <SolarIcon name="sparkles" size={11} color={colors.cream} />
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.outfitTagText}>OUTFIT IDEA</Text>
                       </View>
                       <Text style={styles.outfitLookTitle}>{msg.outfitLook.title}</Text>
                     </View>
@@ -440,7 +440,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
                             />
                             {Boolean(card.badge) && (
                               <View style={styles.cardBadge}>
-                                <Text style={styles.cardBadgeText}>{card.badge}</Text>
+                                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.cardBadgeText}>{card.badge}</Text>
                               </View>
                             )}
                           </View>
@@ -460,8 +460,8 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
                               ]}
                               onPress={() => handleCardAction(card)}
                             >
-                              <Text style={styles.cardActionBtnText}>{card.actionLabel}</Text>
-                              <Ionicons name="arrow-forward" size={12} color={colors.cream} />
+                              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.cardActionBtnText}>{card.actionLabel}</Text>
+                              <SolarIcon name="arrow-forward" size={12} color={colors.cream} />
                             </TouchableOpacity>
                           </View>
                         </TouchableOpacity>
@@ -481,7 +481,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
                         activeOpacity={0.7}
                       >
                         <Text style={styles.followUpText}>"{promptText}"</Text>
-                        <Ionicons name="arrow-forward" size={12} color={colors.charcoal} />
+                        <SolarIcon name="arrow-forward" size={12} color={colors.charcoal} />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -515,7 +515,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
             <KaphorImage uri={imageUri} style={styles.attachedPreviewThumb} contentFit="cover" />
             <Text style={styles.imageAttachedText} numberOfLines={1}>Photo attached for styling analysis</Text>
             <TouchableOpacity onPress={() => setImageUri(null)} hitSlop={8}>
-              <Ionicons name="close-circle" size={20} color={colors.charcoal} />
+              <SolarIcon name="close-circle" size={20} color={colors.charcoal} />
             </TouchableOpacity>
           </View>
         )}
@@ -560,7 +560,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
             {loading ? (
               <Spinner color={colors.cream} size="small" />
             ) : (
-              <Ionicons
+              <SolarIcon
                 name="arrow-up"
                 size={20}
                 color={!input.trim() && !imageUri ? colors.textMuted : colors.cream}

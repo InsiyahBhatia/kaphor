@@ -4,6 +4,7 @@ import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-
 
 import { hapticFeedback } from '../../utils/haptics';
 import { Spinner } from './Loader';
+import { typography } from '../../theme';
 
 interface ButtonProps {
   title: string;
@@ -82,9 +83,15 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
 
   textBase: { fontWeight: '700', letterSpacing: 1 },
-  smText: { fontSize: 12 },
-  mdText: { fontSize: 14 },
-  lgText: { fontSize: 16 },
+  smText: {
+ fontSize: 12, fontFamily: typography.body,
+  },
+  mdText: {
+ fontSize: 14, fontFamily: typography.body,
+  },
+  lgText: {
+ fontSize: 16, fontFamily: typography.body,
+  },
 
   primaryText: { color: colors.white },
   secondaryText: { color: colors.rose },

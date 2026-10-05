@@ -14,7 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../../src/theme';
 import { swapService } from '../../../src/services/swapService';
@@ -300,7 +300,7 @@ export default function SwapDetailsScreen() {
           onPress={() => safeBack('/(tabs)/circular')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={20} color={colors.charcoal} />
+          <SolarIcon name="arrow-back" size={20} color={colors.charcoal} />
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.headerPre}>Exchange details</Text>
@@ -313,7 +313,7 @@ export default function SwapDetailsScreen() {
           onPress={handleMessagePartner}
           disabled={actionLoading}
         >
-          <Ionicons name="chatbubbles" size={18} color={colors.cream} />
+          <SolarIcon name="chatbubbles" size={18} color={colors.cream} />
         </TouchableOpacity>
       </View>
 
@@ -360,8 +360,8 @@ export default function SwapDetailsScreen() {
               <Spinner size="small" color={colors.cream} />
             ) : (
               <>
-                <Ionicons name="chatbubbles-outline" size={16} color={colors.cream} />
-                <Text style={styles.directChatBtnText}>
+                <SolarIcon name="chatbubbles-outline" size={16} color={colors.cream} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.directChatBtnText}>
                   MESSAGE {partner?.displayName?.toUpperCase() || 'PARTNER'}
                 </Text>
               </>
@@ -374,7 +374,7 @@ export default function SwapDetailsScreen() {
           <View style={styles.statusRow}>
             <Text style={styles.sectionLabel}>Transaction status</Text>
             <View style={[styles.statusTag, getStatusTagStyle(swap.status)]}>
-              <Text style={styles.statusTagText}>{swap.status}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.statusTagText}>{swap.status}</Text>
             </View>
           </View>
 
@@ -392,7 +392,7 @@ export default function SwapDetailsScreen() {
                     ]}
                   >
                     {status === 'completed' ? (
-                      <Ionicons name="checkmark" size={10} color={colors.cream} />
+                      <SolarIcon name="checkmark" size={10} color={colors.cream} />
                     ) : (
                       <Text
                         style={[
@@ -434,7 +434,7 @@ export default function SwapDetailsScreen() {
           {/* YOU GIVE CARD */}
           <View style={styles.garmentCard}>
             <View style={styles.cardBadgeGive}>
-              <Text style={styles.cardBadgeText}>You give</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.cardBadgeText}>You give</Text>
             </View>
             <TouchableOpacity
               style={styles.garmentImgWrap}
@@ -450,8 +450,8 @@ export default function SwapDetailsScreen() {
                 contentFit="cover"
               />
               <View style={styles.zoomPillSmall}>
-                <Ionicons name="scan-outline" size={11} color={colors.white} />
-                <Text style={styles.zoomPillSmallText}>Zoom</Text>
+                <SolarIcon name="scan-outline" size={11} color={colors.white} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.zoomPillSmallText}>Zoom</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity 
@@ -491,14 +491,14 @@ export default function SwapDetailsScreen() {
           {/* Center Swap Icon */}
           <View style={styles.exchangeDivider}>
             <View style={styles.exchangeIconCircle}>
-              <Ionicons name="repeat" size={18} color={colors.cream} />
+              <SolarIcon name="repeat" size={18} color={colors.cream} />
             </View>
           </View>
 
           {/* YOU RECEIVE CARD */}
           <View style={styles.garmentCard}>
             <View style={styles.cardBadgeReceive}>
-              <Text style={styles.cardBadgeText}>You receive</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.cardBadgeText}>You receive</Text>
             </View>
             <TouchableOpacity
               style={styles.garmentImgWrap}
@@ -514,8 +514,8 @@ export default function SwapDetailsScreen() {
                 contentFit="cover"
               />
               <View style={styles.zoomPillSmall}>
-                <Ionicons name="scan-outline" size={11} color={colors.white} />
-                <Text style={styles.zoomPillSmallText}>Zoom</Text>
+                <SolarIcon name="scan-outline" size={11} color={colors.white} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.zoomPillSmallText}>Zoom</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -572,7 +572,7 @@ export default function SwapDetailsScreen() {
         >
           <View style={styles.chatPartnerBannerLeft}>
             <View style={styles.chatIconWrap}>
-              <Ionicons name="chatbubbles" size={16} color={colors.cream} />
+              <SolarIcon name="chatbubbles" size={16} color={colors.cream} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.chatPartnerBannerTitle}>
@@ -583,14 +583,14 @@ export default function SwapDetailsScreen() {
               </Text>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.charcoal} />
+          <SolarIcon name="chevron-forward" size={18} color={colors.charcoal} />
         </TouchableOpacity>
 
         {/* Proposal Note */}
         {swap.message && (
           <View style={styles.messageBox}>
             <View style={styles.messageHeaderRow}>
-              <Ionicons name="chatbox-ellipses-outline" size={14} color={colors.charcoal} />
+              <SolarIcon name="chatbox-ellipses-outline" size={14} color={colors.charcoal} />
               <Text style={styles.messageLabel}>Proposal memo</Text>
             </View>
             <Text style={styles.messageText}>"{swap.message}"</Text>
@@ -610,7 +610,7 @@ export default function SwapDetailsScreen() {
           return (
             <View style={styles.evidenceSection}>
               <View style={styles.evidenceHeader}>
-                <Ionicons name="shield-checkmark-outline" size={14} color={colors.charcoal} />
+                <SolarIcon name="shield-checkmark-outline" size={14} color={colors.charcoal} />
                 <Text style={styles.sectionLabel}>Condition evidence photos</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
@@ -635,7 +635,7 @@ export default function SwapDetailsScreen() {
         {/* Escrow & Security Deposit Summary */}
         <View style={styles.escrowNoticeCard}>
           <View style={styles.escrowNoticeHeader}>
-            <Ionicons name="lock-closed" size={16} color={colors.goldDark} />
+            <SolarIcon name="lock-closed" size={16} color={colors.goldDark} />
             <Text style={styles.escrowNoticeTitle}>Security payment protection</Text>
           </View>
           <Text style={styles.escrowNoticeBody}>
@@ -648,7 +648,7 @@ export default function SwapDetailsScreen() {
         {swap.status === 'COMPLETED' && (
           <View style={styles.reviewCard}>
             <View style={styles.reviewHeader}>
-              <Ionicons name="star" size={18} color={colors.gold} />
+              <SolarIcon name="star" size={18} color={colors.gold} />
               <Text style={styles.reviewCardTitle}>Swap partner reputation</Text>
             </View>
 
@@ -656,7 +656,7 @@ export default function SwapDetailsScreen() {
               <View style={styles.reviewSubmittedBox}>
                 <View style={styles.starsRow}>
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Ionicons
+                    <SolarIcon
                       key={s}
                       name="star"
                       size={18}
@@ -683,7 +683,7 @@ export default function SwapDetailsScreen() {
                       onPress={() => setReviewRating(star)}
                       style={{ padding: 4 }}
                     >
-                      <Ionicons
+                      <SolarIcon
                         name={star <= reviewRating ? 'star' : 'star-outline'}
                         size={28}
                         color={colors.gold}
@@ -710,8 +710,8 @@ export default function SwapDetailsScreen() {
                     <Spinner size="small" color={colors.cream} />
                   ) : (
                     <>
-                      <Ionicons name="checkmark-circle" size={16} color={colors.cream} />
-                      <Text style={styles.submitReviewBtnText}>Submit review</Text>
+                      <SolarIcon name="checkmark-circle" size={16} color={colors.cream} />
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.submitReviewBtnText}>Submit review</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -731,8 +731,8 @@ export default function SwapDetailsScreen() {
               onPress={handleMessagePartner}
               disabled={actionLoading}
             >
-              <Ionicons name="chatbubbles-outline" size={15} color={colors.charcoal} />
-              <Text style={styles.secondaryBtnText}>Chat</Text>
+              <SolarIcon name="chatbubbles-outline" size={15} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.secondaryBtnText}>Chat</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -740,8 +740,8 @@ export default function SwapDetailsScreen() {
               onPress={() => handleRespond(false)}
               disabled={actionLoading}
             >
-              <Ionicons name="close" size={15} color={colors.red} />
-              <Text style={styles.declineBtnText}>Decline</Text>
+              <SolarIcon name="close" size={15} color={colors.red} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.declineBtnText}>Decline</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -753,8 +753,8 @@ export default function SwapDetailsScreen() {
                 <Spinner size="small" color={colors.cream} />
               ) : (
                 <>
-                  <Ionicons name="checkmark" size={15} color={colors.cream} />
-                  <Text style={styles.acceptBtnText}>Accept</Text>
+                  <SolarIcon name="checkmark" size={15} color={colors.cream} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.acceptBtnText}>Accept</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -769,16 +769,16 @@ export default function SwapDetailsScreen() {
               onPress={handleCancel}
               disabled={actionLoading}
             >
-              <Ionicons name="close-circle-outline" size={16} color={colors.textMuted} />
-              <Text style={styles.cancelBtnText}>Cancel request</Text>
+              <SolarIcon name="close-circle-outline" size={16} color={colors.textMuted} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.cancelBtnText}>Cancel request</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dockBtn, styles.primaryBtn]}
               onPress={handleMessagePartner}
               disabled={actionLoading}
             >
-              <Ionicons name="chatbubbles" size={16} color={colors.cream} />
-              <Text style={styles.primaryBtnText}>Message owner</Text>
+              <SolarIcon name="chatbubbles" size={16} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.primaryBtnText}>Message owner</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -790,15 +790,15 @@ export default function SwapDetailsScreen() {
               style={[styles.dockBtn, styles.secondaryBtn]}
               onPress={handleMessagePartner}
             >
-              <Ionicons name="chatbubbles-outline" size={16} color={colors.charcoal} />
-              <Text style={styles.secondaryBtnText}>Chat</Text>
+              <SolarIcon name="chatbubbles-outline" size={16} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.secondaryBtnText}>Chat</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dockBtn, styles.primaryBtn, { flex: 2 }]}
               onPress={() => router.push(`/(tabs)/swap/agreement?swapId=${swap.id}` as any)}
             >
-              <Ionicons name="document-text-outline" size={16} color={colors.cream} />
-              <Text style={styles.primaryBtnText}>Review & sign agreement</Text>
+              <SolarIcon name="document-text-outline" size={16} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.primaryBtnText}>Review & sign agreement</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -810,15 +810,15 @@ export default function SwapDetailsScreen() {
               style={[styles.dockBtn, styles.secondaryBtn]}
               onPress={() => router.push(`/(tabs)/swap/agreement?swapId=${swap.id}` as any)}
             >
-              <Ionicons name="document-text" size={14} color={colors.charcoal} />
-              <Text style={styles.secondaryBtnText}>Agreement</Text>
+              <SolarIcon name="document-text" size={14} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.secondaryBtnText}>Agreement</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dockBtn, styles.goldBtn, { flex: 2 }]}
               onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
             >
-              <Ionicons name="cube-outline" size={16} color={colors.cream} />
-              <Text style={styles.goldBtnText}>Pay deposit & ship</Text>
+              <SolarIcon name="cube-outline" size={16} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.goldBtnText}>Pay deposit & ship</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -830,8 +830,8 @@ export default function SwapDetailsScreen() {
               style={[styles.dockBtn, styles.secondaryBtn]}
               onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
             >
-              <Ionicons name="cube-outline" size={14} color={colors.charcoal} />
-              <Text style={styles.secondaryBtnText}>Tracking</Text>
+              <SolarIcon name="cube-outline" size={14} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.secondaryBtnText}>Tracking</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dockBtn, styles.forestBtn, { flex: 2 }]}
@@ -843,8 +843,8 @@ export default function SwapDetailsScreen() {
                 <Spinner color={colors.cream} size="small" />
               ) : (
                 <>
-                  <Ionicons name="checkmark-done-circle" size={16} color={colors.cream} />
-                  <Text style={styles.forestBtnText}>Confirm package received</Text>
+                  <SolarIcon name="checkmark-done-circle" size={16} color={colors.cream} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.forestBtnText}>Confirm package received</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -854,7 +854,7 @@ export default function SwapDetailsScreen() {
         {/* State 6: COMPLETED */}
         {swap.status === 'COMPLETED' && (
           <View style={styles.completedNotice}>
-            <Ionicons name="checkmark-circle" size={18} color={colors.forest} />
+            <SolarIcon name="checkmark-circle" size={18} color={colors.forest} />
             <Text style={styles.completedNoticeText}>Swap complete & deposits released</Text>
           </View>
         )}
@@ -874,11 +874,11 @@ export default function SwapDetailsScreen() {
             onPress={() => setSelectedPhoto(null)}
             hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           >
-            <Ionicons name="close" size={28} color={colors.white} />
+            <SolarIcon name="close" size={28} color={colors.white} />
           </TouchableOpacity>
 
           <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
-            <Ionicons name="scan-outline" size={13} color={colors.paperGlass} />
+            <SolarIcon name="scan-outline" size={13} color={colors.paperGlass} />
             <Text style={styles.zoomInstructionText}>Pinch to zoom</Text>
           </View>
 

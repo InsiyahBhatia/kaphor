@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { orderService, TransactionOrder } from '../../../src/services/orderService';
 import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
@@ -44,10 +44,10 @@ export default function OrderConfirmedScreen() {
         {/* Success Animation Area */}
         <View style={styles.successIconWrap}>
           <View style={styles.successCircle}>
-            <Ionicons name="checkmark-circle" size={72} color={colors.forest} />
+            <SolarIcon name="checkmark-circle" size={72} color={colors.forest} />
           </View>
           <View style={styles.successBadge}>
-            <Text style={styles.successBadgeText}>PAID</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.successBadgeText}>PAID</Text>
           </View>
         </View>
 
@@ -75,7 +75,7 @@ export default function OrderConfirmedScreen() {
 
           <View style={styles.timelineStep}>
             <View style={styles.timelineDot}>
-              <Ionicons name="chatbubble-ellipses" size={16} color={colors.cream} />
+              <SolarIcon name="chatbubble-ellipses" size={16} color={colors.cream} />
             </View>
             <View style={styles.timelineContent}>
               <Text style={styles.timelineTitle}>1. Coordinate with Seller</Text>
@@ -89,7 +89,7 @@ export default function OrderConfirmedScreen() {
 
           <View style={styles.timelineStep}>
             <View style={styles.timelineDot}>
-              <Ionicons name="cube" size={16} color={colors.cream} />
+              <SolarIcon name="cube" size={16} color={colors.cream} />
             </View>
             <View style={styles.timelineContent}>
               <Text style={styles.timelineTitle}>2. Item Shipped</Text>
@@ -103,7 +103,7 @@ export default function OrderConfirmedScreen() {
 
           <View style={styles.timelineStep}>
             <View style={styles.timelineDot}>
-              <Ionicons name="hand-left" size={16} color={colors.cream} />
+              <SolarIcon name="hand-left" size={16} color={colors.cream} />
             </View>
             <View style={styles.timelineContent}>
               <Text style={styles.timelineTitle}>3. Confirm Delivery</Text>
@@ -117,7 +117,7 @@ export default function OrderConfirmedScreen() {
         {/* Impact Stats */}
         <View style={styles.impactCard}>
           <View style={styles.impactHeader}>
-            <Ionicons name="leaf" size={18} color={colors.cream} />
+            <SolarIcon name="leaf" size={18} color={colors.cream} />
             <Text style={styles.impactTitle}>ENVIRONMENTAL IMPACT</Text>
           </View>
           <Text style={styles.impactText}>
@@ -134,21 +134,21 @@ export default function OrderConfirmedScreen() {
             style={styles.primaryBtn}
             onPress={() => router.replace(`/(tabs)/shop/orders/${orderId}`)}
           >
-            <Ionicons name="chatbubble-ellipses" size={18} color={colors.cream} />
-            <Text style={styles.primaryBtnText}>MESSAGE SELLER</Text>
+            <SolarIcon name="chatbubble-ellipses" size={18} color={colors.cream} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.primaryBtnText}>MESSAGE SELLER</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={styles.secondaryBtn}
           onPress={() => router.replace('/(tabs)/shop/orders')}
         >
-          <Text style={styles.secondaryBtnText}>VIEW ALL ORDERS</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.secondaryBtnText}>VIEW ALL ORDERS</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.homeBtn}
           onPress={() => router.replace('/(tabs)')}
         >
-          <Text style={styles.homeBtnText}>BACK TO HOME</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.homeBtnText}>BACK TO HOME</Text>
         </TouchableOpacity>
       </View>
     </View>

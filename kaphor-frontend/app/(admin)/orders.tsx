@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { adminService } from '../../src/services/adminService';
 import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
@@ -51,7 +51,7 @@ export default function AdminOrdersScreen() {
       <AdminTopBar title="ORDERS" subtitle={`${meta.total} TRANSACTIONS · PAGE ${meta.page}/${meta.pages}`} onRefresh={load} />
 
       <View style={styles.searchBar}>
-        <Ionicons name="search" size={16} color={colors.textMuted} />
+        <SolarIcon name="search" size={16} color={colors.textMuted} />
         <TextInput accessibilityLabel="Order id, buyer, seller, garment"
           style={styles.searchInput}
           placeholder="ORDER ID, BUYER, SELLER, GARMENT…"
@@ -64,7 +64,7 @@ export default function AdminOrdersScreen() {
         />
         {q !== '' && (
           <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Remove" onPress={() => setQ('')}>
-            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+            <SolarIcon name="close-circle" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -72,7 +72,7 @@ export default function AdminOrdersScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
         {STATUSES.map((s) => (
           <TouchableOpacity key={s} onPress={() => setStatus(s)} style={[styles.statusChip, status === s && styles.statusChipActive]}>
-            <Text style={[styles.statusChipText, status === s && styles.statusChipTextActive]}>{s}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.statusChipText, status === s && styles.statusChipTextActive]}>{s}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>

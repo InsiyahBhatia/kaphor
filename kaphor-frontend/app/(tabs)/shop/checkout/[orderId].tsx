@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { useRazorpay } from '@codearcade/expo-razorpay';
 import api, { invalidateCache } from '../../../../src/services/api';
 import { useAuth } from '../../../../src/context/AuthContext';
@@ -54,7 +54,7 @@ interface PaymentMethodOption {
   title: string;
   subtitle: string;
   badge: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof SolarIcon.glyphMap;
 }
 
 const PAYMENT_METHODS: PaymentMethodOption[] = [
@@ -283,14 +283,14 @@ invalidateCache('/garments');
       <View style={styles.container}>
         <Header title="CHECKOUT" showBack fallbackPath="/(tabs)/shop" />
         <View style={styles.center}>
-          <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
+          <SolarIcon name="alert-circle-outline" size={48} color={colors.textMuted} />
           <Text style={styles.emptyText}>Order not found</Text>
           <TouchableOpacity 
             style={styles.backBtn} 
             onPress={() => safeBack('/(tabs)/shop')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Text style={styles.backBtnText}>GO BACK</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.backBtnText}>GO BACK</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -314,14 +314,14 @@ invalidateCache('/garments');
       <View style={styles.progressBar}>
         <View style={styles.step}>
           <View style={[styles.stepCircle, styles.stepDone]}>
-            <Ionicons name="checkmark" size={14} color={colors.cream} />
+            <SolarIcon name="checkmark" size={14} color={colors.cream} />
           </View>
           <Text style={[styles.stepLabel, styles.stepLabelDone]}>REQUEST</Text>
         </View>
         <View style={[styles.progressLine, styles.progressLineDone]} />
         <View style={styles.step}>
           <View style={[styles.stepCircle, styles.stepDone]}>
-            <Ionicons name="checkmark" size={14} color={colors.cream} />
+            <SolarIcon name="checkmark" size={14} color={colors.cream} />
           </View>
           <Text style={[styles.stepLabel, styles.stepLabelDone]}>DELIVERY</Text>
         </View>
@@ -354,7 +354,7 @@ invalidateCache('/garments');
           <View style={styles.addressCard}>
             <View style={styles.addressHeader}>
               <View style={styles.addressIconBox}>
-                <Ionicons name="location-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="location-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={{ flex: 1 }}>
                 <View style={styles.addressNameRow}>
@@ -363,7 +363,7 @@ invalidateCache('/garments');
                   </Text>
                   {selectedAddress?.isDefault && (
                     <View style={styles.defaultBadge}>
-                      <Text style={styles.defaultBadgeText}>DEFAULT</Text>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.defaultBadgeText}>DEFAULT</Text>
                     </View>
                   )}
                 </View>
@@ -420,7 +420,7 @@ invalidateCache('/garments');
             {/* Free Delivery Progress Bar */}
             <View style={styles.deliveryProgressContainer}>
               <View style={styles.deliveryProgressHeader}>
-                <Ionicons
+                <SolarIcon
                   name={deliveryCharge === 0 ? "gift" : "car-outline"}
                   size={15}
                   color={deliveryCharge === 0 ? colors.forest : colors.charcoal}
@@ -499,7 +499,7 @@ invalidateCache('/garments');
                       {isSelected && <View style={styles.radioDot} />}
                     </View>
                     <View style={[styles.methodIconBox, isSelected && styles.methodIconBoxActive]}>
-                      <Ionicons
+                      <SolarIcon
                         name={item.icon}
                         size={18}
                         color={isSelected ? colors.cream : colors.charcoal}
@@ -521,7 +521,7 @@ invalidateCache('/garments');
                             isSelected && styles.methodBadgeActive,
                           ]}
                         >
-                          <Text
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                             style={[
                               styles.methodBadgeText,
                               isSelected && styles.methodBadgeTextActive,
@@ -541,8 +541,8 @@ invalidateCache('/garments');
             })}
 
             <View style={styles.securityBadge}>
-              <Ionicons name="shield-checkmark" size={14} color={colors.forest} />
-              <Text style={styles.securityBadgeText}>
+              <SolarIcon name="shield-checkmark" size={14} color={colors.forest} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.securityBadgeText}>
                 Razorpay 256-bit SSL Encrypted • PCI-DSS Level 1 Certified
               </Text>
             </View>
@@ -552,7 +552,7 @@ invalidateCache('/garments');
         {/* Impact Note */}
         <View style={styles.impactCard}>
           <View style={styles.impactIconCol}>
-            <Ionicons name="leaf" size={20} color={colors.cream} />
+            <SolarIcon name="leaf" size={20} color={colors.cream} />
           </View>
           <View style={styles.impactBody}>
             <Text style={styles.impactTitle}>CARBON-NEUTRAL DELIVERY</Text>
@@ -574,7 +574,7 @@ invalidateCache('/garments');
                 onPress={() => setShowAddressPicker(false)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="close" size={22} color={colors.charcoal} />
+                <SolarIcon name="close" size={22} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 300 }}>
@@ -593,7 +593,7 @@ invalidateCache('/garments');
                       <Text style={styles.addressOptionName}>{addr.name}</Text>
                       {addr.isDefault && (
                         <View style={styles.defaultBadge}>
-                          <Text style={styles.defaultBadgeText}>DEFAULT</Text>
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.defaultBadgeText}>DEFAULT</Text>
                         </View>
                       )}
                     </View>
@@ -614,7 +614,7 @@ invalidateCache('/garments');
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
         <View style={styles.disclaimerBar}>
-          <Ionicons name="shield-checkmark" size={12} color={colors.textMuted} />
+          <SolarIcon name="shield-checkmark" size={12} color={colors.textMuted} />
           <Text style={styles.disclaimerBarText}>
             Direct P2P Purchase: Kaphor acts strictly as an electronic intermediary under Sec. 79 of IT Act, 2000 and is not responsible for seller representations, authenticity, or peer transactions.
           </Text>
@@ -635,10 +635,10 @@ invalidateCache('/garments');
             <Spinner color={colors.cream} size="small" />
           ) : (
             <>
-              <Text style={styles.payButtonText}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.payButtonText}>
                 PAY VIA {selectedMethod.toUpperCase()}
               </Text>
-              <Ionicons name="lock-closed" size={16} color={colors.cream} />
+              <SolarIcon name="lock-closed" size={16} color={colors.cream} />
             </>
           )}
         </TouchableOpacity>
@@ -833,6 +833,7 @@ const styles = StyleSheet.create({
   priceFree: {
     color: colors.forest,
     fontSize: 12,
+      fontFamily: typography.body,
   },
   freeDeliveryNote: {
     flexDirection: 'row',

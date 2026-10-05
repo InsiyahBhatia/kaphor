@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
+  Platform,
   Pressable,
   TouchableOpacity,
   Alert,
@@ -11,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../components/common/SolarIcon';
 import { userService } from '../../services/userService';
 import { garmentService } from '../../services/garmentService';
 import { KaphorImage } from '../../components/KaphorImage';
@@ -68,17 +69,17 @@ const ListingCard = React.memo(function ListingCard({ item, onInsights, onManage
         activeOpacity={0.7}
       >
         <View style={styles.telemetryItem}>
-          <Ionicons name="eye-outline" size={12} color={colors.gold} />
+          <SolarIcon name="eye-outline" size={12} color={colors.gold} />
           <Text style={styles.telemetryText}>{item.insights?.views ?? item.viewCount ?? 0} views</Text>
         </View>
         <View style={styles.telemetryDivider} />
         <View style={styles.telemetryItem}>
-          <Ionicons name="heart-outline" size={12} color={colors.crimson} />
+          <SolarIcon name="heart-outline" size={12} color={colors.crimson} />
           <Text style={styles.telemetryText}>{item.insights?.saves ?? 0} saves</Text>
         </View>
         <View style={styles.telemetryDivider} />
         <View style={styles.telemetryAction}>
-          <Ionicons name="analytics-outline" size={12} color={colors.gold} />
+          <SolarIcon name="analytics-outline" size={12} color={colors.gold} />
           <Text style={styles.telemetryActionText}>INSIGHTS ›</Text>
         </View>
       </TouchableOpacity>
@@ -92,8 +93,8 @@ const ListingCard = React.memo(function ListingCard({ item, onInsights, onManage
             onInsights(item.id);
           }}
         >
-          <Ionicons name="stats-chart-outline" size={14} color={colors.gold} />
-          <Text style={[styles.actionBtnText, { color: colors.gold }]}>INSIGHTS</Text>
+          <SolarIcon name="stats-chart-outline" size={14} color={colors.gold} />
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.gold }]}>INSIGHTS</Text>
         </TouchableOpacity>
 
         <View style={styles.divider} />
@@ -102,8 +103,8 @@ const ListingCard = React.memo(function ListingCard({ item, onInsights, onManage
           style={styles.actionBtn}
           onPress={() => onOpen(item.id)}
         >
-          <Ionicons name="eye-outline" size={14} color={colors.textSecond} />
-          <Text style={styles.actionBtnText}>VIEW</Text>
+          <SolarIcon name="eye-outline" size={14} color={colors.textSecond} />
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>VIEW</Text>
         </TouchableOpacity>
 
         <View style={styles.divider} />
@@ -112,8 +113,8 @@ const ListingCard = React.memo(function ListingCard({ item, onInsights, onManage
           style={[styles.actionBtn, styles.editBtn]}
           onPress={() => onEdit(item.id)}
         >
-          <Ionicons name="create-outline" size={14} color={colors.textSecond} />
-          <Text style={styles.actionBtnText}>EDIT</Text>
+          <SolarIcon name="create-outline" size={14} color={colors.textSecond} />
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>EDIT</Text>
         </TouchableOpacity>
 
         <View style={styles.divider} />
@@ -122,12 +123,12 @@ const ListingCard = React.memo(function ListingCard({ item, onInsights, onManage
           style={styles.actionBtn}
           onPress={() => onManage(item)}
         >
-          <Ionicons
+          <SolarIcon
             name={item.isActive ? 'options-outline' : 'pause-circle-outline'}
             size={14}
             color={item.isActive ? colors.charcoal : colors.orange}
           />
-          <Text
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
             style={[
               styles.actionBtnText,
               { color: item.isActive ? colors.charcoal : colors.orange },
@@ -141,6 +142,7 @@ const ListingCard = React.memo(function ListingCard({ item, onInsights, onManage
   );
 });
 
+const listingKey = (item: any) => item.id;
 let cachedListings: any[] | null = null;
 
 export function MyListingsScreen() {
@@ -164,10 +166,6 @@ export function MyListingsScreen() {
       setRefreshing(false);
     }
   }, []);
-
-  useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
 
   useFocusEffect(
     useCallback(() => {
@@ -230,7 +228,7 @@ export function MyListingsScreen() {
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          <SolarIcon name="arrow-back" size={24} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>MY LISTINGS</Text>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add"
@@ -238,7 +236,7 @@ export function MyListingsScreen() {
           onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { fresh: Date.now().toString() } } as any)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="add" size={24} color={colors.gold} />
+          <SolarIcon name="add" size={24} color={colors.gold} />
         </TouchableOpacity>
       </View>
 
@@ -246,7 +244,7 @@ export function MyListingsScreen() {
         <Loader variant="default" />
       ) : listings.length === 0 ? (
         <View style={styles.center}>
-          <Ionicons name="pricetag-outline" size={54} color={colors.textMuted} />
+          <SolarIcon name="pricetag-outline" size={54} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>No Garments Listed Yet</Text>
           <Text style={styles.emptyText}>
             List clothes or ethnic wear to sell, rent or swap.
@@ -255,19 +253,19 @@ export function MyListingsScreen() {
             style={styles.listNowBtn}
             onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { fresh: Date.now().toString() } } as any)}
           >
-            <Ionicons name="add-circle-outline" size={18} color={colors.bg} />
+            <SolarIcon name="add-circle-outline" size={18} color={colors.bg} />
             <Text style={styles.listNowText}>LIST A GARMENT</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={listings}
-          keyExtractor={(item) => item.id}
+          keyExtractor={listingKey}
           renderItem={renderItem}
           initialNumToRender={6}
           maxToRenderPerBatch={6}
           windowSize={7}
-          removeClippedSubviews
+          removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={

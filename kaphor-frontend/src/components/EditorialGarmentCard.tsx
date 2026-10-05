@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { KaphorImage } from './KaphorImage';
 import { EditorialIcon, IllustrationLayer } from './editorial/IllustrationLayer';
@@ -39,6 +39,20 @@ function EditorialGarmentCardImpl({
   imageAspectRatio = 0.85,
 }: EditorialGarmentCardProps) {
   const [isLiked, setIsLiked] = useState<boolean>(Boolean(item.isLiked));
+  // Keep the latest handlers in refs so the memo comparer can ignore inline closures
+  const onPressRef = useRef(onPress);
+  const onBuyRef = useRef(onBuyRequest);
+  onPressRef.current = onPress;
+  onBuyRef.current = onBuyRequest;
+  const handlePress = useCallback(() => onPressRef.current?.(), []);
+  const handleBuy = useCallback((e: any) => {
+    e.stopPropagation();
+    hapticFeedback.light();
+    onBuyRef.current?.();
+  }, []);
+  useEffect(() => {
+    setIsLiked(Boolean(item.isLiked));
+  }, [item.isLiked]);
   const price = item.price ? Math.round(item.price) : 0;
   const rawOriginal = item.originalPrice ? Math.round(Number(item.originalPrice)) : (item.costPrice ? Math.round(Number(item.costPrice)) : 0);
   const estimatedOriginal = rawOriginal > price
@@ -67,7 +81,7 @@ function EditorialGarmentCardImpl({
   return (
     <TouchableOpacity
       style={[styles.garmentCard, style]}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.9}
     >
       <View style={[styles.garmentImageWrap, { aspectRatio: imageAspectRatio }]}>
@@ -82,7 +96,7 @@ function EditorialGarmentCardImpl({
         />
 
         <View style={styles.conditionPill}>
-          <Text style={styles.conditionPillText}>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.conditionPillText}>
             {item.condition ? item.condition.replace('_', ' ').toUpperCase() : 'PRISTINE'}
           </Text>
         </View>
@@ -94,7 +108,7 @@ function EditorialGarmentCardImpl({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.8}
         >
-          <EditorialIcon name={isLiked ? 'heartFilled' : 'heart'} size={22} />
+          <EditorialIcon name={isLiked ? 'heartFilled' : 'heart'} size={18} tintColor={isLiked ? colors.red : colors.ink} />
         </TouchableOpacity>
       </View>
 
@@ -117,7 +131,7 @@ function EditorialGarmentCardImpl({
               <Text style={styles.garmentPrice}>₹{formatCurrency(price)}</Text>
               {discountPercent > 0 && (
                 <View style={styles.discountBadge}>
-                  <Text style={styles.discountBadgeText}>-{discountPercent}%</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.discountBadgeText}>-{discountPercent}%</Text>
                 </View>
               )}
             </View>
@@ -131,11 +145,7 @@ function EditorialGarmentCardImpl({
           {onBuyRequest && (
             <TouchableOpacity
               style={styles.quickBuyBtn}
-              onPress={(e) => {
-                e.stopPropagation();
-                hapticFeedback.light();
-                onBuyRequest();
-              }}
+              onPress={handleBuy}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <EditorialIcon name="bag" size={22} />
@@ -147,7 +157,24 @@ function EditorialGarmentCardImpl({
   );
 }
 
-export const EditorialGarmentCard = React.memo(EditorialGarmentCardImpl);
+function areEqual(prev: EditorialGarmentCardProps, next: EditorialGarmentCardProps): boolean {
+  const a = prev.item;
+  const b = next.item;
+  return (
+    a.id === b.id &&
+    a.updatedAt === b.updatedAt &&
+    Boolean(a.isLiked) === Boolean(b.isLiked) &&
+    a.price === b.price &&
+    a.title === b.title &&
+    a.condition === b.condition &&
+    a.images?.[0] === b.images?.[0] &&
+    Boolean(prev.onBuyRequest) === Boolean(next.onBuyRequest) &&
+    prev.style === next.style &&
+    prev.imageAspectRatio === next.imageAspectRatio
+  );
+}
+
+export const EditorialGarmentCard = React.memo(EditorialGarmentCardImpl, areEqual);
 
 const styles = StyleSheet.create({
   garmentCard: {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { promptPhotoSelection } from '../../../src/utils/imagePicker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -123,7 +123,7 @@ export default function UpcycleSuggestionsScreen() {
           onPress={() => safeBack('/(tabs)/studio')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.cream} />
+          <SolarIcon name="chevron-back" size={28} color={colors.cream} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Upcycle studio</Text>
         <View style={{ width: 28 }} />
@@ -151,7 +151,7 @@ export default function UpcycleSuggestionsScreen() {
             <View style={styles.heroSection}>
               <IllustrationLayer variant="upcycle" muted />
               <View style={styles.atelierIcon}>
-                <Ionicons name="cut-outline" size={30} color={colors.goldDark} />
+                <SolarIcon name="cut-outline" size={30} color={colors.goldDark} />
               </View>
               <Text style={styles.title}>AI Upcycle Ideas</Text>
               <Text style={styles.subtitle}>Upload a photo or describe a garment and our AI will suggest creative ways to transform it.</Text>
@@ -159,7 +159,7 @@ export default function UpcycleSuggestionsScreen() {
                 {['OLD GARMENT', 'CUT', 'REWORK', 'New piece'].map((step, index) => (
                   <React.Fragment key={step}>
                     <Text style={styles.processStep}>{step}</Text>
-                    {index < 3 && <Ionicons name="arrow-forward" size={13} color={colors.textMuted} />}
+                    {index < 3 && <SolarIcon name="arrow-forward" size={13} color={colors.textMuted} />}
                   </React.Fragment>
                 ))}
               </View>
@@ -171,7 +171,7 @@ export default function UpcycleSuggestionsScreen() {
               ) : (
                 <View style={styles.imagePlaceholder}>
                   <View style={styles.cameraCircle}>
-                    <Ionicons name="camera" size={28} color={colors.goldDark} />
+                    <SolarIcon name="camera" size={28} color={colors.goldDark} />
                   </View>
                   <Text style={styles.imageText}>Take or upload photo</Text>
                   <Text style={styles.imageSubtext}>Camera or gallery (unlocks AI vision)</Text>
@@ -180,8 +180,8 @@ export default function UpcycleSuggestionsScreen() {
             </TouchableOpacity>
             {image && (
               <TouchableOpacity onPress={() => setImage(null)} style={styles.removeBtn}>
-                <Ionicons name="close-circle" size={16} color={colors.error} />
-                <Text style={styles.removeBtnText}>Remove Photo</Text>
+                <SolarIcon name="close-circle" size={16} color={colors.error} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.removeBtnText}>Remove Photo</Text>
               </TouchableOpacity>
             )}
 
@@ -202,12 +202,12 @@ export default function UpcycleSuggestionsScreen() {
               {loading ? (
                 <View style={styles.loadingRow}>
                   <Spinner color={colors.goldDark} />
-                  <Text style={styles.mainBtnText}>  {image ? 'Analyzing image...' : 'Getting ideas...'}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainBtnText}>  {image ? 'Analyzing image...' : 'Getting ideas...'}</Text>
                 </View>
               ) : (
                 <View style={styles.loadingRow}>
-                  <Ionicons name="sparkles" size={18} color={colors.goldDark} />
-                  <Text style={styles.mainBtnText}>  GET AI SUGGESTIONS</Text>
+                  <SolarIcon name="sparkles" size={18} color={colors.goldDark} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainBtnText}>  GET AI SUGGESTIONS</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -215,7 +215,7 @@ export default function UpcycleSuggestionsScreen() {
             {/* ── YouTube Upcycling Masterclass Tutorials ───────────────────────────── */}
             <View style={{ marginTop: 32, marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <Ionicons name="logo-youtube" size={20} color={colors.error} />
+                <SolarIcon name="logo-youtube" size={20} color={colors.error} />
                 <Text style={{ fontFamily: typography.headings, fontSize: 18, color: colors.charcoal, letterSpacing: 1.5 }}>
                   Upcycling video tutorials
                 </Text>
@@ -250,7 +250,7 @@ export default function UpcycleSuggestionsScreen() {
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}>
-                        <Ionicons name="play-circle" size={36} color={colors.paperGlass} />
+                        <SolarIcon name="play-circle" size={36} color={colors.paperGlass} />
                       </View>
                       <View style={{
                         position: 'absolute',
@@ -303,7 +303,7 @@ export default function UpcycleSuggestionsScreen() {
                   )}
                   {!!s.impact && (
                     <View style={styles.impactRow}>
-                      <Ionicons name="leaf" size={14} color={colors.success} />
+                      <SolarIcon name="leaf" size={14} color={colors.success} />
                       <Text style={styles.impactText}>{s.impact}</Text>
                     </View>
                   )}
@@ -311,7 +311,7 @@ export default function UpcycleSuggestionsScreen() {
               ))}
             </View>
             <TouchableOpacity style={styles.secondaryBtn} onPress={() => { setResult(null); setDescription(''); setImage(null); }}>
-              <Text style={styles.secondaryBtnText}>Try another garment</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.secondaryBtnText}>Try another garment</Text>
             </TouchableOpacity>
           </>
         )}
@@ -329,35 +329,63 @@ const styles = StyleSheet.create({
   heroSection: { alignItems: 'center', marginBottom: 28, position: 'relative', overflow: 'hidden', borderWidth: 1.5, borderColor: colors.borderLight, backgroundColor: colors.paperLight, padding: 20 },
   atelierIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.goldLight, justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: colors.goldLight },
   title: { fontSize: 26, fontFamily: typography.headings, color: colors.charcoal, marginTop: 4, marginBottom: 8 },
-  subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 22, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4 },
+  subtitle: {
+ color: colors.textMuted, fontSize: 14, lineHeight: 22, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4, fontFamily: typography.body,
+  },
   processRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 16 },
   processStep: { fontFamily: typography.handwritten, fontSize: 14, color: colors.charcoal, backgroundColor: colors.cream, borderWidth: 1, borderColor: colors.borderLight, paddingHorizontal: 7, paddingVertical: 4, includeFontPadding: false, },
   imageArea: { width: '100%', height: 200, borderWidth: 1.5, borderColor: colors.charcoal, borderStyle: 'dashed', borderRadius: 8, overflow: 'hidden', marginBottom: 12, backgroundColor: colors.paperLight },
   previewImage: { width: '100%', height: '100%' },
   imagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   cameraCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.goldLight, justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: colors.goldLight },
-  imageText: { color: colors.goldDark, fontSize: 12, fontWeight: '700', letterSpacing: 2 },
-  imageSubtext: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+  imageText: {
+ color: colors.goldDark, fontSize: 12, fontWeight: '700', letterSpacing: 2, fontFamily: typography.bodyBold,
+  },
+  imageSubtext: {
+ color: colors.textMuted, fontSize: 11, marginTop: 4, fontFamily: typography.body,
+  },
   removeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', marginBottom: 16 },
-  removeBtnText: { color: colors.error, fontSize: 12 },
-  input: { borderWidth: 1.5, borderColor: colors.charcoal, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, color: colors.charcoal, backgroundColor: colors.paperLight, fontSize: 14, minHeight: 80, textAlignVertical: 'top', marginBottom: 24 },
+  removeBtnText: {
+ color: colors.error, fontSize: 12, fontFamily: typography.body,
+  },
+  input: {
+ borderWidth: 1.5, borderColor: colors.charcoal, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, color: colors.charcoal, backgroundColor: colors.paperLight, fontSize: 14, minHeight: 80, textAlignVertical: 'top', marginBottom: 24, fontFamily: typography.body,
+  },
   mainBtn: { width: '100%', height: 56, backgroundColor: colors.gold, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: colors.charcoal },
-  mainBtnText: { color: colors.goldDark, fontSize: 15, fontWeight: '800', letterSpacing: 1 },
+  mainBtnText: {
+ color: colors.goldDark, fontSize: 15, fontWeight: '800', letterSpacing: 1, fontFamily: typography.bodyBold,
+  },
   loadingRow: { flexDirection: 'row', alignItems: 'center' },
   suggestionsContainer: { gap: 16, marginBottom: 24, marginTop: 16 },
   suggestionCard: { backgroundColor: colors.paperLight, borderRadius: 8, padding: 20, borderLeftWidth: 3, borderLeftColor: colors.gold, borderWidth: 1, borderColor: colors.borderLight },
   suggestionHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
   numberBadge: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.gold, justifyContent: 'center', alignItems: 'center' },
-  numberText: { color: colors.goldDark, fontSize: 14, fontWeight: '800' },
-  suggestionTitle: { color: colors.charcoal, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  numberText: {
+ color: colors.goldDark, fontSize: 14, fontWeight: '800', fontFamily: typography.bodyBold,
+  },
+  suggestionTitle: {
+ color: colors.charcoal, fontSize: 16, fontWeight: '700', marginBottom: 4, fontFamily: typography.bodyBold,
+  },
   metaRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   diffBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.goldLight, borderWidth: 1, borderColor: colors.goldLight },
-  diffText: { color: colors.goldDark, fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  timeText: { color: colors.textMuted, fontSize: 12 },
-  suggestionText: { color: colors.textSecond, fontSize: 14, lineHeight: 22, marginBottom: 10 },
-  materialsText: { color: colors.textMuted, fontSize: 12, marginBottom: 8 },
+  diffText: {
+ color: colors.goldDark, fontSize: 10, fontWeight: '700', letterSpacing: 1, fontFamily: typography.bodyBold,
+  },
+  timeText: {
+ color: colors.textMuted, fontSize: 12, fontFamily: typography.body,
+  },
+  suggestionText: {
+ color: colors.textSecond, fontSize: 14, lineHeight: 22, marginBottom: 10, fontFamily: typography.body,
+  },
+  materialsText: {
+ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontFamily: typography.body,
+  },
   impactRow: { flexDirection: 'row', gap: 6, alignItems: 'center', paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.overlayLight },
-  impactText: { color: colors.success, fontSize: 12, flex: 1 },
+  impactText: {
+ color: colors.success, fontSize: 12, flex: 1, fontFamily: typography.body,
+  },
   secondaryBtn: { width: '100%', height: 56, borderWidth: 1.5, borderColor: colors.charcoal, borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.paperLight },
-  secondaryBtnText: { color: colors.charcoal, fontSize: 14, fontWeight: '700', letterSpacing: 2 },
+  secondaryBtnText: {
+ color: colors.charcoal, fontSize: 14, fontWeight: '700', letterSpacing: 2, fontFamily: typography.bodyBold,
+  },
 });

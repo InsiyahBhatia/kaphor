@@ -11,7 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { GoogleLogo } from '../../src/components/common/GoogleLogo';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
@@ -136,7 +137,7 @@ export default function RegisterScreen() {
             onPress={() => safeBack('/(auth)/welcome')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="chevron-back" size={26} color={colors.ink} />
+            <SolarIcon name="chevron-back" size={26} color={colors.ink} />
           </TouchableOpacity>
 
           <View style={styles.brandRow}>
@@ -224,7 +225,7 @@ export default function RegisterScreen() {
               activeOpacity={0.7}
             >
               <View style={[styles.checkboxBox, agreeToTerms && styles.checkboxBoxActive]}>
-                {agreeToTerms && <Ionicons name="checkmark" size={13} color={colors.white} />}
+                {agreeToTerms && <SolarIcon name="checkmark" size={13} color={colors.white} />}
               </View>
             </TouchableOpacity>
             <View style={styles.termsTextWrap}>
@@ -256,7 +257,7 @@ export default function RegisterScreen() {
             {isLoading ? (
               <Spinner color={colors.white} />
             ) : (
-              <Text style={styles.buttonText}>Create Account</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.buttonText}>Create Account</Text>
             )}
           </TouchableOpacity>
 
@@ -277,8 +278,8 @@ export default function RegisterScreen() {
               <Spinner color={colors.ink} />
             ) : (
               <>
-                <Ionicons name="logo-google" size={18} color={colors.ink} />
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
+                <GoogleLogo size={18} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.googleButtonText}>Continue with Google</Text>
               </>
             )}
           </TouchableOpacity>

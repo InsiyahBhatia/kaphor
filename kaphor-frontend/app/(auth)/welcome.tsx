@@ -50,7 +50,7 @@ export default function WelcomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="Get started"
         >
-          <Text style={styles.buttonText}>Get started</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.buttonText}>Get started</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -59,7 +59,7 @@ export default function WelcomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="I already have an account"
         >
-          <Text style={styles.secondaryButtonText}>I already have an account</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.secondaryButtonText}>I already have an account</Text>
         </TouchableOpacity>
 
         <Text style={styles.legalNoticeText}>

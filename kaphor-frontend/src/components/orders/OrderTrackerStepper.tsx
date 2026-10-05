@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../common/SolarIcon';
 import { colors, typography } from '../../theme';
 
 export interface StepItem {
@@ -28,7 +28,7 @@ export function OrderTrackerStepper({ type, status, style }: OrderTrackerStepper
     if (isCancelled) {
       return (
         <View style={[styles.cancelledContainer, style]}>
-          <Ionicons name="close-circle" size={16} color={colors.red} />
+          <SolarIcon name="close-circle" size={16} color={colors.red} />
           <Text style={styles.cancelledText}>TRANSACTION {status}</Text>
         </View>
       );
@@ -86,7 +86,7 @@ export function OrderTrackerStepper({ type, status, style }: OrderTrackerStepper
                 ]}
               >
                 {isDone && !isCurrent ? (
-                  <Ionicons name="checkmark" size={11} color={colors.cream} />
+                  <SolarIcon name="checkmark" size={11} color={colors.cream} />
                 ) : (
                   <View
                     style={[

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { adminService } from '../../src/services/adminService';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors, typography } from '../../src/theme';
@@ -96,7 +96,7 @@ export default function AdminUsersScreen() {
     <View style={styles.container}>
       <AdminTopBar title="USERS" subtitle={`${meta.total} ACCOUNTS`} onRefresh={load} />
       <View style={styles.searchBar}>
-        <Ionicons name="search" size={16} color={colors.textMuted} />
+        <SolarIcon name="search" size={16} color={colors.textMuted} />
         <TextInput accessibilityLabel="Name, email, username"
           style={styles.searchInput}
           placeholder="NAME, EMAIL, USERNAME…"
@@ -109,7 +109,7 @@ export default function AdminUsersScreen() {
         />
         {q !== '' && (
           <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Remove" onPress={() => setQ('')}>
-            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+            <SolarIcon name="close-circle" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -153,14 +153,14 @@ export default function AdminUsersScreen() {
                   onPress={() => toggleBlock(u)}
                   disabled={busyId === `b-${u.id}`}
                 >
-                  <Ionicons name={u.isActive ? 'lock-closed' : 'lock-open'} size={14} color={colors.white} />
+                  <SolarIcon name={u.isActive ? 'lock-closed' : 'lock-open'} size={14} color={colors.white} />
                 </TouchableOpacity>
                 <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Refresh"
                   style={[styles.iconBtn, { backgroundColor: colors.charcoal }]}
                   onPress={() => cycleTier(u)}
                   disabled={busyId === `t-${u.id}`}
                 >
-                  <Ionicons name="refresh" size={14} color={u.tier === 'ELITE' ? colors.gold : colors.white} />
+                  <SolarIcon name="refresh" size={14} color={u.tier === 'ELITE' ? colors.gold : colors.white} />
                 </TouchableOpacity>
                 {me?.id !== u.id && (
                   <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Delete"
@@ -168,7 +168,7 @@ export default function AdminUsersScreen() {
                     onPress={() => removeUser(u)}
                     disabled={busyId === `d-${u.id}`}
                   >
-                    <Ionicons name="trash-outline" size={14} color={colors.white} />
+                    <SolarIcon name="trash-outline" size={14} color={colors.white} />
                   </TouchableOpacity>
                 )}
               </View>

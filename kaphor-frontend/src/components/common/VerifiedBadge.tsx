@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from './SolarIcon';
 import { colors, typography } from '../../theme';
 
 interface VerifiedBadgeProps {
@@ -35,7 +35,7 @@ export function VerifiedBadge({
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Ionicons name="shield-checkmark" size={14} color={colors.gold} />
+        <SolarIcon name="shield-checkmark" size={14} color={colors.gold} />
       </TouchableOpacity>
     );
   }
@@ -49,9 +49,9 @@ export function VerifiedBadge({
       ]}
       activeOpacity={0.8}
     >
-      <Ionicons name="shield-checkmark" size={size === 'large' ? 14 : 12} color={colors.gold} />
+      <SolarIcon name="shield-checkmark" size={size === 'large' ? 14 : 12} color={colors.gold} />
       {showLabel && (
-        <Text style={[styles.badgeText, size === 'large' && styles.badgeTextLarge]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.badgeText, size === 'large' && styles.badgeTextLarge]}>
           {displayLabel}
         </Text>
       )}
@@ -88,5 +88,6 @@ const styles = StyleSheet.create({
   },
   badgeTextLarge: {
     fontSize: 11.5,
+      fontFamily: typography.body,
   },
 });

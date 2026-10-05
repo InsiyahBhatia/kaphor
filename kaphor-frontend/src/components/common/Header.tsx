@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from './SolarIcon';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../theme';
@@ -67,7 +67,7 @@ export function Header({
             style={styles.iconBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+            <SolarIcon name="arrow-back" size={24} color={colors.textPrimary} />
           </Pressable>
         ) : (
           <Pressable accessibilityRole="button" accessibilityLabel="Add" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} 
@@ -89,7 +89,7 @@ export function Header({
             } as any)} 
             style={styles.iconBtn}
           >
-            <Ionicons name="add-outline" size={28} color={colors.textPrimary} />
+            <SolarIcon name="add-outline" size={28} color={colors.textPrimary} />
           </Pressable>
         )}
       </View>
@@ -106,9 +106,9 @@ export function Header({
         </Pressable>
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={styles.title}>{title}</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.title}>{title}</Text>
           {!!subtitle && (
-            <Text style={styles.subtitle}>{subtitle}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.subtitle}>{subtitle}</Text>
           )}
         </View>
       )}
@@ -124,7 +124,7 @@ export function Header({
               <EditorialIcon name="bell" size={23} />
               {notifUnread > 0 && (
                 <View style={[styles.badge, styles.notifBadge]}>
-                  <Text style={styles.badgeText}>{notifUnread > 9 ? '9+' : notifUnread}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeText}>{notifUnread > 9 ? '9+' : notifUnread}</Text>
                 </View>
               )}
             </Pressable>
@@ -137,7 +137,7 @@ export function Header({
               <EditorialIcon name="mail" size={28} />
               {activeMessageUnread > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{activeMessageUnread > 9 ? '9+' : activeMessageUnread}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeText}>{activeMessageUnread > 9 ? '9+' : activeMessageUnread}</Text>
                 </View>
               )}
             </Pressable>

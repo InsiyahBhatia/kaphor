@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
@@ -45,7 +45,7 @@ export default function BespokeScreen() {
           onPress={() => safeBack('/(tabs)/circular')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back-sharp" size={28} color={colors.charcoal} />
+          <SolarIcon name="chevron-back-sharp" size={28} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Custom consultation</Text>
         <View style={{ width: 28 }} />
@@ -66,12 +66,12 @@ export default function BespokeScreen() {
 
         <View style={styles.infoCards}>
           <View style={styles.infoCard}>
-            <Ionicons name="time-sharp" size={24} color={colors.white} />
+            <SolarIcon name="time-sharp" size={24} color={colors.white} />
             <Text style={styles.infoTitle}>Timeline</Text>
             <Text style={styles.infoText}>2-6 WKS</Text>
           </View>
           <View style={[styles.infoCard, { backgroundColor: colors.cream, borderColor: colors.charcoal }]}>
-            <Ionicons name="shield-checkmark-sharp" size={24} color={colors.charcoal} />
+            <SolarIcon name="shield-checkmark-sharp" size={24} color={colors.charcoal} />
             <Text style={[styles.infoTitle, { color: colors.red }]}>Guarantee</Text>
             <Text style={[styles.infoText, { color: colors.charcoal }]}>Flawless</Text>
           </View>
@@ -101,7 +101,7 @@ export default function BespokeScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting}>
-          {submitting ? <Spinner color={colors.cream} /> : <Text style={styles.submitBtnText}>Start request →</Text>}
+          {submitting ? <Spinner color={colors.cream} /> : <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.submitBtnText}>Start request →</Text>}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

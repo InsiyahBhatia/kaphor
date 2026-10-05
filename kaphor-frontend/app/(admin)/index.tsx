@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { useAuth } from '../../src/context/AuthContext';
 import { adminService } from '../../src/services/adminService';
 import { colors, typography } from '../../src/theme';
@@ -24,7 +24,7 @@ interface TodoItem {
   count: number;
   route: string;
   accent?: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof SolarIcon.glyphMap;
 }
 
 export default function AdminOverviewScreen() {
@@ -73,14 +73,14 @@ export default function AdminOverviewScreen() {
     return (
       <View style={styles.centered}>
         <View style={styles.lockIconBox}>
-          <Ionicons name="shield-outline" size={48} color={colors.crimson} />
+          <SolarIcon name="shield-outline" size={48} color={colors.crimson} />
         </View>
         <Text style={styles.lockTitle}>ACCESS RESTRICTED</Text>
         <Text style={styles.lockSub}>
           ADMIN ACCESS REQUIRED.
         </Text>
         <TouchableOpacity style={styles.lockBtn} onPress={() => router.replace('/(tabs)/profile')}>
-          <Text style={styles.lockBtnText}>RETURN TO PROFILE</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.lockBtnText}>RETURN TO PROFILE</Text>
         </TouchableOpacity>
       </View>
     );
@@ -138,7 +138,7 @@ export default function AdminOverviewScreen() {
             <View key={k.label} style={styles.kpiCard}>
               <View style={styles.kpiTopRow}>
                 <Text style={styles.kpiLabel}>{k.label}</Text>
-                <Ionicons
+                <SolarIcon
                   name={k.icon}
                   size={14}
                   color={k.accent ? colors.crimson : colors.textMuted}
@@ -179,13 +179,13 @@ export default function AdminOverviewScreen() {
             >
               <View style={styles.moduleHead}>
                 <View style={styles.moduleIconBox}>
-                  <Ionicons name={m.icon} size={16} color={colors.ink} />
+                  <SolarIcon name={m.icon} size={16} color={colors.ink} />
                 </View>
                 <Text style={styles.moduleCount}>{m.count}</Text>
               </View>
               <View style={styles.moduleFoot}>
                 <Text style={styles.moduleTitle}>{m.title}</Text>
-                <Ionicons name="arrow-forward" size={12} color={colors.ink} />
+                <SolarIcon name="arrow-forward" size={12} color={colors.ink} />
               </View>
             </TouchableOpacity>
           ))}
@@ -255,7 +255,7 @@ export default function AdminOverviewScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.todoTop}>
-                <Ionicons name={t.icon} size={14} color={t.accent || colors.textMuted} />
+                <SolarIcon name={t.icon} size={14} color={t.accent || colors.textMuted} />
                 <Text style={[styles.todoCount, t.accent && { color: t.accent }]}>
                   {t.count}
                 </Text>

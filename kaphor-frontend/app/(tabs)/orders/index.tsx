@@ -1,19 +1,23 @@
-import { peek, remember, hydrate } from '../../../src/utils/swrCache';
-import React, { useState, useCallback, useEffect } from 'react';
+import { useListStore, hydrateLists, refreshOrders, loadMoreOrders } from '../../../src/store/listStore';
+
+const EMPTY_ORDERS: TransactionOrder[] = [];
+const EMPTY_RENTALS: RentalItem[] = [];
+const EMPTY_SWAPS: any[] = [];
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
+  Platform,
   TouchableOpacity,
   RefreshControl,
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { KaphorImage } from '../../../src/components/KaphorImage';
-import { OrderCardsLoading } from '../../../src/components/common/CardLoadingScreen';
 import { OrderTrackerStepper } from '../../../src/components/orders/OrderTrackerStepper';
 import { EstTradeValueBadge } from '../../../src/components/orders/EstTradeValueBadge';
 import { FairValueMatcher } from '../../../src/components/orders/FairValueMatcher';
@@ -28,374 +32,12 @@ import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { navigateToLiveSwapStage } from '../../../src/utils/swapNavigation';
 import { Spinner, Loader } from '../../../src/components/common/Loader';
 
-export default function OrdersManagementScreen() {
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const { user } = useAuth();
-  useBackHandler('/(tabs)/profile');
 
-  // Main Category Tab: 'orders' (Sale) | 'rentals' | 'swaps'
-  const [activeTab, setActiveTab] = useState<'orders' | 'rentals' | 'swaps'>(
-    (params.tab as any) || 'orders'
-  );
+type RowHandlers = Record<string, (...args: any[]) => any>;
 
-  // Sub-roles
-  const [ordersRole, setOrdersRole] = useState<'buyer' | 'seller'>('buyer');
-  const [rentalsRole, setRentalsRole] = useState<'renter' | 'lender'>('renter');
-  const [swapsFilter, setSwapsFilter] = useState<'all' | 'action' | 'completed'>('all');
-
-  // Data states
-  const cached = peek<any>('orders:all');
-  const [summary, setSummary] = useState<OrdersSummaryData | null>(cached?.sum ?? null);
-  const [ordersList, setOrdersList] = useState<TransactionOrder[]>(cached?.ords ?? []);
-  const [rentalsList, setRentalsList] = useState<RentalItem[]>(cached?.rents ?? []);
-  const [swapsList, setSwapsList] = useState<any[]>(cached?.swps ?? []);
-  const [loading, setLoading] = useState(!cached);
-  const [refreshing, setRefreshing] = useState(false);
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const isTabSwitching = false;
-
-  const handleSelectTab = (tab: 'orders' | 'rentals' | 'swaps') => {
-    if (tab === activeTab) return;
-    hapticFeedback.selection();
-    setActiveTab(tab);
-  };
-
-  const handleSelectRole = (action: () => void) => {
-    hapticFeedback.selection();
-    action();
-  };
-
-  // If query params specify tab, sync it
-  useEffect(() => {
-    if (params.tab && ['orders', 'rentals', 'swaps'].includes(params.tab as string)) {
-      setActiveTab(params.tab as any);
-    }
-  }, [params.tab]);
-
-  const loadAllData = useCallback(async () => {
-    try {
-      const [sum, ords, rents, swps] = await Promise.all([
-        trackingService.getSummary(),
-        trackingService.getOrders(),
-        trackingService.getRentals('all'),
-        trackingService.getSwaps(),
-      ]);
-      setSummary(sum);
-      setOrdersList(ords);
-      setRentalsList(rents);
-      setSwapsList(swps);
-      remember('orders:all', { sum, ords, rents, swps });
-    } catch {
-      // Fallback empty
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  // Show the last persisted copy instantly on a cold start, then refresh in the background
-  useEffect(() => {
-    if (cached) return;
-    hydrate<any>('orders:all').then((c) => {
-      if (!c) return;
-      setSummary((v) => v ?? c.sum);
-      setOrdersList((v) => (v.length ? v : c.ords ?? []));
-      setRentalsList((v) => (v.length ? v : c.rents ?? []));
-      setSwapsList((v) => (v.length ? v : c.swps ?? []));
-      setLoading(false);
-    });
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadAllData();
-    }, [loadAllData])
-  );
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    hapticFeedback.light();
-    loadAllData();
-  };
-
-  // Helper to open chat
-  const handleOpenChat = async (
-    otherUserId: string,
-    garmentId?: string,
-    extra?: { orderId?: string; swapId?: string; rentalId?: string; type?: string }
-  ) => {
-    if (!otherUserId) return;
-    try {
-      const conv = await messageService.getOrCreateConversation(otherUserId, garmentId, extra);
-      router.push(`/messages/${conv.id}` as any);
-    } catch {
-      router.push('/(tabs)/messages' as any);
-    }
-  };
-
-  // Actions for Orders
-  const handleMarkShipped = async (orderId: string) => {
-    setActionLoadingId(orderId);
-    try {
-      await trackingService.markOrderShipped(orderId);
-      invalidateCache(['/orders', '/users/me/wardrobe']);
-      Alert.alert('Success', 'Order marked as shipped. Buyer has been notified!');
-      loadAllData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not mark order shipped.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleMarkDelivered = async (orderId: string) => {
-    setActionLoadingId(orderId);
-    try {
-      await trackingService.markOrderDelivered(orderId);
-      invalidateCache(['/orders', '/users/me/wardrobe', '/impact']);
-      loadAllData();
-      Alert.alert(
-        'Delivery Confirmed',
-        'Garment delivery confirmed! Would you like to review and rate the seller now?',
-        [
-          { text: 'LATER', style: 'cancel' },
-          {
-            text: 'REVIEW SELLER',
-            onPress: () => router.push(`/(tabs)/shop/orders/${orderId}?review=true` as any),
-          },
-        ]
-      );
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not confirm delivery.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  // Actions for Rentals
-  const handleDispatchRental = async (rentalId: string) => {
-    setActionLoadingId(rentalId);
-    try {
-      await trackingService.dispatchRental(rentalId);
-      invalidateCache(['/rentals', '/users/me/wardrobe']);
-      Alert.alert('Shipped', 'Rental is now active. The renter has been told.');
-      loadAllData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not mark the rental as shipped.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleReturnRental = async (rentalId: string) => {
-    setActionLoadingId(rentalId);
-    try {
-      await trackingService.returnRental(rentalId);
-      invalidateCache(['/rentals', '/users/me/wardrobe']);
-      Alert.alert('Returned', 'Garment marked as returned. Lender will inspect and release deposit.');
-      loadAllData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not mark rental returned.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleReleaseDeposit = async (rentalId: string) => {
-    setActionLoadingId(rentalId);
-    try {
-      await trackingService.releaseRentalDeposit(rentalId);
-      invalidateCache(['/rentals', '/users/me/wardrobe']);
-      Alert.alert('Released', 'Security deposit has been refunded to borrower.');
-      loadAllData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not release deposit.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  // Filtered Orders
-  const currentOrders = ordersList.filter((o) => {
-    if (ordersRole === 'buyer') return o.buyerId === user?.id;
-    return o.sellerId === user?.id;
-  });
-
-  // Filtered Rentals
-  const currentRentals = rentalsList.filter((r) => {
-    if (rentalsRole === 'renter') return r.renterId === user?.id;
-    return r.garment?.sellerId === user?.id;
-  });
-
-  // Filtered Swaps
-  const currentSwaps = swapsList.filter((s) => {
-    const isDone = s.status === 'COMPLETED' || s.status === 'REJECTED' || s.status === 'CANCELLED';
-    if (swapsFilter === 'completed') return isDone;
-    if (swapsFilter === 'action') return !isDone;
-    return true;
-  });
-
-  if (loading) {
-    return <Loader variant="order" />;
-  }
-
-  return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 20) }]}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
-            style={styles.backButton}
-            onPress={() => safeBack('/(tabs)/profile')}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Ionicons name="arrow-back" size={22} color={colors.charcoal} />
-          </TouchableOpacity>
-          <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={styles.headerTitle}>MY ORDERS</Text>
-          </View>
-          <View style={{ width: 40 }} />
-        </View>
-
-        {/* PRIMARY CATEGORY TABS */}
-        <View style={styles.primaryTabs}>
-          <TouchableOpacity
-            style={[styles.primaryTab, activeTab === 'orders' && styles.primaryTabActive]}
-            onPress={() => handleSelectTab('orders')}
-          >
-            <Ionicons name="bag-check-outline" size={13} color={activeTab === 'orders' ? colors.cream : colors.charcoal} />
-            <Text style={[styles.primaryTabText, activeTab === 'orders' && styles.primaryTabTextActive]}>
-              SALES
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.primaryTab, activeTab === 'rentals' && styles.primaryTabActive]}
-            onPress={() => handleSelectTab('rentals')}
-          >
-            <Ionicons name="calendar-outline" size={13} color={activeTab === 'rentals' ? colors.cream : colors.charcoal} />
-            <Text style={[styles.primaryTabText, activeTab === 'rentals' && styles.primaryTabTextActive]}>
-              RENTALS
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.primaryTab, activeTab === 'swaps' && styles.primaryTabActive]}
-            onPress={() => handleSelectTab('swaps')}
-          >
-            <Ionicons name="swap-horizontal-outline" size={13} color={activeTab === 'swaps' ? colors.cream : colors.charcoal} />
-            <Text style={[styles.primaryTabText, activeTab === 'swaps' && styles.primaryTabTextActive]}>
-              SWAPS
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* SLIM SUMMARY STRIP */}
-        <View style={styles.summaryStrip}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNum}>{summary?.orders.buyingActive || 0}</Text>
-            <Text style={styles.summaryLbl}>Buying</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNum}>{summary?.orders.sellingActive || 0}</Text>
-            <Text style={styles.summaryLbl}>Selling</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNum}>{(summary?.rentals.borrowingActive || 0) + (summary?.rentals.lendingActive || 0)}</Text>
-            <Text style={styles.summaryLbl}>Rentals</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNum}>{summary?.swaps.active || 0}</Text>
-            <Text style={styles.summaryLbl}>Swaps</Text>
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {loading || isTabSwitching ? (
-          <OrderCardsLoading count={4} />
-        ) : (
-          <>
-            {/* ═══════════════════════════════════════════════ */}
-            {/* TAB 1: PURCHASES & SALES                        */}
-            {/* ═══════════════════════════════════════════════ */}
-            {activeTab === 'orders' && (
-          <View>
-            {/* ROLE TOGGLE */}
-            <View style={styles.roleToggleRow}>
-              <TouchableOpacity
-                style={[styles.rolePill, ordersRole === 'buyer' && styles.rolePillActive]}
-                onPress={() => handleSelectRole(() => setOrdersRole('buyer'))}
-              >
-                <Ionicons
-                  name="bag-handle-outline"
-                  size={14}
-                  color={ordersRole === 'buyer' ? colors.cream : colors.charcoal}
-                />
-                <Text
-                  style={[
-                    styles.rolePillText,
-                    ordersRole === 'buyer' && styles.rolePillTextActive,
-                  ]}
-                >
-                  I'M BUYING ({ordersList.filter((o) => o.buyerId === user?.id).length})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.rolePill, ordersRole === 'seller' && styles.rolePillActive]}
-                onPress={() => handleSelectRole(() => setOrdersRole('seller'))}
-              >
-                <Ionicons
-                  name="pricetag-outline"
-                  size={14}
-                  color={ordersRole === 'seller' ? colors.cream : colors.charcoal}
-                />
-                <Text
-                  style={[
-                    styles.rolePillText,
-                    ordersRole === 'seller' && styles.rolePillTextActive,
-                  ]}
-                >
-                  I'M SELLING ({ordersList.filter((o) => o.sellerId === user?.id).length})
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {currentOrders.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="receipt-outline" size={44} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>NO ORDERS FOUND</Text>
-                <Text style={styles.emptySub}>
-                  {ordersRole === 'buyer'
-                    ? 'Browse the shop to find something you like.'
-                    : 'List your items to start getting orders.'}
-                </Text>
-                <TouchableOpacity
-                  style={styles.emptyBtn}
-                  onPress={() =>
-                    ordersRole === 'buyer'
-                      ? router.push('/(tabs)/shop')
-                      : router.push('/(tabs)/shop/sell')
-                  }
-                >
-                  <Text style={styles.emptyBtnText}>
-                    {ordersRole === 'buyer' ? 'EXPLORE SHOP →' : 'LIST A GARMENT →'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              currentOrders.map((order) => {
-                const isBuyer = order.buyerId === user?.id;
+const OrderCard = React.memo(function OrderCard({ order, userId, actionLoadingId, h, router }: { order: TransactionOrder; userId?: string; actionLoadingId: string | null; h: RowHandlers; router: ReturnType<typeof useRouter> }) {
+  const { handleOpenChat, handleMarkShipped, handleMarkDelivered, handleDispatchRental, handleReturnRental, handleReleaseDeposit } = h;
+                const isBuyer = order.buyerId === userId;
                 const otherParty = isBuyer ? order.seller : order.buyer;
                 const firstItem = order.items?.[0];
                 const thumb = firstItem?.garment?.images?.[0];
@@ -423,7 +65,7 @@ export default function OrdersManagementScreen() {
                           order.status === 'CONFIRMED' && { backgroundColor: colors.charcoal },
                         ]}
                       >
-                        <Text style={styles.statusTagText}>{order.status}</Text>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.statusTagText}>{order.status}</Text>
                       </View>
                     </View>
 
@@ -452,7 +94,7 @@ export default function OrdersManagementScreen() {
                         </Text>
                       </View>
                       <View style={styles.viewChevronCol}>
-                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                        <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
                       </View>
                     </TouchableOpacity>
 
@@ -473,7 +115,7 @@ export default function OrdersManagementScreen() {
                         }
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
+                        <SolarIcon name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.chatActionText}>CHAT</Text>
                       </TouchableOpacity>
 
@@ -485,7 +127,7 @@ export default function OrdersManagementScreen() {
                         }}
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="eye-outline" size={14} color={colors.charcoal} />
+                        <SolarIcon name="eye-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.detailActionText}>ITEM</Text>
                       </TouchableOpacity>
 
@@ -496,7 +138,7 @@ export default function OrdersManagementScreen() {
                           onPress={() => router.push(`/(tabs)/shop/orders/${order.id}?review=true` as any)}
                           activeOpacity={0.85}
                         >
-                          <Ionicons name="star" size={13} color={colors.orange} />
+                          <SolarIcon name="star" size={13} color={colors.orange} />
                           <Text style={styles.reviewActionText}>REVIEW ★</Text>
                         </TouchableOpacity>
                       ) : !isBuyer && order.status === 'CONFIRMED' ? (
@@ -531,91 +173,18 @@ export default function OrdersManagementScreen() {
                           onPress={() => router.push(`/(tabs)/shop/orders/${order.id}` as any)}
                           activeOpacity={0.85}
                         >
-                          <Ionicons name="navigate-outline" size={13} color={colors.cream} />
+                          <SolarIcon name="navigate-outline" size={13} color={colors.cream} />
                           <Text style={styles.trackActionText}>TRACK ORDER →</Text>
                         </TouchableOpacity>
                       )}
                     </View>
                   </View>
                 );
-              })
-            )}
-          </View>
-        )}
+});
 
-        {/* ═══════════════════════════════════════════════ */}
-        {/* TAB 2: RENTALS (BORROWER & LENDER)              */}
-        {/* ═══════════════════════════════════════════════ */}
-        {activeTab === 'rentals' && (
-          <View>
-            {/* ROLE TOGGLE */}
-            <View style={styles.roleToggleRow}>
-              <TouchableOpacity
-                style={[styles.rolePill, rentalsRole === 'renter' && styles.rolePillActive]}
-                onPress={() => handleSelectRole(() => setRentalsRole('renter'))}
-              >
-                <Ionicons
-                  name="key-outline"
-                  size={14}
-                  color={rentalsRole === 'renter' ? colors.cream : colors.charcoal}
-                />
-                <Text
-                  style={[
-                    styles.rolePillText,
-                    rentalsRole === 'renter' && styles.rolePillTextActive,
-                  ]}
-                >
-                  BORROWED (I'M RENTING) (
-                  {rentalsList.filter((r) => r.renterId === user?.id).length})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.rolePill, rentalsRole === 'lender' && styles.rolePillActive]}
-                onPress={() => handleSelectRole(() => setRentalsRole('lender'))}
-              >
-                <Ionicons
-                  name="shield-checkmark-outline"
-                  size={14}
-                  color={rentalsRole === 'lender' ? colors.cream : colors.charcoal}
-                />
-                <Text
-                  style={[
-                    styles.rolePillText,
-                    rentalsRole === 'lender' && styles.rolePillTextActive,
-                  ]}
-                >
-                  LENT OUT (MY PIECES) (
-                  {rentalsList.filter((r) => r.garment?.sellerId === user?.id).length})
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {currentRentals.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="calendar-outline" size={44} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>NO RENTALS FOUND</Text>
-                <Text style={styles.emptySub}>
-                  {rentalsRole === 'renter'
-                    ? 'Browse items you can rent for a few days.'
-                    : 'List your clothes for rent to earn money.'}
-                </Text>
-                <TouchableOpacity
-                  style={styles.emptyBtn}
-                  onPress={() =>
-                    rentalsRole === 'renter'
-                      ? router.push('/(tabs)/rental')
-                      : router.push('/(tabs)/shop/sell')
-                  }
-                >
-                  <Text style={styles.emptyBtnText}>
-                    {rentalsRole === 'renter' ? 'BROWSE RENTALS →' : 'LIST FOR RENTAL →'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              currentRentals.map((rental) => {
-                const isRenter = rental.renterId === user?.id;
+const RentalCard = React.memo(function RentalCard({ rental, userId, actionLoadingId, h, router }: { rental: RentalItem; userId?: string; actionLoadingId: string | null; h: RowHandlers; router: ReturnType<typeof useRouter> }) {
+  const { handleOpenChat, handleMarkShipped, handleMarkDelivered, handleDispatchRental, handleReturnRental, handleReleaseDeposit } = h;
+                const isRenter = rental.renterId === userId;
                 const counterpart = isRenter ? rental.garment?.seller : rental.renter;
                 const thumb = rental.garment?.images?.[0];
                 const isLoading = actionLoadingId === rental.id;
@@ -651,7 +220,7 @@ export default function OrdersManagementScreen() {
                           rental.status === 'RESERVED' && { backgroundColor: colors.copper },
                         ]}
                       >
-                        <Text style={styles.statusTagText}>{rental.status}</Text>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.statusTagText}>{rental.status}</Text>
                       </View>
                     </View>
 
@@ -680,7 +249,7 @@ export default function OrdersManagementScreen() {
                         </Text>
                       </View>
                       <View style={styles.viewChevronCol}>
-                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                        <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
                       </View>
                     </TouchableOpacity>
 
@@ -691,7 +260,7 @@ export default function OrdersManagementScreen() {
 
                     {/* ESCROW GUARANTEE BANNER */}
                     <View style={styles.escrowNotice}>
-                      <Ionicons name="shield-checkmark" size={14} color={colors.forest} />
+                      <SolarIcon name="shield-checkmark" size={14} color={colors.forest} />
                       <Text style={styles.escrowNoticeText}>
                         ₹299 refundable deposit, held safely
                       </Text>
@@ -710,7 +279,7 @@ export default function OrdersManagementScreen() {
                         }
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
+                        <SolarIcon name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.chatActionText}>CHAT</Text>
                       </TouchableOpacity>
 
@@ -722,7 +291,7 @@ export default function OrdersManagementScreen() {
                         }}
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="eye-outline" size={14} color={colors.charcoal} />
+                        <SolarIcon name="eye-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.detailActionText}>ITEM</Text>
                       </TouchableOpacity>
 
@@ -772,85 +341,18 @@ export default function OrdersManagementScreen() {
                           onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                           activeOpacity={0.85}
                         >
-                          <Ionicons name="navigate-outline" size={13} color={colors.cream} />
+                          <SolarIcon name="navigate-outline" size={13} color={colors.cream} />
                           <Text style={styles.trackActionText}>TRACK LEASE →</Text>
                         </TouchableOpacity>
                       )}
                     </View>
                   </View>
                 );
-              })
-            )}
-          </View>
-        )}
+});
 
-        {/* ═══════════════════════════════════════════════ */}
-        {/* TAB 3: SWAPS (BARTER EXCHANGES)                 */}
-        {/* ═══════════════════════════════════════════════ */}
-        {activeTab === 'swaps' && (
-          <View>
-            {/* SUB FILTER */}
-            <View style={styles.roleToggleRow}>
-              <TouchableOpacity
-                style={[styles.rolePill, swapsFilter === 'all' && styles.rolePillActive]}
-                onPress={() => handleSelectRole(() => setSwapsFilter('all'))}
-              >
-                <Text
-                  style={[
-                    styles.rolePillText,
-                    swapsFilter === 'all' && styles.rolePillTextActive,
-                  ]}
-                >
-                  ALL ({swapsList.length})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.rolePill, swapsFilter === 'action' && styles.rolePillActive]}
-                onPress={() => handleSelectRole(() => setSwapsFilter('action'))}
-              >
-                <Text
-                  style={[
-                    styles.rolePillText,
-                    swapsFilter === 'action' && styles.rolePillTextActive,
-                  ]}
-                >
-                  IN PROGRESS
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.rolePill, swapsFilter === 'completed' && styles.rolePillActive]}
-                onPress={() => handleSelectRole(() => setSwapsFilter('completed'))}
-              >
-                <Text
-                  style={[
-                    styles.rolePillText,
-                    swapsFilter === 'completed' && styles.rolePillTextActive,
-                  ]}
-                >
-                  COMPLETED
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {currentSwaps.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="swap-horizontal" size={44} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>NO SWAP EXCHANGES</Text>
-                <Text style={styles.emptySub}>
-                  Browse accessories you can swap. No cash needed.
-                </Text>
-                <TouchableOpacity
-                  style={styles.emptyBtn}
-                  onPress={() => router.push('/(tabs)/swap')}
-                >
-                  <Text style={styles.emptyBtnText}>BROWSE SWAPS →</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              currentSwaps.map((swap) => {
-                const isInitiator = swap.initiatorId === user?.id;
+const SwapCard = React.memo(function SwapCard({ swap, userId, actionLoadingId, h, router }: { swap: any; userId?: string; actionLoadingId: string | null; h: RowHandlers; router: ReturnType<typeof useRouter> }) {
+  const { handleOpenChat, handleMarkShipped, handleMarkDelivered, handleDispatchRental, handleReturnRental, handleReleaseDeposit } = h;
+                const isInitiator = swap.initiatorId === userId;
                 const partner = isInitiator ? swap.receiver : swap.initiator;
 
                 const extractGarmentImage = (obj: any): string => {
@@ -889,7 +391,7 @@ export default function OrdersManagementScreen() {
                         </Text>
                       </View>
                       <View style={[styles.statusTag, { backgroundColor: colors.copper }]}>
-                        <Text style={styles.statusTagText}>{swap.compositeStatus || swap.status}</Text>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.statusTagText}>{swap.compositeStatus || swap.status}</Text>
                       </View>
                     </View>
 
@@ -915,8 +417,8 @@ export default function OrdersManagementScreen() {
                       </TouchableOpacity>
 
                       <View style={styles.swapArrowCol}>
-                        <Ionicons name="swap-horizontal" size={24} color={colors.charcoal} />
-                        <Text style={styles.swapCashlessBadge}>CASHLESS</Text>
+                        <SolarIcon name="swap-horizontal" size={24} color={colors.charcoal} />
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.swapCashlessBadge}>CASHLESS</Text>
                       </View>
 
                       <TouchableOpacity
@@ -966,7 +468,7 @@ export default function OrdersManagementScreen() {
                         }
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
+                        <SolarIcon name="chatbubble-ellipses-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.chatActionText}>CHAT</Text>
                       </TouchableOpacity>
 
@@ -978,28 +480,524 @@ export default function OrdersManagementScreen() {
                         }}
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="eye-outline" size={14} color={colors.charcoal} />
+                        <SolarIcon name="eye-outline" size={14} color={colors.charcoal} />
                         <Text style={styles.detailActionText}>ITEM</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
                         style={styles.trackActionBtn}
-                        onPress={() => navigateToLiveSwapStage(router, swap, user?.id)}
+                        onPress={() => navigateToLiveSwapStage(router, swap, userId)}
                         activeOpacity={0.85}
                       >
-                        <Ionicons name="navigate-outline" size={13} color={colors.cream} />
+                        <SolarIcon name="navigate-outline" size={13} color={colors.cream} />
                         <Text style={styles.trackActionText}>TRACK STAGE →</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 );
-              })
-            )}
+});
+
+const rowKey = (it: any) => it.id;
+
+export default function OrdersManagementScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const { user } = useAuth();
+  useBackHandler('/(tabs)/profile');
+
+  // Main Category Tab: 'orders' (Sale) | 'rentals' | 'swaps'
+  const [activeTab, setActiveTab] = useState<'orders' | 'rentals' | 'swaps'>(
+    (params.tab as any) || 'orders'
+  );
+
+  // Sub-roles
+  const [ordersRole, setOrdersRole] = useState<'buyer' | 'seller'>('buyer');
+  const [rentalsRole, setRentalsRole] = useState<'renter' | 'lender'>('renter');
+  const [swapsFilter, setSwapsFilter] = useState<'all' | 'action' | 'completed'>('all');
+
+  // Cache-first data: persisted store warmed after login; skeleton only when nothing is cached
+  const bundle = useListStore((s) => s.orders);
+  const hydrated = useListStore((s) => s.hydrated);
+  const hasMoreOrders = useListStore((s) => s.ordersCursor !== null);
+  const summary = bundle?.sum ?? null;
+  const ordersList = bundle?.ords ?? EMPTY_ORDERS;
+  const rentalsList = bundle?.rents ?? EMPTY_RENTALS;
+  const swapsList = bundle?.swps ?? EMPTY_SWAPS;
+  const [fetchSettled, setFetchSettled] = useState(false);
+  const loading = bundle === null && (!hydrated || !fetchSettled);
+  const [refreshing, setRefreshing] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const handleSelectTab = (tab: 'orders' | 'rentals' | 'swaps') => {
+    if (tab === activeTab) return;
+    hapticFeedback.selection();
+    setActiveTab(tab);
+  };
+
+  const handleSelectRole = (action: () => void) => {
+    hapticFeedback.selection();
+    action();
+  };
+
+  // If query params specify tab, sync it
+  useEffect(() => {
+    if (params.tab && ['orders', 'rentals', 'swaps'].includes(params.tab as string)) {
+      setActiveTab(params.tab as any);
+    }
+  }, [params.tab]);
+
+  const loadAllData = useCallback(async (force = false) => {
+    try {
+      await hydrateLists();
+      await refreshOrders(force);
+    } catch {
+      // keep whatever is on screen
+    } finally {
+      setFetchSettled(true);
+      setRefreshing(false);
+    }
+  }, []);
+
+  // Skips the network when the data is < 30s old (mutations below force a refresh)
+  useFocusEffect(
+    useCallback(() => {
+      loadAllData();
+    }, [loadAllData])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    hapticFeedback.light();
+    loadAllData(true);
+  };
+
+  // Helper to open chat
+  const handleOpenChat = async (
+    otherUserId: string,
+    garmentId?: string,
+    extra?: { orderId?: string; swapId?: string; rentalId?: string; type?: string }
+  ) => {
+    if (!otherUserId) return;
+    try {
+      const conv = await messageService.getOrCreateConversation(otherUserId, garmentId, extra);
+      router.push(`/messages/${conv.id}` as any);
+    } catch {
+      router.push('/(tabs)/messages' as any);
+    }
+  };
+
+  // Actions for Orders
+  const handleMarkShipped = async (orderId: string) => {
+    setActionLoadingId(orderId);
+    try {
+      await trackingService.markOrderShipped(orderId);
+      invalidateCache(['/orders', '/users/me/wardrobe']);
+      Alert.alert('Success', 'Order marked as shipped. Buyer has been notified!');
+      loadAllData(true);
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Could not mark order shipped.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleMarkDelivered = async (orderId: string) => {
+    setActionLoadingId(orderId);
+    try {
+      await trackingService.markOrderDelivered(orderId);
+      invalidateCache(['/orders', '/users/me/wardrobe', '/impact']);
+      loadAllData(true);
+      Alert.alert(
+        'Delivery Confirmed',
+        'Garment delivery confirmed! Would you like to review and rate the seller now?',
+        [
+          { text: 'LATER', style: 'cancel' },
+          {
+            text: 'REVIEW SELLER',
+            onPress: () => router.push(`/(tabs)/shop/orders/${orderId}?review=true` as any),
+          },
+        ]
+      );
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Could not confirm delivery.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Actions for Rentals
+  const handleDispatchRental = async (rentalId: string) => {
+    setActionLoadingId(rentalId);
+    try {
+      await trackingService.dispatchRental(rentalId);
+      invalidateCache(['/rentals', '/users/me/wardrobe']);
+      Alert.alert('Shipped', 'Rental is now active. The renter has been told.');
+      loadAllData(true);
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Could not mark the rental as shipped.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleReturnRental = async (rentalId: string) => {
+    setActionLoadingId(rentalId);
+    try {
+      await trackingService.returnRental(rentalId);
+      invalidateCache(['/rentals', '/users/me/wardrobe']);
+      Alert.alert('Returned', 'Garment marked as returned. Lender will inspect and release deposit.');
+      loadAllData(true);
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Could not mark rental returned.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleReleaseDeposit = async (rentalId: string) => {
+    setActionLoadingId(rentalId);
+    try {
+      await trackingService.releaseRentalDeposit(rentalId);
+      invalidateCache(['/rentals', '/users/me/wardrobe']);
+      Alert.alert('Released', 'Security deposit has been refunded to borrower.');
+      loadAllData(true);
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Could not release deposit.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Filtered Orders
+  const currentOrders = ordersList.filter((o) => {
+    if (ordersRole === 'buyer') return o.buyerId === user?.id;
+    return o.sellerId === user?.id;
+  });
+
+  // Filtered Rentals
+  const currentRentals = rentalsList.filter((r) => {
+    if (rentalsRole === 'renter') return r.renterId === user?.id;
+    return r.garment?.sellerId === user?.id;
+  });
+
+  // Filtered Swaps
+  const currentSwaps = swapsList.filter((s) => {
+    const isDone = s.status === 'COMPLETED' || s.status === 'REJECTED' || s.status === 'CANCELLED';
+    if (swapsFilter === 'completed') return isDone;
+    if (swapsFilter === 'action') return !isDone;
+    return true;
+  });
+
+
+  const latest = useRef<Record<string, any>>({});
+  latest.current = { handleOpenChat, handleMarkShipped, handleMarkDelivered, handleDispatchRental, handleReturnRental, handleReleaseDeposit };
+  const rowHandlers = useMemo<RowHandlers>(() => ({
+      handleOpenChat: (...a: any[]) => (latest.current as any).handleOpenChat(...a),
+      handleMarkShipped: (...a: any[]) => (latest.current as any).handleMarkShipped(...a),
+      handleMarkDelivered: (...a: any[]) => (latest.current as any).handleMarkDelivered(...a),
+      handleDispatchRental: (...a: any[]) => (latest.current as any).handleDispatchRental(...a),
+      handleReturnRental: (...a: any[]) => (latest.current as any).handleReturnRental(...a),
+      handleReleaseDeposit: (...a: any[]) => (latest.current as any).handleReleaseDeposit(...a),
+  }), []);
+
+  const listData: any[] = activeTab === 'orders' ? currentOrders : activeTab === 'rentals' ? currentRentals : currentSwaps;
+
+  const renderCard = useCallback(
+    ({ item }: { item: any }) => {
+      const busy = actionLoadingId === item.id ? item.id : null;
+      if (activeTab === 'orders') return <OrderCard order={item} userId={user?.id} actionLoadingId={busy} h={rowHandlers} router={router} />;
+      if (activeTab === 'rentals') return <RentalCard rental={item} userId={user?.id} actionLoadingId={busy} h={rowHandlers} router={router} />;
+      return <SwapCard swap={item} userId={user?.id} actionLoadingId={busy} h={rowHandlers} router={router} />;
+    },
+    [activeTab, actionLoadingId, user?.id, rowHandlers, router]
+  );
+
+  const listHeader = activeTab === 'orders' ? (
+            <View style={styles.roleToggleRow}>
+              <TouchableOpacity
+                style={[styles.rolePill, ordersRole === 'buyer' && styles.rolePillActive]}
+                onPress={() => handleSelectRole(() => setOrdersRole('buyer'))}
+              >
+                <SolarIcon
+                  name="bag-handle-outline"
+                  size={14}
+                  color={ordersRole === 'buyer' ? colors.cream : colors.charcoal}
+                />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+                  style={[
+                    styles.rolePillText,
+                    ordersRole === 'buyer' && styles.rolePillTextActive,
+                  ]}
+                >
+                  I'M BUYING ({ordersList.filter((o) => o.buyerId === user?.id).length})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.rolePill, ordersRole === 'seller' && styles.rolePillActive]}
+                onPress={() => handleSelectRole(() => setOrdersRole('seller'))}
+              >
+                <SolarIcon
+                  name="pricetag-outline"
+                  size={14}
+                  color={ordersRole === 'seller' ? colors.cream : colors.charcoal}
+                />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+                  style={[
+                    styles.rolePillText,
+                    ordersRole === 'seller' && styles.rolePillTextActive,
+                  ]}
+                >
+                  I'M SELLING ({ordersList.filter((o) => o.sellerId === user?.id).length})
+                </Text>
+              </TouchableOpacity>
+            </View>
+  ) : activeTab === 'rentals' ? (
+            <View style={styles.roleToggleRow}>
+              <TouchableOpacity
+                style={[styles.rolePill, rentalsRole === 'renter' && styles.rolePillActive]}
+                onPress={() => handleSelectRole(() => setRentalsRole('renter'))}
+              >
+                <SolarIcon
+                  name="key-outline"
+                  size={14}
+                  color={rentalsRole === 'renter' ? colors.cream : colors.charcoal}
+                />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+                  style={[
+                    styles.rolePillText,
+                    rentalsRole === 'renter' && styles.rolePillTextActive,
+                  ]}
+                >
+                  BORROWED (I'M RENTING) (
+                  {rentalsList.filter((r) => r.renterId === user?.id).length})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.rolePill, rentalsRole === 'lender' && styles.rolePillActive]}
+                onPress={() => handleSelectRole(() => setRentalsRole('lender'))}
+              >
+                <SolarIcon
+                  name="shield-checkmark-outline"
+                  size={14}
+                  color={rentalsRole === 'lender' ? colors.cream : colors.charcoal}
+                />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+                  style={[
+                    styles.rolePillText,
+                    rentalsRole === 'lender' && styles.rolePillTextActive,
+                  ]}
+                >
+                  LENT OUT (MY PIECES) (
+                  {rentalsList.filter((r) => r.garment?.sellerId === user?.id).length})
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+  ) : (
+            <View style={styles.roleToggleRow}>
+              <TouchableOpacity
+                style={[styles.rolePill, swapsFilter === 'all' && styles.rolePillActive]}
+                onPress={() => handleSelectRole(() => setSwapsFilter('all'))}
+              >
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+                  style={[
+                    styles.rolePillText,
+                    swapsFilter === 'all' && styles.rolePillTextActive,
+                  ]}
+                >
+                  ALL ({swapsList.length})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.rolePill, swapsFilter === 'action' && styles.rolePillActive]}
+                onPress={() => handleSelectRole(() => setSwapsFilter('action'))}
+              >
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+                  style={[
+                    styles.rolePillText,
+                    swapsFilter === 'action' && styles.rolePillTextActive,
+                  ]}
+                >
+                  IN PROGRESS
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.rolePill, swapsFilter === 'completed' && styles.rolePillActive]}
+                onPress={() => handleSelectRole(() => setSwapsFilter('completed'))}
+              >
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+                  style={[
+                    styles.rolePillText,
+                    swapsFilter === 'completed' && styles.rolePillTextActive,
+                  ]}
+                >
+                  COMPLETED
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+  );
+
+  const listEmpty = activeTab === 'orders' ? (
+              <View style={styles.emptyState}>
+                <SolarIcon name="receipt-outline" size={44} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>NO ORDERS FOUND</Text>
+                <Text style={styles.emptySub}>
+                  {ordersRole === 'buyer'
+                    ? 'Browse the shop to find something you like.'
+                    : 'List your items to start getting orders.'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyBtn}
+                  onPress={() =>
+                    ordersRole === 'buyer'
+                      ? router.push('/(tabs)/shop')
+                      : router.push('/(tabs)/shop/sell')
+                  }
+                >
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.emptyBtnText}>
+                    {ordersRole === 'buyer' ? 'EXPLORE SHOP →' : 'LIST A GARMENT →'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+  ) : activeTab === 'rentals' ? (
+              <View style={styles.emptyState}>
+                <SolarIcon name="calendar-outline" size={44} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>NO RENTALS FOUND</Text>
+                <Text style={styles.emptySub}>
+                  {rentalsRole === 'renter'
+                    ? 'Browse items you can rent for a few days.'
+                    : 'List your clothes for rent to earn money.'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyBtn}
+                  onPress={() =>
+                    rentalsRole === 'renter'
+                      ? router.push('/(tabs)/rental')
+                      : router.push('/(tabs)/shop/sell')
+                  }
+                >
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.emptyBtnText}>
+                    {rentalsRole === 'renter' ? 'BROWSE RENTALS →' : 'LIST FOR RENTAL →'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+  ) : (
+              <View style={styles.emptyState}>
+                <SolarIcon name="swap-horizontal" size={44} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>NO SWAP EXCHANGES</Text>
+                <Text style={styles.emptySub}>
+                  Browse accessories you can swap. No cash needed.
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyBtn}
+                  onPress={() => router.push('/(tabs)/swap')}
+                >
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.emptyBtnText}>BROWSE SWAPS →</Text>
+                </TouchableOpacity>
+              </View>
+  );
+
+  if (loading) {
+    return <Loader variant="order" />;
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* HEADER */}
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 20) }]}>
+        <View style={styles.headerTop}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
+            style={styles.backButton}
+            onPress={() => safeBack('/(tabs)/profile')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <SolarIcon name="arrow-back" size={22} color={colors.charcoal} />
+          </TouchableOpacity>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={styles.headerTitle}>MY ORDERS</Text>
           </View>
-        )}
-          </>
-        )}
-      </ScrollView>
+          <View style={{ width: 40 }} />
+        </View>
+
+        {/* PRIMARY CATEGORY TABS */}
+        <View style={styles.primaryTabs}>
+          <TouchableOpacity
+            style={[styles.primaryTab, activeTab === 'orders' && styles.primaryTabActive]}
+            onPress={() => handleSelectTab('orders')}
+          >
+            <SolarIcon name="bag-check-outline" size={13} color={activeTab === 'orders' ? colors.cream : colors.charcoal} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.primaryTabText, activeTab === 'orders' && styles.primaryTabTextActive]}>
+              SALES
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.primaryTab, activeTab === 'rentals' && styles.primaryTabActive]}
+            onPress={() => handleSelectTab('rentals')}
+          >
+            <SolarIcon name="calendar-outline" size={13} color={activeTab === 'rentals' ? colors.cream : colors.charcoal} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.primaryTabText, activeTab === 'rentals' && styles.primaryTabTextActive]}>
+              RENTALS
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.primaryTab, activeTab === 'swaps' && styles.primaryTabActive]}
+            onPress={() => handleSelectTab('swaps')}
+          >
+            <SolarIcon name="swap-horizontal-outline" size={13} color={activeTab === 'swaps' ? colors.cream : colors.charcoal} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.primaryTabText, activeTab === 'swaps' && styles.primaryTabTextActive]}>
+              SWAPS
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* SLIM SUMMARY STRIP */}
+        <View style={styles.summaryStrip}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNum}>{summary?.orders.buyingActive || 0}</Text>
+            <Text style={styles.summaryLbl}>Buying</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNum}>{summary?.orders.sellingActive || 0}</Text>
+            <Text style={styles.summaryLbl}>Selling</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNum}>{(summary?.rentals.borrowingActive || 0) + (summary?.rentals.lendingActive || 0)}</Text>
+            <Text style={styles.summaryLbl}>Rentals</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNum}>{summary?.swaps.active || 0}</Text>
+            <Text style={styles.summaryLbl}>Swaps</Text>
+          </View>
+        </View>
+      </View>
+
+      <FlatList
+        data={listData as any[]}
+        keyExtractor={rowKey}
+        renderItem={renderCard}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={listEmpty}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={7}
+        onEndReached={activeTab === 'orders' && hasMoreOrders ? loadMoreOrders : undefined}
+        onEndReachedThreshold={0.5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      />
     </View>
   );
 }

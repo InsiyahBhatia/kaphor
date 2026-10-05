@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../../../src/theme';
 import { Header } from '../../../../src/components/common/Header';
@@ -261,7 +261,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
                 style={[styles.labelChip, form.label === opt && styles.labelChipActive]}
                 onPress={() => setForm({ ...form, label: opt })}
               >
-                <Text style={[styles.labelChipText, form.label === opt && styles.labelChipTextActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.labelChipText, form.label === opt && styles.labelChipTextActive]}>
                   {opt}
                 </Text>
               </TouchableOpacity>
@@ -362,7 +362,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
             {saving ? (
               <Spinner color={colors.cream} />
             ) : (
-              <Text style={styles.primaryBtnText}>{mode === 'add' ? 'SAVE ADDRESS' : 'UPDATE ADDRESS'}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.primaryBtnText}>{mode === 'add' ? 'SAVE ADDRESS' : 'UPDATE ADDRESS'}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -379,7 +379,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
       <View style={styles.progressBar}>
         <View style={styles.step}>
           <View style={[styles.stepCircle, styles.stepDone]}>
-            <Ionicons name="checkmark" size={14} color={colors.cream} />
+            <SolarIcon name="checkmark" size={14} color={colors.cream} />
           </View>
           <Text style={[styles.stepLabel, styles.stepLabelDone]}>REQUEST</Text>
         </View>
@@ -421,7 +421,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
                     <View style={styles.addressLabelBadge}>
                       <Text style={styles.addressLabelText}>{addr.label}</Text>
                     </View>
-                    {addr.isDefault && <Text style={styles.defaultBadge}>DEFAULT</Text>}
+                    {addr.isDefault && <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.defaultBadge}>DEFAULT</Text>}
                   </View>
                   <Text style={styles.addressName}>{addr.fullName}</Text>
                   <Text style={styles.addressDetail} numberOfLines={2}>
@@ -434,7 +434,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
                 </View>
                 <View style={styles.addressActions}>
                   <TouchableOpacity accessibilityRole="button" accessibilityLabel="Edit" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => handleEdit(addr)} style={styles.actionBtn}>
-                    <Ionicons name="create-outline" size={18} color={colors.textMuted} />
+                    <SolarIcon name="create-outline" size={18} color={colors.textMuted} />
                   </TouchableOpacity>
                   <TouchableOpacity accessibilityRole="button" accessibilityLabel="Delete" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => {
                     Alert.alert('Delete Address', 'Are you sure?', [
@@ -442,7 +442,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
                       { text: 'Delete', style: 'destructive', onPress: () => handleDelete(addr.id) },
                     ]);
                   }} style={styles.actionBtn}>
-                    <Ionicons name="trash-outline" size={18} color={colors.red} />
+                    <SolarIcon name="trash-outline" size={18} color={colors.red} />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -450,7 +450,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
 
             {addresses.length === 0 && (
               <View style={styles.emptyBox}>
-                <Ionicons name="location-outline" size={48} color={colors.textMuted} />
+                <SolarIcon name="location-outline" size={48} color={colors.textMuted} />
                 <Text style={styles.emptyText}>No saved addresses</Text>
               </View>
             )}
@@ -459,8 +459,8 @@ let resolvedOrderId = currentOrderId || paramOrderId;
               style={styles.addBtn}
               onPress={() => { setForm({ ...EMPTY_FORM }); setEditId(null); setErrors({}); setMode('add'); }}
             >
-              <Ionicons name="add-circle-outline" size={20} color={colors.charcoal} />
-              <Text style={styles.addBtnText}>ADD NEW ADDRESS</Text>
+              <SolarIcon name="add-circle-outline" size={20} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.addBtnText}>ADD NEW ADDRESS</Text>
             </TouchableOpacity>
 
             {/* Selected Address Summary */}
@@ -476,7 +476,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
             )}
 
             <View style={styles.infoBox}>
-              <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
+              <SolarIcon name="information-circle-outline" size={18} color={colors.textMuted} />
               <Text style={styles.infoText}>
                 Delivery usually takes 3-5 business days after the seller confirms the order.
               </Text>
@@ -494,7 +494,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
           {saving ? (
             <Spinner color={colors.cream} />
           ) : (
-            <Text style={styles.primaryBtnText}>CONTINUE TO PAYMENT →</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.primaryBtnText}>CONTINUE TO PAYMENT →</Text>
           )}
         </TouchableOpacity>
       </View>

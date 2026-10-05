@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Dimensions, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import { messageService } from '../../../src/services/messageService';
@@ -13,6 +13,7 @@ import { hapticFeedback } from '../../../src/utils/haptics';
 import { useAuthStore } from '../../../src/store/authStore';
 import { getFormattedGarmentPrice, normalizeRupees } from '../../../src/utils/priceFormatter';
 import { Spinner, Loader } from '../../../src/components/common/Loader';
+import { peekGarment } from '../../../src/store/garmentStore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -21,8 +22,10 @@ export default function RentalDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const currentUserId = useAuthStore((s) => s.user?.id);
-  const [garment, setGarment] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // Seed from lists already seen so the page paints instantly, then revalidate in the background
+  const seeded = peekGarment(id as string);
+  const [garment, setGarment] = useState<any>(seeded ?? null);
+  const [loading, setLoading] = useState(!seeded);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [zoomVisible, setZoomVisible] = useState(false);
   const [startingChat, setStartingChat] = useState(false);
@@ -54,7 +57,7 @@ export default function RentalDetailScreen() {
   useEffect(() => {
     let isMounted = true;
     (async () => {
-      setLoading(true);
+      if (!seeded) setLoading(true);
       try {
         const data = await garmentService.getGarmentById(id as string);
         if (data && isMounted) {
@@ -132,7 +135,7 @@ export default function RentalDetailScreen() {
   if (!garment) {
     return (
       <View style={[styles.container, styles.center, { paddingHorizontal: 24 }]}>
-        <Ionicons name="calendar-outline" size={48} color={colors.textMuted} style={{ marginBottom: 16 }} />
+        <SolarIcon name="calendar-outline" size={48} color={colors.textMuted} style={{ marginBottom: 16 }} />
         <Text style={{ color: colors.charcoal, fontFamily: typography.handSemi, fontSize: 19, textAlign: 'center', includeFontPadding: false }}>
           Rental lease details
         </Text>
@@ -194,8 +197,8 @@ export default function RentalDetailScreen() {
               contentFit="cover" 
             />
             <View style={styles.zoomPill}>
-              <Ionicons name="scan-outline" size={13} color={colors.white} />
-              <Text style={styles.zoomPillText}>Tap to zoom</Text>
+              <SolarIcon name="scan-outline" size={13} color={colors.white} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.zoomPillText}>Tap to zoom</Text>
             </View>
           </TouchableOpacity>
 
@@ -204,7 +207,7 @@ export default function RentalDetailScreen() {
             onPress={() => safeBack('/(tabs)/shop')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+            <SolarIcon name="chevron-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
 
@@ -257,7 +260,7 @@ export default function RentalDetailScreen() {
                 <Spinner size="small" color={colors.charcoal} />
               ) : (
                 <>
-                  <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.charcoal} />
+                  <SolarIcon name="chatbubble-ellipses-outline" size={18} color={colors.charcoal} />
                   <Text style={styles.messageLenderText}>Chat with lender about rental</Text>
                 </>
               )}
@@ -278,7 +281,7 @@ export default function RentalDetailScreen() {
               });
             }}
           >
-            <Ionicons name="sparkles" size={18} color={colors.gold} />
+            <SolarIcon name="sparkles" size={18} color={colors.gold} />
             <Text style={styles.aiDoubtText}>Questions? Ask Kaphor ai</Text>
           </TouchableOpacity>
 
@@ -302,7 +305,7 @@ export default function RentalDetailScreen() {
           <View style={styles.availabilityCard}>
             <View style={styles.availabilityHeaderRow}>
               <View style={styles.availabilityTitleGroup}>
-                <Ionicons
+                <SolarIcon
                   name={availabilityData.isAvailable ? 'checkmark-circle' : 'time'}
                   size={18}
                   color={availabilityData.isAvailable ? colors.forest : colors.gold}
@@ -313,7 +316,7 @@ export default function RentalDetailScreen() {
                 styles.availabilityBadge,
                 availabilityData.isAvailable ? styles.availabilityBadgeOk : styles.availabilityBadgeWarn
               ]}>
-                <Text style={styles.availabilityBadgeText}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.availabilityBadgeText}>
                   {availabilityData.isAvailable ? 'Available to rent' : 'Check dates'}
                 </Text>
               </View>
@@ -334,8 +337,8 @@ export default function RentalDetailScreen() {
               }}
               activeOpacity={0.85}
             >
-              <Ionicons name="calendar-outline" size={15} color={colors.charcoal} />
-              <Text style={styles.checkDatesBtnText}>Check specific dates & availability →</Text>
+              <SolarIcon name="calendar-outline" size={15} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.checkDatesBtnText}>Check specific dates & availability →</Text>
             </TouchableOpacity>
           </View>
 
@@ -375,7 +378,7 @@ export default function RentalDetailScreen() {
           </View>
 
           <View style={styles.impactCard}>
-            <Ionicons name="leaf" size={20} color={colors.forest} />
+            <SolarIcon name="leaf" size={20} color={colors.forest} />
             <Text style={styles.impactText}>
               Renting this piece avoids about 12kg of CO2.
             </Text>
@@ -397,11 +400,11 @@ export default function RentalDetailScreen() {
             onPress={() => setZoomVisible(false)}
             hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           >
-            <Ionicons name="close" size={28} color={colors.white} />
+            <SolarIcon name="close" size={28} color={colors.white} />
           </TouchableOpacity>
 
           <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
-            <Ionicons name="scan-outline" size={13} color={colors.paperGlass} />
+            <SolarIcon name="scan-outline" size={13} color={colors.paperGlass} />
             <Text style={styles.zoomInstructionText}>Pinch to zoom</Text>
           </View>
 
@@ -438,7 +441,7 @@ export default function RentalDetailScreen() {
             style={[styles.reserveButton, { backgroundColor: colors.cream, borderColor: colors.charcoal, opacity: 0.7 }]}
             disabled={true}
           >
-            <Text style={[styles.reserveButtonText, { color: colors.charcoal }]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.reserveButtonText, { color: colors.charcoal }]}>
               Your listed item
             </Text>
           </TouchableOpacity>
@@ -454,7 +457,7 @@ export default function RentalDetailScreen() {
                 <Spinner size="small" color={colors.charcoal} />
               ) : (
                 <>
-                  <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.charcoal} />
+                  <SolarIcon name="chatbubble-ellipses-outline" size={20} color={colors.charcoal} />
                   <Text style={styles.chatIconLabel}>Chat</Text>
                 </>
               )}
@@ -472,8 +475,8 @@ export default function RentalDetailScreen() {
               activeOpacity={0.88}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <Ionicons name="calendar-outline" size={16} color={colors.white} />
-                <Text style={styles.reserveButtonText}>Request to rent</Text>
+                <SolarIcon name="calendar-outline" size={16} color={colors.white} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.reserveButtonText}>Request to rent</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -547,9 +550,13 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   content: { padding: 24 },
-  brand: { color: colors.crimson, fontSize: 12, letterSpacing: 2, fontWeight: '800' },
+  brand: {
+ color: colors.crimson, fontSize: 12, letterSpacing: 2, fontWeight: '800', fontFamily: typography.bodyBold,
+  },
   title: { color: colors.textPrimary, fontSize: 32, fontFamily: 'BebasNeue_400Regular', marginTop: 4, marginBottom: 12 },
-  desc: { color: colors.textSecond, fontSize: 15, lineHeight: 24, marginBottom: 20 },
+  desc: {
+ color: colors.textSecond, fontSize: 15, lineHeight: 24, marginBottom: 20, fontFamily: typography.body,
+  },
   aiDoubtButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -580,16 +587,28 @@ const styles = StyleSheet.create({
     shadowRadius: 10, 
     elevation: 2 
   },
-  rateTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: '800', letterSpacing: 2, marginBottom: 20 },
+  rateTitle: {
+ color: colors.textPrimary, fontSize: 13, fontWeight: '800', letterSpacing: 2, marginBottom: 20, fontFamily: typography.bodyBold,
+  },
   rateRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
-  rateLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, fontWeight: '700' },
-  rateValue: { color: colors.textPrimary, fontSize: 18, fontWeight: '800' },
+  rateLabel: {
+ color: colors.textMuted, fontSize: 12, letterSpacing: 1, fontWeight: '700', fontFamily: typography.bodyBold,
+  },
+  rateValue: {
+ color: colors.textPrimary, fontSize: 18, fontWeight: '800', fontFamily: typography.bodyBold,
+  },
   details: { marginBottom: 24 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
-  detailLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, fontWeight: '700' },
-  detailValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  detailLabel: {
+ color: colors.textMuted, fontSize: 12, letterSpacing: 1, fontWeight: '700', fontFamily: typography.bodyBold,
+  },
+  detailValue: {
+ color: colors.textPrimary, fontSize: 15, fontWeight: '700', fontFamily: typography.bodyBold,
+  },
   impactCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, backgroundColor: colors.emeraldLight, borderRadius: 16, borderWidth: 1, borderColor: colors.emeraldLight, marginBottom: 24 },
-  impactText: { color: colors.forest, fontSize: 13, flex: 1, lineHeight: 18, fontWeight: '600' },
+  impactText: {
+ color: colors.forest, fontSize: 13, flex: 1, lineHeight: 18, fontWeight: '600', fontFamily: typography.bodyMedium,
+  },
   footer: { 
     paddingHorizontal: 24, 
     paddingTop: 16,
@@ -613,7 +632,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  reserveButtonText: { color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
+  reserveButtonText: {
+ color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2, fontFamily: typography.bodyBold,
+  },
   messageLenderBtn: {
     flexDirection: 'row',
     alignItems: 'center',

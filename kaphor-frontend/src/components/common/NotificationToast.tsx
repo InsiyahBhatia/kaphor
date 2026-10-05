@@ -9,7 +9,7 @@ import {
   PanResponder,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from './SolarIcon';
 import * as Haptics from 'expo-haptics';
 import { colors, typography } from '../../theme';
 import { connectSocket, getSocket } from '../../services/socket';
@@ -140,7 +140,8 @@ export function NotificationToast() {
   };
 
   useEffect(() => {
-    let activeSocket = connectSocket() || getSocket();
+    if (!userId) return;
+    let activeSocket = getSocket() || connectSocket();
 
     const handleNewNotification = (notif: any) => {
       if (notif && notif.title) {
@@ -219,16 +220,22 @@ export function NotificationToast() {
       attach(activeSocket);
     }
 
-    const interval = setInterval(() => {
-      const s = connectSocket() || getSocket();
-      if (s && s !== activeSocket) {
-        activeSocket = s;
-        attach(activeSocket);
-      }
-    }, 2000);
+    // The socket is created after first paint; poll only until it exists, then stop
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (!activeSocket) {
+      interval = setInterval(() => {
+        const s = getSocket() || connectSocket();
+        if (s) {
+          activeSocket = s;
+          attach(s);
+          if (interval) clearInterval(interval);
+          interval = null;
+        }
+      }, 1000);
+    }
 
     return () => {
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
       if (activeSocket) {
         activeSocket.off('new_notification', handleNewNotification);
         activeSocket.off('new_direct_message', handleNewDirectMessage);
@@ -324,13 +331,13 @@ export function NotificationToast() {
         activeOpacity={0.92}
       >
         <View style={[styles.iconWrap, { backgroundColor: catInfo.bg }]}>
-          <Ionicons name={catInfo.icon as any} size={20} color={catInfo.color} />
+          <SolarIcon name={catInfo.icon as any} size={20} color={catInfo.color} />
         </View>
 
         <View style={styles.textWrap}>
           <View style={styles.titleRow}>
             <View style={[styles.badgePill, { borderColor: catInfo.color }]}>
-              <Text style={[styles.badgeText, { color: catInfo.color }]}>{catInfo.label}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.badgeText, { color: catInfo.color }]}>{catInfo.label}</Text>
             </View>
             <Text style={styles.title} numberOfLines={1}>
               {toast.title}
@@ -346,7 +353,7 @@ export function NotificationToast() {
           onPress={dismiss}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="close" size={16} color={colors.textMuted} />
+          <SolarIcon name="close" size={16} color={colors.textMuted} />
         </TouchableOpacity>
 
         {/* Bottom Countdown Progress Bar */}

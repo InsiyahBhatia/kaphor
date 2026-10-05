@@ -13,8 +13,9 @@ import {
   Keyboard,
   Modal,
 } from 'react-native';
+import { getOrderSeed } from '../../../../src/store/listStore';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../../../../src/theme';
 import { orderService, TransactionOrder, OrderMessage, ShippingAddress } from '../../../../src/services/orderService';
@@ -47,7 +48,7 @@ const timelineSteps = [
 // The last viewed copy of each order thread is kept in memory so reopening a
 // tracking screen paints immediately and revalidates in the background
 // (stale-while-revalidate), instead of staring at a full-screen spinner.
-const orderThreadCache = new Map<string, { order: TransactionOrder; messages: OrderMessage[] }>();
+const orderThreadCache = new Map<string, { order: TransactionOrder; messages: OrderMessage[]; ts: number }>();
 
 function AddressCard({ address }: { address: ShippingAddress }) {
   return (
@@ -57,7 +58,7 @@ function AddressCard({ address }: { address: ShippingAddress }) {
         <View style={styles.addressAccent} />
         <View style={styles.addressTopRow}>
           <View style={styles.addressLabelBadge}>
-            <Ionicons name="location" size={12} color={colors.cream} />
+            <SolarIcon name="location" size={12} color={colors.cream} />
             <Text style={styles.addressLabelText}>
               {address.label?.toUpperCase() || 'SHIPPING ADDRESS'}
             </Text>
@@ -69,12 +70,12 @@ function AddressCard({ address }: { address: ShippingAddress }) {
       <View style={styles.addressBody}>
         {/* Full name + phone row */}
         <View style={styles.nameRow}>
-          <Ionicons name="person-outline" size={14} color={colors.charcoal} style={{ marginRight: 6 }} />
+          <SolarIcon name="person-outline" size={14} color={colors.charcoal} style={{ marginRight: 6 }} />
           <Text style={styles.nameText}>{address.fullName}</Text>
         </View>
         {address.phone && (
           <View style={styles.detailRow}>
-            <Ionicons name="call-outline" size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
+            <SolarIcon name="call-outline" size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
             <Text style={styles.detailText}>{address.phone}</Text>
           </View>
         )}
@@ -84,7 +85,7 @@ function AddressCard({ address }: { address: ShippingAddress }) {
 
         {/* Address lines */}
         <View style={styles.detailRow}>
-          <Ionicons name="home-outline" size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
+          <SolarIcon name="home-outline" size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
           <View style={{ flex: 1 }}>
             <Text style={styles.detailText}>{address.line1}</Text>
             {address.line2 ? <Text style={styles.detailText}>{address.line2}</Text> : null}
@@ -92,14 +93,14 @@ function AddressCard({ address }: { address: ShippingAddress }) {
         </View>
         {address.landmark && (
           <View style={styles.detailRow}>
-            <Ionicons name="compass-outline" size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
+            <SolarIcon name="compass-outline" size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
             <Text style={styles.detailText}>Near {address.landmark}</Text>
           </View>
         )}
 
         {/* City, State, Pincode */}
         <View style={styles.detailRow}>
-          <Ionicons name="map-outline" size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
+          <SolarIcon name="map-outline" size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
           <Text style={styles.detailText}>
             {address.city}, {address.state} — {address.pincode}
           </Text>
@@ -133,7 +134,7 @@ function StatusTimeline({ currentStatus }: { currentStatus: string }) {
                 ]}
               >
                 {isCompleted ? (
-                  <Ionicons name="checkmark" size={10} color={colors.cream} />
+                  <SolarIcon name="checkmark" size={10} color={colors.cream} />
                 ) : (
                   <View style={styles.timelineDotEmpty} />
                 )}
@@ -165,10 +166,10 @@ export default function OrderThreadScreen() {
   useBackHandler('/(tabs)/orders');
   // Seed from the session cache so a revisit renders the thread with zero network wait
   const cachedThread = orderId ? orderThreadCache.get(orderId) : undefined;
-  const [order, setOrder] = useState<TransactionOrder | null>(cachedThread?.order ?? null);
+  const [order, setOrder] = useState<TransactionOrder | null>(cachedThread?.order ?? getOrderSeed(orderId) ?? null);
   const [messages, setMessages] = useState<OrderMessage[]>(cachedThread?.messages ?? []);
   const [draft, setDraft] = useState('');
-  const [loading, setLoading] = useState(!cachedThread);
+  const [loading, setLoading] = useState(!cachedThread && !getOrderSeed(orderId));
   const [sending, setSending] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
@@ -193,8 +194,13 @@ export default function OrderThreadScreen() {
     };
   }, []);
 
-  const loadAll = useCallback(async () => {
+  const loadAll = useCallback(async (force = false) => {
     if (!orderId) return;
+    const hit = orderThreadCache.get(orderId);
+    if (!force && hit && Date.now() - hit.ts < 30_000) {
+      setLoading(false);
+      return;
+    }
     try {
       const [o, msgs] = await Promise.all([
         orderService.getOrder(orderId),
@@ -202,7 +208,7 @@ export default function OrderThreadScreen() {
       ]);
       setOrder(o);
       setMessages(msgs);
-      orderThreadCache.set(orderId, { order: o, messages: msgs });
+      orderThreadCache.set(orderId, { order: o, messages: msgs, ts: Date.now() });
     } catch {
       // Only show the error state when we have nothing cached to display
       if (!orderThreadCache.has(orderId)) setOrder(null);
@@ -243,7 +249,7 @@ export default function OrderThreadScreen() {
     try {
       await orderService.approveOrder(orderId);
       Alert.alert('Request Approved', 'Buyer has been notified and can now proceed with payment.');
-      await loadAll();
+      await loadAll(true);
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Could not approve order.');
     } finally {
@@ -266,7 +272,7 @@ export default function OrderThreadScreen() {
             try {
               await orderService.rejectOrder(orderId);
               Alert.alert('Request Declined', 'Purchase request has been declined.');
-              await loadAll();
+              await loadAll(true);
             } catch (e: any) {
               Alert.alert('Error', e?.response?.data?.message || 'Could not decline order.');
             } finally {
@@ -355,7 +361,7 @@ export default function OrderThreadScreen() {
       } else {
         await api.patch(`/orders/${orderId}/cancel`);
       }
-      await loadAll();
+      await loadAll(true);
       Alert.alert('Cancelled', isPaid
         ? 'The order has been cancelled and a refund has been started. Funds should appear within 5–7 business days.'
         : 'The order has been cancelled.');
@@ -372,14 +378,14 @@ export default function OrderThreadScreen() {
     setReviewSubmitting(true);
     try {
       await orderService.submitPeerReview(orderId, rating, reviewComment.trim() || undefined);
-      await loadAll();
+      await loadAll(true);
       setReviewModalVisible(false);
       Alert.alert('Thank you', 'Your review helps other buyers trust great sellers.');
     } catch (e: any) {
       const status = e?.response?.status;
       const msg = e?.response?.data?.message || '';
       if (status === 409 || msg.toLowerCase().includes('already') || msg.toLowerCase().includes('duplicate')) {
-        await loadAll();
+        await loadAll(true);
         setReviewModalVisible(false);
         Alert.alert('Review Saved', 'Your review has been saved for this transaction.');
       } else {
@@ -404,7 +410,7 @@ export default function OrderThreadScreen() {
     }
   };
 
-  if (loading || !user) {
+  if ((loading && !order) || !user) {
     return (
       <View style={styles.centered}>
         <Loader variant="order" compact />
@@ -415,7 +421,7 @@ export default function OrderThreadScreen() {
   if (!order) {
     return (
       <View style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
+        <SolarIcon name="alert-circle-outline" size={48} color={colors.textMuted} />
         <Text style={[styles.miss, { marginTop: 12 }]}>Order not found</Text>
         <TouchableOpacity 
           style={styles.goBackBtn} 
@@ -462,7 +468,7 @@ export default function OrderThreadScreen() {
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+          <SolarIcon name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <View style={styles.headerMid}>
           <Text style={styles.headerTitle} numberOfLines={1}>
@@ -473,13 +479,13 @@ export default function OrderThreadScreen() {
           </Text>
         </View>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Shield checkmark" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => router.push(`/(tabs)/shop/seller/${other.id}`)} style={styles.trustBtn}>
-          <Ionicons name="shield-checkmark-outline" size={22} color={colors.charcoal} />
+          <SolarIcon name="shield-checkmark-outline" size={22} color={colors.charcoal} />
         </TouchableOpacity>
       </View>
 
       {/* ── Status Bar ──────────────────────────────────────── */}
       <View style={styles.statusBar}>
-        <Ionicons name={cfg.icon} size={18} color={cfg.color} />
+        <SolarIcon name={cfg.icon} size={18} color={cfg.color} />
         <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
         <View style={{ flex: 1 }} />
         <Text style={styles.orderIdText}>#{order.id.slice(0, 8)}</Text>
@@ -493,8 +499,8 @@ export default function OrderThreadScreen() {
             onPress={handleReject}
             disabled={actionLoading}
           >
-            <Ionicons name="close-circle-outline" size={16} color={colors.cream} />
-            <Text style={styles.actionBtnText}>DECLINE</Text>
+            <SolarIcon name="close-circle-outline" size={16} color={colors.cream} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>DECLINE</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtnSuccess, actionLoading && styles.disabled]}
@@ -505,8 +511,8 @@ export default function OrderThreadScreen() {
               <Spinner size="small" color={colors.cream} />
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={16} color={colors.cream} />
-                <Text style={styles.actionBtnText}>APPROVE PURCHASE</Text>
+                <SolarIcon name="checkmark-circle-outline" size={16} color={colors.cream} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>APPROVE PURCHASE</Text>
               </>
             )}
           </TouchableOpacity>
@@ -520,8 +526,8 @@ export default function OrderThreadScreen() {
             style={styles.actionBtnSuccess}
             onPress={handleProceedToPayment}
           >
-            <Ionicons name="card-outline" size={16} color={colors.cream} />
-            <Text style={styles.actionBtnText}>
+            <SolarIcon name="card-outline" size={16} color={colors.cream} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>
               PROCEED TO PAYMENT (₹{Math.round(order.totalAmount).toLocaleString('en-IN')})
             </Text>
           </TouchableOpacity>
@@ -533,22 +539,22 @@ export default function OrderThreadScreen() {
         <View style={styles.actionBar}>
           {showCancel && !isSeller ? (
             <TouchableOpacity style={styles.actionBtnDanger} onPress={handleCancelRefund}>
-              <Ionicons name="close-circle-outline" size={16} color={colors.cream} />
-              <Text style={styles.actionBtnText}>
+              <SolarIcon name="close-circle-outline" size={16} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>
                 {order.status === 'CONFIRMED' ? 'REFUND' : 'CANCEL'}
               </Text>
             </TouchableOpacity>
           ) : null}
           {showShip ? (
             <TouchableOpacity style={styles.actionBtnPrimary} onPress={ship}>
-              <Ionicons name="cube-outline" size={16} color={colors.cream} />
-              <Text style={styles.actionBtnText}>MARK SHIPPED</Text>
+              <SolarIcon name="cube-outline" size={16} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>MARK SHIPPED</Text>
             </TouchableOpacity>
           ) : null}
           {showDeliver ? (
             <TouchableOpacity style={styles.actionBtnSuccess} onPress={deliver}>
-              <Ionicons name="checkmark-done-outline" size={16} color={colors.cream} />
-              <Text style={styles.actionBtnText}>CONFIRM DELIVERED</Text>
+              <SolarIcon name="checkmark-done-outline" size={16} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>CONFIRM DELIVERED</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -558,7 +564,7 @@ export default function OrderThreadScreen() {
       {isPendingApproval && (
         <View style={[styles.nextStepsBanner, { backgroundColor: colors.goldLight, borderLeftWidth: 4, borderLeftColor: colors.orange }]}>
           <View style={styles.nextStepsHeader}>
-            <Ionicons
+            <SolarIcon
               name={isSeller ? "alert-circle" : "hourglass"}
               size={18}
               color={colors.orange}
@@ -578,7 +584,7 @@ export default function OrderThreadScreen() {
       {order.status === 'PENDING' && isApproved && (
         <View style={[styles.nextStepsBanner, { backgroundColor: colors.paperLight, borderLeftWidth: 4, borderLeftColor: colors.forest }]}>
           <View style={styles.nextStepsHeader}>
-            <Ionicons name="checkmark-circle" size={18} color={colors.forest} />
+            <SolarIcon name="checkmark-circle" size={18} color={colors.forest} />
             <Text style={[styles.nextStepsTitle, { color: colors.forest }]}>
               {isBuyer ? 'PURCHASE APPROVED · READY FOR PAYMENT' : 'PURCHASE APPROVED · AWAITING BUYER PAYMENT'}
             </Text>
@@ -594,7 +600,7 @@ export default function OrderThreadScreen() {
       {isRejected && (
         <View style={[styles.nextStepsBanner, { backgroundColor: colors.crimsonLight, borderLeftWidth: 4, borderLeftColor: colors.red }]}>
           <View style={styles.nextStepsHeader}>
-            <Ionicons name="close-circle" size={18} color={colors.red} />
+            <SolarIcon name="close-circle" size={18} color={colors.red} />
             <Text style={[styles.nextStepsTitle, { color: colors.red }]}>
               REQUEST DECLINED
             </Text>
@@ -609,7 +615,7 @@ export default function OrderThreadScreen() {
       {order.status === 'CONFIRMED' && (
         <View style={styles.nextStepsBanner}>
           <View style={styles.nextStepsHeader}>
-            <Ionicons
+            <SolarIcon
               name={isSeller ? 'cube' : 'time'}
               size={18}
               color={isSeller ? colors.ink : colors.forest}
@@ -628,7 +634,7 @@ export default function OrderThreadScreen() {
       {order.status === 'SHIPPED' && (
         <View style={styles.nextStepsBanner}>
           <View style={styles.nextStepsHeader}>
-            <Ionicons name="airplane" size={18} color={colors.ink} />
+            <SolarIcon name="airplane" size={18} color={colors.ink} />
             <Text style={styles.nextStepsTitle}>
               {isBuyer ? 'ITEM IN TRANSIT' : 'ITEM SHIPPED'}
             </Text>
@@ -651,14 +657,14 @@ export default function OrderThreadScreen() {
             {/* ── Order Summary Card ────────────────────────────── */}
             <View style={styles.summaryCard}>
               <View style={styles.summaryRow}>
-                <Ionicons name="bag-outline" size={16} color={colors.charcoal} />
+                <SolarIcon name="bag-outline" size={16} color={colors.charcoal} />
                 <Text style={styles.summaryLabel}>ORDER TOTAL</Text>
                 <Text style={styles.summaryValue}>
                   ₹{Math.round(order.totalAmount).toLocaleString('en-IN')}
                 </Text>
               </View>
               <View style={styles.summaryRow}>
-                <Ionicons name="calendar-outline" size={16} color={colors.charcoal} />
+                <SolarIcon name="calendar-outline" size={16} color={colors.charcoal} />
                 <Text style={styles.summaryLabel}>PLACED ON</Text>
                 <Text style={styles.summaryDate}>
                   {new Date(order.createdAt).toLocaleDateString('en-IN', {
@@ -673,7 +679,7 @@ export default function OrderThreadScreen() {
             {/* ── Transaction Items Dossier (Request 9: Show transaction items detail) ── */}
             <View style={styles.itemsDossierCard}>
               <View style={styles.itemsDossierHeader}>
-                <Ionicons name="shirt-outline" size={15} color={colors.charcoal} />
+                <SolarIcon name="shirt-outline" size={15} color={colors.charcoal} />
                 <Text style={styles.itemsDossierTitle}>ORDER ITEMS ({order.items.length})</Text>
               </View>
               {order.items.map((item) => {
@@ -713,7 +719,7 @@ export default function OrderThreadScreen() {
                     </View>
                     <View style={styles.viewItemActionCol}>
                       <View style={styles.viewItemPill}>
-                        <Text style={styles.viewItemPillText}>VIEW →</Text>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.viewItemPillText}>VIEW →</Text>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -730,7 +736,7 @@ export default function OrderThreadScreen() {
               >
                 <View style={styles.reviewPromptHeader}>
                   <View style={styles.reviewPromptStarBox}>
-                    <Ionicons name="star" size={20} color={colors.orange} />
+                    <SolarIcon name="star" size={20} color={colors.orange} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.reviewPromptTitle}>RATE & REVIEW SELLER</Text>
@@ -740,7 +746,7 @@ export default function OrderThreadScreen() {
                   </View>
                 </View>
                 <View style={styles.reviewPromptBtn}>
-                  <Text style={styles.reviewPromptBtnText}>RATE NOW ★</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.reviewPromptBtnText}>RATE NOW ★</Text>
                 </View>
               </TouchableOpacity>
             )}
@@ -750,7 +756,7 @@ export default function OrderThreadScreen() {
               <View style={styles.completedReviewCard}>
                 <View style={styles.completedReviewTop}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Ionicons name="star" size={18} color={colors.orange} />
+                    <SolarIcon name="star" size={18} color={colors.orange} />
                     <Text style={styles.completedReviewTitle}>
                       {isBuyer ? 'YOUR PEER REVIEW' : "BUYER'S PEER REVIEW"}
                     </Text>
@@ -765,7 +771,7 @@ export default function OrderThreadScreen() {
                 ) : null}
 
                 <View style={styles.completedReviewFooter}>
-                  <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
+                  <SolarIcon name="shield-checkmark" size={12} color={colors.forest} />
                   <Text style={styles.completedReviewMeta}>
                     Verified Transaction Review · Order #{order.id.slice(0, 8).toUpperCase()}
                   </Text>
@@ -790,7 +796,7 @@ export default function OrderThreadScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.sectionTitle}>DELIVERY ADDRESS</Text>
-                  <Ionicons
+                  <SolarIcon
                     name={addressExpanded ? 'chevron-up' : 'chevron-down'}
                     size={16}
                     color={colors.textMuted}
@@ -803,7 +809,7 @@ export default function OrderThreadScreen() {
             {/* ── Unified Messages & Coordination Card ───────── */}
             <View style={styles.chatActionCard}>
               <View style={styles.chatActionIconBox}>
-                <Ionicons name="chatbubbles" size={20} color={colors.cream} />
+                <SolarIcon name="chatbubbles" size={20} color={colors.cream} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.chatActionTitle}>
@@ -818,7 +824,7 @@ export default function OrderThreadScreen() {
                 onPress={openUnifiedChat}
                 activeOpacity={0.8}
               >
-                <Text style={styles.openChatBtnText}>OPEN CHAT →</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.openChatBtnText}>OPEN CHAT →</Text>
               </TouchableOpacity>
             </View>
 
@@ -883,7 +889,7 @@ export default function OrderThreadScreen() {
             {sending ? (
               <Spinner color={colors.cream} />
             ) : (
-              <Ionicons name="send" size={18} color={colors.cream} />
+              <SolarIcon name="send" size={18} color={colors.cream} />
             )}
           </TouchableOpacity>
         </View>
@@ -924,7 +930,7 @@ export default function OrderThreadScreen() {
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   style={styles.modalCloseBtn}
                 >
-                  <Ionicons name="close" size={20} color={colors.charcoal} />
+                  <SolarIcon name="close" size={20} color={colors.charcoal} />
                 </TouchableOpacity>
               </View>
 
@@ -939,7 +945,7 @@ export default function OrderThreadScreen() {
                     }}
                     style={styles.starHitTarget}
                   >
-                    <Ionicons
+                    <SolarIcon
                       name={n <= rating ? 'star' : 'star-outline'}
                       size={36}
                       color={n <= rating ? colors.orange : colors.borderLight}
@@ -972,7 +978,7 @@ export default function OrderThreadScreen() {
                 {reviewSubmitting ? (
                   <Spinner color={colors.cream} />
                 ) : (
-                  <Text style={styles.submitReviewBtnText}>SUBMIT PEER REVIEW ★</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.submitReviewBtnText}>SUBMIT PEER REVIEW ★</Text>
                 )}
               </TouchableOpacity>
 
@@ -980,7 +986,7 @@ export default function OrderThreadScreen() {
                 style={styles.cancelReviewBtn}
                 onPress={() => setReviewModalVisible(false)}
               >
-                <Text style={styles.cancelReviewBtnText}>MAYBE LATER</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.cancelReviewBtnText}>MAYBE LATER</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

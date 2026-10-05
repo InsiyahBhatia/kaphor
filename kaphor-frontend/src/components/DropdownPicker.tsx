@@ -8,7 +8,7 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from './common/SolarIcon';
 import { colors, typography } from '../theme';
 
 interface Option {
@@ -69,7 +69,7 @@ export const DropdownPicker: React.FC<DropdownPickerProps> = ({
             </Text>
           )}
         </View>
-        {isSelected && <Ionicons name="checkmark-sharp" size={20} color={colors.red} />}
+        {isSelected && <SolarIcon name="checkmark-sharp" size={20} color={colors.red} />}
       </TouchableOpacity>
     );
   };
@@ -102,7 +102,7 @@ export const DropdownPicker: React.FC<DropdownPickerProps> = ({
         <Text style={[styles.triggerText, !selectedOption && { color: colors.textMuted }]}>
           {selectedOption ? selectedOption.label : placeholder}
         </Text>
-        <Ionicons name="chevron-down-sharp" size={20} color={colors.charcoal} />
+        <SolarIcon name="chevron-down-sharp" size={20} color={colors.charcoal} />
       </TouchableOpacity>
 
       <Modal
@@ -116,7 +116,7 @@ export const DropdownPicker: React.FC<DropdownPickerProps> = ({
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{label} // REFINEMENT</Text>
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => setModalVisible(false)}>
-                <Ionicons name="close-sharp" size={24} color={colors.charcoal} />
+                <SolarIcon name="close-sharp" size={24} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
 

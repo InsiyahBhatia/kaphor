@@ -11,7 +11,7 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
@@ -35,7 +35,7 @@ interface UpcycleCategory {
   accentColor: string;
   accentLight: string;
   accentDark: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof SolarIcon.glyphMap;
   image: any;
   tutorials: Tutorial[];
   inspirations?: string[];
@@ -141,9 +141,9 @@ function TutorialPill({ tutorial, accent, accentLight, accentDark }: {
   };
   return (
     <TouchableOpacity style={[styles.pill, { backgroundColor: accentLight, borderColor: accent }]} onPress={handlePress} activeOpacity={0.75}>
-      <Ionicons name="logo-youtube" size={11} color={colors.error} />
-      <Text style={[styles.pillText, { color: accentDark }]}>{tutorial.label}</Text>
-      <Ionicons name="open-outline" size={10} color={accentDark} style={{ opacity: 0.6 }} />
+      <SolarIcon name="logo-youtube" size={11} color={colors.error} />
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.pillText, { color: accentDark }]}>{tutorial.label}</Text>
+      <SolarIcon name="open-outline" size={10} color={accentDark} style={{ opacity: 0.6 }} />
     </TouchableOpacity>
   );
 }
@@ -153,8 +153,8 @@ function InspirationPill({ label, accent, accentLight, accentDark }: {
 }) {
   return (
     <View style={[styles.pill, { backgroundColor: accentLight, borderColor: accent }]}>
-      <Ionicons name="bulb-outline" size={11} color={accentDark} />
-      <Text style={[styles.pillText, { color: accentDark }]}>{label}</Text>
+      <SolarIcon name="bulb-outline" size={11} color={accentDark} />
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.pillText, { color: accentDark }]}>{label}</Text>
     </View>
   );
 }
@@ -169,26 +169,26 @@ function UpcycleCard({ category }: { category: UpcycleCategory }) {
           <Image source={category.image} style={styles.cardImage} resizeMode="cover" />
           <View style={styles.cardImageOverlay}>
             <View style={[styles.expandBadge, { backgroundColor: category.accentColor }]}>
-              <Ionicons name="expand-outline" size={12} color={colors.white} />
-              <Text style={styles.expandBadgeText}>View poster</Text>
+              <SolarIcon name="expand-outline" size={12} color={colors.white} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.expandBadgeText}>View poster</Text>
             </View>
           </View>
         </TouchableOpacity>
         <View style={styles.cardBody}>
           <View style={styles.cardTitleRow}>
             <View style={[styles.cardIconBox, { backgroundColor: category.accentColor }]}>
-              <Ionicons name={category.icon} size={16} color={colors.white} />
+              <SolarIcon name={category.icon} size={16} color={colors.white} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cardGarment, { color: category.accentDark }]}>UPCYCLE YOUR {category.garment}</Text>
-              <Text style={styles.cardTagline}>{category.tagline}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.cardTagline}>{category.tagline}</Text>
             </View>
           </View>
           {category.tutorials.length > 0 && (
             <>
               <View style={styles.pillSectionHeader}>
-                <Ionicons name="logo-youtube" size={10} color={colors.error} />
-                <Text style={styles.pillSectionTitle}>Watch & make</Text>
+                <SolarIcon name="logo-youtube" size={10} color={colors.error} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pillSectionTitle}>Watch & make</Text>
               </View>
               <View style={styles.pillRow}>
                 {category.tutorials.map((t) => (
@@ -200,8 +200,8 @@ function UpcycleCard({ category }: { category: UpcycleCategory }) {
           {category.inspirations && category.inspirations.length > 0 && (
             <>
               <View style={styles.pillSectionHeader}>
-                <Ionicons name="bulb-outline" size={10} color={category.accentColor} />
-                <Text style={[styles.pillSectionTitle, { color: category.accentDark }]}>Inspiration ideas</Text>
+                <SolarIcon name="bulb-outline" size={10} color={category.accentColor} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.pillSectionTitle, { color: category.accentDark }]}>Inspiration ideas</Text>
               </View>
               <View style={styles.pillRow}>
                 {category.inspirations.map((label) => (
@@ -211,16 +211,16 @@ function UpcycleCard({ category }: { category: UpcycleCategory }) {
             </>
           )}
           <TouchableOpacity style={[styles.repairCta, { borderColor: category.accentColor }]} onPress={() => router.push('/(tabs)/studio/repair-refresh' as any)} activeOpacity={0.8}>
-            <Ionicons name="color-palette-sharp" size={13} color={category.accentDark} />
-            <Text style={[styles.repairCtaText, { color: category.accentDark }]}>Repair & refresh guides</Text>
-            <Ionicons name="chevron-forward" size={12} color={category.accentDark} />
+            <SolarIcon name="color-palette-sharp" size={13} color={category.accentDark} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.repairCtaText, { color: category.accentDark }]}>Repair & refresh guides</Text>
+            <SolarIcon name="chevron-forward" size={12} color={category.accentDark} />
           </TouchableOpacity>
         </View>
       </View>
       <Modal visible={posterVisible} transparent animationType="fade" onRequestClose={() => setPosterVisible(false)}>
         <View style={styles.modalBackdrop}>
           <TouchableOpacity style={styles.modalClose} onPress={() => setPosterVisible(false)} activeOpacity={0.85}>
-            <Ionicons name="close" size={22} color={colors.white} />
+            <SolarIcon name="close" size={22} color={colors.white} />
           </TouchableOpacity>
           <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
             <Image source={category.image} style={styles.modalImage} resizeMode="contain" />

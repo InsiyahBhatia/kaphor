@@ -1,9 +1,9 @@
 import { peek, remember, hydrate } from '../../src/utils/swrCache';
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity, Dimensions, Alert, Linking, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, Platform, TouchableOpacity, Dimensions, Alert, Linking, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../src/services/garmentService';
 import { orderService } from '../../src/services/orderService';
@@ -23,11 +23,12 @@ import { hapticFeedback } from '../../src/utils/haptics';
 
 import { Header } from '../../src/components/common/Header';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
-import { Loader } from '../../src/components/common/Loader';
 import { getErrorMessage } from '../../src/utils/errors';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
+const SAVED_CARD_STYLE = { width: '100%', marginRight: 0 } as const;
+const keyById = (x: any) => x.id;
 
 export default function SavedAssetsScreen() {
   const router = useRouter();
@@ -65,7 +66,7 @@ export default function SavedAssetsScreen() {
     setRefreshing(false);
   }, [fetchSavedAssets, fetchSavedRepairs]);
 
-  const handleBuyRequest = async (item: any) => {
+  const handleBuyRequest = useCallback(async (item: any) => {
     try {
       const order = await orderService.requestPurchase(item.id);
       const orderId = order?.orderId;
@@ -92,22 +93,22 @@ export default function SavedAssetsScreen() {
     } catch (error: any) {
       Alert.alert('Notice', getErrorMessage(error, 'Could not submit purchase request. Please try again.'));
     }
-  };
+  }, [router]);
 
-  const handleRemoveRepair = async (id: string) => {
+  const handleRemoveRepair = useCallback(async (id: string) => {
     try {
       await removeSavedRepair(id);
       setSavedRepairs((prev) => prev.filter((i) => i.id !== id));
     } catch {
       Alert.alert('Error', 'Could not remove item. Please try again.');
     }
-  };
+  }, []);
 
-  const handleOpenYouTube = (videoId: string) => {
+  const handleOpenYouTube = useCallback((videoId: string) => {
     Linking.openURL(youTubeUrl(videoId)).catch(() => {
       Alert.alert('Error', 'Could not open YouTube.');
     });
-  };
+  }, []);
 
   useEffect(() => {
     hydrate<any[]>('saved:assets').then((c) => {
@@ -122,7 +123,7 @@ export default function SavedAssetsScreen() {
   }, [fetchSavedAssets, fetchSavedRepairs]);
 
   // ── Render repair item ─────────────────────────────────────────
-  const renderRepairItem = (item: SavedRepairItem) => {
+  const renderRepairItem = useCallback((item: SavedRepairItem) => {
     if (item.type === 'guide' && item.guide) {
       const g = item.guide;
       return (
@@ -174,7 +175,7 @@ export default function SavedAssetsScreen() {
                 });
               }}
             >
-              <Ionicons name="open-outline" size={14} color={colors.ink} />
+              <SolarIcon name="open-outline" size={14} color={colors.ink} />
               <Text style={[styles.repairRemoveText, { color: colors.ink }]}>READ</Text>
             </TouchableOpacity>
           ) : null}
@@ -182,7 +183,7 @@ export default function SavedAssetsScreen() {
             style={styles.repairRemoveBtn}
             onPress={() => handleRemoveRepair(item.id)}
           >
-            <Ionicons name="trash-outline" size={14} color={colors.red} />
+            <SolarIcon name="trash-outline" size={14} color={colors.red} />
             <Text style={styles.repairRemoveText}>REMOVE</Text>
           </TouchableOpacity>
         </View>
@@ -200,14 +201,14 @@ export default function SavedAssetsScreen() {
         >
           <View style={styles.youtubeThumbWrap}>
             {v.thumbnail ? (
-              <Image source={{ uri: v.thumbnail }} style={styles.youtubeThumb} />
+              <Image source={{ uri: v.thumbnail }} style={styles.youtubeThumb} contentFit="cover" cachePolicy="memory-disk" transition={120} recyclingKey={item.id} />
             ) : (
               <View style={styles.youtubeThumbPlaceholder}>
-                <Ionicons name="image-outline" size={20} color={colors.textMuted} />
+                <SolarIcon name="image-outline" size={20} color={colors.textMuted} />
               </View>
             )}
             <View style={styles.youtubePlayOverlay}>
-              <Ionicons name="play-circle" size={28} color={colors.paperGlass} />
+              <SolarIcon name="play-circle" size={28} color={colors.paperGlass} />
             </View>
           </View>
           <View style={styles.youtubeInfo}>
@@ -222,23 +223,116 @@ export default function SavedAssetsScreen() {
             onPress={() => handleRemoveRepair(item.id)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="close-circle" size={18} color={colors.red} />
+            <SolarIcon name="close-circle" size={18} color={colors.red} />
           </TouchableOpacity>
         </TouchableOpacity>
       );
     }
 
     return null;
-  };
+  }, [handleRemoveRepair, handleOpenYouTube]);
 
-  const renderShopItem = ({ item }: { item: any }) => (
-    <View style={styles.cardContainer}>
-      <EditorialGarmentCard
-        item={item}
-        onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
-        onBuyRequest={() => handleBuyRequest(item)}
-        style={{ width: '100%', marginRight: 0 }}
-      />
+  const renderShopItem = useCallback(({ item }: { item: any }) => (
+    <View style={styles.gridCol}>
+      <View style={styles.cardContainer}>
+        <EditorialGarmentCard
+          item={item}
+          onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
+          onBuyRequest={() => handleBuyRequest(item)}
+          style={SAVED_CARD_STYLE}
+        />
+      </View>
+    </View>
+  ), [router, handleBuyRequest]);
+
+  // Repairs flattened into one list: section header rows + items
+  const repairRows = useMemo(() => {
+    const guides = savedRepairs.filter((r) => r.type === 'guide');
+    const videos = savedRepairs.filter((r) => r.type === 'youtube');
+    const rows: any[] = [];
+    if (guides.length) rows.push({ id: '__h_guides', header: 'guides' }, ...guides);
+    if (videos.length) rows.push({ id: '__h_videos', header: 'videos' }, ...videos);
+    return rows;
+  }, [savedRepairs]);
+
+  const renderRepairRow = useCallback(({ item }: { item: any }) => {
+    if (item.header === 'guides') {
+      return (
+        <View style={styles.repairSubHeader}>
+          <SolarIcon name="book-outline" size={16} color={colors.charcoal} />
+          <Text style={styles.repairSubTitle}>GUIDES</Text>
+        </View>
+      );
+    }
+    if (item.header === 'videos') {
+      return (
+        <View style={[styles.repairSubHeader, { marginTop: 12 }]}>
+          <SolarIcon name="logo-youtube" size={16} color={colors.rose} />
+          <Text style={styles.repairSubTitle}>VIDEO TUTORIALS</Text>
+        </View>
+      );
+    }
+    return renderRepairItem(item);
+  }, [renderRepairItem]);
+
+  const listHeader = (
+    <View>
+      {/* Tab Switcher */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'shop' && styles.tabActive]}
+          onPress={() => setActiveTab('shop')}
+        >
+          <SolarIcon name="bag-outline" size={16} color={activeTab === 'shop' ? colors.cream : colors.charcoal} />
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'shop' && styles.tabTextActive]}>
+            SHOP ({savedAssets.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'repairs' && styles.tabActive]}
+          onPress={() => setActiveTab('repairs')}
+        >
+          <SolarIcon name="construct-outline" size={16} color={activeTab === 'repairs' ? colors.cream : colors.charcoal} />
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'repairs' && styles.tabTextActive]}>
+            REPAIRS ({savedRepairs.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'shop' && savedAssets.length > 0 && (
+        <View style={styles.vaultHeader}>
+          <Text style={styles.vaultTitle}>SAVED ITEMS</Text>
+          <View style={styles.badgeLine}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeText}>TOTAL: {savedAssets.length} ITEMS</Text>
+          </View>
+        </View>
+      )}
+      {activeTab === 'repairs' && savedRepairs.length > 0 && (
+        <View style={styles.vaultHeader}>
+          <Text style={styles.vaultTitle}>SAVED REPAIRS</Text>
+          <View style={styles.badgeLine}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgeText}>TOTAL: {savedRepairs.length} ITEMS</Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+
+  const listEmpty = activeTab === 'shop' ? (
+    <View style={styles.tabEmptyState}>
+      <SolarIcon name="bag-outline" size={40} color={colors.textMuted} />
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tabEmptyText}>No saved shop items yet.</Text>
+      <TouchableOpacity onPress={() => router.push('/(tabs)/shop')}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tabEmptyAction}>Browse the marketplace →</Text>
+      </TouchableOpacity>
+    </View>
+  ) : (
+    <View style={styles.tabEmptyState}>
+      <SolarIcon name="construct-outline" size={40} color={colors.textMuted} />
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tabEmptyText}>No saved repair sessions yet.</Text>
+      <TouchableOpacity onPress={() => router.push('/(tabs)/studio/repair-refresh')}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tabEmptyAction}>Try Repair & Refresh →</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -255,20 +349,31 @@ export default function SavedAssetsScreen() {
         </View>
       ) : bothEmpty ? (
         <View style={styles.emptyState}>
-          <Ionicons name="heart-dislike-outline" size={64} color={colors.textMuted} />
+          <SolarIcon name="heart-dislike-outline" size={64} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>NOTHING SAVED YET</Text>
           <Text style={styles.emptySub}>Save items from the shop or bookmark repair guides & video tutorials to see them here.</Text>
           <TouchableOpacity
             style={styles.ctaButton}
             onPress={() => router.push('/(tabs)/shop')}
           >
-            <Text style={styles.ctaText}>GO SHOPPING →</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.ctaText}>GO SHOPPING →</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          key={activeTab}
+          data={activeTab === 'shop' ? savedAssets : repairRows}
+          keyExtractor={keyById}
+          renderItem={activeTab === 'shop' ? renderShopItem : renderRepairRow}
+          numColumns={activeTab === 'shop' ? COLUMN_COUNT : 1}
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={listEmpty}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -277,114 +382,7 @@ export default function SavedAssetsScreen() {
               colors={[colors.crimson]}
             />
           }
-        >
-          {/* ── Tab Switcher ─────────────────────────────────────── */}
-          <View style={styles.tabBar}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'shop' && styles.tabActive]}
-              onPress={() => setActiveTab('shop')}
-            >
-              <Ionicons
-                name="bag-outline"
-                size={16}
-                color={activeTab === 'shop' ? colors.cream : colors.charcoal}
-              />
-              <Text style={[styles.tabText, activeTab === 'shop' && styles.tabTextActive]}>
-                SHOP ({savedAssets.length})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'repairs' && styles.tabActive]}
-              onPress={() => setActiveTab('repairs')}
-            >
-              <Ionicons
-                name="construct-outline"
-                size={16}
-                color={activeTab === 'repairs' ? colors.cream : colors.charcoal}
-              />
-              <Text style={[styles.tabText, activeTab === 'repairs' && styles.tabTextActive]}>
-                REPAIRS ({savedRepairs.length})
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* ── Shop Tab ─────────────────────────────────────────── */}
-          {activeTab === 'shop' && (
-            savedAssets.length === 0 ? (
-              <View style={styles.tabEmptyState}>
-                <Ionicons name="bag-outline" size={40} color={colors.textMuted} />
-                <Text style={styles.tabEmptyText}>No saved shop items yet.</Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/shop')}>
-                  <Text style={styles.tabEmptyAction}>Browse the marketplace →</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.gridWrap}>
-                <View style={styles.vaultHeader}>
-                  <Text style={styles.vaultTitle}>SAVED ITEMS</Text>
-                  <View style={styles.badgeLine}>
-                    <Text style={styles.badgeText}>TOTAL: {savedAssets.length} ITEMS</Text>
-                  </View>
-                </View>
-                <View style={styles.grid}>
-                  {savedAssets.map((item) => (
-                    <View key={item.id} style={styles.gridCol}>
-                      {renderShopItem({ item })}
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )
-          )}
-
-          {/* ── Repairs Tab ────────────────────────────────────────── */}
-          {activeTab === 'repairs' && (
-            savedRepairs.length === 0 ? (
-              <View style={styles.tabEmptyState}>
-                <Ionicons name="construct-outline" size={40} color={colors.textMuted} />
-                <Text style={styles.tabEmptyText}>No saved repair sessions yet.</Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/studio/repair-refresh')}>
-                  <Text style={styles.tabEmptyAction}>Try Repair & Refresh →</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.repairsSection}>
-                <View style={styles.vaultHeader}>
-                  <Text style={styles.vaultTitle}>SAVED REPAIRS</Text>
-                  <View style={styles.badgeLine}>
-                    <Text style={styles.badgeText}>TOTAL: {savedRepairs.length} ITEMS</Text>
-                  </View>
-                </View>
-
-                {/* Guides */}
-                {savedRepairs.filter(r => r.type === 'guide').length > 0 && (
-                  <>
-                    <View style={styles.repairSubHeader}>
-                      <Ionicons name="book-outline" size={16} color={colors.charcoal} />
-                      <Text style={styles.repairSubTitle}>GUIDES</Text>
-                    </View>
-                    {savedRepairs
-                      .filter(r => r.type === 'guide')
-                      .map(renderRepairItem)}
-                  </>
-                )}
-
-                {/* YouTube */}
-                {savedRepairs.filter(r => r.type === 'youtube').length > 0 && (
-                  <>
-                    <View style={[styles.repairSubHeader, { marginTop: 12 }]}>
-                      <Ionicons name="logo-youtube" size={16} color={colors.rose} />
-                      <Text style={styles.repairSubTitle}>VIDEO TUTORIALS</Text>
-                    </View>
-                    {savedRepairs
-                      .filter(r => r.type === 'youtube')
-                      .map(renderRepairItem)}
-                  </>
-                )}
-              </View>
-            )
-          )}
-        </ScrollView>
+        />
       )}
     </View>
   );

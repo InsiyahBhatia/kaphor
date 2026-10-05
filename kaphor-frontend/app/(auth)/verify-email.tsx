@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../src/services/api';
@@ -69,7 +69,7 @@ export default function VerifyEmailScreen() {
         ) : success ? (
           <>
             <View style={[styles.iconCircle, { backgroundColor: colors.emeraldLight, borderColor: colors.forest }]}>
-              <Ionicons name="checkmark-done-circle-outline" size={44} color={colors.forest} />
+              <SolarIcon name="checkmark-done-circle-outline" size={44} color={colors.forest} />
             </View>
             <Text style={styles.title}>Email verified</Text>
             <Squiggle width={90} />
@@ -83,13 +83,13 @@ export default function VerifyEmailScreen() {
               accessibilityRole="button"
               accessibilityLabel="Continue to sign in"
             >
-              <Text style={styles.mainBtnText}>Continue to Sign In</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainBtnText}>Continue to Sign In</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
             <View style={[styles.iconCircle, { backgroundColor: colors.crimsonLight, borderColor: colors.rose }]}>
-              <Ionicons name="alert-circle-outline" size={44} color={colors.rose} />
+              <SolarIcon name="alert-circle-outline" size={44} color={colors.rose} />
             </View>
             <Text style={styles.title}>Verification failed</Text>
             <Squiggle width={90} />
@@ -101,7 +101,7 @@ export default function VerifyEmailScreen() {
               accessibilityRole="button"
               accessibilityLabel="Back to sign in"
             >
-              <Text style={styles.mainBtnText}>Back to Sign In</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainBtnText}>Back to Sign In</Text>
             </TouchableOpacity>
           </>
         )}

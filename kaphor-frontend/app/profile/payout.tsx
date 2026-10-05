@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../../src/theme';
 import paymentService from '../../src/services/paymentService';
@@ -247,7 +247,7 @@ export default function PayoutAccountsScreen() {
       >
         <View style={[styles.inlineHeader, { paddingTop: Math.max(insets.top, 16) }]}>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => { setMode('list'); setErrors({}); setEditId(null); setForm({...EMPTY_FORM}); }}>
-            <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+            <SolarIcon name="arrow-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
           <Text style={styles.inlineHeaderTitle}>{title}</Text>
           <View style={{ width: 24 }} />
@@ -279,15 +279,15 @@ export default function PayoutAccountsScreen() {
               style={[styles.methodChip, form.method === 'BANK' && styles.methodChipActive]}
               onPress={() => setForm({...form, method: 'BANK', upiId: '', accountNumber: '', confirmAccountNumber: '', ifsc: '', bankName: ''})}
             >
-              <Ionicons name="business" size={16} color={form.method === 'BANK' ? colors.cream : colors.charcoal} />
-              <Text style={[styles.methodChipText, form.method === 'BANK' && styles.methodChipTextActive]}>BANK</Text>
+              <SolarIcon name="business" size={16} color={form.method === 'BANK' ? colors.cream : colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.methodChipText, form.method === 'BANK' && styles.methodChipTextActive]}>BANK</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.methodChip, form.method === 'UPI' && styles.methodChipActive]}
               onPress={() => setForm({...form, method: 'UPI', accountNumber: '', confirmAccountNumber: '', ifsc: '', bankName: ''})}
             >
-              <Ionicons name="phone-portrait" size={16} color={form.method === 'UPI' ? colors.cream : colors.charcoal} />
-              <Text style={[styles.methodChipText, form.method === 'UPI' && styles.methodChipTextActive]}>UPI</Text>
+              <SolarIcon name="phone-portrait" size={16} color={form.method === 'UPI' ? colors.cream : colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.methodChipText, form.method === 'UPI' && styles.methodChipTextActive]}>UPI</Text>
             </TouchableOpacity>
           </View>
 
@@ -296,7 +296,7 @@ export default function PayoutAccountsScreen() {
               {/* Edit-mode security note: ask to re-enter account number */}
               {editId && (
                 <View style={styles.editSecurityNote}>
-                  <Ionicons name="shield-checkmark" size={16} color={colors.navy} />
+                  <SolarIcon name="shield-checkmark" size={16} color={colors.navy} />
                   <Text style={styles.editSecurityNoteText}>
                     For security, please re-enter your account number to confirm the update.
                   </Text>
@@ -377,7 +377,7 @@ export default function PayoutAccountsScreen() {
 
           {/* Security Note */}
           <View style={styles.securityNote}>
-            <Ionicons name="lock-closed" size={14} color={colors.forest} />
+            <SolarIcon name="lock-closed" size={14} color={colors.forest} />
             <Text style={styles.securityNoteText}>
               Your account details are encrypted end-to-end. We never show full account numbers.
             </Text>
@@ -392,7 +392,7 @@ export default function PayoutAccountsScreen() {
             {saving ? (
               <Spinner color={colors.cream} />
             ) : (
-              <Text style={styles.saveBtnText}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.saveBtnText}>
                 {mode === 'add' ? 'SAVE ACCOUNT' : 'UPDATE ACCOUNT'}
               </Text>
             )}
@@ -411,13 +411,13 @@ export default function PayoutAccountsScreen() {
           onPress={() => safeBack('/(tabs)/profile')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+          <SolarIcon name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>PAYOUT ACCOUNTS</Text>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           onPress={() => { setForm({ ...EMPTY_FORM }); setEditId(null); setErrors({}); setMode('add'); }}
         >
-          <Ionicons name="add" size={28} color={colors.charcoal} />
+          <SolarIcon name="add" size={28} color={colors.charcoal} />
         </TouchableOpacity>
       </View>
 
@@ -427,7 +427,7 @@ export default function PayoutAccountsScreen() {
         </View>
       ) : accounts.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="wallet-outline" size={64} color={colors.textMuted} />
+          <SolarIcon name="wallet-outline" size={64} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>NO PAYOUT ACCOUNTS</Text>
           <Text style={styles.emptySub}>
             Add a bank account or UPI ID to receive payments when your items sell.
@@ -436,15 +436,15 @@ export default function PayoutAccountsScreen() {
             style={styles.addFirstBtn}
             onPress={() => { setForm({ ...EMPTY_FORM }); setEditId(null); setErrors({}); setMode('add'); }}
           >
-            <Ionicons name="add-circle-outline" size={18} color={colors.cream} />
-            <Text style={styles.addFirstBtnText}>ADD ACCOUNT</Text>
+            <SolarIcon name="add-circle-outline" size={18} color={colors.cream} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.addFirstBtnText}>ADD ACCOUNT</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
           {/* Info Banner */}
           <View style={styles.infoBanner}>
-            <Ionicons name="information-circle" size={16} color={colors.navy} />
+            <SolarIcon name="information-circle" size={16} color={colors.navy} />
             <Text style={styles.infoBannerText}>
               Payouts are processed within 48 hours after the buyer confirms delivery. Commission is deducted before transfer.
             </Text>
@@ -457,7 +457,7 @@ export default function PayoutAccountsScreen() {
                 {/* Card Header */}
                 <View style={styles.cardHeader}>
                   <View style={styles.cardMethodBadge}>
-                    <Ionicons
+                    <SolarIcon
                       name={isUpi ? 'phone-portrait' : 'business'}
                       size={12}
                       color={colors.cream}
@@ -466,8 +466,8 @@ export default function PayoutAccountsScreen() {
                   </View>
                   {acct.isDefault ? (
                     <View style={styles.defaultBadge}>
-                      <Ionicons name="checkmark-circle" size={12} color={colors.forest} />
-                      <Text style={styles.defaultBadgeText}>DEFAULT</Text>
+                      <SolarIcon name="checkmark-circle" size={12} color={colors.forest} />
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.defaultBadgeText}>DEFAULT</Text>
                     </View>
                   ) : null}
                 </View>
@@ -475,24 +475,24 @@ export default function PayoutAccountsScreen() {
                 {/* Card Body */}
                 <View style={styles.cardBody}>
                   <View style={styles.cardRow}>
-                    <Ionicons name="person-outline" size={14} color={colors.charcoal} style={{ marginRight: 8 }} />
+                    <SolarIcon name="person-outline" size={14} color={colors.charcoal} style={{ marginRight: 8 }} />
                     <Text style={styles.cardTitle}>{acct.accountHolderName}</Text>
                   </View>
                   {isUpi ? (
                     <View style={styles.cardRow}>
-                      <Ionicons name="phone-portrait" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
+                      <SolarIcon name="phone-portrait" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
                       <Text style={styles.cardDetail}>{acct.upiId}</Text>
                     </View>
                   ) : (
                     <>
                       <View style={styles.cardRow}>
-                        <Ionicons name="card-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
+                        <SolarIcon name="card-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
                         <Text style={styles.cardDetail}>
                           {maskAccount(acct.accountNumber)}
                         </Text>
                       </View>
                       <View style={styles.cardRow}>
-                        <Ionicons name="globe-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
+                        <SolarIcon name="globe-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
                         <Text style={styles.cardDetail}>
                           {acct.bankName} • {acct.ifsc}
                         </Text>
@@ -504,11 +504,11 @@ export default function PayoutAccountsScreen() {
                 {/* Card Actions */}
                 <View style={styles.cardActions}>
                   <TouchableOpacity style={styles.cardActionBtn} onPress={() => handleEdit(acct)}>
-                    <Ionicons name="create-outline" size={16} color={colors.charcoal} />
+                    <SolarIcon name="create-outline" size={16} color={colors.charcoal} />
                     <Text style={styles.cardActionText}>EDIT</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.cardActionBtn} onPress={() => handleDelete(acct.id)}>
-                    <Ionicons name="trash-outline" size={16} color={colors.red} />
+                    <SolarIcon name="trash-outline" size={16} color={colors.red} />
                     <Text style={[styles.cardActionText, { color: colors.red }]}>REMOVE</Text>
                   </TouchableOpacity>
                 </View>
@@ -521,7 +521,7 @@ export default function PayoutAccountsScreen() {
             style={styles.addMoreBtn}
             onPress={() => { setForm({ ...EMPTY_FORM }); setEditId(null); setErrors({}); setMode('add'); }}
           >
-            <Ionicons name="add-circle-outline" size={20} color={colors.charcoal} />
+            <SolarIcon name="add-circle-outline" size={20} color={colors.charcoal} />
             <Text style={styles.addMoreText}>ADD ANOTHER ACCOUNT</Text>
           </TouchableOpacity>
 
@@ -530,11 +530,11 @@ export default function PayoutAccountsScreen() {
             style={styles.historyToggle}
             onPress={() => { setShowHistory(!showHistory); if (!showHistory) loadHistory(); }}
           >
-            <Ionicons name="time-outline" size={18} color={colors.charcoal} />
+            <SolarIcon name="time-outline" size={18} color={colors.charcoal} />
             <Text style={styles.historyToggleText}>
               {showHistory ? 'HIDE PAYOUT HISTORY' : 'VIEW PAYOUT HISTORY'}
             </Text>
-            <Ionicons
+            <SolarIcon
               name={showHistory ? 'chevron-up' : 'chevron-down'}
               size={16}
               color={colors.charcoal}

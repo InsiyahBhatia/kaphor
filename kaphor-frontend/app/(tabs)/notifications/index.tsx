@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   AppState,
   AppStateStatus,
@@ -12,10 +13,9 @@ import {
   Modal,
   Switch,
   Platform,
-  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import * as Haptics from 'expo-haptics';
 import { useNotificationStore, NotificationItem } from '../../../src/store/notificationStore';
 import { swapService } from '../../../src/services/swapService';
@@ -336,14 +336,14 @@ export default function NotificationsScreen() {
           >
             {/* Left Icon Wrap */}
             <View style={[styles.iconWrap, { backgroundColor: meta.bg }]}>
-              <Ionicons name={meta.icon as any} size={20} color={meta.color} />
+              <SolarIcon name={meta.icon as any} size={20} color={meta.color} />
             </View>
 
             {/* Card Main Info */}
             <View style={styles.cardContent}>
               <View style={styles.cardHeaderRow}>
                 <View style={[styles.typeBadge, { borderColor: meta.color }]}>
-                  <Text style={[styles.typeBadgeText, { color: meta.color }]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.typeBadgeText, { color: meta.color }]}>
                     {meta.label}
                   </Text>
                 </View>
@@ -361,7 +361,7 @@ export default function NotificationsScreen() {
               </Text>
 
               <View style={styles.ctaRow}>
-                <Text style={[styles.ctaText, { color: meta.color }]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.ctaText, { color: meta.color }]}>
                   {meta.cta}
                 </Text>
               </View>
@@ -380,7 +380,7 @@ export default function NotificationsScreen() {
                   }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Ionicons name="checkmark" size={14} color={colors.forest || colors.inkSoft} />
+                  <SolarIcon name="checkmark" size={14} color={colors.forest || colors.inkSoft} />
                 </TouchableOpacity>
               )}
 
@@ -394,7 +394,7 @@ export default function NotificationsScreen() {
                 }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="close" size={14} color={colors.textMuted} />
+                <SolarIcon name="close" size={14} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -414,7 +414,7 @@ export default function NotificationsScreen() {
             style={styles.backBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
+            <SolarIcon name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
 
           <View style={{ flex: 1 }}>
@@ -431,7 +431,7 @@ export default function NotificationsScreen() {
                 style={styles.actionBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="checkmark-done" size={16} color={colors.charcoal} />
+                <SolarIcon name="checkmark-done" size={16} color={colors.charcoal} />
               </TouchableOpacity>
             )}
 
@@ -440,7 +440,7 @@ export default function NotificationsScreen() {
               style={styles.actionBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="options-outline" size={16} color={colors.charcoal} />
+              <SolarIcon name="options-outline" size={16} color={colors.charcoal} />
             </TouchableOpacity>
 
             {bellNotifications.length > 0 && (
@@ -449,7 +449,7 @@ export default function NotificationsScreen() {
                 style={styles.actionBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
+                <SolarIcon name="trash-outline" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -477,12 +477,12 @@ export default function NotificationsScreen() {
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
                   {cat}
                 </Text>
                 {count > 0 && (
                   <View style={[styles.chipBadge, isActive ? styles.chipBadgeActive : undefined]}>
-                    <Text style={[styles.chipBadgeText, isActive ? styles.chipBadgeTextActive : undefined]}>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.chipBadgeText, isActive ? styles.chipBadgeTextActive : undefined]}>
                       {count > 99 ? '99+' : count}
                     </Text>
                   </View>
@@ -513,7 +513,7 @@ export default function NotificationsScreen() {
           ) : (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconCircle}>
-              <Ionicons
+              <SolarIcon
                 name={category === 'UNREAD' ? 'checkmark-circle-outline' : 'notifications-off-outline'}
                 size={40}
                 color={colors.charcoal}
@@ -562,7 +562,7 @@ export default function NotificationsScreen() {
                 style={styles.modalCloseBtn}
                 onPress={() => setShowSettingsModal(false)}
               >
-                <Ionicons name="close" size={20} color={colors.charcoal} />
+                <SolarIcon name="close" size={20} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
 
@@ -637,7 +637,7 @@ export default function NotificationsScreen() {
               style={styles.doneBtn}
               onPress={() => setShowSettingsModal(false)}
             >
-              <Text style={styles.doneBtnText}>SAVE & CLOSE</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.doneBtnText}>SAVE & CLOSE</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

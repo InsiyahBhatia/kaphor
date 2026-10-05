@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from './common/SolarIcon';
 import { colors, typography } from '../theme';
 import { KaphorImage } from './KaphorImage';
 import { CenterCardsLoading } from './common/CardLoadingScreen';
@@ -65,12 +65,12 @@ export function RecyclingHubsModal({
           <View style={styles.modalHeader}>
             <View style={styles.headerTitleRow}>
               <View style={styles.headerIconWrap}>
-                <Ionicons name="leaf" size={14} color={colors.white} />
+                <SolarIcon name="leaf" size={14} color={colors.white} />
               </View>
               <Text style={styles.headerTitle}>TEXTILE RECYCLING HUBS</Text>
             </View>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Ionicons name="close" size={22} color={colors.charcoal} />
+              <SolarIcon name="close" size={22} color={colors.charcoal} />
             </TouchableOpacity>
           </View>
 
@@ -87,8 +87,8 @@ export function RecyclingHubsModal({
                     {garment.title}
                   </Text>
                   <View style={styles.eolBadge}>
-                    <Ionicons name="shield-checkmark" size={10} color={colors.goldDark} />
-                    <Text style={styles.eolBadgeText}>100% ZERO LANDFILL ROUTING</Text>
+                    <SolarIcon name="shield-checkmark" size={10} color={colors.goldDark} />
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.eolBadgeText}>100% ZERO LANDFILL ROUTING</Text>
                   </View>
                 </View>
               </View>
@@ -96,7 +96,7 @@ export function RecyclingHubsModal({
 
             {/* Location Pill */}
             <View style={styles.locationBanner}>
-              <Ionicons name="location-sharp" size={14} color={colors.forest} />
+              <SolarIcon name="location-sharp" size={14} color={colors.forest} />
               <Text style={styles.locationText}>
                 Nearest certified recyclers for{' '}
                 <Text style={styles.locationBold}>
@@ -128,7 +128,7 @@ export function RecyclingHubsModal({
 
                       {/* Address */}
                       <View style={styles.metaRow}>
-                        <Ionicons name="navigate-outline" size={12} color={colors.textMuted} />
+                        <SolarIcon name="navigate-outline" size={12} color={colors.textMuted} />
                         <Text style={styles.metaText} numberOfLines={2}>
                           {center.address}
                         </Text>
@@ -136,7 +136,7 @@ export function RecyclingHubsModal({
 
                       {/* Operating Hours */}
                       <View style={styles.metaRow}>
-                        <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+                        <SolarIcon name="time-outline" size={12} color={colors.textMuted} />
                         <Text style={styles.metaText}>{center.operatingHours}</Text>
                       </View>
 
@@ -144,7 +144,7 @@ export function RecyclingHubsModal({
                       <View style={styles.fiberTagRow}>
                         {center.acceptedFibers.slice(0, 3).map((fib, idx) => (
                           <View key={idx} style={styles.fiberTag}>
-                            <Text style={styles.fiberTagText}>{fib}</Text>
+                            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.fiberTagText}>{fib}</Text>
                           </View>
                         ))}
                       </View>
@@ -157,7 +157,7 @@ export function RecyclingHubsModal({
                       {/* Direct Hub Information & Drop-Off Protocol */}
                       <View style={styles.facilityDetailsBox}>
                         <View style={styles.detailRow}>
-                          <Ionicons name="call-outline" size={12} color={colors.forest} />
+                          <SolarIcon name="call-outline" size={12} color={colors.forest} />
                           <Text style={styles.detailPhoneText}>Helpline: {center.phone || '+91 1800-CIRCULAR'}</Text>
                         </View>
                         <Text style={styles.dropOffInstructions}>
@@ -172,7 +172,7 @@ export function RecyclingHubsModal({
 
             {/* AI Condition Scan Promo */}
             <TouchableOpacity style={styles.aiScanCard} onPress={handleRunAiScan} activeOpacity={0.85}>
-              <Ionicons name="scan-circle-outline" size={24} color={colors.charcoal} />
+              <SolarIcon name="scan-circle-outline" size={24} color={colors.charcoal} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.aiScanTitle}>Unsure if it can be repaired?</Text>
                 <Text style={styles.aiScanSub}>
@@ -183,7 +183,7 @@ export function RecyclingHubsModal({
 
             {/* National Mail-In Free satchel */}
             <View style={styles.mailInBanner}>
-              <Ionicons name="cube-outline" size={20} color={colors.forest} />
+              <SolarIcon name="cube-outline" size={20} color={colors.forest} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.mailInTitle}>Pan-India Free Mail-In Box</Text>
                 <Text style={styles.mailInSub}>

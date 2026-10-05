@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import paymentService from '../../../src/services/paymentService';
@@ -18,7 +18,7 @@ import { OrderCardsLoading } from '../../../src/components/common/CardLoadingScr
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TYPE_ICONS: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+const TYPE_ICONS: Record<string, { icon: keyof typeof SolarIcon.glyphMap; color: string }> = {
   PURCHASE: { icon: 'cart', color: colors.charcoal },
   RENTAL_FEE: { icon: 'calendar', color: colors.navy },
   RENTAL_DEPOSIT: { icon: 'shield-checkmark', color: colors.teal },
@@ -103,7 +103,7 @@ export default function PaymentHistoryScreen() {
           <View style={[styles.summaryCard, { borderColor: colors.forest }]}>
             <View style={styles.summaryCardTop}>
               <Text style={styles.summaryCardLabel}>TOTAL INFLOWS</Text>
-              <Ionicons name="arrow-down-circle" size={14} color={colors.forest} />
+              <SolarIcon name="arrow-down-circle" size={14} color={colors.forest} />
             </View>
             <Text style={[styles.summaryCardAmount, { color: colors.forest }]}>
               +{paymentService.formatAmount(totalInflows)}
@@ -115,7 +115,7 @@ export default function PaymentHistoryScreen() {
           <View style={[styles.summaryCard, { borderColor: colors.charcoal }]}>
             <View style={styles.summaryCardTop}>
               <Text style={styles.summaryCardLabel}>TOTAL SPENT</Text>
-              <Ionicons name="arrow-up-circle" size={14} color={colors.charcoal} />
+              <SolarIcon name="arrow-up-circle" size={14} color={colors.charcoal} />
             </View>
             <Text style={[styles.summaryCardAmount, { color: colors.charcoal }]}>
               −{paymentService.formatAmount(totalOutflows)}
@@ -127,7 +127,7 @@ export default function PaymentHistoryScreen() {
           <View style={[styles.summaryCard, { borderColor: colors.goldDark }]}>
             <View style={styles.summaryCardTop}>
               <Text style={styles.summaryCardLabel}>HELD SAFELY</Text>
-              <Ionicons name="lock-closed" size={13} color={colors.goldDark} />
+              <SolarIcon name="lock-closed" size={13} color={colors.goldDark} />
             </View>
             <Text style={[styles.summaryCardAmount, { color: colors.goldDark }]}>
               {paymentService.formatAmount(activeEscrow)}
@@ -149,7 +149,7 @@ export default function PaymentHistoryScreen() {
             onPress={() => setFilterType(null)}
             activeOpacity={0.7}
           >
-            <Text
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
               style={[
                 styles.filterChipText,
                 filterType === null && styles.filterChipTextActive,
@@ -168,7 +168,7 @@ export default function PaymentHistoryScreen() {
               onPress={() => setFilterType(type)}
               activeOpacity={0.7}
             >
-              <Text
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                 style={[
                   styles.filterChipText,
                   filterType === type && styles.filterChipTextActive,
@@ -187,7 +187,7 @@ export default function PaymentHistoryScreen() {
         </View>
       ) : filtered.length === 0 ? (
         <View style={styles.center}>
-          <Ionicons name="card-outline" size={48} color={colors.textMuted} />
+          <SolarIcon name="card-outline" size={48} color={colors.textMuted} />
           <Text style={styles.emptyText}>NO TRANSACTIONS RECORDED</Text>
           {filterType && (
             <TouchableOpacity onPress={() => setFilterType(null)}>
@@ -202,7 +202,7 @@ export default function PaymentHistoryScreen() {
         >
           {filtered.map((tx) => {
             const meta = TYPE_ICONS[tx.type] ?? {
-              icon: 'card' as keyof typeof Ionicons.glyphMap,
+              icon: 'card' as keyof typeof SolarIcon.glyphMap,
               color: colors.textMuted,
             };
             const statusMeta = paymentService.getStatusMeta(tx.status);
@@ -217,7 +217,7 @@ export default function PaymentHistoryScreen() {
               >
                 <View style={styles.cardLeft}>
                   <View style={[styles.iconWrap, { backgroundColor: meta.color }]}>
-                    <Ionicons name={meta.icon} size={18} color={colors.cream} />
+                    <SolarIcon name={meta.icon} size={18} color={colors.cream} />
                   </View>
                 </View>
                 <View style={styles.cardBody}>
@@ -263,7 +263,7 @@ export default function PaymentHistoryScreen() {
                     onPress={() => setSelectedReceipt(tx)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Ionicons name="receipt-outline" size={13} color={colors.textMuted} />
+                    <SolarIcon name="receipt-outline" size={13} color={colors.textMuted} />
                     <Text style={styles.receiptActionText}>Receipt</Text>
                   </TouchableOpacity>
                 </View>
@@ -286,14 +286,14 @@ export default function PaymentHistoryScreen() {
               {/* Modal Header */}
               <View style={styles.modalHeader}>
                 <View style={styles.modalHeaderTitleRow}>
-                  <Ionicons name="receipt-outline" size={18} color={colors.charcoal} />
+                  <SolarIcon name="receipt-outline" size={18} color={colors.charcoal} />
                   <Text style={styles.modalHeaderTitle}>TRANSACTION RECEIPT</Text>
                 </View>
                 <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                   onPress={() => setSelectedReceipt(null)}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  <Ionicons name="close" size={22} color={colors.charcoal} />
+                  <SolarIcon name="close" size={22} color={colors.charcoal} />
                 </TouchableOpacity>
               </View>
 
@@ -301,7 +301,7 @@ export default function PaymentHistoryScreen() {
                 {/* Status Hero */}
                 <View style={styles.receiptStatusBox}>
                   <View style={[styles.receiptIconCircle, { backgroundColor: paymentService.getStatusMeta(selectedReceipt.status).color }]}>
-                    <Ionicons name="checkmark" size={20} color={colors.cream} />
+                    <SolarIcon name="checkmark" size={20} color={colors.cream} />
                   </View>
                   <Text style={styles.receiptAmountHero}>
                     {selectedReceipt.type === 'SELLER_PAYOUT' || selectedReceipt.type === 'RENTAL_REFUND' ? '+' : '−'}
@@ -315,24 +315,24 @@ export default function PaymentHistoryScreen() {
                 {/* Ledger Info Table */}
                 <View style={styles.receiptTable}>
                   <View style={styles.tableRow}>
-                    <Text style={styles.tableLabel}>Transaction Type</Text>
-                    <Text style={styles.tableValue}>{selectedReceipt.type.replace(/_/g, ' ')}</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableLabel}>Transaction Type</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableValue}>{selectedReceipt.type.replace(/_/g, ' ')}</Text>
                   </View>
                   <View style={styles.tableRow}>
-                    <Text style={styles.tableLabel}>Description</Text>
-                    <Text style={[styles.tableValue, { flex: 1, textAlign: 'right' }]}>{selectedReceipt.description}</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableLabel}>Description</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tableValue, { flex: 1, textAlign: 'right' }]}>{selectedReceipt.description}</Text>
                   </View>
                   <View style={styles.tableRow}>
-                    <Text style={styles.tableLabel}>Transaction ID</Text>
-                    <Text style={styles.tableValueMono}>#{selectedReceipt.id.slice(0, 16).toUpperCase()}</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableLabel}>Transaction ID</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableValueMono}>#{selectedReceipt.id.slice(0, 16).toUpperCase()}</Text>
                   </View>
                   <View style={styles.tableRow}>
-                    <Text style={styles.tableLabel}>Reference ID</Text>
-                    <Text style={styles.tableValueMono}>#{selectedReceipt.referenceId.slice(0, 16).toUpperCase()}</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableLabel}>Reference ID</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableValueMono}>#{selectedReceipt.referenceId.slice(0, 16).toUpperCase()}</Text>
                   </View>
                   <View style={styles.tableRow}>
-                    <Text style={styles.tableLabel}>Date & Time</Text>
-                    <Text style={styles.tableValue}>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableLabel}>Date & Time</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableValue}>
                       {new Date(selectedReceipt.createdAt).toLocaleString('en-IN', {
                         dateStyle: 'medium',
                         timeStyle: 'short',
@@ -340,14 +340,14 @@ export default function PaymentHistoryScreen() {
                     </Text>
                   </View>
                   <View style={styles.tableRow}>
-                    <Text style={styles.tableLabel}>Settlement Currency</Text>
-                    <Text style={styles.tableValue}>{selectedReceipt.currency || 'INR'}</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableLabel}>Settlement Currency</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tableValue}>{selectedReceipt.currency || 'INR'}</Text>
                   </View>
                 </View>
 
                 {/* Escrow & Security Assurance */}
                 <View style={styles.escrowNotice}>
-                  <Ionicons name="shield-checkmark" size={16} color={colors.forest} />
+                  <SolarIcon name="shield-checkmark" size={16} color={colors.forest} />
                   <Text style={styles.escrowNoticeText}>
                     Your payment is held safely until the order is done.
                   </Text>
@@ -359,7 +359,7 @@ export default function PaymentHistoryScreen() {
                   onPress={() => handleNavigateToReference(selectedReceipt)}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.modalActionBtnText}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.modalActionBtnText}>
                     {selectedReceipt.linkType === 'rental' || selectedReceipt.type.includes('RENTAL')
                       ? 'VIEW RENTAL DETAILS →'
                       : 'VIEW ASSOCIATED ORDER →'}

@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useState, useEffect } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useRouter } from 'expo-router';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
@@ -38,13 +38,13 @@ export default function StudioScreen() {
         onPress={() => router.push('/(tabs)/studio/repair-refresh')}
       >
         <View style={[styles.bespokeIconBox, { backgroundColor: colors.forest }]}>
-          <Ionicons name="construct-sharp" size={24} color={colors.white} />
+          <SolarIcon name="construct-sharp" size={24} color={colors.white} />
         </View>
         <View style={{ flex: 1, marginLeft: 16 }}>
           <Text style={styles.bespokeTitle}>Repair & refresh</Text>
           <Text style={styles.bespokeSubtitle}>AI-powered repair guides, tutorials & upcycling ideas</Text>
         </View>
-        <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
+        <SolarIcon name="arrow-forward-sharp" size={20} color={colors.charcoal} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -52,13 +52,13 @@ export default function StudioScreen() {
         onPress={() => router.push('/(tabs)/studio/bespoke')}
       >
         <View style={styles.bespokeIconBox}>
-          <Ionicons name="flash-sharp" size={24} color={colors.white} />
+          <SolarIcon name="flash-sharp" size={24} color={colors.white} />
         </View>
         <View style={{ flex: 1, marginLeft: 16 }}>
           <Text style={styles.bespokeTitle}>Custom override</Text>
           <Text style={styles.bespokeSubtitle}>Commission a custom reconstructed item</Text>
         </View>
-        <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
+        <SolarIcon name="arrow-forward-sharp" size={20} color={colors.charcoal} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -66,13 +66,13 @@ export default function StudioScreen() {
         onPress={() => router.push('/(tabs)/studio/upcycle')}
       >
         <View style={[styles.bespokeIconBox, { backgroundColor: colors.terracotta }]}>
-          <Ionicons name="cut-sharp" size={24} color={colors.white} />
+          <SolarIcon name="cut-sharp" size={24} color={colors.white} />
         </View>
         <View style={{ flex: 1, marginLeft: 16 }}>
           <Text style={styles.bespokeTitle}>Upcycle lab</Text>
           <Text style={styles.bespokeSubtitle}>Selected video tutorials for transforming your clothes</Text>
         </View>
-        <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
+        <SolarIcon name="arrow-forward-sharp" size={20} color={colors.charcoal} />
       </TouchableOpacity>
 
       <View style={styles.sectionHeader}>

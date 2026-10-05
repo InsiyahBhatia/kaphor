@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, FlatList, Platform, TextInput, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { useGarmentStore } from '../../../src/store/garmentStore';
+import { useGarmentStore, prefetchDetailImages } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { orderService } from '../../../src/services/orderService';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
@@ -33,11 +33,12 @@ const ShopGridCard = React.memo(function ShopGridCard({
   );
 });
 
+const CATEGORY_CHIPS = ['ALL', ...MARKET_CATEGORIES.map((g) => g.group)];
 const CARD_STYLE = { width: '100%', marginRight: 0 } as const;
 
 export default function ShopScreen() {
   const router = useRouter();
-  const categories = ['ALL', ...MARKET_CATEGORIES.map(g => g.group)];
+  const categories = CATEGORY_CHIPS;
   const SIZES = MARKET_SIZES;
   const CONDITIONS = MARKET_CONDITIONS;
 
@@ -45,6 +46,9 @@ export default function ShopScreen() {
   const isLoading = useGarmentStore((s) => s.isLoading);
   const fetchError = useGarmentStore((s) => s.fetchError);
   const fetchFeed = useGarmentStore((s) => s.fetchFeed);
+  const loadMore = useGarmentStore((s) => s.loadMore);
+  const isLoadingMore = useGarmentStore((s) => s.isLoadingMore);
+  const hasMore = useGarmentStore((s) => Boolean(s.pagination.nextCursor));
 
   const [refreshing, setRefreshing] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -76,13 +80,7 @@ export default function ShopScreen() {
   }, [filterCategory, openFilters]);
 
   // Revalidate feed whenever user focuses the Shop tab or when filters change
-  useFocusEffect(
-    useCallback(() => {
-      applyFilters();
-    }, [searchQuery, selectedFilters])
-  );
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     const params: any = {};
     if (searchQuery) params.q = searchQuery;
     
@@ -108,17 +106,27 @@ export default function ShopScreen() {
     // Ensure we only show SALE items in the main shop feed
     params.listingType = 'SALE';
     
-    fetchFeed(params);
-  };
+    return fetchFeed(params);
+  }, [searchQuery, selectedFilters, fetchFeed]);
 
-  const onRefresh = async () => {
+  useFocusEffect(
+    useCallback(() => {
+      applyFilters();
+    }, [applyFilters])
+  );
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      applyFilters();
+      await applyFilters();
     } finally {
-      setTimeout(() => setRefreshing(false), 600);
+      setRefreshing(false);
     }
-  };
+  }, [applyFilters]);
+
+  const onEndReached = useCallback(() => {
+    if (hasMore && !isLoadingMore && !isLoading) loadMore();
+  }, [hasMore, isLoadingMore, isLoading, loadMore]);
 
   const handleBuyRequest = useCallback(async (item: any) => {
     try {
@@ -173,6 +181,10 @@ export default function ShopScreen() {
         (hasOtherListings ? (item.sellerId !== currentUserId && (item as any).seller?.id !== currentUserId) : true)
     );
   }, [garments, currentUserId]);
+
+  useEffect(() => {
+    prefetchDetailImages(saleItems, 4);
+  }, [saleItems]);
 
   const keyExtractor = useCallback((item: any) => item.id, []);
   const openItem = useCallback((id: string) => router.push(`/(tabs)/shop/${id}` as any), [router]);
@@ -268,7 +280,7 @@ export default function ShopScreen() {
             >
               <View style={styles.aiHeaderBtnInner}>
                 <EditorialIcon name="sparkle" size={16} allowTint tintColor={colors.gold} />
-                <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.aiHeaderBtnText}>AI STYLIST</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)} activeOpacity={0.85}>
@@ -317,7 +329,7 @@ export default function ShopScreen() {
                   {saleItems.length} {saleItems.length === 1 ? 'PIECE' : 'PIECES'}
                 </Text>
                 <View style={styles.saleTag}>
-                  <Text style={styles.saleTagText}>SALE ONLY</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.saleTagText}>SALE ONLY</Text>
                 </View>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -343,6 +355,9 @@ export default function ShopScreen() {
             </View>
             }
             ListEmptyComponent={renderEmpty}
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.6}
+            ListFooterComponent={isLoadingMore ? <GarmentGridSkeleton count={4} /> : null}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -412,10 +427,10 @@ export default function ShopScreen() {
 
                 <View style={styles.modalFooter}>
                   <TouchableOpacity style={styles.resetBtn} onPress={() => setSelectedFilters({ categories: [], sizes: [], priceRange: [0, 1000000], conditions: [] })}>
-                    <Text style={styles.resetBtnText}>RESET</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.resetBtnText}>RESET</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.applyBtn} onPress={() => setShowFilters(false)}>
-                    <Text style={styles.applyBtnText}>APPLY FILTERS</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.applyBtnText}>APPLY FILTERS</Text>
                   </TouchableOpacity>
                 </View>
               </View>

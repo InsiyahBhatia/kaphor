@@ -16,7 +16,6 @@ import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/70
 import { Caveat_400Regular } from '@expo-google-fonts/caveat/400Regular';
 import { Caveat_600SemiBold } from '@expo-google-fonts/caveat/600SemiBold';
 import { Caveat_700Bold } from '@expo-google-fonts/caveat/700Bold';
-import { Ionicons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { AuthProvider } from '../src/context/AuthContext';
@@ -25,6 +24,7 @@ import { Toast } from '../src/components/common/Toast';
 import { NotificationToast } from '../src/components/common/NotificationToast';
 import { useAuth } from '../src/context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
+import { BrandSplash } from '../src/components/common/BrandSplash';
 import { warmUpServer } from '../src/services/api';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
 
@@ -68,22 +68,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, segments, isLoading]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <BrandSplash visible={isLoading} />
+    </>
+  );
 }
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    ...Ionicons.font,
     BebasNeue_400Regular,
-    IBMPlexMono_400Regular,
-    PlayfairDisplay_400Regular_Italic,
     PlayfairDisplay_700Bold,
-    CormorantGaramond_400Regular,
-    CormorantGaramond_600SemiBold,
-    CormorantGaramond_700Bold,
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     Caveat_400Regular,
     Caveat_600SemiBold,
@@ -91,7 +89,16 @@ export default function RootLayout() {
   });
 
   // Decorative / rarely used fonts load in the background and never block first paint
-  useFonts({ IBMPlexMono_700Bold, IMFellEnglish_400Regular });
+  useFonts({
+    IBMPlexMono_400Regular,
+    IBMPlexMono_700Bold,
+    IMFellEnglish_400Regular,
+    PlayfairDisplay_400Regular_Italic,
+    CormorantGaramond_400Regular,
+    CormorantGaramond_600SemiBold,
+    CormorantGaramond_700Bold,
+    PlusJakartaSans_600SemiBold,
+  });
 
   useEffect(() => {
     if (loaded || error) {

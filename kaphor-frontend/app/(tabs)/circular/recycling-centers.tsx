@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Router, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import { CenterCardsLoading } from '../../../src/components/common/CardLoadingScreen';
@@ -22,7 +22,7 @@ function CenterCard({ center, router }: { center: RecyclingCenter; router: Route
           </Text>
         </View>
         <View style={styles.scorePill}>
-          <Ionicons name="shield-checkmark" size={12} color={colors.emeraldDark} />
+          <SolarIcon name="shield-checkmark" size={12} color={colors.emeraldDark} />
           <Text style={styles.scoreText}>{center.zeroLandfillScore}%</Text>
         </View>
       </View>
@@ -32,16 +32,16 @@ function CenterCard({ center, router }: { center: RecyclingCenter; router: Route
       ) : null}
 
       <View style={styles.metaRow}>
-        <Ionicons name="navigate-outline" size={15} color={colors.textMuted} />
+        <SolarIcon name="navigate-outline" size={15} color={colors.textMuted} />
         <Text style={styles.metaText} numberOfLines={3}>{center.address}</Text>
       </View>
       <View style={styles.metaRow}>
-        <Ionicons name="time-outline" size={15} color={colors.textMuted} />
+        <SolarIcon name="time-outline" size={15} color={colors.textMuted} />
         <Text style={styles.metaText}>{center.operatingHours}</Text>
       </View>
       {center.phone ? (
         <View style={styles.metaRow}>
-          <Ionicons name="call-outline" size={15} color={colors.emerald} />
+          <SolarIcon name="call-outline" size={15} color={colors.emerald} />
           <Text style={[styles.metaText, { color: colors.emeraldDark, fontWeight: '800' }]}>
             {center.phone}
           </Text>
@@ -51,7 +51,7 @@ function CenterCard({ center, router }: { center: RecyclingCenter; router: Route
       <View style={styles.fiberTagRow}>
         {center.acceptedFibers.map((fib, idx) => (
           <View key={idx} style={styles.fiberTag}>
-            <Text style={styles.fiberTagText}>{fib}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.fiberTagText}>{fib}</Text>
           </View>
         ))}
       </View>
@@ -102,7 +102,7 @@ export default function RecyclingCentersScreen() {
       >
         {/* Location Banner */}
         <View style={styles.locationBanner}>
-          <Ionicons name="location-sharp" size={16} color={colors.emerald} />
+          <SolarIcon name="location-sharp" size={16} color={colors.emerald} />
           <Text style={styles.locationText}>
             Verified drop-off centers near{' '}
             <Text style={styles.locationBold}>{data?.userLocation?.city || 'Your Area'}</Text>
@@ -116,7 +116,7 @@ export default function RecyclingCentersScreen() {
           <>
             {nearest.length > 0 && (
               <View style={styles.groupHeader}>
-                <Ionicons name="navigate-sharp" size={15} color={colors.emerald} />
+                <SolarIcon name="navigate-sharp" size={15} color={colors.emerald} />
                 <Text style={styles.groupHeaderText}>
                   NEAREST TO {data?.userLocation?.city?.toUpperCase() || 'YOU'}
                 </Text>
@@ -132,7 +132,7 @@ export default function RecyclingCentersScreen() {
 
             {others.length > 0 && (
               <View style={[styles.groupHeader, { marginTop: 8 }]}>
-                <Ionicons name="map-outline" size={15} color={colors.goldDark} />
+                <SolarIcon name="map-outline" size={15} color={colors.goldDark} />
                 <Text style={styles.groupHeaderText}>Other verified hubs (PAN-India)</Text>
               </View>
             )}
@@ -152,7 +152,7 @@ export default function RecyclingCentersScreen() {
           onPress={() => router.push('/(tabs)/circular/condition-check')}
           activeOpacity={0.85}
         >
-          <Ionicons name="scan-circle-outline" size={26} color={colors.ink} />
+          <SolarIcon name="scan-circle-outline" size={26} color={colors.ink} />
           <View style={{ flex: 1 }}>
             <Text style={styles.aiScanTitle}>Unsure if it can be repaired?</Text>
             <Text style={styles.aiScanSub}>
@@ -163,7 +163,7 @@ export default function RecyclingCentersScreen() {
 
         {/* National Mail-In Free satchel */}
         <View style={styles.mailInBanner}>
-          <Ionicons name="cube-outline" size={22} color={colors.emerald} />
+          <SolarIcon name="cube-outline" size={22} color={colors.emerald} />
           <View style={{ flex: 1 }}>
             <Text style={styles.mailInTitle}>Pan-India Free Mail-In Box</Text>
             <Text style={styles.mailInSub}>

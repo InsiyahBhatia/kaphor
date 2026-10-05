@@ -1,47 +1,39 @@
 import React from 'react';
-import {
-  Image,
-  ImageStyle,
-  StyleProp,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from 'react-native';
-import { EditorialIconName, getEditorialIcon } from './EditorialAssets';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { colors } from '../../theme';
+import { SolarIcon } from '../common/SolarIcon';
+import { EditorialIconName } from './EditorialAssets';
 
 export type { EditorialIconName };
 
 export interface EditorialIconProps {
   name: EditorialIconName;
-  /** Rendered width and height in dp. Icons ship as square 256px canvases, so this is the real visual box. */
+  /** Rendered width and height in dp. */
   size?: number;
-  /**
-   * Only applied when `allowTint` is true. The artwork is full-colour, so tinting turns it
-   * into a flat silhouette; leave both unset to keep the illustration as drawn.
-   */
+  /** Icon color. Defaults to ink. */
   tintColor?: string;
+  /** Kept so older call sites still compile; icons are always drawn in `tintColor`. */
   allowTint?: boolean;
   focused?: boolean;
   /** Screen-reader label. Without it the icon is treated as decorative and hidden from a11y. */
   accessibilityLabel?: string;
   testID?: string;
   style?: StyleProp<ViewStyle>;
-  imageStyle?: StyleProp<ImageStyle>;
+  imageStyle?: unknown;
 }
 
 export function EditorialIcon({
   name,
   size = 24,
   tintColor,
-  allowTint = false,
   focused,
   accessibilityLabel,
   testID,
   style,
-  imageStyle,
 }: EditorialIconProps) {
-  const source = getEditorialIcon(name);
   const labelled = !!accessibilityLabel;
+  // The active (focused) icon uses the accent color unless a color was given
+  const color = tintColor ?? (focused ? colors.rose : colors.ink);
 
   return (
     <View
@@ -53,17 +45,7 @@ export function EditorialIcon({
       importantForAccessibility={labelled ? 'yes' : 'no-hide-descendants'}
       style={[styles.container, { width: size, height: size }, style]}
     >
-      <Image
-        source={source}
-        style={[
-          { width: size, height: size },
-          allowTint && tintColor ? { tintColor } : undefined,
-          imageStyle,
-        ]}
-        resizeMode="contain"
-        fadeDuration={0}
-        accessibilityIgnoresInvertColors
-      />
+      <SolarIcon name={`ed:${name}`} size={size} color={color} />
     </View>
   );
 }

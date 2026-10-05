@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
+  Platform,
   TouchableOpacity,
   Alert,
   Dimensions,
@@ -13,19 +14,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../components/common/SolarIcon';
 import { colors, typography } from '../../theme';
 import { KaphorImage } from '../../components/KaphorImage';
 import { Header } from '../../components/common/Header';
 import { GarmentGridSkeleton } from '../../components/common/CardLoadingScreen';
 import { RecyclingHubsModal } from '../../components/RecyclingHubsModal';
-import { cachedGet, fetchFresh, invalidateCache } from '../../services/api';
+import { swrGet, fetchFresh, invalidateCache } from '../../services/api';
 import api from '../../services/api';
 import { hapticFeedback } from '../../utils/haptics';
-import { Loader } from '../../components/common/Loader';
 import { getErrorMessage } from '../../utils/errors';
 
 const { width } = Dimensions.get('window');
+const toList = (d: any): any[] => (Array.isArray(d) ? d : []);
+const wardrobeKey = (g: any) => g.id;
 const CARD_WIDTH = (width - 48) / 2;
 
 // ── Lifecycle state display config ───────────────────────────────
@@ -67,11 +69,11 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
     <View style={styles.card}>
       {/* Image */}
       <View style={styles.imageWrapper}>
-        <KaphorImage uri={imageUrl} style={styles.cardImage} contentFit="contain" />
+        <KaphorImage uri={imageUrl} style={styles.cardImage} contentFit="contain" width={CARD_WIDTH} recyclingKey={item.id} />
         {/* State badge overlay */}
         <View style={[styles.stateBadge, { backgroundColor: config.color }]}>
-          <Ionicons name={config.icon as any} size={10} color={colors.white} />
-          <Text style={styles.stateBadgeText}>{config.label}</Text>
+          <SolarIcon name={config.icon as any} size={10} color={colors.white} />
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.stateBadgeText}>{config.label}</Text>
         </View>
       </View>
 
@@ -90,22 +92,22 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
               style={[styles.actionBtn, { borderColor: colors.forest, flex: 1 }]}
               onPress={() => onAction('LOG_WEAR', item)}
             >
-              <Ionicons name="footsteps" size={12} color={colors.forest} />
-              <Text style={[styles.actionBtnText, { color: colors.forest }]}>I WORE THIS</Text>
+              <SolarIcon name="footsteps" size={12} color={colors.forest} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.forest }]}>I WORE THIS</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, { borderColor: colors.charcoal }]}
               onPress={() => onAction('INITIATE_RESELL', item)}
             >
-              <Ionicons name="pricetag" size={12} color={colors.charcoal} />
-              <Text style={[styles.actionBtnText, { color: colors.charcoal }]}>SELL</Text>
+              <SolarIcon name="pricetag" size={12} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.charcoal }]}>SELL</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, { borderColor: colors.goldDark, paddingHorizontal: 6 }]}
               onPress={() => onAction('RECYCLE_HUBS', item)}
               accessibilityLabel="Recycle this garment"
             >
-              <Ionicons name="leaf-outline" size={12} color={colors.goldDark} />
+              <SolarIcon name="leaf-outline" size={12} color={colors.goldDark} />
             </TouchableOpacity>
           </>
         )}
@@ -114,8 +116,8 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
             style={[styles.actionBtn, { borderColor: colors.forest, flex: 1 }]}
             onPress={() => onAction('RELIST', item)}
           >
-            <Ionicons name="arrow-up-circle" size={14} color={colors.forest} />
-            <Text style={[styles.actionBtnText, { color: colors.forest }]}>RELIST NOW</Text>
+            <SolarIcon name="arrow-up-circle" size={14} color={colors.forest} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.forest }]}>RELIST NOW</Text>
           </TouchableOpacity>
         )}
         {state === 'RENTED' && (
@@ -123,8 +125,8 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
             style={[styles.actionBtn, { borderColor: colors.ink, flex: 1, backgroundColor: colors.overlayLight }]}
             onPress={() => onAction('VIEW_RENTAL', item)}
           >
-            <Ionicons name="time" size={13} color={colors.ink} />
-            <Text style={[styles.actionBtnText, { color: colors.ink }]}>VIEW RENTAL</Text>
+            <SolarIcon name="time" size={13} color={colors.ink} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.ink }]}>VIEW RENTAL</Text>
           </TouchableOpacity>
         )}
         {state === 'CIRCULATION' && (
@@ -132,8 +134,8 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
             style={[styles.actionBtn, { borderColor: colors.navy, flex: 1, backgroundColor: colors.overlayLight }]}
             onPress={() => onAction('VIEW', item)}
           >
-            <Ionicons name="eye" size={13} color={colors.navy} />
-            <Text style={[styles.actionBtnText, { color: colors.navy }]}>VIEW ITEM</Text>
+            <SolarIcon name="eye" size={13} color={colors.navy} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.navy }]}>VIEW ITEM</Text>
           </TouchableOpacity>
         )}
         {state === 'REUSE_UPCYCLE_RECYCLE' && (
@@ -141,8 +143,8 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
             style={[styles.actionBtn, { borderColor: colors.forest, flex: 1, backgroundColor: colors.emeraldLight }]}
             onPress={() => onAction('RECYCLE_HUBS', item)}
           >
-            <Ionicons name="location" size={13} color={colors.forest} />
-            <Text style={[styles.actionBtnText, { color: colors.forest }]}>RECYCLING HUBS</Text>
+            <SolarIcon name="location" size={13} color={colors.forest} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.forest }]}>RECYCLING HUBS</Text>
           </TouchableOpacity>
         )}
         {state === 'PURCHASE_INTENT' && (
@@ -150,8 +152,8 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
             style={[styles.actionBtn, { borderColor: colors.orange, flex: 1, opacity: 0.6 }]}
             disabled
           >
-            <Ionicons name="time" size={14} color={colors.orange} />
-            <Text style={[styles.actionBtnText, { color: colors.orange }]}>AWAITING PAYMENT</Text>
+            <SolarIcon name="time" size={14} color={colors.orange} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.orange }]}>AWAITING PAYMENT</Text>
           </TouchableOpacity>
         )}
         {state === 'DECLINE' && (
@@ -160,15 +162,15 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
               style={[styles.actionBtn, { borderColor: colors.charcoal, flex: 1 }]}
               onPress={() => onAction('VIEW', item)}
             >
-              <Ionicons name="eye" size={13} color={colors.charcoal} />
-              <Text style={[styles.actionBtnText, { color: colors.charcoal }]}>VIEW</Text>
+              <SolarIcon name="eye" size={13} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.charcoal }]}>VIEW</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, { borderColor: colors.navy, flex: 1 }]}
               onPress={() => onAction('RECYCLE_HUBS', item)}
             >
-              <Ionicons name="leaf" size={13} color={colors.navy} />
-              <Text style={[styles.actionBtnText, { color: colors.navy }]}>RECYCLE</Text>
+              <SolarIcon name="leaf" size={13} color={colors.navy} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.navy }]}>RECYCLE</Text>
             </TouchableOpacity>
           </>
         )}
@@ -177,8 +179,8 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
             style={[styles.actionBtn, { borderColor: colors.charcoal, flex: 1 }]}
             onPress={() => onAction('VIEW', item)}
           >
-            <Ionicons name="eye" size={14} color={colors.charcoal} />
-            <Text style={[styles.actionBtnText, { color: colors.charcoal }]}>VIEW</Text>
+            <SolarIcon name="eye" size={14} color={colors.charcoal} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.charcoal }]}>VIEW</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -187,7 +189,7 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
 });
 
 // ── Summary stats for wardrobe header ───────────────────────────
-function WardrobeStats({
+const WardrobeStats = React.memo(function WardrobeStats({
   garments,
   onOpenRecyclingModal,
 }: {
@@ -231,7 +233,7 @@ function WardrobeStats({
         activeOpacity={0.8}
       >
         <View style={styles.recycleIconWrap}>
-          <Ionicons name="location" size={15} color={colors.goldDark} />
+          <SolarIcon name="location" size={15} color={colors.goldDark} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.recycleBannerTitle}>END-OF-LIFE TEXTILE ROUTING</Text>
@@ -244,7 +246,7 @@ function WardrobeStats({
       {/* Impact Multiplier Banner */}
       <View style={styles.impactBanner}>
         <View style={styles.impactIconWrap}>
-          <Ionicons name="leaf" size={16} color={colors.forest} />
+          <SolarIcon name="leaf" size={16} color={colors.forest} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.impactBannerTitle}>CLOSET IMPACT MULTIPLIER</Text>
@@ -255,7 +257,7 @@ function WardrobeStats({
       </View>
     </View>
   );
-}
+});
 
 // ── Main Component ──────────────────────────────────────────────
 export function WardrobeScreen() {
@@ -266,19 +268,20 @@ export function WardrobeScreen() {
   const [recyclingGarment, setRecyclingGarment] = useState<any | null>(null);
   const [showRecyclingModal, setShowRecyclingModal] = useState(false);
 
+  const wardrobeRef = useRef<any[]>([]);
+  wardrobeRef.current = wardrobe;
+
+  // Stale-while-revalidate: cached wardrobe paints immediately, fresh data replaces it
   const loadWardrobe = useCallback(async () => {
     try {
-      const data = await cachedGet('/users/me/wardrobe');
-      setWardrobe(Array.isArray(data) ? data : []);
-      // Fetch fresh in background to ensure recently bought/rented items show up immediately
-      fetchFresh('/users/me/wardrobe').then((fresh) => {
-        if (Array.isArray(fresh)) setWardrobe(fresh);
-      }).catch(() => {});
+      await swrGet('/users/me/wardrobe', (data) => {
+        setWardrobe(toList(data));
+        setLoading(false);
+      });
     } catch (error) {
       console.error('Failed to load wardrobe', error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -287,25 +290,18 @@ export function WardrobeScreen() {
     hapticFeedback.light();
     try {
       const data = await fetchFresh('/users/me/wardrobe');
-      setWardrobe(Array.isArray(data) ? data : []);
+      setWardrobe(toList(data));
     } catch {
     } finally {
       setRefreshing(false);
     }
   }, []);
 
-  // Initial mount: load cached data instantly
-  useEffect(() => {
-    loadWardrobe();
-  }, [loadWardrobe]);
-
-  // Screen focus: always fetch fresh wardrobe to reflect any recent purchases or rentals
+  // Screen focus (incl. first mount): cached copy first, then fresh to reflect recent purchases or rentals
   useFocusEffect(
     useCallback(() => {
-      fetchFresh('/users/me/wardrobe').then((data) => {
-        setWardrobe(Array.isArray(data) ? data : []);
-      }).catch(() => {});
-    }, [])
+      loadWardrobe();
+    }, [loadWardrobe])
   );
 
   // On app foreground: force fresh fetch
@@ -313,16 +309,16 @@ export function WardrobeScreen() {
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
       if (next === 'active') {
         fetchFresh('/users/me/wardrobe').then((data) => {
-          setWardrobe(Array.isArray(data) ? data : []);
+          setWardrobe(toList(data));
         }).catch(() => { });
       }
     });
     return () => sub.remove();
   }, []);
 
-  const handleAction = async (action: string, itemOrId: any) => {
+  const handleAction = useCallback(async (action: string, itemOrId: any) => {
     const garmentId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.id;
-    const item = typeof itemOrId === 'object' ? itemOrId : wardrobe.find((g) => g.id === garmentId);
+    const item = typeof itemOrId === 'object' ? itemOrId : wardrobeRef.current.find((g) => g.id === garmentId);
 
     try {
       switch (action) {
@@ -384,7 +380,44 @@ export function WardrobeScreen() {
     } catch (err: any) {
       Alert.alert('Error', getErrorMessage(err, 'Action failed'));
     }
-  };
+  }, [router, loadWardrobe]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: any }) => (
+      <View style={styles.cardWrapper}>
+        <WardrobeItemCard item={item} onAction={handleAction} />
+      </View>
+    ),
+    [handleAction]
+  );
+
+  const openRecyclingModal = useCallback(() => {
+    setRecyclingGarment(null);
+    setShowRecyclingModal(true);
+  }, []);
+
+  const listHeader = useMemo(
+    () => (
+      <View>
+        {/* Stats & Recycling Guide Banner */}
+        <WardrobeStats garments={wardrobe} onOpenRecyclingModal={openRecyclingModal} />
+
+        {/* Section label */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>ALL ITEMS ({wardrobe.length})</Text>
+          <View style={styles.legendHint}>
+            <View style={[styles.legendDot, { backgroundColor: colors.forest }]} />
+            <Text style={styles.legendText}>Owned</Text>
+            <View style={[styles.legendDot, { backgroundColor: colors.orange }]} />
+            <Text style={styles.legendText}>Sell-ready</Text>
+            <View style={[styles.legendDot, { backgroundColor: colors.navy }]} />
+            <Text style={styles.legendText}>Circulating</Text>
+          </View>
+        </View>
+      </View>
+    ),
+    [wardrobe, openRecyclingModal]
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -396,7 +429,7 @@ export function WardrobeScreen() {
         </View>
       ) : wardrobe.length === 0 ? (
         <View style={styles.center}>
-          <Ionicons name="shirt-outline" size={64} color={colors.charcoal} style={{ opacity: 0.3 }} />
+          <SolarIcon name="shirt-outline" size={64} color={colors.charcoal} style={{ opacity: 0.3 }} />
           <Text style={styles.emptyTitle}>YOUR CLOSET IS EMPTY</Text>
           <Text style={styles.emptySubtext}>
             List clothes to sell, rent or swap, or browse the marketplace.
@@ -406,21 +439,31 @@ export function WardrobeScreen() {
               style={styles.listEmptyBtn}
               onPress={() => router.push('/(tabs)/shop/sell')}
             >
-              <Ionicons name="add" size={16} color={colors.white} />
-              <Text style={styles.listEmptyBtnText}>LIST AN ITEM</Text>
+              <SolarIcon name="add" size={16} color={colors.white} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.listEmptyBtnText}>LIST AN ITEM</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.shopBtn}
               onPress={() => router.push('/(tabs)/shop')}
             >
-              <Text style={styles.shopBtnText}>BROWSE MARKETPLACE →</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.shopBtnText}>BROWSE MARKETPLACE →</Text>
             </TouchableOpacity>
           </View>
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          data={wardrobe}
+          keyExtractor={wardrobeKey}
+          renderItem={renderItem}
+          numColumns={2}
+          columnWrapperStyle={styles.columnWrap}
+          ListHeaderComponent={listHeader}
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -429,38 +472,7 @@ export function WardrobeScreen() {
               colors={[colors.crimson]}
             />
           }
-        >
-          {/* Stats & Recycling Guide Banner */}
-          <WardrobeStats
-            garments={wardrobe}
-            onOpenRecyclingModal={() => {
-              setRecyclingGarment(null);
-              setShowRecyclingModal(true);
-            }}
-          />
-
-          {/* Section label */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>ALL ITEMS ({wardrobe.length})</Text>
-            <View style={styles.legendHint}>
-              <View style={[styles.legendDot, { backgroundColor: colors.forest }]} />
-              <Text style={styles.legendText}>Owned</Text>
-              <View style={[styles.legendDot, { backgroundColor: colors.orange }]} />
-              <Text style={styles.legendText}>Sell-ready</Text>
-              <View style={[styles.legendDot, { backgroundColor: colors.navy }]} />
-              <Text style={styles.legendText}>Circulating</Text>
-            </View>
-          </View>
-
-          {/* Grid */}
-          <View style={styles.grid}>
-            {wardrobe.map((item) => (
-              <View key={item.id} style={styles.cardWrapper}>
-                <WardrobeItemCard item={item} onAction={handleAction} />
-              </View>
-            ))}
-          </View>
-        </ScrollView>
+        />
       )}
 
       {/* Certified Textile Recycling Hubs Guided Modal */}
@@ -568,7 +580,8 @@ const styles = StyleSheet.create({
 
   // Grid
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  cardWrapper: { width: CARD_WIDTH },
+  columnWrap: { gap: 12 },
+  cardWrapper: { width: CARD_WIDTH, marginBottom: 12 },
 
   // Card
   card: {

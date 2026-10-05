@@ -13,7 +13,7 @@ import {
   Linking,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { promptPhotoSelection } from '../../../src/utils/imagePicker';
 import { colors, typography, spacing, radius } from '../../../src/theme';
@@ -332,7 +332,7 @@ export default function RepairRefreshScreen() {
         <Text style={[styles.pickerValue, !value && styles.pickerPlaceholder]}>
           {value ? capitalize(value) : 'Choose one'}
         </Text>
-        <Ionicons name={openPicker === key ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
+        <SolarIcon name={openPicker === key ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
       </TouchableOpacity>
       {openPicker === key && (
         <View style={styles.chipWrap}>
@@ -348,7 +348,7 @@ export default function RepairRefreshScreen() {
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{capitalize(opt)}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.chipText, selected && styles.chipTextSelected]}>{capitalize(opt)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -370,13 +370,13 @@ export default function RepairRefreshScreen() {
           <>
             <Image source={{ uri: imageUri }} style={styles.photo} resizeMode="cover" />
             <View style={styles.photoChange}>
-              <Ionicons name="camera-outline" size={14} color={colors.white} />
+              <SolarIcon name="camera-outline" size={14} color={colors.white} />
               <Text style={styles.photoChangeText}>Change photo</Text>
             </View>
           </>
         ) : (
           <View style={styles.photoEmpty}>
-            <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
+            <SolarIcon name="camera-outline" size={32} color={colors.textMuted} />
             <Text style={styles.photoEmptyText}>Add a photo</Text>
           </View>
         )}
@@ -405,7 +405,7 @@ export default function RepairRefreshScreen() {
         activeOpacity={0.85}
         accessibilityRole="button"
       >
-        <Text style={styles.primaryBtnText}>Find tutorials</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.primaryBtnText}>Find tutorials</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -424,7 +424,7 @@ export default function RepairRefreshScreen() {
         <View style={styles.thumbWrap}>
           <Image source={{ uri: thumbnailFor(video) }} style={styles.thumb} resizeMode="cover" />
           <View style={styles.playOverlay}>
-            <Ionicons name="play-circle" size={40} color={colors.white} />
+            <SolarIcon name="play-circle" size={40} color={colors.white} />
           </View>
           <TouchableOpacity
             style={styles.saveBtn}
@@ -433,7 +433,7 @@ export default function RepairRefreshScreen() {
             accessibilityRole="button"
             accessibilityLabel={saved ? 'Remove from saved' : 'Save'}
           >
-            <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={18} color={saved ? colors.rose : colors.ink} />
+            <SolarIcon name={saved ? 'bookmark' : 'bookmark-outline'} size={18} color={saved ? colors.rose : colors.ink} />
           </TouchableOpacity>
         </View>
         <Text style={styles.videoTitle} numberOfLines={2}>{video.title}</Text>
@@ -462,7 +462,7 @@ export default function RepairRefreshScreen() {
             <Text style={styles.blogSource} numberOfLines={1}>{blog.source}</Text>
             {!!meta && (
               <View style={[styles.metaChip, { borderColor: difficultyColor(blog.difficulty) }]}>
-                <Text style={[styles.metaChipText, { color: difficultyColor(blog.difficulty) }]}>{meta}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.metaChipText, { color: difficultyColor(blog.difficulty) }]}>{meta}</Text>
               </View>
             )}
           </View>
@@ -473,7 +473,7 @@ export default function RepairRefreshScreen() {
           accessibilityRole="button"
           accessibilityLabel={saved ? 'Remove from saved' : 'Save'}
         >
-          <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={20} color={saved ? colors.rose : colors.ink} />
+          <SolarIcon name={saved ? 'bookmark' : 'bookmark-outline'} size={20} color={saved ? colors.rose : colors.ink} />
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -486,8 +486,8 @@ export default function RepairRefreshScreen() {
       activeOpacity={0.85}
       accessibilityRole="link"
     >
-      <Ionicons name="logo-youtube" size={18} color={colors.white} />
-      <Text style={styles.primaryBtnText}>Search on YouTube</Text>
+      <SolarIcon name="logo-youtube" size={18} color={colors.white} />
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.primaryBtnText}>Search on YouTube</Text>
     </TouchableOpacity>
   );
 
@@ -508,7 +508,7 @@ export default function RepairRefreshScreen() {
             accessibilityRole="tab"
             accessibilityState={{ selected: activeTab === tab }}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab === 'repair' ? 'Repair' : 'Upcycle'}
             </Text>
           </TouchableOpacity>

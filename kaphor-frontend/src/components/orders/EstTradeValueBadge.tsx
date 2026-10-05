@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../common/SolarIcon';
 import { colors, typography } from '../../theme';
 
 export interface EstTradeValueBadgeProps {
@@ -72,7 +72,7 @@ export function EstTradeValueBadge({
       ]}
     >
       <View style={styles.iconRow}>
-        <Ionicons
+        <SolarIcon
           name="pricetag-outline"
           size={isSmall ? 10 : isLarge ? 14 : 11}
           color={variant === 'subtle' ? colors.charcoal : colors.cream}
@@ -136,10 +136,12 @@ const styles = StyleSheet.create({
   labelSm: {
     fontSize: 11,
     letterSpacing: 0.5,
+      fontFamily: typography.body,
   },
   labelLg: {
     fontSize: 11,
     letterSpacing: 1,
+      fontFamily: typography.body,
   },
   valueText: {
     fontFamily: typography.headings,
@@ -151,10 +153,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 15,
     letterSpacing: 0.5,
+      fontFamily: typography.body,
   },
   valueTextLg: {
     fontSize: 17,
     letterSpacing: 1,
+      fontFamily: typography.body,
   },
 
   // Variants

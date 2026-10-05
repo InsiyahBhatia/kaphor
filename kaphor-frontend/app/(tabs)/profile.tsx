@@ -8,12 +8,12 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
-  Image,
   Modal,
   TextInput,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { capturePhotoFromCamera, pickPhotoFromGallery } from '../../src/utils/imagePicker';
 
@@ -261,7 +261,7 @@ export default function ProfileScreen() {
         title="MY PROFILE"
         rightElement={
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Log out" onPress={handleLogout} style={styles.headerLogoutBtn} hitSlop={12}>
-            <Ionicons name="log-out-outline" size={20} color={colors.charcoal} />
+            <SolarIcon name="log-out-outline" size={20} color={colors.charcoal} />
           </TouchableOpacity>
         }
       />
@@ -306,7 +306,7 @@ export default function ProfileScreen() {
                 {updatingAvatar ? (
                   <Spinner size="small" color={colors.white} />
                 ) : (
-                  <Ionicons name="camera" size={11} color={colors.white} />
+                  <SolarIcon name="camera" size={11} color={colors.white} />
                 )}
               </View>
             </TouchableOpacity>
@@ -325,12 +325,12 @@ export default function ProfileScreen() {
 
               <View style={styles.memberTagRow}>
                 <View style={styles.rolePill}>
-                  <Text style={styles.rolePillText}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.rolePillText}>
                     {role === 'ADMIN' ? 'ADMIN' : isVerified ? 'VERIFIED MEMBER' : 'CIRCULAR MEMBER'}
                   </Text>
                 </View>
                 <View style={styles.tierPill}>
-                  <Ionicons name="sparkles" size={10} color={colors.charcoal} />
+                  <SolarIcon name="sparkles" size={10} color={colors.charcoal} />
                   <Text style={styles.tierText}>{currentTier}</Text>
                 </View>
               </View>
@@ -342,10 +342,10 @@ export default function ProfileScreen() {
                   onPress={() => router.push('/my-listings' as any)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="shirt-outline" size={11} color={colors.charcoal} />
-                  <Text style={styles.topQuickBtnText}>MY LISTINGS</Text>
+                  <SolarIcon name="shirt-outline" size={11} color={colors.charcoal} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.topQuickBtnText}>MY LISTINGS</Text>
                   <View style={styles.topQuickBadge}>
-                    <Text style={styles.topQuickBadgeText}>{profile?.stats?.listings || 0}</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.topQuickBadgeText}>{profile?.stats?.listings || 0}</Text>
                   </View>
                 </TouchableOpacity>
 
@@ -354,11 +354,11 @@ export default function ProfileScreen() {
                   onPress={() => router.push('/(tabs)/orders?tab=orders' as any)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="cube-outline" size={11} color={colors.charcoal} />
-                  <Text style={styles.topQuickBtnText}>MY ORDERS</Text>
+                  <SolarIcon name="cube-outline" size={11} color={colors.charcoal} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.topQuickBtnText}>MY ORDERS</Text>
                   {activeOrdersCount > 0 ? (
                     <View style={[styles.topQuickBadge, { backgroundColor: colors.crimson }]}>
-                      <Text style={[styles.topQuickBadgeText, { color: colors.white }]}>{activeOrdersCount}</Text>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.topQuickBadgeText, { color: colors.white }]}>{activeOrdersCount}</Text>
                     </View>
                   ) : null}
                 </TouchableOpacity>
@@ -377,8 +377,8 @@ export default function ProfileScreen() {
                   }}
                   hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 >
-                  <Ionicons name="pencil-outline" size={11} color={colors.charcoal} />
-                  <Text style={styles.editBioBtnText}>EDIT BIO</Text>
+                  <SolarIcon name="pencil-outline" size={11} color={colors.charcoal} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.editBioBtnText}>EDIT BIO</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -461,7 +461,7 @@ export default function ProfileScreen() {
               >
                 <View style={styles.aestheticHeaderLeft}>
                   <View style={styles.aestheticIconBubble}>
-                    <Ionicons name="sparkles" size={13} color={colors.white} />
+                    <SolarIcon name="sparkles" size={13} color={colors.white} />
                   </View>
                   <View>
                     <Text style={styles.aestheticCardLabel}>YOUR STYLE</Text>
@@ -486,7 +486,7 @@ export default function ProfileScreen() {
                       {isAestheticVerified ? 'RETAKE' : 'TAKE QUIZ →'}
                     </Text>
                   </TouchableOpacity>
-                  <Ionicons
+                  <SolarIcon
                     name={isArchetypeExpanded ? 'chevron-up' : 'chevron-down'}
                     size={16}
                     color={colors.cream}
@@ -518,7 +518,7 @@ export default function ProfileScreen() {
                     </Text>
                   </View>
                   <View style={styles.expandDossierBtn}>
-                    <Text style={styles.expandDossierBtnText}>VIEW DETAILS ▾</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.expandDossierBtnText}>VIEW DETAILS ▾</Text>
                   </View>
                 </TouchableOpacity>
               )}
@@ -531,7 +531,7 @@ export default function ProfileScreen() {
                       <Text style={styles.aestheticNameLarge}>
                         {(aestheticMeta?.name || 'SADE GIRL').toUpperCase()}
                       </Text>
-                      <Text style={styles.aestheticTagline}>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.aestheticTagline}>
                         {aestheticMeta?.tagline || 'Moody, understated streetwear meets sultry minimalism'}
                       </Text>
                     </View>
@@ -557,10 +557,12 @@ export default function ProfileScreen() {
                       <Image
                         source={AESTHETIC_IMAGES[aestheticMeta?.id || 'Sade Girl']}
                         style={styles.profileAestheticHeroImage}
-                        resizeMode="contain"
+                        contentFit="contain"
+                        cachePolicy="memory-disk"
+                        transition={120}
                       />
                       <View style={styles.profileTapToExpandOverlay}>
-                        <Ionicons name="expand" size={13} color={colors.cream} />
+                        <SolarIcon name="expand" size={13} color={colors.cream} />
                         <Text style={styles.profileTapToExpandText}>TAP FOR FULL-SCREEN MOODBOARD</Text>
                       </View>
                     </TouchableOpacity>
@@ -585,14 +587,14 @@ export default function ProfileScreen() {
                   {Boolean(styleProfile?.secondaryAesthetic) && (
                     <View style={styles.profileSecondaryCard}>
                       <View style={styles.profileSecondaryHeader}>
-                        <Text style={styles.profileSecondaryBadge}>CLOSE SECOND ARCHETYPE</Text>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.profileSecondaryBadge}>CLOSE SECOND ARCHETYPE</Text>
                         <Text style={styles.profileSecondaryMatch}>SECONDARY VIBE</Text>
                       </View>
                       <Text style={styles.profileSecondaryName}>
                         {styleProfile.secondaryAesthetic.toUpperCase()}
                       </Text>
                       {Boolean(AESTHETIC_PROFILES[styleProfile.secondaryAesthetic as AestheticId]?.tagline) && (
-                        <Text style={styles.profileSecondaryTagline}>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.profileSecondaryTagline}>
                           {AESTHETIC_PROFILES[styleProfile.secondaryAesthetic as AestheticId].tagline}
                         </Text>
                       )}
@@ -606,10 +608,10 @@ export default function ProfileScreen() {
                       onPress={() => router.push({ pathname: '/(tabs)/shop', params: { aesthetic: aestheticMeta?.id || rawAesthetic } } as any)}
                       activeOpacity={0.85}
                     >
-                      <Text style={styles.exploreAestheticBtnText}>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.exploreAestheticBtnText}>
                         EXPLORE {aestheticMeta?.name?.toUpperCase() || 'STYLE'} PICKS
                       </Text>
-                      <Ionicons name="arrow-forward" size={13} color={colors.cream} />
+                      <SolarIcon name="arrow-forward" size={13} color={colors.cream} />
                     </TouchableOpacity>
 
                     {AESTHETIC_IMAGES[aestheticMeta?.id || 'Sade Girl'] && (
@@ -618,8 +620,8 @@ export default function ProfileScreen() {
                         onPress={() => setFullscreenAesthetic(aestheticMeta?.id || 'Sade Girl')}
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="scan-outline" size={14} color={colors.charcoal} />
-                        <Text style={styles.profileFullscreenBtnText}>INSPECT FULL MOODBOARD POSTER</Text>
+                        <SolarIcon name="scan-outline" size={14} color={colors.charcoal} />
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.profileFullscreenBtnText}>INSPECT FULL MOODBOARD POSTER</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -633,8 +635,8 @@ export default function ProfileScreen() {
                     }}
                     activeOpacity={0.85}
                   >
-                    <Ionicons name="chevron-up" size={13} color={colors.charcoal} />
-                    <Text style={styles.collapseDossierBtnText}>HIDE DETAILS ▴</Text>
+                    <SolarIcon name="chevron-up" size={13} color={colors.charcoal} />
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.collapseDossierBtnText}>HIDE DETAILS ▴</Text>
                   </TouchableOpacity>
                 </View>
               ) : !isAestheticVerified ? (
@@ -648,7 +650,7 @@ export default function ProfileScreen() {
                     onPress={() => router.push('/(auth)/style-quiz')}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.startQuizCtaText}>START AESTHETIC QUIZ →</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.startQuizCtaText}>START AESTHETIC QUIZ →</Text>
                   </TouchableOpacity>
                 </View>
               ) : null}
@@ -665,7 +667,7 @@ export default function ProfileScreen() {
           <View style={styles.impactHeader}>
             <View style={styles.impactTitleRow}>
               <View style={styles.impactIconBubble}>
-                <Ionicons name="leaf" size={14} color={colors.white} />
+                <SolarIcon name="leaf" size={14} color={colors.white} />
               </View>
               <View>
                 <Text style={styles.impactCardTitle}>IMPACT DETAILS</Text>
@@ -673,8 +675,8 @@ export default function ProfileScreen() {
               </View>
             </View>
             <View style={styles.impactActionBadge}>
-              <Text style={styles.impactActionText}>VIEW DETAILS</Text>
-              <Ionicons name="arrow-forward" size={11} color={colors.forest} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.impactActionText}>VIEW DETAILS</Text>
+              <SolarIcon name="arrow-forward" size={11} color={colors.forest} />
             </View>
           </View>
 
@@ -716,12 +718,12 @@ export default function ProfileScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Ionicons
+            <SolarIcon
               name="cube"
               size={14}
               color={activeTab === 'ACTIVITY' ? colors.white : colors.charcoal}
             />
-            <Text
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
               style={[styles.segmentTabText, activeTab === 'ACTIVITY' && styles.segmentTabTextActive]}
             >
               ACTIVITY
@@ -736,12 +738,12 @@ export default function ProfileScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Ionicons
+            <SolarIcon
               name="shirt"
               size={14}
               color={activeTab === 'CLOSET' ? colors.white : colors.charcoal}
             />
-            <Text
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
               style={[styles.segmentTabText, activeTab === 'CLOSET' && styles.segmentTabTextActive]}
             >
               WARDROBE
@@ -756,12 +758,12 @@ export default function ProfileScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Ionicons
+            <SolarIcon
               name="settings"
               size={14}
               color={activeTab === 'ACCOUNT' ? colors.white : colors.charcoal}
             />
-            <Text
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
               style={[styles.segmentTabText, activeTab === 'ACCOUNT' && styles.segmentTabTextActive]}
             >
               ACCOUNT
@@ -779,7 +781,7 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="cube-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="cube-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>MY ORDERS</Text>
@@ -787,10 +789,10 @@ export default function ProfileScreen() {
               </View>
               {activeOrdersCount > 0 && (
                 <View style={styles.badgePillActive}>
-                  <Text style={styles.badgePillActiveText}>{activeOrdersCount} ACTIVE</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.badgePillActiveText}>{activeOrdersCount} ACTIVE</Text>
                 </View>
               )}
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Occasional Rentals */}
@@ -800,13 +802,13 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="time-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="time-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>OCCASIONAL RENTALS</Text>
                 <Text style={styles.cardSubtitle}>Rent clothes and approve requests</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Fair Swaps */}
@@ -816,13 +818,13 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="swap-horizontal-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="swap-horizontal-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>CIRCULAR SWAPS</Text>
                 <Text style={styles.cardSubtitle}>Swap accessories safely</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Payment History */}
@@ -832,13 +834,13 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="receipt-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="receipt-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>PAYMENT HISTORY</Text>
                 <Text style={styles.cardSubtitle}>Invoices, security deposits & transactions</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
         )}
@@ -853,13 +855,13 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="shirt-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="shirt-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>DIGITAL CLOSET</Text>
                 <Text style={styles.cardSubtitle}>Your closet and how often you wear things</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* My Listings */}
@@ -869,16 +871,16 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="pricetag-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="pricetag-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>MY LISTINGS</Text>
                 <Text style={styles.cardSubtitle}>Active pieces listed for sale or rent</Text>
               </View>
               <View style={styles.countBadgeNeutral}>
-                <Text style={styles.countBadgeNeutralText}>{profile?.stats?.listings || 0} ITEMS</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.countBadgeNeutralText}>{profile?.stats?.listings || 0} ITEMS</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Saved Items */}
@@ -888,16 +890,16 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="heart-outline" size={18} color={colors.crimson} />
+                <SolarIcon name="heart-outline" size={18} color={colors.crimson} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>SAVED ITEMS</Text>
                 <Text style={styles.cardSubtitle}>Items you saved and are watching</Text>
               </View>
               <View style={styles.countBadgeNeutral}>
-                <Text style={styles.countBadgeNeutralText}>{savedAssets.length} SAVED</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.countBadgeNeutralText}>{savedAssets.length} SAVED</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Style Quiz */}
@@ -907,13 +909,13 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="sparkles-outline" size={18} color={colors.gold} />
+                <SolarIcon name="sparkles-outline" size={18} color={colors.gold} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>AI STYLE DETAILS</Text>
                 <Text style={styles.cardSubtitle}>Gemini aesthetic preferences & fit silhouette</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
         )}
@@ -928,7 +930,7 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="shield-checkmark-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="shield-checkmark-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>ID VERIFICATION</Text>
@@ -940,9 +942,9 @@ export default function ProfileScreen() {
                   isVerified ? { backgroundColor: colors.forest } : { backgroundColor: colors.gold },
                 ]}
               >
-                <Text style={styles.statusPillText}>{isVerified ? 'VERIFIED' : 'PENDING'}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.statusPillText}>{isVerified ? 'VERIFIED' : 'PENDING'}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Delivery Addresses */}
@@ -952,13 +954,13 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="location-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="location-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>SHIPPING ADDRESSES</Text>
                 <Text style={styles.cardSubtitle}>Where we send things and where you ship from</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Bank Payouts */}
@@ -968,13 +970,13 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="wallet-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="wallet-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>BANK & PAYOUTS</Text>
                 <Text style={styles.cardSubtitle}>Razorpay account link & earnings transfers</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Community Reviews */}
@@ -984,13 +986,13 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="star-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="star-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>COMMUNITY REVIEWS</Text>
                 <Text style={styles.cardSubtitle}>Ratings from buyers, renters & swap peers</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Notifications */}
@@ -1000,7 +1002,7 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="notifications-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="notifications-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>NOTIFICATIONS</Text>
@@ -1008,10 +1010,10 @@ export default function ProfileScreen() {
               </View>
               {unreadNotifs > 0 && (
                 <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadBadgeText}>{unreadNotifs}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.unreadBadgeText}>{unreadNotifs}</Text>
                 </View>
               )}
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Settings */}
@@ -1021,13 +1023,13 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.cardIconBox}>
-                <Ionicons name="options-outline" size={18} color={colors.charcoal} />
+                <SolarIcon name="options-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>SETTINGS & SECURITY</Text>
                 <Text style={styles.cardSubtitle}>Security credentials, password & app preferences</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             {/* Admin Override */}
@@ -1038,13 +1040,13 @@ export default function ProfileScreen() {
                 activeOpacity={0.85}
               >
                 <View style={[styles.cardIconBox, { backgroundColor: colors.crimsonLight }]}>
-                  <Ionicons name="shield" size={18} color={colors.crimson} />
+                  <SolarIcon name="shield" size={18} color={colors.crimson} />
                 </View>
                 <View style={styles.cardInfoCol}>
                   <Text style={[styles.cardTitle, { color: colors.crimson }]}>ADMIN CONSOLE</Text>
                   <Text style={styles.cardSubtitle}>Platform management, KYC approvals & metrics</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.crimson} />
+                <SolarIcon name="chevron-forward" size={16} color={colors.crimson} />
               </TouchableOpacity>
             )}
 
@@ -1054,8 +1056,8 @@ export default function ProfileScreen() {
               onPress={handleLogout}
               activeOpacity={0.85}
             >
-              <Ionicons name="log-out-outline" size={16} color={colors.crimson} />
-              <Text style={styles.logoutButtonText}>SIGN OUT</Text>
+              <SolarIcon name="log-out-outline" size={16} color={colors.crimson} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.logoutButtonText}>SIGN OUT</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1086,7 +1088,7 @@ export default function ProfileScreen() {
               onPress={() => setFullscreenAesthetic(null)}
               activeOpacity={0.8}
             >
-              <Ionicons name="close" size={26} color={colors.cream} />
+              <SolarIcon name="close" size={26} color={colors.cream} />
             </TouchableOpacity>
           </View>
 
@@ -1096,7 +1098,9 @@ export default function ProfileScreen() {
               <Image
                 source={AESTHETIC_IMAGES[fullscreenAesthetic!]}
                 style={styles.profileModalImage}
-                resizeMode="contain"
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                transition={120}
               />
             </View>
           )}
@@ -1108,7 +1112,7 @@ export default function ProfileScreen() {
               onPress={() => setFullscreenAesthetic(null)}
               activeOpacity={0.85}
             >
-              <Ionicons name="checkmark-circle" size={18} color={colors.charcoal} />
+              <SolarIcon name="checkmark-circle" size={18} color={colors.charcoal} />
               <Text style={styles.profileModalDoneText}>CLOSE FULL SCREEN VIEW</Text>
             </TouchableOpacity>
           </View>
@@ -1131,7 +1135,7 @@ export default function ProfileScreen() {
             <View style={styles.bioModalHeader}>
               <Text style={styles.bioModalTitle}>EDIT BIO</Text>
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={() => setEditingBio(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={20} color={colors.charcoal} />
+                <SolarIcon name="close" size={20} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
 
@@ -1819,6 +1823,7 @@ const styles = StyleSheet.create({
     color: colors.crimson,
     fontSize: 13,
     lineHeight: 18,
+      fontFamily: typography.body,
   },
   profileEssentialItemText: {
     flex: 1,
@@ -2051,6 +2056,7 @@ const styles = StyleSheet.create({
     color: colors.textSecond,
     lineHeight: 15,
     fontStyle: 'italic',
+      fontFamily: typography.body,
   },
   editBioBtn: {
     flexDirection: 'row',

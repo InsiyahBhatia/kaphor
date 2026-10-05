@@ -12,7 +12,9 @@ import {
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image';
+import { GoogleLogo } from '../../src/components/common/GoogleLogo';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
@@ -76,7 +78,7 @@ export default function LoginScreen() {
             onPress={() => safeBack('/(auth)/welcome')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="chevron-back" size={26} color={colors.ink} />
+            <SolarIcon name="chevron-back" size={26} color={colors.ink} />
           </TouchableOpacity>
 
           <View style={styles.brandRow}>
@@ -89,11 +91,12 @@ export default function LoginScreen() {
 
         {/* Editorial Muse Woman Illustration & Greeting */}
         <View style={styles.museHeroWrap}>
-          <Image
-            source={require('../../assets/editorial/indian/muse_pink_banarasi.png')}
+          <ExpoImage
+            source={require('../../assets/editorial/fashion/muse_hero.png')}
             style={styles.museImage}
-            resizeMode="contain"
-            accessibilityLabel="A stylish woman muse in a festive pink saree with gajra"
+            contentFit="contain"
+            cachePolicy="memory-disk"
+            accessibilityLabel="A stylish woman in a flowing pink dress with a big bow"
           />
         </View>
 
@@ -151,7 +154,7 @@ export default function LoginScreen() {
             {isLoading ? (
               <Spinner color={colors.white} />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.buttonText}>Sign In</Text>
             )}
           </TouchableOpacity>
 
@@ -172,8 +175,8 @@ export default function LoginScreen() {
               <Spinner color={colors.ink} />
             ) : (
               <>
-                <Ionicons name="logo-google" size={18} color={colors.ink} />
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
+                <GoogleLogo size={18} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.googleButtonText}>Continue with Google</Text>
               </>
             )}
           </TouchableOpacity>
@@ -229,12 +232,12 @@ const styles = StyleSheet.create({
   museHeroWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 140,
-    marginVertical: 4,
+    height: 190,
+    marginVertical: 8,
   },
   museImage: {
-    width: 140,
-    height: 140,
+    width: '100%',
+    height: 190,
   },
   header: {
     alignItems: 'center',

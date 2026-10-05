@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../../src/theme';
 import {
@@ -299,7 +299,7 @@ export default function AddressBookScreen() {
             }}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+            <SolarIcon name="arrow-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
           <Text style={styles.inlineHeaderTitle}>{title}</Text>
           <View style={{ width: 24 }} />
@@ -325,13 +325,13 @@ export default function AddressBookScreen() {
                   setForm({ ...form, label: opt });
                 }}
               >
-                <Ionicons
+                <SolarIcon
                   name={opt === 'Home' ? 'home' : opt === 'Work' ? 'briefcase' : 'location'}
                   size={12}
                   color={form.label === opt ? colors.cream : colors.charcoal}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={[styles.labelChipText, form.label === opt && styles.labelChipTextActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.labelChipText, form.label === opt && styles.labelChipTextActive]}>
                   {opt.toUpperCase()}
                 </Text>
               </TouchableOpacity>
@@ -360,7 +360,7 @@ export default function AddressBookScreen() {
             />
             {Boolean(errors.fullName) && (
               <View style={styles.errorRow}>
-                <Ionicons name="alert-circle" size={12} color={colors.red} />
+                <SolarIcon name="alert-circle" size={12} color={colors.red} />
                 <Text style={styles.errorText}>{errors.fullName}</Text>
               </View>
             )}
@@ -390,7 +390,7 @@ export default function AddressBookScreen() {
             />
             {Boolean(errors.phone) && (
               <View style={styles.errorRow}>
-                <Ionicons name="alert-circle" size={12} color={colors.red} />
+                <SolarIcon name="alert-circle" size={12} color={colors.red} />
                 <Text style={styles.errorText}>{errors.phone}</Text>
               </View>
             )}
@@ -418,7 +418,7 @@ export default function AddressBookScreen() {
             />
             {Boolean(errors.line1) && (
               <View style={styles.errorRow}>
-                <Ionicons name="alert-circle" size={12} color={colors.red} />
+                <SolarIcon name="alert-circle" size={12} color={colors.red} />
                 <Text style={styles.errorText}>{errors.line1}</Text>
               </View>
             )}
@@ -473,7 +473,7 @@ export default function AddressBookScreen() {
               />
               {Boolean(errors.city) && (
                 <View style={styles.errorRow}>
-                  <Ionicons name="alert-circle" size={12} color={colors.red} />
+                  <SolarIcon name="alert-circle" size={12} color={colors.red} />
                   <Text style={styles.errorText}>{errors.city}</Text>
                 </View>
               )}
@@ -502,7 +502,7 @@ export default function AddressBookScreen() {
               />
               {Boolean(errors.pincode) && (
                 <View style={styles.errorRow}>
-                  <Ionicons name="alert-circle" size={12} color={colors.red} />
+                  <SolarIcon name="alert-circle" size={12} color={colors.red} />
                   <Text style={styles.errorText}>{errors.pincode}</Text>
                 </View>
               )}
@@ -531,7 +531,7 @@ export default function AddressBookScreen() {
             />
             {Boolean(errors.state) && (
               <View style={styles.errorRow}>
-                <Ionicons name="alert-circle" size={12} color={colors.red} />
+                <SolarIcon name="alert-circle" size={12} color={colors.red} />
                 <Text style={styles.errorText}>{errors.state}</Text>
               </View>
             )}
@@ -549,7 +549,7 @@ export default function AddressBookScreen() {
             {saving ? (
               <Spinner color={colors.cream} />
             ) : (
-              <Text style={styles.saveBtnText}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.saveBtnText}>
                 {mode === 'add' ? 'SAVE & USE ADDRESS' : 'UPDATE ADDRESS'}
               </Text>
             )}
@@ -568,7 +568,7 @@ export default function AddressBookScreen() {
           onPress={() => safeBack('/(tabs)/profile')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+          <SolarIcon name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ADDRESS BOOK</Text>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add"
@@ -581,14 +581,14 @@ export default function AddressBookScreen() {
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="add" size={28} color={colors.charcoal} />
+          <SolarIcon name="add" size={28} color={colors.charcoal} />
         </TouchableOpacity>
       </View>
 
       {/* Select Mode Top Banner */}
       {isSelectMode && (
         <View style={styles.selectModeBanner}>
-          <Ionicons name="navigate-circle" size={16} color={colors.navy} />
+          <SolarIcon name="navigate-circle" size={16} color={colors.navy} />
           <Text style={styles.selectModeBannerText}>
             SELECT DELIVERY ADDRESS · Tap any address below to use it
           </Text>
@@ -601,7 +601,7 @@ export default function AddressBookScreen() {
         </View>
       ) : addresses.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="location-outline" size={64} color={colors.textMuted} />
+          <SolarIcon name="location-outline" size={64} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>NO ADDRESSES YET</Text>
           <Text style={styles.emptySub}>Add your delivery address.</Text>
           <TouchableOpacity
@@ -614,8 +614,8 @@ export default function AddressBookScreen() {
               setMode('add');
             }}
           >
-            <Ionicons name="add-circle-outline" size={18} color={colors.cream} />
-            <Text style={styles.addFirstBtnText}>ADD DELIVERY ADDRESS</Text>
+            <SolarIcon name="add-circle-outline" size={18} color={colors.cream} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.addFirstBtnText}>ADD DELIVERY ADDRESS</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -641,7 +641,7 @@ export default function AddressBookScreen() {
                       {isSelected && <View style={styles.radioInner} />}
                     </View>
                     <View style={styles.cardLabelBadge}>
-                      <Ionicons name="location" size={10} color={colors.cream} />
+                      <SolarIcon name="location" size={10} color={colors.cream} />
                       <Text style={styles.cardLabelText}>{addr.label.toUpperCase()}</Text>
                     </View>
                   </View>
@@ -649,8 +649,8 @@ export default function AddressBookScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     {addr.isDefault ? (
                       <View style={styles.defaultBadge}>
-                        <Ionicons name="checkmark-circle" size={12} color={colors.forest} />
-                        <Text style={styles.defaultBadgeText}>DEFAULT</Text>
+                        <SolarIcon name="checkmark-circle" size={12} color={colors.forest} />
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.defaultBadgeText}>DEFAULT</Text>
                       </View>
                     ) : (
                       <TouchableOpacity onPress={() => handleSetDefault(addr)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
@@ -663,28 +663,28 @@ export default function AddressBookScreen() {
                 {/* Card Body */}
                 <View style={styles.cardBody}>
                   <View style={styles.cardRow}>
-                    <Ionicons name="person-outline" size={14} color={colors.charcoal} style={{ marginRight: 8 }} />
+                    <SolarIcon name="person-outline" size={14} color={colors.charcoal} style={{ marginRight: 8 }} />
                     <Text style={styles.cardName}>{addr.fullName}</Text>
                   </View>
                   <View style={styles.cardRow}>
-                    <Ionicons name="call-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
+                    <SolarIcon name="call-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
                     <Text style={styles.cardDetail}>{addr.phone}</Text>
                   </View>
                   <View style={styles.cardDivider} />
                   <View style={styles.cardRow}>
-                    <Ionicons name="home-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
+                    <SolarIcon name="home-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
                     <Text style={styles.cardDetail} numberOfLines={2}>
                       {addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}
                     </Text>
                   </View>
                   {Boolean(addr.landmark) && (
                     <View style={styles.cardRow}>
-                      <Ionicons name="compass-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
+                      <SolarIcon name="compass-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
                       <Text style={styles.cardDetail}>Near {addr.landmark}</Text>
                     </View>
                   )}
                   <View style={styles.cardRow}>
-                    <Ionicons name="map-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
+                    <SolarIcon name="map-outline" size={14} color={colors.textMuted} style={{ marginRight: 8 }} />
                     <Text style={styles.cardDetail}>
                       {addr.city}, {addr.state} — {addr.pincode}
                     </Text>
@@ -696,12 +696,12 @@ export default function AddressBookScreen() {
                   style={[styles.selectBtnCta, isSelected && styles.selectBtnCtaActive]}
                   onPress={() => handleSelectAddress(addr)}
                 >
-                  <Ionicons
+                  <SolarIcon
                     name={isSelected ? 'checkmark-circle' : 'radio-button-off'}
                     size={14}
                     color={isSelected ? colors.cream : colors.charcoal}
                   />
-                  <Text style={[styles.selectBtnCtaText, isSelected && styles.selectBtnCtaTextActive]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.selectBtnCtaText, isSelected && styles.selectBtnCtaTextActive]}>
                     {isSelected ? 'ACTIVE DELIVERY DESTINATION' : 'DELIVER TO THIS ADDRESS'}
                   </Text>
                 </TouchableOpacity>
@@ -713,7 +713,7 @@ export default function AddressBookScreen() {
                     onPress={() => handleEdit(addr)}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   >
-                    <Ionicons name="create-outline" size={15} color={colors.charcoal} />
+                    <SolarIcon name="create-outline" size={15} color={colors.charcoal} />
                     <Text style={styles.cardActionText}>EDIT</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -721,7 +721,7 @@ export default function AddressBookScreen() {
                     onPress={() => handleDelete(addr.id)}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   >
-                    <Ionicons name="trash-outline" size={15} color={colors.red} />
+                    <SolarIcon name="trash-outline" size={15} color={colors.red} />
                     <Text style={[styles.cardActionText, { color: colors.red }]}>DELETE</Text>
                   </TouchableOpacity>
                 </View>
@@ -740,7 +740,7 @@ export default function AddressBookScreen() {
               setMode('add');
             }}
           >
-            <Ionicons name="add-circle-outline" size={20} color={colors.charcoal} />
+            <SolarIcon name="add-circle-outline" size={20} color={colors.charcoal} />
             <Text style={styles.addMoreText}>ADD ANOTHER ADDRESS</Text>
           </TouchableOpacity>
         </ScrollView>

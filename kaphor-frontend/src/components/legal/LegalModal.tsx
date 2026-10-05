@@ -9,9 +9,9 @@ import {
   SafeAreaView,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../common/SolarIcon';
 import { colors, typography } from '../../theme';
-import { LEGAL_DOCUMENTS, LegalDocument } from '../../data/legalPolicies';
+import type { LegalDocument } from '../../data/legalPolicies';
 
 interface LegalModalProps {
   visible: boolean;
@@ -38,6 +38,21 @@ export const LegalModal: React.FC<LegalModalProps> = ({
     }
   }, [initialDocId, visible]);
 
+  // The policy text is large: load it the first time the modal opens
+  const [docs, setDocs] = useState<LegalDocument[] | null>(null);
+  useEffect(() => {
+    if (!visible || docs) return;
+    let alive = true;
+    import('../../data/legalPolicies').then((m) => {
+      if (alive) setDocs(m.LEGAL_DOCUMENTS);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [visible, docs]);
+
+  if (!docs) return null;
+  const LEGAL_DOCUMENTS = docs;
   const activeDoc: LegalDocument =
     LEGAL_DOCUMENTS.find((d) => d.id === selectedId) || LEGAL_DOCUMENTS[0];
 
@@ -63,7 +78,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={24} color={colors.textPrimary} />
+              <SolarIcon name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -82,13 +97,13 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                   onPress={() => setSelectedId(doc.id)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons
+                  <SolarIcon
                     name={doc.icon as any}
                     size={14}
                     color={isActive ? colors.white : colors.textSecond}
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.chipText, isActive && styles.chipTextActive]}>
                     {doc.shortTitle}
                   </Text>
                 </TouchableOpacity>
@@ -128,7 +143,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
 
           {/* Grievance Officer Quick Contact Footer */}
           <View style={styles.grievanceNotice}>
-            <Ionicons name="mail-outline" size={16} color={colors.ink} />
+            <SolarIcon name="mail-outline" size={16} color={colors.ink} />
             <Text style={styles.grievanceNoticeText}>
               For questions or dispute escalations, contact the Grievance Officer at{' '}
               <Text style={{ fontWeight: '700', color: colors.ink }}>grievance@kaphor.com</Text>.
@@ -147,8 +162,8 @@ export const LegalModal: React.FC<LegalModalProps> = ({
               }}
               activeOpacity={0.85}
             >
-              <Ionicons name="checkmark-done" size={18} color={colors.white} style={{ marginRight: 8 }} />
-              <Text style={styles.acceptButtonText}>{acceptButtonText}</Text>
+              <SolarIcon name="checkmark-done" size={18} color={colors.white} style={{ marginRight: 8 }} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.acceptButtonText}>{acceptButtonText}</Text>
             </TouchableOpacity>
           </View>
         )}

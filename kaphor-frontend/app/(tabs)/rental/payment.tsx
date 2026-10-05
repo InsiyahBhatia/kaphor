@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useRazorpay } from '@codearcade/expo-razorpay';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
@@ -26,7 +26,7 @@ interface PaymentMethodOption {
   title: string;
   subtitle: string;
   badge: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof SolarIcon.glyphMap;
 }
 
 const PAYMENT_METHODS: PaymentMethodOption[] = [
@@ -247,7 +247,7 @@ export default function RentalPaymentScreen() {
       <View style={styles.progressBar}>
         <View style={styles.step}>
           <View style={[styles.stepCircle, styles.stepDone]}>
-            <Ionicons name="checkmark" size={14} color={colors.cream} />
+            <SolarIcon name="checkmark" size={14} color={colors.cream} />
           </View>
           <Text style={[styles.stepLabel, styles.stepLabelDone]}>Details</Text>
         </View>
@@ -300,7 +300,7 @@ export default function RentalPaymentScreen() {
                 ]}
               >
                 {includeInsurance && (
-                  <Ionicons name="checkmark" size={12} color={colors.cream} />
+                  <SolarIcon name="checkmark" size={12} color={colors.cream} />
                 )}
               </View>
               <View style={styles.insuranceInfo}>
@@ -326,7 +326,7 @@ export default function RentalPaymentScreen() {
 
         {/* Deposit Note */}
         <View style={styles.depositNote}>
-          <Ionicons name="information-circle" size={18} color={colors.navy} />
+          <SolarIcon name="information-circle" size={18} color={colors.navy} />
           <Text style={styles.depositNoteText}>
             The security deposit of {fmt(breakdown?.securityDeposit ?? 0)} is
             fully refundable and will be released within 48 hours after the item
@@ -363,7 +363,7 @@ export default function RentalPaymentScreen() {
                       {isSelected && <View style={styles.radioDot} />}
                     </View>
                     <View style={[styles.methodIconBox, isSelected && styles.methodIconBoxActive]}>
-                      <Ionicons
+                      <SolarIcon
                         name={item.icon}
                         size={18}
                         color={isSelected ? colors.cream : colors.charcoal}
@@ -385,7 +385,7 @@ export default function RentalPaymentScreen() {
                             isSelected && styles.methodBadgeActive,
                           ]}
                         >
-                          <Text
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                             style={[
                               styles.methodBadgeText,
                               isSelected && styles.methodBadgeTextActive,
@@ -405,8 +405,8 @@ export default function RentalPaymentScreen() {
             })}
 
             <View style={styles.securityBadge}>
-              <Ionicons name="shield-checkmark" size={14} color={colors.forest} />
-              <Text style={styles.securityBadgeText}>
+              <SolarIcon name="shield-checkmark" size={14} color={colors.forest} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.securityBadgeText}>
                 Razorpay 256-bit SSL Encrypted • PCI-DSS Level 1 Certified
               </Text>
             </View>
@@ -432,10 +432,10 @@ export default function RentalPaymentScreen() {
             <Spinner color={colors.cream} size="small" />
           ) : (
             <>
-              <Text style={styles.payBtnText}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.payBtnText}>
                 PAY VIA {selectedMethod.toUpperCase()}
               </Text>
-              <Ionicons name="lock-closed" size={16} color={colors.cream} />
+              <SolarIcon name="lock-closed" size={16} color={colors.cream} />
             </>
           )}
         </TouchableOpacity>

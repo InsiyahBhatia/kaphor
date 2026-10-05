@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../common/SolarIcon';
 import { colors, typography } from '../../theme';
 import { formatTradeValuation } from './EstTradeValueBadge';
 
@@ -64,12 +64,12 @@ export function FairValueMatcher({
       {/* HEADER SECTION */}
       <View style={styles.headerRow}>
         <View style={styles.titleWithIcon}>
-          <Ionicons name="scale-outline" size={14} color={colors.charcoal} />
+          <SolarIcon name="scale-outline" size={14} color={colors.charcoal} />
           <Text style={styles.matcherTitle}>Fair value matcher</Text>
         </View>
 
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
-          <Text style={styles.statusBadgeText}>{getStatusBadgeText()}</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.statusBadgeText}>{getStatusBadgeText()}</Text>
         </View>
       </View>
 
@@ -108,14 +108,14 @@ export function FairValueMatcher({
       <View style={styles.recommendationBox}>
         {isEquitable ? (
           <View style={styles.recContent}>
-            <Ionicons name="checkmark-circle" size={15} color={colors.emeraldDark} />
+            <SolarIcon name="checkmark-circle" size={15} color={colors.emeraldDark} />
             <Text style={styles.recText}>
               <Text style={styles.recTextBold}>Fair 1:1 Barter Confirmed.</Text> Both pieces have balanced appraisal value within standard vintage trade tolerances. No cash equalizer needed.
             </Text>
           </View>
         ) : (
           <View style={styles.recContent}>
-            <Ionicons name="alert-circle-outline" size={15} color={getStatusColor()} />
+            <SolarIcon name="alert-circle-outline" size={15} color={getStatusColor()} />
             <Text style={styles.recText}>
               <Text style={styles.recTextBold}>Suggested Cash Equalizer: ₹{delta.toLocaleString('en-IN')}.</Text>{' '}
               {userHasSurplus
@@ -135,7 +135,7 @@ export function FairValueMatcher({
             activeOpacity={0.7}
           >
             <Text style={styles.accordionTitle}>Price check metrics & attributes</Text>
-            <Ionicons
+            <SolarIcon
               name={expandedDetails ? 'chevron-up' : 'chevron-down'}
               size={14}
               color={colors.charcoal}

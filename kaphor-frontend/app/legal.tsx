@@ -9,7 +9,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../src/components/common/SolarIcon';
 import { colors, typography } from '../src/theme';
 import { Header } from '../src/components/common/Header';
 import { LEGAL_DOCUMENTS, LegalDocument } from '../src/data/legalPolicies';
@@ -43,7 +43,7 @@ export default function LegalCenterScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={16} color={colors.textMuted} />
+          <SolarIcon name="search" size={16} color={colors.textMuted} />
           <TextInput accessibilityLabel="Search policies (e.g. payments, taxes, return, privacy)"
             placeholder="Search policies (e.g. payments, taxes, return, privacy)"
             placeholderTextColor={colors.textMuted}
@@ -54,7 +54,7 @@ export default function LegalCenterScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+              <SolarIcon name="close-circle" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -79,13 +79,13 @@ export default function LegalCenterScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Ionicons
+                <SolarIcon
                   name={doc.icon as any}
                   size={14}
                   color={isActive ? colors.white : colors.textSecond}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.chipText, isActive && styles.chipTextActive]}>
                   {doc.shortTitle}
                 </Text>
               </TouchableOpacity>
@@ -117,7 +117,7 @@ export default function LegalCenterScreen() {
 
         {filteredClauses.length === 0 ? (
           <View style={styles.noResultsCard}>
-            <Ionicons name="search-outline" size={32} color={colors.textMuted} />
+            <SolarIcon name="search-outline" size={32} color={colors.textMuted} />
             <Text style={styles.noResultsTitle}>No matching clauses found</Text>
             <Text style={styles.noResultsSub}>
               Try searching a different keyword or switch to another policy document.
@@ -141,7 +141,7 @@ export default function LegalCenterScreen() {
         {/* Grievance Redressal Card */}
         <View style={styles.grievanceCard}>
           <View style={styles.grievanceHeader}>
-            <Ionicons name="information-circle-outline" size={20} color={colors.ink} />
+            <SolarIcon name="information-circle-outline" size={20} color={colors.ink} />
             <Text style={styles.grievanceTitle}>STATUTORY GRIEVANCE REDRESSAL</Text>
           </View>
           <Text style={styles.grievanceText}>

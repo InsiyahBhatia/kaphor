@@ -14,7 +14,7 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography } from '../../../src/theme';
 import { CenterCardsLoading } from '../../../src/components/common/CardLoadingScreen';
@@ -206,7 +206,7 @@ export default function ConditionCheckScreen() {
         <View style={styles.container}>
           <View style={styles.header}>
             <TouchableOpacity onPress={resetAssessment}>
-              <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+              <SolarIcon name="arrow-back" size={24} color={colors.charcoal} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Assessment</Text>
             <View style={{ width: 24 }} />
@@ -304,7 +304,7 @@ export default function ConditionCheckScreen() {
                   style={[styles.actionBtn, { marginTop: 6 }]}
                   onPress={navigateToSell}
                 >
-                  <Text style={styles.actionBtnText}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>
                     {resellPrice ? `CONFIRM & LIST FOR ₹${resellPrice} →` : 'List for sale (1-click) →'}
                   </Text>
                 </TouchableOpacity>
@@ -316,8 +316,8 @@ export default function ConditionCheckScreen() {
             <View style={styles.actionCard}>
               <View style={styles.segregationBanner}>
                 <View style={styles.segregationBadge}>
-                  <Ionicons name="sparkles" size={12} color={colors.white} />
-                  <Text style={styles.segregationBadgeText}>Wear / damage detected · repair or upcycle</Text>
+                  <SolarIcon name="sparkles" size={12} color={colors.white} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.segregationBadgeText}>Wear / damage detected · repair or upcycle</Text>
                 </View>
                 <Text style={styles.actionCardTitle}>Restore or transform</Text>
                 <Text style={styles.segregationSub}>
@@ -329,7 +329,7 @@ export default function ConditionCheckScreen() {
               <View style={[styles.pathCard, { borderColor: colors.orange }]}>
                 <View style={styles.pathHeader}>
                   <View style={[styles.pathIconBox, { backgroundColor: colors.orange }]}>
-                    <Ionicons name="cut-outline" size={18} color={colors.cream} />
+                    <SolarIcon name="cut-outline" size={18} color={colors.cream} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.pathTitle, { color: colors.orange }]}>Repair & upcycle</Text>
@@ -342,9 +342,9 @@ export default function ConditionCheckScreen() {
                     : 'Get step-by-step repair guides, video tutorials, and upcycling ideas for this garment.'}
                 </Text>
                 <View style={styles.pathTagsRow}>
-                  <View style={styles.pathTag}><Text style={styles.pathTagText}>🧵 Repair Guides</Text></View>
-                  <View style={styles.pathTag}><Text style={styles.pathTagText}>🎬 Video Tutorials</Text></View>
-                  <View style={styles.pathTag}><Text style={styles.pathTagText}>✂️ Upcycle Ideas</Text></View>
+                  <View style={styles.pathTag}><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pathTagText}>🧵 Repair Guides</Text></View>
+                  <View style={styles.pathTag}><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pathTagText}>🎬 Video Tutorials</Text></View>
+                  <View style={styles.pathTag}><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.pathTagText}>✂️ Upcycle Ideas</Text></View>
                 </View>
                 <TouchableOpacity
                   style={[styles.actionBtn, { backgroundColor: colors.orange, borderColor: colors.orange, marginTop: 12 }]}
@@ -383,7 +383,7 @@ export default function ConditionCheckScreen() {
                     });
                   }}
                 >
-                  <Text style={styles.actionBtnText}>Explore repair & upcycle guides →</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>Explore repair & upcycle guides →</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -393,8 +393,8 @@ export default function ConditionCheckScreen() {
             <View style={styles.actionCard}>
               <View style={styles.recycleHeader}>
                 <View style={styles.recycleHeaderBadge}>
-                  <Ionicons name="leaf" size={13} color={colors.white} />
-                  <Text style={styles.recycleHeaderBadgeText}>Verified recycling partner directory</Text>
+                  <SolarIcon name="leaf" size={13} color={colors.white} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.recycleHeaderBadgeText}>Verified recycling partner directory</Text>
                 </View>
                 <Text style={styles.actionCardTitle}>Certified textile recycling hubs</Text>
               </View>
@@ -405,7 +405,7 @@ export default function ConditionCheckScreen() {
 
               {/* Location Banner */}
               <View style={styles.locationDetectionBanner}>
-                <Ionicons name="location" size={15} color={colors.charcoal} />
+                <SolarIcon name="location" size={15} color={colors.charcoal} />
                 <Text style={styles.locationDetectionText}>
                   Showing verified drop-off centers near{' '}
                   <Text style={styles.locationDetectionBold}>
@@ -431,7 +431,7 @@ export default function ConditionCheckScreen() {
                           </Text>
                         </View>
                         <View style={styles.centerScorePill}>
-                          <Ionicons name="shield-checkmark" size={11} color={colors.forest} />
+                          <SolarIcon name="shield-checkmark" size={11} color={colors.forest} />
                           <Text style={styles.centerScoreText}>{center.zeroLandfillScore}% ZERO-LANDFILL</Text>
                         </View>
                       </View>
@@ -443,18 +443,18 @@ export default function ConditionCheckScreen() {
 
                       {/* Address & Operating Hours */}
                       <View style={styles.centerMetaRow}>
-                        <Ionicons name="navigate-outline" size={12} color={colors.textMuted} />
+                        <SolarIcon name="navigate-outline" size={12} color={colors.textMuted} />
                         <Text style={styles.centerMetaText} numberOfLines={2}>{center.address}</Text>
                       </View>
                       <View style={styles.centerMetaRow}>
-                        <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+                        <SolarIcon name="time-outline" size={12} color={colors.textMuted} />
                         <Text style={styles.centerMetaText}>{center.operatingHours}</Text>
                       </View>
 
                       {/* Helpline Phone */}
                       {center.phone ? (
                         <View style={styles.centerMetaRow}>
-                          <Ionicons name="call-outline" size={12} color={colors.forest} />
+                          <SolarIcon name="call-outline" size={12} color={colors.forest} />
                           <Text style={[styles.centerMetaText, { color: colors.forest, fontWeight: '800' }]}>
                             {center.phone}
                           </Text>
@@ -465,7 +465,7 @@ export default function ConditionCheckScreen() {
                       <View style={styles.fiberTagRow}>
                         {center.acceptedFibers.map((fib, idx) => (
                           <View key={idx} style={styles.fiberTagPill}>
-                            <Text style={styles.fiberTagText}>{fib}</Text>
+                            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.fiberTagText}>{fib}</Text>
                           </View>
                         ))}
                       </View>
@@ -592,7 +592,7 @@ export default function ConditionCheckScreen() {
             onPress={() => safeBack('/(tabs)/circular')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+            <SolarIcon name="arrow-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Condition check</Text>
           <View style={{ width: 24 }} />
@@ -615,7 +615,7 @@ export default function ConditionCheckScreen() {
               <Image source={{ uri: imageUri }} style={styles.uploadPreview} />
             ) : (
               <View style={styles.uploadPlaceholder}>
-                <Ionicons name="camera-outline" size={36} color={colors.charcoal} />
+                <SolarIcon name="camera-outline" size={36} color={colors.charcoal} />
                 <Text style={styles.uploadText}>Take or upload a photo</Text>
                 <Text style={styles.uploadSubtext}>Camera or gallery (JPG / PNG)</Text>
               </View>
@@ -625,15 +625,15 @@ export default function ConditionCheckScreen() {
           {imageUri && (
             <View style={styles.uploadActions}>
               <TouchableOpacity onPress={() => pickImage(false)} style={styles.uploadActionBtn}>
-                <Ionicons name="images-outline" size={16} color={colors.charcoal} />
+                <SolarIcon name="images-outline" size={16} color={colors.charcoal} />
                 <Text style={styles.uploadActionText}>Gallery</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => pickImage(true)} style={styles.uploadActionBtn}>
-                <Ionicons name="camera" size={16} color={colors.charcoal} />
+                <SolarIcon name="camera" size={16} color={colors.charcoal} />
                 <Text style={styles.uploadActionText}>Camera</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setImageUri(null)} style={styles.uploadActionBtn}>
-                <Ionicons name="close-outline" size={16} color={colors.red} />
+                <SolarIcon name="close-outline" size={16} color={colors.red} />
                 <Text style={[styles.uploadActionText, { color: colors.red }]}>Remove</Text>
               </TouchableOpacity>
             </View>
@@ -648,7 +648,7 @@ export default function ConditionCheckScreen() {
             <Text style={category ? styles.pickerText : styles.pickerPlaceholder}>
               {category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Auto-detect from photo (or select)'}
             </Text>
-            <Ionicons name={showCategoryPicker ? 'chevron-up' : 'chevron-down'} size={18} color={colors.charcoal} />
+            <SolarIcon name={showCategoryPicker ? 'chevron-up' : 'chevron-down'} size={18} color={colors.charcoal} />
           </TouchableOpacity>
           {showCategoryPicker && (
             <View style={styles.pickerGrid}>
@@ -696,7 +696,7 @@ export default function ConditionCheckScreen() {
           </Text>
 
           <View style={styles.chipSection}>
-            <Text style={styles.chipSectionLabel}>Color</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.chipSectionLabel}>Color</Text>
             <View style={styles.chipRow}>
               {COLOR_FAMILIES.map((o) => (
                 <TouchableOpacity
@@ -704,7 +704,7 @@ export default function ConditionCheckScreen() {
                   style={[styles.chip, color === o && styles.chipActive]}
                   onPress={() => setColor(color === o ? '' : o)}
                 >
-                  <Text style={[styles.chipText, color === o && styles.chipTextActive]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.chipText, color === o && styles.chipTextActive]}>
                     {o.charAt(0).toUpperCase() + o.slice(1)}
                   </Text>
                 </TouchableOpacity>
@@ -713,7 +713,7 @@ export default function ConditionCheckScreen() {
           </View>
 
           <View style={styles.chipSection}>
-            <Text style={styles.chipSectionLabel}>Season</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.chipSectionLabel}>Season</Text>
             <View style={styles.chipRow}>
               {SEASONS.map((o) => (
                 <TouchableOpacity
@@ -721,7 +721,7 @@ export default function ConditionCheckScreen() {
                   style={[styles.chip, season === o && styles.chipActive]}
                   onPress={() => setSeason(season === o ? '' : o)}
                 >
-                  <Text style={[styles.chipText, season === o && styles.chipTextActive]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.chipText, season === o && styles.chipTextActive]}>
                     {o.replace('_', ' ')}
                   </Text>
                 </TouchableOpacity>
@@ -730,7 +730,7 @@ export default function ConditionCheckScreen() {
           </View>
 
           <View style={styles.chipSection}>
-            <Text style={styles.chipSectionLabel}>Style</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.chipSectionLabel}>Style</Text>
             <View style={styles.chipRow}>
               {STYLE_TAGS.map((o) => (
                 <TouchableOpacity
@@ -738,7 +738,7 @@ export default function ConditionCheckScreen() {
                   style={[styles.chip, style === o && styles.chipActive]}
                   onPress={() => setStyle(style === o ? '' : o)}
                 >
-                  <Text style={[styles.chipText, style === o && styles.chipTextActive]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.chipText, style === o && styles.chipTextActive]}>
                     {o.charAt(0).toUpperCase() + o.slice(1)}
                   </Text>
                 </TouchableOpacity>
@@ -911,7 +911,9 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginBottom: 20,
   },
-  heroEmoji: { fontSize: 48, marginBottom: 8 },
+  heroEmoji: {
+ fontSize: 48, marginBottom: 8, fontFamily: typography.body,
+  },
   heroTitle: { fontFamily: typography.headings, fontSize: 40, color: colors.cream, letterSpacing: 2, marginBottom: 8 },
   heroSubtitle: { fontFamily: typography.handwritten, fontSize: 16, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 26, includeFontPadding: false, },
 

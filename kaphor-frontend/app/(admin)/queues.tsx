@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { adminService } from '../../src/services/adminService';
 import api from '../../src/services/api';
 import { colors, typography } from '../../src/theme';
@@ -21,7 +21,7 @@ function QueueSection({
             <Text style={styles.sectionCount}>{count}</Text>
           </View>
         </View>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textMuted} />
+        <SolarIcon name={open ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textMuted} />
       </TouchableOpacity>
       {open && <View style={styles.sectionBody}>{children}</View>}
     </View>

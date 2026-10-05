@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react';
+import { InteractionManager } from 'react-native';
 import { safeStorage } from '../utils/storage';
 import { persistTokens, clearStoredTokens, clearApiCache } from '../services/api';
 import { useAuthStore, type AuthUser } from '../store/authStore';
 import { forget as forgetSwr } from '../utils/swrCache';
+import { prefetchLists, resetLists } from '../store/listStore';
 
 interface User {
   id: string;
@@ -78,6 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await clearStoredTokens();
     clearApiCache();
     forgetSwr();
+    resetLists();
     await safeStorage.clearUserCaches();
     try {
       const { disconnectSocket } = await import('../services/socket');
@@ -91,6 +94,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadStorageData();
   }, []);
 
+  async function backgroundRefresh(accessToken: string, refreshToken: string) {
+    prefetchLists(); // warm inbox + orders in parallel with the profile refresh
+    try {
+      const { userService } = await import('../services/userService');
+      try {
+        const updatedUser = await userService.getMe();
+        if (updatedUser) {
+          const freshNormalized = normalizeUser(updatedUser);
+          setUser(freshNormalized);
+          const currentAccess = (await safeStorage.getItem('kaphor_access_token')) || accessToken;
+          const currentRefresh = (await safeStorage.getItem('kaphor_refresh_token')) || refreshToken;
+          await safeStorage.setItem(
+            AUTH_DATA_KEY,
+            JSON.stringify({ accessToken: currentAccess, refreshToken: currentRefresh, user: freshNormalized })
+          );
+        }
+      } catch (err: any) {
+        const status = err?.response?.status;
+        if (status === 401 || status === 403) {
+          const remainingRefresh = await safeStorage.getItem('kaphor_refresh_token');
+          if (!remainingRefresh) {
+            await clearLocalSession();
+            return;
+          }
+        }
+      }
+      const { connectSocket } = await import('../services/socket');
+      connectSocket();
+    } catch {
+      /* offline / socket unavailable: keep the cached session */
+    }
+  }
   async function loadStorageData() {
     try {
       // 1. Concurrently read cached tokens and session data
@@ -131,38 +166,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(accessToken);
       setUser(normalized);
 
-      // 2. Fetch fresh user in background without blowing away offline session on cold start/timeouts
-      const { userService } = await import('../services/userService');
-      try {
-        const updatedUser = await userService.getMe();
-        if (updatedUser) {
-          const freshNormalized = normalizeUser(updatedUser);
-          setUser(freshNormalized);
-          const currentAccess = (await safeStorage.getItem('kaphor_access_token')) || accessToken;
-          const currentRefresh = (await safeStorage.getItem('kaphor_refresh_token')) || refreshToken;
-          await safeStorage.setItem(
-            AUTH_DATA_KEY,
-            JSON.stringify({ accessToken: currentAccess, refreshToken: currentRefresh, user: freshNormalized })
-          );
-        }
-      } catch (err: any) {
-        const status = err?.response?.status;
-        if (status === 401 || status === 403) {
-          // If refresh token was genuinely rejected, api interceptor cleared it
-          const remainingRefresh = await safeStorage.getItem('kaphor_refresh_token');
-          if (!remainingRefresh) {
-            await clearLocalSession();
-            return;
-          }
-        }
-      }
-
-      // Connect socket now that user session is active
-      try {
-        const { connectSocket } = await import('../services/socket');
-        connectSocket();
-      } catch (sockErr) {
-      }
+      // First paint can happen now; refresh + socket run after interactions
+      setIsLoading(false);
+      InteractionManager.runAfterInteractions(() => {
+        void backgroundRefresh(accessToken, refreshToken);
+      });
     } catch (e) {
       console.warn('Error loading auth data', e);
       // Do not wipe credentials on transient errors
@@ -195,6 +203,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       connectSocket();
     } catch (sockErr) {
     }
+    InteractionManager.runAfterInteractions(() => prefetchLists());
   }
 
   const signIn = async (email: string, password?: string) => {
@@ -259,8 +268,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const value = useMemo(() => ({ user, token, isLoading, signIn, signInWithGoogle, signUp, signOut, setUser }), [user, token, isLoading]);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, signIn, signInWithGoogle, signUp, signOut, setUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,10 +10,12 @@ import {
   Dimensions,
   Pressable,
   RefreshControl,
+  FlatList,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import { useGarmentStore } from '../../src/store/garmentStore';
+import { useGarmentStore, prefetchDetailImages, seedGarments } from '../../src/store/garmentStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { orderService } from '../../src/services/orderService';
 import {
@@ -23,7 +25,9 @@ import {
 } from '../../src/services/recommendationService';
 import { KaphorImage } from '../../src/components/KaphorImage';
 import { EditorialGarmentCard } from '../../src/components/EditorialGarmentCard';
-import { EditorialIcon, HandwrittenNote, IllustrationLayer } from '../../src/components/editorial/IllustrationLayer';
+import { EditorialIcon, HandwrittenNote } from '../../src/components/editorial/IllustrationLayer';
+import { Image as ExpoImage } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GarmentShelfSkeleton } from '../../src/components/common/CardLoadingScreen';
 import { Header } from '../../src/components/common/Header';
 import api from '../../src/services/api';
@@ -106,7 +110,7 @@ function BrandStatusBar() {
 }
 
 // ── 2. Editorial Hero Showcase ─────────────────────────────────────────────
-function HeroShowcase({
+const HeroShowcase = React.memo(function HeroShowcase({
   onExplore,
   onRentals,
 }: {
@@ -115,22 +119,35 @@ function HeroShowcase({
 }) {
   return (
     <View style={styles.heroContainer}>
-      <IllustrationLayer variant="home" />
+      <ExpoImage
+        source={require("../../assets/images/opt/muse-white-dress.webp")}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        contentPosition="right bottom"
+        cachePolicy="memory-disk"
+      />
+      <LinearGradient
+        colors={[colors.paperLight, colors.paperGlass, "transparent"]}
+        locations={[0, 0.45, 0.85]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={StyleSheet.absoluteFill}
+      />
 
       <View style={styles.heroContent}>
         <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>NEW THIS SEASON</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.heroBadgeText}>NEW THIS SEASON</Text>
         </View>
 
         <Text style={styles.heroHeadline}>
           CIRCULAR{'\n'}FASHION{'\n'}LIVES LONGER
         </Text>
 
-        <Text style={styles.heroTagline}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.heroTagline}>
           Buy, sell, swap and rent pre-loved fashion with zero retail waste.
         </Text>
 
-        <HandwrittenNote style={styles.heroNote}>
+        <HandwrittenNote style={styles.heroNote} textStyle={{ color: colors.rose }}>
           pre-loved pieces, new beginnings.
         </HandwrittenNote>
 
@@ -140,7 +157,7 @@ function HeroShowcase({
             onPress={onExplore}
             activeOpacity={0.88}
           >
-            <Text style={styles.heroPrimaryBtnText}>EXPLORE SHOP</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.heroPrimaryBtnText}>EXPLORE SHOP</Text>
             <Text style={styles.inlineArrow}>→</Text>
           </TouchableOpacity>
 
@@ -149,31 +166,31 @@ function HeroShowcase({
             onPress={onRentals}
             activeOpacity={0.88}
           >
-            <Text style={styles.heroSecondaryBtnText}>RENTALS</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.heroSecondaryBtnText}>RENTALS</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.heroTrustRow}>
           <View style={styles.heroTrustItem}>
-            <EditorialIcon name="verified" size={17} />
+            <EditorialIcon name="verified" size={17} tintColor={colors.inkSoft} />
             <Text style={styles.heroTrustText}>VERIFIED CONDITION</Text>
           </View>
           <View style={styles.heroTrustItem}>
-            <EditorialIcon name="shield" size={17} />
+            <EditorialIcon name="shield" size={17} tintColor={colors.inkSoft} />
             <Text style={styles.heroTrustText}>SECURE PAYMENT</Text>
           </View>
           <View style={styles.heroTrustItem}>
-            <EditorialIcon name="swap" size={17} />
+            <EditorialIcon name="swap" size={17} tintColor={colors.inkSoft} />
             <Text style={styles.heroTrustText}>CASHLESS SWAP</Text>
           </View>
         </View>
       </View>
     </View>
   );
-}
+});
 
 // ── 3. Quick Atelier Pillars ───────────────────────────────────────────────
-function QuickAtelierGrid({ onNavigate }: { onNavigate: (route: string) => void }) {
+const QuickAtelierGrid = React.memo(function QuickAtelierGrid({ onNavigate }: { onNavigate: (route: string) => void }) {
   return (
     <View style={styles.quickActionGrid}>
       {QUICK_PILLARS.map((pillar, i) => (
@@ -198,7 +215,7 @@ function QuickAtelierGrid({ onNavigate }: { onNavigate: (route: string) => void 
       ))}
     </View>
   );
-}
+});
 
 // ── 4. Section Header ──────────────────────────────────────────────────────
 function SectionHeader({
@@ -220,7 +237,7 @@ function SectionHeader({
         <Text style={styles.sectionTitle}>{title}</Text>
         {tag && (
           <View style={[styles.sectionTag, { backgroundColor: tagBg }]}>
-            <Text style={[styles.sectionTagText, { color: tagColor }]}>{tag}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.sectionTagText, { color: tagColor }]}>{tag}</Text>
           </View>
         )}
       </View>
@@ -232,6 +249,35 @@ function SectionHeader({
     </View>
   );
 }
+
+// ── Horizontal shelf (virtualised) ─────────────────────────────────────────
+function Shelf<T>({
+  data,
+  renderItem,
+  keyExtractor,
+}: {
+  data: T[];
+  renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
+  keyExtractor: (item: T, index: number) => string;
+}) {
+  return (
+    <FlatList
+      horizontal
+      data={data}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.shelfScroll}
+      initialNumToRender={4}
+      maxToRenderPerBatch={6}
+      windowSize={7}
+      removeClippedSubviews={Platform.OS === 'android'}
+    />
+  );
+}
+
+const itemKey = (g: { id: string }) => g.id;
+const swapKey = (s: FairSwapRecommendation, i: number) => s.recommendedSwap.id || String(i);
 
 // ── 5. Editorial Garment Card imported from src/components/EditorialGarmentCard ─────
 
@@ -292,7 +338,7 @@ const OccasionRentalCard = React.memo(function OccasionRentalCard({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.8}
         >
-          <EditorialIcon name={isLiked ? 'heartFilled' : 'heart'} size={22} />
+          <EditorialIcon name={isLiked ? 'heartFilled' : 'heart'} size={18} tintColor={isLiked ? colors.red : colors.ink} />
         </TouchableOpacity>
       </View>
 
@@ -319,7 +365,7 @@ const OccasionRentalCard = React.memo(function OccasionRentalCard({
         </View>
 
         <View style={styles.rentalReserveCta}>
-          <Text style={styles.rentalReserveText}>REQUEST RENTAL • CHECK DATES</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.rentalReserveText}>REQUEST RENTAL • CHECK DATES</Text>
           <Text style={styles.cardArrow}>→</Text>
         </View>
       </View>
@@ -378,7 +424,7 @@ const FairSwapCard = React.memo(function FairSwapCard({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.8}
         >
-          <EditorialIcon name={isLiked ? 'heartFilled' : 'heart'} size={22} />
+          <EditorialIcon name={isLiked ? 'heartFilled' : 'heart'} size={18} tintColor={isLiked ? colors.red : colors.ink} />
         </TouchableOpacity>
 
         <View style={styles.swapParityPill}>
@@ -395,7 +441,7 @@ const FairSwapCard = React.memo(function FairSwapCard({
             {(swapItem.brand || 'SWAP').toUpperCase()}
           </Text>
           <View style={styles.zeroCashBadge}>
-            <Text style={styles.zeroCashBadgeText}>CASHLESS</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.zeroCashBadgeText}>CASHLESS</Text>
           </View>
         </View>
 
@@ -405,11 +451,11 @@ const FairSwapCard = React.memo(function FairSwapCard({
 
         <View style={styles.swapValuationRow}>
           <View>
-            <Text style={styles.swapValuationLabel}>EST. TRADE VALUE</Text>
+            <Text numberOfLines={1} style={styles.swapValuationLabel}>EST. TRADE VALUE</Text>
             <Text style={styles.swapValuationValue}>₹{formatCurrency(valuation)}</Text>
           </View>
           <View style={styles.swapTradeAction}>
-            <Text style={styles.swapTradeActionText}>PROPOSE SWAP →</Text>
+            <Text numberOfLines={1} style={styles.swapTradeActionText}>PROPOSE SWAP →</Text>
           </View>
         </View>
 
@@ -508,6 +554,8 @@ export default function HomeScreen() {
       // (e.g. server-side cache served before the listingType filter deployed)
       forYou = (forYou || []).filter((g: any) => !g.listingType || g.listingType === 'SALE');
 
+      seedGarments(rentals);
+      seedGarments(swaps?.map((x: any) => x.recommendedSwap));
       setForYouItems(forYou || []);
       setRentalPicks(rentals || []);
       setFairSwaps(swaps || []);
@@ -604,6 +652,56 @@ export default function HomeScreen() {
     )
     .slice(0, 10), [garments, currentUserId]);
 
+  const accessoryCards = useMemo(
+    () => accessoriesList.map((item) => ({
+      ...item,
+      price: item.price ? Math.round(item.price) : 0,
+      condition: item.condition || 'Pristine',
+    })),
+    [accessoriesList]
+  );
+  const newArrivalCards = useMemo(
+    () => newArrivals.map((item) => ({
+      ...item,
+      price: item.price ? Math.round(item.price) : 0,
+      condition: item.condition || 'Excellent',
+      fitScore: 0,
+      matchReason: 'Fresh Arrival',
+      seller: (item as any).seller || { id: item.sellerId, username: 'Member' },
+    }) as any),
+    [newArrivals]
+  );
+
+  useEffect(() => {
+    prefetchDetailImages(forYouItems, 3);
+  }, [forYouItems]);
+
+  const renderSaleItem = useCallback(
+    ({ item }: { item: any }) => (
+      <EditorialGarmentCard
+        item={item}
+        onPress={() => navigateToItem(item.id)}
+        onBuyRequest={() => handleBuyRequest(item)}
+      />
+    ),
+    [navigateToItem, handleBuyRequest]
+  );
+  const renderRental = useCallback(
+    ({ item }: { item: RecommendedGarment }) => (
+      <OccasionRentalCard item={item} onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)} />
+    ),
+    [router]
+  );
+  const renderSwap = useCallback(
+    ({ item }: { item: FairSwapRecommendation }) => (
+      <FairSwapCard item={item} onPress={() => navigateToSwap(item.recommendedSwap.id)} />
+    ),
+    [navigateToSwap]
+  );
+  const onExploreShop = useCallback(() => navigateToRoute('/(tabs)/shop'), [navigateToRoute]);
+  const onOpenRentals = useCallback(() => navigateToRoute('/(tabs)/rental'), [navigateToRoute]);
+  const onPillarNavigate = useCallback((route: string) => navigateToRoute(route), [navigateToRoute]);
+
   return (
     <View style={styles.container}>
       <Header showLogo />
@@ -622,10 +720,7 @@ export default function HomeScreen() {
         }
       >
         {/* HERO SHOWCASE */}
-        <HeroShowcase
-          onExplore={() => navigateToRoute('/(tabs)/shop')}
-          onRentals={() => navigateToRoute('/(tabs)/rental')}
-        />
+        <HeroShowcase onExplore={onExploreShop} onRentals={onOpenRentals} />
 
         {/* CATEGORY PILL NAVIGATION */}
         <View style={styles.categoryStrip}>
@@ -647,7 +742,7 @@ export default function HomeScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.categoryPillText, isSelected && styles.categoryPillTextActive]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.categoryPillText, isSelected && styles.categoryPillTextActive]}>
                     {cat.label}
                   </Text>
                 </TouchableOpacity>
@@ -657,7 +752,7 @@ export default function HomeScreen() {
         </View>
 
         {/* QUICK ATELIER PILLARS */}
-        <QuickAtelierGrid onNavigate={(route) => navigateToRoute(route)} />
+        <QuickAtelierGrid onNavigate={onPillarNavigate} />
 
         {/* 1. CURATED FOR YOU (AI EDIT - COLD-START RESILIENT) */}
         <View style={styles.sectionContainer}>
@@ -674,16 +769,7 @@ export default function HomeScreen() {
           {forYouLoading && forYouItems.length === 0 ? (
             <GarmentShelfSkeleton count={3} cardWidth={CARD_WIDTH} />
           ) : forYouItems.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
-              {forYouItems.map((item) => (
-                <EditorialGarmentCard
-                  key={item.id}
-                  item={item}
-                  onPress={() => navigateToItem(item.id)}
-                  onBuyRequest={() => handleBuyRequest(item)}
-                />
-              ))}
-            </ScrollView>
+            <Shelf data={forYouItems} renderItem={renderSaleItem} keyExtractor={itemKey} />
           ) : (
             <TouchableOpacity
               style={styles.emptyPromptBox}
@@ -714,15 +800,7 @@ export default function HomeScreen() {
           {rentalsLoading && rentalPicks.length === 0 ? (
             <GarmentShelfSkeleton count={3} cardWidth={CARD_WIDTH} />
           ) : rentalPicks.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
-              {rentalPicks.map((item) => (
-                <OccasionRentalCard
-                  key={item.id}
-                  item={item}
-                  onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)}
-                />
-              ))}
-            </ScrollView>
+            <Shelf data={rentalPicks} renderItem={renderRental} keyExtractor={itemKey} />
           ) : (
             <TouchableOpacity
               style={styles.emptyPromptBox}
@@ -751,15 +829,7 @@ export default function HomeScreen() {
             <Text style={styles.sectionSubtitle}>
               Swap one item for another. No cash needed.
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
-              {fairSwaps.map((swap, idx) => (
-                <FairSwapCard
-                  key={swap.recommendedSwap.id || idx}
-                  item={swap}
-                  onPress={() => navigateToSwap(swap.recommendedSwap.id)}
-                />
-              ))}
-            </ScrollView>
+            <Shelf data={fairSwaps} renderItem={renderSwap} keyExtractor={swapKey} />
           </View>
         )}
 
@@ -776,20 +846,7 @@ export default function HomeScreen() {
             <Text style={styles.sectionSubtitle}>
               Fine jewelry, watches, designer handbags, and leather goods ready for instant purchase or barter.
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
-              {accessoriesList.map((item) => (
-                <EditorialGarmentCard
-                  key={item.id}
-                  item={{
-                    ...item,
-                    price: item.price ? Math.round(item.price) : 0,
-                    condition: item.condition || 'Pristine',
-                  }}
-                  onPress={() => navigateToItem(item.id)}
-                  onBuyRequest={() => handleBuyRequest(item)}
-                />
-              ))}
-            </ScrollView>
+            <Shelf data={accessoryCards} renderItem={renderSaleItem} keyExtractor={itemKey} />
           </View>
         )}
 
@@ -805,23 +862,7 @@ export default function HomeScreen() {
           {isLoading && newArrivals.length === 0 ? (
             <GarmentShelfSkeleton count={3} cardWidth={CARD_WIDTH} />
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
-              {newArrivals.map((item) => (
-                <EditorialGarmentCard
-                  key={item.id}
-                  item={{
-                    ...item,
-                    price: item.price ? Math.round(item.price) : 0,
-                    condition: item.condition || 'Excellent',
-                    fitScore: 0,
-                    matchReason: 'Fresh Arrival',
-                    seller: (item as any).seller || { id: item.sellerId, username: 'Member' },
-                  } as RecommendedGarment}
-                  onPress={() => navigateToItem(item.id)}
-                  onBuyRequest={() => handleBuyRequest(item)}
-                />
-              ))}
-            </ScrollView>
+            <Shelf data={newArrivalCards} renderItem={renderSaleItem} keyExtractor={itemKey} />
           )}
         </View>
 
@@ -867,7 +908,7 @@ const styles = StyleSheet.create({
     color: colors.paperGlass,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13.5,
   },
 
   // ── Hero ────────────────────────────────────────────────────────
@@ -878,9 +919,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: colors.paperLight,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    backgroundColor: colors.paperDark,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
   },
   heroGradientOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -906,13 +947,13 @@ const styles = StyleSheet.create({
     color: colors.goldDark,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13.5,
   },
   heroHeadline: {
     fontFamily: typography.headings,
     fontSize: 40,
     lineHeight: 42,
-    color: colors.charcoal,
+    color: colors.ink,
     letterSpacing: 0.6,
     marginBottom: 8,
   },
@@ -920,7 +961,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     fontSize: 13,
     lineHeight: 19,
-    color: colors.textSecond,
+    color: colors.inkSoft,
     marginBottom: 10,
     maxWidth: '92%',
   },
@@ -936,9 +977,9 @@ const styles = StyleSheet.create({
   heroPrimaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.charcoal,
+    backgroundColor: colors.crimson,
     borderWidth: 1,
-    borderColor: colors.charcoal,
+    borderColor: colors.crimson,
     paddingHorizontal: 18,
     paddingVertical: 11,
     borderRadius: radius.sm,
@@ -977,7 +1018,7 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: colors.overlayLight,
+    borderTopColor: "rgba(255,255,255,0.25)",
   },
   heroTrustItem: {
     flexDirection: 'row',
@@ -985,7 +1026,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   heroTrustText: {
-    color: colors.textSecond,
+    color: colors.inkSoft,
     fontFamily: typography.bodyMedium,
     fontSize: 11.5,
     letterSpacing: 0.8,
@@ -1107,12 +1148,12 @@ const styles = StyleSheet.create({
   sectionTagText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13.5,
   },
   seeAllText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13.5,
     color: colors.crimson,
   },
   shelfScroll: {
@@ -1161,7 +1202,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13.5,
   },
   conditionPill: {
     position: 'absolute',
@@ -1176,7 +1217,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13.5,
   },
   garmentInfo: {
     padding: 12,
@@ -1190,7 +1231,7 @@ const styles = StyleSheet.create({
   garmentBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13.5,
     color: colors.charcoal,
     flex: 1,
   },
@@ -1231,9 +1272,10 @@ const styles = StyleSheet.create({
   },
   discountBadgeText: {
     color: colors.crimson,
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
   },
   garmentOriginalPrice: {
     fontFamily: typography.mono,
@@ -1290,9 +1332,10 @@ const styles = StyleSheet.create({
   },
   rentalBadgePillText: {
     color: colors.white,
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
   },
   rentalInfo: {
     padding: 12,
@@ -1338,9 +1381,10 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   rentalReserveText: {
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
     color: colors.charcoal,
   },
   cardArrow: {
@@ -1399,9 +1443,10 @@ const styles = StyleSheet.create({
   },
   zeroCashBadgeText: {
     color: colors.forest,
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
   },
   swapValuationRow: {
     flexDirection: 'row',
@@ -1413,9 +1458,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   swapValuationLabel: {
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
     color: colors.forest,
   },
   swapValuationValue: {
@@ -1425,6 +1471,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   swapTradeAction: {
+    flexShrink: 0,
     backgroundColor: colors.forest,
     paddingHorizontal: 6,
     paddingVertical: 3,
@@ -1432,9 +1479,10 @@ const styles = StyleSheet.create({
   },
   swapTradeActionText: {
     color: colors.white,
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
   },
   swapCounterpartBox: {
     paddingTop: 4,
@@ -1478,7 +1526,7 @@ const styles = StyleSheet.create({
   emptyPromptTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13.5,
     color: colors.charcoal,
   },
   emptyPromptDesc: {

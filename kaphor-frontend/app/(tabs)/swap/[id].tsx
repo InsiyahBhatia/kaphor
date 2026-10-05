@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, TextInput, Modal, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
@@ -184,7 +184,7 @@ export default function SwapDetailScreen() {
           onPress={() => safeBack('/(tabs)/circular')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
+          <SolarIcon name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Swap request</Text>
         <View style={{ width: 28 }} />
@@ -209,8 +209,8 @@ export default function SwapDetailScreen() {
             >
               <KaphorImage uri={(garment as any)?.primaryImage || garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
               <View style={styles.zoomPillSmall}>
-                <Ionicons name="scan-outline" size={10} color={colors.white} />
-                <Text style={styles.zoomPillSmallText}>Zoom</Text>
+                <SolarIcon name="scan-outline" size={10} color={colors.white} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.zoomPillSmallText}>Zoom</Text>
               </View>
             </TouchableOpacity>
             <View style={styles.wantedInfo}>
@@ -246,9 +246,9 @@ export default function SwapDetailScreen() {
         {isOwnGarment ? (
           <View style={styles.ownGarmentContainer}>
             <View style={styles.ownGarmentHeader}>
-              <Ionicons name="information-circle" size={24} color={colors.crimson} />
+              <SolarIcon name="information-circle" size={24} color={colors.crimson} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.ownGarmentBadgeText}>Owned by you · self-swap restricted</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.ownGarmentBadgeText}>Owned by you · self-swap restricted</Text>
                 <Text style={styles.ownGarmentTitle}>This is your listed accessory</Text>
               </View>
             </View>
@@ -260,14 +260,14 @@ export default function SwapDetailScreen() {
                 style={styles.browseCommunityBtn}
                 onPress={() => router.push('/(tabs)/swap')}
               >
-                <Ionicons name="swap-horizontal" size={16} color={colors.cream} />
-                <Text style={styles.browseCommunityBtnText}>Browse community swaps</Text>
+                <SolarIcon name="swap-horizontal" size={16} color={colors.cream} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.browseCommunityBtnText}>Browse community swaps</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.viewClosetBtn}
                 onPress={() => router.push('/(tabs)/profile')}
               >
-                <Text style={styles.viewClosetBtnText}>View in my closet</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.viewClosetBtnText}>View in my closet</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -287,21 +287,21 @@ export default function SwapDetailScreen() {
 
             {/* Security Notice */}
             <View style={styles.securityNotice}>
-              <Ionicons name="shield-checkmark" size={16} color={colors.navy} />
+              <SolarIcon name="shield-checkmark" size={16} color={colors.navy} />
               <Text style={styles.securityNoticeText}>
                 Safe swap: both people pay a ₹500 deposit that is refunded after delivery.
               </Text>
             </View>
 
             <View style={styles.arrowContainer}>
-              <Ionicons name="swap-vertical" size={32} color={colors.charcoal} />
+              <SolarIcon name="swap-vertical" size={32} color={colors.charcoal} />
             </View>
 
             <View style={styles.sectionTitleRow}>
               <Text style={styles.sectionTitle}>Select an accessory to offer</Text>
               {fairMatchesCount > 0 && (
                 <View style={styles.fairCountPill}>
-                  <Text style={styles.fairCountPillText}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.fairCountPillText}>
                     {fairMatchesCount} FAIR MATCH{fairMatchesCount > 1 ? 'ES' : ''}
                   </Text>
                 </View>
@@ -314,7 +314,7 @@ export default function SwapDetailScreen() {
                   style={[styles.filterChip, !filterFairOnly && styles.filterChipActive]}
                   onPress={() => setFilterFairOnly(false)}
                 >
-                  <Text style={[styles.filterChipText, !filterFairOnly && styles.filterChipTextActive]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.filterChipText, !filterFairOnly && styles.filterChipTextActive]}>
                     ALL PIECES ({myGarments.length})
                   </Text>
                 </TouchableOpacity>
@@ -323,13 +323,13 @@ export default function SwapDetailScreen() {
                   style={[styles.filterChip, filterFairOnly && styles.filterChipActive]}
                   onPress={() => setFilterFairOnly(true)}
                 >
-                  <Ionicons 
+                  <SolarIcon 
                     name="scale-outline" 
                     size={12} 
                     color={filterFairOnly ? colors.cream : colors.emeraldDark} 
                     style={{ marginRight: 4 }} 
                   />
-                  <Text style={[styles.filterChipText, filterFairOnly && styles.filterChipTextActive, !filterFairOnly && { color: colors.emeraldDark }]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.filterChipText, filterFairOnly && styles.filterChipTextActive, !filterFairOnly && { color: colors.emeraldDark }]}>
                     FAIR VALUE ({fairMatchesCount})
                   </Text>
                 </TouchableOpacity>
@@ -386,7 +386,7 @@ export default function SwapDetailScreen() {
                           styles.parityTag,
                           isFair ? styles.parityFair : isSurplus ? styles.paritySurplus : styles.paritySpread
                         ]}>
-                          <Text style={styles.parityTagText}>
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.parityTagText}>
                             {isFair 
                               ? `FAIR (±${diffPct}%)` 
                               : isSurplus 
@@ -397,7 +397,7 @@ export default function SwapDetailScreen() {
 
                         {selectedOffer === g.id && (
                           <View style={styles.checkmark}>
-                            <Ionicons name="checkmark-circle" size={24} color={colors.crimson} />
+                            <SolarIcon name="checkmark-circle" size={24} color={colors.crimson} />
                           </View>
                         )}
                       </View>
@@ -444,13 +444,13 @@ export default function SwapDetailScreen() {
                       setConditionPhotos((prev) => prev.filter((_, i) => i !== idx));
                     }}
                   >
-                    <Ionicons name="close-circle" size={20} color={colors.red} />
+                    <SolarIcon name="close-circle" size={20} color={colors.red} />
                   </TouchableOpacity>
                 </TouchableOpacity>
               ))}
               {conditionPhotos.length < 3 && (
                 <TouchableOpacity style={styles.photoAddBtn} onPress={pickConditionPhoto}>
-                  <Ionicons name="camera-outline" size={24} color={colors.textMuted} />
+                  <SolarIcon name="camera-outline" size={24} color={colors.textMuted} />
                   <Text style={styles.photoAddText}>Add photo</Text>
                 </TouchableOpacity>
               )}
@@ -478,7 +478,7 @@ export default function SwapDetailScreen() {
           {submitting ? (
             <Spinner color={colors.cream} />
           ) : (
-            <Text style={styles.swapBtnText}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.swapBtnText}>
               {isOwnGarment ? 'Cannot swap with yourself' : 'Send secure swap request'}
             </Text>
           )}
@@ -499,11 +499,11 @@ export default function SwapDetailScreen() {
             onPress={() => setZoomImageUri(null)}
             hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           >
-            <Ionicons name="close" size={28} color={colors.white} />
+            <SolarIcon name="close" size={28} color={colors.white} />
           </TouchableOpacity>
 
           <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
-            <Ionicons name="scan-outline" size={13} color={colors.paperGlass} />
+            <SolarIcon name="scan-outline" size={13} color={colors.paperGlass} />
             <Text style={styles.zoomInstructionText}>Pinch to zoom</Text>
           </View>
 
@@ -705,6 +705,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
     color: colors.charcoal, textAlignVertical: 'top', fontSize: 14,
     marginBottom: 12,
+      fontFamily: typography.body,
   },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
   emptyText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 13, includeFontPadding: false, },

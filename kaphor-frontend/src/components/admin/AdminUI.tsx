@@ -23,7 +23,7 @@ export function Card({ children, style }: { children: React.ReactNode; style?: a
 export function Chip({ children, color = colors.ink, bg = colors.bgMuted }: { children: React.ReactNode; color?: string; bg?: string }) {
   return (
     <View style={[styles.chip, { borderColor: color, backgroundColor: bg }]}>
-      <Text style={[styles.chipText, { color }]}>{String(children).toUpperCase()}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.chipText, { color }]}>{String(children).toUpperCase()}</Text>
     </View>
   );
 }
@@ -70,12 +70,12 @@ export function IconBtn({
       style={[styles.iconBtn, { backgroundColor: bg }, disabled && { opacity: 0.4 }]}
     >
       {/* @ts-ignore */}
-      <Ionicons name={icon} size={size} color={color} />
+      <SolarIcon name={icon} size={size} color={color} />
     </TouchableOpacity>
   );
 }
 
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../common/SolarIcon';
 import { Loader as SkeletonLoader } from '../common/Loader';
 
 function Loader() {

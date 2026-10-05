@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { peek, remember, hydrate } from '../../../src/utils/swrCache';
 import {
   View,
   Text,
@@ -8,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { colors, typography, spacing } from '../../../src/theme';
 import { impactService } from '../../../src/services/impactService';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
@@ -18,9 +19,22 @@ const { width } = Dimensions.get('window');
 
 export default function UnifiedImpactScreen() {
   useBackHandler('/(tabs)/profile');
-  const [impactData, setImpactData] = useState<any>(null);
-  const [reportData, setReportData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const cached = peek<any>('impact:all');
+  const [impactData, setImpactData] = useState<any>(cached?.imp ?? null);
+  const [reportData, setReportData] = useState<any>(cached?.rep ?? null);
+  const [loading, setLoading] = useState(!cached);
+
+  // Cold start: paint the persisted copy immediately, then refresh in the background
+  useEffect(() => {
+    if (cached) return;
+    hydrate<any>('impact:all').then((c) => {
+      if (!c) return;
+      setImpactData((v: any) => v ?? c.imp);
+      setReportData((v: any) => v ?? c.rep);
+      setLoading(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,6 +48,7 @@ export default function UnifiedImpactScreen() {
           if (isMounted) {
             setImpactData(imp);
             setReportData(rep);
+            remember('impact:all', { imp, rep });
           }
         } catch (err) {
           console.error('Failed to load impact', err);
@@ -118,14 +133,14 @@ export default function UnifiedImpactScreen() {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={20} color={colors.charcoal} />
+          <SolarIcon name="arrow-back" size={20} color={colors.charcoal} />
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.headerPre}>Sustainability ledger</Text>
           <Text style={styles.headerTitle}>Impact details</Text>
         </View>
         <View style={styles.iconPlaceholder}>
-          <Ionicons name="leaf-outline" size={18} color={colors.forest} />
+          <SolarIcon name="leaf-outline" size={18} color={colors.forest} />
         </View>
       </View>
 
@@ -134,8 +149,8 @@ export default function UnifiedImpactScreen() {
         <View style={styles.tierCard}>
           <View style={styles.tierTopRow}>
             <View style={styles.tierPill}>
-              <Ionicons name="shield-checkmark" size={13} color={colors.cream} />
-              <Text style={styles.tierPillText}>STATUS: {tier.toUpperCase()}</Text>
+              <SolarIcon name="shield-checkmark" size={13} color={colors.cream} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tierPillText}>STATUS: {tier.toUpperCase()}</Text>
             </View>
             <Text style={styles.userCallout}>
               {impactData?.user?.displayName?.toUpperCase() || 'Circular member'}
@@ -148,7 +163,7 @@ export default function UnifiedImpactScreen() {
 
           {impactData?.nextMilestone && (
             <View style={styles.milestoneRow}>
-              <Ionicons name="sparkles" size={14} color={colors.gold} />
+              <SolarIcon name="sparkles" size={14} color={colors.gold} />
               <Text style={styles.milestoneText}>{impactData.nextMilestone}</Text>
             </View>
           )}
@@ -160,7 +175,7 @@ export default function UnifiedImpactScreen() {
           {metrics.map((m) => (
             <View key={m.label} style={[styles.metricCard, { borderTopColor: m.color }]}>
               <View style={styles.cardHeaderRow}>
-                <Ionicons name={m.icon as any} size={20} color={m.color} />
+                <SolarIcon name={m.icon as any} size={20} color={m.color} />
                 <Text style={styles.metricLabel}>{m.label}</Text>
               </View>
               <View style={styles.valueRow}>
@@ -231,7 +246,7 @@ export default function UnifiedImpactScreen() {
 
         {/* Verification Footer */}
         <View style={styles.footerNote}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
+          <SolarIcon name="information-circle-outline" size={16} color={colors.textMuted} />
           <Text style={styles.footerNoteText}>
             Impact is worked out from garment weights and fabric type.
           </Text>

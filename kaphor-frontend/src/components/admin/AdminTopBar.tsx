@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../../theme';
 
@@ -62,7 +62,7 @@ export default function AdminTopBar({
           onPress={handleBack}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="arrow-back" size={18} color={colors.ink} />
+          <SolarIcon name="arrow-back" size={18} color={colors.ink} />
         </TouchableOpacity>
 
         <View style={styles.titleCol}>
@@ -83,7 +83,7 @@ export default function AdminTopBar({
             disabled={refreshing}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons
+            <SolarIcon
               name={refreshing ? 'hourglass-outline' : 'refresh'}
               size={18}
               color={colors.white}
@@ -110,7 +110,7 @@ export default function AdminTopBar({
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.navChipText, active && styles.navChipTextActive]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.navChipText, active && styles.navChipTextActive]}>
                   {nav.label}
                 </Text>
               </TouchableOpacity>

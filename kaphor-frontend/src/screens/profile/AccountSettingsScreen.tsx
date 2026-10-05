@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../components/common/SolarIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { promptPhotoSelection } from '../../utils/imagePicker';
 import { useAuth } from '../../context/AuthContext';
@@ -205,7 +205,7 @@ export function AccountSettingsScreen() {
             style={styles.backBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
+            <SolarIcon name="arrow-back" size={22} color={colors.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>ACCOUNT SETTINGS</Text>
           <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn}>
@@ -231,14 +231,14 @@ export function AccountSettingsScreen() {
               <Image source={{ uri: avatar }} style={styles.avatarImg} contentFit="cover" cachePolicy="memory-disk" transition={150} />
             ) : (
               <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
-                <Ionicons name="person" size={26} color={colors.textMuted} />
+                <SolarIcon name="person" size={26} color={colors.textMuted} />
               </View>
             )}
             <View style={styles.cameraIconBadge}>
               {uploadingAvatar ? (
                 <Spinner size="small" color={colors.white} />
               ) : (
-                <Ionicons name="camera" size={11} color={colors.cream} />
+                <SolarIcon name="camera" size={11} color={colors.cream} />
               )}
             </View>
           </TouchableOpacity>
@@ -336,13 +336,13 @@ export function AccountSettingsScreen() {
             onPress={() => router.push('/profile/payout' as any)}
           >
             <View style={styles.compactActionIcon}>
-              <Ionicons name="wallet-outline" size={18} color={colors.charcoal} />
+              <SolarIcon name="wallet-outline" size={18} color={colors.charcoal} />
             </View>
             <View style={styles.compactActionBody}>
-              <Text style={styles.compactActionTitle}>PAYOUT ACCOUNTS</Text>
-              <Text style={styles.compactActionSub}>Bank & UPI IDs</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.compactActionTitle}>PAYOUT ACCOUNTS</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.compactActionSub}>Bank & UPI IDs</Text>
             </View>
-            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+            <SolarIcon name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
 
           <Pressable
@@ -350,13 +350,13 @@ export function AccountSettingsScreen() {
             onPress={() => router.push('/(tabs)/shop/payment-history' as any)}
           >
             <View style={styles.compactActionIcon}>
-              <Ionicons name="receipt-outline" size={18} color={colors.charcoal} />
+              <SolarIcon name="receipt-outline" size={18} color={colors.charcoal} />
             </View>
             <View style={styles.compactActionBody}>
-              <Text style={styles.compactActionTitle}>PAYMENT HISTORY</Text>
-              <Text style={styles.compactActionSub}>Payments & orders</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.compactActionTitle}>PAYMENT HISTORY</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.compactActionSub}>Payments & orders</Text>
             </View>
-            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+            <SolarIcon name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
         </View>
 
@@ -375,14 +375,14 @@ export function AccountSettingsScreen() {
               {testingPush ? (
                 <Spinner size="small" color={colors.forest} />
               ) : (
-                <Ionicons name="notifications-outline" size={18} color={colors.forest} />
+                <SolarIcon name="notifications-outline" size={18} color={colors.forest} />
               )}
             </View>
             <View style={styles.compactActionBody}>
-              <Text style={styles.compactActionTitle}>TEST PHONE NOTIFICATION</Text>
-              <Text style={styles.compactActionSub}>Trigger instant out-of-app heads-up alert</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.compactActionTitle}>TEST PHONE NOTIFICATION</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.compactActionSub}>Trigger instant out-of-app heads-up alert</Text>
             </View>
-            <Ionicons name="paper-plane-outline" size={16} color={colors.charcoal} />
+            <SolarIcon name="paper-plane-outline" size={16} color={colors.charcoal} />
           </Pressable>
         </View>
 
@@ -397,15 +397,18 @@ export function AccountSettingsScreen() {
             onPress={() => router.push('/legal' as any)}
           >
             <View style={[styles.compactActionIcon, { backgroundColor: colors.paperDark }]}>
-              <Ionicons name="shield-checkmark-outline" size={18} color={colors.ink} />
+              <SolarIcon name="shield-checkmark-outline" size={18} color={colors.ink} />
             </View>
             <View style={styles.compactActionBody}>
-              <Text style={styles.compactActionTitle}>LEGAL & COMPLIANCE CENTER</Text>
-              <Text style={styles.compactActionSub}>Terms of Use, DPDP Privacy, Grievance Officer & Swapping</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.compactActionTitle}>LEGAL & COMPLIANCE CENTER</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.compactActionSub}>Terms of Use, DPDP Privacy, Grievance Officer & Swapping</Text>
             </View>
-            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+            <SolarIcon name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
         </View>
+        <Text style={styles.creditsText}>
+          Icons: Solar Icon Set by 480 Design (CC BY 4.0)
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
     </SafeAreaView>
@@ -413,6 +416,14 @@ export function AccountSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  creditsText: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 24,
+    marginBottom: 32,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.cream,

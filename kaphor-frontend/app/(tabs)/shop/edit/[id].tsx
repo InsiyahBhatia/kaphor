@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { garmentService } from '../../../../src/services/garmentService';
 import { colors, typography, spacing, radius } from '../../../../src/theme';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
@@ -198,11 +198,11 @@ export default function EditListingScreen() {
           style={styles.backBtn} 
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          <SolarIcon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>EDIT LISTING</Text>
         <View style={[styles.statusPill, isActive ? styles.activePill : styles.inactivePill]}>
-          <Text style={styles.statusPillText}>{isActive ? 'LIVE' : 'PAUSED'}</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.statusPillText}>{isActive ? 'LIVE' : 'PAUSED'}</Text>
         </View>
       </View>
 
@@ -227,7 +227,7 @@ export default function EditListingScreen() {
                     <KaphorImage uri={uri} style={styles.thumbImage as any} contentFit="cover" width={100} />
                     {idx === 0 && (
                       <View style={styles.coverTag}>
-                        <Text style={styles.coverTagText}>COVER</Text>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.coverTagText}>COVER</Text>
                       </View>
                     )}
                   </View>
@@ -322,7 +322,7 @@ export default function EditListingScreen() {
             {listingType === 'ACCESSORY_SWAP' && (
               <View>
                 <View style={styles.swapNotice}>
-                  <Ionicons name="repeat" size={20} color={colors.gold} />
+                  <SolarIcon name="repeat" size={20} color={colors.gold} />
                   <Text style={styles.swapNoticeText}>
                     This accessory is available for direct peer-to-peer swaps in the Circular Hub.
                   </Text>
@@ -486,7 +486,7 @@ export default function EditListingScreen() {
                     : 'Asset is temporarily hidden from the browse feed and search.'}
                 </Text>
               </View>
-              <Ionicons
+              <SolarIcon
                 name={isActive ? 'toggle' : 'toggle-outline'}
                 size={36}
                 color={isActive ? colors.success : colors.textMuted}
@@ -509,8 +509,8 @@ export default function EditListingScreen() {
                 <Spinner size="small" color={colors.crimson} />
               ) : (
                 <>
-                  <Ionicons name="trash-outline" size={18} color={colors.crimson} />
-                  <Text style={styles.deleteButtonText}>DE-LIST & REMOVE FROM MARKET</Text>
+                  <SolarIcon name="trash-outline" size={18} color={colors.crimson} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.deleteButtonText}>DE-LIST & REMOVE FROM MARKET</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -528,8 +528,8 @@ export default function EditListingScreen() {
               <Spinner color={colors.bg} />
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={20} color={colors.bg} />
-                <Text style={styles.saveBtnText}>SAVE CHANGES</Text>
+                <SolarIcon name="checkmark-circle-outline" size={20} color={colors.bg} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.saveBtnText}>SAVE CHANGES</Text>
               </>
             )}
           </TouchableOpacity>

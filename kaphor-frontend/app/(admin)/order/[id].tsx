@@ -132,7 +132,7 @@ export default function AdminOrderDetailScreen() {
 
         {REFUNDABLE.includes(order.status) && (
           <TouchableOpacity style={[styles.refundBtn, refunding && { opacity: 0.6 }]} onPress={handleRefund} disabled={refunding}>
-            <Text style={styles.refundBtnText}>{refunding ? 'PROCESSING…' : 'PROCESS REFUND'}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.refundBtnText}>{refunding ? 'PROCESSING…' : 'PROCESS REFUND'}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

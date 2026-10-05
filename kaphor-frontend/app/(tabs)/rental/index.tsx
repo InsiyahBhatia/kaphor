@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, FlatList, Platform, TouchableOpacity, RefreshControl } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { rentalService } from '../../../src/services/rentalService';
@@ -11,6 +11,7 @@ import { EditorialPageHeader, HandwrittenNote } from '../../../src/components/ed
 import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { colors, typography } from '../../../src/theme';
 import { useAuthStore } from '../../../src/store/authStore';
+import { seedGarments } from '../../../src/store/garmentStore';
 
 function statusColor(status: string) {
   switch (status) {
@@ -42,7 +43,7 @@ const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }:
                 {/* Header with Role Pill & Status */}
                 <View style={styles.myRentalHeader}>
                   <View style={[styles.roleBadge, isLender ? styles.roleBadgeLender : styles.roleBadgeBorrower]}>
-                    <Text style={[styles.roleBadgeText, isLender ? styles.roleBadgeTextLender : styles.roleBadgeTextBorrower]}>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.roleBadgeText, isLender ? styles.roleBadgeTextLender : styles.roleBadgeTextBorrower]}>
                       {isLender ? 'You are lender' : 'You are borrower'}
                     </Text>
                   </View>
@@ -69,7 +70,7 @@ const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }:
                       {new Date(rental.startDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
                     </Text>
                   </View>
-                  <Ionicons name="arrow-forward" size={14} color={colors.textMuted} />
+                  <SolarIcon name="arrow-forward" size={14} color={colors.textMuted} />
                   <View style={styles.myRentalDateBlock}>
                     <Text style={styles.myRentalDateLabel}>Return due</Text>
                     <Text style={styles.myRentalDateValue}>
@@ -91,7 +92,7 @@ const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }:
                       style={[styles.myRentalDossierBtn, { backgroundColor: colors.terracottaDark, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
                       onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                     >
-                      <Ionicons name="time" size={13} color={colors.white} />
+                      <SolarIcon name="time" size={13} color={colors.white} />
                       <Text style={styles.myRentalDossierText}>REVIEW & APPROVE DATES ➔</Text>
                     </TouchableOpacity>
                   ) : rental.status === 'APPROVED' && !isLender ? (
@@ -99,7 +100,7 @@ const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }:
                       style={[styles.myRentalDossierBtn, { backgroundColor: colors.forest || colors.forest, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
                       onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                     >
-                      <Ionicons name="card" size={13} color={colors.white} />
+                      <SolarIcon name="card" size={13} color={colors.white} />
                       <Text style={styles.myRentalDossierText}>PAY DEPOSIT ➔</Text>
                     </TouchableOpacity>
                   ) : (rental.status === 'RETURNED' || rental.status === 'COMPLETED') && (!currentUserId || !rental?.metadata?.reviews?.[currentUserId]) ? (
@@ -107,7 +108,7 @@ const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }:
                       style={[styles.myRentalDossierBtn, { backgroundColor: colors.orange, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
                       onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}?review=true` as any)}
                     >
-                      <Ionicons name="star" size={13} color={colors.white} />
+                      <SolarIcon name="star" size={13} color={colors.white} />
                       <Text style={styles.myRentalDossierText}>RATE & REVIEW LEASE ➔</Text>
                     </TouchableOpacity>
                   ) : (
@@ -138,7 +139,7 @@ const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }:
                       }
                     }}
                   >
-                    <Ionicons name="chatbubble-ellipses-outline" size={15} color={colors.charcoal} />
+                    <SolarIcon name="chatbubble-ellipses-outline" size={15} color={colors.charcoal} />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -190,7 +191,9 @@ export default function RentalScreen() {
   const fetchAvailableRentals = async () => {
     try {
       await swrGet('/rentals/available', (res) => {
-        setRentals(toList(res));
+        const list = toList(res);
+        seedGarments(list);
+        setRentals(list);
         setLoading(false);
       });
     } catch (err) {
@@ -270,7 +273,7 @@ export default function RentalScreen() {
             style={[styles.roleFilterChip, roleFilter === item.id && styles.roleFilterChipActive]}
             onPress={() => setRoleFilter(item.id as any)}
           >
-            <Text style={[styles.roleFilterChipText, roleFilter === item.id && styles.roleFilterChipTextActive]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.roleFilterChipText, roleFilter === item.id && styles.roleFilterChipTextActive]}>
               {item.label}
             </Text>
           </TouchableOpacity>
@@ -283,10 +286,10 @@ export default function RentalScreen() {
     if (myRentals.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={40} color={colors.charcoal} />
+          <SolarIcon name="calendar-outline" size={40} color={colors.charcoal} />
           <Text style={styles.emptyText}>No active rental leases</Text>
           <TouchableOpacity style={styles.button} onPress={() => setActiveTab('browse')}>
-            <Text style={styles.buttonText}>Explore available pieces →</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.buttonText}>Explore available pieces →</Text>
           </TouchableOpacity>
         </View>
       );
@@ -304,7 +307,7 @@ export default function RentalScreen() {
         style={[styles.tab, activeTab === 'browse' && styles.tabActive]}
         onPress={() => setActiveTab('browse')}
       >
-        <Text style={[styles.tabText, activeTab === 'browse' && styles.tabTextActive]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'browse' && styles.tabTextActive]}>
           BROWSE ({rentals.length})
         </Text>
       </TouchableOpacity>
@@ -312,7 +315,7 @@ export default function RentalScreen() {
         style={[styles.tab, activeTab === 'my' && styles.tabActive]}
         onPress={() => setActiveTab('my')}
       >
-        <Text style={[styles.tabText, activeTab === 'my' && styles.tabTextActive]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'my' && styles.tabTextActive]}>
           MY RENTALS{myRentals.length > 0 ? ` (${myRentals.length})` : ''}
         </Text>
       </TouchableOpacity>
@@ -320,7 +323,7 @@ export default function RentalScreen() {
         style={styles.tab}
         onPress={() => router.push('/(tabs)/orders?tab=rentals' as any)}
       >
-        <Text style={[styles.tabText, { color: colors.copper, fontWeight: '800' }]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, { color: colors.copper, fontWeight: '800' }]}>
           TRACK LEASES ➔
         </Text>
       </TouchableOpacity>
@@ -340,16 +343,16 @@ export default function RentalScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.charcoal} />
           }
         >
-          <Ionicons name="calendar-sharp" size={48} color={colors.charcoal} />
+          <SolarIcon name="calendar-sharp" size={48} color={colors.charcoal} />
           <Text style={styles.emptyText}>No leasable assets found</Text>
           <TouchableOpacity style={styles.button} onPress={() => handleRefresh()}>
-            <Text style={styles.buttonText}>REFRESH CATALOG ↻</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.buttonText}>REFRESH CATALOG ↻</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, { marginTop: 12, backgroundColor: colors.white }]}
             onPress={() => router.push('/(tabs)/shop/sell')}
           >
-            <Text style={[styles.buttonText, { color: colors.charcoal }]}>+ LIST A RENTAL ITEM</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.buttonText, { color: colors.charcoal }]}>+ LIST A RENTAL ITEM</Text>
           </TouchableOpacity>
         </ScrollView>
       );

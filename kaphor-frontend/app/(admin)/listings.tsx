@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { adminService } from '../../src/services/adminService';
 import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
@@ -79,7 +79,7 @@ export default function AdminListingsScreen() {
     <View style={styles.container}>
       <AdminTopBar title="LISTINGS" subtitle={`${data?.meta?.total ?? 0} GARMENTS`} onRefresh={load} />
       <View style={styles.searchBar}>
-        <Ionicons name="search" size={16} color={colors.textMuted} />
+        <SolarIcon name="search" size={16} color={colors.textMuted} />
         <TextInput accessibilityLabel="Title, brand, category"
           style={styles.searchInput}
           placeholder="TITLE, BRAND, CATEGORY…"
@@ -89,7 +89,7 @@ export default function AdminListingsScreen() {
         />
         {q !== '' && (
           <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Remove" onPress={() => setQ('')}>
-            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+            <SolarIcon name="close-circle" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -101,7 +101,7 @@ export default function AdminListingsScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
         {LIFECYCLES.map((s) => (
           <TouchableOpacity key={s} onPress={() => setLifecycle(s)} style={[styles.statusChip, lifecycle === s && styles.statusChipActive]}>
-            <Text style={[styles.statusChipText, lifecycle === s && styles.statusChipTextActive]}>{s.replace(/_/g, ' ')}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.statusChipText, lifecycle === s && styles.statusChipTextActive]}>{s.replace(/_/g, ' ')}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -132,10 +132,10 @@ export default function AdminListingsScreen() {
               </View>
               <View style={styles.actions}>
                 <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={g.isActive ? 'Pause listing' : 'Activate listing'} style={[styles.iconBtn, { backgroundColor: colors.charcoal }]} onPress={() => togglePause(g)} disabled={busyId === `p-${g.id}`}>
-                  <Ionicons name={g.isActive ? 'pause' : 'play'} size={14} color={colors.white} />
+                  <SolarIcon name={g.isActive ? 'pause' : 'play'} size={14} color={colors.white} />
                 </TouchableOpacity>
                 <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Delete" style={[styles.iconBtn, { backgroundColor: colors.crimson }]} onPress={() => removeGarment(g)} disabled={busyId === `d-${g.id}`}>
-                  <Ionicons name="trash-outline" size={14} color={colors.white} />
+                  <SolarIcon name="trash-outline" size={14} color={colors.white} />
                 </TouchableOpacity>
               </View>
             </View>

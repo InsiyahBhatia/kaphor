@@ -73,5 +73,6 @@ const styles = StyleSheet.create({
   diamondText: {
     fontSize: 10,
     lineHeight: 12,
+      fontFamily: typography.body,
   },
 });

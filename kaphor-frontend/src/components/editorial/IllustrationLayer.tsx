@@ -37,6 +37,9 @@ export {
   MagazineDivider,
 };
 
+const MUSE_LEHENGA = require('../../../assets/images/opt/muse-lehenga-maroon-sm.webp');
+const MUSE_WHITE_DRESS = require('../../../assets/images/opt/muse-white-dress-sm.webp');
+
 export type EditorialVariant =
   | 'home'
   | 'archive'
@@ -96,25 +99,8 @@ export function IllustrationLayer({
 
   if (variant === 'rental') {
     return (
-      <View pointerEvents="none" style={[styles.layer, style, { opacity: baseOpacity }]}>
-        {/* Carved Palace Jharokha Window with Mogra Garlands */}
-        <Image
-          source={EditorialIndian.jharokhaWindowGarlands}
-          style={styles.rentalJharokha}
-          resizeMode="contain"
-        />
-        {/* Royal Crimson Bridal Zari Lehenga */}
-        <Image
-          source={EditorialIndian.royalCrimsonLehenga}
-          style={styles.rentalLehenga}
-          resizeMode="contain"
-        />
-        {/* Royal Zari Potli Bag */}
-        <Image
-          source={EditorialIndian.royalCrimsonPotli}
-          style={styles.rentalPotli}
-          resizeMode="contain"
-        />
+      <View pointerEvents="none" style={[styles.layer, style]}>
+        <Image source={MUSE_LEHENGA} style={styles.rentalWoman} resizeMode="contain" />
         <View style={styles.inkRule} />
       </View>
     );
@@ -122,23 +108,9 @@ export function IllustrationLayer({
 
   if (variant === 'swap') {
     return (
-      <View pointerEvents="none" style={[styles.layer, style, { opacity: baseOpacity }]}>
-        {/* Two women exchanging garments / peer-to-peer exchange */}
-        <Image
-          source={EditorialFashion.parisFigure03}
-          style={styles.swapFigureLeft}
-          resizeMode="contain"
-        />
-        <Image
-          source={EditorialFashion.parisFigure07}
-          style={styles.swapFigureRight}
-          resizeMode="contain"
-        />
-        <Image
-          source={EditorialRibbons.sticker02}
-          style={styles.swapBadge}
-          resizeMode="contain"
-        />
+      <View pointerEvents="none" style={[styles.layer, style]}>
+        <Image source={MUSE_WHITE_DRESS} style={styles.swapWomanLeft} resizeMode="contain" />
+        <Image source={MUSE_LEHENGA} style={styles.swapWomanRight} resizeMode="contain" />
         <View style={styles.inkRule} />
       </View>
     );
@@ -342,56 +314,28 @@ const styles = StyleSheet.create({
   },
 
   // Rental
-  rentalJharokha: {
+  rentalWoman: {
     position: 'absolute',
-    left: 20,
-    top: 8,
-    width: 140,
-    height: 165,
-    opacity: 0.16,
-  },
-  rentalLehenga: {
-    position: 'absolute',
-    right: -12,
-    bottom: -8,
-    width: 205,
-    height: 230,
-    opacity: 0.95,
-  },
-  rentalPotli: {
-    position: 'absolute',
-    right: 160,
-    bottom: 12,
-    width: 52,
-    height: 58,
-    opacity: 0.85,
+    right: 6,
+    bottom: -64,
+    width: 150,
+    height: 225,
   },
 
   // Swap
-  swapFigureLeft: {
+  swapWomanLeft: {
     position: 'absolute',
-    right: 110,
-    bottom: -10,
-    width: 160,
-    height: 190,
-    opacity: 0.82,
+    right: 96,
+    bottom: -60,
+    width: 140,
+    height: 210,
   },
-  swapFigureRight: {
+  swapWomanRight: {
     position: 'absolute',
-    right: -15,
-    bottom: -10,
-    width: 170,
-    height: 190,
-    opacity: 0.85,
-  },
-  swapBadge: {
-    position: 'absolute',
-    left: -15,
-    top: 10,
-    width: 80,
-    height: 80,
-    opacity: 0.65,
-    transform: [{ rotate: '-8deg' }],
+    right: -10,
+    bottom: -64,
+    width: 150,
+    height: 225,
   },
 
   // Upcycle Studio

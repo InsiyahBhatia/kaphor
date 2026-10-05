@@ -12,7 +12,7 @@ import {
   Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { rentalService } from '../../../../src/services/rentalService';
 import { messageService } from '../../../../src/services/messageService';
@@ -386,11 +386,11 @@ export default function RentalLeaseDossierScreen() {
   if (!rental) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
+        <SolarIcon name="alert-circle-outline" size={48} color={colors.textMuted} />
         <Text style={styles.errorTitle}>Rental not found</Text>
         <Text style={styles.errorSubtitle}>This rental order could not be located or access is restricted.</Text>
         <TouchableOpacity style={styles.primaryCta} onPress={() => safeBack('/(tabs)/rental')}>
-          <Text style={styles.primaryCtaText}>Back to rentals</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.primaryCtaText}>Back to rentals</Text>
         </TouchableOpacity>
       </View>
     );
@@ -426,7 +426,7 @@ export default function RentalLeaseDossierScreen() {
           onPress={() => safeBack('/(tabs)/rental')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
+          <SolarIcon name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={{ alignItems: 'center' }}>
           <Text style={styles.headerTitle}>Rental lease details</Text>
@@ -440,7 +440,7 @@ export default function RentalLeaseDossierScreen() {
           {startingChat ? (
             <Spinner size="small" color={colors.crimson} />
           ) : (
-            <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.textPrimary} />
+            <SolarIcon name="chatbubble-ellipses-outline" size={24} color={colors.textPrimary} />
           )}
         </TouchableOpacity>
       </View>
@@ -475,7 +475,7 @@ export default function RentalLeaseDossierScreen() {
                     step.done && styles.stepperBadgeDone,
                     isCurrent && styles.stepperBadgeCurrent,
                   ]}>
-                    <Ionicons
+                    <SolarIcon
                       name={step.icon as any}
                       size={12}
                       color={step.done || isCurrent ? colors.white : colors.textMuted}
@@ -555,7 +555,7 @@ export default function RentalLeaseDossierScreen() {
           <View style={styles.actionPromptCard}>
             <View style={styles.actionPromptTop}>
               <View style={styles.actionPromptIconBadge}>
-                <Ionicons name="time" size={18} color={colors.terracottaDark} />
+                <SolarIcon name="time" size={18} color={colors.terracottaDark} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.actionPromptTitle}>Action required: approve rental dates</Text>
@@ -580,7 +580,7 @@ export default function RentalLeaseDossierScreen() {
                   <Spinner color={colors.white} size="small" />
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle" size={15} color={colors.white} />
+                    <SolarIcon name="checkmark-circle" size={15} color={colors.white} />
                     <Text style={styles.actionPromptAcceptText}>Accept & approve dates</Text>
                   </>
                 )}
@@ -594,7 +594,7 @@ export default function RentalLeaseDossierScreen() {
           <View style={[styles.actionPromptCard, { borderColor: colors.forest, backgroundColor: colors.emeraldLight }]}>
             <View style={styles.actionPromptTop}>
               <View style={[styles.actionPromptIconBadge, { backgroundColor: colors.emeraldLight }]}>
-                <Ionicons name="checkmark-circle" size={18} color={colors.forest} />
+                <SolarIcon name="checkmark-circle" size={18} color={colors.forest} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.actionPromptTitle, { color: colors.forest }]}>
@@ -609,7 +609,7 @@ export default function RentalLeaseDossierScreen() {
               style={[styles.actionPromptBtn, styles.actionPromptPay]}
               onPress={handleProceedToPayment}
             >
-              <Ionicons name="card" size={15} color={colors.white} />
+              <SolarIcon name="card" size={15} color={colors.white} />
               <Text style={styles.actionPromptAcceptText}>PROCEED TO PAYMENT (₹{totalAmount.toLocaleString()}) →</Text>
             </TouchableOpacity>
           </View>
@@ -620,7 +620,7 @@ export default function RentalLeaseDossierScreen() {
           <View style={styles.rentalReviewCard}>
             <View style={styles.rentalReviewHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="star" size={16} color={colors.orange} />
+                <SolarIcon name="star" size={16} color={colors.orange} />
                 <Text style={styles.rentalReviewTitle}>Your rental review</Text>
               </View>
               <View style={styles.rentalReviewBadge}>
@@ -635,7 +635,7 @@ export default function RentalLeaseDossierScreen() {
               </Text>
             )}
             <View style={styles.rentalReviewFooter}>
-              <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
+              <SolarIcon name="shield-checkmark" size={12} color={colors.forest} />
               <Text style={styles.rentalReviewMeta}>Verified Circular Lease Review · Saved</Text>
             </View>
           </View>
@@ -655,10 +655,10 @@ export default function RentalLeaseDossierScreen() {
               <Text style={styles.titleText} numberOfLines={2}>{garment.title}</Text>
               <View style={styles.tagRow}>
                 <View style={styles.tag}>
-                  <Text style={styles.tagText}>{garment.category || 'COUTURE'}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.tagText}>{garment.category || 'COUTURE'}</Text>
                 </View>
                 <View style={[styles.tag, { borderColor: colors.forest || colors.forest }]}>
-                  <Text style={[styles.tagText, { color: colors.forest || colors.forest }]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tagText, { color: colors.forest || colors.forest }]}>
                     {garment.condition || 'PRISTINE'}
                   </Text>
                 </View>
@@ -677,8 +677,8 @@ export default function RentalLeaseDossierScreen() {
               <Text style={styles.counterpartyName}>{counterparty?.displayName || counterparty?.username || 'Verified Kaphor Member'}</Text>
             </View>
             <TouchableOpacity style={styles.chatButton} onPress={handleChat} activeOpacity={0.8}>
-              <Ionicons name="chatbubble-outline" size={14} color={colors.crimson} />
-              <Text style={styles.chatButtonText}>Message</Text>
+              <SolarIcon name="chatbubble-outline" size={14} color={colors.crimson} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.chatButtonText}>Message</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -719,7 +719,7 @@ export default function RentalLeaseDossierScreen() {
           {/* Outbound Tracking */}
           <View style={styles.trackingSection}>
             <View style={styles.trackingHeader}>
-              <Ionicons name="airplane-outline" size={15} color={colors.crimson} />
+              <SolarIcon name="airplane-outline" size={15} color={colors.crimson} />
               <Text style={styles.trackingTitle}>Outbound to borrower</Text>
             </View>
             {rental.trackingNumber ? (
@@ -739,8 +739,8 @@ export default function RentalLeaseDossierScreen() {
                   onPress={handleTrackOutbound}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="open-outline" size={13} color={colors.crimson} />
-                  <Text style={styles.trackOnlineBtnText}>TRACK ON {rental.carrier ? rental.carrier.toUpperCase() : 'COURIER'} WEBSITE</Text>
+                  <SolarIcon name="open-outline" size={13} color={colors.crimson} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.trackOnlineBtnText}>TRACK ON {rental.carrier ? rental.carrier.toUpperCase() : 'COURIER'} WEBSITE</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -758,7 +758,7 @@ export default function RentalLeaseDossierScreen() {
           {(['ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) || Boolean(rental.returnTracking)) && (
             <View style={[styles.trackingSection, { marginTop: 14 }]}>
               <View style={styles.trackingHeader}>
-                <Ionicons name="repeat-outline" size={15} color={colors.forest || colors.forest} />
+                <SolarIcon name="repeat-outline" size={15} color={colors.forest || colors.forest} />
                 <Text style={styles.trackingTitle}>Return to lender</Text>
               </View>
               {rental.returnTracking ? (
@@ -778,8 +778,8 @@ export default function RentalLeaseDossierScreen() {
                     onPress={handleTrackReturn}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="open-outline" size={13} color={colors.forest || colors.forest} />
-                    <Text style={[styles.trackOnlineBtnText, { color: colors.forest || colors.forest }]}>
+                    <SolarIcon name="open-outline" size={13} color={colors.forest || colors.forest} />
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.trackOnlineBtnText, { color: colors.forest || colors.forest }]}>
                       TRACK RETURN ON {rental.returnCarrier ? rental.returnCarrier.toUpperCase() : 'COURIER'}
                     </Text>
                   </TouchableOpacity>
@@ -843,12 +843,12 @@ export default function RentalLeaseDossierScreen() {
               styles.escrowPill,
               isDepositReleased ? styles.escrowPillReleased : styles.escrowPillHeld
             ]}>
-              <Ionicons
+              <SolarIcon
                 name={isDepositReleased ? 'checkmark-circle' : 'shield-checkmark'}
                 size={12}
                 color={isDepositReleased ? (colors.forest || colors.forest) : colors.crimson}
               />
-              <Text style={[
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[
                 styles.escrowPillText,
                 isDepositReleased && { color: colors.forest || colors.forest }
               ]}>
@@ -864,7 +864,7 @@ export default function RentalLeaseDossierScreen() {
           <View style={styles.summaryRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={styles.summaryLabel}>Refundable security deposit</Text>
-              <Ionicons name="lock-closed" size={11} color={colors.forest || colors.forest} />
+              <SolarIcon name="lock-closed" size={11} color={colors.forest || colors.forest} />
             </View>
             <Text style={[styles.summaryValue, { color: colors.forest || colors.forest }]}>
               ₹{refundableDeposit} {isDepositReleased ? '(Refunded)' : '(Held safely)'}
@@ -887,7 +887,7 @@ export default function RentalLeaseDossierScreen() {
 
         {/* Legal Disclaimer */}
         <View style={styles.legalDisclaimerBox}>
-          <Ionicons name="shield-checkmark" size={13} color={colors.textMuted} />
+          <SolarIcon name="shield-checkmark" size={13} color={colors.textMuted} />
           <Text style={styles.legalDisclaimerText}>
             Rental Agreement: Kaphor operates exclusively as an intermediary under Section 79 of the Information Technology Act, 2000. All transactions and wear liabilities are governed by user agreement between lender and borrower.
           </Text>
@@ -912,8 +912,8 @@ export default function RentalLeaseDossierScreen() {
               onPress={() => setDeclineModalVisible(true)}
               activeOpacity={0.88}
             >
-              <Ionicons name="close-circle-outline" size={16} color={colors.red || colors.rose} />
-              <Text style={[styles.actionBtnText, { color: colors.red || colors.rose }]}>Decline</Text>
+              <SolarIcon name="close-circle-outline" size={16} color={colors.red || colors.rose} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.red || colors.rose }]}>Decline</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, styles.approveBtn]}
@@ -925,8 +925,8 @@ export default function RentalLeaseDossierScreen() {
                 <Spinner color={colors.white} />
               ) : (
                 <>
-                  <Ionicons name="checkmark-circle" size={16} color={colors.white} />
-                  <Text style={styles.actionBtnText}>Accept request</Text>
+                  <SolarIcon name="checkmark-circle" size={16} color={colors.white} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>Accept request</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -940,8 +940,8 @@ export default function RentalLeaseDossierScreen() {
             onPress={handleProceedToPayment}
             activeOpacity={0.88}
           >
-            <Ionicons name="card" size={16} color={colors.white} />
-            <Text style={styles.actionBtnText}>PROCEED TO PAYMENT (₹{totalAmount.toLocaleString()})</Text>
+            <SolarIcon name="card" size={16} color={colors.white} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>PROCEED TO PAYMENT (₹{totalAmount.toLocaleString()})</Text>
           </TouchableOpacity>
         )}
 
@@ -952,8 +952,8 @@ export default function RentalLeaseDossierScreen() {
             onPress={() => setDispatchModalVisible(true)}
             activeOpacity={0.88}
           >
-            <Ionicons name="paper-plane" size={16} color={colors.white} />
-            <Text style={styles.actionBtnText}>Ship garment & enter tracking</Text>
+            <SolarIcon name="paper-plane" size={16} color={colors.white} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>Ship garment & enter tracking</Text>
           </TouchableOpacity>
         )}
 
@@ -969,8 +969,8 @@ export default function RentalLeaseDossierScreen() {
               <Spinner color={colors.white} />
             ) : (
               <>
-                <Ionicons name="checkmark-done" size={16} color={colors.white} />
-                <Text style={styles.actionBtnText}>Confirm I received garment</Text>
+                <SolarIcon name="checkmark-done" size={16} color={colors.white} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>Confirm I received garment</Text>
               </>
             )}
           </TouchableOpacity>
@@ -983,8 +983,8 @@ export default function RentalLeaseDossierScreen() {
             onPress={() => setReturnModalVisible(true)}
             activeOpacity={0.88}
           >
-            <Ionicons name="return-down-back" size={16} color={colors.white} />
-            <Text style={styles.actionBtnText}>Start return & enter tracking</Text>
+            <SolarIcon name="return-down-back" size={16} color={colors.white} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>Start return & enter tracking</Text>
           </TouchableOpacity>
         )}
 
@@ -1000,8 +1000,8 @@ export default function RentalLeaseDossierScreen() {
               <Spinner color={colors.white} />
             ) : (
               <>
-                <Ionicons name="checkbox-outline" size={16} color={colors.white} />
-                <Text style={styles.actionBtnText}>Confirm return received</Text>
+                <SolarIcon name="checkbox-outline" size={16} color={colors.white} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>Confirm return received</Text>
               </>
             )}
           </TouchableOpacity>
@@ -1019,8 +1019,8 @@ export default function RentalLeaseDossierScreen() {
               <Spinner color={colors.white} />
             ) : (
               <>
-                <Ionicons name="shield-checkmark" size={16} color={colors.white} />
-                <Text style={styles.actionBtnText}>Inspect & release deposit (₹299)</Text>
+                <SolarIcon name="shield-checkmark" size={16} color={colors.white} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>Inspect & release deposit (₹299)</Text>
               </>
             )}
           </TouchableOpacity>
@@ -1033,8 +1033,8 @@ export default function RentalLeaseDossierScreen() {
             onPress={() => setReviewModalVisible(true)}
             activeOpacity={0.88}
           >
-            <Ionicons name="star" size={16} color={colors.crimson} />
-            <Text style={[styles.actionBtnText, { color: colors.crimson }]}>
+            <SolarIcon name="star" size={16} color={colors.crimson} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.crimson }]}>
               RATE & REVIEW {isRenter ? 'LENDER' : 'BORROWER'}
             </Text>
           </TouchableOpacity>
@@ -1063,7 +1063,7 @@ export default function RentalLeaseDossierScreen() {
                 style={styles.closeBtn}
                 onPress={() => setDeclineModalVisible(false)}
               >
-                <Ionicons name="close" size={22} color={colors.textPrimary} />
+                <SolarIcon name="close" size={22} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -1082,7 +1082,7 @@ export default function RentalLeaseDossierScreen() {
                 style={[styles.actionBtn, styles.declineBtn, { flex: 1 }]}
                 onPress={() => setDeclineModalVisible(false)}
               >
-                <Text style={[styles.actionBtnText, { color: colors.textPrimary }]}>Cancel</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.actionBtnText, { color: colors.textPrimary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, { flex: 1, backgroundColor: colors.red || colors.rose }]}
@@ -1092,7 +1092,7 @@ export default function RentalLeaseDossierScreen() {
                 {actionLoading ? (
                   <Spinner color={colors.white} />
                 ) : (
-                  <Text style={styles.actionBtnText}>Confirm decline</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>Confirm decline</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1122,7 +1122,7 @@ export default function RentalLeaseDossierScreen() {
                 style={styles.closeBtn}
                 onPress={() => setDispatchModalVisible(false)}
               >
-                <Ionicons name="close" size={22} color={colors.textPrimary} />
+                <SolarIcon name="close" size={22} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -1134,7 +1134,7 @@ export default function RentalLeaseDossierScreen() {
                   style={[styles.carrierChip, carrier === c && styles.carrierChipActive]}
                   onPress={() => setCarrier(c)}
                 >
-                  <Text style={[styles.carrierChipText, carrier === c && styles.carrierChipTextActive]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.carrierChipText, carrier === c && styles.carrierChipTextActive]}>
                     {c}
                   </Text>
                 </TouchableOpacity>
@@ -1159,7 +1159,7 @@ export default function RentalLeaseDossierScreen() {
               {actionLoading ? (
                 <Spinner color={colors.white} />
               ) : (
-                <Text style={styles.modalSubmitBtnText}>Confirm shipping</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.modalSubmitBtnText}>Confirm shipping</Text>
               )}
             </TouchableOpacity>
           </TouchableOpacity>
@@ -1188,7 +1188,7 @@ export default function RentalLeaseDossierScreen() {
                 style={styles.closeBtn}
                 onPress={() => setReturnModalVisible(false)}
               >
-                <Ionicons name="close" size={22} color={colors.textPrimary} />
+                <SolarIcon name="close" size={22} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -1200,7 +1200,7 @@ export default function RentalLeaseDossierScreen() {
                   style={[styles.carrierChip, returnCarrier === c && styles.carrierChipActive]}
                   onPress={() => setReturnCarrier(c)}
                 >
-                  <Text style={[styles.carrierChipText, returnCarrier === c && styles.carrierChipTextActive]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.carrierChipText, returnCarrier === c && styles.carrierChipTextActive]}>
                     {c}
                   </Text>
                 </TouchableOpacity>
@@ -1225,7 +1225,7 @@ export default function RentalLeaseDossierScreen() {
               {actionLoading ? (
                 <Spinner color={colors.white} />
               ) : (
-                <Text style={styles.modalSubmitBtnText}>Mark as returned</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.modalSubmitBtnText}>Mark as returned</Text>
               )}
             </TouchableOpacity>
           </TouchableOpacity>
@@ -1254,7 +1254,7 @@ export default function RentalLeaseDossierScreen() {
                 style={styles.closeBtn}
                 onPress={() => setReviewModalVisible(false)}
               >
-                <Ionicons name="close" size={22} color={colors.textPrimary} />
+                <SolarIcon name="close" size={22} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -1269,7 +1269,7 @@ export default function RentalLeaseDossierScreen() {
                   }}
                   style={{ padding: 6 }}
                 >
-                  <Ionicons
+                  <SolarIcon
                     name={star <= rating ? 'star' : 'star-outline'}
                     size={32}
                     color={star <= rating ? colors.gold : colors.textMuted}
@@ -1296,7 +1296,7 @@ export default function RentalLeaseDossierScreen() {
               {actionLoading ? (
                 <Spinner color={colors.white} />
               ) : (
-                <Text style={styles.modalSubmitBtnText}>Submit review</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.modalSubmitBtnText}>Submit review</Text>
               )}
             </TouchableOpacity>
           </TouchableOpacity>
@@ -1325,6 +1325,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 6,
     marginBottom: 20,
+      fontFamily: typography.body,
   },
   header: {
     paddingHorizontal: 20,
@@ -1388,6 +1389,7 @@ const styles = StyleSheet.create({
     color: colors.textSecond,
     lineHeight: 16,
     marginTop: 2,
+      fontFamily: typography.body,
   },
 
   // Card Structure
@@ -1424,6 +1426,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginTop: 2,
     lineHeight: 18,
+      fontFamily: typography.bodyBold,
   },
   tagRow: { flexDirection: 'row', gap: 6, marginVertical: 6 },
   tag: {
@@ -1441,11 +1444,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: colors.textPrimary,
+      fontFamily: typography.bodyBold,
   },
   rateUnit: {
     fontSize: 11,
     fontWeight: '400',
     color: colors.textMuted,
+      fontFamily: typography.body,
   },
   divider: {
     height: 1,
@@ -1466,6 +1471,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     marginTop: 1,
+      fontFamily: typography.bodyBold,
   },
   chatButton: {
     flexDirection: 'row',
@@ -1509,6 +1515,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginTop: 2,
     textAlign: 'center',
+      fontFamily: typography.bodyBold,
   },
   timelineBarContainer: {
     flex: 1,
@@ -1572,11 +1579,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.textPrimary,
     marginTop: 1,
+      fontFamily: typography.bodyBold,
   },
   noTrackingText: {
     fontSize: 11,
     color: colors.textMuted,
     lineHeight: 16,
+      fontFamily: typography.body,
   },
 
   // Address
@@ -1592,17 +1601,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 2,
+      fontFamily: typography.bodyBold,
   },
   addressLine: {
     fontSize: 11.5,
     color: colors.textSecond,
     lineHeight: 16,
+      fontFamily: typography.body,
   },
   addressCity: {
     fontSize: 11.5,
     fontWeight: '600',
     color: colors.textPrimary,
     marginTop: 2,
+      fontFamily: typography.bodyMedium,
   },
 
   // Escrow Header & Pills
@@ -1644,6 +1656,7 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '700',
     color: colors.textPrimary,
+      fontFamily: typography.bodyBold,
   },
   totalLabel: {
     fontSize: 16,
@@ -1653,6 +1666,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
     color: colors.crimson,
+      fontFamily: typography.bodyBold,
   },
 
   // Legal Disclaimer
@@ -1671,6 +1685,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textMuted,
     lineHeight: 14,
+      fontFamily: typography.body,
   },
 
   // Floating Footer CTA
@@ -1748,6 +1763,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.textPrimary,
     marginTop: 2,
+      fontFamily: typography.bodyBold,
   },
   closeBtn: { padding: 4 },
   inputLabel: {
@@ -1790,6 +1806,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     color: colors.textPrimary,
     fontSize: 13,
+      fontFamily: typography.body,
   },
   modalSubmitBtn: {
     backgroundColor: colors.crimson,
@@ -1948,6 +1965,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textPrimary,
     fontWeight: '600',
+      fontFamily: typography.bodyMedium,
   },
   historyTime: {
     fontSize: 11,
@@ -2006,6 +2024,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textSecond,
     lineHeight: 16,
+      fontFamily: typography.body,
   },
   actionPromptBtnRow: {
     flexDirection: 'row',
@@ -2085,6 +2104,7 @@ const styles = StyleSheet.create({
     color: colors.textSecond,
     lineHeight: 18,
     marginBottom: 10,
+      fontFamily: typography.body,
   },
   rentalReviewFooter: {
     flexDirection: 'row',

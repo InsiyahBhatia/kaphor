@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import {
   View,
   Text,
@@ -20,14 +20,11 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { colors, typography } from '../../src/theme';
 import { KaphorImage, normalizeImageUri } from '../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
 import { ConversationChatLoading } from '../../src/components/common/CardLoadingScreen';
-import * as ImagePicker from 'expo-image-picker';
-import { promptPhotoSelection } from '../../src/utils/imagePicker';
-import * as FileSystem from 'expo-file-system/legacy';
 import {
   messageService,
   ConversationDetailResponse,
@@ -38,7 +35,8 @@ import { useAuth } from '../../src/context/AuthContext';
 import { getSocket, connectSocket } from '../../src/services/socket';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { peek, remember, hydrate } from '../../src/utils/swrCache';
+import { getConversationSeed } from '../../src/store/listStore';
 import { hapticFeedback } from '../../src/utils/haptics';
 import { useNotificationStore } from '../../src/store/notificationStore';
 import { swapService } from '../../src/services/swapService';
@@ -158,7 +156,7 @@ function SwipeableMessageBubble({ children, onSwipeReply, isMine }: SwipeableMes
         ]}
       >
         <View style={styles.swipeReplyCircle}>
-          <Ionicons name="arrow-undo" size={14} color={colors.charcoal} />
+          <SolarIcon name="arrow-undo" size={14} color={colors.charcoal} />
         </View>
       </Animated.View>
 
@@ -236,7 +234,7 @@ const ComposerBar = React.memo(
           activeOpacity={0.75}
           hitSlop={ATTACH_HIT}
         >
-          <Ionicons name="add" size={24} color={colors.charcoal} />
+          <SolarIcon name="add" size={24} color={colors.charcoal} />
         </TouchableOpacity>
 
         <View style={[styles.inputWrapper, focused && styles.inputWrapperFocused]}>
@@ -260,7 +258,7 @@ const ComposerBar = React.memo(
             activeOpacity={0.7}
             hitSlop={ATTACH_HIT}
           >
-            <Ionicons name="camera" size={20} color={focused ? colors.charcoal : colors.textMuted} />
+            <SolarIcon name="camera" size={20} color={focused ? colors.charcoal : colors.textMuted} />
           </TouchableOpacity>
         </View>
 
@@ -273,13 +271,453 @@ const ComposerBar = React.memo(
           {sending ? (
             <Spinner color={colors.cream} size="small" />
           ) : (
-            <Ionicons name="arrow-up" size={20} color={canSend ? colors.cream : colors.textMuted} />
+            <SolarIcon name="arrow-up" size={20} color={canSend ? colors.cream : colors.textMuted} />
           )}
         </TouchableOpacity>
       </View>
     );
   })
 );
+
+
+interface ChatRowActions {
+  startReply: (m: DirectMessageItem) => void;
+  longPress: (m: DirectMessageItem) => void;
+  scrollTo: (id: string) => void;
+  openGarment: (g: ConversationGarment) => void;
+  viewImage: (uri: string | null) => void;
+  toggleReaction: (targetId: string, emoji: string) => void;
+  push: (path: string) => void;
+}
+
+type ReactionList = { emoji: string; count: number; userReacted: boolean }[];
+
+interface ChatRowModel {
+  item: DirectMessageItem;
+  isFirst: boolean;
+  showDateDivider: boolean;
+  dateLabel: string;
+  isSameSenderAsPrev: boolean;
+  isSameSenderAsNext: boolean;
+  isMine: boolean;
+  reactions?: ReactionList;
+  reactionsSig: string;
+}
+
+interface ChatMessageRowProps {
+  row: ChatRowModel;
+  effectiveGarment: ConversationGarment | null | undefined;
+  conversation: ConversationDetailResponse['conversation'] | undefined;
+  swapId: string | null | undefined;
+  actions: ChatRowActions;
+}
+
+const chatRowKey = (row: ChatRowModel) => row.item.id;
+
+function chatRowPropsEqual(a: ChatMessageRowProps, b: ChatMessageRowProps) {
+  const x = a.row;
+  const y = b.row;
+  return (
+    x.item.id === y.item.id &&
+    x.item.content === y.item.content &&
+    x.item.readAt === y.item.readAt &&
+    x.item.imageUrl === y.item.imageUrl &&
+    x.item.isFlagged === y.item.isFlagged &&
+    (x.item as any).updatedAt === (y.item as any).updatedAt &&
+    x.isFirst === y.isFirst &&
+    x.showDateDivider === y.showDateDivider &&
+    x.dateLabel === y.dateLabel &&
+    x.isSameSenderAsPrev === y.isSameSenderAsPrev &&
+    x.isSameSenderAsNext === y.isSameSenderAsNext &&
+    x.isMine === y.isMine &&
+    x.reactionsSig === y.reactionsSig &&
+    a.effectiveGarment === b.effectiveGarment &&
+    a.conversation === b.conversation &&
+    a.swapId === b.swapId &&
+    a.actions === b.actions
+  );
+}
+
+/** One chat bubble (with date separator, product snippet, image, transaction buttons, reactions). */
+const ChatMessageRow = React.memo(function ChatMessageRow({
+  row,
+  effectiveGarment,
+  conversation,
+  swapId,
+  actions,
+}: ChatMessageRowProps) {
+  const { item, isFirst, showDateDivider, dateLabel, isSameSenderAsPrev, isSameSenderAsNext, isMine, reactions } = row;
+  const garment = conversation?.garment;
+  const parsed = parseReplyContent(item.content || '');
+  const dynamicBubbleCorners = isMine
+    ? {
+        borderTopLeftRadius: 16,
+        borderBottomLeftRadius: 16,
+        borderTopRightRadius: isSameSenderAsPrev ? 16 : 4,
+        borderBottomRightRadius: isSameSenderAsNext ? 16 : 4,
+        marginBottom: isSameSenderAsNext ? 3 : 10,
+      }
+    : {
+        borderTopRightRadius: 16,
+        borderBottomRightRadius: 16,
+        borderTopLeftRadius: isSameSenderAsPrev ? 16 : 4,
+        borderBottomLeftRadius: isSameSenderAsNext ? 16 : 4,
+        marginBottom: isSameSenderAsNext ? 3 : 10,
+      };
+
+  return (
+            <View>
+              {showDateDivider && (
+                <View style={styles.dateDivider}>
+                  <View style={styles.dateDividerPill}>
+                    <Text style={styles.dateDividerText}>{dateLabel}</Text>
+                  </View>
+                </View>
+              )}
+
+              <SwipeableMessageBubble
+                onSwipeReply={() => actions.startReply(item)}
+                isMine={isMine}
+              >
+                <View
+                  style={[
+                    styles.bubbleWrapper,
+                    isMine ? styles.myBubbleWrapper : styles.theirBubbleWrapper,
+                  ]}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.bubble,
+                      isMine ? styles.myBubble : styles.theirBubble,
+                      dynamicBubbleCorners,
+                    ]}
+                    onLongPress={() => actions.longPress(item)}
+                    activeOpacity={0.92}
+                    delayLongPress={220}
+                  >
+                    {/* WhatsApp-Style Quoted Message Header */}
+                    {parsed.replyTo && (
+                      <TouchableOpacity
+                        style={[
+                          styles.quoteContainer,
+                          isMine ? styles.myQuoteContainer : styles.theirQuoteContainer,
+                        ]}
+                        onPress={() => actions.scrollTo(parsed.replyTo!.id)}
+                        activeOpacity={0.8}
+                      >
+                        <View
+                          style={[
+                            styles.quoteAccentBar,
+                            isMine ? styles.myQuoteAccent : styles.theirQuoteAccent,
+                          ]}
+                        />
+                        <View style={styles.quoteContent}>
+                          <Text
+                            style={[
+                              styles.quoteSender,
+                              isMine ? styles.myQuoteSender : styles.theirQuoteSender,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {parsed.replyTo.senderName}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.quoteText,
+                              isMine ? styles.myQuoteText : styles.theirQuoteText,
+                            ]}
+                            numberOfLines={2}
+                          >
+                            {parsed.replyTo.content}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* In-Message Product Snippet */}
+                    {(() => {
+                      const text = parsed.text || '';
+                      const isRentalMsg = text.includes('[RENTAL RESERVATION]') || text.includes('[RENTAL APPROVED]');
+                      const isSwapMsg = text.includes('[SWAP PROPOSAL]');
+
+                      let displayGarment = effectiveGarment;
+
+                      if (isRentalMsg) {
+                        const titleMatch = text.match(/rental request for "([^"]+)"/i) || text.match(/dates for "([^"]+)"/i);
+                        if (titleMatch && titleMatch[1]) {
+                          const targetTitle = titleMatch[1].trim().toLowerCase();
+                          const allAvailable: any[] = [
+                            ...(conversation?.sellerGarments || []),
+                            ...(conversation?.counterpartyGarments || []),
+                            (conversation as any)?.rental?.garment,
+                            garment,
+                          ].filter(Boolean);
+                          const matched = allAvailable.find((g: any) =>
+                            g.title?.trim().toLowerCase() === targetTitle ||
+                            targetTitle.includes(g.title?.trim().toLowerCase()) ||
+                            g.title?.trim().toLowerCase().includes(targetTitle)
+                          );
+                          displayGarment = matched || ((conversation as any)?.rental?.garment?.title?.toLowerCase().includes(targetTitle) ? (conversation as any)?.rental?.garment : null);
+                        } else if ((conversation as any)?.rental?.garment) {
+                          displayGarment = (conversation as any)?.rental?.garment;
+                        }
+                      } else if (isSwapMsg) {
+                        displayGarment = null;
+                      } else {
+                        const shouldShowSnippet = (
+                          isFirst ||
+                          /\b(rent|rental|lease|swap|trade|buy|order|price|this|dress|piece|item|garment|jacket|shirt|pant|size)\b/i.test(text)
+                        );
+                        if (!shouldShowSnippet) displayGarment = null;
+                      }
+
+                      if (!displayGarment) return null;
+
+                      return (
+                        <TouchableOpacity
+                          style={[
+                            styles.inBubbleProductSnippet,
+                            isMine ? styles.inBubbleSnippetMine : styles.inBubbleSnippetTheir,
+                          ]}
+                          onPress={() => actions.openGarment(displayGarment)}
+                          activeOpacity={0.88}
+                        >
+                          <KaphorImage
+                            uri={displayGarment.image || displayGarment.images?.[0] || ''}
+                            style={styles.inBubbleSnippetThumb}
+                            contentFit="cover"
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[
+                                styles.inBubbleSnippetBrand,
+                                isMine ? { color: colors.paperDark } : { color: colors.copper },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {displayGarment.brand?.toUpperCase() || 'KAPHOR'}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.inBubbleSnippetTitle,
+                                isMine ? { color: colors.white } : { color: colors.charcoal },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {displayGarment.title}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.inBubbleSnippetPrice,
+                                isMine ? { color: colors.gold } : { color: colors.charcoal },
+                              ]}
+                            >
+                              {isRentalMsg || displayGarment.rentalPriceDay
+                                ? `₹${Math.round(displayGarment.rentalPriceDay || displayGarment.price || 0)}/day (Rent)`
+                                : displayGarment.listingType === 'ACCESSORY_SWAP'
+                                ? 'Swap Piece'
+                                : `₹${Math.round(displayGarment.price || 0)}`}
+                            </Text>
+                          </View>
+                          <View
+                            style={[
+                              styles.inBubbleSnippetBtn,
+                              isMine
+                                ? { backgroundColor: colors.overlayLight }
+                                : { backgroundColor: colors.charcoal },
+                            ]}
+                          >
+                            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+                              style={[
+                                styles.inBubbleSnippetBtnText,
+                                isMine ? { color: colors.white } : { color: colors.cream },
+                              ]}
+                            >
+                              DETAILS
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })()}
+
+                    {item.imageUrl && (
+                      <TouchableOpacity
+                        onPress={() => actions.viewImage(item.imageUrl || null)}
+                        activeOpacity={0.9}
+                      >
+                        <KaphorImage
+                          uri={item.imageUrl}
+                          style={styles.bubbleImage}
+                          contentFit="cover"
+                        />
+                      </TouchableOpacity>
+                    )}
+
+                    {parsed.text && parsed.text !== '📷 Photo' && (
+                      <Text
+                        style={[
+                          styles.bubbleText,
+                          isMine ? styles.myBubbleText : styles.theirBubbleText,
+                        ]}
+                      >
+                        {parsed.text}
+                      </Text>
+                    )}
+
+                    {/* Quick interactive transaction button if message is a swap proposal */}
+                    {Boolean(parsed.text && parsed.text.includes('[SWAP PROPOSAL]')) && (
+                      <TouchableOpacity
+                        style={[
+                          styles.chatTransactionActionBtn,
+                          isMine
+                            ? { backgroundColor: colors.borderLight, borderColor: colors.borderLight }
+                            : { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
+                        ]}
+                        onPress={() => actions.push(swapId ? `/(tabs)/swap/details?swapId=${swapId}` : '/(tabs)/orders?tab=swaps')}
+                        activeOpacity={0.88}
+                      >
+                        <SolarIcon name="swap-horizontal" size={13} color={isMine ? colors.white : colors.cream} />
+                        <Text style={[styles.chatTransactionActionText, isMine ? { color: colors.white } : { color: colors.cream }]}>
+                          {isMine ? 'VIEW SWAP DETAILS ➔' : 'REVIEW & RESPOND TO SWAP ➔'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Quick interactive transaction button if message is a rental request or approval */}
+                    {Boolean(parsed.text && (parsed.text.includes('[RENTAL RESERVATION]') || parsed.text.includes('[RENTAL APPROVED]'))) && (
+                      <TouchableOpacity
+                        style={[
+                          styles.chatTransactionActionBtn,
+                          parsed.text?.includes('[RENTAL APPROVED]')
+                            ? { backgroundColor: colors.forest || colors.forest, borderColor: colors.forest || colors.forest }
+                            : isMine
+                            ? { backgroundColor: colors.borderLight, borderColor: colors.borderLight }
+                            : { backgroundColor: colors.orange, borderColor: colors.orange },
+                        ]}
+                        onPress={() => {
+                          const rentalIdMatch = parsed.text?.match(/Lease ID:\s*([a-zA-Z0-9_-]+)/);
+                          const targetRentalId = rentalIdMatch
+                            ? rentalIdMatch[1]
+                            : ((conversation as any)?.rental?.id || (conversation as any)?.rentalId);
+                          if (targetRentalId) {
+                            actions.push(`/(tabs)/rental/lease/${targetRentalId}`);
+                          } else {
+                            actions.push('/(tabs)/rental?tab=my');
+                          }
+                        }}
+                        activeOpacity={0.88}
+                      >
+                        <SolarIcon
+                          name={parsed.text?.includes('[RENTAL APPROVED]') ? 'card-outline' : 'calendar-outline'}
+                          size={13}
+                          color={colors.white}
+                        />
+                        <Text style={[styles.chatTransactionActionText, { color: colors.white }]}>
+                          {parsed.text?.includes('[RENTAL APPROVED]')
+                            ? (isMine ? 'VIEW LEASE DETAILS ➔' : 'PROCEED TO PAYMENT ➔')
+                            : (isMine ? 'VIEW RENTAL DETAILS ➔' : 'REVIEW & APPROVE DATES ➔')}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {item.isFlagged && (
+                      <View style={styles.flaggedWarning}>
+                        <SolarIcon name="warning" size={12} color={colors.red} />
+                        <Text style={styles.flaggedWarningText}>
+                          Potential off-platform payment detected
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Integrated WhatsApp-Style Timestamp & Double Checkmarks */}
+                    <View style={styles.timeRow}>
+                      <Text
+                        style={[
+                          styles.timeText,
+                          isMine ? styles.myTimeText : styles.theirTimeText,
+                        ]}
+                      >
+                        {new Date(item.createdAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                      {isMine && (
+                        <SolarIcon
+                          name={item.readAt ? 'checkmark-done' : 'checkmark'}
+                          size={13}
+                          color={item.readAt ? colors.gold : colors.goldDark}
+                          style={{ marginLeft: 3 }}
+                        />
+                      )}
+                    </View>
+
+                    {/* Instagram/WhatsApp-Style Anchored Reaction Badges */}
+                    {reactions && reactions.length > 0 && (
+                      <View style={[styles.reactionBadgeContainer, isMine ? styles.reactionBadgeMine : styles.reactionBadgeTheir]}>
+                        {reactions.map((r: { emoji: string; count: number; userReacted: boolean }, rIdx: number) => (
+                          <TouchableOpacity
+                            key={rIdx}
+                            style={[
+                              styles.reactionBadgePill,
+                              r.userReacted && styles.reactionBadgePillActive,
+                            ]}
+                            onPress={() => actions.toggleReaction(item.id, r.emoji)}
+                            activeOpacity={0.8}
+                          >
+                            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.reactionBadgeEmoji}>{r.emoji}</Text>
+                            {r.count > 1 && (
+                              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.reactionBadgeCount, r.userReacted && styles.reactionBadgeCountActive]}>
+                                {r.count}
+                              </Text>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </SwipeableMessageBubble>
+            </View>
+  );
+}, chatRowPropsEqual);
+
+function createTypingBus() {
+  let value = false;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => value,
+    set: (v: boolean) => {
+      if (v === value) return;
+      value = v;
+      listeners.forEach((l) => l());
+    },
+    subscribe: (l: () => void) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+  };
+}
+type TypingBus = ReturnType<typeof createTypingBus>;
+
+const HeaderHandleText = React.memo(function HeaderHandleText({ bus, handle }: { bus: TypingBus; handle: string }) {
+  const typing = useSyncExternalStore(bus.subscribe, bus.get, bus.get);
+  return <>{typing ? 'typing...' : `@${handle} • View Profile`}</>;
+});
+
+const TypingBanner = React.memo(function TypingBanner({ bus, name }: { bus: TypingBus; name: string }) {
+  const typing = useSyncExternalStore(bus.subscribe, bus.get, bus.get);
+  if (!typing) return null;
+  return (
+    <View style={styles.typingWrap}>
+      <Text style={styles.typingText}>{name} is typing...</Text>
+    </View>
+  );
+});
+
+const MAINTAIN_VISIBLE_POSITION = { minIndexForVisible: 1, autoscrollToTopThreshold: 80 };
 
 export default function DirectChatScreen() {
   const insets = useSafeAreaInsets();
@@ -288,8 +726,14 @@ export default function DirectChatScreen() {
   const { user } = useAuth();
   useBackHandler('/(tabs)/messages');
 
-  const [detail, setDetail] = useState<ConversationDetailResponse | null>(null);
-  const [messages, setMessages] = useState<DirectMessageItem[]>([]);
+  // Paint instantly: memory cache first, otherwise the inbox row (header) while messages load
+  const cacheChatKey = `chat:${conversationId}`;
+  const cachedChat = useRef(peek<any>(cacheChatKey)).current;
+  const seedConv = useRef(getConversationSeed(conversationId)).current;
+  const [detail, setDetail] = useState<ConversationDetailResponse | null>(
+    () => cachedChat?.detail ?? (seedConv ? ({ conversation: seedConv as any, messages: [] } as ConversationDetailResponse) : null)
+  );
+  const [messages, setMessages] = useState<DirectMessageItem[]>(() => cachedChat?.messages ?? []);
   const setActiveConversationId = useNotificationStore((s) => s.setActiveConversationId);
 
   useEffect(() => {
@@ -302,8 +746,8 @@ export default function DirectChatScreen() {
   }, [conversationId, setActiveConversationId]);
 
   // Cap rendered history; older messages load on demand
-  const [historyLimit, setHistoryLimit] = useState(150);
-  const loadEarlier = useCallback(() => setHistoryLimit((n) => n + 150), []);
+  const [historyLimit, setHistoryLimit] = useState(100);
+  const loadEarlier = useCallback(() => setHistoryLimit((n) => n + 100), []);
 
   // Separate reactions from normal message bubbles and map by messageId
   const { displayMessages, reactionsByMessageId, hasEarlier } = useMemo(() => {
@@ -361,9 +805,11 @@ export default function DirectChatScreen() {
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<QuotedReplyInfo | null>(null);
   const [actionMessage, setActionMessage] = useState<DirectMessageItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!(cachedChat?.messages?.length > 0));
   const [sending, setSending] = useState(false);
-  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  // Typing state lives outside React state so only the two tiny subscribers re-render
+  const typingBus = useRef(createTypingBus()).current;
+  const isScrolledRef = useRef(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadWhileScrolled, setUnreadWhileScrolled] = useState(0);
@@ -401,6 +847,10 @@ export default function DirectChatScreen() {
   }, [swapId]);
 
   const flatListRef = useRef<FlatList>(null);
+  // List is inverted: offset 0 is the newest message
+  const scrollToLatest = useCallback((animated = true) => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated });
+  }, []);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const partnerTypingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -426,13 +876,13 @@ export default function DirectChatScreen() {
   };
 
   const scrollToMessage = (messageId: string) => {
-    const targetIdx = messages.findIndex((m) => m.id === messageId);
+    const targetIdx = listData.findIndex((r) => r.item.id === messageId);
     if (targetIdx >= 0) {
       try {
         flatListRef.current?.scrollToIndex({ index: targetIdx, animated: true, viewPosition: 0.5 });
         hapticFeedback.light();
       } catch {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        scrollToLatest(true);
       }
     }
   };
@@ -444,7 +894,7 @@ export default function DirectChatScreen() {
 
     const showSub = Keyboard.addListener(showEvent, () => {
       setKeyboardVisible(true);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => scrollToLatest(true), 100);
     });
     const hideSub = Keyboard.addListener(hideEvent, () => {
       setKeyboardVisible(false);
@@ -456,19 +906,17 @@ export default function DirectChatScreen() {
     };
   }, []);
 
-  const cacheChatKey = `@kaphor_chat_${conversationId}`;
 
   // Load offline cached messages immediately on mount
   useEffect(() => {
     if (!conversationId) return;
     (async () => {
       try {
-        const cached = await AsyncStorage.getItem(cacheChatKey);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed.detail) setDetail(parsed.detail);
+        const parsed = await hydrate<any>(cacheChatKey);
+        if (parsed) {
+          if (parsed.detail) setDetail((d) => d ?? parsed.detail);
           if (Array.isArray(parsed.messages) && parsed.messages.length > 0) {
-            setMessages(parsed.messages);
+            setMessages((m) => (m.length === 0 ? parsed.messages : m));
             setLoading(false);
           }
         }
@@ -481,6 +929,17 @@ export default function DirectChatScreen() {
     messagesRef.current = messages;
   }, [messages]);
 
+  // Persist the latest messages (debounced) only when the list changes, never per keystroke
+  useEffect(() => {
+    if (!conversationId || !detail || messages.length === 0) return;
+    const t = setTimeout(() => {
+      const persistable = messages.filter((m) => !m.id.startsWith('temp-')).slice(-100);
+      if (persistable.length === 0) return;
+      remember(cacheChatKey, { detail: { ...detail, messages: [] }, messages: persistable });
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [messages, detail, conversationId, cacheChatKey]);
+
   const loadConversation = useCallback(async () => {
     if (!conversationId) return;
     try {
@@ -489,7 +948,6 @@ export default function DirectChatScreen() {
       setMessages(data.messages);
       useNotificationStore.getState().fetchUnreadMessageCount();
       // Persist to offline cache
-      AsyncStorage.setItem(cacheChatKey, JSON.stringify({ detail: { ...data, messages: [] }, messages: data.messages.slice(-100) })).catch(() => {});
     } catch (e: any) {
       console.error('Failed to load conversation', e);
       if (messagesRef.current.length === 0) {
@@ -537,33 +995,28 @@ export default function DirectChatScreen() {
 
             return [...prev, newMsg];
           });
-          setIsPartnerTyping(false);
-          setShowScrollBottom((isScrolled) => {
-            if (isScrolled) {
-              setUnreadWhileScrolled((c) => c + 1);
-            } else {
-              setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-              }, 100);
-            }
-            return isScrolled;
-          });
+          typingBus.set(false);
+          if (isScrolledRef.current) {
+            setUnreadWhileScrolled((c) => c + 1);
+          } else {
+            setTimeout(() => scrollToLatest(true), 100);
+          }
         }
       };
 
       const typingHandler = (data: any) => {
         if (data.conversationId === conversationId && data.userId !== user?.id) {
-          setIsPartnerTyping(true);
+          typingBus.set(true);
           if (partnerTypingTimerRef.current) clearTimeout(partnerTypingTimerRef.current);
           partnerTypingTimerRef.current = setTimeout(() => {
-            setIsPartnerTyping(false);
+            typingBus.set(false);
           }, 3000);
         }
       };
 
       const stopTypingHandler = (data: any) => {
         if (data.conversationId === conversationId && data.userId !== user?.id) {
-          setIsPartnerTyping(false);
+          typingBus.set(false);
         }
       };
 
@@ -585,16 +1038,15 @@ export default function DirectChatScreen() {
     }
   }, [conversationId, loadConversation, user?.id]);
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
-    if (distanceFromBottom > 180) {
-      setShowScrollBottom(true);
-    } else {
-      setShowScrollBottom(false);
-      setUnreadWhileScrolled(0);
-    }
-  };
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    // Inverted list: distance from the newest message is the raw offset
+    const distanceFromBottom = event.nativeEvent.contentOffset.y;
+    const scrolled = distanceFromBottom > 180;
+    if (scrolled === isScrolledRef.current) return;
+    isScrolledRef.current = scrolled;
+    setShowScrollBottom(scrolled);
+    if (!scrolled) setUnreadWhileScrolled(0);
+  }, []);
 
   const handleInputChange = useCallback(() => {
 
@@ -615,6 +1067,7 @@ export default function DirectChatScreen() {
 
   const openCameraDirectly = async () => {
     try {
+      const ImagePicker = await import('expo-image-picker');
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Please grant camera access to capture photos.');
@@ -644,6 +1097,7 @@ export default function DirectChatScreen() {
         text: 'Choose from Gallery',
         onPress: async () => {
           try {
+            const ImagePicker = await import('expo-image-picker');
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
               Alert.alert('Permission Denied', 'Please grant photo access to share images in chat.');
@@ -669,6 +1123,7 @@ export default function DirectChatScreen() {
 
   const uploadPhotoBase64 = async (uri: string): Promise<string> => {
     try {
+      const FileSystem = await import('expo-file-system/legacy');
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: 'base64',
       });
@@ -703,7 +1158,7 @@ export default function DirectChatScreen() {
 
     setMessages((prev) => [...prev, tempMsg]);
     if (!content.startsWith('[[REACTION:')) {
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => scrollToLatest(true), 100);
     }
 
     try {
@@ -782,7 +1237,7 @@ export default function DirectChatScreen() {
     };
 
     setMessages((prev) => [...prev, tempMsg]);
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    setTimeout(() => scrollToLatest(true), 100);
 
     try {
       let finalImgUrl: string | undefined = undefined;
@@ -1000,6 +1455,90 @@ export default function DirectChatScreen() {
     return 'member';
   };
 
+  // Row view-models, newest first (the list is inverted)
+  const listData = useMemo<ChatRowModel[]>(() => {
+    const n = displayMessages.length;
+    const out: ChatRowModel[] = new Array(n);
+    const today = new Date();
+    const todayStr = today.toDateString();
+    const yest = new Date();
+    yest.setDate(today.getDate() - 1);
+    const yesterdayStr = yest.toDateString();
+    const dayStrs: string[] = new Array(n);
+    const times: number[] = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const d = new Date(displayMessages[i].createdAt);
+      dayStrs[i] = d.toDateString();
+      times[i] = d.getTime();
+    }
+    for (let i = 0; i < n; i++) {
+      const item = displayMessages[i];
+      const showDateDivider = i === 0 || dayStrs[i] !== dayStrs[i - 1];
+      const isSameSenderAsPrev =
+        !showDateDivider &&
+        i > 0 &&
+        displayMessages[i - 1].senderId === item.senderId &&
+        Math.abs(times[i] - times[i - 1]) < 120000;
+      const isSameSenderAsNext =
+        i < n - 1 &&
+        displayMessages[i + 1].senderId === item.senderId &&
+        Math.abs(times[i + 1] - times[i]) < 120000 &&
+        dayStrs[i + 1] === dayStrs[i];
+      let dateLabel = new Date(item.createdAt)
+        .toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
+        .toUpperCase();
+      if (dayStrs[i] === todayStr) dateLabel = 'TODAY';
+      else if (dayStrs[i] === yesterdayStr) dateLabel = 'YESTERDAY';
+      const reactions = reactionsByMessageId[item.id];
+      out[n - 1 - i] = {
+        item,
+        isFirst: i === 0,
+        showDateDivider,
+        dateLabel,
+        isSameSenderAsPrev,
+        isSameSenderAsNext,
+        isMine: item.senderId === user?.id,
+        reactions,
+        reactionsSig: reactions ? reactions.map((r) => r.emoji + ':' + r.count + ':' + (r.userReacted ? 1 : 0)).join('|') : '',
+      };
+    }
+    return out;
+  }, [displayMessages, reactionsByMessageId, user?.id]);
+
+  // Always-current handlers behind a stable object so memoized rows never re-render for them
+  const latestHandlers = useRef({ startReply: handleStartReply, scrollTo: scrollToMessage, toggleReaction: handleToggleReaction });
+  latestHandlers.current = { startReply: handleStartReply, scrollTo: scrollToMessage, toggleReaction: handleToggleReaction };
+  const rowActions = useMemo<ChatRowActions>(
+    () => ({
+      startReply: (m) => latestHandlers.current.startReply(m),
+      scrollTo: (id) => latestHandlers.current.scrollTo(id),
+      toggleReaction: (id, e) => latestHandlers.current.toggleReaction(id, e),
+      longPress: (m) => {
+        setActionMessage(m);
+        hapticFeedback.medium();
+      },
+      openGarment: (g) => setModalGarment(g),
+      viewImage: (uri) => setViewingImage(uri),
+      push: (path) => router.push(path as any),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const conversationForRows = detail?.conversation;
+  const renderRow = useCallback(
+    ({ item }: { item: ChatRowModel }) => (
+      <ChatMessageRow
+        row={item}
+        effectiveGarment={effectiveGarment}
+        conversation={conversationForRows}
+        swapId={swapId}
+        actions={rowActions}
+      />
+    ),
+    [effectiveGarment, conversationForRows, swapId, rowActions]
+  );
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -1012,7 +1551,7 @@ export default function DirectChatScreen() {
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
+          <SolarIcon name="chevron-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1029,7 +1568,7 @@ export default function DirectChatScreen() {
               {other?.isVerified && <VerifiedBadge size="compact" />}
             </View>
             <Text style={styles.headerHandle}>
-              {isPartnerTyping ? 'typing...' : `@${formatHandle(other)} • View Profile`}
+              <HeaderHandleText bus={typingBus} handle={formatHandle(other)} />
             </Text>
           </View>
         </TouchableOpacity>
@@ -1040,7 +1579,7 @@ export default function DirectChatScreen() {
             onPress={handleOpenTransactionsHub}
             hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
           >
-            <Ionicons name="cube-outline" size={20} color={colors.charcoal} />
+            <SolarIcon name="cube-outline" size={20} color={colors.charcoal} />
           </TouchableOpacity>
 
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Person circle" 
@@ -1048,11 +1587,11 @@ export default function DirectChatScreen() {
             onPress={() => other?.id && router.push(`/(tabs)/shop/seller/${other.id}` as any)}
             hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
           >
-            <Ionicons name="person-circle-outline" size={24} color={colors.charcoal} />
+            <SolarIcon name="person-circle-outline" size={24} color={colors.charcoal} />
           </TouchableOpacity>
 
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Shield" style={styles.reportBtn} onPress={handleReport} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
-            <Ionicons name="shield-outline" size={18} color={colors.charcoal} />
+            <SolarIcon name="shield-outline" size={18} color={colors.charcoal} />
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -1061,7 +1600,7 @@ export default function DirectChatScreen() {
             hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
             accessibilityLabel="Delete Conversation"
           >
-            <Ionicons name="trash-outline" size={18} color={colors.red || colors.rose} />
+            <SolarIcon name="trash-outline" size={18} color={colors.red || colors.rose} />
           </TouchableOpacity>
         </View>
       </View>
@@ -1076,8 +1615,8 @@ export default function DirectChatScreen() {
           {/* Top Banner Row */}
           <View style={styles.swapHeaderRow}>
             <View style={styles.swapHeaderBadge}>
-              <Ionicons name="swap-horizontal" size={12} color={colors.white} />
-              <Text style={styles.swapHeaderBadgeText}>SWAP #{swapId.slice(0, 8).toUpperCase()}</Text>
+              <SolarIcon name="swap-horizontal" size={12} color={colors.white} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.swapHeaderBadgeText}>SWAP #{swapId.slice(0, 8).toUpperCase()}</Text>
             </View>
             <View style={[
               styles.swapStageStatusPill,
@@ -1085,7 +1624,7 @@ export default function DirectChatScreen() {
               swapDetails?.status === 'SHIPPED' || swapDetails?.status === 'BOTH_SHIPPED' ? { backgroundColor: colors.goldDark } :
               { backgroundColor: colors.inkSoft }
             ]}>
-              <Text style={styles.swapStageStatusText}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.swapStageStatusText}>
                 {swapDetails?.status ? swapDetails.status.replace(/_/g, ' ') : 'ACTIVE TRADE'}
               </Text>
             </View>
@@ -1105,11 +1644,11 @@ export default function DirectChatScreen() {
                   />
                 ) : (
                   <View style={[styles.swapThumb, styles.swapThumbPlaceholder]}>
-                    <Ionicons name="shirt-outline" size={18} color={colors.textMuted} />
+                    <SolarIcon name="shirt-outline" size={18} color={colors.textMuted} />
                   </View>
                 )}
                 <View style={styles.swapRoleTagOffered}>
-                  <Text style={styles.swapRoleTagText}>OFFERED</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.swapRoleTagText}>OFFERED</Text>
                 </View>
               </View>
               <Text style={styles.swapItemTitle} numberOfLines={1}>
@@ -1125,7 +1664,7 @@ export default function DirectChatScreen() {
             {/* Central Trade Icon */}
             <View style={styles.swapCenterIndicator}>
               <View style={styles.swapExchangeCircle}>
-                <Ionicons name="swap-horizontal" size={14} color={colors.charcoal} />
+                <SolarIcon name="swap-horizontal" size={14} color={colors.charcoal} />
               </View>
               <Text style={styles.swapCenterHint}>VIEW STAGE →</Text>
             </View>
@@ -1142,11 +1681,11 @@ export default function DirectChatScreen() {
                   />
                 ) : (
                   <View style={[styles.swapThumb, styles.swapThumbPlaceholder]}>
-                    <Ionicons name="sparkles-outline" size={18} color={colors.textMuted} />
+                    <SolarIcon name="sparkles-outline" size={18} color={colors.textMuted} />
                   </View>
                 )}
                 <View style={styles.swapRoleTagWanted}>
-                  <Text style={styles.swapRoleTagText}>WANTED</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.swapRoleTagText}>WANTED</Text>
                 </View>
               </View>
               <Text style={styles.swapItemTitle} numberOfLines={1}>
@@ -1171,13 +1710,13 @@ export default function DirectChatScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.orderIconBox}>
-              <Ionicons name="cube" size={16} color={colors.cream} />
+              <SolarIcon name="cube" size={16} color={colors.cream} />
             </View>
             <View style={styles.orderCoordinationInfo}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={styles.orderCoordinationTitle}>ORDER #{order.id.slice(0, 8).toUpperCase()}</Text>
                 <View style={styles.orderStatusChip}>
-                  <Text style={styles.orderStatusChipText}>{order.status}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.orderStatusChipText}>{order.status}</Text>
                 </View>
               </View>
               <Text style={styles.orderCoordinationSub} numberOfLines={1}>
@@ -1215,13 +1754,13 @@ export default function DirectChatScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.rentalIconBox}>
-              <Ionicons name="calendar" size={16} color={colors.cream} />
+              <SolarIcon name="calendar" size={16} color={colors.cream} />
             </View>
             <View style={styles.rentalCoordinationInfo}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={styles.rentalCoordinationTitle}>RENTAL #{rental.id.slice(0, 8).toUpperCase()}</Text>
                 <View style={styles.rentalStatusChip}>
-                  <Text style={styles.rentalStatusChipText}>{rental.status?.replace(/_/g, ' ') || 'ACTIVE'}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.rentalStatusChipText}>{rental.status?.replace(/_/g, ' ') || 'ACTIVE'}</Text>
                 </View>
               </View>
               <Text style={styles.rentalCoordinationSub} numberOfLines={1}>
@@ -1266,7 +1805,7 @@ export default function DirectChatScreen() {
                   contentFit="cover"
                 />
                 <View style={styles.garmentCardZoomIcon}>
-                  <Ionicons name="expand" size={10} color={colors.cream} />
+                  <SolarIcon name="expand" size={10} color={colors.cream} />
                 </View>
               </View>
             )}
@@ -1286,7 +1825,7 @@ export default function DirectChatScreen() {
                       : { backgroundColor: colors.emeraldLight, borderColor: colors.forest },
                   ]}
                 >
-                  <Text
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                     style={[
                       styles.intentModeBadgeText,
                       { color: garmentMode === 'RENT' ? colors.ink : garmentMode === 'SWAP' ? colors.terracottaDark : colors.forest },
@@ -1322,12 +1861,12 @@ export default function DirectChatScreen() {
                 </Text>
                 {effectiveGarment.size ? (
                   <View style={styles.specMiniPill}>
-                    <Text style={styles.specMiniPillText}>SIZE {effectiveGarment.size.toUpperCase()}</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.specMiniPillText}>SIZE {effectiveGarment.size.toUpperCase()}</Text>
                   </View>
                 ) : null}
                 {effectiveGarment.condition ? (
                   <View style={styles.specMiniPill}>
-                    <Text style={styles.specMiniPillText}>{effectiveGarment.condition.toUpperCase()}</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.specMiniPillText}>{effectiveGarment.condition.toUpperCase()}</Text>
                   </View>
                 ) : null}
               </View>
@@ -1341,8 +1880,8 @@ export default function DirectChatScreen() {
               onPress={() => setModalGarment(effectiveGarment)}
               activeOpacity={0.8}
             >
-              <Ionicons name="information-circle-outline" size={13} color={colors.charcoal} />
-              <Text style={styles.garmentDetailsBtnText}>DETAILS</Text>
+              <SolarIcon name="information-circle-outline" size={13} color={colors.charcoal} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentDetailsBtnText}>DETAILS</Text>
             </TouchableOpacity>
 
             {isMyGarment ? (
@@ -1351,7 +1890,7 @@ export default function DirectChatScreen() {
                 onPress={() => router.push(`/(tabs)/shop/edit/${effectiveGarment.id}` as any)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.garmentActionBtnText}>EDIT</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentActionBtnText}>EDIT</Text>
               </TouchableOpacity>
             ) : garmentMode === 'RENT' ? (
               <TouchableOpacity
@@ -1359,7 +1898,7 @@ export default function DirectChatScreen() {
                 onPress={() => router.push(`/(tabs)/rental/${effectiveGarment.id}` as any)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.garmentActionBtnText}>RENT →</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentActionBtnText}>RENT →</Text>
               </TouchableOpacity>
             ) : garmentMode === 'SWAP' ? (
               <TouchableOpacity
@@ -1367,7 +1906,7 @@ export default function DirectChatScreen() {
                 onPress={() => router.push(`/(tabs)/swap/${effectiveGarment.id}` as any)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.garmentActionBtnText}>SWAP →</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentActionBtnText}>SWAP →</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -1375,7 +1914,7 @@ export default function DirectChatScreen() {
                 onPress={() => router.push(`/(tabs)/shop/${effectiveGarment.id}` as any)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.garmentActionBtnText}>BUY →</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentActionBtnText}>BUY →</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1385,7 +1924,7 @@ export default function DirectChatScreen() {
         <View style={styles.wardrobeStripContainer}>
           <View style={styles.wardrobeStripHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-              <Ionicons name="shirt-outline" size={13} color={colors.charcoal} />
+              <SolarIcon name="shirt-outline" size={13} color={colors.charcoal} />
               {counterpartyGarments.length > 0 && sellerGarments.length > 0 ? (
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   <TouchableOpacity
@@ -1395,7 +1934,7 @@ export default function DirectChatScreen() {
                       activeGarmentsTab === 'counterparty' && styles.wardrobeTabMiniActive,
                     ]}
                   >
-                    <Text
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                       style={[
                         styles.wardrobeTabMiniText,
                         activeGarmentsTab === 'counterparty' && styles.wardrobeTabMiniTextActive,
@@ -1411,7 +1950,7 @@ export default function DirectChatScreen() {
                       activeGarmentsTab === 'seller' && styles.wardrobeTabMiniActive,
                     ]}
                   >
-                    <Text
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                       style={[
                         styles.wardrobeTabMiniText,
                         activeGarmentsTab === 'seller' && styles.wardrobeTabMiniTextActive,
@@ -1478,8 +2017,8 @@ export default function DirectChatScreen() {
                     onPress={() => handleLinkGarment(cg)}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   >
-                    <Ionicons name={isLinked ? 'checkmark' : 'link'} size={11} color={colors.white} />
-                    <Text style={styles.wardrobeStripLinkBtnText}>{isLinked ? 'LINKED' : 'LINK'}</Text>
+                    <SolarIcon name={isLinked ? 'checkmark' : 'link'} size={11} color={colors.white} />
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.wardrobeStripLinkBtnText}>{isLinked ? 'LINKED' : 'LINK'}</Text>
                   </TouchableOpacity>
                 </View>
               );
@@ -1495,13 +2034,13 @@ export default function DirectChatScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.rentalIconBox, { backgroundColor: colors.ink }]}>
-                <Ionicons name="calendar" size={16} color={colors.cream} />
+                <SolarIcon name="calendar" size={16} color={colors.cream} />
               </View>
               <View style={styles.rentalCoordinationInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.rentalCoordinationTitle}>RENTAL INQUIRY & LEASING</Text>
                   <View style={[styles.rentalStatusChip, { backgroundColor: colors.overlayLight }]}>
-                    <Text style={[styles.rentalStatusChipText, { color: colors.ink }]}>RENT</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.rentalStatusChipText, { color: colors.ink }]}>RENT</Text>
                   </View>
                 </View>
                 <Text style={styles.rentalCoordinationSub} numberOfLines={1}>
@@ -1534,13 +2073,13 @@ export default function DirectChatScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.rentalIconBox, { backgroundColor: colors.goldDark }]}>
-                <Ionicons name="swap-horizontal" size={16} color={colors.cream} />
+                <SolarIcon name="swap-horizontal" size={16} color={colors.cream} />
               </View>
               <View style={styles.rentalCoordinationInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.rentalCoordinationTitle}>SWAP & TRADE INQUIRY</Text>
                   <View style={[styles.rentalStatusChip, { backgroundColor: colors.goldLight }]}>
-                    <Text style={[styles.rentalStatusChipText, { color: colors.goldDark }]}>SWAP</Text>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.rentalStatusChipText, { color: colors.goldDark }]}>SWAP</Text>
                   </View>
                 </View>
                 <Text style={styles.rentalCoordinationSub} numberOfLines={1}>
@@ -1568,7 +2107,7 @@ export default function DirectChatScreen() {
         ) : (
           <View style={styles.directSellerBar}>
             <View style={styles.directIconCircle}>
-              <Ionicons name="storefront" size={16} color={colors.forest || colors.inkSoft} />
+              <SolarIcon name="storefront" size={16} color={colors.forest || colors.inkSoft} />
             </View>
             <View style={styles.directSellerInfo}>
               <Text style={styles.directSellerTitle}>DIRECT CHAT</Text>
@@ -1602,408 +2141,31 @@ export default function DirectChatScreen() {
       ) : (
       <FlatList
         ref={flatListRef}
-        data={displayMessages}
-        keyExtractor={(item) => item.id}
+        data={listData}
+        keyExtractor={chatRowKey}
+        renderItem={renderRow}
+        inverted
         style={{ flex: 1 }}
         contentContainerStyle={styles.messagesList}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         onScroll={handleScroll}
-        scrollEventThrottle={16}
+        scrollEventThrottle={64}
         initialNumToRender={15}
         maxToRenderPerBatch={10}
-        windowSize={7}
+        windowSize={9}
         updateCellsBatchingPeriod={50}
         removeClippedSubviews={Platform.OS === 'android'}
-        ListHeaderComponent={
+        maintainVisibleContentPosition={MAINTAIN_VISIBLE_POSITION}
+        onEndReached={hasEarlier ? loadEarlier : undefined}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={
           hasEarlier ? (
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Load earlier messages" onPress={loadEarlier} style={{ alignSelf: 'center', paddingVertical: 10 }}>
               <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.textMuted }}>LOAD EARLIER MESSAGES</Text>
             </TouchableOpacity>
           ) : null
         }
-        onContentSizeChange={() => {
-          if (!showScrollBottom) {
-            flatListRef.current?.scrollToEnd({ animated: false });
-          }
-        }}
-        onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
-        renderItem={({ item, index }) => {
-          const isMine = item.senderId === user?.id;
-          const parsed = parseReplyContent(item.content || '');
-
-          const prevMsg = index > 0 ? displayMessages[index - 1] : null;
-          const nextMsg = index < displayMessages.length - 1 ? displayMessages[index + 1] : null;
-
-          const showDateDivider =
-            index === 0 ||
-            new Date(item.createdAt).toDateString() !==
-              new Date(displayMessages[index - 1]?.createdAt).toDateString();
-
-          const isSameSenderAsPrev =
-            !showDateDivider &&
-            prevMsg &&
-            prevMsg.senderId === item.senderId &&
-            Math.abs(new Date(item.createdAt).getTime() - new Date(prevMsg.createdAt).getTime()) < 120000;
-
-          const isSameSenderAsNext =
-            nextMsg &&
-            nextMsg.senderId === item.senderId &&
-            Math.abs(new Date(nextMsg.createdAt).getTime() - new Date(item.createdAt).getTime()) < 120000 &&
-            new Date(nextMsg.createdAt).toDateString() === new Date(item.createdAt).toDateString();
-
-          const itemDate = new Date(item.createdAt);
-          const today = new Date();
-          const yesterday = new Date();
-          yesterday.setDate(today.getDate() - 1);
-
-          let dateLabel = itemDate.toLocaleDateString('en-IN', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          }).toUpperCase();
-
-          if (itemDate.toDateString() === today.toDateString()) {
-            dateLabel = 'TODAY';
-          } else if (itemDate.toDateString() === yesterday.toDateString()) {
-            dateLabel = 'YESTERDAY';
-          }
-
-          const dynamicBubbleCorners = isMine
-            ? {
-                borderTopLeftRadius: 16,
-                borderBottomLeftRadius: 16,
-                borderTopRightRadius: isSameSenderAsPrev ? 16 : 4,
-                borderBottomRightRadius: isSameSenderAsNext ? 16 : 4,
-                marginBottom: isSameSenderAsNext ? 3 : 10,
-              }
-            : {
-                borderTopRightRadius: 16,
-                borderBottomRightRadius: 16,
-                borderTopLeftRadius: isSameSenderAsPrev ? 16 : 4,
-                borderBottomLeftRadius: isSameSenderAsNext ? 16 : 4,
-                marginBottom: isSameSenderAsNext ? 3 : 10,
-              };
-
-          return (
-            <View>
-              {showDateDivider && (
-                <View style={styles.dateDivider}>
-                  <View style={styles.dateDividerPill}>
-                    <Text style={styles.dateDividerText}>{dateLabel}</Text>
-                  </View>
-                </View>
-              )}
-
-              <SwipeableMessageBubble
-                onSwipeReply={() => handleStartReply(item)}
-                isMine={isMine}
-              >
-                <View
-                  style={[
-                    styles.bubbleWrapper,
-                    isMine ? styles.myBubbleWrapper : styles.theirBubbleWrapper,
-                  ]}
-                >
-                  <TouchableOpacity
-                    style={[
-                      styles.bubble,
-                      isMine ? styles.myBubble : styles.theirBubble,
-                      dynamicBubbleCorners,
-                    ]}
-                    onLongPress={() => {
-                      setActionMessage(item);
-                      hapticFeedback.medium();
-                    }}
-                    activeOpacity={0.92}
-                    delayLongPress={220}
-                  >
-                    {/* WhatsApp-Style Quoted Message Header */}
-                    {parsed.replyTo && (
-                      <TouchableOpacity
-                        style={[
-                          styles.quoteContainer,
-                          isMine ? styles.myQuoteContainer : styles.theirQuoteContainer,
-                        ]}
-                        onPress={() => scrollToMessage(parsed.replyTo!.id)}
-                        activeOpacity={0.8}
-                      >
-                        <View
-                          style={[
-                            styles.quoteAccentBar,
-                            isMine ? styles.myQuoteAccent : styles.theirQuoteAccent,
-                          ]}
-                        />
-                        <View style={styles.quoteContent}>
-                          <Text
-                            style={[
-                              styles.quoteSender,
-                              isMine ? styles.myQuoteSender : styles.theirQuoteSender,
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {parsed.replyTo.senderName}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.quoteText,
-                              isMine ? styles.myQuoteText : styles.theirQuoteText,
-                            ]}
-                            numberOfLines={2}
-                          >
-                            {parsed.replyTo.content}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    )}
-
-                    {/* In-Message Product Snippet */}
-                    {(() => {
-                      const text = parsed.text || '';
-                      const isRentalMsg = text.includes('[RENTAL RESERVATION]') || text.includes('[RENTAL APPROVED]');
-                      const isSwapMsg = text.includes('[SWAP PROPOSAL]');
-
-                      let displayGarment = effectiveGarment;
-
-                      if (isRentalMsg) {
-                        const titleMatch = text.match(/rental request for "([^"]+)"/i) || text.match(/dates for "([^"]+)"/i);
-                        if (titleMatch && titleMatch[1]) {
-                          const targetTitle = titleMatch[1].trim().toLowerCase();
-                          const allAvailable: any[] = [
-                            ...(detail?.conversation?.sellerGarments || []),
-                            ...(detail?.conversation?.counterpartyGarments || []),
-                            (detail?.conversation as any)?.rental?.garment,
-                            garment,
-                          ].filter(Boolean);
-                          const matched = allAvailable.find((g: any) =>
-                            g.title?.trim().toLowerCase() === targetTitle ||
-                            targetTitle.includes(g.title?.trim().toLowerCase()) ||
-                            g.title?.trim().toLowerCase().includes(targetTitle)
-                          );
-                          displayGarment = matched || ((detail?.conversation as any)?.rental?.garment?.title?.toLowerCase().includes(targetTitle) ? (detail?.conversation as any)?.rental?.garment : null);
-                        } else if ((detail?.conversation as any)?.rental?.garment) {
-                          displayGarment = (detail?.conversation as any)?.rental?.garment;
-                        }
-                      } else if (isSwapMsg) {
-                        displayGarment = null;
-                      } else {
-                        const shouldShowSnippet = (
-                          index === 0 ||
-                          /\b(rent|rental|lease|swap|trade|buy|order|price|this|dress|piece|item|garment|jacket|shirt|pant|size)\b/i.test(text)
-                        );
-                        if (!shouldShowSnippet) displayGarment = null;
-                      }
-
-                      if (!displayGarment) return null;
-
-                      return (
-                        <TouchableOpacity
-                          style={[
-                            styles.inBubbleProductSnippet,
-                            isMine ? styles.inBubbleSnippetMine : styles.inBubbleSnippetTheir,
-                          ]}
-                          onPress={() => setModalGarment(displayGarment)}
-                          activeOpacity={0.88}
-                        >
-                          <KaphorImage
-                            uri={displayGarment.image || displayGarment.images?.[0] || ''}
-                            style={styles.inBubbleSnippetThumb}
-                            contentFit="cover"
-                          />
-                          <View style={{ flex: 1 }}>
-                            <Text
-                              style={[
-                                styles.inBubbleSnippetBrand,
-                                isMine ? { color: colors.paperDark } : { color: colors.copper },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {displayGarment.brand?.toUpperCase() || 'KAPHOR'}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.inBubbleSnippetTitle,
-                                isMine ? { color: colors.white } : { color: colors.charcoal },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {displayGarment.title}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.inBubbleSnippetPrice,
-                                isMine ? { color: colors.gold } : { color: colors.charcoal },
-                              ]}
-                            >
-                              {isRentalMsg || displayGarment.rentalPriceDay
-                                ? `₹${Math.round(displayGarment.rentalPriceDay || displayGarment.price || 0)}/day (Rent)`
-                                : displayGarment.listingType === 'ACCESSORY_SWAP'
-                                ? 'Swap Piece'
-                                : `₹${Math.round(displayGarment.price || 0)}`}
-                            </Text>
-                          </View>
-                          <View
-                            style={[
-                              styles.inBubbleSnippetBtn,
-                              isMine
-                                ? { backgroundColor: colors.overlayLight }
-                                : { backgroundColor: colors.charcoal },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.inBubbleSnippetBtnText,
-                                isMine ? { color: colors.white } : { color: colors.cream },
-                              ]}
-                            >
-                              DETAILS
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })()}
-
-                    {item.imageUrl && (
-                      <TouchableOpacity
-                        onPress={() => setViewingImage(item.imageUrl || null)}
-                        activeOpacity={0.9}
-                      >
-                        <KaphorImage
-                          uri={item.imageUrl}
-                          style={styles.bubbleImage}
-                          contentFit="cover"
-                        />
-                      </TouchableOpacity>
-                    )}
-
-                    {parsed.text && parsed.text !== '📷 Photo' && (
-                      <Text
-                        style={[
-                          styles.bubbleText,
-                          isMine ? styles.myBubbleText : styles.theirBubbleText,
-                        ]}
-                      >
-                        {parsed.text}
-                      </Text>
-                    )}
-
-                    {/* Quick interactive transaction button if message is a swap proposal */}
-                    {Boolean(parsed.text && parsed.text.includes('[SWAP PROPOSAL]')) && (
-                      <TouchableOpacity
-                        style={[
-                          styles.chatTransactionActionBtn,
-                          isMine
-                            ? { backgroundColor: colors.borderLight, borderColor: colors.borderLight }
-                            : { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
-                        ]}
-                        onPress={() => router.push(swapId ? `/(tabs)/swap/details?swapId=${swapId}` as any : '/(tabs)/orders?tab=swaps' as any)}
-                        activeOpacity={0.88}
-                      >
-                        <Ionicons name="swap-horizontal" size={13} color={isMine ? colors.white : colors.cream} />
-                        <Text style={[styles.chatTransactionActionText, isMine ? { color: colors.white } : { color: colors.cream }]}>
-                          {isMine ? 'VIEW SWAP DETAILS ➔' : 'REVIEW & RESPOND TO SWAP ➔'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-
-                    {/* Quick interactive transaction button if message is a rental request or approval */}
-                    {Boolean(parsed.text && (parsed.text.includes('[RENTAL RESERVATION]') || parsed.text.includes('[RENTAL APPROVED]'))) && (
-                      <TouchableOpacity
-                        style={[
-                          styles.chatTransactionActionBtn,
-                          parsed.text?.includes('[RENTAL APPROVED]')
-                            ? { backgroundColor: colors.forest || colors.forest, borderColor: colors.forest || colors.forest }
-                            : isMine
-                            ? { backgroundColor: colors.borderLight, borderColor: colors.borderLight }
-                            : { backgroundColor: colors.orange, borderColor: colors.orange },
-                        ]}
-                        onPress={() => {
-                          const rentalIdMatch = parsed.text?.match(/Lease ID:\s*([a-zA-Z0-9_-]+)/);
-                          const targetRentalId = rentalIdMatch
-                            ? rentalIdMatch[1]
-                            : ((detail?.conversation as any)?.rental?.id || (detail?.conversation as any)?.rentalId);
-                          if (targetRentalId) {
-                            router.push(`/(tabs)/rental/lease/${targetRentalId}` as any);
-                          } else {
-                            router.push('/(tabs)/rental?tab=my' as any);
-                          }
-                        }}
-                        activeOpacity={0.88}
-                      >
-                        <Ionicons
-                          name={parsed.text?.includes('[RENTAL APPROVED]') ? 'card-outline' : 'calendar-outline'}
-                          size={13}
-                          color={colors.white}
-                        />
-                        <Text style={[styles.chatTransactionActionText, { color: colors.white }]}>
-                          {parsed.text?.includes('[RENTAL APPROVED]')
-                            ? (isMine ? 'VIEW LEASE DETAILS ➔' : 'PROCEED TO PAYMENT ➔')
-                            : (isMine ? 'VIEW RENTAL DETAILS ➔' : 'REVIEW & APPROVE DATES ➔')}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-
-                    {item.isFlagged && (
-                      <View style={styles.flaggedWarning}>
-                        <Ionicons name="warning" size={12} color={colors.red} />
-                        <Text style={styles.flaggedWarningText}>
-                          Potential off-platform payment detected
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Integrated WhatsApp-Style Timestamp & Double Checkmarks */}
-                    <View style={styles.timeRow}>
-                      <Text
-                        style={[
-                          styles.timeText,
-                          isMine ? styles.myTimeText : styles.theirTimeText,
-                        ]}
-                      >
-                        {new Date(item.createdAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Text>
-                      {isMine && (
-                        <Ionicons
-                          name={item.readAt ? 'checkmark-done' : 'checkmark'}
-                          size={13}
-                          color={item.readAt ? colors.gold : colors.goldDark}
-                          style={{ marginLeft: 3 }}
-                        />
-                      )}
-                    </View>
-
-                    {/* Instagram/WhatsApp-Style Anchored Reaction Badges */}
-                    {reactionsByMessageId[item.id] && reactionsByMessageId[item.id].length > 0 && (
-                      <View style={[styles.reactionBadgeContainer, isMine ? styles.reactionBadgeMine : styles.reactionBadgeTheir]}>
-                        {reactionsByMessageId[item.id].map((r: { emoji: string; count: number; userReacted: boolean }, rIdx: number) => (
-                          <TouchableOpacity
-                            key={rIdx}
-                            style={[
-                              styles.reactionBadgePill,
-                              r.userReacted && styles.reactionBadgePillActive,
-                            ]}
-                            onPress={() => handleToggleReaction(item.id, r.emoji)}
-                            activeOpacity={0.8}
-                          >
-                            <Text style={styles.reactionBadgeEmoji}>{r.emoji}</Text>
-                            {r.count > 1 && (
-                              <Text style={[styles.reactionBadgeCount, r.userReacted && styles.reactionBadgeCountActive]}>
-                                {r.count}
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </SwipeableMessageBubble>
-            </View>
-          );
-        }}
       />
       )}
 
@@ -2020,29 +2182,24 @@ export default function DirectChatScreen() {
           ]}
           onPress={() => {
             hapticFeedback.light();
-            flatListRef.current?.scrollToEnd({ animated: true });
+            scrollToLatest(true);
+            isScrolledRef.current = false;
             setShowScrollBottom(false);
             setUnreadWhileScrolled(0);
           }}
           activeOpacity={0.88}
         >
-          <Ionicons name="chevron-down" size={20} color={colors.charcoal} />
+          <SolarIcon name="chevron-down" size={20} color={colors.charcoal} />
           {unreadWhileScrolled > 0 && (
             <View style={styles.floatingScrollBadge}>
-              <Text style={styles.floatingScrollBadgeText}>{unreadWhileScrolled}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.floatingScrollBadgeText}>{unreadWhileScrolled}</Text>
             </View>
           )}
         </TouchableOpacity>
       )}
 
       {/* Typing Indicator */}
-      {isPartnerTyping && (
-        <View style={styles.typingWrap}>
-          <Text style={styles.typingText}>
-            {other?.displayName || 'Partner'} is typing...
-          </Text>
-        </View>
-      )}
+      <TypingBanner bus={typingBus} name={other?.displayName || 'Partner'} />
 
       {/* Selected Image Preview Bar */}
       {selectedImage && (
@@ -2053,7 +2210,7 @@ export default function DirectChatScreen() {
             style={styles.removeImageBtn}
             onPress={() => setSelectedImage(null)}
           >
-            <Ionicons name="close-circle" size={20} color={colors.red} />
+            <SolarIcon name="close-circle" size={20} color={colors.red} />
           </TouchableOpacity>
         </View>
       )}
@@ -2064,7 +2221,7 @@ export default function DirectChatScreen() {
           <View style={styles.replyBarAccent} />
           <View style={styles.replyBarContent}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="arrow-undo" size={12} color={colors.forest || colors.inkSoft} />
+              <SolarIcon name="arrow-undo" size={12} color={colors.forest || colors.inkSoft} />
               <Text style={styles.replyBarSender}>Replying to {replyingTo.senderName}</Text>
             </View>
             <Text style={styles.replyBarText} numberOfLines={1}>
@@ -2076,7 +2233,7 @@ export default function DirectChatScreen() {
             onPress={() => setReplyingTo(null)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            <SolarIcon name="close-circle" size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
       )}
@@ -2093,7 +2250,7 @@ export default function DirectChatScreen() {
         onSend={handleSend}
         onPickImage={pickImage}
         onCamera={openCameraDirectly}
-        onFocusScroll={() => setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150)}
+        onFocusScroll={() => setTimeout(() => scrollToLatest(true), 150)}
       />
 
       {/* Full-Screen Zoomable Image Viewer Modal */}
@@ -2110,11 +2267,11 @@ export default function DirectChatScreen() {
             onPress={() => setViewingImage(null)}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
           >
-            <Ionicons name="close" size={28} color={colors.white} />
+            <SolarIcon name="close" size={28} color={colors.white} />
           </TouchableOpacity>
 
           <View style={styles.zoomInstructionWrap}>
-            <Ionicons name="scan-outline" size={12} color={colors.paperGlass} />
+            <SolarIcon name="scan-outline" size={12} color={colors.paperGlass} />
             <Text style={styles.zoomInstructionText}>PINCH TO ZOOM</Text>
           </View>
 
@@ -2182,7 +2339,7 @@ export default function DirectChatScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.actionIconBox, { backgroundColor: colors.emeraldLight }]}>
-                <Ionicons name="arrow-undo" size={16} color={colors.forest || colors.inkSoft} />
+                <SolarIcon name="arrow-undo" size={16} color={colors.forest || colors.inkSoft} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.actionItemTitle}>Reply to Message</Text>
@@ -2204,7 +2361,7 @@ export default function DirectChatScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.actionIconBox, { backgroundColor: colors.paper }]}>
-                <Ionicons name="copy-outline" size={16} color={colors.charcoal} />
+                <SolarIcon name="copy-outline" size={16} color={colors.charcoal} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.actionItemTitle}>Copy Text</Text>
@@ -2222,7 +2379,7 @@ export default function DirectChatScreen() {
                 activeOpacity={0.8}
               >
                 <View style={[styles.actionIconBox, { backgroundColor: colors.paperDark }]}>
-                  <Ionicons name="expand-outline" size={16} color={colors.navy || colors.ink} />
+                  <SolarIcon name="expand-outline" size={16} color={colors.navy || colors.ink} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.actionItemTitle}>View Photo</Text>
@@ -2258,7 +2415,7 @@ export default function DirectChatScreen() {
             {/* Modal Header */}
             <View style={styles.garmentModalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="shirt-outline" size={16} color={colors.charcoal} />
+                <SolarIcon name="shirt-outline" size={16} color={colors.charcoal} />
                 <Text style={styles.garmentModalHeaderTitle}>ITEM DETAILS & TERMS</Text>
               </View>
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
@@ -2266,7 +2423,7 @@ export default function DirectChatScreen() {
                 style={styles.garmentModalCloseBtn}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="close" size={20} color={colors.charcoal} />
+                <SolarIcon name="close" size={20} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
 
@@ -2343,7 +2500,7 @@ export default function DirectChatScreen() {
                           : { backgroundColor: colors.emeraldLight, borderColor: colors.forest },
                       ]}
                     >
-                      <Ionicons
+                      <SolarIcon
                         name={
                           mode === 'RENT'
                             ? 'calendar-outline'
@@ -2485,8 +2642,8 @@ export default function DirectChatScreen() {
                             router.push(`/(tabs)/shop/edit/${modalGarment.id}` as any);
                           }}
                         >
-                          <Ionicons name="create-outline" size={16} color={colors.cream} />
-                          <Text style={styles.garmentModalPrimaryBtnText}>EDIT LISTING</Text>
+                          <SolarIcon name="create-outline" size={16} color={colors.cream} />
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentModalPrimaryBtnText}>EDIT LISTING</Text>
                         </TouchableOpacity>
                       ) : mode === 'RENT' ? (
                         <TouchableOpacity
@@ -2496,8 +2653,8 @@ export default function DirectChatScreen() {
                             router.push(`/(tabs)/rental/${modalGarment.id}` as any);
                           }}
                         >
-                          <Ionicons name="calendar" size={16} color={colors.cream} />
-                          <Text style={styles.garmentModalPrimaryBtnText}>BOOK / RESERVE DATES</Text>
+                          <SolarIcon name="calendar" size={16} color={colors.cream} />
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentModalPrimaryBtnText}>BOOK / RESERVE DATES</Text>
                         </TouchableOpacity>
                       ) : mode === 'SWAP' ? (
                         <TouchableOpacity
@@ -2507,8 +2664,8 @@ export default function DirectChatScreen() {
                             router.push(`/(tabs)/swap/${modalGarment.id}` as any);
                           }}
                         >
-                          <Ionicons name="swap-horizontal" size={16} color={colors.cream} />
-                          <Text style={styles.garmentModalPrimaryBtnText}>PROPOSE SWAP PROPOSAL</Text>
+                          <SolarIcon name="swap-horizontal" size={16} color={colors.cream} />
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentModalPrimaryBtnText}>PROPOSE SWAP PROPOSAL</Text>
                         </TouchableOpacity>
                       ) : (
                         <TouchableOpacity
@@ -2518,8 +2675,8 @@ export default function DirectChatScreen() {
                             router.push(`/(tabs)/shop/${modalGarment.id}` as any);
                           }}
                         >
-                          <Ionicons name="bag-check-outline" size={16} color={colors.cream} />
-                          <Text style={styles.garmentModalPrimaryBtnText}>BUY NOW / CHECKOUT</Text>
+                          <SolarIcon name="bag-check-outline" size={16} color={colors.cream} />
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentModalPrimaryBtnText}>BUY NOW / CHECKOUT</Text>
                         </TouchableOpacity>
                       )}
 
@@ -2534,12 +2691,12 @@ export default function DirectChatScreen() {
                           showToast('Piece attached to message input!');
                         }}
                       >
-                        <Ionicons
+                        <SolarIcon
                           name="chatbubble-ellipses-outline"
                           size={16}
                           color={colors.charcoal}
                         />
-                        <Text style={styles.garmentModalSecondaryBtnText}>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.garmentModalSecondaryBtnText}>
                           DISCUSS THIS PIECE IN CHAT
                         </Text>
                       </TouchableOpacity>
@@ -2559,12 +2716,12 @@ export default function DirectChatScreen() {
                           setModalGarment(null);
                         }}
                       >
-                        <Ionicons
+                        <SolarIcon
                           name={effectiveGarment?.id === modalGarment.id ? 'checkmark-circle' : 'link'}
                           size={16}
                           color={effectiveGarment?.id === modalGarment.id ? colors.emeraldDark : colors.charcoal}
                         />
-                        <Text
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                           style={[
                             styles.garmentModalSecondaryBtnText,
                             effectiveGarment?.id === modalGarment.id && { color: colors.emeraldDark },
@@ -2611,7 +2768,7 @@ export default function DirectChatScreen() {
             {/* Modal Header */}
             <View style={styles.garmentModalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="cube" size={18} color={colors.charcoal} />
+                <SolarIcon name="cube" size={18} color={colors.charcoal} />
                 <Text style={styles.garmentModalHeaderTitle}>PRODUCTS & TRANSACTIONS HUB</Text>
               </View>
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
@@ -2619,7 +2776,7 @@ export default function DirectChatScreen() {
                 style={styles.garmentModalCloseBtn}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="close" size={20} color={colors.charcoal} />
+                <SolarIcon name="close" size={20} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
 
@@ -2667,7 +2824,7 @@ export default function DirectChatScreen() {
                   </View>
                 ) : (
                   <View style={styles.hubEmptyCard}>
-                    <Ionicons name="shirt-outline" size={22} color={colors.textMuted} />
+                    <SolarIcon name="shirt-outline" size={22} color={colors.textMuted} />
                     <Text style={styles.hubEmptyText}>
                       No item is currently anchored to this conversation. Select a piece below to link it.
                     </Text>
@@ -2688,7 +2845,7 @@ export default function DirectChatScreen() {
                         ]}
                         onPress={() => setActiveGarmentsTab('counterparty')}
                       >
-                        <Text
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                           style={[
                             styles.hubTabPillText,
                             activeGarmentsTab === 'counterparty' && styles.hubTabPillTextActive,
@@ -2706,7 +2863,7 @@ export default function DirectChatScreen() {
                         ]}
                         onPress={() => setActiveGarmentsTab('seller')}
                       >
-                        <Text
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
                           style={[
                             styles.hubTabPillText,
                             activeGarmentsTab === 'seller' && styles.hubTabPillTextActive,
@@ -2731,7 +2888,7 @@ export default function DirectChatScreen() {
                           <Text style={styles.hubGarmentPillTitle} numberOfLines={1}>
                             {g.title}
                           </Text>
-                          <Text style={styles.hubGarmentPillPrice}>
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.hubGarmentPillPrice}>
                             ₹{Math.round(g.rentalPriceDay || g.price || 0)}
                             {g.rentalPriceDay ? '/d' : ''}
                           </Text>
@@ -2744,7 +2901,7 @@ export default function DirectChatScreen() {
                               handleLinkGarment(g);
                             }}
                           >
-                            <Text style={styles.hubGarmentPillBtnText}>
+                            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.hubGarmentPillBtnText}>
                               {isLinked ? 'LINKED ✓' : 'LINK TO CHAT'}
                             </Text>
                           </TouchableOpacity>
@@ -2768,13 +2925,13 @@ export default function DirectChatScreen() {
                   activeOpacity={0.8}
                 >
                   <View style={[styles.hubLinkIcon, { backgroundColor: colors.paperDark }]}>
-                    <Ionicons name="calendar-outline" size={16} color={colors.ink} />
+                    <SolarIcon name="calendar-outline" size={16} color={colors.ink} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.hubLinkTitle}>Browse Rental Pieces</Text>
                     <Text style={styles.hubLinkSub}>Explore designer pieces available for rent</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -2786,13 +2943,13 @@ export default function DirectChatScreen() {
                   activeOpacity={0.8}
                 >
                   <View style={[styles.hubLinkIcon, { backgroundColor: colors.emeraldLight }]}>
-                    <Ionicons name="document-text-outline" size={16} color={colors.forest || colors.emeraldDark} />
+                    <SolarIcon name="document-text-outline" size={16} color={colors.forest || colors.emeraldDark} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.hubLinkTitle}>My Active Leases & Returns</Text>
                     <Text style={styles.hubLinkSub}>Track current rentals, end dates & returns</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -2804,13 +2961,13 @@ export default function DirectChatScreen() {
                   activeOpacity={0.8}
                 >
                   <View style={[styles.hubLinkIcon, { backgroundColor: colors.paper }]}>
-                    <Ionicons name="bag-check-outline" size={16} color={colors.charcoal} />
+                    <SolarIcon name="bag-check-outline" size={16} color={colors.charcoal} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.hubLinkTitle}>My Orders & Purchases</Text>
                     <Text style={styles.hubLinkSub}>Track deliveries, payments & past receipts</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -2822,13 +2979,13 @@ export default function DirectChatScreen() {
                   activeOpacity={0.8}
                 >
                   <View style={[styles.hubLinkIcon, { backgroundColor: colors.paperDark }]}>
-                    <Ionicons name="swap-horizontal" size={16} color={colors.terracottaDark} />
+                    <SolarIcon name="swap-horizontal" size={16} color={colors.terracottaDark} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.hubLinkTitle}>Swap deals</Text>
                     <Text style={styles.hubLinkSub}>Manage circular wardrobe proposals</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
                 {other?.id && (
@@ -2841,7 +2998,7 @@ export default function DirectChatScreen() {
                     activeOpacity={0.8}
                   >
                     <View style={[styles.hubLinkIcon, { backgroundColor: colors.paperDark }]}>
-                      <Ionicons name="storefront-outline" size={16} color={colors.ink} />
+                      <SolarIcon name="storefront-outline" size={16} color={colors.ink} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.hubLinkTitle}>
@@ -2849,7 +3006,7 @@ export default function DirectChatScreen() {
                       </Text>
                       <Text style={styles.hubLinkSub}>Browse all items from this seller</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                    <SolarIcon name="chevron-forward" size={16} color={colors.textMuted} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -2861,7 +3018,7 @@ export default function DirectChatScreen() {
       {/* Floating In-App Toast */}
       {toastMessage && (
         <View style={[styles.toastContainer, { top: Math.max(insets.top + 50, 70) }]}>
-          <Ionicons name="checkmark-circle" size={16} color={colors.cream} />
+          <SolarIcon name="checkmark-circle" size={16} color={colors.cream} />
           <Text style={styles.toastText}>{toastMessage}</Text>
         </View>
       )}
@@ -3570,6 +3727,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: colors.textMuted,
+      fontFamily: typography.bodyBold,
   },
   garmentModalSecondaryPrice: {
     fontFamily: typography.mono,
@@ -4216,6 +4374,7 @@ const styles = StyleSheet.create({
   },
   reactionEmojiText: {
     fontSize: 22,
+      fontFamily: typography.body,
   },
   // Instagram / WhatsApp Reaction Badges
   reactionBadgeContainer: {
@@ -4255,6 +4414,7 @@ const styles = StyleSheet.create({
   },
   reactionBadgeEmoji: {
     fontSize: 12,
+      fontFamily: typography.body,
   },
   reactionBadgeCount: {
     fontSize: 11.5,

@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../src/services/api';
@@ -52,7 +52,7 @@ export default function ForgotPasswordScreen() {
         <StatusBar style="dark" />
         <View style={styles.center}>
           <View style={styles.iconCircle}>
-            <Ionicons name="mail-outline" size={44} color={colors.rose} />
+            <SolarIcon name="mail-outline" size={44} color={colors.rose} />
           </View>
           <Text style={styles.title}>Check your email</Text>
           <Squiggle width={90} />
@@ -66,7 +66,7 @@ export default function ForgotPasswordScreen() {
             accessibilityRole="button"
             accessibilityLabel="Back to sign in"
           >
-            <Text style={styles.mainBtnText}>Back to Sign In</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainBtnText}>Back to Sign In</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -97,7 +97,7 @@ export default function ForgotPasswordScreen() {
             onPress={() => safeBack('/(auth)/login')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="chevron-back" size={26} color={colors.ink} />
+            <SolarIcon name="chevron-back" size={26} color={colors.ink} />
           </TouchableOpacity>
 
           <View style={styles.brandRow}>
@@ -110,7 +110,7 @@ export default function ForgotPasswordScreen() {
 
         <View style={styles.center}>
           <View style={styles.iconCircle}>
-            <Ionicons name="lock-open-outline" size={40} color={colors.rose} />
+            <SolarIcon name="lock-open-outline" size={40} color={colors.rose} />
           </View>
           <Text style={styles.title}>Forgot password</Text>
           <Squiggle width={80} />
@@ -140,7 +140,7 @@ export default function ForgotPasswordScreen() {
             accessibilityRole="button"
             accessibilityLabel="Send reset link"
           >
-            {sending ? <Spinner color={colors.white} /> : <Text style={styles.mainBtnText}>Send Reset Link</Text>}
+            {sending ? <Spinner color={colors.white} /> : <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.mainBtnText}>Send Reset Link</Text>}
           </TouchableOpacity>
         </View>
       </ScrollView>
