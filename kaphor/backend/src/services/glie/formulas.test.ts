@@ -146,7 +146,7 @@ describe('computeGLIE', () => {
     // 0.35*0.55 + 0.25*0.60 + 0.20*0.50 + 0.20*0.55
     // = 0.1925 + 0.15 + 0.10 + 0.11 = 0.5525
     expect(glie).toBeCloseTo(0.5525, 4);
-    expect(getRouting(glie)).toBe('RECYCLE');
+    expect(getRouting(glie)).toBe('UPCYCLE');
   });
 
   it('returns UPCYCLE at exactly 0.565 threshold', () => {
@@ -172,14 +172,15 @@ describe('getRouting', () => {
     expect(getRouting(1.0)).toBe('RESELL');
   });
 
-  it('routes to UPCYCLE when 0.565 <= GLIE < 0.63', () => {
+  it('routes to UPCYCLE when 0.50 <= GLIE < 0.63', () => {
+    expect(getRouting(0.50)).toBe('UPCYCLE');
     expect(getRouting(0.565)).toBe('UPCYCLE');
     expect(getRouting(0.60)).toBe('UPCYCLE');
     expect(getRouting(0.629)).toBe('UPCYCLE');
   });
 
-  it('routes to RECYCLE when GLIE < 0.565', () => {
-    expect(getRouting(0.564)).toBe('RECYCLE');
+  it('routes to RECYCLE when GLIE < 0.50', () => {
+    expect(getRouting(0.499)).toBe('RECYCLE');
     expect(getRouting(0.3)).toBe('RECYCLE');
     expect(getRouting(0)).toBe('RECYCLE');
   });

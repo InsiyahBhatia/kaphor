@@ -309,7 +309,7 @@ export function queryT5(
   const picked: T5Guide[] = relevant.map(s => s.guide);
 
   // If fewer than 4 matches, pad with the highest quality compatible guides from the pool
-  if (picked.length < 4) {
+  if (picked.length > 0 && picked.length < 4) {
     const fallbackSorted = pool
       .filter(g => !isConflictingCategory(g, normalize(category)))
       .sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));

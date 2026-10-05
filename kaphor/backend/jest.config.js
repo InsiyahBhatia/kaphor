@@ -21,7 +21,7 @@ module.exports = {
   moduleNameMapper: {
     '@/(.*)': '<rootDir>/src/$1',
   },
-  setupFilesAfterSetup: [],
+  setupFilesAfterEnv: [],
   testTimeout: 30000,
   verbose: true,
 };
