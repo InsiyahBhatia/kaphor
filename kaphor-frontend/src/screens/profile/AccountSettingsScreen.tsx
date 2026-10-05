@@ -6,9 +6,7 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  ActivityIndicator,
   Alert,
-  Image,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -23,6 +21,9 @@ import { userService } from '../../services/userService';
 import api from '../../services/api';
 import { colors, typography, radius } from '../../theme';
 import { safeBack, useBackHandler } from '../../utils/navigation';
+import { Loader, Spinner } from '../../components/common/Loader';
+import { Image } from 'expo-image';
+import { getErrorMessage } from '../../utils/errors';
 
 export function AccountSettingsScreen() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export function AccountSettingsScreen() {
       if (res.data?.success) {
         Alert.alert(
           'Notification Sent',
-          res.data?.message || 'Test notification dispatched to your phone!'
+          res.data?.message || 'Test notification sent to your phone!'
         );
       } else {
         Alert.alert(
@@ -52,7 +53,7 @@ export function AccountSettingsScreen() {
     } catch (err: any) {
       Alert.alert(
         'Notification Failed',
-        err?.response?.data?.message || 'Could not run the push test. Make sure the server is reachable.'
+        getErrorMessage(err, 'Could not run the push test. Make sure the server is reachable.')
       );
     } finally {
       setTestingPush(false);
@@ -98,7 +99,7 @@ export function AccountSettingsScreen() {
         Alert.alert('Success', 'Profile photo updated!');
       }
     } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to update photo.');
+      Alert.alert('Error', getErrorMessage(err, 'Failed to update photo.'));
     } finally {
       setUploadingAvatar(false);
     }
@@ -138,7 +139,7 @@ export function AccountSettingsScreen() {
         }
       }
     } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to pick photo.');
+      Alert.alert('Error', getErrorMessage(err, 'Failed to pick photo.'));
     }
   };
 
@@ -176,7 +177,7 @@ export function AccountSettingsScreen() {
       safeBack('/(tabs)/profile');
     } catch (err: any) {
       console.error('Failed to save settings', err);
-      const msg = err?.response?.data?.message || err?.message || 'Failed to update profile.';
+      const msg = getErrorMessage(err, 'Failed to update profile.');
       Alert.alert('Error', msg);
     } finally {
       setSaving(false);
@@ -185,8 +186,8 @@ export function AccountSettingsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, styles.center]} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.charcoal} />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Loader variant="default" />
       </SafeAreaView>
     );
   }
@@ -199,7 +200,7 @@ export function AccountSettingsScreen() {
       >
         {/* Top Header */}
         <View style={styles.header}>
-          <Pressable
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back"
             onPress={() => safeBack('/(tabs)/profile')}
             style={styles.backBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -209,7 +210,7 @@ export function AccountSettingsScreen() {
           <Text style={styles.headerTitle}>ACCOUNT SETTINGS</Text>
           <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn}>
             {saving ? (
-              <ActivityIndicator size="small" color={colors.cream} />
+              <Spinner size="small" color={colors.cream} />
             ) : (
               <Text style={styles.saveText}>SAVE</Text>
             )}
@@ -227,7 +228,7 @@ export function AccountSettingsScreen() {
         <View style={styles.avatarRow}>
           <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={styles.avatarWrap}>
             {avatar ? (
-              <Image source={{ uri: avatar }} style={styles.avatarImg} />
+              <Image source={{ uri: avatar }} style={styles.avatarImg} contentFit="cover" cachePolicy="memory-disk" transition={150} />
             ) : (
               <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
                 <Ionicons name="person" size={26} color={colors.textMuted} />
@@ -235,7 +236,7 @@ export function AccountSettingsScreen() {
             )}
             <View style={styles.cameraIconBadge}>
               {uploadingAvatar ? (
-                <ActivityIndicator size="small" color={colors.white} />
+                <Spinner size="small" color={colors.white} />
               ) : (
                 <Ionicons name="camera" size={11} color={colors.cream} />
               )}
@@ -249,7 +250,7 @@ export function AccountSettingsScreen() {
               </Text>
             </TouchableOpacity>
             <Text style={styles.avatarSubText}>
-              {user?.email || 'Archive Member'}
+              {user?.email || 'Member'}
             </Text>
           </View>
         </View>
@@ -258,7 +259,7 @@ export function AccountSettingsScreen() {
         <View style={styles.formRow}>
           <View style={styles.halfCol}>
             <Text style={styles.label}>DISPLAY NAME</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Your name"
               style={styles.input}
               value={displayName}
               onChangeText={setDisplayName}
@@ -271,7 +272,7 @@ export function AccountSettingsScreen() {
             <Text style={styles.label}>USERNAME HANDLE</Text>
             <View style={styles.usernameInputWrap}>
               <Text style={styles.usernameAt}>@</Text>
-              <TextInput
+              <TextInput accessibilityLabel="handle"
                 style={styles.usernameInput}
                 value={username}
                 onChangeText={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
@@ -288,7 +289,7 @@ export function AccountSettingsScreen() {
         <View style={styles.formRow}>
           <View style={styles.halfCol}>
             <Text style={styles.label}>LOCATION</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Mumbai, IN"
               style={styles.input}
               value={location}
               onChangeText={setLocation}
@@ -299,11 +300,11 @@ export function AccountSettingsScreen() {
 
           <View style={styles.halfCol}>
             <Text style={styles.label}>AESTHETIC</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Minimal"
               style={styles.input}
               value={styleAesthetic}
               onChangeText={setStyleAesthetic}
-              placeholder="e.g. LUXURY"
+              placeholder="e.g. Minimal"
               placeholderTextColor={colors.textMuted}
               autoCapitalize="characters"
             />
@@ -312,12 +313,12 @@ export function AccountSettingsScreen() {
 
         {/* Bio */}
         <View style={styles.fieldBlock}>
-          <Text style={styles.label}>BIOGRAPHY & ARCHIVAL TASTE</Text>
-          <TextInput
+          <Text style={styles.label}>ABOUT YOU & YOUR TASTE</Text>
+          <TextInput accessibilityLabel="Tell us about your style"
             style={[styles.input, styles.textArea]}
             value={bio}
             onChangeText={setBio}
-            placeholder="Tell the atelier about your wardrobe and fashion aesthetic..."
+            placeholder="Tell us about your style..."
             placeholderTextColor={colors.textMuted}
             multiline
             numberOfLines={3}
@@ -352,8 +353,8 @@ export function AccountSettingsScreen() {
               <Ionicons name="receipt-outline" size={18} color={colors.charcoal} />
             </View>
             <View style={styles.compactActionBody}>
-              <Text style={styles.compactActionTitle}>PAYMENT LEDGER</Text>
-              <Text style={styles.compactActionSub}>Transactions & escrow</Text>
+              <Text style={styles.compactActionTitle}>PAYMENT HISTORY</Text>
+              <Text style={styles.compactActionSub}>Payments & orders</Text>
             </View>
             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
@@ -370,11 +371,11 @@ export function AccountSettingsScreen() {
             onPress={handleTestPush}
             disabled={testingPush}
           >
-            <View style={[styles.compactActionIcon, { backgroundColor: '#E8F5E9' }]}>
+            <View style={[styles.compactActionIcon, { backgroundColor: colors.emeraldLight }]}>
               {testingPush ? (
-                <ActivityIndicator size="small" color="#2E7D32" />
+                <Spinner size="small" color={colors.forest} />
               ) : (
-                <Ionicons name="notifications-outline" size={18} color="#2E7D32" />
+                <Ionicons name="notifications-outline" size={18} color={colors.forest} />
               )}
             </View>
             <View style={styles.compactActionBody}>
@@ -395,8 +396,8 @@ export function AccountSettingsScreen() {
             style={[styles.compactActionCard, { width: '100%' }]}
             onPress={() => router.push('/legal' as any)}
           >
-            <View style={[styles.compactActionIcon, { backgroundColor: '#EBF3FB' }]}>
-              <Ionicons name="shield-checkmark-outline" size={18} color="#1C4B82" />
+            <View style={[styles.compactActionIcon, { backgroundColor: colors.paperDark }]}>
+              <Ionicons name="shield-checkmark-outline" size={18} color={colors.ink} />
             </View>
             <View style={styles.compactActionBody}>
               <Text style={styles.compactActionTitle}>LEGAL & COMPLIANCE CENTER</Text>
@@ -453,10 +454,9 @@ const styles = StyleSheet.create({
   },
   saveText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
 
   content: {
@@ -511,16 +511,16 @@ const styles = StyleSheet.create({
   },
   changePhotoText: {
     color: colors.ink,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     textDecorationLine: 'underline',
   },
   avatarSubText: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
   },
 
   // Form Rows & Fields
@@ -536,10 +536,9 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.ink,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    letterSpacing: 1,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     marginBottom: 4,
   },
   input: {
@@ -550,7 +549,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
     color: colors.ink,
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     fontSize: 12,
   },
   usernameInputWrap: {
@@ -563,7 +562,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   usernameAt: {
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     fontSize: 12,
     color: colors.ink,
     fontWeight: '900',
@@ -573,7 +572,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 7,
     color: colors.ink,
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     fontSize: 12,
   },
   textArea: {
@@ -586,15 +585,14 @@ const styles = StyleSheet.create({
   sectionHeaderRow: {
     marginTop: 4,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(20,20,20,0.1)',
+    borderTopColor: colors.overlayLight,
     paddingTop: 8,
   },
   sectionHeader: {
     color: colors.ink,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    letterSpacing: 1.2,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   actionCardsRow: {
     flexDirection: 'row',
@@ -630,15 +628,15 @@ const styles = StyleSheet.create({
   },
   compactActionTitle: {
     color: colors.ink,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 0.4,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   compactActionSub: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     marginTop: 1,
   },
 });

@@ -12,7 +12,12 @@ export function resolveApiBaseUrl(): string {
   const fallback = 'https://kaphor-backend.onrender.com/api/v1';
   const raw = process.env.EXPO_PUBLIC_API_URL ?? fallback;
 
-  if (!__DEV__ || Platform.OS !== 'android') {
+  // Release builds must talk to the server over HTTPS only
+  if (!__DEV__) {
+    return raw.startsWith('https://') ? raw : fallback;
+  }
+
+  if (Platform.OS !== 'android') {
     return raw;
   }
 
@@ -23,7 +28,7 @@ export function resolveApiBaseUrl(): string {
     if (isLocal) {
       const hostUri =
         Constants.expoConfig?.hostUri ?? (Constants as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost;
-      let hostname = '10.214.166.156';
+      let hostname = '10.0.2.2'; // Android emulator → host machine
       if (hostUri) {
         const metroHost = hostUri.split(':')[0];
         if (metroHost && metroHost !== '127.0.0.1' && metroHost !== 'localhost') {
@@ -48,13 +53,37 @@ const REFRESH_KEY = 'kaphor_refresh_token';
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 30000,
-  headers: { 
+  headers: {
     'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': 'true'
   },
 });
 
 // ── Refresh token queue (prevents concurrent refreshes) ────────
+// Dedupe identical in-flight GET requests (same url + params share one promise)
+const inflightGets = new Map<string, Promise<any>>();
+const rawGet = api.get.bind(api);
+api.get = ((url: string, config?: any) => {
+  if (config?.signal || config?.responseType || config?.onDownloadProgress) {
+    return rawGet(url, config);
+  }
+  const key = `${url}|${config?.params ? JSON.stringify(config.params) : ''}|${config?.headers ? JSON.stringify(config.headers) : ''}`;
+  const existing = inflightGets.get(key);
+  if (existing) return existing;
+  const p = rawGet(url, config).finally(() => {
+    inflightGets.delete(key);
+  });
+  inflightGets.set(key, p);
+  return p;
+}) as typeof api.get;
+
+/** Fire-and-forget request to wake the sleeping backend (Render free plan). */
+export function warmUpServer(): void {
+  try {
+    const base = API_URL.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+    axios.get(`${base}/health`, { timeout: 8000 }).catch(() => {});
+  } catch {}
+}
+
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 let failedQueue: Array<{
@@ -142,8 +171,22 @@ async function attemptTokenRefresh(): Promise<boolean> {
 api.interceptors.response.use(
   (res) => res,
   async (err: AxiosError) => {
-    const original = err.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    if (err.response?.status !== 401 || original._retry) {
+    const original = err.config as InternalAxiosRequestConfig & { _retry?: boolean; _retried?: boolean };
+    // Retry idempotent GETs once on network errors / 5xx (e.g. Render waking up)
+    if (
+      original &&
+      (original.method ?? 'get').toLowerCase() === 'get' &&
+      !original._retried &&
+      !axios.isCancel(err) &&
+      err.code !== 'ECONNABORTED' &&
+      err.code !== 'ETIMEDOUT' &&
+      (!err.response || err.response.status >= 500)
+    ) {
+      original._retried = true;
+      await new Promise((r) => setTimeout(r, 700));
+      return api(original);
+    }
+    if (!original || err.response?.status !== 401 || original._retry) {
       return Promise.reject(err);
     }
 
@@ -279,6 +322,10 @@ export async function fetchFresh<T = any>(url: string, params?: Record<string, a
  * Invalidate all cached GET responses for URLs matching a prefix or list of prefixes.
  * Useful after a mutation (POST/PUT/PATCH/DELETE) to force a fresh fetch.
  */
+export function clearApiCache(): void {
+  GET_CACHE.clear();
+}
+
 export function invalidateCache(prefixOrPrefixes: string | string[]): void {
   const prefixes = Array.isArray(prefixOrPrefixes) ? prefixOrPrefixes : [prefixOrPrefixes];
   for (const key of GET_CACHE.keys()) {
@@ -287,6 +334,40 @@ export function invalidateCache(prefixOrPrefixes: string | string[]): void {
       AsyncStorage.removeItem(`${OFFLINE_PREFIX}${key}`).catch(() => {});
     }
   }
+}
+
+/**
+ * Stale-while-revalidate GET: calls onData immediately with any cached copy (memory, then
+ * disk), then again with the fresh network result. Resolves once the network call settles.
+ * Returns true when cached data was shown. Errors are only thrown if nothing was shown.
+ */
+export async function swrGet<T = any>(
+  url: string,
+  onData: (data: T, fromCache: boolean) => void,
+  params?: Record<string, any>
+): Promise<boolean> {
+  const cacheKey = `${url}${params ? JSON.stringify(params) : ''}`;
+  let shown = false;
+  const mem = GET_CACHE.get(cacheKey);
+  if (mem) {
+    onData(mem.data as T, true);
+    shown = true;
+  } else {
+    try {
+      const persisted = await AsyncStorage.getItem(`${OFFLINE_PREFIX}${cacheKey}`);
+      if (persisted) {
+        onData(JSON.parse(persisted) as T, true);
+        shown = true;
+      }
+    } catch {}
+  }
+  try {
+    const fresh = await fetchFresh<T>(url, params);
+    onData(fresh, false);
+  } catch (e) {
+    if (!shown) throw e;
+  }
+  return shown;
 }
 
 export default api;

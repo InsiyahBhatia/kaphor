@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { KaphorImage } from './KaphorImage';
 import { EditorialIcon, IllustrationLayer } from './editorial/IllustrationLayer';
@@ -31,7 +31,7 @@ function formatCurrency(amount?: number | null): string {
   return Math.round(amount).toLocaleString('en-IN');
 }
 
-export function EditorialGarmentCard({
+function EditorialGarmentCardImpl({
   item,
   onPress,
   onBuyRequest,
@@ -47,7 +47,7 @@ export function EditorialGarmentCard({
   const discountPercent =
     estimatedOriginal > price ? Math.round(((estimatedOriginal - price) / estimatedOriginal) * 100) : 0;
 
-  const handleToggleLike = async (e: any) => {
+  const handleToggleLike = useCallback(async (e: any) => {
     e.stopPropagation();
     hapticFeedback.selection();
     const nextState = !isLiked;
@@ -62,7 +62,7 @@ export function EditorialGarmentCard({
       setIsLiked(!nextState);
       console.error('Failed to toggle wishlist item', err);
     }
-  };
+  }, [isLiked, item.id]);
 
   return (
     <TouchableOpacity
@@ -77,6 +77,8 @@ export function EditorialGarmentCard({
           category={item.category}
           style={styles.garmentImage}
           contentFit="cover"
+          width={typeof (style as any)?.width === 'number' ? (style as any).width : 220}
+          recyclingKey={item.id}
         />
 
         <View style={styles.conditionPill}>
@@ -100,7 +102,7 @@ export function EditorialGarmentCard({
         <IllustrationLayer variant="card" />
         <View style={styles.garmentMetaRow}>
           <Text style={styles.garmentBrand} numberOfLines={1}>
-            {(item.brand || 'ARCHIVE ATELIER').toUpperCase()}
+            {(item.brand || 'KAPHOR').toUpperCase()}
           </Text>
           <Text style={styles.garmentSize}>SIZE {item.size || 'M'}</Text>
         </View>
@@ -145,16 +147,18 @@ export function EditorialGarmentCard({
   );
 }
 
+export const EditorialGarmentCard = React.memo(EditorialGarmentCardImpl);
+
 const styles = StyleSheet.create({
   garmentCard: {
     width: 220,
     marginRight: 14,
-    backgroundColor: '#FAF7F0',
+    backgroundColor: colors.paperLight,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(20,20,20,0.16)',
+    borderColor: colors.overlayLight,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -163,7 +167,7 @@ const styles = StyleSheet.create({
   garmentImageWrap: {
     width: '100%',
     aspectRatio: 0.85,
-    backgroundColor: '#F3EFE9',
+    backgroundColor: colors.paper,
     position: 'relative',
   },
   garmentImage: {
@@ -174,17 +178,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     left: 8,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.paperGlass,
     paddingHorizontal: 6,
     paddingVertical: 2.5,
     borderRadius: 3,
   },
   conditionPillText: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   wishlistBtn: {
     position: 'absolute',
@@ -193,10 +196,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.paperGlass,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -207,7 +210,7 @@ const styles = StyleSheet.create({
     padding: 10,
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: '#FAF7F0',
+    backgroundColor: colors.paperLight,
   },
   garmentMetaRow: {
     flexDirection: 'row',
@@ -218,17 +221,16 @@ const styles = StyleSheet.create({
   },
   garmentBrand: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.4,
   },
   garmentSize: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    fontWeight: '700',
   },
   garmentTitle: {
     fontFamily: typography.body,
@@ -261,13 +263,13 @@ const styles = StyleSheet.create({
   },
   discountBadgeText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   garmentOriginalPrice: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 1,

@@ -10,7 +10,6 @@ import {
   TextInput,
   Platform,
   KeyboardAvoidingView,
-  ActivityIndicator,
   Modal,
   Switch,
 } from 'react-native';
@@ -18,7 +17,6 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography } from '../../../src/theme';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { CenterCardsLoading } from '../../../src/components/common/CardLoadingScreen';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { circularService, RecyclingCenter, RecyclingCentersResponse } from '../../../src/services/circularService';
@@ -35,6 +33,9 @@ import {
   GLIEResponse,
 } from '../../../src/services/glieService';
 import { setSharedRepairAssessment } from '../../../src/services/repairService';
+import { Spinner, Loader } from '../../../src/components/common/Loader';
+import { cleanText, humanizeKey } from '../../../src/utils/formatText';
+import { formatRupees } from '../../../src/utils/priceFormatter';
 
 export default function ConditionCheckScreen() {
   const router = useRouter();
@@ -135,8 +136,8 @@ export default function ConditionCheckScreen() {
       }
     } catch (e: any) {
       Alert.alert(
-        'Assessment Failed',
-        e?.message || 'Could not connect to the assessment service. Make sure the backend is running and try again.'
+        'Could not check this item',
+        'We could not check this item right now. Please check your connection and try again.'
       );
     } finally {
       setAnalyzing(false);
@@ -168,7 +169,7 @@ export default function ConditionCheckScreen() {
 
     const catName = category || (result as any)?.garment_category || (result as any)?.category || 'Dresses';
     const displayTitle = (result as any)?.title || `${(fiber || (result as any)?.fiber_type || 'Heritage').toUpperCase()} ${catName.toUpperCase()}`;
-    const displayDesc = (result as any)?.description || `Pre-loved ${catName} in ${conditionGrade(score).label} condition. Assessed by Kaphor Circular AI.`;
+    const displayDesc = cleanText((result as any)?.description) || `Pre-loved ${catName} in ${conditionGrade(score).label} condition. Checked with the Kaphor app.`;
 
     const finalSellingPrice = resellPrice.trim() || (result?.suggested_price_inr ? String(result.suggested_price_inr) : '');
     const finalCostPrice = costPrice.trim() || price || ((result as any)?.original_price_inr ? String((result as any).original_price_inr) : '');
@@ -207,7 +208,7 @@ export default function ConditionCheckScreen() {
             <TouchableOpacity onPress={resetAssessment}>
               <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>ASSESSMENT</Text>
+            <Text style={styles.headerTitle}>Assessment</Text>
             <View style={{ width: 24 }} />
           </View>
 
@@ -248,12 +249,12 @@ export default function ConditionCheckScreen() {
 
             return (
               <View style={styles.actionCard}>
-                <Text style={styles.actionCardTitle}>VERIFIED FOR MARKETPLACE RESALE</Text>
+                <Text style={styles.actionCardTitle}>Verified for marketplace resale</Text>
                 
                 {result.suggested_price_inr ? (
                   <View style={{ marginVertical: 8, padding: 12, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.25)' }}>
-                    <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.emerald, fontWeight: '700', letterSpacing: 0.5 }}>
-                      MARKET RECOMMENDED RESALE: ₹{result.suggested_price_inr}
+                    <Text style={{ fontFamily: typography.handSemi, fontSize: 16, color: colors.emerald, includeFontPadding: false }}>
+                      SUGGESTED SELLING PRICE: {formatRupees(result.suggested_price_inr)}
                     </Text>
                     <Text style={{ fontFamily: typography.body, fontSize: 11, color: colors.textMuted, marginTop: 4, lineHeight: 16 }}>
                       Derived from comparable resale listings for {category || 'this category'} in {grade.label} condition. You can keep or adjust it below.
@@ -263,8 +264,8 @@ export default function ConditionCheckScreen() {
 
                 {/* Confirm Dual Pricing */}
                 <View style={{ marginVertical: 10 }}>
-                  <Text style={{ fontFamily: typography.mono, fontSize: 10, color: colors.charcoal, fontWeight: '800', letterSpacing: 0.5, marginBottom: 4 }}>
-                    ORIGINAL RETAIL PRICE / MRP (₹)
+                  <Text style={{ fontFamily: typography.handBold, fontSize: 15, color: colors.charcoal, marginBottom: 4, includeFontPadding: false }}>
+                    Original retail price / MRP (₹)
                   </Text>
                   <TextInput
                     style={[styles.textInput, { padding: 10, fontSize: 13, marginBottom: 12 }]}
@@ -275,8 +276,8 @@ export default function ConditionCheckScreen() {
                     keyboardType="numeric"
                   />
 
-                  <Text style={{ fontFamily: typography.mono, fontSize: 10, color: colors.charcoal, fontWeight: '800', letterSpacing: 0.5, marginBottom: 4 }}>
-                    CONFIRMED SELLING PRICE (₹)
+                  <Text style={{ fontFamily: typography.handBold, fontSize: 15, color: colors.charcoal, marginBottom: 4, includeFontPadding: false }}>
+                    Confirmed selling price (₹)
                   </Text>
                   <TextInput
                     style={[styles.textInput, { padding: 10, fontSize: 13 }]}
@@ -289,7 +290,7 @@ export default function ConditionCheckScreen() {
 
                   {discountPct > 0 ? (
                     <View style={{ marginTop: 10, padding: 10, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.2)' }}>
-                      <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.emerald, fontWeight: '800' }}>
+                      <Text style={{ fontFamily: typography.handBold, fontSize: 16, color: colors.emerald, includeFontPadding: false }}>
                         MARKETPLACE PREVIEW: -{discountPct}% OFF MRP
                       </Text>
                       <Text style={{ fontFamily: typography.body, fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
@@ -304,7 +305,7 @@ export default function ConditionCheckScreen() {
                   onPress={navigateToSell}
                 >
                   <Text style={styles.actionBtnText}>
-                    {resellPrice ? `CONFIRM & LIST FOR ₹${resellPrice} →` : 'LIST FOR SALE (1-CLICK) →'}
+                    {resellPrice ? `CONFIRM & LIST FOR ₹${resellPrice} →` : 'List for sale (1-click) →'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -316,28 +317,28 @@ export default function ConditionCheckScreen() {
               <View style={styles.segregationBanner}>
                 <View style={styles.segregationBadge}>
                   <Ionicons name="sparkles" size={12} color={colors.white} />
-                  <Text style={styles.segregationBadgeText}>WEAR / DAMAGE DETECTED · REPAIR OR UPCYCLE</Text>
+                  <Text style={styles.segregationBadgeText}>Wear / damage detected · repair or upcycle</Text>
                 </View>
-                <Text style={styles.actionCardTitle}>RESTORE OR TRANSFORM</Text>
+                <Text style={styles.actionCardTitle}>Restore or transform</Text>
                 <Text style={styles.segregationSub}>
-                  {result.description || 'This garment shows localized wear or damage. Choose whether to mend it back to original wearability or creatively transform it into a brand new item.'}
+                  {cleanText(result.description) || 'This garment shows localized wear or damage. Choose whether to mend it back to original wearability or creatively transform it into a brand new item.'}
                 </Text>
               </View>
 
               {/* Single CTA: repair & upcycle live on the same page behind a toggle */}
-              <View style={[styles.pathCard, { borderColor: '#C95F12' }]}>
+              <View style={[styles.pathCard, { borderColor: colors.orange }]}>
                 <View style={styles.pathHeader}>
-                  <View style={[styles.pathIconBox, { backgroundColor: '#C95F12' }]}>
+                  <View style={[styles.pathIconBox, { backgroundColor: colors.orange }]}>
                     <Ionicons name="cut-outline" size={18} color={colors.cream} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.pathTitle, { color: '#C95F12' }]}>REPAIR & UPCYCLE</Text>
+                    <Text style={[styles.pathTitle, { color: colors.orange }]}>Repair & upcycle</Text>
                     <Text style={styles.pathSubtitle}>Mend it back to wearable or transform it into something new</Text>
                   </View>
                 </View>
                 <Text style={styles.pathDescription}>
                   {result.repair_feasibility
-                    ? `${result.repair_feasibility} You'll get matching repair guides, video tutorials, and upcycling ideas for this garment.`
+                    ? `${cleanText(result.repair_feasibility)} You'll get matching repair guides, video tutorials, and upcycling ideas for this garment.`
                     : 'Get step-by-step repair guides, video tutorials, and upcycling ideas for this garment.'}
                 </Text>
                 <View style={styles.pathTagsRow}>
@@ -346,7 +347,7 @@ export default function ConditionCheckScreen() {
                   <View style={styles.pathTag}><Text style={styles.pathTagText}>✂️ Upcycle Ideas</Text></View>
                 </View>
                 <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: '#C95F12', borderColor: '#C95F12', marginTop: 12 }]}
+                  style={[styles.actionBtn, { backgroundColor: colors.orange, borderColor: colors.orange, marginTop: 12 }]}
                   onPress={() => {
                     if ((result as any)?.rawRepairResult) {
                       setSharedRepairAssessment((result as any).rawRepairResult);
@@ -374,7 +375,7 @@ export default function ConditionCheckScreen() {
                         prefillCategory: deducedCat || category || '',
                         prefillFiber: fiber || (result as any)?.fiber_type || '',
                         prefillPrice: price || '',
-                        damageDescription: result?.description || '',
+                        damageDescription: cleanText(result?.description) || '',
                         damageTypes: JSON.stringify(result?.damage_breakdown?.damage_types || []),
                         repairFeasibility: result?.repair_feasibility || '',
                         conditionScore: String(result?.condition_score ?? 0.45),
@@ -382,7 +383,7 @@ export default function ConditionCheckScreen() {
                     });
                   }}
                 >
-                  <Text style={styles.actionBtnText}>EXPLORE REPAIR & UPCYCLE GUIDES →</Text>
+                  <Text style={styles.actionBtnText}>Explore repair & upcycle guides →</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -393,9 +394,9 @@ export default function ConditionCheckScreen() {
               <View style={styles.recycleHeader}>
                 <View style={styles.recycleHeaderBadge}>
                   <Ionicons name="leaf" size={13} color={colors.white} />
-                  <Text style={styles.recycleHeaderBadgeText}>VERIFIED RECYCLING PARTNER DIRECTORY</Text>
+                  <Text style={styles.recycleHeaderBadgeText}>Verified recycling partner directory</Text>
                 </View>
-                <Text style={styles.actionCardTitle}>CERTIFIED TEXTILE RECYCLING HUBS</Text>
+                <Text style={styles.actionCardTitle}>Certified textile recycling hubs</Text>
               </View>
 
               <Text style={styles.actionCardTutorial}>
@@ -430,7 +431,7 @@ export default function ConditionCheckScreen() {
                           </Text>
                         </View>
                         <View style={styles.centerScorePill}>
-                          <Ionicons name="shield-checkmark" size={11} color="#283618" />
+                          <Ionicons name="shield-checkmark" size={11} color={colors.forest} />
                           <Text style={styles.centerScoreText}>{center.zeroLandfillScore}% ZERO-LANDFILL</Text>
                         </View>
                       </View>
@@ -504,40 +505,37 @@ export default function ConditionCheckScreen() {
             </View>
           </View>
 
-          {/* ── Fine-Tuned Qwen2-VL VLM Breakdown Card ──────────────── */}
+          {/* ── Check result: friendly labelled rows ───────────────── */}
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>AI VISION INTELLIGENCE (QWEN2-VL VLM)</Text>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Backbone Model</Text>
-              <Text style={[styles.summaryValue, { color: colors.forest, fontWeight: '700' }]}>
-                {(result as any).model || 'Gemini 3.1 Flash (Vision AI)'}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Condition Score (CS)</Text>
-              <Text style={styles.summaryValue}>{(result.condition_score * 100).toFixed(1)}%</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Damage Ratio (DR)</Text>
-              <Text style={styles.summaryValue}>{((result.damage_breakdown?.damage_ratio ?? 0) * 100).toFixed(1)}%</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Wear Zone Ratio (WR)</Text>
-              <Text style={styles.summaryValue}>{((result.damage_breakdown?.wear_zone_ratio ?? 0) * 100).toFixed(1)}%</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Stain Ratio (SR)</Text>
-              <Text style={styles.summaryValue}>{((result.damage_breakdown?.stain_ratio ?? 0) * 100).toFixed(1)}%</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Fiber Degradation (FD)</Text>
-              <Text style={styles.summaryValue}>{((result.damage_breakdown?.fiber_degradation_score ?? 0) * 100).toFixed(1)}%</Text>
-            </View>
-            {result.description ? (
+            <Text style={styles.summaryTitle}>Your result</Text>
+            {[
+              { label: 'Condition', value: grade.label },
+              { label: 'Fabric', value: fiber.trim() || humanizeKey(String((result as any).fiber_type || '')) || 'Not sure' },
+              {
+                label: 'Damage found',
+                value: (() => {
+                  const types = (result.damage_breakdown?.damage_types || [])
+                    .map((d) => humanizeKey(String(d)))
+                    .filter((d) => d && d.toLowerCase() !== 'none');
+                  return types.length ? types.join(', ') : 'None found';
+                })(),
+              },
+              { label: 'Best next step', value: routeInfo.title },
+              {
+                label: 'Estimated value',
+                value: result.suggested_price_inr ? formatRupees(result.suggested_price_inr) : 'Not available',
+              },
+            ].map((row) => (
+              <View key={row.label} style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>{row.label}</Text>
+                <Text style={styles.summaryValue}>{row.value}</Text>
+              </View>
+            ))}
+            {cleanText(result.description) ? (
               <View style={[styles.summaryRow, { flexDirection: 'column', alignItems: 'flex-start', marginTop: 6 }]}>
-                <Text style={styles.summaryLabel}>VLM Description</Text>
+                <Text style={styles.summaryLabel}>Notes</Text>
                 <Text style={[styles.summaryValue, { marginTop: 4, fontSize: 13, color: colors.charcoal }]}>
-                  {result.description}
+                  {cleanText(result.description)}
                 </Text>
               </View>
             ) : null}
@@ -545,7 +543,7 @@ export default function ConditionCheckScreen() {
 
           {/* ── Garment Summary ──────────────────────────────────────── */}
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>ASSESSED GARMENT</Text>
+            <Text style={styles.summaryTitle}>Assessed garment</Text>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Type</Text>
               <Text style={styles.summaryValue}>{category ? (category.charAt(0).toUpperCase() + category.slice(1)) : 'Auto-detected'}</Text>
@@ -564,7 +562,7 @@ export default function ConditionCheckScreen() {
 
           {/* ── Scan Another ─────────────────────────────────────────── */}
           <TouchableOpacity style={styles.scanAgainBtn} onPress={resetAssessment}>
-            <Text style={styles.scanAgainText}>ASSESS ANOTHER GARMENT</Text>
+            <Text style={styles.scanAgainText}>Assess another garment</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -575,10 +573,9 @@ export default function ConditionCheckScreen() {
   // ── Loading View ─────────────────────────────────────────────
   if (analyzing) {
     return (
-      <DossierLoading
+      <Loader
         variant="glie"
-        glieStep={glieStep}
-        glieTotalSteps={5}
+        step={glieStep}
       />
     );
   }
@@ -597,7 +594,7 @@ export default function ConditionCheckScreen() {
           >
             <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>CONDITION CHECK</Text>
+          <Text style={styles.headerTitle}>Condition check</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -643,7 +640,7 @@ export default function ConditionCheckScreen() {
           )}
 
           {/* Category Picker */}
-          <Text style={styles.inputLabel}>GARMENT TYPE (OPTIONAL — AI AUTO-DETECTED)</Text>
+          <Text style={styles.inputLabel}>Garment type (optional — ai auto-detected)</Text>
           <TouchableOpacity
             style={styles.pickerBtn}
             onPress={() => setShowCategoryPicker(!showCategoryPicker)}
@@ -673,7 +670,7 @@ export default function ConditionCheckScreen() {
           )}
 
           {/* Fiber Input */}
-          <Text style={styles.inputLabel}>FABRIC TYPE (OPTIONAL — AI AUTO-DETECTED)</Text>
+          <Text style={styles.inputLabel}>Fabric type (optional — ai auto-detected)</Text>
           <TextInput
             style={styles.textInput}
             placeholder="Auto-detect from photo (or type e.g. Cotton)"
@@ -683,7 +680,7 @@ export default function ConditionCheckScreen() {
           />
 
           {/* Original Price */}
-          <Text style={styles.inputLabel}>ORIGINAL PRICE (₹)</Text>
+          <Text style={styles.inputLabel}>Original price (₹)</Text>
           <TextInput
             style={styles.textInput}
             placeholder="What did you pay? (optional)"
@@ -695,7 +692,7 @@ export default function ConditionCheckScreen() {
 
           {/* Optional chips: color, season, style — flat layout */}
           <Text style={[styles.inputLabel, { marginTop: 24, color: colors.textMuted }]}>
-            ADDITIONAL DETAILS (OPTIONAL)
+            Additional details (optional)
           </Text>
 
           <View style={styles.chipSection}>
@@ -758,7 +755,7 @@ export default function ConditionCheckScreen() {
             onPress={submitAssessment}
             disabled={analyzing || !imageUri}
           >
-            <Text style={styles.submitText}>ASSESS GARMENT</Text>
+            <Text style={styles.submitText}>Assess garment</Text>
           </TouchableOpacity>
 
           {!imageUri && (
@@ -787,11 +784,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.charcoal,
-    fontSize: 14,
-    fontFamily: typography.mono,
-    fontWeight: '900',
-    letterSpacing: 2,
-  },
+    fontSize: 19,
+    fontFamily: typography.handBold, includeFontPadding: false, },
 
   // ── Form ────────────────────────────────────────────────────
   formContent: { padding: 20, paddingBottom: 180 },
@@ -810,22 +804,19 @@ const styles = StyleSheet.create({
   },
   uploadPreview: { width: '100%', height: '100%', resizeMode: 'cover' },
   uploadPlaceholder: { alignItems: 'center', gap: 8 },
-  uploadText: { fontFamily: typography.mono, fontSize: 13, fontWeight: '800', color: colors.charcoal },
-  uploadSubtext: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted },
+  uploadText: { fontFamily: typography.handBold, fontSize: 18, color: colors.charcoal, includeFontPadding: false, },
+  uploadSubtext: { fontFamily: typography.handwritten, fontSize: 14, color: colors.textMuted, includeFontPadding: false, },
   uploadActions: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 28 },
   uploadActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10 },
-  uploadActionText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '800', color: colors.charcoal },
+  uploadActionText: { fontFamily: typography.handBold, fontSize: 15, color: colors.charcoal, includeFontPadding: false, },
 
   // Inputs
   inputLabel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    fontSize: 14,
     color: colors.charcoal,
-    letterSpacing: 1.5,
     marginBottom: 8,
-    marginTop: 20,
-  },
+    marginTop: 20, includeFontPadding: false, },
   textInput: {
     borderWidth: 1.5,
     borderColor: colors.charcoal,
@@ -866,12 +857,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   pickerOptionActive: { backgroundColor: colors.charcoal },
-  pickerOptionText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '700', color: colors.charcoal },
+  pickerOptionText: { fontFamily: typography.handSemi, fontSize: 16, color: colors.charcoal, includeFontPadding: false, },
   pickerOptionTextActive: { color: colors.cream },
 
   // Chips (flat layout — no nested ScrollViews)
   chipSection: { marginBottom: 8 },
-  chipSectionLabel: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.5, marginBottom: 6 },
+  chipSectionLabel: { fontFamily: typography.handBold, fontSize: 14, color: colors.textMuted, marginBottom: 6, includeFontPadding: false, },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     paddingHorizontal: 10,
@@ -881,7 +872,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   chipActive: { backgroundColor: colors.charcoal },
-  chipText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '700', color: colors.charcoal },
+  chipText: { fontFamily: typography.handSemi, fontSize: 14, color: colors.charcoal, includeFontPadding: false, },
   chipTextActive: { color: colors.cream },
 
   // Submit
@@ -901,8 +892,8 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.5 },
   submitRow: { flexDirection: 'row', alignItems: 'center' },
-  submitText: { color: colors.cream, fontFamily: typography.mono, fontSize: 14, fontWeight: '900', letterSpacing: 2 },
-  hintText: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 16 },
+  submitText: { color: colors.cream, fontFamily: typography.bodyBold, fontSize: 14, letterSpacing: 0.2 },
+  hintText: { fontFamily: typography.handwritten, fontSize: 14, color: colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 25, includeFontPadding: false, },
 
   // ── Result ──────────────────────────────────────────────────
   resultContent: { padding: 20, paddingBottom: 180 },
@@ -922,7 +913,7 @@ const styles = StyleSheet.create({
   },
   heroEmoji: { fontSize: 48, marginBottom: 8 },
   heroTitle: { fontFamily: typography.headings, fontSize: 40, color: colors.cream, letterSpacing: 2, marginBottom: 8 },
-  heroSubtitle: { fontFamily: typography.mono, fontSize: 11, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 18 },
+  heroSubtitle: { fontFamily: typography.handwritten, fontSize: 16, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 26, includeFontPadding: false, },
 
   // Grade Row
   gradeRow: {
@@ -932,9 +923,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   gradeBadge: { paddingHorizontal: 20, paddingVertical: 10, borderWidth: 2, borderColor: colors.charcoal },
-  gradeText: { fontFamily: typography.mono, fontSize: 14, fontWeight: '900', color: colors.cream, letterSpacing: 1.5 },
+  gradeText: { fontFamily: typography.handBold, fontSize: 19, color: colors.cream, includeFontPadding: false, },
   gradeMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  gradeMetaLabel: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, letterSpacing: 0.5 },
+  gradeMetaLabel: { fontFamily: typography.handwritten, fontSize: 14, color: colors.textMuted, includeFontPadding: false, },
   gradeThumb: { width: 44, height: 44, borderWidth: 1.5, borderColor: colors.charcoal },
 
   // Action Card
@@ -950,17 +941,17 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 20,
   },
-  actionCardTitle: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 12 },
+  actionCardTitle: { fontFamily: typography.handBold, fontSize: 15, color: colors.textMuted, marginBottom: 12, includeFontPadding: false, },
   actionCardPrice: { fontFamily: typography.headings, fontSize: 42, color: colors.charcoal, marginBottom: 16 },
   actionCardTutorial: { fontFamily: typography.body, fontSize: 14, color: colors.charcoal, lineHeight: 22, marginBottom: 16 },
-  actionCardPlaceholder: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, lineHeight: 18, marginBottom: 16 },
+  actionCardPlaceholder: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, lineHeight: 26, marginBottom: 16, includeFontPadding: false, },
   
   // Segregated Path Cards
   segregationBanner: {
     marginBottom: 14,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ECE8DD',
+    borderBottomColor: colors.paperDark,
   },
   segregationBadge: {
     flexDirection: 'row',
@@ -974,12 +965,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   segregationBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
-    color: colors.cream,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 14,
+    color: colors.cream, includeFontPadding: false, },
   segregationSub: {
     fontFamily: typography.body,
     fontSize: 12,
@@ -990,7 +978,7 @@ const styles = StyleSheet.create({
   pathCard: {
     backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: '#1E3B2F',
+    borderColor: colors.forest,
     padding: 14,
     borderRadius: 6,
     shadowColor: colors.charcoal,
@@ -1013,18 +1001,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pathTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#1E3B2F',
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
   pathSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    fontSize: 14,
     color: colors.textMuted,
-    marginTop: 2,
-  },
+    marginTop: 2, includeFontPadding: false, },
   pathDescription: {
     fontFamily: typography.body,
     fontSize: 12,
@@ -1039,24 +1023,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   pathTag: {
-    backgroundColor: '#F5F2EA',
+    backgroundColor: colors.paperLight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: '#DCD8CC',
+    borderColor: colors.borderLight,
     borderRadius: 3,
   },
   pathTagText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 14,
+    color: colors.charcoal, includeFontPadding: false, },
 
   tutorialMeta: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   tutorialChip: { backgroundColor: colors.cream, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: colors.charcoal },
-  tutorialChipText: { fontFamily: typography.mono, fontSize: 8, fontWeight: '700', color: colors.charcoal },
-  toolsText: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginBottom: 16 },
+  tutorialChipText: { fontFamily: typography.handSemi, fontSize: 13, color: colors.charcoal, includeFontPadding: false, },
+  toolsText: { fontFamily: typography.handwritten, fontSize: 14, color: colors.textMuted, marginBottom: 16, includeFontPadding: false, },
   actionBtn: {
     backgroundColor: colors.charcoal,
     height: 50,
@@ -1070,7 +1052,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  actionBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
+  actionBtnText: { color: colors.cream, fontFamily: typography.bodyBold, fontSize: 12, letterSpacing: 0.2 },
 
   // Impact Card
   impactCard: {
@@ -1085,12 +1067,12 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 20,
   },
-  impactTitle: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 16 },
+  impactTitle: { fontFamily: typography.handBold, fontSize: 15, color: colors.textMuted, marginBottom: 16, includeFontPadding: false, },
   impactGrid: { flexDirection: 'row', gap: 12 },
   impactStat: { flex: 1, backgroundColor: colors.cream, padding: 12, borderWidth: 1.5, borderColor: colors.charcoal, alignItems: 'center' },
   impactStatValue: { fontFamily: typography.headings, fontSize: 28, color: colors.charcoal },
-  impactStatUnit: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginTop: 2 },
-  impactStatLabel: { fontFamily: typography.mono, fontSize: 8, fontWeight: '800', color: colors.charcoal, marginTop: 4, letterSpacing: 0.5, textAlign: 'center' },
+  impactStatUnit: { fontFamily: typography.bodyMedium, fontSize: 9, color: colors.textMuted, marginTop: 2 },
+  impactStatLabel: { fontFamily: typography.handBold, fontSize: 13, color: colors.charcoal, marginTop: 4, textAlign: 'center', includeFontPadding: false, },
 
   // Summary Card
   summaryCard: {
@@ -1100,10 +1082,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     marginBottom: 24,
   },
-  summaryTitle: { fontFamily: typography.mono, fontSize: 9, fontWeight: '900', color: colors.textMuted, letterSpacing: 1, marginBottom: 12 },
+  summaryTitle: { fontFamily: typography.handBold, fontSize: 14, color: colors.textMuted, marginBottom: 12, includeFontPadding: false, },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  summaryLabel: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted },
-  summaryValue: { fontFamily: typography.mono, fontSize: 11, fontWeight: '800', color: colors.charcoal },
+  summaryLabel: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
+  summaryValue: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.charcoal },
 
   // Recycling Centers UI
   recycleHeader: {
@@ -1113,7 +1095,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#283618',
+    backgroundColor: colors.forest,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 3,
@@ -1121,17 +1103,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   recycleHeaderBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
-    color: colors.white,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 13,
+    color: colors.white, includeFontPadding: false, },
   locationDetectionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F5F3EB',
+    backgroundColor: colors.paperLight,
     padding: 10,
     borderRadius: 4,
     borderWidth: 1,
@@ -1139,11 +1118,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   locationDetectionText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontFamily: typography.handwritten,
+    fontSize: 15,
     color: colors.charcoal,
-    flex: 1,
-  },
+    flex: 1, includeFontPadding: false, },
   locationDetectionBold: {
     fontWeight: '900',
     color: colors.charcoal,
@@ -1154,16 +1132,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   recyclingLoadingText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: colors.textMuted,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 15,
+    color: colors.textMuted, includeFontPadding: false, },
   centersListContainer: {
     gap: 12,
     marginBottom: 16,
   },
   centerItemCard: {
-    backgroundColor: '#FDFCFA',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
     borderColor: colors.charcoal,
     padding: 12,
@@ -1177,18 +1154,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   centerItemName: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   centerItemCity: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '700',
+    fontFamily: typography.handSemi,
+    fontSize: 14,
     color: colors.forest,
-    marginTop: 2,
-  },
+    marginTop: 2, includeFontPadding: false, },
   centerDescriptionText: {
     fontFamily: typography.body,
     fontSize: 11,
@@ -1206,10 +1179,9 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   centerScoreText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 8,
-    fontWeight: '900',
-    color: '#283618',
+    color: colors.forest,
   },
   centerMetaRow: {
     flexDirection: 'row',
@@ -1217,11 +1189,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   centerMetaText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    fontSize: 14,
     color: colors.textMuted,
-    flex: 1,
-  },
+    flex: 1, includeFontPadding: false, },
   fiberTagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1229,26 +1200,22 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   fiberTagPill: {
-    backgroundColor: '#EFECE4',
+    backgroundColor: colors.paperDark,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 2,
   },
   fiberTagText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '700',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 13,
+    color: colors.charcoal, includeFontPadding: false, },
   certText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handSemi,
+    fontSize: 13,
     color: colors.copper,
-    fontWeight: '700',
-    marginTop: 2,
-  },
+    marginTop: 2, includeFontPadding: false, },
   facilityDetailsBox: {
-    backgroundColor: '#F7F5EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
     borderColor: 'rgba(30,31,34,0.12)',
     borderRadius: 3,
@@ -1262,41 +1229,36 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   detailPhoneText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 9,
-    fontWeight: '800',
     color: colors.forest,
   },
   dropOffInstructions: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handwritten,
+    fontSize: 13,
     color: colors.charcoal,
-    lineHeight: 11,
-  },
+    lineHeight: 18, includeFontPadding: false, },
   mailInCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#F0F5ED',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 1.5,
-    borderColor: '#4A7C59',
+    borderColor: colors.forest,
     padding: 12,
     borderRadius: 4,
     marginTop: 4,
   },
   mailInTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#283618',
-  },
+    fontFamily: typography.handBold,
+    fontSize: 15,
+    color: colors.forest, includeFontPadding: false, },
   mailInSub: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handwritten,
+    fontSize: 13,
     color: colors.charcoal,
     marginTop: 2,
-    lineHeight: 12,
-  },
+    lineHeight: 20, includeFontPadding: false, },
 
   // Scan Again
   scanAgainBtn: {
@@ -1307,7 +1269,7 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     backgroundColor: colors.cream,
   },
-  scanAgainText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  scanAgainText: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false, },
 
   // Hard Reject Banner (Part 4 PDF)
   hardRejectBanner: {
@@ -1322,13 +1284,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   hardRejectTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.red,
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
+    marginBottom: 2, includeFontPadding: false, },
   hardRejectText: {
     fontFamily: typography.body,
     fontSize: 11,
@@ -1338,7 +1297,7 @@ const styles = StyleSheet.create({
 
   // Point-of-Disposal Prep Card (Part 4 PDF)
   prepCard: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
     borderColor: colors.charcoal,
     padding: 14,
@@ -1352,12 +1311,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   prepCardTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: colors.charcoal,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   prepCardSub: {
     fontFamily: typography.body,
     fontSize: 11,
@@ -1374,11 +1330,9 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   prepTaskText: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   prepTaskDone: {
     textDecorationLine: 'line-through',
     opacity: 0.5,
@@ -1401,11 +1355,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.forest,
   },
   verifyPrepBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '900',
     color: colors.cream,
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
 
   // Domestic-Only Toggle (Part 2 PDF)
@@ -1420,11 +1373,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   toggleTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   toggleSub: {
     fontFamily: typography.body,
     fontSize: 10,
@@ -1448,12 +1399,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   transparencyTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: colors.forest,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
   transparencyText: {
     fontFamily: typography.body,
     fontSize: 11.5,
@@ -1464,7 +1412,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FAF5E8',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
     borderColor: colors.gold,
     padding: 8,
@@ -1472,12 +1420,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   informalSectorText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    fontSize: 14,
     color: colors.charcoal,
-    flex: 1,
-  },
+    flex: 1, includeFontPadding: false, },
 
   // Partner Onboarding Callout (Part 3 PDF)
   onboardCalloutBtn: {
@@ -1492,12 +1438,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   onboardCalloutText: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '900',
-    color: colors.charcoal,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
 
   // Modal Styles
   modalOverlay: {
@@ -1523,12 +1466,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   modalTitle: {
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '900',
-    color: colors.charcoal,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 18,
+    color: colors.charcoal, includeFontPadding: false, },
   modalSub: {
     fontFamily: typography.body,
     fontSize: 11,
@@ -1547,12 +1487,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   modalPpeText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontFamily: typography.handSemi,
+    fontSize: 15,
     color: colors.charcoal,
-    flex: 1,
-    fontWeight: '700',
-  },
+    flex: 1, includeFontPadding: false, },
   modalSubmitBtn: {
     backgroundColor: colors.charcoal,
     paddingVertical: 14,
@@ -1561,11 +1499,8 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   modalSubmitText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: colors.cream,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.cream, includeFontPadding: false, },
 });
 

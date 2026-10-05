@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { colors, typography, spacing } from '../../theme';
 import { useNotificationStore } from '../../store/notificationStore';
 import { safeBack, useBackHandler } from '../../utils/navigation';
 import { EditorialIcon } from '../editorial/IllustrationLayer';
+import { KaphorLogo } from './KaphorLogo';
 
 interface HeaderProps {
   title?: string;
@@ -61,7 +62,7 @@ export function Header({
     <View style={[styles.container, { paddingTop: Math.max(insets.top + 8, 24), paddingBottom: 14 }]}>
       <View style={styles.left}>
         {showBack ? (
-          <Pressable 
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" 
             onPress={handleBack} 
             style={styles.iconBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -69,7 +70,7 @@ export function Header({
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </Pressable>
         ) : (
-          <Pressable 
+          <Pressable accessibilityRole="button" accessibilityLabel="Add" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} 
             onPress={() => router.push({ 
               pathname: '/shop/sell', 
               params: { 
@@ -98,18 +99,16 @@ export function Header({
           onPress={() => router.replace('/(tabs)' as any)} 
           hitSlop={8}
           style={styles.logoContainer}
+          accessibilityRole="button"
+          accessibilityLabel="Go to home"
         >
-          <Image
-            source={require('../../../assets/kaphor-logo-transparent.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
+          <KaphorLogo size={28} />
         </Pressable>
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={styles.title}>{title?.toUpperCase()}</Text>
+          <Text style={styles.title}>{title}</Text>
           {!!subtitle && (
-            <Text style={styles.subtitle}>{subtitle.toUpperCase()}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
           )}
         </View>
       )}
@@ -168,27 +167,23 @@ const styles = StyleSheet.create({
   title: {
     color: colors.textPrimary,
     fontFamily: typography.headings,
-    fontSize: 20,
-    letterSpacing: 2.2,
+    fontSize: 22,
+    letterSpacing: 0.3,
     textAlign: 'center',
     lineHeight: 22,
   },
   subtitle: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    letterSpacing: 1.8,
-    marginTop: 2,
+    fontFamily: typography.handwritten,
+    fontSize: 18,
+    letterSpacing: 0.2,
+    marginTop: 0,
     textAlign: 'center',
   },
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 2,
-  },
-  logoImage: {
-    width: 96,
-    height: 34,
   },
   badge: {
     position: 'absolute',
@@ -208,9 +203,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimson,
   },
   badgeText: {
-    color: 'white',
+    color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 11.5,
     fontWeight: 'bold',
   },
 });

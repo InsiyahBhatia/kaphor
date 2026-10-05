@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Modal,
   TextInput,
   Alert,
@@ -24,6 +23,8 @@ import { hapticFeedback } from '../../../../src/utils/haptics';
 import { useAuthStore } from '../../../../src/store/authStore';
 
 import { invalidateCache } from '../../../../src/services/api';
+import { Loader, Spinner } from '../../../../src/components/common/Loader';
+import { getErrorMessage } from '../../../../src/utils/errors';
 
 export default function RentalLeaseDossierScreen() {
   const insets = useSafeAreaInsets();
@@ -156,11 +157,11 @@ export default function RentalLeaseDossierScreen() {
       invalidateCache('/users/me/wardrobe');
       Alert.alert(
         'Rental Request Approved',
-        'You have approved the rental dates! The borrower has been notified and granted 24 hours to secure payment into escrow.'
+        'You have approved the rental dates! The borrower has been notified and granted 24 hours to pay. Your money is held safely until delivery.'
       );
       await loadData();
     } catch (err: any) {
-      Alert.alert('Approval Error', err?.response?.data?.message || 'Failed to approve rental request.');
+      Alert.alert('Approval Error', getErrorMessage(err, 'Failed to approve rental request.'));
     } finally {
       setActionLoading(false);
     }
@@ -179,7 +180,7 @@ export default function RentalLeaseDossierScreen() {
       Alert.alert('Request Declined', 'You have declined this rental request.');
       await loadData();
     } catch (err: any) {
-      Alert.alert('Decline Error', err?.response?.data?.message || 'Failed to decline rental request.');
+      Alert.alert('Decline Error', getErrorMessage(err, 'Failed to decline rental request.'));
     } finally {
       setActionLoading(false);
     }
@@ -203,7 +204,7 @@ export default function RentalLeaseDossierScreen() {
   const handleConfirmDelivery = async () => {
     Alert.alert(
       'Confirm Garment Received',
-      'Have you received and verified the luxury piece? Your active lease duration officially begins now.',
+      'Did you get the piece and check it? Your rental starts now.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -218,7 +219,7 @@ export default function RentalLeaseDossierScreen() {
               Alert.alert('Delivery Confirmed', 'Enjoy your rental piece! Return instructions are available anytime on this screen.');
               await loadData();
             } catch (err: any) {
-              Alert.alert('Error', err?.response?.data?.message || 'Failed to confirm delivery.');
+              Alert.alert('Error', getErrorMessage(err, 'Failed to confirm delivery.'));
             } finally {
               setActionLoading(false);
             }
@@ -247,7 +248,7 @@ export default function RentalLeaseDossierScreen() {
               Alert.alert('Return Received', 'Inspection period active. Please inspect the garment and release the ₹299 deposit.');
               await loadData();
             } catch (err: any) {
-              Alert.alert('Error', err?.response?.data?.message || 'Failed to confirm return receipt.');
+              Alert.alert('Error', getErrorMessage(err, 'Failed to confirm return receipt.'));
             } finally {
               setActionLoading(false);
             }
@@ -289,10 +290,10 @@ export default function RentalLeaseDossierScreen() {
       invalidateCache('/rentals');
       invalidateCache('/users/me/wardrobe');
       setDispatchModalVisible(false);
-      Alert.alert('Garment Dispatched', 'Outbound shipment has been marked dispatched. The borrower has been notified with tracking details.');
+      Alert.alert('Garment Shipped', 'Your shipment is marked as sent. The borrower can now see the tracking details.');
       await loadData();
     } catch (err: any) {
-      Alert.alert('Dispatch Error', err?.response?.data?.message || 'Failed to dispatch rental.');
+      Alert.alert('Shipping Error', getErrorMessage(err, 'Could not update shipping. Please try again.'));
     } finally {
       setActionLoading(false);
     }
@@ -313,7 +314,7 @@ export default function RentalLeaseDossierScreen() {
       Alert.alert('Return Confirmed', 'The lender has been notified. Your security deposit will be released upon inspection.');
       await loadData();
     } catch (err: any) {
-      Alert.alert('Return Error', err?.response?.data?.message || 'Failed to submit return.');
+      Alert.alert('Return Error', getErrorMessage(err, 'Failed to submit return.'));
     } finally {
       setActionLoading(false);
     }
@@ -339,7 +340,7 @@ export default function RentalLeaseDossierScreen() {
               Alert.alert('Deposit Released', '₹299 security deposit has been refunded to the borrower.');
               await loadData();
             } catch (err: any) {
-              Alert.alert('Release Error', err?.response?.data?.message || 'Failed to release deposit.');
+              Alert.alert('Release Error', getErrorMessage(err, 'Failed to release deposit.'));
             } finally {
               setActionLoading(false);
             }
@@ -379,22 +380,17 @@ export default function RentalLeaseDossierScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={colors.crimson} />
-        <Text style={styles.loadingText}>LOADING LEASE DOSSIER…</Text>
-      </View>
-    );
+    return <Loader variant="rental" />;
   }
 
   if (!rental) {
     return (
       <View style={[styles.container, styles.center]}>
         <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
-        <Text style={styles.errorTitle}>RENTAL NOT FOUND</Text>
+        <Text style={styles.errorTitle}>Rental not found</Text>
         <Text style={styles.errorSubtitle}>This rental order could not be located or access is restricted.</Text>
         <TouchableOpacity style={styles.primaryCta} onPress={() => safeBack('/(tabs)/rental')}>
-          <Text style={styles.primaryCtaText}>BACK TO RENTALS</Text>
+          <Text style={styles.primaryCtaText}>Back to rentals</Text>
         </TouchableOpacity>
       </View>
     );
@@ -404,7 +400,7 @@ export default function RentalLeaseDossierScreen() {
   const seller = garment.seller || {};
   const renter = rental.renter || {};
   const counterparty = isRenter ? seller : renter;
-  const counterpartyRole = isRenter ? 'LENDER / OWNER' : 'BORROWER / RENTER';
+  const counterpartyRole = isRenter ? 'Lender / owner' : 'Borrower / renter';
 
   const startDate = new Date(rental.startDate);
   const endDate = new Date(rental.endDate);
@@ -426,14 +422,14 @@ export default function RentalLeaseDossierScreen() {
     <View style={styles.container}>
       {/* Top Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
           onPress={() => safeBack('/(tabs)/rental')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={{ alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>RENTAL LEASE DOSSIER</Text>
+          <Text style={styles.headerTitle}>Rental lease details</Text>
           <Text style={styles.headerSub}>ID: {rental.id.slice(0, 8).toUpperCase()}</Text>
         </View>
         <TouchableOpacity
@@ -442,7 +438,7 @@ export default function RentalLeaseDossierScreen() {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           {startingChat ? (
-            <ActivityIndicator size="small" color={colors.crimson} />
+            <Spinner size="small" color={colors.crimson} />
           ) : (
             <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.textPrimary} />
           )}
@@ -456,8 +452,8 @@ export default function RentalLeaseDossierScreen() {
             {[
               { key: 'REQUEST', label: '1. REQUEST', icon: 'document-text-outline', done: true },
               { key: 'APPROVE', label: '2. APPROVAL', icon: 'checkmark-circle-outline', done: rental.status !== 'REQUESTED' && rental.status !== 'DECLINED' },
-              { key: 'PAY', label: '3. ESCROW PAY', icon: 'card-outline', done: ['RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
-              { key: 'DISPATCH', label: '4. DISPATCH', icon: 'airplane-outline', done: ['DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
+              { key: 'PAY', label: '3. PAY', icon: 'card-outline', done: ['RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
+              { key: 'DISPATCH', label: '4. SHIPPING', icon: 'airplane-outline', done: ['DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
               { key: 'ACTIVE', label: '5. WEAR', icon: 'sparkles-outline', done: ['ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
               { key: 'RETURN', label: '6. RETURN', icon: 'repeat-outline', done: ['RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) },
               { key: 'REFUND', label: '7. REFUND', icon: 'shield-checkmark-outline', done: rental.status === 'COMPLETED' },
@@ -516,38 +512,38 @@ export default function RentalLeaseDossierScreen() {
           <View style={styles.statusRow}>
             <View style={[
               styles.statusBadgeDot,
-              (rental.status === 'APPROVED' || rental.status === 'ACTIVE' || rental.status === 'COMPLETED') && { backgroundColor: colors.forest || '#2A7B4C' },
-              (rental.status === 'REQUESTED' || rental.status === 'RESERVED') && { backgroundColor: colors.gold || '#D4AF37' },
-              (rental.status === 'DECLINED' || rental.status === 'OVERDUE') && { backgroundColor: colors.red || '#E53E3E' },
+              (rental.status === 'APPROVED' || rental.status === 'ACTIVE' || rental.status === 'COMPLETED') && { backgroundColor: colors.forest || colors.forest },
+              (rental.status === 'REQUESTED' || rental.status === 'RESERVED') && { backgroundColor: colors.gold || colors.gold },
+              (rental.status === 'DECLINED' || rental.status === 'OVERDUE') && { backgroundColor: colors.red || colors.rose },
             ]} />
             <Text style={styles.statusTitle}>
               {rental.status === 'REQUESTED' && (isLender ? 'ACTION REQUIRED • NEW RENTAL REQUEST' : 'REQUEST SENT • PENDING LENDER APPROVAL')}
-              {rental.status === 'APPROVED' && (isLender ? 'REQUEST APPROVED • AWAITING PAYMENT' : 'REQUEST APPROVED! PROCEED TO PAYMENT')}
-              {rental.status === 'DECLINED' && 'RENTAL REQUEST DECLINED'}
-              {rental.status === 'RESERVED' && (isLender ? 'PAYMENT SECURED IN ESCROW • READY TO DISPATCH' : 'PAYMENT SECURED IN ESCROW')}
-              {rental.status === 'DISPATCHED' && (isLender ? 'OUTBOUND SHIPMENT IN TRANSIT' : 'PIECE ON THE WAY • DISPATCHED')}
-              {rental.status === 'ACTIVE' && `ACTIVE LEASE • ${daysLeft > 0 ? `${daysLeft} ${daysLeft === 1 ? 'DAY' : 'DAYS'} LEFT` : 'DUE TODAY'}`}
-              {rental.status === 'RETURN_DISPATCHED' && (isLender ? 'RETURN SHIPMENT IN TRANSIT' : 'RETURN DISPATCHED • IN TRANSIT')}
-              {rental.status === 'RETURNED' && (isDepositReleased ? 'RETURNED & DEPOSIT REFUNDED' : 'RETURN RECEIVED • 48H INSPECTION WINDOW')}
+              {rental.status === 'APPROVED' && (isLender ? 'REQUEST APPROVED • AWAITING PAYMENT' : 'Request approved! Proceed to payment')}
+              {rental.status === 'DECLINED' && 'Rental request declined'}
+              {rental.status === 'RESERVED' && (isLender ? 'PAID • READY TO SHIP' : 'PAID • HELD SAFELY')}
+              {rental.status === 'DISPATCHED' && (isLender ? 'Outbound shipment in transit' : 'SHIPPED • ON THE WAY')}
+              {rental.status === 'ACTIVE' && `ACTIVE LEASE • ${daysLeft > 0 ? `${daysLeft} ${daysLeft === 1 ? 'DAY' : 'DAYS'} LEFT` : 'Due today'}`}
+              {rental.status === 'RETURN_DISPATCHED' && (isLender ? 'Return shipment in transit' : 'RETURN SHIPPED • ON THE WAY')}
+              {rental.status === 'RETURNED' && (isDepositReleased ? 'Returned & deposit refunded' : 'RETURN RECEIVED • 48H INSPECTION WINDOW')}
               {rental.status === 'COMPLETED' && 'LEASE COMPLETED • DEPOSIT REFUNDED'}
-              {rental.status === 'OVERDUE' && 'RETURN OVERDUE'}
+              {rental.status === 'OVERDUE' && 'Return overdue'}
             </Text>
           </View>
           <Text style={styles.statusDesc}>
             {rental.status === 'REQUESTED' && isLender && 'Please review the requested dates and approve or decline the lease request.'}
             {rental.status === 'REQUESTED' && isRenter && 'The garment owner will review your dates within 24 hours. No payment is taken until approved.'}
             {rental.status === 'APPROVED' && isLender && 'You approved this lease. The borrower has 24 hours to secure their reservation by completing payment.'}
-            {rental.status === 'APPROVED' && isRenter && 'The garment owner approved your request! Complete payment to lock your dates into escrow.'}
+            {rental.status === 'APPROVED' && isRenter && 'The garment owner approved your request! Pay now to lock in your dates.'}
             {rental.status === 'DECLINED' && (rental.declineReason ? `Owner note: "${rental.declineReason}"` : 'This rental request could not be accommodated at this time.')}
-            {rental.status === 'RESERVED' && isLender && 'Payment is locked in escrow. Please package and dispatch the garment. Tap below to enter tracking.'}
-            {rental.status === 'RESERVED' && isRenter && 'Payment is secured in escrow. The garment owner is preparing your piece for insured dispatch.'}
-            {rental.status === 'DISPATCHED' && isLender && `Dispatched via ${rental.carrier || 'courier'} (${rental.trackingNumber || 'Tracking provided'}).`}
-            {rental.status === 'DISPATCHED' && isRenter && `Dispatched via ${rental.carrier || 'courier'} (${rental.trackingNumber || 'Tracking provided'}). Please tap "Confirm Received" upon delivery.`}
-            {rental.status === 'ACTIVE' && isRenter && `Enjoy wearing! Please dispatch for return on or before ${endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}.`}
+            {rental.status === 'RESERVED' && isLender && 'Payment is held safely. Please pack and ship the garment, then add the tracking number below.'}
+            {rental.status === 'RESERVED' && isRenter && 'Payment is held safely. The owner is getting your piece ready to ship.'}
+            {rental.status === 'DISPATCHED' && isLender && `Shipped via ${rental.carrier || 'courier'} (${rental.trackingNumber || 'Tracking provided'}).`}
+            {rental.status === 'DISPATCHED' && isRenter && `Shipped via ${rental.carrier || 'courier'} (${rental.trackingNumber || 'Tracking provided'}). Please tap "Confirm Received" upon delivery.`}
+            {rental.status === 'ACTIVE' && isRenter && `Enjoy wearing! Please ship for return on or before ${endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}.`}
             {rental.status === 'ACTIVE' && isLender && `Garment is currently with the borrower. Scheduled return: ${endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}.`}
-            {rental.status === 'RETURN_DISPATCHED' && isLender && `Dispatched back by borrower via ${rental.returnCarrier || 'courier'} (${rental.returnTracking || 'Tracking provided'}). Please confirm upon delivery.`}
+            {rental.status === 'RETURN_DISPATCHED' && isLender && `Sent back by borrower via ${rental.returnCarrier || 'courier'} (${rental.returnTracking || 'Tracking provided'}). Please confirm upon delivery.`}
             {rental.status === 'RETURN_DISPATCHED' && isRenter && `Return package in transit via ${rental.returnCarrier || 'courier'}. Security deposit will be refunded after owner inspection.`}
-            {rental.status === 'RETURNED' && isLender && !isDepositReleased && 'Please inspect garment hygiene and fabric condition to release the ₹299 escrow deposit.'}
+            {rental.status === 'RETURNED' && isLender && !isDepositReleased && 'Please check the garment is clean and undamaged to release the ₹299 deposit.'}
             {rental.status === 'RETURNED' && isDepositReleased && 'All lease obligations fulfilled. Security deposit has been successfully released.'}
             {rental.status === 'COMPLETED' && 'All lease obligations fulfilled. Security deposit has been successfully refunded.'}
             {rental.status === 'OVERDUE' && 'The agreed rental duration has expired. Please contact support or the lender immediately.'}
@@ -559,10 +555,10 @@ export default function RentalLeaseDossierScreen() {
           <View style={styles.actionPromptCard}>
             <View style={styles.actionPromptTop}>
               <View style={styles.actionPromptIconBadge}>
-                <Ionicons name="time" size={18} color="#B45309" />
+                <Ionicons name="time" size={18} color={colors.terracottaDark} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.actionPromptTitle}>ACTION REQUIRED: APPROVE RENTAL DATES</Text>
+                <Text style={styles.actionPromptTitle}>Action required: approve rental dates</Text>
                 <Text style={styles.actionPromptSub}>
                   {rental.renter?.displayName || 'Borrower'} requested this piece for {daysTotal} days ({new Date(rental.startDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – {new Date(rental.endDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}). Approve to open the 24-hour escrow payment window.
                 </Text>
@@ -573,7 +569,7 @@ export default function RentalLeaseDossierScreen() {
                 style={[styles.actionPromptBtn, styles.actionPromptDecline]}
                 onPress={() => setDeclineModalVisible(true)}
               >
-                <Text style={styles.actionPromptDeclineText}>DECLINE</Text>
+                <Text style={styles.actionPromptDeclineText}>Decline</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionPromptBtn, styles.actionPromptAccept]}
@@ -581,11 +577,11 @@ export default function RentalLeaseDossierScreen() {
                 disabled={actionLoading}
               >
                 {actionLoading ? (
-                  <ActivityIndicator color={colors.white} size="small" />
+                  <Spinner color={colors.white} size="small" />
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle" size={15} color={colors.white} />
-                    <Text style={styles.actionPromptAcceptText}>ACCEPT & APPROVE DATES</Text>
+                    <Text style={styles.actionPromptAcceptText}>Accept & approve dates</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -595,17 +591,17 @@ export default function RentalLeaseDossierScreen() {
 
         {/* ── Prominent Borrower Payment Action Card when Approved ── */}
         {isRenter && rental.status === 'APPROVED' && !rental.paidAt && (
-          <View style={[styles.actionPromptCard, { borderColor: colors.forest, backgroundColor: '#F0FDF4' }]}>
+          <View style={[styles.actionPromptCard, { borderColor: colors.forest, backgroundColor: colors.emeraldLight }]}>
             <View style={styles.actionPromptTop}>
-              <View style={[styles.actionPromptIconBadge, { backgroundColor: '#DCFCE7' }]}>
+              <View style={[styles.actionPromptIconBadge, { backgroundColor: colors.emeraldLight }]}>
                 <Ionicons name="checkmark-circle" size={18} color={colors.forest} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.actionPromptTitle, { color: colors.forest }]}>
-                  DATES APPROVED! READY FOR ESCROW PAYMENT
+                  Dates approved! Time to pay
                 </Text>
                 <Text style={styles.actionPromptSub}>
-                  The owner has approved your reservation! Complete escrow payment within 24 hours to secure your dates.
+                  The owner has approved your reservation! Please pay within 24 hours to keep your dates.
                 </Text>
               </View>
             </View>
@@ -624,8 +620,8 @@ export default function RentalLeaseDossierScreen() {
           <View style={styles.rentalReviewCard}>
             <View style={styles.rentalReviewHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="star" size={16} color="#C95F12" />
-                <Text style={styles.rentalReviewTitle}>YOUR RENTAL REVIEW</Text>
+                <Ionicons name="star" size={16} color={colors.orange} />
+                <Text style={styles.rentalReviewTitle}>Your rental review</Text>
               </View>
               <View style={styles.rentalReviewBadge}>
                 <Text style={styles.rentalReviewScore}>
@@ -647,7 +643,7 @@ export default function RentalLeaseDossierScreen() {
 
         {/* Garment Details Card */}
         <View style={styles.card}>
-          <Text style={styles.cardSectionLabel}>RENTAL ASSET</Text>
+          <Text style={styles.cardSectionLabel}>Rental item</Text>
           <View style={styles.garmentRow}>
             <KaphorImage
               uri={Array.isArray(garment.images) && garment.images.length > 0 ? garment.images[0] : null}
@@ -655,14 +651,14 @@ export default function RentalLeaseDossierScreen() {
               contentFit="cover"
             />
             <View style={styles.garmentInfo}>
-              <Text style={styles.brandText}>{garment.brand || 'LUXURY DESIGNER'}</Text>
+              <Text style={styles.brandText}>{garment.brand || 'DESIGNER'}</Text>
               <Text style={styles.titleText} numberOfLines={2}>{garment.title}</Text>
               <View style={styles.tagRow}>
                 <View style={styles.tag}>
                   <Text style={styles.tagText}>{garment.category || 'COUTURE'}</Text>
                 </View>
-                <View style={[styles.tag, { borderColor: colors.forest || '#2A7B4C' }]}>
-                  <Text style={[styles.tagText, { color: colors.forest || '#2A7B4C' }]}>
+                <View style={[styles.tag, { borderColor: colors.forest || colors.forest }]}>
+                  <Text style={[styles.tagText, { color: colors.forest || colors.forest }]}>
                     {garment.condition || 'PRISTINE'}
                   </Text>
                 </View>
@@ -682,18 +678,18 @@ export default function RentalLeaseDossierScreen() {
             </View>
             <TouchableOpacity style={styles.chatButton} onPress={handleChat} activeOpacity={0.8}>
               <Ionicons name="chatbubble-outline" size={14} color={colors.crimson} />
-              <Text style={styles.chatButtonText}>MESSAGE</Text>
+              <Text style={styles.chatButtonText}>Message</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Schedule & Duration Timeline Card */}
         <View style={styles.card}>
-          <Text style={styles.cardSectionLabel}>LEASE TIMELINE</Text>
+          <Text style={styles.cardSectionLabel}>Lease timeline</Text>
           <View style={styles.timelineContainer}>
             <View style={styles.timelineEndpoint}>
               <View style={styles.timelineCircle} />
-              <Text style={styles.timelineDateLabel}>DELIVERY / START</Text>
+              <Text style={styles.timelineDateLabel}>Delivery / start</Text>
               <Text style={styles.timelineDateValue}>
                 {startDate.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
               </Text>
@@ -707,8 +703,8 @@ export default function RentalLeaseDossierScreen() {
             </View>
 
             <View style={styles.timelineEndpoint}>
-              <View style={[styles.timelineCircle, { backgroundColor: colors.forest || '#2A7B4C' }]} />
-              <Text style={styles.timelineDateLabel}>RETURN DUE</Text>
+              <View style={[styles.timelineCircle, { backgroundColor: colors.forest || colors.forest }]} />
+              <Text style={styles.timelineDateLabel}>Return due</Text>
               <Text style={styles.timelineDateValue}>
                 {endDate.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
               </Text>
@@ -718,22 +714,22 @@ export default function RentalLeaseDossierScreen() {
 
         {/* Logistics & Tracking Card */}
         <View style={styles.card}>
-          <Text style={styles.cardSectionLabel}>LOGISTICS & SHIPMENT TRACKING</Text>
+          <Text style={styles.cardSectionLabel}>Logistics & shipment tracking</Text>
 
           {/* Outbound Tracking */}
           <View style={styles.trackingSection}>
             <View style={styles.trackingHeader}>
               <Ionicons name="airplane-outline" size={15} color={colors.crimson} />
-              <Text style={styles.trackingTitle}>OUTBOUND TO BORROWER</Text>
+              <Text style={styles.trackingTitle}>Outbound to borrower</Text>
             </View>
             {rental.trackingNumber ? (
               <View style={styles.trackingDetailsBox}>
                 <View style={styles.trackingDetailRow}>
-                  <Text style={styles.trackingDetailLabel}>CARRIER</Text>
+                  <Text style={styles.trackingDetailLabel}>Carrier</Text>
                   <Text style={styles.trackingDetailValue}>{rental.carrier || 'BlueDart'}</Text>
                 </View>
                 <View style={styles.trackingDetailRow}>
-                  <Text style={styles.trackingDetailLabel}>TRACKING AWB</Text>
+                  <Text style={styles.trackingDetailLabel}>Tracking AWB</Text>
                   <Text style={[styles.trackingDetailValue, { fontFamily: typography.mono }]}>
                     {rental.trackingNumber}
                   </Text>
@@ -751,9 +747,9 @@ export default function RentalLeaseDossierScreen() {
               <Text style={styles.noTrackingText}>
                 {isLender
                   ? (rental.status === 'REQUESTED' || rental.status === 'APPROVED'
-                      ? 'Shipment details will unlock once the request is approved and paid into escrow.'
-                      : 'Awaiting your dispatch. Tap "Dispatch Garment" below when ready.')
-                  : 'Garment owner will input courier tracking once dispatched.'}
+                      ? 'Shipment details will unlock once the request is approved and paid.'
+                      : 'Tap "Ship Garment" below when you are ready.')
+                  : 'The owner will add the tracking number once shipped.'}
               </Text>
             )}
           </View>
@@ -762,28 +758,28 @@ export default function RentalLeaseDossierScreen() {
           {(['ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED'].includes(rental.status) || Boolean(rental.returnTracking)) && (
             <View style={[styles.trackingSection, { marginTop: 14 }]}>
               <View style={styles.trackingHeader}>
-                <Ionicons name="repeat-outline" size={15} color={colors.forest || '#2A7B4C'} />
-                <Text style={styles.trackingTitle}>RETURN TO LENDER</Text>
+                <Ionicons name="repeat-outline" size={15} color={colors.forest || colors.forest} />
+                <Text style={styles.trackingTitle}>Return to lender</Text>
               </View>
               {rental.returnTracking ? (
                 <View style={styles.trackingDetailsBox}>
                   <View style={styles.trackingDetailRow}>
-                    <Text style={styles.trackingDetailLabel}>RETURN COURIER</Text>
+                    <Text style={styles.trackingDetailLabel}>Return courier</Text>
                     <Text style={styles.trackingDetailValue}>{rental.returnCarrier || 'Delhivery'}</Text>
                   </View>
                   <View style={styles.trackingDetailRow}>
-                    <Text style={styles.trackingDetailLabel}>RETURN AWB</Text>
+                    <Text style={styles.trackingDetailLabel}>Return AWB</Text>
                     <Text style={[styles.trackingDetailValue, { fontFamily: typography.mono }]}>
                       {rental.returnTracking}
                     </Text>
                   </View>
                   <TouchableOpacity
-                    style={[styles.trackOnlineBtn, { borderColor: colors.forest || '#2A7B4C' }]}
+                    style={[styles.trackOnlineBtn, { borderColor: colors.forest || colors.forest }]}
                     onPress={handleTrackReturn}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="open-outline" size={13} color={colors.forest || '#2A7B4C'} />
-                    <Text style={[styles.trackOnlineBtnText, { color: colors.forest || '#2A7B4C' }]}>
+                    <Ionicons name="open-outline" size={13} color={colors.forest || colors.forest} />
+                    <Text style={[styles.trackOnlineBtnText, { color: colors.forest || colors.forest }]}>
                       TRACK RETURN ON {rental.returnCarrier ? rental.returnCarrier.toUpperCase() : 'COURIER'}
                     </Text>
                   </TouchableOpacity>
@@ -791,8 +787,8 @@ export default function RentalLeaseDossierScreen() {
               ) : (
                 <Text style={styles.noTrackingText}>
                   {isRenter
-                    ? 'Use the prepaid return bag. Tap "Initiate Return" below once scheduled.'
-                    : 'Return shipment will appear once dispatched by the borrower.'}
+                    ? 'Use the prepaid return bag. Tap "Start Return" below once scheduled.'
+                    : 'Return shipping will show up once the borrower ships it.'}
                 </Text>
               )}
             </View>
@@ -801,7 +797,7 @@ export default function RentalLeaseDossierScreen() {
           {/* Activity Log / Milestones */}
           {Array.isArray(rental.trackingHistory) && rental.trackingHistory.length > 0 && (
             <View style={styles.historyContainer}>
-              <Text style={styles.historyLabel}>ACTIVITY & AUDIT LOG</Text>
+              <Text style={styles.historyLabel}>Activity & audit log</Text>
               {rental.trackingHistory.map((item: any, idx: number) => (
                 <View key={idx} style={styles.historyRow}>
                   <View style={styles.historyDot} />
@@ -820,7 +816,7 @@ export default function RentalLeaseDossierScreen() {
         {/* Shipping Destination Card */}
         {rental.shippingAddress && (
           <View style={styles.card}>
-            <Text style={styles.cardSectionLabel}>DELIVERY ADDRESS</Text>
+            <Text style={styles.cardSectionLabel}>Delivery address</Text>
             <View style={styles.addressBox}>
               <Text style={styles.addressRecipient}>
                 {rental.shippingAddress.fullName} • {rental.shippingAddress.phone}
@@ -842,7 +838,7 @@ export default function RentalLeaseDossierScreen() {
         {/* Escrow & Payment Breakdown Card */}
         <View style={styles.card}>
           <View style={styles.escrowHeaderRow}>
-            <Text style={styles.cardSectionLabel}>PAYMENT & ESCROW BREAKDOWN</Text>
+            <Text style={styles.cardSectionLabel}>Payment breakdown</Text>
             <View style={[
               styles.escrowPill,
               isDepositReleased ? styles.escrowPillReleased : styles.escrowPillHeld
@@ -850,13 +846,13 @@ export default function RentalLeaseDossierScreen() {
               <Ionicons
                 name={isDepositReleased ? 'checkmark-circle' : 'shield-checkmark'}
                 size={12}
-                color={isDepositReleased ? (colors.forest || '#2A7B4C') : colors.crimson}
+                color={isDepositReleased ? (colors.forest || colors.forest) : colors.crimson}
               />
               <Text style={[
                 styles.escrowPillText,
-                isDepositReleased && { color: colors.forest || '#2A7B4C' }
+                isDepositReleased && { color: colors.forest || colors.forest }
               ]}>
-                {isDepositReleased ? 'ESCROW REFUNDED' : 'ESCROW SECURED'}
+                {isDepositReleased ? 'Deposit refunded' : 'Deposit secured'}
               </Text>
             </View>
           </View>
@@ -867,24 +863,24 @@ export default function RentalLeaseDossierScreen() {
           </View>
           <View style={styles.summaryRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={styles.summaryLabel}>REFUNDABLE SECURITY DEPOSIT</Text>
-              <Ionicons name="lock-closed" size={11} color={colors.forest || '#2A7B4C'} />
+              <Text style={styles.summaryLabel}>Refundable security deposit</Text>
+              <Ionicons name="lock-closed" size={11} color={colors.forest || colors.forest} />
             </View>
-            <Text style={[styles.summaryValue, { color: colors.forest || '#2A7B4C' }]}>
-              ₹{refundableDeposit} {isDepositReleased ? '(Refunded)' : '(In Escrow)'}
+            <Text style={[styles.summaryValue, { color: colors.forest || colors.forest }]}>
+              ₹{refundableDeposit} {isDepositReleased ? '(Refunded)' : '(Held safely)'}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>DAMAGE WAIVER & HYGIENIC STEAM</Text>
+            <Text style={styles.summaryLabel}>Damage waiver & hygienic steam</Text>
             <Text style={styles.summaryValue}>₹{damageInsurance}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>TWO-WAY INSURED COURIER</Text>
+            <Text style={styles.summaryLabel}>Two-way insured courier</Text>
             <Text style={styles.summaryValue}>₹{deliveryReturnFee}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
-            <Text style={styles.totalLabel}>TOTAL LEASE AMOUNT</Text>
+            <Text style={styles.totalLabel}>Total lease amount</Text>
             <Text style={styles.totalValue}>₹{totalAmount.toLocaleString()}</Text>
           </View>
         </View>
@@ -893,7 +889,7 @@ export default function RentalLeaseDossierScreen() {
         <View style={styles.legalDisclaimerBox}>
           <Ionicons name="shield-checkmark" size={13} color={colors.textMuted} />
           <Text style={styles.legalDisclaimerText}>
-            Direct Peer-to-Peer Rental Agreement: Kaphor operates exclusively as an intermediary under Section 79 of the Information Technology Act, 2000. All transactions and wear liabilities are governed by user agreement between lender and borrower.
+            Rental Agreement: Kaphor operates exclusively as an intermediary under Section 79 of the Information Technology Act, 2000. All transactions and wear liabilities are governed by user agreement between lender and borrower.
           </Text>
         </View>
       </ScrollView>
@@ -916,8 +912,8 @@ export default function RentalLeaseDossierScreen() {
               onPress={() => setDeclineModalVisible(true)}
               activeOpacity={0.88}
             >
-              <Ionicons name="close-circle-outline" size={16} color={colors.red || '#E53E3E'} />
-              <Text style={[styles.actionBtnText, { color: colors.red || '#E53E3E' }]}>DECLINE</Text>
+              <Ionicons name="close-circle-outline" size={16} color={colors.red || colors.rose} />
+              <Text style={[styles.actionBtnText, { color: colors.red || colors.rose }]}>Decline</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, styles.approveBtn]}
@@ -926,11 +922,11 @@ export default function RentalLeaseDossierScreen() {
               activeOpacity={0.88}
             >
               {actionLoading ? (
-                <ActivityIndicator color={colors.white} />
+                <Spinner color={colors.white} />
               ) : (
                 <>
                   <Ionicons name="checkmark-circle" size={16} color={colors.white} />
-                  <Text style={styles.actionBtnText}>ACCEPT REQUEST</Text>
+                  <Text style={styles.actionBtnText}>Accept request</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -940,7 +936,7 @@ export default function RentalLeaseDossierScreen() {
         {/* Borrower Proceed to Payment button */}
         {isRenter && rental.status === 'APPROVED' && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.gold || '#D4AF37' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.gold || colors.gold }]}
             onPress={handleProceedToPayment}
             activeOpacity={0.88}
           >
@@ -957,24 +953,24 @@ export default function RentalLeaseDossierScreen() {
             activeOpacity={0.88}
           >
             <Ionicons name="paper-plane" size={16} color={colors.white} />
-            <Text style={styles.actionBtnText}>DISPATCH GARMENT & ENTER TRACKING</Text>
+            <Text style={styles.actionBtnText}>Ship garment & enter tracking</Text>
           </TouchableOpacity>
         )}
 
         {/* Borrower confirm delivery button */}
         {isRenter && rental.status === 'DISPATCHED' && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.forest || '#2A7B4C' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.forest || colors.forest }]}
             onPress={handleConfirmDelivery}
             disabled={actionLoading}
             activeOpacity={0.88}
           >
             {actionLoading ? (
-              <ActivityIndicator color={colors.white} />
+              <Spinner color={colors.white} />
             ) : (
               <>
                 <Ionicons name="checkmark-done" size={16} color={colors.white} />
-                <Text style={styles.actionBtnText}>CONFIRM I RECEIVED GARMENT</Text>
+                <Text style={styles.actionBtnText}>Confirm I received garment</Text>
               </>
             )}
           </TouchableOpacity>
@@ -983,29 +979,29 @@ export default function RentalLeaseDossierScreen() {
         {/* Borrower return button */}
         {isRenter && rental.status === 'ACTIVE' && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.forest || '#2A7B4C' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.forest || colors.forest }]}
             onPress={() => setReturnModalVisible(true)}
             activeOpacity={0.88}
           >
             <Ionicons name="return-down-back" size={16} color={colors.white} />
-            <Text style={styles.actionBtnText}>INITIATE RETURN & ENTER TRACKING</Text>
+            <Text style={styles.actionBtnText}>Start return & enter tracking</Text>
           </TouchableOpacity>
         )}
 
         {/* Lender confirm return delivery */}
         {isLender && rental.status === 'RETURN_DISPATCHED' && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.forest || '#2A7B4C' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.forest || colors.forest }]}
             onPress={handleConfirmReturnDelivery}
             disabled={actionLoading}
             activeOpacity={0.88}
           >
             {actionLoading ? (
-              <ActivityIndicator color={colors.white} />
+              <Spinner color={colors.white} />
             ) : (
               <>
                 <Ionicons name="checkbox-outline" size={16} color={colors.white} />
-                <Text style={styles.actionBtnText}>CONFIRM RETURN RECEIVED</Text>
+                <Text style={styles.actionBtnText}>Confirm return received</Text>
               </>
             )}
           </TouchableOpacity>
@@ -1014,17 +1010,17 @@ export default function RentalLeaseDossierScreen() {
         {/* Lender inspect & release deposit */}
         {isLender && rental.status === 'RETURNED' && !isDepositReleased && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.forest || '#2A7B4C' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.forest || colors.forest }]}
             onPress={handleReleaseDeposit}
             disabled={actionLoading}
             activeOpacity={0.88}
           >
             {actionLoading ? (
-              <ActivityIndicator color={colors.white} />
+              <Spinner color={colors.white} />
             ) : (
               <>
                 <Ionicons name="shield-checkmark" size={16} color={colors.white} />
-                <Text style={styles.actionBtnText}>INSPECT & RELEASE DEPOSIT (₹299)</Text>
+                <Text style={styles.actionBtnText}>Inspect & release deposit (₹299)</Text>
               </>
             )}
           </TouchableOpacity>
@@ -1060,10 +1056,10 @@ export default function RentalLeaseDossierScreen() {
           <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalPre}>LENDER DECISION</Text>
-                <Text style={styles.modalTitle}>DECLINE RENTAL REQUEST</Text>
+                <Text style={styles.modalPre}>Lender decision</Text>
+                <Text style={styles.modalTitle}>Decline rental request</Text>
               </View>
-              <TouchableOpacity
+              <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Close"
                 style={styles.closeBtn}
                 onPress={() => setDeclineModalVisible(false)}
               >
@@ -1071,8 +1067,8 @@ export default function RentalLeaseDossierScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.inputLabel}>REASON FOR DECLINING (OPTIONAL)</Text>
-            <TextInput
+            <Text style={styles.inputLabel}>Reason for declining (optional)</Text>
+            <TextInput accessibilityLabel="Reason for declining"
               style={[styles.textInput, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
               placeholder="e.g. Garment is undergoing professional cleaning, or dates unavailable."
               placeholderTextColor={colors.textMuted}
@@ -1086,17 +1082,17 @@ export default function RentalLeaseDossierScreen() {
                 style={[styles.actionBtn, styles.declineBtn, { flex: 1 }]}
                 onPress={() => setDeclineModalVisible(false)}
               >
-                <Text style={[styles.actionBtnText, { color: colors.textPrimary }]}>CANCEL</Text>
+                <Text style={[styles.actionBtnText, { color: colors.textPrimary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionBtn, { flex: 1, backgroundColor: colors.red || '#E53E3E' }]}
+                style={[styles.actionBtn, { flex: 1, backgroundColor: colors.red || colors.rose }]}
                 onPress={handleDecline}
                 disabled={actionLoading}
               >
                 {actionLoading ? (
-                  <ActivityIndicator color={colors.white} />
+                  <Spinner color={colors.white} />
                 ) : (
-                  <Text style={styles.actionBtnText}>CONFIRM DECLINE</Text>
+                  <Text style={styles.actionBtnText}>Confirm decline</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1119,10 +1115,10 @@ export default function RentalLeaseDossierScreen() {
           <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalPre}>OUTBOUND SHIPMENT</Text>
-                <Text style={styles.modalTitle}>DISPATCH GARMENT</Text>
+                <Text style={styles.modalPre}>Outbound shipment</Text>
+                <Text style={styles.modalTitle}>Ship garment</Text>
               </View>
-              <TouchableOpacity
+              <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Close"
                 style={styles.closeBtn}
                 onPress={() => setDispatchModalVisible(false)}
               >
@@ -1130,7 +1126,7 @@ export default function RentalLeaseDossierScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.inputLabel}>COURIER / CARRIER NAME</Text>
+            <Text style={styles.inputLabel}>Courier / carrier name</Text>
             <View style={styles.carrierChipsRow}>
               {['BlueDart', 'Delhivery', 'DTDC', 'India Post'].map((c) => (
                 <TouchableOpacity
@@ -1145,8 +1141,8 @@ export default function RentalLeaseDossierScreen() {
               ))}
             </View>
 
-            <Text style={[styles.inputLabel, { marginTop: 14 }]}>TRACKING NUMBER / AWB</Text>
-            <TextInput
+            <Text style={[styles.inputLabel, { marginTop: 14 }]}>Tracking number / AWB</Text>
+            <TextInput accessibilityLabel="Tracking number"
               style={styles.textInput}
               placeholder="e.g. BD7839210IN"
               placeholderTextColor={colors.textMuted}
@@ -1161,9 +1157,9 @@ export default function RentalLeaseDossierScreen() {
               disabled={actionLoading}
             >
               {actionLoading ? (
-                <ActivityIndicator color={colors.white} />
+                <Spinner color={colors.white} />
               ) : (
-                <Text style={styles.modalSubmitBtnText}>CONFIRM DISPATCH</Text>
+                <Text style={styles.modalSubmitBtnText}>Confirm shipping</Text>
               )}
             </TouchableOpacity>
           </TouchableOpacity>
@@ -1185,10 +1181,10 @@ export default function RentalLeaseDossierScreen() {
           <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalPre}>RETURN SHIPMENT</Text>
-                <Text style={styles.modalTitle}>CONFIRM GARMENT RETURN</Text>
+                <Text style={styles.modalPre}>Return shipment</Text>
+                <Text style={styles.modalTitle}>Confirm garment return</Text>
               </View>
-              <TouchableOpacity
+              <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Close"
                 style={styles.closeBtn}
                 onPress={() => setReturnModalVisible(false)}
               >
@@ -1196,7 +1192,7 @@ export default function RentalLeaseDossierScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.inputLabel}>RETURN COURIER</Text>
+            <Text style={styles.inputLabel}>Return courier</Text>
             <View style={styles.carrierChipsRow}>
               {['Delhivery', 'BlueDart', 'DTDC', 'Doorstep Pickup'].map((c) => (
                 <TouchableOpacity
@@ -1211,8 +1207,8 @@ export default function RentalLeaseDossierScreen() {
               ))}
             </View>
 
-            <Text style={[styles.inputLabel, { marginTop: 14 }]}>RETURN AWB (OPTIONAL)</Text>
-            <TextInput
+            <Text style={[styles.inputLabel, { marginTop: 14 }]}>Return AWB (optional)</Text>
+            <TextInput accessibilityLabel="Return tracking number"
               style={styles.textInput}
               placeholder="e.g. DELH9821034"
               placeholderTextColor={colors.textMuted}
@@ -1222,14 +1218,14 @@ export default function RentalLeaseDossierScreen() {
             />
 
             <TouchableOpacity
-              style={[styles.modalSubmitBtn, { backgroundColor: colors.forest || '#2A7B4C' }]}
+              style={[styles.modalSubmitBtn, { backgroundColor: colors.forest || colors.forest }]}
               onPress={handleReturn}
               disabled={actionLoading}
             >
               {actionLoading ? (
-                <ActivityIndicator color={colors.white} />
+                <Spinner color={colors.white} />
               ) : (
-                <Text style={styles.modalSubmitBtnText}>MARK AS RETURNED</Text>
+                <Text style={styles.modalSubmitBtnText}>Mark as returned</Text>
               )}
             </TouchableOpacity>
           </TouchableOpacity>
@@ -1251,10 +1247,10 @@ export default function RentalLeaseDossierScreen() {
           <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalPre}>PEER EXPERIENCE</Text>
-                <Text style={styles.modalTitle}>RATE RENTAL PARTNER</Text>
+                <Text style={styles.modalPre}>Peer experience</Text>
+                <Text style={styles.modalTitle}>Rate rental partner</Text>
               </View>
-              <TouchableOpacity
+              <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Close"
                 style={styles.closeBtn}
                 onPress={() => setReviewModalVisible(false)}
               >
@@ -1265,7 +1261,7 @@ export default function RentalLeaseDossierScreen() {
             {/* Stars */}
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
+                <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={`Rate ${star} stars`}
                   key={star}
                   onPress={() => {
                     hapticFeedback.selection();
@@ -1276,14 +1272,14 @@ export default function RentalLeaseDossierScreen() {
                   <Ionicons
                     name={star <= rating ? 'star' : 'star-outline'}
                     size={32}
-                    color={star <= rating ? '#E5A93C' : colors.textMuted}
+                    color={star <= rating ? colors.gold : colors.textMuted}
                   />
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={[styles.inputLabel, { marginTop: 14 }]}>COMMENTS / FEEDBACK</Text>
-            <TextInput
+            <Text style={[styles.inputLabel, { marginTop: 14 }]}>Comments / feedback</Text>
+            <TextInput accessibilityLabel="Review comment"
               style={[styles.textInput, { height: 80, textAlignVertical: 'top' }]}
               placeholder="Garment cleanliness, accuracy, packaging, communication…"
               placeholderTextColor={colors.textMuted}
@@ -1298,9 +1294,9 @@ export default function RentalLeaseDossierScreen() {
               disabled={actionLoading}
             >
               {actionLoading ? (
-                <ActivityIndicator color={colors.white} />
+                <Spinner color={colors.white} />
               ) : (
-                <Text style={styles.modalSubmitBtnText}>SUBMIT REVIEW</Text>
+                <Text style={styles.modalSubmitBtnText}>Submit review</Text>
               )}
             </TouchableOpacity>
           </TouchableOpacity>
@@ -1315,19 +1311,14 @@ const styles = StyleSheet.create({
   center: { justifyContent: 'center', alignItems: 'center', padding: 24 },
   loadingText: {
     marginTop: 12,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    color: colors.textMuted,
-    letterSpacing: 1.5,
-  },
-  errorTitle: {
+    fontFamily: typography.handwritten,
     fontSize: 16,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    color: colors.textMuted, includeFontPadding: false, },
+  errorTitle: {
+    fontSize: 21,
+    fontFamily: typography.handBold,
     color: colors.textPrimary,
-    marginTop: 16,
-    letterSpacing: 1.5,
-  },
+    marginTop: 16, includeFontPadding: false, },
   errorSubtitle: {
     fontSize: 12,
     color: colors.textMuted,
@@ -1350,33 +1341,31 @@ const styles = StyleSheet.create({
   },
   headerSub: {
     color: colors.textMuted,
-    fontSize: 9,
-    fontFamily: typography.mono,
-    letterSpacing: 0.5,
-    marginTop: 1,
-  },
+    fontSize: 16,
+    fontFamily: typography.handwritten,
+    marginTop: 1, includeFontPadding: false, },
   content: { padding: 16, paddingBottom: 120 },
 
   // Status Banner
   statusBanner: {
-    backgroundColor: 'rgba(229, 169, 60, 0.1)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1.5,
-    borderColor: '#E5A93C',
+    borderColor: colors.gold,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
   },
   statusBannerActive: {
-    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    backgroundColor: colors.crimsonLight,
     borderColor: colors.crimson,
   },
   statusBannerReturned: {
-    backgroundColor: 'rgba(42, 123, 76, 0.08)',
-    borderColor: colors.forest || '#2A7B4C',
+    backgroundColor: colors.emeraldLight,
+    borderColor: colors.forest || colors.forest,
   },
   statusBannerOverdue: {
-    backgroundColor: 'rgba(217, 4, 41, 0.12)',
-    borderColor: '#D90429',
+    backgroundColor: colors.crimsonLight,
+    borderColor: colors.rose,
   },
   statusRow: {
     flexDirection: 'row',
@@ -1391,12 +1380,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimson,
   },
   statusTitle: {
-    fontSize: 12,
-    fontFamily: typography.mono,
-    fontWeight: '900',
-    color: colors.textPrimary,
-    letterSpacing: 1,
-  },
+    fontSize: 17,
+    fontFamily: typography.handBold,
+    color: colors.textPrimary, includeFontPadding: false, },
   statusDesc: {
     fontSize: 11.5,
     color: colors.textSecond,
@@ -1414,13 +1400,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   cardSectionLabel: {
-    fontSize: 9.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontSize: 16,
+    fontFamily: typography.handBold,
     color: colors.textMuted,
-    letterSpacing: 1,
-    marginBottom: 12,
-  },
+    marginBottom: 12, includeFontPadding: false, },
 
   // Garment Row
   garmentRow: { flexDirection: 'row', gap: 12 },
@@ -1432,12 +1415,9 @@ const styles = StyleSheet.create({
   },
   garmentInfo: { flex: 1, justifyContent: 'center' },
   brandText: {
-    fontSize: 10,
-    fontFamily: typography.mono,
-    fontWeight: '700',
-    color: colors.crimson,
-    letterSpacing: 1,
-  },
+    fontSize: 16,
+    fontFamily: typography.handSemi,
+    color: colors.crimson, includeFontPadding: false, },
   titleText: {
     fontSize: 14,
     fontWeight: '700',
@@ -1454,18 +1434,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   tagText: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    fontWeight: '700',
-    color: colors.textSecond,
-  },
+    fontSize: 16,
+    fontFamily: typography.handSemi,
+    color: colors.textSecond, includeFontPadding: false, },
   garmentRate: {
     fontSize: 13,
     fontWeight: '800',
     color: colors.textPrimary,
   },
   rateUnit: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '400',
     color: colors.textMuted,
   },
@@ -1480,11 +1458,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   counterpartyRoleLabel: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    color: colors.textMuted,
-    fontWeight: '700',
-  },
+    fontSize: 16,
+    fontFamily: typography.handSemi,
+    color: colors.textMuted, includeFontPadding: false, },
   counterpartyName: {
     fontSize: 13,
     fontWeight: '700',
@@ -1502,11 +1478,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   chatButtonText: {
-    fontSize: 9.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontSize: 11,
+    fontFamily: typography.bodyBold,
     color: colors.crimson,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
 
   // Timeline
@@ -1525,12 +1500,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   timelineDateLabel: {
-    fontSize: 8,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.textMuted, includeFontPadding: false, },
   timelineDateValue: {
     fontSize: 11,
     fontWeight: '800',
@@ -1561,11 +1533,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   timelineDurationText: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.crimson,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.crimson, includeFontPadding: false, },
 
   // Tracking
   trackingSection: {
@@ -1582,12 +1552,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   trackingTitle: {
-    fontSize: 9.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: 0.5,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.textPrimary, includeFontPadding: false, },
   trackingDetailsBox: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1597,10 +1564,9 @@ const styles = StyleSheet.create({
   },
   trackingDetailRow: {},
   trackingDetailLabel: {
-    fontSize: 8,
-    fontFamily: typography.mono,
-    color: colors.textMuted,
-  },
+    fontSize: 16,
+    fontFamily: typography.handwritten,
+    color: colors.textMuted, includeFontPadding: false, },
   trackingDetailValue: {
     fontSize: 12,
     fontWeight: '800',
@@ -1650,45 +1616,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    backgroundColor: colors.crimsonLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   escrowPillReleased: {
-    backgroundColor: 'rgba(42, 123, 76, 0.1)',
+    backgroundColor: colors.emeraldLight,
   },
   escrowPillHeld: {
-    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    backgroundColor: colors.crimsonLight,
   },
   escrowPillText: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.crimson,
-    letterSpacing: 0.5,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.crimson, includeFontPadding: false, },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 6,
   },
   summaryLabel: {
-    fontSize: 10,
-    fontFamily: typography.mono,
-    color: colors.textMuted,
-  },
+    fontSize: 16,
+    fontFamily: typography.handwritten,
+    color: colors.textMuted, includeFontPadding: false, },
   summaryValue: {
     fontSize: 11.5,
     fontWeight: '700',
     color: colors.textPrimary,
   },
   totalLabel: {
-    fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '900',
-    color: colors.textPrimary,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.textPrimary, includeFontPadding: false, },
   totalValue: {
     fontSize: 15,
     fontWeight: '900',
@@ -1708,7 +1668,7 @@ const styles = StyleSheet.create({
   },
   legalDisclaimerText: {
     flex: 1,
-    fontSize: 9.5,
+    fontSize: 11,
     color: colors.textMuted,
     lineHeight: 14,
   },
@@ -1736,10 +1696,9 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     color: colors.white,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
   reviewActionBtn: {
     backgroundColor: 'transparent',
@@ -1754,15 +1713,14 @@ const styles = StyleSheet.create({
   },
   primaryCtaText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontFamily: typography.bodyBold,
     fontSize: 11,
   },
 
   // Modals
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -1782,12 +1740,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalPre: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    color: colors.crimson,
-    letterSpacing: 1,
-    fontWeight: '800',
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.crimson, includeFontPadding: false, },
   modalTitle: {
     fontSize: 16,
     fontWeight: '900',
@@ -1796,13 +1751,10 @@ const styles = StyleSheet.create({
   },
   closeBtn: { padding: 4 },
   inputLabel: {
-    fontSize: 9,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontSize: 16,
+    fontFamily: typography.handBold,
     color: colors.textMuted,
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
+    marginBottom: 8, includeFontPadding: false, },
   carrierChipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1819,14 +1771,12 @@ const styles = StyleSheet.create({
   },
   carrierChipActive: {
     borderColor: colors.crimson,
-    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    backgroundColor: colors.crimsonLight,
   },
   carrierChipText: {
-    fontSize: 10,
-    fontFamily: typography.mono,
-    fontWeight: '700',
-    color: colors.textSecond,
-  },
+    fontSize: 16,
+    fontFamily: typography.handSemi,
+    color: colors.textSecond, includeFontPadding: false, },
   carrierChipTextActive: {
     color: colors.crimson,
     fontWeight: '900',
@@ -1850,10 +1800,9 @@ const styles = StyleSheet.create({
   },
   modalSubmitBtnText: {
     color: colors.white,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
   starsRow: {
     flexDirection: 'row',
@@ -1891,22 +1840,20 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   stepperBadgeDone: {
-    backgroundColor: colors.forest || '#2A7B4C',
+    backgroundColor: colors.forest || colors.forest,
   },
   stepperBadgeCurrent: {
-    backgroundColor: colors.gold || '#D4AF37',
+    backgroundColor: colors.gold || colors.gold,
     borderWidth: 2,
     borderColor: colors.crimson,
   },
   stepperItemText: {
-    fontSize: 9.5,
-    fontFamily: typography.mono,
-    fontWeight: '700',
+    fontSize: 16,
+    fontFamily: typography.handSemi,
     color: colors.textMuted,
-    marginRight: 8,
-  },
+    marginRight: 8, includeFontPadding: false, },
   stepperItemTextDone: {
-    color: colors.forest || '#2A7B4C',
+    color: colors.forest || colors.forest,
   },
   stepperItemTextCurrent: {
     color: colors.textPrimary,
@@ -1919,37 +1866,37 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   stepperLineDone: {
-    backgroundColor: colors.forest || '#2A7B4C',
+    backgroundColor: colors.forest || colors.forest,
   },
 
   // ── Status Banner Variants ──
   statusBannerRequested: {
-    borderColor: colors.gold || '#D4AF37',
-    backgroundColor: 'rgba(212, 175, 55, 0.06)',
+    borderColor: colors.gold || colors.gold,
+    backgroundColor: colors.overlayLight,
   },
   statusBannerApproved: {
-    borderColor: colors.forest || '#2A7B4C',
-    backgroundColor: 'rgba(42, 123, 76, 0.08)',
+    borderColor: colors.forest || colors.forest,
+    backgroundColor: colors.emeraldLight,
   },
   statusBannerDeclined: {
-    borderColor: colors.red || '#E53E3E',
-    backgroundColor: 'rgba(229, 62, 62, 0.08)',
+    borderColor: colors.red || colors.rose,
+    backgroundColor: colors.crimsonLight,
   },
   statusBannerReserved: {
-    borderColor: colors.gold || '#D4AF37',
-    backgroundColor: 'rgba(212, 175, 55, 0.06)',
+    borderColor: colors.gold || colors.gold,
+    backgroundColor: colors.overlayLight,
   },
   statusBannerDispatched: {
     borderColor: colors.crimson,
-    backgroundColor: 'rgba(155, 27, 48, 0.06)',
+    backgroundColor: colors.crimsonLight,
   },
   statusBannerReturnDispatched: {
-    borderColor: colors.forest || '#2A7B4C',
-    backgroundColor: 'rgba(42, 123, 76, 0.06)',
+    borderColor: colors.forest || colors.forest,
+    backgroundColor: colors.emeraldLight,
   },
   statusBannerCompleted: {
-    borderColor: colors.forest || '#2A7B4C',
-    backgroundColor: 'rgba(42, 123, 76, 0.1)',
+    borderColor: colors.forest || colors.forest,
+    backgroundColor: colors.emeraldLight,
   },
 
   // ── Online Tracking Button ──
@@ -1966,11 +1913,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   trackOnlineBtnText: {
-    fontSize: 9.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontSize: 11,
+    fontFamily: typography.bodyBold,
     color: colors.crimson,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
 
   // ── Activity History Log ──
@@ -1981,13 +1927,10 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   historyLabel: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontSize: 16,
+    fontFamily: typography.handBold,
     color: colors.textMuted,
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
+    marginBottom: 8, includeFontPadding: false, },
   historyRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -2007,8 +1950,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   historyTime: {
-    fontSize: 9.5,
-    fontFamily: typography.mono,
+    fontSize: 11,
+    fontFamily: typography.bodyMedium,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -2023,18 +1966,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: colors.red || '#E53E3E',
+    borderColor: colors.red || colors.rose,
   },
   approveBtn: {
     flex: 2,
-    backgroundColor: colors.gold || '#D4AF37',
+    backgroundColor: colors.gold || colors.gold,
   },
 
   // ── Action Prompt Cards (Lender Approval & Borrower Payment) ──
   actionPromptCard: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: colors.goldLight,
     borderWidth: 1.5,
-    borderColor: '#F59E0B',
+    borderColor: colors.gold,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -2049,19 +1992,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.goldLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
   },
   actionPromptTitle: {
-    fontSize: 12,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: '#92400E',
-    letterSpacing: 0.5,
-    marginBottom: 3,
-  },
+    fontSize: 17,
+    fontFamily: typography.handBold,
+    color: colors.terracottaDark,
+    marginBottom: 3, includeFontPadding: false, },
   actionPromptSub: {
     fontSize: 11,
     color: colors.textSecond,
@@ -2085,14 +2025,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: colors.red || '#E53E3E',
+    borderColor: colors.red || colors.rose,
   },
   actionPromptDeclineText: {
     fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.red || '#E53E3E',
-    letterSpacing: 0.5,
+    fontFamily: typography.bodyBold,
+    color: colors.red || colors.rose,
+    letterSpacing: 0.2,
   },
   actionPromptAccept: {
     flex: 2,
@@ -2100,13 +2039,12 @@ const styles = StyleSheet.create({
   },
   actionPromptAcceptText: {
     fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontFamily: typography.bodyBold,
     color: colors.white,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   actionPromptPay: {
-    backgroundColor: colors.forest || '#2A7B4C',
+    backgroundColor: colors.forest || colors.forest,
     width: '100%',
     marginTop: 4,
   },
@@ -2115,7 +2053,7 @@ const styles = StyleSheet.create({
   rentalReviewCard: {
     backgroundColor: colors.bgCard,
     borderWidth: 1.5,
-    borderColor: '#F59E0B',
+    borderColor: colors.gold,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -2127,23 +2065,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   rentalReviewTitle: {
-    fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: 0.8,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.textPrimary, includeFontPadding: false, },
   rentalReviewBadge: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.goldLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   rentalReviewScore: {
     fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: '#92400E',
+    fontFamily: typography.bodyBold,
+    color: colors.terracottaDark,
   },
   rentalReviewComment: {
     fontSize: 12,
@@ -2161,8 +2095,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   rentalReviewMeta: {
-    fontSize: 10,
-    fontFamily: typography.mono,
-    color: colors.textMuted,
-  },
+    fontSize: 16,
+    fontFamily: typography.handwritten,
+    color: colors.textMuted, includeFontPadding: false, },
 });

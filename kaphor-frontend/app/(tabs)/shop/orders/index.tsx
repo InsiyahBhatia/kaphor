@@ -11,11 +11,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { DossierLoading } from '../../../../src/components/common/DossierLoading';
 import { colors } from '../../../../src/theme';
 import { useAuth } from '../../../../src/context/AuthContext';
 import { orderService, TransactionOrder } from '../../../../src/services/orderService';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
+import { Loader } from '../../../../src/components/common/Loader';
 
 function statusLabel(s: string) {
   switch (s) {
@@ -106,13 +106,13 @@ export default function OrdersInboxScreen() {
   const insets = useSafeAreaInsets();
 
   if (loading) {
-    return <DossierLoading variant="order" />;
+    return <Loader variant="order" />;
   }
 
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           onPress={() => safeBack('/(tabs)/shop')} 
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   counterparty: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   status: { fontSize: 11, fontWeight: '800', color: colors.crimson, letterSpacing: 0.5 },
-  reviewed: { fontSize: 10, fontWeight: '800', color: colors.gold },
+  reviewed: { fontSize: 11, fontWeight: '800', color: colors.gold },
   preview: { fontSize: 12, color: colors.textSecond, marginTop: 4 },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 48, fontSize: 14 },
 });

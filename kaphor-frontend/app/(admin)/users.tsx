@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { adminService } from '../../src/services/adminService';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Chip, Empty } from '../../src/components/admin/AdminUI';
+import { Loader } from '../../src/components/common/Loader';
 
 export default function AdminUsersScreen() {
   const { user: me } = useAuth();
@@ -96,7 +97,7 @@ export default function AdminUsersScreen() {
       <AdminTopBar title="USERS" subtitle={`${meta.total} ACCOUNTS`} onRefresh={load} />
       <View style={styles.searchBar}>
         <Ionicons name="search" size={16} color={colors.textMuted} />
-        <TextInput
+        <TextInput accessibilityLabel="Name, email, username"
           style={styles.searchInput}
           placeholder="NAME, EMAIL, USERNAME…"
           placeholderTextColor={colors.textMuted}
@@ -107,7 +108,7 @@ export default function AdminUsersScreen() {
           }}
         />
         {q !== '' && (
-          <TouchableOpacity onPress={() => setQ('')}>
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Remove" onPress={() => setQ('')}>
             <Ionicons name="close-circle" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         )}
@@ -121,9 +122,9 @@ export default function AdminUsersScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      {loading ? (
+      {loading && !data ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.ink} />
+          <Loader compact />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -147,14 +148,14 @@ export default function AdminUsersScreen() {
                 </View>
               </View>
               <View style={styles.actions}>
-                <TouchableOpacity
+                <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={u.isActive ? 'Block user' : 'Unblock user'}
                   style={[styles.iconBtn, { backgroundColor: u.isActive ? colors.error : colors.emerald }]}
                   onPress={() => toggleBlock(u)}
                   disabled={busyId === `b-${u.id}`}
                 >
                   <Ionicons name={u.isActive ? 'lock-closed' : 'lock-open'} size={14} color={colors.white} />
                 </TouchableOpacity>
-                <TouchableOpacity
+                <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Refresh"
                   style={[styles.iconBtn, { backgroundColor: colors.charcoal }]}
                   onPress={() => cycleTier(u)}
                   disabled={busyId === `t-${u.id}`}
@@ -162,7 +163,7 @@ export default function AdminUsersScreen() {
                   <Ionicons name="refresh" size={14} color={u.tier === 'ELITE' ? colors.gold : colors.white} />
                 </TouchableOpacity>
                 {me?.id !== u.id && (
-                  <TouchableOpacity
+                  <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Delete"
                     style={[styles.iconBtn, { backgroundColor: colors.crimson }]}
                     onPress={() => removeUser(u)}
                     disabled={busyId === `d-${u.id}`}
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   toggleChipActive: { backgroundColor: colors.ink },
-  toggleText: { fontFamily: typography.monoBold, fontSize: 9, color: colors.ink },
+  toggleText: { fontFamily: typography.monoBold, fontSize: 11, color: colors.ink },
   toggleTextActive: { color: colors.cream },
 
   list: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
   },
   userInfo: { flex: 1 },
   userName: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
-  userEmail: { fontFamily: typography.mono, fontSize: 9.5, color: colors.textMuted, marginTop: 3 },
+  userEmail: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 3 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   actions: { justifyContent: 'center', gap: 8, paddingLeft: 8 },
   iconBtn: {
@@ -275,6 +276,6 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  pagerText: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.ink, letterSpacing: 1 },
-  pagerInfo: { fontFamily: typography.monoBold, fontSize: 10, color: colors.textMuted },
+  pagerText: { fontFamily: typography.monoBold, fontSize: 11, color: colors.ink, letterSpacing: 1 },
+  pagerInfo: { fontFamily: typography.monoBold, fontSize: 11, color: colors.textMuted },
 });

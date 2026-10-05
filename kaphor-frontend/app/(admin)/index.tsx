@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +14,7 @@ import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Bars, Sparkline } from '../../src/components/admin/Bars';
 import { Card, SectionLabel, formatINR, Chip, Empty } from '../../src/components/admin/AdminUI';
+import { Loader } from '../../src/components/common/Loader';
 
 type Range = '7d' | '30d' | '90d';
 
@@ -66,12 +66,7 @@ export default function AdminOverviewScreen() {
     __DEV__;
 
   if (authLoading || (loading && !monitor && !analytics)) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.ink} />
-        <Text style={styles.loadingText}>SYNCING PLATFORM DATA…</Text>
-      </View>
-    );
+    return <Loader variant="default" />;
   }
 
   if (!isAdminAuthorized) {
@@ -82,7 +77,7 @@ export default function AdminOverviewScreen() {
         </View>
         <Text style={styles.lockTitle}>ACCESS RESTRICTED</Text>
         <Text style={styles.lockSub}>
-          KAPHOR ADMIN PRIVILEGES REQUIRED TO ACCESS THIS CONTROL PANEL.
+          ADMIN ACCESS REQUIRED.
         </Text>
         <TouchableOpacity style={styles.lockBtn} onPress={() => router.replace('/(tabs)/profile')}>
           <Text style={styles.lockBtnText}>RETURN TO PROFILE</Text>
@@ -250,7 +245,7 @@ export default function AdminOverviewScreen() {
         </Card>
 
         {/* ── OPERATIONS QUEUE BREAKDOWN ── */}
-        <SectionLabel>Operations Dispatch</SectionLabel>
+        <SectionLabel>Quick Actions</SectionLabel>
         <View style={styles.todoGrid}>
           {todoItems.map((t) => (
             <TouchableOpacity
@@ -318,7 +313,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontFamily: typography.monoBold,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 2,
   },
@@ -344,7 +339,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.mono,
     color: colors.textMuted,
     marginTop: 8,
-    fontSize: 10,
+    fontSize: 11,
     lineHeight: 15,
     maxWidth: 280,
   },
@@ -360,7 +355,7 @@ const styles = StyleSheet.create({
   lockBtnText: {
     color: colors.cream,
     fontFamily: typography.monoBold,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 1,
   },
 
@@ -397,7 +392,7 @@ const styles = StyleSheet.create({
   },
   kpiLabel: {
     fontFamily: typography.monoBold,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 1,
   },
@@ -427,7 +422,7 @@ const styles = StyleSheet.create({
   },
   rangeText: {
     fontFamily: typography.monoBold,
-    fontSize: 9.5,
+    fontSize: 11,
     color: colors.ink,
   },
   rangeTextActive: {
@@ -469,7 +464,7 @@ const styles = StyleSheet.create({
   },
   moduleCount: {
     fontFamily: typography.monoBold,
-    fontSize: 8.5,
+    fontSize: 11,
     color: colors.ink,
     letterSpacing: 0.8,
   },
@@ -493,13 +488,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: typography.monoBold,
-    fontSize: 10.5,
+    fontSize: 11,
     color: colors.ink,
     letterSpacing: 1,
   },
   cardMeta: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 0.8,
   },
@@ -510,7 +505,7 @@ const styles = StyleSheet.create({
   },
   axisText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
   },
 
@@ -519,7 +514,7 @@ const styles = StyleSheet.create({
   },
   sparkLabel: {
     fontFamily: typography.monoBold,
-    fontSize: 8,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 0.8,
     marginBottom: 6,
@@ -534,19 +529,19 @@ const styles = StyleSheet.create({
   },
   topIndex: {
     fontFamily: typography.monoBold,
-    fontSize: 9.5,
+    fontSize: 11,
     color: colors.textMuted,
     width: 24,
   },
   topLabel: {
     flex: 1,
     fontFamily: typography.monoBold,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.ink,
   },
   topCount: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 11,
     color: colors.textMuted,
   },
 
@@ -583,7 +578,7 @@ const styles = StyleSheet.create({
   },
   todoLabel: {
     fontFamily: typography.monoBold,
-    fontSize: 7.5,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 0.8,
     marginTop: 3,
@@ -600,13 +595,13 @@ const styles = StyleSheet.create({
   },
   healthLabel: {
     fontFamily: typography.monoBold,
-    fontSize: 8.5,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 1.2,
   },
   healthValue: {
     fontFamily: typography.monoBold,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.ink,
   },
 });

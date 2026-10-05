@@ -6,7 +6,6 @@ import {
   FlatList,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -17,7 +16,6 @@ import {
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { DossierLoading } from '../../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../../src/theme';
 import { orderService, TransactionOrder, OrderMessage, ShippingAddress } from '../../../../src/services/orderService';
 import { messageService } from '../../../../src/services/messageService';
@@ -27,11 +25,12 @@ import { useAuth } from '../../../../src/context/AuthContext';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { hapticFeedback } from '../../../../src/utils/haptics';
+import { Spinner, Loader } from '../../../../src/components/common/Loader';
 
 const statusConfig = {
   PENDING:    { label: 'AWAITING PAYMENT',   color: colors.red,        icon: 'time-outline' },
   CONFIRMED:  { label: 'PAID · COORDINATE',  color: colors.forest,     icon: 'checkmark-circle-outline' },
-  SHIPPED:    { label: 'SHIPPED',             color: '#1C2B4A',        icon: 'cube-outline' },
+  SHIPPED:    { label: 'SHIPPED',             color: colors.ink,        icon: 'cube-outline' },
   DELIVERED:  { label: 'DELIVERED',           color: colors.forest,    icon: 'checkmark-done-outline' },
   CANCELLED:  { label: 'CANCELLED',           color: colors.red,       icon: 'close-circle-outline' },
   REFUNDED:   { label: 'REFUNDED',            color: colors.textMuted, icon: 'cash-outline' },
@@ -301,7 +300,7 @@ export default function OrderThreadScreen() {
     const isPaid = order.status === 'CONFIRMED';
     const title = isPaid ? 'Cancel & Refund' : 'Cancel Order';
     const message = isPaid
-      ? 'This will cancel the order and initiate a full refund. The amount will be returned to your original payment method.'
+      ? 'This will cancel the order and start a full refund. The amount will be returned to your original payment method.'
       : 'Are you sure you want to cancel this order?';
 
     Alert.alert(title, message, [
@@ -327,7 +326,7 @@ export default function OrderThreadScreen() {
       }
       await loadAll();
       Alert.alert('Cancelled', isPaid
-        ? 'The order has been cancelled and a refund has been initiated. Funds should appear within 5–7 business days.'
+        ? 'The order has been cancelled and a refund has been started. Funds should appear within 5–7 business days.'
         : 'The order has been cancelled.');
     } catch (e: any) {
       const msg = e?.response?.data?.message || 'Could not cancel order.';
@@ -377,7 +376,7 @@ export default function OrderThreadScreen() {
   if (loading || !user) {
     return (
       <View style={styles.centered}>
-        <DossierLoading variant="order" compact />
+        <Loader variant="order" compact />
       </View>
     );
   }
@@ -412,7 +411,7 @@ export default function OrderThreadScreen() {
   
   let cfg = (statusConfig as any)[order.status] || statusConfig.PENDING;
   if (isPendingApproval) {
-    cfg = { label: 'AWAITING SELLER APPROVAL', color: '#C95F12', icon: 'hourglass-outline' };
+    cfg = { label: 'AWAITING SELLER APPROVAL', color: colors.orange, icon: 'hourglass-outline' };
   } else if (isRejected) {
     cfg = { label: 'REQUEST DECLINED', color: colors.red, icon: 'close-circle-outline' };
   } else if (order.status === 'PENDING' && isApproved) {
@@ -427,7 +426,7 @@ export default function OrderThreadScreen() {
     >
       {/* ── Header ──────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           onPress={() => safeBack('/(tabs)/orders')} 
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -442,7 +441,7 @@ export default function OrderThreadScreen() {
             {isBuyer ? 'Seller' : 'Buyer'} · {other.displayName}
           </Text>
         </View>
-        <TouchableOpacity onPress={() => router.push(`/(tabs)/shop/seller/${other.id}`)} style={styles.trustBtn}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Shield checkmark" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => router.push(`/(tabs)/shop/seller/${other.id}`)} style={styles.trustBtn}>
           <Ionicons name="shield-checkmark-outline" size={22} color={colors.charcoal} />
         </TouchableOpacity>
       </View>
@@ -472,7 +471,7 @@ export default function OrderThreadScreen() {
             disabled={actionLoading}
           >
             {actionLoading ? (
-              <ActivityIndicator size="small" color={colors.cream} />
+              <Spinner size="small" color={colors.cream} />
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={16} color={colors.cream} />
@@ -526,27 +525,27 @@ export default function OrderThreadScreen() {
 
       {/* ── Next Steps Instructions (Approval / Seller / Buyer Specific) ─────── */}
       {isPendingApproval && (
-        <View style={[styles.nextStepsBanner, { backgroundColor: '#FDF7EB', borderLeftWidth: 4, borderLeftColor: '#C95F12' }]}>
+        <View style={[styles.nextStepsBanner, { backgroundColor: colors.goldLight, borderLeftWidth: 4, borderLeftColor: colors.orange }]}>
           <View style={styles.nextStepsHeader}>
             <Ionicons
               name={isSeller ? "alert-circle" : "hourglass"}
               size={18}
-              color="#C95F12"
+              color={colors.orange}
             />
-            <Text style={[styles.nextStepsTitle, { color: '#C95F12' }]}>
+            <Text style={[styles.nextStepsTitle, { color: colors.orange }]}>
               {isSeller ? 'PURCHASE APPROVAL REQUIRED' : 'AWAITING SELLER APPROVAL'}
             </Text>
           </View>
           <Text style={styles.nextStepsBody}>
             {isSeller
-              ? `The buyer has requested to purchase this piece for ₹${Math.round(order.totalAmount).toLocaleString('en-IN')}. Please approve above to allow the buyer to complete payment and arrange dispatch.`
+              ? `The buyer has requested to purchase this piece for ₹${Math.round(order.totalAmount).toLocaleString('en-IN')}. Please approve above to allow the buyer to complete payment and arrange shipping.`
               : `Your purchase request has been submitted to ${other.displayName}. Once they approve your request, you can proceed directly to secure payment.`}
           </Text>
         </View>
       )}
 
       {order.status === 'PENDING' && isApproved && (
-        <View style={[styles.nextStepsBanner, { backgroundColor: '#F2F8F4', borderLeftWidth: 4, borderLeftColor: colors.forest }]}>
+        <View style={[styles.nextStepsBanner, { backgroundColor: colors.paperLight, borderLeftWidth: 4, borderLeftColor: colors.forest }]}>
           <View style={styles.nextStepsHeader}>
             <Ionicons name="checkmark-circle" size={18} color={colors.forest} />
             <Text style={[styles.nextStepsTitle, { color: colors.forest }]}>
@@ -562,7 +561,7 @@ export default function OrderThreadScreen() {
       )}
 
       {isRejected && (
-        <View style={[styles.nextStepsBanner, { backgroundColor: '#FCEDEC', borderLeftWidth: 4, borderLeftColor: colors.red }]}>
+        <View style={[styles.nextStepsBanner, { backgroundColor: colors.crimsonLight, borderLeftWidth: 4, borderLeftColor: colors.red }]}>
           <View style={styles.nextStepsHeader}>
             <Ionicons name="close-circle" size={18} color={colors.red} />
             <Text style={[styles.nextStepsTitle, { color: colors.red }]}>
@@ -582,15 +581,15 @@ export default function OrderThreadScreen() {
             <Ionicons
               name={isSeller ? 'cube' : 'time'}
               size={18}
-              color={isSeller ? '#1C2B4A' : colors.forest}
+              color={isSeller ? colors.ink : colors.forest}
             />
             <Text style={styles.nextStepsTitle}>
-              {isSeller ? 'NEXT STEPS: DISPATCH ITEM' : 'NEXT STEPS: AWAITING DISPATCH'}
+              {isSeller ? 'NEXT STEPS: SHIP THE ITEM' : 'NEXT STEPS: WAITING FOR SHIPPING'}
             </Text>
           </View>
           <Text style={styles.nextStepsBody}>
             {isSeller
-              ? 'Payment is secured in escrow. 1) Check the buyer delivery address below. 2) Pack and courier the item. 3) Tap "MARK SHIPPED" above when dispatched.'
+              ? 'Payment is held safely. 1) Check the buyer address below. 2) Pack and send the item. 3) Tap "MARK SHIPPED" above.'
               : 'Payment confirmed! The seller has been notified to pack and ship your item. You can track progress or message the seller below.'}
           </Text>
         </View>
@@ -598,14 +597,14 @@ export default function OrderThreadScreen() {
       {order.status === 'SHIPPED' && (
         <View style={styles.nextStepsBanner}>
           <View style={styles.nextStepsHeader}>
-            <Ionicons name="airplane" size={18} color="#1C2B4A" />
+            <Ionicons name="airplane" size={18} color={colors.ink} />
             <Text style={styles.nextStepsTitle}>
-              {isBuyer ? 'ITEM IN TRANSIT' : 'ITEM DISPATCHED'}
+              {isBuyer ? 'ITEM IN TRANSIT' : 'ITEM SHIPPED'}
             </Text>
           </View>
           <Text style={styles.nextStepsBody}>
             {isBuyer
-              ? 'Your package is on its way! Once delivered to your door, inspect the garment condition and tap "CONFIRM DELIVERED" to release escrow funds.'
+              ? 'Your package is on its way! Once it arrives, check the item and tap "CONFIRM DELIVERED" to release the payment.'
               : 'Package marked as shipped. Once the buyer receives and verifies the garment, the order will complete and funds will settle.'}
           </Text>
         </View>
@@ -644,7 +643,7 @@ export default function OrderThreadScreen() {
             <View style={styles.itemsDossierCard}>
               <View style={styles.itemsDossierHeader}>
                 <Ionicons name="shirt-outline" size={15} color={colors.charcoal} />
-                <Text style={styles.itemsDossierTitle}>ORDER PIECES ({order.items.length})</Text>
+                <Text style={styles.itemsDossierTitle}>ORDER ITEMS ({order.items.length})</Text>
               </View>
               {order.items.map((item) => {
                 const garmentId = item.garment?.id || item.garmentId;
@@ -664,10 +663,10 @@ export default function OrderThreadScreen() {
                     />
                     <View style={styles.orderGarmentDetails}>
                       <Text style={styles.orderGarmentBrand} numberOfLines={1}>
-                        {item.garment?.brand || 'ARCHIVE'}
+                        {item.garment?.brand || 'KAPHOR'}
                       </Text>
                       <Text style={styles.orderGarmentTitle} numberOfLines={2}>
-                        {item.garment?.title || 'Heritage Piece'}
+                        {item.garment?.title || 'Classic Piece'}
                       </Text>
                       <View style={styles.orderGarmentMetaRow}>
                         <Text style={styles.orderGarmentPrice}>
@@ -700,7 +699,7 @@ export default function OrderThreadScreen() {
               >
                 <View style={styles.reviewPromptHeader}>
                   <View style={styles.reviewPromptStarBox}>
-                    <Ionicons name="star" size={20} color="#C95F12" />
+                    <Ionicons name="star" size={20} color={colors.orange} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.reviewPromptTitle}>RATE & REVIEW SELLER</Text>
@@ -720,7 +719,7 @@ export default function OrderThreadScreen() {
               <View style={styles.completedReviewCard}>
                 <View style={styles.completedReviewTop}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Ionicons name="star" size={18} color="#C95F12" />
+                    <Ionicons name="star" size={18} color={colors.orange} />
                     <Text style={styles.completedReviewTitle}>
                       {isBuyer ? 'YOUR PEER REVIEW' : "BUYER'S PEER REVIEW"}
                     </Text>
@@ -780,7 +779,7 @@ export default function OrderThreadScreen() {
                   {isBuyer ? 'COORDINATE WITH SELLER' : 'COORDINATE WITH BUYER'}
                 </Text>
                 <Text style={styles.chatActionSub}>
-                  Direct shipping coordination, dispatch photos & address updates in your unified messages thread.
+                  Chat about shipping, photos and address changes here.
                 </Text>
               </View>
               <TouchableOpacity
@@ -799,7 +798,7 @@ export default function OrderThreadScreen() {
             {messages.length === 0 && (
               <Text style={styles.hint}>
                 {canMessage
-                  ? 'All communication and dispatch coordination can be managed in your unified chat.'
+                  ? 'You can chat about shipping here.'
                   : 'This order was cancelled or refunded; messaging is closed.'}
               </Text>
             )}
@@ -836,7 +835,7 @@ export default function OrderThreadScreen() {
             },
           ]}
         >
-          <TextInput
+          <TextInput accessibilityLabel="Message"
             style={styles.input}
             placeholder="Message…"
             placeholderTextColor={colors.textMuted}
@@ -845,13 +844,13 @@ export default function OrderThreadScreen() {
             multiline
             maxLength={4000}
           />
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Send" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={[styles.sendBtn, (!draft.trim() || sending) && styles.sendBtnDisabled]}
             onPress={send}
             disabled={sending || !draft.trim()}
           >
             {sending ? (
-              <ActivityIndicator color={colors.cream} />
+              <Spinner color={colors.cream} />
             ) : (
               <Ionicons name="send" size={18} color={colors.cream} />
             )}
@@ -889,7 +888,7 @@ export default function OrderThreadScreen() {
                     Order #{order.id.slice(0, 8).toUpperCase()} · {other.displayName}
                   </Text>
                 </View>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                   onPress={() => setReviewModalVisible(false)}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   style={styles.modalCloseBtn}
@@ -901,7 +900,7 @@ export default function OrderThreadScreen() {
               <Text style={styles.reviewRatingHelp}>SELECT STAR RATING (1–5)</Text>
               <View style={styles.starsRow}>
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button" accessibilityLabel="Button" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     key={n}
                     onPress={() => {
                       hapticFeedback.selection();
@@ -912,7 +911,7 @@ export default function OrderThreadScreen() {
                     <Ionicons
                       name={n <= rating ? 'star' : 'star-outline'}
                       size={36}
-                      color={n <= rating ? '#C95F12' : '#C8C4BA'}
+                      color={n <= rating ? colors.orange : colors.borderLight}
                     />
                   </TouchableOpacity>
                 ))}
@@ -924,9 +923,9 @@ export default function OrderThreadScreen() {
                  rating === 2 ? '★★☆☆☆ SUBPAR' : '★☆☆☆☆ POOR'}
               </Text>
 
-              <TextInput
+              <TextInput accessibilityLabel="How was the seller, the item and the shipping speed?"
                 style={styles.reviewModalInput}
-                placeholder="How was the seller's communication, garment condition, and dispatch speed?"
+                placeholder="How was the seller, the item and the shipping speed?"
                 placeholderTextColor={colors.textMuted}
                 value={reviewComment}
                 onChangeText={setReviewComment}
@@ -940,7 +939,7 @@ export default function OrderThreadScreen() {
                 disabled={reviewSubmitting}
               >
                 {reviewSubmitting ? (
-                  <ActivityIndicator color={colors.cream} />
+                  <Spinner color={colors.cream} />
                 ) : (
                   <Text style={styles.submitReviewBtnText}>SUBMIT PEER REVIEW ★</Text>
                 )}
@@ -963,9 +962,9 @@ export default function OrderThreadScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.cream },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cream, gap: 8 },
-  miss: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 14 },
+  miss: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 18, includeFontPadding: false },
   goBackBtn: { borderWidth: 2, borderColor: colors.charcoal, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
-  goBackText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '800', color: colors.charcoal, letterSpacing: 1 },
+  goBackText: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, includeFontPadding: false },
 
   // Header
   header: {
@@ -981,7 +980,7 @@ const styles = StyleSheet.create({
   backBtn: { padding: 6, marginRight: 4 },
   headerMid: { flex: 1 },
   headerTitle: { fontFamily: typography.headings, fontSize: 18, color: colors.charcoal, letterSpacing: 0.5 },
-  headerSub: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, marginTop: 3 },
+  headerSub: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, marginTop: 3, includeFontPadding: false },
   trustBtn: { padding: 8, borderWidth: 1.5, borderColor: colors.charcoal },
 
   // Status Bar
@@ -992,11 +991,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
     backgroundColor: colors.white,
   },
-  statusText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
-  orderIdText: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, letterSpacing: 0.5 },
+  statusText: { fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false },
+  orderIdText: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, letterSpacing: 0.5 },
 
   // Action Buttons
   actionBar: {
@@ -1005,7 +1004,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
     backgroundColor: colors.white,
   },
   actionBtnPrimary: {
@@ -1014,11 +1013,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#1C2B4A',
+    backgroundColor: colors.ink,
     paddingVertical: 12,
     borderWidth: 2,
-    borderColor: '#1C2B4A',
-    shadowColor: '#1C2B4A',
+    borderColor: colors.ink,
+    shadowColor: colors.ink,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1056,7 +1055,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
-  actionBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+  actionBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false },
 
   // List
   msgList: { flex: 1 },
@@ -1066,7 +1065,7 @@ const styles = StyleSheet.create({
   chatActionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F7F4EB',
+    backgroundColor: colors.paperLight,
     borderWidth: 2,
     borderColor: colors.forest,
     padding: 14,
@@ -1087,17 +1086,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   chatActionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.forest,
-    letterSpacing: 0.5,
   },
   chatActionSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    lineHeight: 12,
+    lineHeight: 23,
     marginTop: 2,
   },
   openChatBtn: {
@@ -1107,19 +1106,17 @@ const styles = StyleSheet.create({
   },
   openChatBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
 
   // Section Title
   sectionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 1.5,
     marginBottom: 12,
     marginTop: 20,
   },
@@ -1151,11 +1148,10 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 1,
   },
   summaryValue: {
     fontFamily: typography.headings,
@@ -1175,7 +1171,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
+    borderTopColor: colors.overlayLight,
   },
   itemChip: {
     flexDirection: 'row',
@@ -1188,21 +1184,22 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   itemChipText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
     maxWidth: 120,
   },
   itemChipQty: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   moreItems: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     alignSelf: 'center',
   },
@@ -1241,7 +1238,7 @@ const styles = StyleSheet.create({
     left: 13,
     width: 2,
     height: 40,
-    backgroundColor: 'rgba(30,31,34,0.15)',
+    backgroundColor: colors.overlayLight,
     zIndex: 0,
   },
   timelineVertLineDone: {
@@ -1252,7 +1249,7 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: 'rgba(30,31,34,0.2)',
+    borderColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -1263,9 +1260,9 @@ const styles = StyleSheet.create({
     borderColor: colors.forest,
   },
   timelineDotCurrent: {
-    backgroundColor: '#1C2B4A',
-    borderColor: '#1C2B4A',
-    shadowColor: '#1C2B4A',
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 6,
@@ -1275,7 +1272,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: 'rgba(30,31,34,0.2)',
+    backgroundColor: colors.overlayLight,
   },
   timelineContent: {
     marginLeft: 14,
@@ -1284,26 +1281,26 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   timelineLabel: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    letterSpacing: 0.5,
   },
   timelineLabelDone: {
     color: colors.charcoal,
     fontWeight: '800',
   },
   timelineHint: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
     marginTop: 3,
-    letterSpacing: 0.5,
   },
   timelineDate: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginTop: 3,
   },
@@ -1326,29 +1323,28 @@ const styles = StyleSheet.create({
   },
   addressAccent: {
     height: 4,
-    backgroundColor: '#1C2B4A',
+    backgroundColor: colors.ink,
   },
   addressTopRow: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   addressLabelBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1C2B4A',
+    backgroundColor: colors.ink,
     paddingHorizontal: 10,
     paddingVertical: 4,
     alignSelf: 'flex-start',
   },
   addressLabelText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 1,
   },
   addressBody: {
     padding: 16,
@@ -1359,9 +1355,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nameText: {
-    fontFamily: typography.mono,
-    fontSize: 15,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.charcoal,
   },
   detailRow: {
@@ -1369,20 +1365,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   detailText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    lineHeight: 18,
+    lineHeight: 21,
     flex: 1,
   },
   addressDivider: {
     height: 1,
-    backgroundColor: 'rgba(30,31,34,0.1)',
+    backgroundColor: colors.overlayLight,
     marginVertical: 2,
   },
 
   // Messages
-  hint: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 11, lineHeight: 18, textAlign: 'center', paddingHorizontal: 20, marginTop: 8 },
+  hint: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 17, lineHeight: 21, textAlign: 'center', paddingHorizontal: 20, marginTop: 8, includeFontPadding: false },
   bubble: {
     maxWidth: '85%',
     padding: 14,
@@ -1396,12 +1393,12 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  bubbleMine: { alignSelf: 'flex-end', backgroundColor: '#F7F5F0', borderColor: colors.charcoal },
+  bubbleMine: { alignSelf: 'flex-end', backgroundColor: colors.paperLight, borderColor: colors.charcoal },
   bubbleTheirs: { alignSelf: 'flex-start' },
-  bubbleMeta: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.textMuted, marginBottom: 6, letterSpacing: 0.5 },
+  bubbleMeta: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, marginBottom: 6, includeFontPadding: false },
   bubbleText: { fontFamily: typography.body, fontSize: 15, color: colors.charcoal, lineHeight: 22 },
   bubbleTextMine: { color: colors.charcoal },
-  time: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginTop: 8 },
+  time: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, marginTop: 8, includeFontPadding: false },
 
   // Composer
   composer: {
@@ -1453,19 +1450,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   reviewTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   reviewHint: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginTop: 6,
     marginBottom: 10,
-    lineHeight: 14,
+    lineHeight: 21,
   },
   stars: { flexDirection: 'row', gap: 8, marginVertical: 8 },
   reviewInput: {
@@ -1492,14 +1489,14 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
-  reviewSubmitText: { color: colors.cream, fontFamily: typography.mono, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+  reviewSubmitText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 18, includeFontPadding: false },
   disabled: { opacity: 0.6 },
 
   // Next Steps Guidance Banner
   nextStepsBanner: {
-    backgroundColor: '#F7F4EB',
+    backgroundColor: colors.paperLight,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.12)',
+    borderBottomColor: colors.overlayLight,
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
@@ -1510,10 +1507,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   nextStepsTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   nextStepsBody: {
@@ -1544,42 +1540,40 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ECE8DD',
+    borderBottomColor: colors.paper,
     marginBottom: 10,
   },
   itemsDossierTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   orderGarmentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F3EC',
+    borderBottomColor: colors.paper,
     gap: 12,
   },
   orderGarmentThumb: {
     width: 54,
     height: 64,
     borderRadius: 6,
-    backgroundColor: '#F0ECE1',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: '#D8D4C8',
+    borderColor: colors.borderLight,
   },
   orderGarmentDetails: {
     flex: 1,
     justifyContent: 'center',
   },
   orderGarmentBrand: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 0.8,
   },
   orderGarmentTitle: {
     fontFamily: typography.headings,
@@ -1600,20 +1594,21 @@ const styles = StyleSheet.create({
     color: colors.red,
   },
   orderGarmentQty: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   orderGarmentSizeChip: {
-    backgroundColor: '#EDE9DE',
+    backgroundColor: colors.paper,
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 3,
   },
   orderGarmentSizeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   viewItemActionCol: {
@@ -1629,23 +1624,22 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   viewItemPillText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.8,
   },
 
   // Prompt Review Card
   reviewPromptCard: {
-    backgroundColor: '#FFF9E6',
+    backgroundColor: colors.goldLight,
     borderWidth: 2,
-    borderColor: '#C95F12',
+    borderColor: colors.orange,
     borderRadius: 8,
     marginHorizontal: 16,
     marginTop: 12,
     padding: 14,
-    shadowColor: '#C95F12',
+    shadowColor: colors.orange,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 0,
@@ -1661,16 +1655,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFE8B3',
+    backgroundColor: colors.paperDark,
     justifyContent: 'center',
     alignItems: 'center',
   },
   reviewPromptTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#8A3E00',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.terracottaDark,
   },
   reviewPromptSub: {
     fontFamily: typography.body,
@@ -1680,24 +1673,23 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   reviewPromptBtn: {
-    backgroundColor: '#C95F12',
+    backgroundColor: colors.orange,
     paddingVertical: 8,
     alignItems: 'center',
     borderRadius: 4,
   },
   reviewPromptBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 1,
   },
 
   // Completed Review Card
   completedReviewCard: {
-    backgroundColor: '#FAF8F2',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
-    borderColor: '#C9A84C',
+    borderColor: colors.gold,
     borderRadius: 8,
     marginHorizontal: 16,
     marginTop: 12,
@@ -1710,25 +1702,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   completedReviewTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   reviewRatingBadge: {
-    backgroundColor: '#FFE8B3',
+    backgroundColor: colors.paperDark,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#E6B800',
+    borderColor: colors.gold,
   },
   reviewRatingScore: {
     fontFamily: typography.mono,
     fontSize: 11,
     fontWeight: '900',
-    color: '#8A3E00',
+    color: colors.terracottaDark,
   },
   completedReviewComment: {
     fontFamily: typography.body,
@@ -1744,21 +1735,20 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: '#ECE8DD',
+    borderTopColor: colors.paper,
   },
   completedReviewMeta: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.forest,
-    letterSpacing: 0.5,
   },
 
   // Review Modal Sheet
   reviewModalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.overlay,
   },
   reviewModalBackdrop: {
     flex: 1,
@@ -1772,7 +1762,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: Platform.OS === 'ios' ? 36 : 24,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -1784,7 +1774,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 12,
     borderBottomWidth: 1.5,
-    borderBottomColor: '#E6E2D5',
+    borderBottomColor: colors.paperDark,
     marginBottom: 14,
   },
   reviewModalTitle: {
@@ -1794,26 +1784,25 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   reviewModalSub: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    fontWeight: '800',
     marginTop: 2,
   },
   modalCloseBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#EBE7DC',
+    backgroundColor: colors.paperDark,
     justifyContent: 'center',
     alignItems: 'center',
   },
   reviewRatingHelp: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.8,
     marginBottom: 8,
   },
   starsRow: {
@@ -1828,11 +1817,10 @@ const styles = StyleSheet.create({
   },
   starLabel: {
     textAlign: 'center',
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#C95F12',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.orange,
     marginBottom: 14,
   },
   reviewModalInput: {
@@ -1862,11 +1850,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   submitReviewBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 1,
   },
   cancelReviewBtn: {
     marginTop: 10,
@@ -1874,10 +1861,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   cancelReviewBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 0.8,
   },
 });

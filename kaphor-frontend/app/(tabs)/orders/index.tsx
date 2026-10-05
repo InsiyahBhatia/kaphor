@@ -1,3 +1,4 @@
+import { peek, remember, hydrate } from '../../../src/utils/swrCache';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -7,13 +8,11 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { KaphorImage } from '../../../src/components/KaphorImage';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { OrderCardsLoading } from '../../../src/components/common/CardLoadingScreen';
 import { OrderTrackerStepper } from '../../../src/components/orders/OrderTrackerStepper';
 import { EstTradeValueBadge } from '../../../src/components/orders/EstTradeValueBadge';
@@ -27,6 +26,7 @@ import { invalidateCache } from '../../../src/services/api';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { navigateToLiveSwapStage } from '../../../src/utils/swapNavigation';
+import { Spinner, Loader } from '../../../src/components/common/Loader';
 
 export default function OrdersManagementScreen() {
   const insets = useSafeAreaInsets();
@@ -46,32 +46,25 @@ export default function OrdersManagementScreen() {
   const [swapsFilter, setSwapsFilter] = useState<'all' | 'action' | 'completed'>('all');
 
   // Data states
-  const [summary, setSummary] = useState<OrdersSummaryData | null>(null);
-  const [ordersList, setOrdersList] = useState<TransactionOrder[]>([]);
-  const [rentalsList, setRentalsList] = useState<RentalItem[]>([]);
-  const [swapsList, setSwapsList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = peek<any>('orders:all');
+  const [summary, setSummary] = useState<OrdersSummaryData | null>(cached?.sum ?? null);
+  const [ordersList, setOrdersList] = useState<TransactionOrder[]>(cached?.ords ?? []);
+  const [rentalsList, setRentalsList] = useState<RentalItem[]>(cached?.rents ?? []);
+  const [swapsList, setSwapsList] = useState<any[]>(cached?.swps ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [isTabSwitching, setIsTabSwitching] = useState(false);
+  const isTabSwitching = false;
 
   const handleSelectTab = (tab: 'orders' | 'rentals' | 'swaps') => {
     if (tab === activeTab) return;
     hapticFeedback.selection();
-    setIsTabSwitching(true);
     setActiveTab(tab);
-    setTimeout(() => {
-      setIsTabSwitching(false);
-    }, 180);
   };
 
   const handleSelectRole = (action: () => void) => {
     hapticFeedback.selection();
-    setIsTabSwitching(true);
     action();
-    setTimeout(() => {
-      setIsTabSwitching(false);
-    }, 150);
   };
 
   // If query params specify tab, sync it
@@ -93,12 +86,26 @@ export default function OrdersManagementScreen() {
       setOrdersList(ords);
       setRentalsList(rents);
       setSwapsList(swps);
+      remember('orders:all', { sum, ords, rents, swps });
     } catch {
       // Fallback empty
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  }, []);
+
+  // Show the last persisted copy instantly on a cold start, then refresh in the background
+  useEffect(() => {
+    if (cached) return;
+    hydrate<any>('orders:all').then((c) => {
+      if (!c) return;
+      setSummary((v) => v ?? c.sum);
+      setOrdersList((v) => (v.length ? v : c.ords ?? []));
+      setRentalsList((v) => (v.length ? v : c.rents ?? []));
+      setSwapsList((v) => (v.length ? v : c.swps ?? []));
+      setLoading(false);
+    });
   }, []);
 
   useFocusEffect(
@@ -173,10 +180,10 @@ export default function OrdersManagementScreen() {
     try {
       await trackingService.dispatchRental(rentalId);
       invalidateCache(['/rentals', '/users/me/wardrobe']);
-      Alert.alert('Dispatched', 'Rental is now active. Renter has been notified.');
+      Alert.alert('Shipped', 'Rental is now active. The renter has been told.');
       loadAllData();
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not mark rental dispatched.');
+      Alert.alert('Error', e?.response?.data?.message || 'Could not mark the rental as shipped.');
     } finally {
       setActionLoadingId(null);
     }
@@ -231,7 +238,7 @@ export default function OrdersManagementScreen() {
   });
 
   if (loading) {
-    return <DossierLoading variant="order" />;
+    return <Loader variant="order" />;
   }
 
   return (
@@ -239,7 +246,7 @@ export default function OrdersManagementScreen() {
       {/* HEADER */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 20) }]}>
         <View style={styles.headerTop}>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
             style={styles.backButton}
             onPress={() => safeBack('/(tabs)/profile')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -370,8 +377,8 @@ export default function OrdersManagementScreen() {
                 <Text style={styles.emptyTitle}>NO ORDERS FOUND</Text>
                 <Text style={styles.emptySub}>
                   {ordersRole === 'buyer'
-                    ? 'Explore the Shop Deck to find curated heritage pieces.'
-                    : 'List your designer archive to start receiving orders.'}
+                    ? 'Browse the shop to find something you like.'
+                    : 'List your items to start getting orders.'}
                 </Text>
                 <TouchableOpacity
                   style={styles.emptyBtn}
@@ -411,8 +418,8 @@ export default function OrdersManagementScreen() {
                       <View
                         style={[
                           styles.statusTag,
-                          order.status === 'DELIVERED' && { backgroundColor: '#2E7D32' },
-                          order.status === 'SHIPPED' && { backgroundColor: '#1C2B4A' },
+                          order.status === 'DELIVERED' && { backgroundColor: colors.forest },
+                          order.status === 'SHIPPED' && { backgroundColor: colors.ink },
                           order.status === 'CONFIRMED' && { backgroundColor: colors.charcoal },
                         ]}
                       >
@@ -432,10 +439,10 @@ export default function OrdersManagementScreen() {
                       <KaphorImage uri={thumb} style={styles.garmentThumb} contentFit="cover" />
                       <View style={styles.garmentInfo}>
                         <Text style={styles.garmentBrand} numberOfLines={1}>
-                          {firstItem?.garment?.brand || 'ARCHIVE'}
+                          {firstItem?.garment?.brand || 'KAPHOR'}
                         </Text>
                         <Text style={styles.garmentTitle} numberOfLines={2}>
-                          {firstItem?.garment?.title || 'Heritage Piece'}
+                          {firstItem?.garment?.title || 'Classic Piece'}
                         </Text>
                         <Text style={styles.garmentPrice}>
                           ₹{(order.totalAmount || 0).toLocaleString('en-IN')}
@@ -489,7 +496,7 @@ export default function OrdersManagementScreen() {
                           onPress={() => router.push(`/(tabs)/shop/orders/${order.id}?review=true` as any)}
                           activeOpacity={0.85}
                         >
-                          <Ionicons name="star" size={13} color="#C95F12" />
+                          <Ionicons name="star" size={13} color={colors.orange} />
                           <Text style={styles.reviewActionText}>REVIEW ★</Text>
                         </TouchableOpacity>
                       ) : !isBuyer && order.status === 'CONFIRMED' ? (
@@ -500,20 +507,20 @@ export default function OrdersManagementScreen() {
                           activeOpacity={0.85}
                         >
                           {isLoading ? (
-                            <ActivityIndicator size="small" color={colors.cream} />
+                            <Spinner size="small" color={colors.cream} />
                           ) : (
                             <Text style={styles.primaryActionText}>MARK SHIPPED</Text>
                           )}
                         </TouchableOpacity>
                       ) : isBuyer && order.status === 'SHIPPED' ? (
                         <TouchableOpacity
-                          style={[styles.primaryActionBtn, { backgroundColor: '#2E7D32', borderColor: '#2E7D32' }]}
+                          style={[styles.primaryActionBtn, { backgroundColor: colors.forest, borderColor: colors.forest }]}
                           onPress={() => handleMarkDelivered(order.id)}
                           disabled={isLoading}
                           activeOpacity={0.85}
                         >
                           {isLoading ? (
-                            <ActivityIndicator size="small" color={colors.cream} />
+                            <Spinner size="small" color={colors.cream} />
                           ) : (
                             <Text style={styles.primaryActionText}>CONFIRM DELIVERED</Text>
                           )}
@@ -590,8 +597,8 @@ export default function OrdersManagementScreen() {
                 <Text style={styles.emptyTitle}>NO RENTALS FOUND</Text>
                 <Text style={styles.emptySub}>
                   {rentalsRole === 'renter'
-                    ? 'Explore available archive pieces to lease for short term.'
-                    : 'List your luxury garments for rental to earn circular revenue.'}
+                    ? 'Browse items you can rent for a few days.'
+                    : 'List your clothes for rent to earn money.'}
                 </Text>
                 <TouchableOpacity
                   style={styles.emptyBtn}
@@ -639,8 +646,8 @@ export default function OrdersManagementScreen() {
                       <View
                         style={[
                           styles.statusTag,
-                          rental.status === 'ACTIVE' && { backgroundColor: '#1C2B4A' },
-                          rental.status === 'RETURNED' && { backgroundColor: '#2E7D32' },
+                          rental.status === 'ACTIVE' && { backgroundColor: colors.ink },
+                          rental.status === 'RETURNED' && { backgroundColor: colors.forest },
                           rental.status === 'RESERVED' && { backgroundColor: colors.copper },
                         ]}
                       >
@@ -660,7 +667,7 @@ export default function OrdersManagementScreen() {
                       <KaphorImage uri={thumb} style={styles.garmentThumb} contentFit="cover" />
                       <View style={styles.garmentInfo}>
                         <Text style={styles.garmentBrand} numberOfLines={1}>
-                          {rental.garment?.brand || 'CURATED LEASE'}
+                          {rental.garment?.brand || 'RENTAL'}
                         </Text>
                         <Text style={styles.garmentTitle} numberOfLines={2}>
                           {rental.garment?.title || 'Rental Asset'}
@@ -684,9 +691,9 @@ export default function OrdersManagementScreen() {
 
                     {/* ESCROW GUARANTEE BANNER */}
                     <View style={styles.escrowNotice}>
-                      <Ionicons name="shield-checkmark" size={14} color="#2E7D32" />
+                      <Ionicons name="shield-checkmark" size={14} color={colors.forest} />
                       <Text style={styles.escrowNoticeText}>
-                        ₹299 Refundable Deposit Protected in Escrow
+                        ₹299 refundable deposit, held safely
                       </Text>
                     </View>
 
@@ -728,9 +735,9 @@ export default function OrdersManagementScreen() {
                           activeOpacity={0.85}
                         >
                           {isLoading ? (
-                            <ActivityIndicator size="small" color={colors.cream} />
+                            <Spinner size="small" color={colors.cream} />
                           ) : (
-                            <Text style={styles.primaryActionText}>MARK DISPATCHED</Text>
+                            <Text style={styles.primaryActionText}>MARK SHIPPED</Text>
                           )}
                         </TouchableOpacity>
                       ) : isRenter && (rental.status === 'RESERVED' || rental.status === 'ACTIVE') ? (
@@ -741,20 +748,20 @@ export default function OrdersManagementScreen() {
                           activeOpacity={0.85}
                         >
                           {isLoading ? (
-                            <ActivityIndicator size="small" color={colors.cream} />
+                            <Spinner size="small" color={colors.cream} />
                           ) : (
                             <Text style={styles.primaryActionText}>MARK RETURNED</Text>
                           )}
                         </TouchableOpacity>
                       ) : !isRenter && rental.status === 'RETURNED' ? (
                         <TouchableOpacity
-                          style={[styles.primaryActionBtn, { backgroundColor: '#2E7D32', borderColor: '#2E7D32' }]}
+                          style={[styles.primaryActionBtn, { backgroundColor: colors.forest, borderColor: colors.forest }]}
                           onPress={() => handleReleaseDeposit(rental.id)}
                           disabled={isLoading}
                           activeOpacity={0.85}
                         >
                           {isLoading ? (
-                            <ActivityIndicator size="small" color={colors.cream} />
+                            <Spinner size="small" color={colors.cream} />
                           ) : (
                             <Text style={styles.primaryActionText}>RELEASE DEPOSIT</Text>
                           )}
@@ -832,7 +839,7 @@ export default function OrdersManagementScreen() {
                 <Ionicons name="swap-horizontal" size={44} color={colors.textMuted} />
                 <Text style={styles.emptyTitle}>NO SWAP EXCHANGES</Text>
                 <Text style={styles.emptySub}>
-                  Browse the Accessory Deck to discover luxury pieces ready for cashless trade.
+                  Browse accessories you can swap. No cash needed.
                 </Text>
                 <TouchableOpacity
                   style={styles.emptyBtn}
@@ -1005,7 +1012,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
+    borderBottomColor: colors.overlayLight,
     paddingBottom: 0,
   },
   headerTop: {
@@ -1028,7 +1035,7 @@ const styles = StyleSheet.create({
   },
   primaryTabs: {
     flexDirection: 'row',
-    backgroundColor: '#ECE8DF',
+    backgroundColor: colors.paper,
     borderRadius: 8,
     padding: 3,
     gap: 4,
@@ -1043,11 +1050,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   primaryTabText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.8,
   },
   primaryTabTextActive: {
     color: colors.cream,
@@ -1057,9 +1063,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#F7F5F0',
+    backgroundColor: colors.paperLight,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.06)',
+    borderTopColor: colors.overlayLight,
   },
   summaryItem: {
     flex: 1,
@@ -1072,16 +1078,16 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   summaryLbl: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 0.4,
     marginTop: 1,
   },
   summaryDivider: {
     width: 1,
     height: 24,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: colors.overlayLight,
   },
   content: {
     padding: 16,
@@ -1101,7 +1107,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: colors.overlayLight,
     borderRadius: 8,
   },
   rolePillActive: {
@@ -1109,11 +1115,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   rolePillText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   rolePillTextActive: {
     color: colors.cream,
@@ -1121,11 +1126,11 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
+    borderColor: colors.overlayLight,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
@@ -1136,7 +1141,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0ECE1',
+    borderBottomColor: colors.paper,
     paddingBottom: 10,
     marginBottom: 12,
   },
@@ -1149,7 +1154,7 @@ const styles = StyleSheet.create({
   },
   orderDate: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1160,11 +1165,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   statusTagText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   cardBody: {
     flexDirection: 'row',
@@ -1175,20 +1179,19 @@ const styles = StyleSheet.create({
     width: 68,
     height: 84,
     borderRadius: 8,
-    backgroundColor: '#F0ECE1',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
+    borderColor: colors.overlayLight,
   },
   garmentInfo: {
     flex: 1,
     justifyContent: 'center',
   },
   garmentBrand: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    fontWeight: '800',
-    letterSpacing: 0.8,
   },
   garmentTitle: {
     fontFamily: typography.headings,
@@ -1203,16 +1206,16 @@ const styles = StyleSheet.create({
     color: colors.red,
   },
   counterpartyText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    fontWeight: '700',
     marginTop: 4,
   },
   stepperContainer: {
-    backgroundColor: '#FAF8F3',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
-    borderColor: '#ECE8DD',
+    borderColor: colors.paper,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 10,
@@ -1222,17 +1225,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.emeraldLight,
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 6,
     marginBottom: 12,
   },
   escrowNoticeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.body,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#2E7D32',
+    color: colors.forest,
     letterSpacing: 0.5,
   },
   cardActionRow: {
@@ -1246,17 +1249,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     height: 38,
-    backgroundColor: '#F5F3ED',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
+    borderColor: colors.overlayLight,
     borderRadius: 8,
   },
   chatActionText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.8,
   },
   detailActionBtn: {
     flex: 1.2,
@@ -1264,15 +1266,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 38,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
+    borderColor: colors.overlayLight,
     borderRadius: 8,
   },
   detailActionText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.8,
   },
   primaryActionBtn: {
     flex: 1.5,
@@ -1285,11 +1286,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   primaryActionText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.8,
   },
   trackActionBtn: {
     flex: 1.1,
@@ -1304,11 +1304,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   trackActionText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.8,
   },
   reviewActionBtn: {
     flex: 1.1,
@@ -1317,29 +1316,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
     height: 38,
-    backgroundColor: '#FFF8E1',
+    backgroundColor: colors.terracottaLight,
     borderWidth: 1,
-    borderColor: '#C95F12',
+    borderColor: colors.orange,
     borderRadius: 8,
   },
   reviewActionText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#C95F12',
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.orange,
   },
   viewChevronCol: {
     justifyContent: 'center',
     paddingLeft: 4,
   },
   itemInspectHint: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
     marginTop: 4,
-    letterSpacing: 0.5,
   },
 
   // Swap Comparison Styling
@@ -1348,7 +1345,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
-    backgroundColor: '#F8F6F0',
+    backgroundColor: colors.paperLight,
     padding: 10,
     borderRadius: 8,
   },
@@ -1360,14 +1357,14 @@ const styles = StyleSheet.create({
     width: 60,
     height: 72,
     borderRadius: 6,
-    backgroundColor: '#EBE7DE',
+    backgroundColor: colors.paperDark,
     marginBottom: 4,
   },
   swapRoleLabel: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    fontWeight: '800',
   },
   swapItemTitle: {
     fontFamily: typography.headings,
@@ -1376,16 +1373,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   estValueBadge: {
-    backgroundColor: '#EDE9DE',
+    backgroundColor: colors.paper,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     marginTop: 4,
   },
   estValueText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   swapArrowCol: {
@@ -1393,12 +1390,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   swapCashlessBadge: {
-    fontFamily: typography.mono,
-    fontSize: 7,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
     marginTop: 2,
-    letterSpacing: 0.5,
   },
 
   // Empty State
@@ -1409,7 +1405,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
+    borderColor: colors.overlayLight,
     borderRadius: 12,
   },
   emptyTitle: {
@@ -1420,11 +1416,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   emptySub: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 21,
     marginBottom: 20,
   },
   emptyBtn: {
@@ -1434,10 +1431,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 1,
   },
 });

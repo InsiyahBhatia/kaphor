@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../../src/theme';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
+import { Loader } from '../../../src/components/common/Loader';
 
 /**
  * Deprecated Certificate screen.
@@ -17,7 +17,7 @@ export default function DeprecatedImpactReportScreen() {
 
   return (
     <View style={styles.container}>
-      <DossierLoading variant="impact" compact />
+      <Loader variant="impact" compact />
     </View>
   );
 }

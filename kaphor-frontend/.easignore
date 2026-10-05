@@ -6,3 +6,7 @@ node_modules/
 dist/
 *.log
 
+
+# design sources / sticker sheets: never upload to EAS (only required assets are bundled)
+assets/_source/
+scripts/assets/__pycache__/

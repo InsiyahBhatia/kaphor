@@ -1,12 +1,13 @@
+import { peek, remember, hydrate } from '../../src/utils/swrCache';
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity, Image, Dimensions, Alert, Linking, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity, Dimensions, Alert, Linking, RefreshControl } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../src/services/garmentService';
 import { orderService } from '../../src/services/orderService';
 import { EditorialGarmentCard } from '../../src/components/EditorialGarmentCard';
-import { DossierLoading } from '../../src/components/common/DossierLoading';
 import { GarmentGridSkeleton } from '../../src/components/common/CardLoadingScreen';
 import { colors, typography } from '../../src/theme';
 import {
@@ -22,6 +23,8 @@ import { hapticFeedback } from '../../src/utils/haptics';
 
 import { Header } from '../../src/components/common/Header';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
+import { Loader } from '../../src/components/common/Loader';
+import { getErrorMessage } from '../../src/utils/errors';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
@@ -30,9 +33,9 @@ export default function SavedAssetsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   useBackHandler('/(tabs)/profile');
-  const [savedAssets, setSavedAssets] = useState<any[]>([]);
+  const [savedAssets, setSavedAssets] = useState<any[]>(() => peek('saved:assets') ?? []);
   const [savedRepairs, setSavedRepairs] = useState<SavedRepairItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => peek('saved:assets') === undefined);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'shop' | 'repairs'>('shop');
 
@@ -40,6 +43,7 @@ export default function SavedAssetsScreen() {
     try {
       const data = await garmentService.getWishlist();
       setSavedAssets(data);
+      remember('saved:assets', data ?? []);
     } catch (error) {
       console.error('Failed to fetch saved assets', error);
     }
@@ -66,7 +70,7 @@ export default function SavedAssetsScreen() {
       const order = await orderService.requestPurchase(item.id);
       const orderId = order?.orderId;
       if (!orderId) {
-        throw new Error('Could not initiate purchase request');
+        throw new Error('Could not start the purchase request');
       }
       if (order?.isApproved) {
         router.push({
@@ -86,7 +90,7 @@ export default function SavedAssetsScreen() {
         );
       }
     } catch (error: any) {
-      Alert.alert('Notice', error?.response?.data?.message || error?.message || 'Could not submit purchase request. Please try again.');
+      Alert.alert('Notice', getErrorMessage(error, 'Could not submit purchase request. Please try again.'));
     }
   };
 
@@ -106,6 +110,12 @@ export default function SavedAssetsScreen() {
   };
 
   useEffect(() => {
+    hydrate<any[]>('saved:assets').then((c) => {
+      if (c) {
+        setSavedAssets((v) => (v.length ? v : c));
+        setLoading(false);
+      }
+    });
     Promise.all([fetchSavedAssets(), fetchSavedRepairs()]).finally(() =>
       setLoading(false)
     );
@@ -119,8 +129,8 @@ export default function SavedAssetsScreen() {
         <View key={item.id} style={styles.repairCard}>
           <View style={styles.repairCardHeader}>
             <View style={[styles.repairTypeBadge, {
-              backgroundColor: g.doc_type === 'repair' ? '#1E3B2F' :
-                g.doc_type === 'upcycle' ? '#C95F12' : '#4A2E1A'
+              backgroundColor: g.doc_type === 'repair' ? colors.emeraldDark :
+                g.doc_type === 'upcycle' ? colors.orange : colors.ink
             }]}>
               <Text style={styles.repairTypeText}>{g.doc_type.toUpperCase()}</Text>
             </View>
@@ -135,24 +145,39 @@ export default function SavedAssetsScreen() {
           {item.garmentLabel && (
             <Text style={styles.repairGarment}>For: {item.garmentLabel}</Text>
           )}
-          {g.steps.length > 0 && (
+          {(g.steps || []).length > 0 && (
             <View style={styles.repairSteps}>
-              {g.steps.slice(0, 2).map((step, si) => (
+              {(g.steps || []).slice(0, 2).map((step, si) => (
                 <View key={si} style={styles.repairStepRow}>
                   <Text style={styles.repairStepBullet}>•</Text>
                   <Text style={styles.repairStepText} numberOfLines={1}>{step}</Text>
                 </View>
               ))}
-              {g.steps.length > 2 && (
-                <Text style={styles.repairMoreSteps}>+{g.steps.length - 2} more steps</Text>
+              {(g.steps || []).length > 2 && (
+                <Text style={styles.repairMoreSteps}>+{(g.steps || []).length - 2} more steps</Text>
               )}
             </View>
           )}
           <View style={styles.repairTools}>
             <Text style={styles.repairToolsLabel}>
-              ⏱ {g.time_minutes} min · {g.tools_required.slice(0, 3).join(', ')}
+              ⏱ {g.time_minutes} min · {(g.tools_required || []).slice(0, 3).join(', ')}
             </Text>
           </View>
+          {g.source_url ? (
+            <TouchableOpacity
+              style={styles.repairRemoveBtn}
+              accessibilityRole="link"
+              accessibilityLabel={`Read ${g.title}`}
+              onPress={() => {
+                Linking.openURL(g.source_url as string).catch(() => {
+                  Alert.alert('Could not open', 'Please try again in a moment.');
+                });
+              }}
+            >
+              <Ionicons name="open-outline" size={14} color={colors.ink} />
+              <Text style={[styles.repairRemoveText, { color: colors.ink }]}>READ</Text>
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity
             style={styles.repairRemoveBtn}
             onPress={() => handleRemoveRepair(item.id)}
@@ -182,7 +207,7 @@ export default function SavedAssetsScreen() {
               </View>
             )}
             <View style={styles.youtubePlayOverlay}>
-              <Ionicons name="play-circle" size={28} color="rgba(255,255,255,0.9)" />
+              <Ionicons name="play-circle" size={28} color={colors.paperGlass} />
             </View>
           </View>
           <View style={styles.youtubeInfo}>
@@ -192,7 +217,7 @@ export default function SavedAssetsScreen() {
               <Text style={styles.youtubeGarment}>{item.garmentLabel}</Text>
             )}
           </View>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
             style={styles.youtubeRemoveBtn}
             onPress={() => handleRemoveRepair(item.id)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -222,7 +247,7 @@ export default function SavedAssetsScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="THE VAULT" showBack fallbackPath="/(tabs)/profile" />
+      <Header title="SAVED" showBack fallbackPath="/(tabs)/profile" />
 
       {loading ? (
         <View style={{ flex: 1, paddingTop: 12 }}>
@@ -231,7 +256,7 @@ export default function SavedAssetsScreen() {
       ) : bothEmpty ? (
         <View style={styles.emptyState}>
           <Ionicons name="heart-dislike-outline" size={64} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>THE VAULT IS EMPTY</Text>
+          <Text style={styles.emptyTitle}>NOTHING SAVED YET</Text>
           <Text style={styles.emptySub}>Save items from the shop or bookmark repair guides & video tutorials to see them here.</Text>
           <TouchableOpacity
             style={styles.ctaButton}
@@ -296,7 +321,7 @@ export default function SavedAssetsScreen() {
             ) : (
               <View style={styles.gridWrap}>
                 <View style={styles.vaultHeader}>
-                  <Text style={styles.vaultTitle}>MANIFESTED ASSETS</Text>
+                  <Text style={styles.vaultTitle}>SAVED ITEMS</Text>
                   <View style={styles.badgeLine}>
                     <Text style={styles.badgeText}>TOTAL: {savedAssets.length} ITEMS</Text>
                   </View>
@@ -348,7 +373,7 @@ export default function SavedAssetsScreen() {
                 {savedRepairs.filter(r => r.type === 'youtube').length > 0 && (
                   <>
                     <View style={[styles.repairSubHeader, { marginTop: 12 }]}>
-                      <Ionicons name="logo-youtube" size={16} color="#FF0000" />
+                      <Ionicons name="logo-youtube" size={16} color={colors.rose} />
                       <Text style={styles.repairSubTitle}>VIDEO TUTORIALS</Text>
                     </View>
                     {savedRepairs
@@ -397,12 +422,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptySub: {
-    fontFamily: typography.mono,
-    fontSize: 12,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: 8,
-    lineHeight: 18,
+    lineHeight: 23,
   },
   ctaButton: {
     marginTop: 32,
@@ -414,9 +440,9 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 14,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
 
   // ── Tab Bar ────────────────────────────────────────────────────
@@ -439,11 +465,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   tabText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   tabTextActive: {
     color: colors.cream,
@@ -456,14 +481,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tabEmptyText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   tabEmptyAction: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
     textDecorationLine: 'underline',
     marginTop: 4,
@@ -501,9 +527,9 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
 
   // ── Repairs Section ────────────────────────────────────────────
@@ -519,11 +545,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   repairSubTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1.5,
   },
 
   // ── Repair Guide Card ──────────────────────────────────────────
@@ -553,11 +578,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   repairTypeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 1,
   },
   repairDiffBadge: {
     paddingHorizontal: 6,
@@ -565,9 +589,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   repairDiffText: {
-    fontFamily: typography.mono,
-    fontSize: 7,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   repairTitle: {
     fontFamily: typography.headings,
@@ -577,14 +601,16 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   repairTechnique: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginBottom: 8,
   },
   repairGarment: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginBottom: 8,
     fontStyle: 'italic',
@@ -599,8 +625,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   repairStepBullet: {
-    fontFamily: typography.mono,
-    fontSize: 12,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   repairStepText: {
@@ -611,8 +638,9 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   repairMoreSteps: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginLeft: 14,
   },
@@ -622,8 +650,9 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   repairToolsLabel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   repairRemoveBtn: {
@@ -634,11 +663,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   repairRemoveText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
-    letterSpacing: 1,
   },
 
   // ── YouTube Card ────────────────────────────────────────────────
@@ -680,7 +708,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: colors.overlayLight,
   },
   youtubeInfo: {
     flex: 1,
@@ -696,13 +724,15 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   youtubeChannel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   youtubeGarment: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     fontStyle: 'italic',
     marginTop: 4,

@@ -1,4 +1,5 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useMemo, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -28,13 +29,15 @@ import { Header } from '../../src/components/common/Header';
 import api from '../../src/services/api';
 import { colors, typography, spacing, radius } from '../../src/theme';
 import { hapticFeedback } from '../../src/utils/haptics';
+import { getErrorMessage } from '../../src/utils/errors';
 
+const HOME_CACHE_KEY = '@kaphor_home_shelves_v1';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = Math.min(220, SCREEN_WIDTH * 0.58);
 
 // ── Categories / Sectors ───────────────────────────────────────────────────
 const CATEGORIES = [
-  { id: 'ALL', label: 'ALL ARCHIVE' },
+  { id: 'ALL', label: 'ALL' },
   { id: 'WOMEN', label: 'WOMENSWEAR', category: 'Womenswear' },
   { id: 'MEN', label: 'MENSWEAR', category: 'Menswear' },
   { id: 'ETHNIC', label: 'ETHNIC & BRIDAL', category: 'Ethnic' },
@@ -47,7 +50,7 @@ const CATEGORIES = [
 const QUICK_PILLARS = [
   {
     label: 'BUY & SELL',
-    sub: 'Pre-owned luxury',
+    sub: 'Pre-owned clothes',
     icon: 'pricetag-sharp' as const,
     assetIcon: 'bag' as const,
     route: '/(tabs)/shop',
@@ -70,7 +73,7 @@ const QUICK_PILLARS = [
     accent: colors.forest,
   },
   {
-    label: 'DIGITAL ATELIER',
+    label: 'STUDIO',
     sub: 'AI scan & repair',
     icon: 'construct-sharp' as const,
     assetIcon: 'sewing' as const,
@@ -95,7 +98,7 @@ function BrandStatusBar() {
     <View style={styles.statusBar}>
       <View style={styles.statusDot} />
       <Text style={styles.statusText} numberOfLines={1}>
-        AUTHENTICATED LUXURY ARCHIVE · 100% CIRCULAR VERIFIED · BUY, LEASE & BARTER
+        BUY, RENT OR SWAP · CHECKED & VERIFIED
       </Text>
       <View style={styles.statusDot} />
     </View>
@@ -116,7 +119,7 @@ function HeroShowcase({
 
       <View style={styles.heroContent}>
         <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>EDITORIAL ARCHIVE // SS26</Text>
+          <Text style={styles.heroBadgeText}>NEW THIS SEASON</Text>
         </View>
 
         <Text style={styles.heroHeadline}>
@@ -137,7 +140,7 @@ function HeroShowcase({
             onPress={onExplore}
             activeOpacity={0.88}
           >
-            <Text style={styles.heroPrimaryBtnText}>EXPLORE ARCHIVE</Text>
+            <Text style={styles.heroPrimaryBtnText}>EXPLORE SHOP</Text>
             <Text style={styles.inlineArrow}>→</Text>
           </TouchableOpacity>
 
@@ -157,7 +160,7 @@ function HeroShowcase({
           </View>
           <View style={styles.heroTrustItem}>
             <EditorialIcon name="shield" size={17} />
-            <Text style={styles.heroTrustText}>ESCROW PROTECTION</Text>
+            <Text style={styles.heroTrustText}>SECURE PAYMENT</Text>
           </View>
           <View style={styles.heroTrustItem}>
             <EditorialIcon name="swap" size={17} />
@@ -233,7 +236,7 @@ function SectionHeader({
 // ── 5. Editorial Garment Card imported from src/components/EditorialGarmentCard ─────
 
 // ── 6. Occasion Rental Card (Accurate Daily Rate) ───────────────────────────
-function OccasionRentalCard({
+const OccasionRentalCard = React.memo(function OccasionRentalCard({
   item,
   onPress,
 }: {
@@ -279,6 +282,8 @@ function OccasionRentalCard({
           category={item.category}
           style={styles.garmentImage}
           contentFit="cover"
+          width={CARD_WIDTH}
+          recyclingKey={item.id}
         />
 
         <TouchableOpacity
@@ -294,7 +299,7 @@ function OccasionRentalCard({
       <View style={styles.rentalInfo}>
         <View style={styles.garmentMetaRow}>
           <Text style={styles.garmentBrand} numberOfLines={1}>
-            {(item.brand || 'DESIGNER COUTURE').toUpperCase()}
+            {(item.brand || 'DESIGNER FASHION').toUpperCase()}
           </Text>
           <Text style={styles.garmentSize}>SIZE {item.size || 'M'}</Text>
         </View>
@@ -320,10 +325,10 @@ function OccasionRentalCard({
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 // ── 7. Fair Swap Barter Card (Accurate Valuation Parity) ─────────────────────
-function FairSwapCard({
+const FairSwapCard = React.memo(function FairSwapCard({
   item,
   onPress,
 }: {
@@ -363,6 +368,8 @@ function FairSwapCard({
           category={swapItem.category}
           style={styles.garmentImage}
           contentFit="cover"
+          width={CARD_WIDTH}
+          recyclingKey={swapItem.id}
         />
 
         <TouchableOpacity
@@ -385,7 +392,7 @@ function FairSwapCard({
       <View style={styles.swapInfo}>
         <View style={styles.garmentMetaRow}>
           <Text style={styles.garmentBrand} numberOfLines={1}>
-            {(swapItem.brand || 'ARCHIVE TRADE').toUpperCase()}
+            {(swapItem.brand || 'SWAP').toUpperCase()}
           </Text>
           <View style={styles.zeroCashBadge}>
             <Text style={styles.zeroCashBadgeText}>CASHLESS</Text>
@@ -416,7 +423,7 @@ function FairSwapCard({
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN HOMESCREEN
@@ -425,7 +432,9 @@ function FairSwapCard({
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { garments, isLoading, fetchFeed } = useGarmentStore();
+  const garments = useGarmentStore((s) => s.garments);
+  const isLoading = useGarmentStore((s) => s.isLoading);
+  const fetchFeed = useGarmentStore((s) => s.fetchFeed);
 
   const [forYouItems, setForYouItems] = useState<RecommendedGarment[]>([]);
   const [rentalPicks, setRentalPicks] = useState<RecommendedGarment[]>([]);
@@ -435,10 +444,26 @@ export default function HomeScreen() {
   const [forYouLoading, setForYouLoading] = useState<boolean>(true);
   const [rentalsLoading, setRentalsLoading] = useState<boolean>(true);
 
+  // Cache-first: hydrate shelves from disk so the home page paints instantly
+  const hydrated = useRef(false);
+  useEffect(() => {
+    AsyncStorage.getItem(HOME_CACHE_KEY)
+      .then((raw) => {
+        if (!raw || hydrated.current) return;
+        try {
+          const c = JSON.parse(raw);
+          setForYouItems((cur) => (cur.length ? cur : c.forYou || []));
+          setRentalPicks((cur) => (cur.length ? cur : c.rentals || []));
+          setFairSwaps((cur) => (cur.length ? cur : c.swaps || []));
+          if (c.forYou?.length) setForYouLoading(false);
+          if (c.rentals?.length) setRentalsLoading(false);
+        } catch {}
+      })
+      .catch(() => {});
+  }, []);
+
   const loadData = useCallback(async () => {
     try {
-      setForYouLoading(true);
-      setRentalsLoading(true);
       fetchFeed({ listingType: 'SALE' });
       let [forYou, rentals, swaps] = await Promise.all([
         recommendationService.getPersonalizedFeed(8),
@@ -455,7 +480,7 @@ export default function HomeScreen() {
             .filter((g: any) => g.isActive !== false)
             .map((g: any) => ({
               ...g,
-              seller: g.seller || { id: g.sellerId, username: 'Curator' },
+              seller: g.seller || { id: g.sellerId, username: 'Member' },
             }));
           if (fallbackCandidates.length > 0) {
             forYou = fallbackCandidates;
@@ -482,6 +507,11 @@ export default function HomeScreen() {
       setForYouItems(forYou || []);
       setRentalPicks(rentals || []);
       setFairSwaps(swaps || []);
+      hydrated.current = true;
+      AsyncStorage.setItem(
+        HOME_CACHE_KEY,
+        JSON.stringify({ forYou: (forYou || []).slice(0, 8), rentals: (rentals || []).slice(0, 8), swaps: (swaps || []).slice(0, 8) })
+      ).catch(() => {});
     } catch (e) {
       console.warn('Failed to load homepage feeds', e);
     } finally {
@@ -505,7 +535,7 @@ export default function HomeScreen() {
       const order = await orderService.requestPurchase(item.id);
       const orderId = order?.orderId;
       if (!orderId) {
-        throw new Error('Could not initiate purchase request');
+        throw new Error('Could not start the purchase request');
       }
       if (order?.isApproved) {
         router.push({
@@ -525,7 +555,7 @@ export default function HomeScreen() {
         );
       }
     } catch (error: any) {
-      Alert.alert('Notice', error?.response?.data?.message || error?.message || 'Could not submit purchase request. Please try again.');
+      Alert.alert('Notice', getErrorMessage(error, 'Could not submit purchase request. Please try again.'));
     }
   }, [router]);
 
@@ -543,7 +573,7 @@ export default function HomeScreen() {
 
   // Filter sale garments for New Arrivals shelf (excluding current user's own items)
   const currentUserId = useAuthStore((s) => s.user?.id);
-  const newArrivals = garments
+  const newArrivals = useMemo(() => garments
     .filter(
       (g) =>
         g.listingType === 'SALE' &&
@@ -553,9 +583,9 @@ export default function HomeScreen() {
         g.sellerId !== currentUserId &&
         (g as any).seller?.id !== currentUserId
     )
-    .slice(0, 10);
+    .slice(0, 10), [garments, currentUserId]);
 
-  const accessoriesList = garments
+  const accessoriesList = useMemo(() => garments
     .filter(
       (g) =>
         (g.category?.toLowerCase().includes('accessor') ||
@@ -568,7 +598,7 @@ export default function HomeScreen() {
         g.sellerId !== currentUserId &&
         (g as any).seller?.id !== currentUserId
     )
-    .slice(0, 10);
+    .slice(0, 10), [garments, currentUserId]);
 
   return (
     <View style={styles.container}>
@@ -628,14 +658,14 @@ export default function HomeScreen() {
         {/* 1. CURATED FOR YOU (AI EDIT - COLD-START RESILIENT) */}
         <View style={styles.sectionContainer}>
           <SectionHeader
-            title="CURATED FOR YOU"
+            title="PICKED FOR YOU"
             tag="AI EDIT"
             tagBg={colors.charcoal}
             tagColor={colors.gold}
             onSeeAll={() => navigateToRoute('/(tabs)/shop')}
           />
           <Text style={styles.sectionSubtitle}>
-            Personalized architectural & circular archive · Learns & refines as you explore.
+            Picked for you. Gets better as you browse.
           </Text>
           {forYouLoading && forYouItems.length === 0 ? (
             <GarmentShelfSkeleton count={3} cardWidth={CARD_WIDTH} />
@@ -657,9 +687,9 @@ export default function HomeScreen() {
               activeOpacity={0.85}
             >
               <EditorialIcon name="sparkle" size={28} />
-              <Text style={styles.emptyPromptTitle}>DISCOVER YOUR STYLE DOSSIER</Text>
+              <Text style={styles.emptyPromptTitle}>FIND YOUR STYLE</Text>
               <Text style={styles.emptyPromptDesc}>
-                Browse the catalog to train your AI stylist and unlock bespoke recommendations.
+                Browse items to help the AI stylist learn what you like.
               </Text>
             </TouchableOpacity>
           )}
@@ -675,7 +705,7 @@ export default function HomeScreen() {
             onSeeAll={() => navigateToRoute('/(tabs)/rental')}
           />
           <Text style={styles.sectionSubtitle}>
-            Designer eveningwear, bridal & couture available for 3, 7 or 14-day leases with zero retail waste.
+            Party and wedding wear to rent for 3, 7 or 14 days.
           </Text>
           {rentalsLoading && rentalPicks.length === 0 ? (
             <GarmentShelfSkeleton count={3} cardWidth={CARD_WIDTH} />
@@ -696,9 +726,9 @@ export default function HomeScreen() {
               activeOpacity={0.85}
             >
               <EditorialIcon name="dress" size={30} />
-              <Text style={styles.emptyPromptTitle}>BROWSE OCCASION LEASE VAULT</Text>
+              <Text style={styles.emptyPromptTitle}>RENT FOR AN OCCASION</Text>
               <Text style={styles.emptyPromptDesc}>
-                Explore sarees, lehengas, and couture eveningwear available for short-term booking.
+                Sarees, lehengas and party wear to rent for a few days.
               </Text>
             </TouchableOpacity>
           )}
@@ -715,7 +745,7 @@ export default function HomeScreen() {
               onSeeAll={() => navigateToRoute('/(tabs)/swap')}
             />
             <Text style={styles.sectionSubtitle}>
-              Cashless 1-to-1 luxury trades with AI valuation matching. Zero monetary exchange.
+              Swap one item for another. No cash needed.
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelfScroll}>
               {fairSwaps.map((swap, idx) => (
@@ -733,8 +763,8 @@ export default function HomeScreen() {
         {accessoriesList.length > 0 && (
           <View style={styles.sectionContainer}>
             <SectionHeader
-              title="ACCESSORIES ARCHIVE"
-              tag="LUXURY HARDWARE"
+              title="ACCESSORIES"
+              tag="JEWELRY & MORE"
               tagBg={colors.navy}
               tagColor={colors.white}
               onSeeAll={() => navigateToRoute('/(tabs)/shop', { category: 'Accessories' })}
@@ -781,7 +811,7 @@ export default function HomeScreen() {
                     condition: item.condition || 'Excellent',
                     fitScore: 0,
                     matchReason: 'Fresh Arrival',
-                    seller: (item as any).seller || { id: item.sellerId, username: 'Curator' },
+                    seller: (item as any).seller || { id: item.sellerId, username: 'Member' },
                   } as RecommendedGarment}
                   onPress={() => navigateToItem(item.id)}
                   onBuyRequest={() => handleBuyRequest(item)}
@@ -821,7 +851,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: colors.borderLight,
   },
   statusDot: {
     width: 5,
@@ -830,11 +860,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gold,
   },
   statusText: {
-    color: 'rgba(255,255,255,0.92)',
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 1.2,
+    color: colors.paperGlass,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
 
   // ── Hero ────────────────────────────────────────────────────────
@@ -845,13 +874,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#FAF7F0',
+    backgroundColor: colors.paperLight,
     borderWidth: 2,
     borderColor: colors.charcoal,
   },
   heroGradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(245, 241, 232, 0.72)',
+    backgroundColor: colors.goldDark,
   },
   heroContent: {
     padding: 22,
@@ -863,7 +892,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: colors.goldLight,
     borderWidth: 1,
-    borderColor: 'rgba(184,145,47,0.38)',
+    borderColor: colors.goldLight,
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 2,
@@ -871,9 +900,9 @@ const styles = StyleSheet.create({
   },
   heroBadgeText: {
     color: colors.goldDark,
-    fontFamily: typography.monoBold,
-    fontSize: 9.5,
-    letterSpacing: 1.2,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   heroHeadline: {
     fontFamily: typography.headings,
@@ -944,7 +973,7 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(20,20,20,0.14)',
+    borderTopColor: colors.overlayLight,
   },
   heroTrustItem: {
     flexDirection: 'row',
@@ -954,7 +983,7 @@ const styles = StyleSheet.create({
   heroTrustText: {
     color: colors.textSecond,
     fontFamily: typography.bodyMedium,
-    fontSize: 9.5,
+    fontSize: 11.5,
     letterSpacing: 0.8,
   },
 
@@ -972,7 +1001,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
+    borderColor: colors.overlayLight,
   },
   categoryPillActive: {
     backgroundColor: colors.charcoal,
@@ -1023,7 +1052,7 @@ const styles = StyleSheet.create({
   quickActionLabel: {
     fontFamily: typography.bodyBold,
     color: colors.charcoal,
-    fontSize: 9.5,
+    fontSize: 11.5,
     letterSpacing: 0.6,
     textAlign: 'center',
     lineHeight: 12,
@@ -1031,7 +1060,7 @@ const styles = StyleSheet.create({
   quickActionDesc: {
     fontFamily: typography.body,
     color: colors.textMuted,
-    fontSize: 8,
+    fontSize: 11,
     letterSpacing: 0.2,
     textAlign: 'center',
     marginTop: 1,
@@ -1072,17 +1101,15 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   sectionTagText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   seeAllText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.crimson,
-    letterSpacing: 0.5,
   },
   shelfScroll: {
     paddingHorizontal: 16,
@@ -1096,9 +1123,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.08)',
+    borderColor: colors.overlayLight,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1107,7 +1134,7 @@ const styles = StyleSheet.create({
   garmentImageWrap: {
     width: '100%',
     height: CARD_WIDTH * 1.25,
-    backgroundColor: '#F3EFE9',
+    backgroundColor: colors.paper,
     position: 'relative',
   },
   garmentImage: {
@@ -1118,7 +1145,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     left: 8,
-    backgroundColor: 'rgba(30,31,34,0.85)',
+    backgroundColor: colors.overlay,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -1128,25 +1155,24 @@ const styles = StyleSheet.create({
   },
   matchPillText: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   conditionPill: {
     position: 'absolute',
     bottom: 8,
     left: 8,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.paperGlass,
     paddingHorizontal: 6,
     paddingVertical: 2.5,
     borderRadius: 3,
   },
   conditionPillText: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   garmentInfo: {
     padding: 12,
@@ -1158,18 +1184,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   garmentBrand: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.6,
     flex: 1,
   },
   garmentSize: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handSemi,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    fontWeight: '600',
   },
   garmentTitle: {
     fontFamily: typography.body,
@@ -1195,20 +1220,20 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   discountBadge: {
-    backgroundColor: 'rgba(168, 34, 34, 0.12)',
+    backgroundColor: colors.crimsonLight,
     paddingHorizontal: 4,
     paddingVertical: 1.5,
     borderRadius: 2,
   },
   discountBadgeText: {
     color: colors.crimson,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   garmentOriginalPrice: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 1,
@@ -1233,9 +1258,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.08)',
+    borderColor: colors.overlayLight,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1244,7 +1269,7 @@ const styles = StyleSheet.create({
   rentalImageWrap: {
     width: '100%',
     height: CARD_WIDTH * 1.25,
-    backgroundColor: '#F3EFE9',
+    backgroundColor: colors.paper,
     position: 'relative',
   },
   rentalBadgePill: {
@@ -1261,16 +1286,15 @@ const styles = StyleSheet.create({
   },
   rentalBadgePillText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   rentalInfo: {
     padding: 12,
   },
   rentalPricingBlock: {
-    backgroundColor: '#FAF6F0',
+    backgroundColor: colors.paperLight,
     padding: 8,
     borderRadius: 4,
     marginBottom: 8,
@@ -1288,13 +1312,13 @@ const styles = StyleSheet.create({
   },
   rentalPerDayUnit: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
   },
   rentalRetailVal: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1305,16 +1329,15 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: colors.cream,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.12)',
+    borderColor: colors.overlayLight,
     paddingVertical: 7,
     borderRadius: 3,
   },
   rentalReserveText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.6,
   },
   cardArrow: {
     fontFamily: typography.monoBold,
@@ -1328,9 +1351,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.08)',
+    borderColor: colors.overlayLight,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1339,7 +1362,7 @@ const styles = StyleSheet.create({
   swapImageWrap: {
     width: '100%',
     height: CARD_WIDTH * 1.25,
-    backgroundColor: '#F3EFE9',
+    backgroundColor: colors.paper,
     position: 'relative',
   },
   swapParityPill: {
@@ -1357,7 +1380,7 @@ const styles = StyleSheet.create({
   swapParityText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1365,32 +1388,31 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   zeroCashBadge: {
-    backgroundColor: 'rgba(30, 59, 47, 0.12)',
+    backgroundColor: colors.emeraldLight,
     paddingHorizontal: 5,
     paddingVertical: 1.5,
     borderRadius: 2,
   },
   zeroCashBadgeText: {
     color: colors.forest,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   swapValuationRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    backgroundColor: '#F2F7F4',
+    backgroundColor: colors.paperLight,
     padding: 8,
     borderRadius: 4,
     marginBottom: 6,
   },
   swapValuationLabel: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.forest,
-    letterSpacing: 0.5,
   },
   swapValuationValue: {
     fontFamily: typography.mono,
@@ -1406,16 +1428,16 @@ const styles = StyleSheet.create({
   },
   swapTradeActionText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   swapCounterpartBox: {
     paddingTop: 4,
   },
   swapCounterpartText: {
     fontFamily: typography.body,
-    fontSize: 9.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     fontStyle: 'italic',
   },
@@ -1426,10 +1448,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.paperGlass,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
@@ -1443,18 +1465,17 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.12)',
+    borderColor: colors.overlayLight,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
   emptyPromptTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   emptyPromptDesc: {
     fontFamily: typography.body,

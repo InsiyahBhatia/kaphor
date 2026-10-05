@@ -60,6 +60,39 @@ export function optimizeCloudinaryUrl(url: string): string {
   return url.replace('/image/upload/', '/image/upload/f_auto,q_auto/');
 }
 
+const CLOUDINARY_UPLOAD_SEGMENT = '/image/upload/';
+
+/**
+ * Returns a Cloudinary delivery URL with f_auto,q_auto and (optionally) a width cap (c_limit never upscales).
+ * Non-Cloudinary URLs (S3, local, data URIs) and URLs that already carry custom transformations are returned unchanged,
+ * so this is always safe to call on any stored image value.
+ */
+export function cloudinaryImageUrl(url: string, opts: { width?: number; height?: number } = {}): string {
+  if (!url || !url.includes('res.cloudinary.com') || !url.includes(CLOUDINARY_UPLOAD_SEGMENT)) return url;
+  const idx = url.indexOf(CLOUDINARY_UPLOAD_SEGMENT);
+  const head = url.slice(0, idx + CLOUDINARY_UPLOAD_SEGMENT.length);
+  let rest = url.slice(idx + CLOUDINARY_UPLOAD_SEGMENT.length);
+  if (rest.startsWith('f_auto,q_auto/')) {
+    rest = rest.slice('f_auto,q_auto/'.length);
+  } else if (/^(?:[a-z]{1,3}_[^/]+\/)+/.test(rest)) {
+    // Some other transformation chain is already present: do not stack another one.
+    return url;
+  }
+  const parts = ['f_auto', 'q_auto'];
+  const w = Math.floor(Number(opts.width));
+  const h = Math.floor(Number(opts.height));
+  if (Number.isFinite(w) && w > 0) parts.push(`w_${Math.min(w, 4000)}`);
+  if (Number.isFinite(h) && h > 0) parts.push(`h_${Math.min(h, 4000)}`);
+  if (parts.length > 2) parts.push('c_limit');
+  return `${head}${parts.join(',')}/${rest}`;
+}
+
+/** Small list-view image (default 480px wide). Same value as the input for non-Cloudinary images. */
+export function thumbnailUrl(url: string | null | undefined, width = 480): string | null {
+  if (!url) return null;
+  return cloudinaryImageUrl(url, { width });
+}
+
 /**
  * Uploads a buffer to Cloudinary with automatic optimization (f_auto,q_auto),
  * with local disk fallback if Cloudinary credentials are unavailable or upload fails.
@@ -87,6 +120,10 @@ export async function uploadToCloudinary(
             folder: targetFolder,
             public_id: filename,
             resource_type: 'auto',
+            // Compress and shrink server-side so the stored original is never a 10MB phone photo.
+            ...(mimetype.startsWith('image/')
+              ? { transformation: [{ width: 1600, height: 1600, crop: 'limit', quality: 'auto' }] }
+              : {}),
           },
           (error, result) => {
             if (error || !result) reject(error || new Error('Upload stream returned undefined result'));

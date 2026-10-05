@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, TextInput, Modal, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, TextInput, Modal, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
 import { swapService } from '../../../src/services/swapService';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,6 +17,8 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { isAccessoryCategory } from '../../../src/constants/market';
 import { EstTradeValueBadge, formatTradeValuation } from '../../../src/components/orders/EstTradeValueBadge';
 import { FairValueMatcher } from '../../../src/components/orders/FairValueMatcher';
+import { Spinner, Loader } from '../../../src/components/common/Loader';
+import { getErrorMessage } from '../../../src/utils/errors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -77,7 +78,7 @@ export default function SwapDetailScreen() {
 
   const pickConditionPhoto = () => {
     promptPhotoSelection({
-      title: 'Condition Evidence',
+      title: 'Condition Photos',
       quality: 0.85,
       base64: true,
       onImagePicked: (result) => {
@@ -86,7 +87,7 @@ export default function SwapDetailScreen() {
         }
       },
       onError: (err) => {
-        Alert.alert('Error', err?.message || 'Failed to capture or pick photo');
+        Alert.alert('Error', 'Could not get the photo. Please try again.');
       },
     });
   };
@@ -105,7 +106,7 @@ export default function SwapDetailScreen() {
 
   const handleSwap = async () => {
     if (isOwnGarment) {
-      Alert.alert('Cannot Swap With Yourself', 'This accessory is already in your archive. Browse community listings to trade.');
+      Alert.alert('Cannot Swap With Yourself', 'This accessory is already in your closet. Browse community listings to trade.');
       return;
     }
     if (!selectedOffer) {
@@ -134,12 +135,12 @@ export default function SwapDetailScreen() {
         'Swap Requested!',
         'The owner has been notified. Your proposal message has been sent to your chat thread.',
         [
-          ...(convId ? [{ text: 'VIEW IN CHAT', onPress: () => router.push(`/messages/${convId}` as any) }] : []),
-          { text: 'VIEW SWAPS', onPress: () => safeBack('/(tabs)/circular') },
+          ...(convId ? [{ text: 'View in chat', onPress: () => router.push(`/messages/${convId}` as any) }] : []),
+          { text: 'View swaps', onPress: () => safeBack('/(tabs)/circular') },
         ]
       );
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || 'Swap request failed.');
+      Alert.alert('Error', getErrorMessage(err, 'Swap request failed.'));
     } finally {
       setSubmitting(false);
     }
@@ -170,7 +171,7 @@ export default function SwapDetailScreen() {
   const selectedGarment = myGarments.find((g) => g.id === selectedOffer);
 
   if (loading) {
-    return <DossierLoading variant="swap" />;
+    return <Loader variant="swap" />;
   }
 
   return (
@@ -179,13 +180,13 @@ export default function SwapDetailScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           onPress={() => safeBack('/(tabs)/circular')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>SWAP REQUEST</Text>
+        <Text style={styles.headerTitle}>Swap request</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -208,24 +209,24 @@ export default function SwapDetailScreen() {
             >
               <KaphorImage uri={(garment as any)?.primaryImage || garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
               <View style={styles.zoomPillSmall}>
-                <Ionicons name="scan-outline" size={10} color="#FFFFFF" />
-                <Text style={styles.zoomPillSmallText}>ZOOM</Text>
+                <Ionicons name="scan-outline" size={10} color={colors.white} />
+                <Text style={styles.zoomPillSmallText}>Zoom</Text>
               </View>
             </TouchableOpacity>
             <View style={styles.wantedInfo}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
                 <Text style={[styles.label, isOwnGarment && { color: colors.crimson }]}>
-                  {isOwnGarment ? 'YOUR ARCHIVE ASSET' : 'YOU WANT'}
+                  {isOwnGarment ? 'Your closet item' : 'You want'}
                 </Text>
                 <EstTradeValueBadge value={garment.price || garment.estimatedValue} size="sm" variant="copper" />
               </View>
               <Text style={styles.wantedTitle}>{garment.title}</Text>
-              <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Archive').toUpperCase()}</Text>
+              <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Closet').toUpperCase()}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' }}>
-                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.textMuted }}>
+                <Text style={{ fontSize: 16, fontFamily: typography.handwritten, color: colors.textMuted, includeFontPadding: false }}>
                   SIZE: {garment.size || 'OS'}
                 </Text>
-                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.crimson, fontWeight: '700' }}>
+                <Text style={{ fontSize: 16, fontFamily: typography.handSemi, color: colors.crimson, includeFontPadding: false }}>
                   {(garment.condition || 'PRISTINE').replace('_', ' ')}
                 </Text>
               </View>
@@ -233,8 +234,8 @@ export default function SwapDetailScreen() {
                 onPress={() => router.push(`/(tabs)/shop/${targetGarmentId}` as any)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}
               >
-                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.gold, fontWeight: '700' }}>
-                  VIEW FULL PIECE DETAILS →
+                <Text style={{ fontSize: 16, fontFamily: typography.handSemi, color: colors.gold, includeFontPadding: false }}>
+                  View full piece details →
                 </Text>
               </TouchableOpacity>
             </View>
@@ -247,12 +248,12 @@ export default function SwapDetailScreen() {
             <View style={styles.ownGarmentHeader}>
               <Ionicons name="information-circle" size={24} color={colors.crimson} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.ownGarmentBadgeText}>OWNED BY YOU · SELF-SWAP RESTRICTED</Text>
+                <Text style={styles.ownGarmentBadgeText}>Owned by you · self-swap restricted</Text>
                 <Text style={styles.ownGarmentTitle}>This is your listed accessory</Text>
               </View>
             </View>
             <Text style={styles.ownGarmentDesc}>
-              You cannot send a swap request for an accessory you already own. Swapping is reserved for trading your pieces with other archive members.
+              You cannot send a swap request for an accessory you already own. Swapping is reserved for trading your pieces with other members.
             </Text>
             <View style={styles.ownGarmentBtnRow}>
               <TouchableOpacity
@@ -260,13 +261,13 @@ export default function SwapDetailScreen() {
                 onPress={() => router.push('/(tabs)/swap')}
               >
                 <Ionicons name="swap-horizontal" size={16} color={colors.cream} />
-                <Text style={styles.browseCommunityBtnText}>BROWSE COMMUNITY SWAPS</Text>
+                <Text style={styles.browseCommunityBtnText}>Browse community swaps</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.viewClosetBtn}
                 onPress={() => router.push('/(tabs)/profile')}
               >
-                <Text style={styles.viewClosetBtnText}>VIEW IN MY ARCHIVE</Text>
+                <Text style={styles.viewClosetBtnText}>View in my closet</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -288,7 +289,7 @@ export default function SwapDetailScreen() {
             <View style={styles.securityNotice}>
               <Ionicons name="shield-checkmark" size={16} color={colors.navy} />
               <Text style={styles.securityNoticeText}>
-                Secure escrow swap: Both parties protected. Refundable ₹500 deposit required before shipping.
+                Safe swap: both people pay a ₹500 deposit that is refunded after delivery.
               </Text>
             </View>
 
@@ -297,7 +298,7 @@ export default function SwapDetailScreen() {
             </View>
 
             <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>SELECT AN ACCESSORY TO OFFER</Text>
+              <Text style={styles.sectionTitle}>Select an accessory to offer</Text>
               {fairMatchesCount > 0 && (
                 <View style={styles.fairCountPill}>
                   <Text style={styles.fairCountPillText}>
@@ -325,10 +326,10 @@ export default function SwapDetailScreen() {
                   <Ionicons 
                     name="scale-outline" 
                     size={12} 
-                    color={filterFairOnly ? colors.cream : '#1E3B2F'} 
+                    color={filterFairOnly ? colors.cream : colors.emeraldDark} 
                     style={{ marginRight: 4 }} 
                   />
-                  <Text style={[styles.filterChipText, filterFairOnly && styles.filterChipTextActive, !filterFairOnly && { color: '#1E3B2F' }]}>
+                  <Text style={[styles.filterChipText, filterFairOnly && styles.filterChipTextActive, !filterFairOnly && { color: colors.emeraldDark }]}>
                     FAIR VALUE ({fairMatchesCount})
                   </Text>
                 </TouchableOpacity>
@@ -344,11 +345,11 @@ export default function SwapDetailScreen() {
                 </Text>
                 {filterFairOnly ? (
                   <TouchableOpacity onPress={() => setFilterFairOnly(false)} style={{ marginTop: 10 }}>
-                    <Text style={styles.linkText}>VIEW ALL ACCESSORIES</Text>
+                    <Text style={styles.linkText}>View all accessories</Text>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { prefillListingType: 'ACCESSORY_SWAP', listingType: 'ACCESSORY_SWAP', fresh: Date.now().toString() } } as any)}>
-                    <Text style={styles.linkText}>LIST AN ACCESSORY</Text>
+                    <Text style={styles.linkText}>List an accessory</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -423,20 +424,20 @@ export default function SwapDetailScreen() {
             )}
 
             {/* Condition Photos */}
-            <Text style={styles.sectionTitle}>CONDITION EVIDENCE (RECOMMENDED)</Text>
+            <Text style={styles.sectionTitle}>Condition evidence (recommended)</Text>
             <Text style={styles.sectionSubtext}>
               Add close-up photos of your garment's condition. Tap any photo to zoom.
             </Text>
             <View style={styles.photoRow}>
               {conditionPhotos.map((uri, idx) => (
-                <TouchableOpacity 
+                <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Remove" 
                   key={idx} 
                   style={styles.photoThumb}
                   activeOpacity={0.9}
                   onPress={() => setZoomImageUri(uri)}
                 >
                   <Image source={{ uri }} style={styles.photoThumbImg} />
-                  <TouchableOpacity
+                  <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Remove"
                     style={styles.photoRemove}
                     onPress={(e) => {
                       e.stopPropagation();
@@ -450,13 +451,13 @@ export default function SwapDetailScreen() {
               {conditionPhotos.length < 3 && (
                 <TouchableOpacity style={styles.photoAddBtn} onPress={pickConditionPhoto}>
                   <Ionicons name="camera-outline" size={24} color={colors.textMuted} />
-                  <Text style={styles.photoAddText}>ADD PHOTO</Text>
+                  <Text style={styles.photoAddText}>Add photo</Text>
                 </TouchableOpacity>
               )}
             </View>
 
-            <Text style={styles.sectionTitle}>MESSAGE THE OWNER (OPTIONAL)</Text>
-            <TextInput
+            <Text style={styles.sectionTitle}>Message the owner (optional)</Text>
+            <TextInput accessibilityLabel="Note to the owner"
               style={styles.messageInput}
               placeholder="Add a note about condition, timing, or delivery…"
               placeholderTextColor={colors.textMuted}
@@ -475,10 +476,10 @@ export default function SwapDetailScreen() {
           disabled={isOwnGarment || !selectedOffer || submitting}
         >
           {submitting ? (
-            <ActivityIndicator color={colors.cream} />
+            <Spinner color={colors.cream} />
           ) : (
             <Text style={styles.swapBtnText}>
-              {isOwnGarment ? 'CANNOT SWAP WITH YOURSELF' : 'SEND SECURE SWAP REQUEST'}
+              {isOwnGarment ? 'Cannot swap with yourself' : 'Send secure swap request'}
             </Text>
           )}
         </TouchableOpacity>
@@ -493,17 +494,17 @@ export default function SwapDetailScreen() {
         statusBarTranslucent
       >
         <View style={styles.zoomModalBackdrop}>
-          <TouchableOpacity 
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" 
             style={[styles.closeZoomBtn, { top: Math.max(insets.top + 10, 44) }]}
             onPress={() => setZoomImageUri(null)}
             hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           >
-            <Ionicons name="close" size={28} color="#FFFFFF" />
+            <Ionicons name="close" size={28} color={colors.white} />
           </TouchableOpacity>
 
           <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
-            <Ionicons name="scan-outline" size={13} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.zoomInstructionText}>PINCH TO ZOOM</Text>
+            <Ionicons name="scan-outline" size={13} color={colors.paperGlass} />
+            <Text style={styles.zoomInstructionText}>Pinch to zoom</Text>
           </View>
 
           {zoomImageUri && (
@@ -533,7 +534,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { justifyContent: 'center', alignItems: 'center' },
   header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
+  headerTitle: { color: colors.charcoal, fontSize: 21, fontFamily: typography.handBold, includeFontPadding: false, },
   content: { padding: 20, paddingBottom: 180 },
 
   stepsIndicator: {
@@ -547,43 +548,42 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(30,31,34,0.1)',
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
   },
   stepDotActive: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
-  stepDotText: { fontFamily: typography.mono, fontSize: 10, fontWeight: '800', color: colors.charcoal },
+  stepDotText: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.charcoal },
   stepDotTextActive: { color: colors.cream },
-  stepLabel: { fontFamily: typography.mono, fontSize: 7, color: colors.textMuted, fontWeight: '700', letterSpacing: 0.5 },
+  stepLabel: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
   stepLabelActive: { color: colors.charcoal, fontWeight: '900' },
 
   securityNotice: {
     flexDirection: 'row',
     gap: 10,
     padding: 14,
-    backgroundColor: 'rgba(28,43,74,0.04)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(28,43,74,0.12)',
+    borderColor: colors.overlayLight,
     marginBottom: 8,
     alignItems: 'center',
   },
   securityNoticeText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.navy,
-    lineHeight: 14,
-  },
+    lineHeight: 20, includeFontPadding: false, },
 
   wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', marginBottom: 8 },
-  wantedCardOwn: { borderColor: colors.crimson, backgroundColor: '#FFFDF9' },
+  wantedCardOwn: { borderColor: colors.crimson, backgroundColor: colors.paperLight },
   wantedImage: { width: 100, height: 120 },
   wantedInfo: { flex: 1, padding: 16, justifyContent: 'center' },
-  label: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 9, letterSpacing: 1.5, marginBottom: 4, fontWeight: '800' },
+  label: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 16, marginBottom: 4, includeFontPadding: false, },
   wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 20 },
-  wantedBrand: { color: colors.red, fontFamily: typography.mono, fontSize: 11, marginTop: 4, fontWeight: '700' },
+  wantedBrand: { color: colors.red, fontFamily: typography.handSemi, fontSize: 16, marginTop: 4, includeFontPadding: false, },
 
   ownGarmentContainer: {
     backgroundColor: colors.white,
@@ -604,12 +604,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   ownGarmentBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
-    color: colors.crimson,
-    letterSpacing: 1.2,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.crimson, includeFontPadding: false, },
   ownGarmentTitle: {
     fontFamily: typography.headings,
     fontSize: 16,
@@ -637,11 +634,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   browseCommunityBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '900',
     color: colors.cream,
-    letterSpacing: 1.5,
+    letterSpacing: 0.2,
   },
   viewClosetBtn: {
     alignItems: 'center',
@@ -652,11 +648,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   viewClosetBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '800',
     color: colors.charcoal,
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
 
   arrowContainer: { alignItems: 'center', marginVertical: 16 },
@@ -668,20 +663,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   fairCountPill: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 1,
-    borderColor: '#2E7D32',
+    borderColor: colors.forest,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 12,
   },
   fairCountPillText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#1B5E20',
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
   filterChipRow: {
     flexDirection: 'row',
     gap: 8,
@@ -700,17 +692,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   filterChipText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   filterChipTextActive: {
     color: colors.cream,
   },
-  sectionTitle: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 2 },
-  sectionSubtext: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, lineHeight: 14, marginBottom: 12, marginTop: -12 },
+  sectionTitle: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
+  sectionSubtext: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, lineHeight: 20, marginBottom: 12, marginTop: -12, includeFontPadding: false, },
   messageInput: {
     backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal,
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
@@ -718,17 +707,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 12 },
-  linkText: { color: colors.red, fontFamily: typography.mono, fontSize: 11, fontWeight: '800', letterSpacing: 1, marginTop: 12 },
+  emptyText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 17, includeFontPadding: false, },
+  linkText: { color: colors.red, fontFamily: typography.handBold, fontSize: 16, marginTop: 12, includeFontPadding: false, },
   offerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   offerCard: { width: '47%', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', position: 'relative' },
-  offerCardSelected: { borderColor: colors.charcoal, borderWidth: 2, backgroundColor: 'rgba(30,31,34,0.02)' },
-  offerCardFair: { borderColor: '#2E7D32', borderWidth: 2 },
+  offerCardSelected: { borderColor: colors.charcoal, borderWidth: 2, backgroundColor: colors.overlayLight },
+  offerCardFair: { borderColor: colors.forest, borderWidth: 2 },
   cardValuationBadge: {
     position: 'absolute',
     top: 6,
     left: 6,
-    backgroundColor: 'rgba(30,31,34,0.85)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 2,
@@ -736,11 +725,8 @@ const styles = StyleSheet.create({
   },
   cardValuationText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16, includeFontPadding: false, },
   parityTag: {
     position: 'absolute',
     bottom: 6,
@@ -751,32 +737,27 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   parityFair: {
-    backgroundColor: '#1B5E20',
+    backgroundColor: colors.forest,
   },
   paritySurplus: {
     backgroundColor: colors.copper,
   },
   paritySpread: {
-    backgroundColor: '#1C2B4A',
+    backgroundColor: colors.ink,
   },
   parityTagText: {
-    color: '#FFFFFF',
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
+    color: colors.white,
+    fontFamily: typography.handBold,
+    fontSize: 16, includeFontPadding: false, },
   offerCardInfo: {
     padding: 8,
     backgroundColor: colors.white,
   },
   offerCategory: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handSemi,
+    fontSize: 16,
     color: colors.textMuted,
-    fontWeight: '700',
-    marginTop: 2,
-  },
+    marginTop: 2, includeFontPadding: false, },
   offerImage: { width: '100%', height: 150 },
   offerTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 13 },
   checkmark: { position: 'absolute', top: 8, right: 8, zIndex: 3 },
@@ -791,7 +772,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', gap: 4,
     backgroundColor: colors.white,
   },
-  photoAddText: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700' },
+  photoAddText: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
 
   footer: { 
     padding: 20, 
@@ -817,10 +798,10 @@ const styles = StyleSheet.create({
     shadowRadius: 0, 
     elevation: 4,
   },
-  swapBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 13, fontWeight: '900', letterSpacing: 2 },
+  swapBtnText: { color: colors.cream, fontFamily: typography.bodyBold, fontSize: 13, letterSpacing: 0.2 },
   zoomModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -828,7 +809,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     zIndex: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 22,
     width: 44,
     height: 44,
@@ -842,18 +823,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
   },
   zoomInstructionText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: typography.handBold, includeFontPadding: false, },
   zoomPillSmall: {
     position: 'absolute',
     bottom: 6,
@@ -861,15 +839,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 10,
   },
   zoomPillSmallText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-  },
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: typography.handBold, includeFontPadding: false, },
 });

@@ -6,24 +6,30 @@ import { auditLog } from '../services/audit.service';
 import { createNotification } from '../services/notification.service';
 import { transferGarmentsToBuyer } from '../services/garment-claim.service';
 
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 export async function handleWebhook(req: Request, res: Response): Promise<void> {
   const sig = req.headers['stripe-signature'];
 
-  if (!sig || !WEBHOOK_SECRET) {
-    res.status(400).send('Webhook Error: Missing signature or secret');
+  const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+  if (!stripe || !WEBHOOK_SECRET) {
+    logger.error('Stripe webhook received but Stripe is not configured');
+    res.status(503).send('Webhook not configured');
+    return;
+  }
+  if (!sig || typeof sig !== 'string' || !Buffer.isBuffer((req as any).rawBody)) {
+    res.status(400).send('Webhook Error: Missing signature');
     return;
   }
 
   let event;
 
   try {
-    // We use req.rawBody which was attached in index.ts
+    // rawBody (the exact bytes Stripe signed) is attached in index.ts. Stripe's SDK does the
+    // constant-time comparison and rejects events older than 5 minutes.
     event = stripe.webhooks.constructEvent((req as any).rawBody, sig, WEBHOOK_SECRET);
   } catch (err: any) {
     logger.error('Webhook signature verification failed', { error: err.message });
-    res.status(400).send(`Webhook Error: ${err.message}`);
+    res.status(400).send('Webhook Error: invalid signature');
     return;
   }
 
@@ -48,6 +54,23 @@ async function handlePaymentSuccess(paymentIntent: any) {
 
   try {
     if (metaOrderId) {
+      const existing = await db.order.findUnique({ where: { id: metaOrderId } });
+      if (!existing) {
+        logger.warn('Stripe webhook for unknown order', { metaOrderId });
+        return;
+      }
+      // Idempotency: Stripe retries events. Only a PENDING order can be confirmed.
+      if (existing.status !== 'PENDING') {
+        logger.info('Stripe webhook ignored (order already processed)', { metaOrderId });
+        return;
+      }
+      // Amount check (Stripe uses the smallest currency unit; INR orders are stored in rupees).
+      const expectedMinor = Math.round(existing.totalAmount * 100);
+      if (typeof paymentIntent.amount_received === 'number' && paymentIntent.amount_received !== expectedMinor) {
+        logger.error('Stripe amount mismatch', { metaOrderId, expectedMinor, got: paymentIntent.amount_received });
+        return;
+      }
+
       const updatedOrder = await db.order.update({
         where: { id: metaOrderId },
         data: {
@@ -81,7 +104,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
     }
 
     const byPi = await db.order.updateMany({
-      where: { stripePaymentId: paymentIntent.id },
+      where: { stripePaymentId: paymentIntent.id, status: 'PENDING' },
       data: { status: 'CONFIRMED' },
     });
     if (byPi.count > 0) {

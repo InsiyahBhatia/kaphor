@@ -4,9 +4,9 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  Platform,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -20,6 +20,8 @@ import { messageService, ConversationSummary } from '../../src/services/messageS
 import { getSocket, connectSocket } from '../../src/services/socket';
 import { useNotificationStore } from '../../src/store/notificationStore';
 import { MessageCardsLoading } from '../../src/components/common/CardLoadingScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getErrorMessage } from '../../src/utils/errors';
 
 type FilterTab = 'ALL' | 'SELL' | 'SWAP' | 'RENT';
 
@@ -58,27 +60,43 @@ export function formatConversationSnippet(text: string | null | undefined): stri
   return text.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
 }
 
+const INBOX_CACHE_KEY = '@kaphor_inbox_cache';
+
 export default function MessagesScreen() {
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
-  const [isTabSwitching, setIsTabSwitching] = useState(false);
 
   const handleSelectTab = (tab: FilterTab) => {
     if (tab === activeTab) return;
-    setIsTabSwitching(true);
     setActiveTab(tab);
-    setTimeout(() => {
-      setIsTabSwitching(false);
-    }, 180);
   };
+
+  // Show the last known inbox instantly, then refresh in the background
+  useEffect(() => {
+    let alive = true;
+    AsyncStorage.getItem(INBOX_CACHE_KEY)
+      .then((raw) => {
+        if (!alive || !raw) return;
+        const cached = JSON.parse(raw);
+        if (Array.isArray(cached) && cached.length > 0) {
+          setConversations((prev) => (prev.length === 0 ? cached : prev));
+          setLoading(false);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const loadConversations = useCallback(async () => {
     try {
       const list = await messageService.listConversations();
       setConversations(list);
+      AsyncStorage.setItem(INBOX_CACHE_KEY, JSON.stringify(list.slice(0, 50))).catch(() => {});
       const totalUnread = list.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
       useNotificationStore.getState().setUnreadMessageCount(totalUnread);
     } catch (e) {
@@ -97,8 +115,10 @@ export default function MessagesScreen() {
       // Listen for incoming live socket events to update inbox instantly in real time
       const socket = connectSocket() || getSocket();
       if (socket) {
+        let debounce: ReturnType<typeof setTimeout> | null = null;
         const handler = () => {
-          loadConversations();
+          if (debounce) clearTimeout(debounce);
+          debounce = setTimeout(() => loadConversations(), 400);
         };
         const handleDeleted = ({ conversationId }: { conversationId: string }) => {
           setConversations((prev) => prev.filter((c) => c.id !== conversationId));
@@ -108,6 +128,7 @@ export default function MessagesScreen() {
         socket.on('conversation_deleted', handleDeleted);
         socket.on('connect', handler);
         return () => {
+          if (debounce) clearTimeout(debounce);
           socket.off('new_direct_message', handler);
           socket.off('direct_message', handler);
           socket.off('conversation_deleted', handleDeleted);
@@ -135,7 +156,7 @@ export default function MessagesScreen() {
                 .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
               useNotificationStore.getState().setUnreadMessageCount(remainingUnread);
             } catch (err: any) {
-              Alert.alert('Error', err?.response?.data?.message || 'Could not delete conversation.');
+              Alert.alert('Error', getErrorMessage(err, 'Could not delete conversation.'));
             }
           },
         },
@@ -181,15 +202,15 @@ export default function MessagesScreen() {
     switch (status) {
       case 'CONFIRMED':
       case 'PAID':
-        return { bg: 'rgba(40,54,24,0.12)', color: colors.forest, label: 'ORDER PAID' };
+        return { bg: colors.emeraldLight, color: colors.forest, label: 'ORDER PAID' };
       case 'SHIPPED':
-        return { bg: 'rgba(30,58,138,0.12)', color: colors.navy, label: 'IN TRANSIT' };
+        return { bg: colors.overlayLight, color: colors.navy, label: 'IN TRANSIT' };
       case 'DELIVERED':
-        return { bg: 'rgba(201,168,76,0.18)', color: '#997300', label: 'DELIVERED' };
+        return { bg: colors.goldLight, color: colors.gold, label: 'DELIVERED' };
       case 'PENDING':
-        return { bg: 'rgba(201,95,18,0.12)', color: colors.orange, label: 'ORDER PENDING' };
+        return { bg: colors.terracottaLight, color: colors.orange, label: 'ORDER PENDING' };
       default:
-        return { bg: 'rgba(30,31,34,0.08)', color: colors.charcoal, label: status };
+        return { bg: colors.overlayLight, color: colors.charcoal, label: status };
     }
   };
 
@@ -202,7 +223,7 @@ export default function MessagesScreen() {
 
     // Single concise, unified context pill
     let contextLabel = 'DIRECT CHAT';
-    let contextBg = 'rgba(0,0,0,0.05)';
+    let contextBg: string = colors.overlayLight;
     let contextColor: string = colors.charcoal;
     let contextIcon: any = 'chatbubble-outline';
 
@@ -213,17 +234,17 @@ export default function MessagesScreen() {
       contextIcon = 'bag-check';
     } else if (category === 'SWAP') {
       contextLabel = `SWAP · ${item.garment?.title || 'Accessory Trade'}`;
-      contextBg = 'rgba(140,109,59,0.12)';
-      contextColor = '#8C6D3B';
+      contextBg = colors.goldLight;
+      contextColor = colors.goldDark;
       contextIcon = 'swap-horizontal';
     } else if (category === 'RENT') {
       contextLabel = `RENTAL · ${item.garment?.title || 'Garment Hire'}`;
-      contextBg = 'rgba(107,70,193,0.1)';
-      contextColor = '#6B46C1';
+      contextBg = colors.overlayLight;
+      contextColor = colors.ink;
       contextIcon = 'calendar';
     } else if (isGarmentInquiry) {
       contextLabel = `${item.garment?.brand ? `${item.garment.brand} · ` : ''}${item.garment?.title || 'Garment'}`;
-      contextBg = 'rgba(193,65,58,0.08)';
+      contextBg = colors.crimsonLight;
       contextColor = colors.red;
       contextIcon = 'pricetag';
     }
@@ -253,7 +274,7 @@ export default function MessagesScreen() {
           />
           {item.otherUser.isVerified && (
             <View style={styles.verifiedDot}>
-              <Ionicons name="shield-checkmark" size={11} color="#C9A84C" />
+              <Ionicons name="shield-checkmark" size={11} color={colors.gold} />
             </View>
           )}
         </TouchableOpacity>
@@ -302,7 +323,7 @@ export default function MessagesScreen() {
                 contentFit="cover"
               />
               <View style={styles.swapThumbBadge}>
-                <Ionicons name="swap-horizontal" size={8} color="#fff" />
+                <Ionicons name="swap-horizontal" size={8} color={colors.white} />
               </View>
             </View>
           ) : category === 'SWAP' && (item.garment?.image || item.garment?.images?.[0]) ? (
@@ -341,8 +362,8 @@ export default function MessagesScreen() {
   return (
     <View style={styles.container}>
       <EditorialPageHeader
-        title="CORRESPONDENCE"
-        subtitle="ARCHIVAL INBOX // PEER EXCHANGE"
+        title="MESSAGES"
+        subtitle="YOUR CHATS"
         eyebrow="MESSAGES"
         variant="messages"
       />
@@ -426,13 +447,17 @@ export default function MessagesScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading || isTabSwitching ? (
+      {loading && conversations.length === 0 ? (
         <MessageCardsLoading count={6} />
       ) : (
         <FlatList
           data={filteredConversations}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={
             filteredConversations.length === 0 ? styles.emptyContainer : styles.listContent
           }
@@ -522,20 +547,19 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     backgroundColor: colors.charcoal,
     borderBottomWidth: 1,
-    borderBottomColor: '#C9A84C',
+    borderBottomColor: colors.gold,
   },
   safetyBarText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   tabsContainer: {
     flexDirection: 'row',
     backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
+    borderBottomColor: colors.overlayLight,
     paddingHorizontal: 10,
     paddingVertical: 6,
     gap: 6,
@@ -547,17 +571,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 10,
-    backgroundColor: '#F5F4F0',
+    backgroundColor: colors.paperLight,
   },
   tabBtnActive: {
     backgroundColor: colors.charcoal,
   },
   tabText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 0.3,
     textAlign: 'center',
   },
   tabTextActive: {
@@ -584,7 +607,7 @@ const styles = StyleSheet.create({
   },
   tabUnreadBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.white,
   },
@@ -603,9 +626,9 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
+    borderColor: colors.overlayLight,
     gap: 10,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -613,7 +636,7 @@ const styles = StyleSheet.create({
   },
   convCardUnread: {
     borderColor: colors.charcoal,
-    backgroundColor: '#FFFEFB',
+    backgroundColor: colors.white,
   },
   convCardOrder: {
     borderLeftWidth: 4,
@@ -653,17 +676,18 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   userName: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   userNameUnread: {
     fontWeight: '900',
   },
   timeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   unifiedContextPill: {
@@ -678,14 +702,14 @@ const styles = StyleSheet.create({
     maxWidth: '94%',
   },
   unifiedContextText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 0.3,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   messageSnippet: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -719,18 +743,18 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     borderWidth: 1,
-    borderColor: '#fff',
+    borderColor: colors.white,
   },
   swapThumbFront: {
     width: 36,
     height: 44,
     borderRadius: 6,
-    backgroundColor: '#EDE8DD',
+    backgroundColor: colors.paper,
     position: 'absolute',
     bottom: 0,
     right: 0,
     borderWidth: 1.5,
-    borderColor: '#fff',
+    borderColor: colors.white,
   },
   swapThumbBadge: {
     position: 'absolute',
@@ -739,11 +763,11 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#8C6D3B',
+    backgroundColor: colors.goldDark,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#fff',
+    borderColor: colors.white,
   },
   unreadPill: {
     backgroundColor: colors.red,
@@ -757,7 +781,7 @@ const styles = StyleSheet.create({
   unreadPillText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '900',
   },
   rightActionRow: {
@@ -768,7 +792,7 @@ const styles = StyleSheet.create({
   delIconBtn: {
     padding: 3,
     borderRadius: 4,
-    backgroundColor: 'rgba(0,0,0,0.03)',
+    backgroundColor: colors.overlayLight,
   },
   emptyContainer: {
     flex: 1,
@@ -796,19 +820,19 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   emptyTitle: {
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.charcoal,
-    letterSpacing: 1,
     marginBottom: 8,
   },
   emptyDesc: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 21,
     marginBottom: 20,
   },
   exploreBtn: {
@@ -825,9 +849,8 @@ const styles = StyleSheet.create({
   },
   exploreBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
 });

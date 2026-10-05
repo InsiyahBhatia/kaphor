@@ -41,12 +41,15 @@ export async function listTransactionOrders(req: AuthRequest, res: Response): Pr
       return;
     }
     const uid = req.user.id;
+    const limitRaw = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : NaN;
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 100;
     const orders: any[] = (await withPrismaRetry(() =>
       db.order.findMany({
         where: {
           OR: [{ buyerId: uid }, { sellerId: uid }],
         },
         orderBy: { updatedAt: 'desc' },
+        take: limit,
         include: {
           ...orderInclude,
           messages: {
@@ -206,10 +209,28 @@ export async function markOrderShipped(req: AuthRequest, res: Response): Promise
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Order must be paid (confirmed) before shipping' });
       return;
     }
-    const { trackingNumber, carrier } = req.body as { trackingNumber?: string; carrier?: string };
-    const awb = trackingNumber || `KPH-DEL-${Math.floor(100000 + Math.random() * 900000)}`;
-    const courierName = carrier || 'Delhivery Express';
+    const rawTracking = req.body?.trackingNumber;
+    const rawCarrier = req.body?.carrier;
+    if (
+      (rawTracking !== undefined && rawTracking !== null && (typeof rawTracking !== 'string' || rawTracking.length > 64)) ||
+      (rawCarrier !== undefined && rawCarrier !== null && (typeof rawCarrier !== 'string' || rawCarrier.length > 64))
+    ) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid tracking details' });
+      return;
+    }
+    const awb = (typeof rawTracking === 'string' && rawTracking.trim()) || `KPH-DEL-${Math.floor(100000 + Math.random() * 900000)}`;
+    const courierName = (typeof rawCarrier === 'string' && rawCarrier.trim()) || 'Delhivery Express';
     const currentHistory = Array.isArray(order.trackingHistory) ? order.trackingHistory : [];
+
+    // Atomic guard: only one CONFIRMED -> SHIPPED transition can win
+    const shipLock = await db.order.updateMany({
+      where: { id: orderId, sellerId: req.user.id, status: 'CONFIRMED' },
+      data: { status: 'SHIPPED' },
+    });
+    if (shipLock.count === 0) {
+      res.status(409).json({ error: 'CONFLICT', message: 'Order status changed; please refresh' });
+      return;
+    }
 
     const updated = await db.order.update({
       where: { id: orderId },
@@ -220,7 +241,7 @@ export async function markOrderShipped(req: AuthRequest, res: Response): Promise
         trackingHistory: [
           ...currentHistory,
           { status: 'BOOKED', timestamp: new Date().toISOString(), note: `Shipment booked with ${courierName}. AWB: ${awb}` },
-          { status: 'PICKED_UP', timestamp: new Date().toISOString(), note: 'Package picked up from seller atelier.' },
+          { status: 'PICKED_UP', timestamp: new Date().toISOString(), note: 'Package picked up from seller.' },
           { status: 'IN_TRANSIT', timestamp: new Date().toISOString(), note: 'In transit to buyer destination facility.' },
         ],
       },
@@ -262,6 +283,15 @@ export async function markOrderDelivered(req: AuthRequest, res: Response): Promi
       return;
     }
     const currentHistory = Array.isArray(order.trackingHistory) ? order.trackingHistory : [];
+    // Atomic guard: ownership transfer / impact / notifications must run exactly once
+    const deliverLock = await db.order.updateMany({
+      where: { id: orderId, buyerId: req.user.id, status: { in: ['SHIPPED', 'CONFIRMED'] } },
+      data: { status: 'DELIVERED' },
+    });
+    if (deliverLock.count === 0) {
+      res.status(409).json({ error: 'CONFLICT', message: 'Order status changed; please refresh' });
+      return;
+    }
     const updated = await db.order.update({
       where: { id: orderId },
       data: {
@@ -314,7 +344,7 @@ export async function getOrderMessages(req: AuthRequest, res: Response): Promise
       return;
     }
     const { orderId } = req.params;
-    const order = await db.order.findUnique({ where: { id: orderId } });
+    const order = await db.order.findUnique({ where: { id: orderId }, select: { buyerId: true, sellerId: true, status: true } });
     if (!order || !isParticipant(order, req.user.id)) {
       res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
       return;
@@ -323,16 +353,17 @@ export async function getOrderMessages(req: AuthRequest, res: Response): Promise
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Messaging is closed for this order' });
       return;
     }
-    const messages = await withPrismaRetry(() =>
+    const messages: any[] = await withPrismaRetry(() =>
       db.orderMessage.findMany({
         where: { orderId },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
         include: {
           sender: { select: { id: true, displayName: true, avatar: true, username: true } },
         },
       })
     );
-    res.json({ data: messages });
+    res.json({ data: [...messages].reverse() });
   } catch (e) {
     logger.error('getOrderMessages failed', { error: e instanceof Error ? e.message : String(e) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to load messages' });
@@ -428,15 +459,24 @@ export async function postPeerReview(req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const review = await db.peerReview.create({
-      data: {
-        orderId,
-        reviewerId: req.user.id,
-        sellerId: order.sellerId,
-        rating,
-        comment: comment || null,
-      },
-    });
+    let review;
+    try {
+      review = await db.peerReview.create({
+        data: {
+          orderId,
+          reviewerId: req.user.id,
+          sellerId: order.sellerId,
+          rating,
+          comment: comment || null,
+        },
+      });
+    } catch (createErr: any) {
+      if (createErr?.code === 'P2002') {
+        res.status(409).json({ error: 'CONFLICT', message: 'You already reviewed this transaction' });
+        return;
+      }
+      throw createErr;
+    }
 
     // Notify Seller
     const garmentTitle = order.items?.[0]?.garment?.title || 'item';

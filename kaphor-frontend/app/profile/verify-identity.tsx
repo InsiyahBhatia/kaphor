@@ -6,7 +6,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   Platform,
   KeyboardAvoidingView,
@@ -17,6 +16,7 @@ import { colors, typography } from '../../src/theme';
 import { Header } from '../../src/components/common/Header';
 import { verificationService, VerificationData } from '../../src/services/verificationService';
 import { VerifiedBadge } from '../../src/components/common/VerifiedBadge';
+import { Loader, Spinner } from '../../src/components/common/Loader';
 
 const DOC_TYPES = [
   { id: 'AADHAAR', label: 'Aadhaar Card', icon: 'card-outline' as const },
@@ -78,8 +78,8 @@ export default function VerifyIdentityScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator color={colors.charcoal} size="large" />
+      <View style={styles.container}>
+        <Loader variant="default" />
       </View>
     );
   }
@@ -106,10 +106,10 @@ export default function VerifyIdentityScreen() {
           <View style={styles.verifiedCard}>
             <View style={styles.verifiedHeader}>
               <View style={styles.verifiedIconWrap}>
-                <Ionicons name="shield-checkmark" size={32} color="#C9A84C" />
+                <Ionicons name="shield-checkmark" size={32} color={colors.gold} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.verifiedTitle}>VERIFIED LUXURY MEMBER</Text>
+                <Text style={styles.verifiedTitle}>VERIFIED MEMBER</Text>
                 <Text style={styles.verifiedSub}>
                   Your identity has been authenticated. You enjoy top-tier community trust and verified badges across your listings and profile.
                 </Text>
@@ -133,7 +133,7 @@ export default function VerifyIdentityScreen() {
           </View>
         ) : isPending ? (
           <View style={styles.pendingCard}>
-            <Ionicons name="time-outline" size={28} color="#C9A84C" />
+            <Ionicons name="time-outline" size={28} color={colors.gold} />
             <Text style={styles.pendingTitle}>VERIFICATION IN PROGRESS</Text>
             <Text style={styles.pendingText}>
               Your document submission is being processed by the Kaphor Trust & Safety team. Verification typically completes within 24 hours.
@@ -144,7 +144,7 @@ export default function VerifyIdentityScreen() {
             {/* Trust Intro */}
             <View style={styles.introCard}>
               <View style={styles.introHeader}>
-                <Ionicons name="shield-checkmark" size={20} color="#C9A84C" />
+                <Ionicons name="shield-checkmark" size={20} color={colors.gold} />
                 <Text style={styles.introTitle}>KAPHOR TRUST & VERIFICATION</Text>
               </View>
               <Text style={styles.introBody}>
@@ -190,7 +190,7 @@ export default function VerifyIdentityScreen() {
                         {doc.label}
                       </Text>
                       {isSelected && (
-                        <Ionicons name="checkmark-circle" size={16} color="#C9A84C" />
+                        <Ionicons name="checkmark-circle" size={16} color={colors.gold} />
                       )}
                     </TouchableOpacity>
                   );
@@ -203,7 +203,7 @@ export default function VerifyIdentityScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>FULL LEGAL NAME</Text>
-                <TextInput
+                <TextInput accessibilityLabel="Insiyah Bhatia"
                   style={styles.input}
                   placeholder="e.g. Insiyah Bhatia"
                   placeholderTextColor={colors.textMuted}
@@ -215,7 +215,7 @@ export default function VerifyIdentityScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>DOCUMENT ID NUMBER</Text>
-                <TextInput
+                <TextInput accessibilityLabel="12-digit Aadhaar / Passport No"
                   style={styles.input}
                   placeholder="e.g. 12-digit Aadhaar / Passport No."
                   placeholderTextColor={colors.textMuted}
@@ -235,11 +235,11 @@ export default function VerifyIdentityScreen() {
                 activeOpacity={0.8}
               >
                 {submitting ? (
-                  <ActivityIndicator color={colors.cream} size="small" />
+                  <Spinner color={colors.cream} size="small" />
                 ) : (
                   <>
                     <Text style={styles.submitButtonText}>ACTIVATE VERIFIED STATUS</Text>
-                    <Ionicons name="shield-checkmark" size={18} color="#C9A84C" />
+                    <Ionicons name="shield-checkmark" size={18} color={colors.gold} />
                   </>
                 )}
               </TouchableOpacity>
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   verifiedCard: {
     backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: '#C9A84C',
+    borderColor: colors.gold,
     padding: 20,
     shadowColor: colors.charcoal,
     shadowOffset: { width: 3, height: 3 },
@@ -286,37 +286,38 @@ const styles = StyleSheet.create({
     height: 52,
     backgroundColor: colors.charcoal,
     borderWidth: 1.5,
-    borderColor: '#C9A84C',
+    borderColor: colors.gold,
     justifyContent: 'center',
     alignItems: 'center',
   },
   verifiedTitle: {
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.charcoal,
-    letterSpacing: 0.5,
     marginBottom: 4,
   },
   verifiedSub: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    lineHeight: 14,
+    lineHeight: 23,
   },
   detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
+    borderTopColor: colors.overlayLight,
     paddingTop: 16,
   },
   detailItem: {
     alignItems: 'flex-start',
   },
   detailLabel: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginBottom: 4,
   },
@@ -329,24 +330,24 @@ const styles = StyleSheet.create({
   pendingCard: {
     backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: '#C9A84C',
+    borderColor: colors.gold,
     padding: 24,
     alignItems: 'center',
     gap: 12,
   },
   pendingTitle: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   pendingText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 21,
   },
   introCard: {
     backgroundColor: colors.charcoal,
@@ -367,17 +368,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   introTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#C9A84C',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.gold,
   },
   introBody: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: 'rgba(247,245,240,0.85)',
-    lineHeight: 15,
+    fontFamily: typography.body,
+    fontSize: 13,
+    color: colors.goldDark,
+    lineHeight: 18,
   },
   perksGrid: {
     flexDirection: 'row',
@@ -393,16 +393,17 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   perkTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   perkDesc: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    lineHeight: 12,
+    lineHeight: 23,
   },
   formSection: {
     backgroundColor: colors.white,
@@ -416,11 +417,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   formSectionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 1,
     marginBottom: 12,
   },
   docTypesList: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 12,
     borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.2)',
+    borderColor: colors.overlayLight,
     backgroundColor: colors.cream,
   },
   docTypeCardActive: {
@@ -441,9 +441,9 @@ const styles = StyleSheet.create({
   },
   docTypeLabel: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   docTypeLabelActive: {
@@ -453,11 +453,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.5,
     marginBottom: 6,
   },
   input: {
@@ -466,13 +465,13 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     height: 48,
     paddingHorizontal: 14,
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     fontSize: 12,
     color: colors.charcoal,
   },
   privacyNote: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.body,
+    fontSize: 14,
     color: colors.textMuted,
     marginTop: 6,
   },
@@ -497,9 +496,8 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
 });

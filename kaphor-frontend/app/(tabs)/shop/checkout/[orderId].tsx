@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   Alert,
   Dimensions,
   Platform,
@@ -16,11 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRazorpay } from '@codearcade/expo-razorpay';
 import api, { invalidateCache } from '../../../../src/services/api';
 import { useAuth } from '../../../../src/context/AuthContext';
-import { DossierLoading } from '../../../../src/components/common/DossierLoading';
 import { colors, typography, spacing } from '../../../../src/theme';
 import { Header } from '../../../../src/components/common/Header';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { safeBack } from '../../../../src/utils/navigation';
+import { Spinner, Loader } from '../../../../src/components/common/Loader';
 
 const { width } = Dimensions.get('window');
 
@@ -198,7 +197,7 @@ export default function CheckoutScreen() {
       amount: totalInPaise, // Razorpay checkout requires integer paise
       currency: order.currency || 'INR',
       order_id: razorpayOrderId,
-      name: 'Kaphor Luxury Circular Fashion',
+      name: 'Kaphor Circular Fashion',
       description: `Order ${orderId?.slice(0, 8)}...`,
       prefill: {
         contact: (user as any)?.phone || '',
@@ -257,7 +256,7 @@ invalidateCache('/garments');
       },
       onFailure: (error: any) => {
         const msg =
-          error?.description || error?.message || 'Payment was cancelled or failed.';
+          'Payment was cancelled or did not go through. You have not been charged.';
         Alert.alert('Payment', msg);
         setProcessing(false);
       },
@@ -273,7 +272,7 @@ invalidateCache('/garments');
       <View style={styles.container}>
         <Header title="CHECKOUT" showBack fallbackPath="/(tabs)/shop" />
         <View style={styles.center}>
-          <DossierLoading variant="checkout" compact />
+          <Loader variant="checkout" compact />
         </View>
       </View>
     );
@@ -382,7 +381,7 @@ invalidateCache('/garments');
                 </Text>
               ) : (
                 <Text style={styles.addressEmpty}>
-                  Using registered dispatch profile. Standard insured express shipping.
+                  Using your saved address. Insured express shipping.
                 </Text>
               )}
             </View>
@@ -571,7 +570,7 @@ invalidateCache('/garments');
           <View style={styles.addressModalContent}>
             <View style={styles.addressModalHeader}>
               <Text style={styles.addressModalTitle}>SELECT DELIVERY ADDRESS</Text>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                 onPress={() => setShowAddressPicker(false)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
@@ -633,7 +632,7 @@ invalidateCache('/garments');
           activeOpacity={0.8}
         >
           {processing ? (
-            <ActivityIndicator color={colors.cream} size="small" />
+            <Spinner color={colors.cream} size="small" />
           ) : (
             <>
               <Text style={styles.payButtonText}>
@@ -661,16 +660,16 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   loadingText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
     color: colors.charcoal,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 2,
+    fontSize: 18,
   },
   emptyText: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 14,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   backBtn: {
     borderWidth: 2,
@@ -680,9 +679,9 @@ const styles = StyleSheet.create({
   },
   backBtnText: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
 
   // Progress Bar
@@ -693,7 +692,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   step: { alignItems: 'center' },
   stepCircle: {
@@ -722,11 +721,10 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     marginTop: 6,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 1,
   },
   stepLabelDone: { color: colors.charcoal },
   stepLabelActive: { color: colors.red },
@@ -749,11 +747,10 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   sectionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 1.5,
     marginBottom: 14,
   },
 
@@ -784,11 +781,9 @@ const styles = StyleSheet.create({
   },
   itemBrand: {
     color: colors.red,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     marginBottom: 4,
   },
   itemTitle: {
@@ -825,10 +820,9 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   priceValue: {
     color: colors.charcoal,
@@ -849,8 +843,9 @@ const styles = StyleSheet.create({
   },
   freeDeliveryText: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   divider: {
     height: 2,
@@ -864,10 +859,9 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     color: colors.red,
-    fontFamily: typography.mono,
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   totalValue: {
     color: colors.charcoal,
@@ -883,11 +877,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitleSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
-    letterSpacing: 1,
   },
   methodsContainer: {
     gap: 10,
@@ -896,7 +889,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     padding: 14,
     borderWidth: 2,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
     shadowColor: colors.charcoal,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.1,
@@ -960,11 +953,10 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   methodTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   methodTitleActive: {
     color: colors.charcoal,
@@ -974,27 +966,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.2)',
+    borderColor: colors.overlayLight,
   },
   methodBadgeActive: {
     backgroundColor: colors.charcoal,
     borderColor: colors.charcoal,
   },
   methodBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 0.5,
   },
   methodBadgeTextActive: {
     color: colors.cream,
   },
   methodSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    lineHeight: 13,
+    lineHeight: 21,
   },
   securityBadge: {
     flexDirection: 'row',
@@ -1003,16 +995,15 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 4,
     paddingVertical: 10,
-    backgroundColor: 'rgba(40, 54, 24, 0.06)',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 1,
-    borderColor: 'rgba(40, 54, 24, 0.2)',
+    borderColor: colors.emeraldLight,
   },
   securityBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.forest,
-    letterSpacing: 0.5,
   },
   impactCard: {
     flexDirection: 'row',
@@ -1031,7 +1022,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRightWidth: 2,
-    borderRightColor: 'rgba(255,255,255,0.2)',
+    borderRightColor: colors.borderLight,
   },
   impactBody: {
     flex: 1,
@@ -1039,17 +1030,17 @@ const styles = StyleSheet.create({
   },
   impactTitle: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     marginBottom: 6,
   },
   impactText: {
-    color: 'rgba(247,245,240,0.85)',
-    fontFamily: typography.mono,
-    fontSize: 10,
-    lineHeight: 16,
+    color: colors.goldDark,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
+    lineHeight: 21,
   },
 
   // Bottom Bar
@@ -1073,10 +1064,10 @@ const styles = StyleSheet.create({
   },
   disclaimerBarText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.body,
+    fontSize: 14,
     color: colors.textMuted,
-    lineHeight: 12,
+    lineHeight: 15,
   },
   bottomTotal: {
     flexDirection: 'row',
@@ -1085,10 +1076,9 @@ const styles = StyleSheet.create({
   },
   bottomTotalLabel: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   bottomTotalValue: {
     color: colors.charcoal,
@@ -1115,19 +1105,17 @@ const styles = StyleSheet.create({
   },
   payButtonText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 2,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
 
   // Address Section
   sectionActionText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
-    letterSpacing: 1,
     textDecorationLine: 'underline',
   },
   addressCard: {
@@ -1172,42 +1160,43 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   defaultBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   addressPhone: {
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
   addressBody: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
+    borderTopColor: colors.overlayLight,
     paddingTop: 10,
   },
   addressLine: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    lineHeight: 16,
+    lineHeight: 21,
   },
   addressEmpty: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     fontStyle: 'italic',
   },
 
   // Delivery Progress
   deliveryProgressContainer: {
-    backgroundColor: 'rgba(30,31,34,0.03)',
+    backgroundColor: colors.overlayLight,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
+    borderColor: colors.overlayLight,
     marginBottom: 16,
   },
   deliveryProgressHeader: {
@@ -1217,15 +1206,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   deliveryProgressTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   progressBarTrack: {
     height: 6,
-    backgroundColor: 'rgba(30,31,34,0.1)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -1241,7 +1229,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -1261,7 +1249,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
     paddingBottom: 10,
   },
   addressModalTitle: {
@@ -1273,13 +1261,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     padding: 14,
     borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.2)',
+    borderColor: colors.overlayLight,
     marginBottom: 10,
   },
   addressOptionCardActive: {
     borderColor: colors.red,
     borderWidth: 2,
-    backgroundColor: 'rgba(155, 27, 48, 0.04)',
+    backgroundColor: colors.crimsonLight,
   },
   addressOptionHeader: {
     flexDirection: 'row',
@@ -1288,15 +1276,16 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   addressOptionName: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   addressOptionText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    lineHeight: 14,
+    lineHeight: 21,
   },
 });

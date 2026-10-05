@@ -1,35 +1,71 @@
+# Render Blueprint for the Kaphor backend.
+# Every variable marked "sync: false" must be filled in by hand in the Render dashboard
+# (Environment tab). Never put real secrets in this file.
 services:
   - type: web
     name: kaphor-backend
-    env: node
+    runtime: node
+    # Pick the region closest to your users AND your database (keep both in the same region).
+    region: singapore
+    # "free" sleeps after 15 minutes idle and has no persistent disk. Use "starter" or higher for a real launch.
     plan: free
     rootDir: kaphor/backend
-    buildCommand: npm install --include=dev && npm run build
-    startCommand: node dist/index.js
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
+    # Runs pending database migrations first, then starts the API.
+    startCommand: npx prisma migrate deploy && node dist/index.js
     healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
-        value: 20.14.0
+        value: 20.18.0
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: API_VERSION
         value: v1
+      # --- Database ---
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
         sync: false
+      # --- Auth (use long random values, at least 32 characters, different from each other) ---
       - key: JWT_SECRET
         sync: false
       - key: JWT_REFRESH_SECRET
         sync: false
-      - key: GEMINI_API_KEY
+      # --- Web / CORS ---
+      - key: ALLOWED_ORIGINS
         sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: BACKEND_URL
+        sync: false
+      # --- Redis ---
+      - key: REDIS_URL
+        sync: false
+      # --- Payments ---
       - key: RAZORPAY_KEY_ID
         sync: false
       - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # --- AI ---
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      # --- Image storage ---
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
         sync: false
       - key: AWS_REGION
         sync: false
@@ -39,11 +75,13 @@ services:
         sync: false
       - key: AWS_S3_BUCKET_NAME
         sync: false
-      - key: CLOUDINARY_CLOUD_NAME
+      # --- Push notifications ---
+      - key: FIREBASE_PROJECT_ID
         sync: false
-      - key: CLOUDINARY_API_KEY
+      - key: FIREBASE_CLIENT_EMAIL
         sync: false
-      - key: CLOUDINARY_API_SECRET
+      - key: FIREBASE_PRIVATE_KEY
         sync: false
-      - key: BACKEND_URL
-        value: https://kaphor-backend.onrender.com
+      # --- Google sign-in ---
+      - key: GOOGLE_CLIENT_ID
+        sync: false

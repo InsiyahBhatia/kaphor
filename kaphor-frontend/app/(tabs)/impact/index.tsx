@@ -11,8 +11,8 @@ import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/theme';
 import { impactService } from '../../../src/services/impactService';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { Loader } from '../../../src/components/common/Loader';
 
 const { width } = Dimensions.get('window');
 
@@ -36,7 +36,7 @@ export default function UnifiedImpactScreen() {
             setReportData(rep);
           }
         } catch (err) {
-          console.error('Failed to load impact dossier', err);
+          console.error('Failed to load impact', err);
         } finally {
           if (isMounted) setLoading(false);
         }
@@ -50,7 +50,7 @@ export default function UnifiedImpactScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
-        <DossierLoading variant="impact" compact />
+        <Loader variant="impact" compact />
       </View>
     );
   }
@@ -61,7 +61,7 @@ export default function UnifiedImpactScreen() {
   const wasteKg = (((record.wasteSavedG || 0) / 1000)).toFixed(1);
   const trees = impactData?.equivalentTrees || 0;
   const itemsCirculated = record.itemsCirculated || 0;
-  const tier = impactData?.tier || 'CIRCULAR CITIZEN';
+  const tier = impactData?.tier || 'Circular citizen';
   const progressPercent = Math.min(100, Math.max(5, impactData?.progressPercentage ?? 35));
   const history = reportData?.monthlyHistory || [];
 
@@ -75,7 +75,7 @@ export default function UnifiedImpactScreen() {
       color: colors.forest,
     },
     {
-      label: 'WATER CONSERVED',
+      label: 'Water conserved',
       value: waterKL,
       unit: 'KILOLITRES',
       subtext: 'Clean industrial water saved',
@@ -83,23 +83,23 @@ export default function UnifiedImpactScreen() {
       color: colors.navy,
     },
     {
-      label: 'LANDFILL DIVERTED',
+      label: 'Landfill diverted',
       value: wasteKg,
-      unit: 'KG TEXTILE',
+      unit: 'Kg textile',
       subtext: 'Pre-consumer / post-use waste avoided',
       icon: 'trash',
       color: colors.charcoal,
     },
     {
-      label: 'CARBON OFFSET',
+      label: 'Carbon offset',
       value: `${trees}`,
-      unit: 'EQUIV. TREES',
+      unit: 'Equiv. Trees',
       subtext: 'Annual carbon absorption equivalent',
       icon: 'sparkles',
       color: colors.forest,
     },
     {
-      label: 'ITEMS CIRCULATED',
+      label: 'Items circulated',
       value: `${itemsCirculated}`,
       unit: 'GARMENTS',
       subtext: 'Active re-wearing & resale cycles',
@@ -112,7 +112,7 @@ export default function UnifiedImpactScreen() {
     <View style={styles.container}>
       {/* Navigation Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
           style={styles.iconBtn}
           onPress={() => safeBack('/(tabs)/profile')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -121,8 +121,8 @@ export default function UnifiedImpactScreen() {
           <Ionicons name="arrow-back" size={20} color={colors.charcoal} />
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerPre}>SUSTAINABILITY LEDGER</Text>
-          <Text style={styles.headerTitle}>IMPACT DOSSIER</Text>
+          <Text style={styles.headerPre}>Sustainability ledger</Text>
+          <Text style={styles.headerTitle}>Impact details</Text>
         </View>
         <View style={styles.iconPlaceholder}>
           <Ionicons name="leaf-outline" size={18} color={colors.forest} />
@@ -138,7 +138,7 @@ export default function UnifiedImpactScreen() {
               <Text style={styles.tierPillText}>STATUS: {tier.toUpperCase()}</Text>
             </View>
             <Text style={styles.userCallout}>
-              {impactData?.user?.displayName?.toUpperCase() || 'CIRCULAR MEMBER'}
+              {impactData?.user?.displayName?.toUpperCase() || 'Circular member'}
             </Text>
           </View>
 
@@ -148,14 +148,14 @@ export default function UnifiedImpactScreen() {
 
           {impactData?.nextMilestone && (
             <View style={styles.milestoneRow}>
-              <Ionicons name="sparkles" size={14} color="#C9A84C" />
+              <Ionicons name="sparkles" size={14} color={colors.gold} />
               <Text style={styles.milestoneText}>{impactData.nextMilestone}</Text>
             </View>
           )}
         </View>
 
         {/* Core Environmental Impact Grid */}
-        <Text style={styles.sectionHeading}>VERIFIED METRICS</Text>
+        <Text style={styles.sectionHeading}>Verified metrics</Text>
         <View style={styles.grid}>
           {metrics.map((m) => (
             <View key={m.label} style={[styles.metricCard, { borderTopColor: m.color }]}>
@@ -173,7 +173,7 @@ export default function UnifiedImpactScreen() {
         </View>
 
         {/* Circulation Activity Breakdown */}
-        <Text style={styles.sectionHeading}>CIRCULATION BREAKDOWN</Text>
+        <Text style={styles.sectionHeading}>Circulation breakdown</Text>
         <View style={styles.breakdownCard}>
           <View style={styles.breakdownRow}>
             <View style={styles.breakdownLabelGroup}>
@@ -203,7 +203,7 @@ export default function UnifiedImpactScreen() {
         {/* Historical Velocity (if data available) */}
         {history.length > 0 && (
           <>
-            <Text style={styles.sectionHeading}>DISPLACEMENT VELOCITY</Text>
+            <Text style={styles.sectionHeading}>Displacement velocity</Text>
             <View style={styles.historyCard}>
               <View style={styles.historyBarsRow}>
                 {history.map((h: any, i: number) => (
@@ -233,7 +233,7 @@ export default function UnifiedImpactScreen() {
         <View style={styles.footerNote}>
           <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
           <Text style={styles.footerNoteText}>
-            Impact data verified via Kaphor GLIE lifecycle database, garment weights, and certified fiber coefficients.
+            Impact is worked out from garment weights and fabric type.
           </Text>
         </View>
       </ScrollView>
@@ -285,12 +285,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerPre: {
-    fontSize: 9,
-    fontFamily: typography.mono,
-    color: colors.red,
-    letterSpacing: 1.5,
-    fontWeight: '800',
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.red, includeFontPadding: false, },
   headerTitle: {
     fontSize: 18,
     fontFamily: typography.headings,
@@ -333,22 +330,16 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   tierPillText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: colors.cream,
-    letterSpacing: 1,
-    fontWeight: '800',
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.cream, includeFontPadding: false, },
   userCallout: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-    fontWeight: '700',
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   tierProgressTrack: {
     height: 6,
-    backgroundColor: 'rgba(26,26,26,0.08)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 3,
     overflow: 'hidden',
     marginBottom: 10,
@@ -372,14 +363,11 @@ const styles = StyleSheet.create({
   },
 
   sectionHeading: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.charcoal,
-    letterSpacing: 1.5,
     marginBottom: 12,
-    marginTop: 4,
-  },
+    marginTop: 4, includeFontPadding: false, },
 
   // Grid
   grid: {
@@ -405,12 +393,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   metricLabel: {
-    fontSize: 11,
-    fontFamily: typography.mono,
-    letterSpacing: 1,
-    fontWeight: '800',
-    color: colors.charcoal,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.charcoal, includeFontPadding: false, },
   valueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -424,10 +409,9 @@ const styles = StyleSheet.create({
   },
   metricUnit: {
     fontSize: 11,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     color: colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   metricSubtext: {
     fontSize: 11,
@@ -455,7 +439,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(26,26,26,0.08)',
+    borderBottomColor: colors.overlayLight,
   },
   breakdownLabelGroup: {
     flexDirection: 'row',
@@ -474,9 +458,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   breakdownCount: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 13,
-    fontWeight: '800',
     color: colors.charcoal,
   },
 
@@ -506,15 +489,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   barVal: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.bodyMedium,
+    fontSize: 11,
     color: colors.textMuted,
     marginBottom: 4,
   },
   barTrack: {
     width: 14,
     height: 80,
-    backgroundColor: 'rgba(26,26,26,0.06)',
+    backgroundColor: colors.overlayLight,
     justifyContent: 'flex-end',
     borderRadius: 2,
   },
@@ -524,18 +507,16 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   barMonth: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '700',
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
     color: colors.charcoal,
     marginTop: 6,
   },
   barType: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    marginTop: 2,
-  },
+    marginTop: 2, includeFontPadding: false, },
   historyMessage: {
     fontFamily: typography.body,
     fontSize: 11,
@@ -544,7 +525,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(26,26,26,0.08)',
+    borderTopColor: colors.overlayLight,
     paddingTop: 8,
   },
 

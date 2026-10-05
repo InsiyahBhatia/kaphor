@@ -63,7 +63,8 @@ export const useGarmentStore = create<GarmentState>((set, get) => ({
     return get().fetchFeed();
   },
   fetchFeed: async (filters = {}) => {
-    set({ isLoading: true, fetchError: null });
+    // Stale-while-revalidate: only show loading when there is nothing to display yet
+    set({ isLoading: get().garments.length === 0, fetchError: null });
     try {
       const { garmentService } = await import('../services/garmentService');
       const response = await garmentService.getFeed(filters);

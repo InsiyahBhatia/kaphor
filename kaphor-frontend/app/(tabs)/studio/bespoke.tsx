@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../../src/services/api';
 import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Spinner } from '../../../src/components/common/Loader';
+import { getErrorMessage } from '../../../src/utils/errors';
 
 export default function BespokeScreen() {
   const router = useRouter();
@@ -23,11 +25,11 @@ export default function BespokeScreen() {
     setSubmitting(true);
     try {
       await api.post('/studio/bespoke-request', { description, contactEmail: email });
-      Alert.alert('Request Sent!', 'Our artisan team will contact you within 48 hours.', [
+      Alert.alert('Request Sent!', 'Our team will contact you within 48 hours.', [
         { text: 'OK', onPress: () => safeBack('/(tabs)/circular') },
       ]);
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || 'Request failed.');
+      Alert.alert('Error', getErrorMessage(err, 'Request failed.'));
     } finally {
       setSubmitting(false);
     }
@@ -39,13 +41,13 @@ export default function BespokeScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           onPress={() => safeBack('/(tabs)/circular')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="chevron-back-sharp" size={28} color={colors.charcoal} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>BESPOKE CONSULTATION</Text>
+        <Text style={styles.headerTitle}>Custom consultation</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -56,37 +58,37 @@ export default function BespokeScreen() {
         automaticallyAdjustKeyboardInsets={true}
         keyboardDismissMode="on-drag"
       >
-        <Text style={styles.title}>CUSTOM RECONSTRUCTION</Text>
+        <Text style={styles.title}>Custom reconstruction</Text>
         <Text style={styles.subtitle}>
-          Our heritage artisans transform your existing pieces into contemporary statement garments.
-          Every project is handled with rigid, museum-grade care and precise architectural technique.
+          Our tailors turn your old clothes into something new.
+          Every project is handled with care.
         </Text>
 
         <View style={styles.infoCards}>
           <View style={styles.infoCard}>
             <Ionicons name="time-sharp" size={24} color={colors.white} />
-            <Text style={styles.infoTitle}>TIMELINE</Text>
+            <Text style={styles.infoTitle}>Timeline</Text>
             <Text style={styles.infoText}>2-6 WKS</Text>
           </View>
           <View style={[styles.infoCard, { backgroundColor: colors.cream, borderColor: colors.charcoal }]}>
             <Ionicons name="shield-checkmark-sharp" size={24} color={colors.charcoal} />
-            <Text style={[styles.infoTitle, { color: colors.red }]}>GUARANTEE</Text>
-            <Text style={[styles.infoText, { color: colors.charcoal }]}>FLAWLESS</Text>
+            <Text style={[styles.infoTitle, { color: colors.red }]}>Guarantee</Text>
+            <Text style={[styles.infoText, { color: colors.charcoal }]}>Flawless</Text>
           </View>
         </View>
 
-        <Text style={styles.inputLabel}>DESCRIBE YOUR VISION / SPECIFICATIONS</Text>
-        <TextInput
+        <Text style={styles.inputLabel}>Describe your vision / specifications</Text>
+        <TextInput accessibilityLabel="Describe your request"
           style={[styles.input, { height: 160, textAlignVertical: 'top' }]}
-          placeholder="Detailed structural requirements..."
+          placeholder="Describe what you want changed..."
           placeholderTextColor={colors.textMuted}
           value={description}
           onChangeText={setDescription}
           multiline
         />
 
-        <Text style={styles.inputLabel}>SECURE CONTACT EMAIL</Text>
-        <TextInput
+        <Text style={styles.inputLabel}>Secure contact email</Text>
+        <TextInput accessibilityLabel="Your email"
           style={styles.input}
           placeholder="agent@domain.com"
           placeholderTextColor={colors.textMuted}
@@ -99,7 +101,7 @@ export default function BespokeScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color={colors.cream} /> : <Text style={styles.submitBtnText}>INITIATE REQUEST →</Text>}
+          {submitting ? <Spinner color={colors.cream} /> : <Text style={styles.submitBtnText}>Start request →</Text>}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -113,10 +115,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', alignItems: 'center', marginBottom: 24,
     paddingBottom: 20, borderBottomWidth: 2, borderBottomColor: colors.charcoal
   },
-  headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, letterSpacing: 2, fontWeight: '800' },
+  headerTitle: { color: colors.charcoal, fontSize: 21, fontFamily: typography.handBold, includeFontPadding: false, },
   content: { padding: 20, paddingBottom: 180 },
   title: { fontSize: 48, fontFamily: typography.headings, color: colors.charcoal, marginBottom: 12 },
-  subtitle: { color: colors.textPrimary, fontFamily: typography.mono, fontSize: 12, lineHeight: 22, marginBottom: 32 },
+  subtitle: { color: colors.textPrimary, fontFamily: typography.handwritten, fontSize: 17, lineHeight: 31, marginBottom: 32, includeFontPadding: false, },
   
   infoCards: { flexDirection: 'row', gap: 16, marginBottom: 32 },
   infoCard: { 
@@ -124,13 +126,13 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4
   },
-  infoTitle: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 10, letterSpacing: 2, fontWeight: '800' },
-  infoText: { color: colors.white, fontFamily: typography.mono, fontSize: 16, fontWeight: '800' },
+  infoTitle: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
+  infoText: { color: colors.white, fontFamily: typography.handBold, fontSize: 21, includeFontPadding: false, },
   
-  inputLabel: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 10, letterSpacing: 2, marginBottom: 8, marginTop: 16, fontWeight: '800' },
+  inputLabel: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 16, marginBottom: 8, marginTop: 16, includeFontPadding: false, },
   input: { 
     height: 56, borderWidth: 2, borderColor: colors.charcoal, backgroundColor: colors.white, 
-    padding: 16, color: colors.charcoal, fontFamily: typography.mono, fontSize: 14, marginBottom: 24,
+    padding: 16, color: colors.charcoal, fontFamily: typography.body, fontSize: 14, marginBottom: 24,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2
   },
   
@@ -146,5 +148,5 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4
   },
-  submitBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 14, fontWeight: '800', letterSpacing: 1 },
+  submitBtnText: { color: colors.cream, fontFamily: typography.bodyBold, fontSize: 14, letterSpacing: 0.2 },
 });

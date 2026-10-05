@@ -35,6 +35,8 @@ const THRESHOLDS = {
   COOLDOWN_BASE_HRS: 24,
 };
 
+const LOE_MUTABLE_STATES: string[] = ['LISTED', 'INTEREST', 'DECLINE', 'CIRCULATION'];
+
 // ── Cosine similarity ────────────────────────────
 function cosine(a: number[], b: number[]): number {
   if (a.length !== b.length || a.length === 0) return 0;
@@ -63,6 +65,16 @@ export async function evaluateLifecycle(garmentId: string, userId: string, event
   ]);
 
   if (!garment || !user) {
+    return { action: 'SUPPRESS', score: 0 };
+  }
+
+  // Behavioural routing must never touch garments that are reserved, in escrow, in a wardrobe,
+  // paused/de-listed, or otherwise outside the live-marketplace states.
+  if (
+    !garment.isActive ||
+    garment.reservedOrderId ||
+    !LOE_MUTABLE_STATES.includes(garment.lifecycleState)
+  ) {
     return { action: 'SUPPRESS', score: 0 };
   }
 
@@ -112,10 +124,11 @@ export async function evaluateLifecycle(garmentId: string, userId: string, event
 
   // 4. & 5. Transition Logic
   if (interestScore < THRESHOLDS.DECLINE_THRESHOLD && interactionDecay > THRESHOLDS.DECAY_MAX && garment.lifecycleState !== 'DECLINE') {
-    await db.garment.update({
-      where: { id: garmentId },
+    const declined = await db.garment.updateMany({
+      where: { id: garmentId, isActive: true, reservedOrderId: null, lifecycleState: { in: LOE_MUTABLE_STATES as any } },
       data: { lifecycleState: 'DECLINE' },
     });
+    if (declined.count === 0) return { action: 'SUPPRESS', score: compatScore };
 
     emitToUser(garment.sellerId, 'lifecycle:update', {
       garmentId,
@@ -128,10 +141,11 @@ export async function evaluateLifecycle(garmentId: string, userId: string, event
 
   if (garment.lifecycleState === 'DECLINE') {
     // DECLINE + no match: transition to CIRCULATION, schedule cooldown
-    await db.garment.update({
-      where: { id: garmentId },
+    const circulated = await db.garment.updateMany({
+      where: { id: garmentId, isActive: true, reservedOrderId: null, lifecycleState: 'DECLINE' },
       data: { lifecycleState: 'CIRCULATION' },
     });
+    if (circulated.count === 0) return { action: 'SUPPRESS', score: compatScore };
 
     // schedule cooldown
     const cooldownHrs = THRESHOLDS.COOLDOWN_BASE_HRS;
@@ -155,10 +169,11 @@ export async function evaluateLifecycle(garmentId: string, userId: string, event
   }
 
   if (interestScore > THRESHOLDS.INTEREST_THRESHOLD && garment.lifecycleState !== 'INTEREST') {
-    await db.garment.update({
-      where: { id: garmentId },
+    const interested = await db.garment.updateMany({
+      where: { id: garmentId, isActive: true, reservedOrderId: null, lifecycleState: { in: LOE_MUTABLE_STATES as any } },
       data: { lifecycleState: 'INTEREST' },
     });
+    if (interested.count === 0) return { action: 'SUPPRESS', score: compatScore };
     return { action: 'TRANSITION', newState: 'INTEREST', score: compatScore };
   }
 
@@ -180,10 +195,13 @@ export async function initiateResell(garmentId: string, userId: string): Promise
     return { action: 'SUPPRESS', score: 0 };
   }
 
-  await db.garment.update({
-    where: { id: garmentId },
+  const moved = await db.garment.updateMany({
+    where: { id: garmentId, sellerId: userId, lifecycleState: 'OWNERSHIP', reservedOrderId: null },
     data: { lifecycleState: 'SELL_INTENT' },
   });
+  if (moved.count === 0) {
+    return { action: 'SUPPRESS', score: 0 };
+  }
 
   emitToUser(userId, 'lifecycle:update', {
     garmentId,

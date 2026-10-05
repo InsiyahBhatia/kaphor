@@ -47,6 +47,11 @@ export const colors = {
   goldLight: '#FDF9EE',
   copper: '#B89A3E',
 
+  // Overlays
+  overlay: 'rgba(23,23,23,0.55)',
+  overlayLight: 'rgba(23,23,23,0.08)',
+  paperGlass: 'rgba(250,247,240,0.92)',
+
   // Semantic mappings
   success: '#176451',
   error: '#C92745',
@@ -90,6 +95,8 @@ export const typography = {
   // Handwritten Editorial Annotations & Signatures
   script: 'Caveat_400Regular',
   handwritten: 'Caveat_400Regular',
+  handSemi: 'Caveat_600SemiBold',
+  handBold: 'Caveat_700Bold',
 } as const;
 
 export const spacing = {

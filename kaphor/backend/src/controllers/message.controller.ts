@@ -23,6 +23,16 @@ async function resolveGarmentThumbnail(garment: any, resolveAllImages: boolean =
   return { ...garment, image: firstImage, images: resolvedImages };
 }
 
+const CONVERSATION_TYPES = ['SALE', 'SWAP', 'RENTAL', 'GENERAL'] as const;
+const MAX_IMAGE_DATA_URI_LENGTH = 8 * 1024 * 1024;
+const MAX_IMAGE_URL_LENGTH = 2048;
+const REPORT_REASON_MAX = 100;
+const REPORT_DETAILS_MAX = 1000;
+
+function isId(v: unknown): v is string {
+  return typeof v === 'string' && v.length > 0 && v.length <= 64;
+}
+
 // Anti-fraud/anti-phishing heuristic pattern
 const OFF_PLATFORM_KEYWORDS = [
   /pay\s+(directly|direct|offline|outside)/i,
@@ -148,8 +158,10 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
             },
             orderBy: { createdAt: 'desc' },
             take: 1,
+            select: { content: true },
           },
         },
+        take: 200,
       }),
       db.directMessage.groupBy({
         by: ['conversationId'],
@@ -167,6 +179,7 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           status: { in: ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED'] },
         },
         orderBy: { createdAt: 'desc' },
+        take: 300,
         select: {
           id: true,
           buyerId: true,
@@ -184,6 +197,7 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           status: { notIn: ['CANCELLED', 'REJECTED'] },
         },
         orderBy: { updatedAt: 'desc' },
+        take: 300,
         select: {
           id: true,
           initiatorId: true,
@@ -201,6 +215,7 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'COMPLETED'] },
         },
         orderBy: { updatedAt: 'desc' },
+        take: 300,
         select: {
           id: true,
           renterId: true,
@@ -391,14 +406,61 @@ export async function getOrCreateConversation(req: AuthRequest, res: Response): 
       rentalId?: string;
     };
 
-    if (!recipientId) {
+    if (!isId(recipientId)) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'recipientId is required' });
+      return;
+    }
+    for (const v of [garmentId, orderId, swapId, rentalId]) {
+      if (v !== undefined && v !== null && !isId(v)) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid identifier' });
+        return;
+      }
+    }
+    if (type !== undefined && type !== null && !(CONVERSATION_TYPES as readonly string[]).includes(type as string)) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid conversation type' });
       return;
     }
 
     if (recipientId === uid) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Cannot start conversation with yourself' });
       return;
+    }
+
+    const recipient = await db.user.findUnique({ where: { id: recipientId }, select: { id: true, isActive: true } });
+    if (!recipient || recipient.isActive === false) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Recipient not found' });
+      return;
+    }
+
+    // Any transaction context linked to a conversation must involve exactly these two users.
+    const bothIds = [uid, recipientId];
+    if (orderId) {
+      const o = await db.order.findUnique({ where: { id: orderId }, select: { buyerId: true, sellerId: true } });
+      if (!o || !bothIds.includes(o.buyerId) || !bothIds.includes(o.sellerId)) {
+        res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this order' });
+        return;
+      }
+    }
+    if (swapId) {
+      const s = await db.swap.findUnique({ where: { id: swapId }, select: { initiatorId: true, receiverId: true } });
+      if (!s || !bothIds.includes(s.initiatorId) || !bothIds.includes(s.receiverId)) {
+        res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this swap' });
+        return;
+      }
+    }
+    if (rentalId) {
+      const r = await db.rental.findUnique({ where: { id: rentalId }, select: { renterId: true, garment: { select: { sellerId: true } } } });
+      if (!r || !bothIds.includes(r.renterId) || !bothIds.includes(r.garment.sellerId)) {
+        res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this rental' });
+        return;
+      }
+    }
+    if (garmentId) {
+      const gExists = await db.garment.findUnique({ where: { id: garmentId }, select: { id: true } });
+      if (!gExists) {
+        res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found' });
+        return;
+      }
     }
 
     let initialType: 'SALE' | 'SWAP' | 'RENTAL' | 'GENERAL' = type || 'SALE';
@@ -640,9 +702,11 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
     const p2AvatarPromise = resolveAvatar(conv.participant2.avatar);
 
     // Fetch messages
+    // Most recent 500 messages only (bounded), returned oldest-first
     const messagesPromise = db.directMessage.findMany({
       where: { conversationId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
       include: {
         sender: {
           select: { id: true, displayName: true, username: true, avatar: true, isVerified: true },
@@ -903,7 +967,7 @@ export async function getConversationMessages(req: AuthRequest, res: Response): 
 
     // Fast resolution: avatars are mapped synchronously, only message images need async resolution if present
     const resolvedMessages = await Promise.all(
-      messages.map(async (m: any) => ({
+      [...messages].reverse().map(async (m: any) => ({
         ...m,
         imageUrl: m.imageUrl ? await getDownloadUrl(m.imageUrl) : null,
         sender: {
@@ -984,8 +1048,14 @@ export async function linkConversationGarment(req: AuthRequest, res: Response): 
       return;
     }
     const { conversationId } = req.params;
-    const { garmentId } = req.body;
+    const rawGarmentId = req.body?.garmentId;
     const uid = req.user.id;
+
+    if (rawGarmentId !== undefined && rawGarmentId !== null && rawGarmentId !== '' && !isId(rawGarmentId)) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid garmentId' });
+      return;
+    }
+    const garmentId: string | null = rawGarmentId || null;
 
     const conv = await db.conversation.findUnique({
       where: { id: conversationId },
@@ -996,9 +1066,17 @@ export async function linkConversationGarment(req: AuthRequest, res: Response): 
       return;
     }
 
+    if (garmentId) {
+      const g = await db.garment.findUnique({ where: { id: garmentId }, select: { sellerId: true } });
+      if (!g || (g.sellerId !== conv.participant1Id && g.sellerId !== conv.participant2Id)) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Garment does not belong to this conversation' });
+        return;
+      }
+    }
+
     const updated = await db.conversation.update({
       where: { id: conversationId },
-      data: { garmentId: garmentId || null },
+      data: { garmentId },
       include: {
         garment: {
           select: {
@@ -1174,6 +1252,17 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Message must have content or an image (max 4000 chars)' });
       return;
     }
+    if (imageUrl) {
+      const isDataUri = imageUrl.startsWith('data:image/');
+      if (isDataUri ? imageUrl.length > MAX_IMAGE_DATA_URI_LENGTH : imageUrl.length > MAX_IMAGE_URL_LENGTH) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Image is too large' });
+        return;
+      }
+      if (!isDataUri && /^(javascript|data|file|vbscript):/i.test(imageUrl)) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid image' });
+        return;
+      }
+    }
 
     const uid = req.user.id;
     const conv = await db.conversation.findUnique({
@@ -1199,7 +1288,13 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
           imageUrl = uploadRes.url;
         }
       } catch (uploadErr) {
-        logger.warn('Failed to upload message image to storage, saving directly', { error: uploadErr });
+        logger.warn('Failed to upload message image to storage', { error: uploadErr });
+        res.status(502).json({ error: 'UPLOAD_FAILED', message: 'Failed to upload image' });
+        return;
+      }
+      if (imageUrl.startsWith('data:')) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid image' });
+        return;
       }
     }
 
@@ -1227,8 +1322,8 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
       const targetId = match ? match[1] : null;
       const emoji = match ? match[2] : '❤️';
       if (targetId) {
-        const targetMsg = await db.directMessage.findUnique({
-          where: { id: targetId },
+        const targetMsg = await db.directMessage.findFirst({
+          where: { id: targetId, conversationId },
           select: { content: true, imageUrl: true },
         });
         if (targetMsg?.content) {
@@ -1247,19 +1342,23 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
       lastPreview = imageUrl && !cleanPreview ? '📷 Photo' : cleanPreview.slice(0, 100);
     }
 
-    await db.conversation.update({
-      where: { id: conversationId },
-      data: {
-        lastMessageText: lastPreview,
-        lastMessageAt: new Date(),
-      },
-    });
-
+    // Independent work: update the conversation preview while resolving media URLs.
+    const [, senderAvatar, resolvedImageUrl] = await Promise.all([
+      db.conversation.update({
+        where: { id: conversationId },
+        data: {
+          lastMessageText: lastPreview,
+          lastMessageAt: new Date(),
+        },
+        select: { id: true },
+      }),
+      resolveAvatar(msg.sender.avatar),
+      msg.imageUrl ? getDownloadUrl(msg.imageUrl) : Promise.resolve(null),
+    ]);
     const resolvedSender = {
       ...msg.sender,
-      avatar: await resolveAvatar(msg.sender.avatar),
+      avatar: senderAvatar,
     };
-    const resolvedImageUrl = msg.imageUrl ? await getDownloadUrl(msg.imageUrl) : null;
     const outgoingData = { ...msg, imageUrl: resolvedImageUrl, sender: resolvedSender };
 
     // Emit live socket event to conversation room & recipient
@@ -1317,10 +1416,13 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
       return;
     }
     const { userId } = req.params;
-    const { reason, details } = req.body as { reason?: string; details?: string };
+    const rawReason = req.body?.reason;
+    const rawDetails = req.body?.details;
+    const reason = typeof rawReason === 'string' ? rawReason.trim() : '';
+    const details = typeof rawDetails === 'string' ? rawDetails.slice(0, REPORT_DETAILS_MAX) : undefined;
 
-    if (!reason) {
-      res.status(400).json({ error: 'BAD_REQUEST', message: 'Report reason is required' });
+    if (!reason || reason.length > REPORT_REASON_MAX) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'A valid report reason is required' });
       return;
     }
 
@@ -1329,12 +1431,22 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
+    if (!isId(userId)) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid user id' });
+      return;
+    }
+    const reported = await db.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!reported) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'User not found' });
+      return;
+    }
+
     const report = await db.userReport.create({
       data: {
         reporterId: req.user.id,
         reportedUserId: userId,
         reason,
-        details: details?.slice(0, 1000),
+        details,
       },
     });
 
@@ -1383,8 +1495,7 @@ export async function deleteConversation(req: AuthRequest, res: Response): Promi
 
     const isParticipant =
       conversation.participant1Id === req.user.id ||
-      conversation.participant2Id === req.user.id ||
-      req.user.role === 'ADMIN';
+      conversation.participant2Id === req.user.id;
 
     if (!isParticipant) {
       res.status(403).json({ error: 'FORBIDDEN', message: 'You are not a participant in this conversation' });

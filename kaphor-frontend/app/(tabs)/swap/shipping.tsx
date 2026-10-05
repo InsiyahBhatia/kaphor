@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  ActivityIndicator,
   Linking,
   Platform,
   KeyboardAvoidingView,
@@ -25,6 +24,8 @@ import { useRazorpay } from '@codearcade/expo-razorpay';
 import { invalidateCache } from '../../../src/services/api';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import type { SwapTransaction, SwapAddress, SwapTracking } from '../../../src/types/swap';
+import { Loader, Spinner } from '../../../src/components/common/Loader';
+import { getErrorMessage } from '../../../src/utils/errors';
 
 const COURIER_OPTIONS = [
   { id: 'DELHIVERY', name: 'Delhivery', icon: 'cube' },
@@ -135,7 +136,7 @@ export default function SwapShippingScreen() {
         'Your delivery address has been updated and shared with your swap partner.'
       );
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || 'Failed to update delivery address.');
+      Alert.alert('Error', getErrorMessage(err, 'Failed to update delivery address.'));
     } finally {
       setSharingAddress(false);
     }
@@ -148,7 +149,7 @@ export default function SwapShippingScreen() {
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Confirm & Release Escrow',
+          text: 'Confirm & Release Deposit',
           onPress: async () => {
             setConfirmingReceived(true);
             try {
@@ -177,7 +178,7 @@ export default function SwapShippingScreen() {
                 );
               }
             } catch (err: any) {
-              Alert.alert('Error', err?.response?.data?.message || 'Failed to confirm receipt.');
+              Alert.alert('Error', getErrorMessage(err, 'Failed to confirm receipt.'));
             } finally {
               setConfirmingReceived(false);
             }
@@ -205,7 +206,7 @@ export default function SwapShippingScreen() {
       }
     } catch (err: any) {
       console.error('Failed to load shipping details', err);
-      Alert.alert('Error', err?.response?.data?.message || 'Failed to load shipping details');
+      Alert.alert('Error', getErrorMessage(err, 'Failed to load shipping details'));
     } finally {
       setLoading(false);
     }
@@ -222,9 +223,9 @@ export default function SwapShippingScreen() {
         amount: amount || 50000,
         currency: 'INR',
         order_id: razorpayOrderId,
-        name: 'Kaphor Luxury Escrow',
+        name: 'Kaphor Swap Deposit',
         description: 'Refundable Swap Security Deposit (₹500)',
-        theme: { color: '#8C6D3B' },
+        theme: { color: colors.goldDark },
       };
 
       try {
@@ -237,9 +238,9 @@ export default function SwapShippingScreen() {
                 razorpay_signature: success.razorpay_signature || '',
               });
               setDepositPaid(true);
-              Alert.alert('Escrow Secured!', '₹500 security deposit has been locked into escrow. You can now safely dispatch your shipment.');
+              Alert.alert('Deposit secured!', 'Your ₹500 deposit is held safely. You can now ship your item.');
             } catch (err: any) {
-              Alert.alert('Escrow Secured!', 'Deposit confirmed in Kaphor vault.');
+              Alert.alert('Deposit secured!', 'Your deposit is confirmed.');
               setDepositPaid(true);
             } finally {
               setPayingDeposit(false);
@@ -253,8 +254,8 @@ export default function SwapShippingScreen() {
       } catch (checkoutErr) {
         // Fallback simulation for dev/emulator environments
         Alert.alert(
-          'Confirm Escrow Deposit',
-          'Lock ₹500 refundable security deposit into Kaphor Escrow? (Refunded automatically upon delivery)',
+          'Confirm Deposit',
+          'Pay a ₹500 refundable deposit? It is refunded automatically after delivery.',
           [
             { text: 'Cancel', style: 'cancel', onPress: () => setPayingDeposit(false) },
             {
@@ -267,7 +268,7 @@ export default function SwapShippingScreen() {
                     razorpay_signature: '',
                   });
                   setDepositPaid(true);
-                  Alert.alert('Escrow Secured!', '₹500 security deposit is now held in escrow. Shipping is unlocked!');
+                  Alert.alert('Deposit secured!', 'Your ₹500 deposit is held safely. You can ship now!');
                 } catch {
                   setDepositPaid(true);
                 } finally {
@@ -287,10 +288,10 @@ export default function SwapShippingScreen() {
   const handleMarkShipped = async () => {
     if (!depositPaid) {
       Alert.alert(
-        'Escrow Deposit Required',
-        'Both parties must deposit the refundable ₹500 escrow before shipping can be confirmed.',
+        'Deposit Required',
+        'Both people must pay the refundable ₹500 deposit before shipping.',
         [
-          { text: 'Pay Escrow Deposit', onPress: handlePayDeposit },
+          { text: 'Pay Deposit', onPress: handlePayDeposit },
           { text: 'Cancel', style: 'cancel' },
         ]
       );
@@ -347,9 +348,7 @@ export default function SwapShippingScreen() {
     return (
       <View style={styles.container}>
         <Header title="SHIPPING" showBack fallbackPath={fallback} />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.charcoal} />
-        </View>
+        <Loader variant="swap" compact />
       </View>
     );
   }
@@ -387,16 +386,16 @@ export default function SwapShippingScreen() {
         <TouchableOpacity style={styles.chatWithPartnerBar} onPress={handleChatWithPartner} activeOpacity={0.8}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Ionicons name="chatbubbles-outline" size={16} color={colors.charcoal} />
-            <Text style={styles.chatWithPartnerText}>CHAT WITH SWAP PARTNER</Text>
+            <Text style={styles.chatWithPartnerText}>Chat with swap partner</Text>
           </View>
           <Ionicons name="chevron-forward" size={14} color={colors.charcoal} />
         </TouchableOpacity>
 
         {/* 1. SHIP TO (PARTNER'S ADDRESS) */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitleNoMargin}>SHIP TO (PARTNER'S ADDRESS)</Text>
+          <Text style={styles.sectionTitleNoMargin}>Ship to (partner's address)</Text>
           <View style={styles.addressRoleBadge}>
-            <Text style={styles.addressRoleBadgeText}>DISPATCH DESTINATION</Text>
+            <Text style={styles.addressRoleBadgeText}>Shipping destination</Text>
           </View>
         </View>
 
@@ -404,7 +403,7 @@ export default function SwapShippingScreen() {
           <View style={styles.addressCard}>
             <View style={styles.addressHeader}>
               <Ionicons name="location" size={14} color={colors.cream} />
-              <Text style={styles.addressHeaderText}>SEND YOUR PACKAGE TO:</Text>
+              <Text style={styles.addressHeaderText}>Send your package to:</Text>
             </View>
             <View style={styles.addressBody}>
               <Text style={styles.addressName}>{partnerAddress.fullName}</Text>
@@ -421,20 +420,20 @@ export default function SwapShippingScreen() {
           <View style={styles.noAddressCard}>
             <Ionicons name="hourglass-outline" size={24} color={colors.textMuted} />
             <Text style={styles.noAddressText}>
-              Partner hasn't shared their delivery address yet. You will be able to dispatch as soon as they provide coordinates.
+              Partner hasn't shared their delivery address yet. You can ship once they add it.
             </Text>
           </View>
         )}
 
         {/* 2. YOUR DELIVERY ADDRESS (WHERE PARTNER SENDS TO YOU) */}
         <View style={[styles.sectionHeaderRow, { marginTop: 18 }]}>
-          <Text style={styles.sectionTitleNoMargin}>YOUR DELIVERY ADDRESS</Text>
+          <Text style={styles.sectionTitleNoMargin}>Your delivery address</Text>
           <TouchableOpacity
             onPress={() => setShowAddressPicker(true)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={styles.changeAddressLink}>
-              {myAddress ? 'CHANGE' : 'SELECT FROM BOOK'}
+              {myAddress ? 'CHANGE' : 'Select from book'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -443,7 +442,7 @@ export default function SwapShippingScreen() {
           <View style={styles.addressCard}>
             <View style={[styles.addressHeader, { backgroundColor: colors.charcoal }]}>
               <Ionicons name="home" size={14} color={colors.cream} />
-              <Text style={styles.addressHeaderText}>PARTNER WILL SHIP TO YOU AT:</Text>
+              <Text style={styles.addressHeaderText}>Partner will ship to you at:</Text>
             </View>
             <View style={styles.addressBody}>
               <Text style={styles.addressName}>{myAddress.fullName}</Text>
@@ -466,7 +465,7 @@ export default function SwapShippingScreen() {
             <Text style={[styles.noAddressText, { color: colors.charcoal, fontWeight: '700' }]}>
               No delivery address shared with partner.
             </Text>
-            <Text style={[styles.noAddressText, { fontSize: 9 }]}>
+            <Text style={[styles.noAddressText, { fontSize: 11 }]}>
               Tap to choose a saved delivery address from your Address Book.
             </Text>
             <View style={styles.pickAddressBtn}>
@@ -482,28 +481,28 @@ export default function SwapShippingScreen() {
               <Ionicons
                 name={depositPaid ? 'shield-checkmark' : 'shield'}
                 size={22}
-                color={depositPaid ? '#2E7D32' : colors.copper}
+                color={depositPaid ? colors.forest : colors.copper}
               />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.depositTitle}>
-                {depositPaid ? 'ESCROW DEPOSIT SECURED' : 'SECURITY DEPOSIT REQUIRED'}
+                {depositPaid ? 'Deposit secured' : 'Deposit required'}
               </Text>
               <Text style={styles.depositAmountText}>
-                {depositPaid ? '₹500 SAFELY HELD IN ESCROW' : '₹500 REFUNDABLE ESCROW'}
+                {depositPaid ? '₹500 HELD SAFELY' : '₹500 REFUNDABLE DEPOSIT'}
               </Text>
             </View>
             <View style={[styles.depositStatusBadge, depositPaid ? styles.badgePaid : styles.badgeUnpaid]}>
               <Text style={[styles.depositStatusBadgeText, depositPaid ? styles.badgeTextPaid : styles.badgeTextUnpaid]}>
-                {depositPaid ? 'PROTECTED' : 'ACTION REQUIRED'}
+                {depositPaid ? 'PROTECTED' : 'Action required'}
               </Text>
             </View>
           </View>
 
           <Text style={styles.depositExplainer}>
             {depositPaid
-              ? 'Your ₹500 refundable security deposit is safely locked in Kaphor Escrow. It will be released automatically back to your payment account once both parties confirm item delivery.'
-              : 'Both members place a refundable ₹500 deposit into Kaphor Escrow before dispatching items. This protects against non-delivery or undisclosed defects, and is 100% refunded upon confirmed delivery.'}
+              ? 'Your ₹500 deposit is held safely. It is refunded once both people confirm delivery.'
+              : 'Both people pay a ₹500 deposit before shipping. It protects against lost or damaged items and is fully refunded after delivery.'}
           </Text>
 
           {!depositPaid && (
@@ -514,11 +513,11 @@ export default function SwapShippingScreen() {
               activeOpacity={0.8}
             >
               {payingDeposit ? (
-                <ActivityIndicator color={colors.cream} size="small" />
+                <Spinner color={colors.cream} size="small" />
               ) : (
                 <>
                   <Ionicons name="lock-closed" size={16} color={colors.cream} />
-                  <Text style={styles.payDepositBtnText}>DEPOSIT ₹500 VIA RAZORPAY / UPI</Text>
+                  <Text style={styles.payDepositBtnText}>Deposit ₹500 via Razorpay / UPI</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -531,7 +530,7 @@ export default function SwapShippingScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <Ionicons name="checkmark-circle" size={22} color={colors.forest} />
               <Text style={[styles.sectionTitle, { marginBottom: 0, color: colors.charcoal, fontSize: 12 }]}>
-                SHIPMENT DISPATCHED
+                Shipment sent
               </Text>
             </View>
             <Text style={styles.shipCardDesc}>
@@ -540,14 +539,14 @@ export default function SwapShippingScreen() {
           </View>
         ) : (
           <>
-            <Text style={styles.sectionTitle}>MARK AS SHIPPED</Text>
+            <Text style={styles.sectionTitle}>Mark as shipped</Text>
             <View style={styles.shipCard}>
               <Text style={styles.shipCardDesc}>
                 Enter tracking details so both parties can track the package in real-time.
               </Text>
 
               {/* Courier Selector */}
-              <Text style={styles.formLabel}>COURIER PARTNER</Text>
+              <Text style={styles.formLabel}>Courier partner</Text>
               <View style={styles.courierGrid}>
                 {COURIER_OPTIONS.map((opt) => (
                   <TouchableOpacity
@@ -568,8 +567,8 @@ export default function SwapShippingScreen() {
               </View>
 
               {/* Tracking Number */}
-              <Text style={styles.formLabel}>TRACKING NUMBER</Text>
-              <TextInput
+              <Text style={styles.formLabel}>Tracking number</Text>
+              <TextInput accessibilityLabel="Tracking number"
                 style={styles.input}
                 placeholder="Enter tracking number from courier receipt"
                 placeholderTextColor={colors.textMuted}
@@ -585,11 +584,11 @@ export default function SwapShippingScreen() {
                 activeOpacity={0.8}
               >
                 {saving ? (
-                  <ActivityIndicator color={colors.cream} />
+                  <Spinner color={colors.cream} />
                 ) : (
                   <>
                     <Ionicons name="cube" size={18} color={colors.cream} />
-                    <Text style={styles.submitBtnText}>MARK AS SHIPPED</Text>
+                    <Text style={styles.submitBtnText}>Mark as shipped</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -599,7 +598,7 @@ export default function SwapShippingScreen() {
 
         {/* Existing Tracking Info */}
         {(myTracking || theirTracking) && (
-          <Text style={styles.sectionTitle}>TRACKING STATUS</Text>
+          <Text style={styles.sectionTitle}>Tracking status</Text>
         )}
         {myTracking && renderTracking('Your Outgoing Shipment', myTracking)}
         {theirTracking && (
@@ -613,7 +612,7 @@ export default function SwapShippingScreen() {
           <View style={styles.confirmReceiptCard}>
             <View style={styles.confirmReceiptHeader}>
               <Ionicons name="shield-checkmark" size={18} color={colors.forest} />
-              <Text style={styles.confirmReceiptTitle}>DELIVERY & CONDITION VERIFICATION</Text>
+              <Text style={styles.confirmReceiptTitle}>Delivery & condition verification</Text>
             </View>
             <Text style={styles.confirmReceiptSub}>
               Once your package arrives, inspect the accessory and confirm receipt to complete the exchange, release your ₹500 security deposit, and update your impact metrics.
@@ -625,11 +624,11 @@ export default function SwapShippingScreen() {
               activeOpacity={0.85}
             >
               {confirmingReceived ? (
-                <ActivityIndicator color={colors.cream} />
+                <Spinner color={colors.cream} />
               ) : (
                 <>
                   <Ionicons name="checkmark-done" size={18} color={colors.cream} />
-                  <Text style={styles.confirmReceiptBtnText}>CONFIRM PACKAGE RECEIVED</Text>
+                  <Text style={styles.confirmReceiptBtnText}>Confirm package received</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -641,7 +640,7 @@ export default function SwapShippingScreen() {
             <View style={styles.completedBanner}>
               <Ionicons name="checkmark-circle" size={24} color={colors.forest} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.completedBannerTitle}>SWAP TRANSACTION COMPLETED</Text>
+                <Text style={styles.completedBannerTitle}>Swap transaction completed</Text>
                 <Text style={styles.completedBannerSub}>
                   Both items received & verified. Security deposits released to your account.
                 </Text>
@@ -651,22 +650,22 @@ export default function SwapShippingScreen() {
             {/* MUTUAL REVIEWS SECTION */}
             <View style={styles.reviewSectionContainer}>
               <View style={styles.reviewSectionHeader}>
-                <Ionicons name="star" size={16} color="#C9A84C" />
-                <Text style={styles.reviewSectionTitle}>MUTUAL PEER REVIEWS</Text>
+                <Ionicons name="star" size={16} color={colors.gold} />
+                <Text style={styles.reviewSectionTitle}>Mutual peer reviews</Text>
               </View>
 
               {/* 1. CURRENT USER REVIEW */}
               {myReview ? (
                 <View style={styles.reviewedCard}>
                   <View style={styles.reviewedCardHeader}>
-                    <Text style={styles.reviewedCardRole}>YOUR REVIEW OF PARTNER</Text>
+                    <Text style={styles.reviewedCardRole}>Your review of partner</Text>
                     <View style={styles.starsRow}>
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Ionicons
                           key={star}
                           name={star <= myReview.rating ? 'star' : 'star-outline'}
                           size={14}
-                          color="#C9A84C"
+                          color={colors.gold}
                         />
                       ))}
                     </View>
@@ -678,20 +677,20 @@ export default function SwapShippingScreen() {
                   )}
                   <View style={styles.reviewedCardFooter}>
                     <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
-                    <Text style={styles.reviewedCardVerified}>VERIFIED PEER EXCHANGE</Text>
+                    <Text style={styles.reviewedCardVerified}>Verified peer exchange</Text>
                   </View>
                 </View>
               ) : (
                 <View style={styles.writeReviewCard}>
-                  <Text style={styles.writeReviewHeading}>RATE YOUR SWAP PARTNER</Text>
+                  <Text style={styles.writeReviewHeading}>Rate your swap partner</Text>
                   <Text style={styles.writeReviewSub}>
-                    How was the accessory condition, prompt dispatch, and trade experience?
+                    How was the accessory condition, fast shipping, and the swap overall?
                   </Text>
 
                   {/* Star Rating Selector */}
                   <View style={styles.starPickerRow}>
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <TouchableOpacity
+                      <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={`Rate ${star} stars`}
                         key={star}
                         onPress={() => {
                           hapticFeedback.selection();
@@ -703,7 +702,7 @@ export default function SwapShippingScreen() {
                         <Ionicons
                           name={star <= reviewRating ? 'star' : 'star-outline'}
                           size={28}
-                          color="#C9A84C"
+                          color={colors.gold}
                         />
                       </TouchableOpacity>
                     ))}
@@ -711,7 +710,7 @@ export default function SwapShippingScreen() {
                   </View>
 
                   {/* Comment Input */}
-                  <TextInput
+                  <TextInput accessibilityLabel="Review comment"
                     style={styles.reviewInput}
                     placeholder="Share feedback on accessory condition, packaging, and trade experience..."
                     placeholderTextColor={colors.textMuted}
@@ -729,11 +728,11 @@ export default function SwapShippingScreen() {
                     activeOpacity={0.85}
                   >
                     {submittingReview ? (
-                      <ActivityIndicator color={colors.cream} />
+                      <Spinner color={colors.cream} />
                     ) : (
                       <>
                         <Ionicons name="star" size={16} color={colors.cream} />
-                        <Text style={styles.submitReviewBtnText}>SUBMIT VERIFIED REVIEW</Text>
+                        <Text style={styles.submitReviewBtnText}>Submit verified review</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -753,7 +752,7 @@ export default function SwapShippingScreen() {
                           key={star}
                           name={star <= partnerReview.rating ? 'star' : 'star-outline'}
                           size={14}
-                          color="#C9A84C"
+                          color={colors.gold}
                         />
                       ))}
                     </View>
@@ -765,7 +764,7 @@ export default function SwapShippingScreen() {
                   )}
                   <View style={styles.reviewedCardFooter}>
                     <Ionicons name="shield-checkmark" size={12} color={colors.forest} />
-                    <Text style={styles.reviewedCardVerified}>VERIFIED PEER EXCHANGE</Text>
+                    <Text style={styles.reviewedCardVerified}>Verified peer exchange</Text>
                   </View>
                 </View>
               ) : (
@@ -784,7 +783,7 @@ export default function SwapShippingScreen() {
                 activeOpacity={0.8}
               >
                 <Ionicons name="shirt-outline" size={16} color={colors.charcoal} />
-                <Text style={styles.wardrobeLinkBtnText}>VIEW RECEIVED ITEM IN WARDROBE →</Text>
+                <Text style={styles.wardrobeLinkBtnText}>View received item in wardrobe →</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -796,8 +795,8 @@ export default function SwapShippingScreen() {
         <View style={styles.addressModalOverlay}>
           <View style={styles.addressModalContent}>
             <View style={styles.addressModalHeader}>
-              <Text style={styles.addressModalTitle}>SELECT YOUR DELIVERY ADDRESS</Text>
-              <TouchableOpacity
+              <Text style={styles.addressModalTitle}>Select your delivery address</Text>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                 onPress={() => setShowAddressPicker(false)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
@@ -806,11 +805,8 @@ export default function SwapShippingScreen() {
             </View>
 
             {sharingAddress ? (
-              <View style={{ padding: 30, alignItems: 'center', gap: 12 }}>
-                <ActivityIndicator size="large" color={colors.charcoal} />
-                <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.textMuted }}>
-                  Updating delivery coordinates...
-                </Text>
+              <View style={{ minHeight: 160 }}>
+                <Loader variant="default" compact message="Updating address..." />
               </View>
             ) : (
               <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
@@ -818,8 +814,8 @@ export default function SwapShippingScreen() {
                   <View style={{ padding: 20, alignItems: 'center' }}>
                     <Text
                       style={{
-                        fontFamily: typography.mono,
-                        fontSize: 12,
+                        fontFamily: typography.handwritten,
+                        fontSize: 17,
                         color: colors.textMuted,
                         textAlign: 'center',
                         marginBottom: 12,
@@ -942,7 +938,7 @@ export default function SwapShippingScreen() {
               onPress={() => openTracking(track.trackingUrl)}
             >
               <Ionicons name="open-outline" size={14} color={colors.cream} />
-              <Text style={styles.trackBtnText}>TRACK PACKAGE</Text>
+              <Text style={styles.trackBtnText}>Track package</Text>
             </TouchableOpacity>
           )
         )}
@@ -957,14 +953,11 @@ const styles = StyleSheet.create({
 
   content: { padding: 20, paddingBottom: 180 },
   sectionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.textMuted,
-    letterSpacing: 1.2,
     marginBottom: 12,
-    marginTop: 20,
-  },
+    marginTop: 20, includeFontPadding: false, },
 
   addressCard: {
     backgroundColor: colors.white,
@@ -977,36 +970,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#1C2B4A',
+    backgroundColor: colors.ink,
     paddingHorizontal: 14,
     paddingVertical: 9,
   },
   addressHeaderText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16, includeFontPadding: false, },
   addressBody: {
     padding: 16,
     gap: 4,
   },
   addressName: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
-    fontWeight: '800',
     color: colors.charcoal,
   },
   addressLine: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyMedium,
     fontSize: 12,
     color: colors.charcoal,
     lineHeight: 18,
   },
   addrDivider: {
     height: 1,
-    backgroundColor: 'rgba(30,31,34,0.1)',
+    backgroundColor: colors.overlayLight,
     marginVertical: 4,
   },
   noAddressCard: {
@@ -1020,12 +1009,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   noAddressText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 16,
-  },
+    lineHeight: 23, includeFontPadding: false, },
 
   depositCard: {
     padding: 16,
@@ -1034,12 +1022,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   depositCardUnpaid: {
-    backgroundColor: '#FDFBF7',
-    borderColor: 'rgba(201,95,18,0.3)',
+    backgroundColor: colors.paperLight,
+    borderColor: colors.terracottaLight,
   },
   depositCardPaid: {
-    backgroundColor: 'rgba(46,125,50,0.06)',
-    borderColor: 'rgba(46,125,50,0.3)',
+    backgroundColor: colors.emeraldLight,
+    borderColor: colors.emeraldLight,
   },
   depositHeader: {
     flexDirection: 'row',
@@ -1055,22 +1043,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   depositIconWrapUnpaid: {
-    backgroundColor: 'rgba(201,95,18,0.1)',
+    backgroundColor: colors.terracottaLight,
   },
   depositIconWrapPaid: {
-    backgroundColor: 'rgba(46,125,50,0.12)',
+    backgroundColor: colors.emeraldLight,
   },
   depositTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
-    fontWeight: '900',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 17,
+    color: colors.charcoal, includeFontPadding: false, },
   depositAmountText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '700',
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1081,25 +1065,21 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   badgeUnpaid: {
-    backgroundColor: 'rgba(201,95,18,0.12)',
+    backgroundColor: colors.terracottaLight,
   },
   badgePaid: {
-    backgroundColor: 'rgba(46,125,50,0.15)',
+    backgroundColor: colors.emeraldLight,
   },
   depositStatusBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16, includeFontPadding: false, },
   badgeTextUnpaid: { color: colors.copper },
-  badgeTextPaid: { color: '#2E7D32' },
+  badgeTextPaid: { color: colors.forest },
   depositExplainer: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.charcoal,
-    lineHeight: 16,
-  },
+    lineHeight: 23, includeFontPadding: false, },
   payDepositBtn: {
     backgroundColor: colors.charcoal,
     paddingVertical: 13,
@@ -1115,10 +1095,9 @@ const styles = StyleSheet.create({
   },
   payDepositBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
 
   shipCard: {
@@ -1129,21 +1108,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   shipCardDesc: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    lineHeight: 16,
-    marginBottom: 14,
-  },
+    lineHeight: 23,
+    marginBottom: 14, includeFontPadding: false, },
   formLabel: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.charcoal,
-    letterSpacing: 1,
     marginBottom: 8,
-    marginTop: 12,
-  },
+    marginTop: 12, includeFontPadding: false, },
   courierGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1164,11 +1139,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   courierChipText: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   courierChipTextActive: { color: colors.cream },
   input: {
     borderWidth: 1.5,
@@ -1195,10 +1168,9 @@ const styles = StyleSheet.create({
   submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12.5,
-    fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
 
   trackingCard: {
@@ -1215,15 +1187,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   trackingLabel: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   trackingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1251,31 +1220,28 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    backgroundColor: 'rgba(30,59,47,0.06)',
+    backgroundColor: colors.overlayLight,
     marginTop: 8,
   },
   deliveredText: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: colors.forest,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
   trackBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#1C2B4A',
+    backgroundColor: colors.ink,
     paddingVertical: 11,
     minHeight: 44,
     marginTop: 10,
   },
   trackBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
   chatWithPartnerBar: {
     flexDirection: 'row',
@@ -1289,14 +1255,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   chatWithPartnerText: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 17,
+    color: colors.charcoal, includeFontPadding: false, },
   confirmReceiptCard: {
-    backgroundColor: '#F7FBF8',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 2,
     borderColor: colors.forest,
     padding: 16,
@@ -1310,20 +1273,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   confirmReceiptTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    fontSize: 17,
     color: colors.forest,
-    letterSpacing: 0.8,
-    flex: 1,
-  },
+    flex: 1, includeFontPadding: false, },
   confirmReceiptSub: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    lineHeight: 16,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    lineHeight: 23,
     color: colors.charcoal,
-    marginBottom: 14,
-  },
+    marginBottom: 14, includeFontPadding: false, },
   confirmReceiptBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1336,16 +1295,15 @@ const styles = StyleSheet.create({
   },
   confirmReceiptBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   completedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#EBF3ED',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 2,
     borderColor: colors.forest,
     padding: 14,
@@ -1353,19 +1311,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   completedBannerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
-    fontWeight: '900',
-    color: colors.forest,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 17,
+    color: colors.forest, includeFontPadding: false, },
   completedBannerSub: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.charcoal,
     marginTop: 2,
-    lineHeight: 14,
-  },
+    lineHeight: 20, includeFontPadding: false, },
   reviewPartnerBtn: {
     backgroundColor: colors.charcoal,
     paddingHorizontal: 12,
@@ -1373,10 +1327,9 @@ const styles = StyleSheet.create({
   },
   reviewPartnerBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
 
   // 2-tier Address Coordinates Styles
@@ -1389,34 +1342,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitleNoMargin: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.textMuted,
-    letterSpacing: 1,
-    flexShrink: 1,
-  },
+    flexShrink: 1, includeFontPadding: false, },
   addressRoleBadge: {
-    backgroundColor: '#1C2B4A',
+    backgroundColor: colors.ink,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 2,
     alignSelf: 'flex-start',
   },
   addressRoleBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
-    color: colors.cream,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.cream, includeFontPadding: false, },
   changeAddressLink: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '800',
     color: colors.charcoal,
     textDecorationLine: 'underline',
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   noAddressCardDashed: {
     alignItems: 'center',
@@ -1436,10 +1382,9 @@ const styles = StyleSheet.create({
   },
   pickAddressBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
 
   // Modal Styles
@@ -1449,7 +1394,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
     zIndex: 999,
   },
@@ -1487,11 +1432,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalAddBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11.5,
-    fontWeight: '800',
     color: colors.cream,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   addressOptionCard: {
     backgroundColor: colors.white,
@@ -1503,7 +1447,7 @@ const styles = StyleSheet.create({
   addressOptionCardActive: {
     borderWidth: 2.5,
     borderColor: colors.charcoal,
-    backgroundColor: '#fffdf5',
+    backgroundColor: colors.paperLight,
     shadowColor: colors.charcoal,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
@@ -1523,7 +1467,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   addressOptionPhone: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyMedium,
     fontSize: 11,
     color: colors.textMuted,
     marginBottom: 4,
@@ -1542,11 +1486,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   defaultBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   reviewSectionContainer: {
     marginTop: 16,
     marginBottom: 24,
@@ -1566,7 +1508,7 @@ const styles = StyleSheet.create({
   reviewedCard: {
     backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: '#C9A84C',
+    borderColor: colors.gold,
     padding: 14,
     borderRadius: 4,
   },
@@ -1577,12 +1519,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   reviewedCardRole: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '900',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   starsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1608,16 +1547,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     borderTopWidth: 1,
-    borderTopColor: '#F0EAE1',
+    borderTopColor: colors.borderLight,
     paddingTop: 8,
   },
   reviewedCardVerified: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '900',
-    color: colors.forest,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
   writeReviewCard: {
     backgroundColor: colors.white,
     borderWidth: 1.5,
@@ -1648,14 +1584,13 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   starRatingNumber: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
-    fontWeight: '900',
     color: colors.charcoal,
     marginLeft: 6,
   },
   reviewInput: {
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
     borderColor: colors.charcoal,
     borderRadius: 4,
@@ -1679,36 +1614,34 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   submitReviewBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11.5,
-    fontWeight: '900',
     color: colors.cream,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   awaitingPartnerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F5F2EB',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: '#E2DEC9',
+    borderColor: colors.borderLight,
     padding: 12,
     marginTop: 12,
     borderRadius: 4,
   },
   awaitingPartnerText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    lineHeight: 15,
-  },
+    lineHeight: 22, includeFontPadding: false, },
   wardrobeLinkBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
     borderColor: colors.charcoal,
     paddingVertical: 12,
@@ -1718,10 +1651,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   wardrobeLinkBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '900',
     color: colors.charcoal,
-    letterSpacing: 0.6,
+    letterSpacing: 0.2,
   },
 });

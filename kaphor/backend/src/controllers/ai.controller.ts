@@ -6,6 +6,8 @@ import { runFashionAgent } from '../services/fashionAgent.service';
 import { generateWithGroq, generateWithGroqVision } from '../services/groq.service';
 import { generateWithGemini } from '../services/gemini.service';
 import { queryT3 } from '../services/glie/t3-market';
+import { z } from 'zod';
+import { parseLlmJson, parseLlmJsonWith, toReadableText, cleanChatReply, errorBody } from '../lib/llmOutput';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -317,9 +319,50 @@ function generateHeuristicProfile(answers: string[]) {
 }
 
 function safeJson(text: string): any {
-    // Extract JSON object/array even if Claude wraps it in markdown
-    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-    return JSON.parse(match ? match[1].trim() : text.trim());
+    // Robust: strips fences, extracts first balanced JSON block
+    const parsed = parseLlmJson(text);
+    if (parsed === undefined) throw new Error('Model did not return valid JSON');
+    return parsed;
+}
+
+const txt = (v: unknown, fallback = '') => toReadableText(v, fallback);
+
+const UpcycleSuggestionSchema = z.object({
+    title: z.string().min(1),
+    description: z.string().default(''),
+    difficulty: z.string().default('Easy'),
+    materialsNeeded: z.array(z.string()).default([]),
+    estimatedTime: z.string().default(''),
+    sustainabilityImpact: z.string().default(''),
+});
+
+const ConditionAssessmentSchema = z.object({
+    condition: z.object({
+        grade: z.string().default('GOOD'),
+        score: z.coerce.number().default(70),
+        fiberHealth: z.string().default('GOOD'),
+        wearAnalysis: z.string().default(''),
+        colorFading: z.string().default('NONE'),
+        structuralIntegrity: z.string().default('INTACT'),
+    }).passthrough(),
+    circularRecommendation: z.object({
+        action: z.string().default('RESELL'),
+        reasoning: z.string().default(''),
+        estimatedValue: z.union([z.string(), z.number()]).default('MEDIUM'),
+        sustainabilityScore: z.coerce.number().default(70),
+    }).passthrough(),
+    upcycleSuggestions: z.array(UpcycleSuggestionSchema).default([]),
+}).passthrough();
+
+function cleanSuggestion(s: z.infer<typeof UpcycleSuggestionSchema>) {
+    return {
+        title: txt(s.title),
+        description: txt(s.description),
+        difficulty: txt(s.difficulty, 'Easy'),
+        materialsNeeded: s.materialsNeeded.map((m) => txt(m)).filter(Boolean),
+        estimatedTime: txt(s.estimatedTime),
+        sustainabilityImpact: txt(s.sustainabilityImpact),
+    };
 }
 
 // ── 1. Style Quiz ─────────────────────────────────────────────────────────────
@@ -391,7 +434,7 @@ export async function processStyleQuiz(req: Request, res: Response): Promise<voi
         });
     } catch (error) {
         logger.error('Style quiz failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -409,7 +452,7 @@ export async function skipStyleQuiz(req: Request, res: Response): Promise<void> 
         res.json({ data: { message: 'Style quiz skipped' } });
     } catch (error) {
         logger.error('Style quiz skip failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -473,7 +516,7 @@ export async function getStyleProfile(req: Request, res: Response): Promise<void
         res.status(200).json({ data: details });
     } catch (error) {
         logger.error('Fetch style profile failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -521,7 +564,7 @@ export async function getRecommendations(req: Request, res: Response): Promise<v
         res.json({ data: scored, cached: false });
     } catch (error) {
         logger.error('Recommendations failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -559,7 +602,7 @@ export async function getFitScore(req: Request, res: Response): Promise<void> {
         });
     } catch (error) {
         logger.error('Fit score failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -644,13 +687,14 @@ export async function chat(req: Request, res: Response): Promise<void> {
 
         // Save assistant response to DB
         await db.chatMessage.create({
-            data: { conversationId: conversation.id, role: 'assistant', content: agentResult.reply }
+            data: { conversationId: conversation.id, role: 'assistant', content: cleanChatReply(agentResult.reply) }
         });
 
+        const cleanReply = cleanChatReply(agentResult.reply);
         const responsePayload = {
-            reply: agentResult.reply,
-            text: agentResult.reply,
-            message: agentResult.reply,
+            reply: cleanReply,
+            text: cleanReply,
+            message: cleanReply,
             actionsExecuted: agentResult.actionsExecuted,
             cards: agentResult.cards,
             products: agentResult.cards,
@@ -677,7 +721,7 @@ export async function chat(req: Request, res: Response): Promise<void> {
     } catch (error: any) {
         logger.error('Chat failed with fatal error', { error: error.message });
         if (!res.headersSent) {
-            res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
+            res.status(500).json(errorBody());
         } else {
             res.write('data: [ERROR]\n\n');
             res.end();
@@ -974,7 +1018,7 @@ ${listingType === 'SALE' ? `IMPORTANT LISTING CONTEXT: The seller has selected o
 - Highlight archival value, craftsmanship, and silhouette in the "description".
 - Set "recommendedListingType" to "SALE".` : ''}
 
-Return ONLY valid JSON with this exact structure:
+Return ONLY valid JSON (no markdown, no code fences, no extra text) with this exact structure. All text values must be plain simple English with no markdown symbols:
 {
   "title": "Short descriptive title (3-5 words)",
   "brand": "Detected brand or 'Unknown Brand'",
@@ -1043,11 +1087,11 @@ Be precise. If the brand or hardware logo is visible, identify it.`;
 
         if (!data || !data.title) {
             data = {
-                title: isSwapMode ? 'Archival Leather Bag' : isRentalMode ? 'Curated Designer Evening Piece' : 'Curated Designer Item',
+                title: isSwapMode ? 'Leather Bag' : isRentalMode ? 'Evening Dress' : 'Pre-loved Item',
                 brand: 'Unknown Brand',
                 category: isSwapMode ? 'Bags' : isRentalMode ? 'Dresses' : 'Tops',
                 subCategory: isSwapMode ? 'Leather Accessory' : isRentalMode ? 'Evening Wear' : 'Contemporary Top',
-                description: 'Pre-loved authentic piece curated for KaPhor circular fashion and conscious style.',
+                description: 'Pre-loved item in good shape. Add a few details to finish your listing.',
                 size: isSwapMode ? 'FREE SIZE' : 'M',
                 condition: 'PRISTINE',
                 color: ['Black'],
@@ -1069,6 +1113,12 @@ Be precise. If the brand or hardware logo is visible, identify it.`;
         } else {
             // Normalize category to exact valid catalog category
             data.category = resolveListingCategory(data.category, data.subCategory, data.title);
+            data.title = txt(data.title, 'Pre-loved item');
+            data.brand = txt(data.brand, 'Unknown Brand');
+            data.subCategory = txt(data.subCategory);
+            data.description = txt(data.description, 'Pre-loved item in good shape.');
+            data.color = (Array.isArray(data.color) ? data.color : [data.color]).filter(Boolean).map((c: any) => txt(c));
+            data.material = (Array.isArray(data.material) ? data.material : [data.material]).filter(Boolean).map((c: any) => txt(c));
 
             // Normalize conditions
             const validConditions = ['PRISTINE', 'MINOR_WEAR', 'UPCYCLE', 'RECYCLE_ONLY'];
@@ -1113,10 +1163,10 @@ Be precise. If the brand or hardware logo is visible, identify it.`;
         res.json({ data });
     } catch (error) {
         logger.error('Analyze listing failed', { error });
-        const fallbackT3 = computeT3PriceRecommendation('Tops', 'Tops', 'Curated Garment', 'PRISTINE', 'Unknown');
+        const fallbackT3 = computeT3PriceRecommendation('Tops', 'Tops', 'Pre-loved Garment', 'PRISTINE', 'Unknown');
         res.json({
             data: {
-                title: 'Curated Garment',
+                title: 'Pre-loved Garment',
                 brand: 'Unknown',
                 category: 'Tops',
                 subCategory: 'Tops',
@@ -1169,7 +1219,7 @@ export async function assessCondition(req: Request, res: Response): Promise<void
         }
 
         const prompt = `You are KaPhor AI, a luxury sustainable fashion condition expert.
-Analyze the provided garment image and description, then return ONLY valid JSON with this exact structure:
+Analyze the provided garment image and description, then return ONLY valid JSON (no markdown, no code fences). All text values must be plain simple English with no ** or # symbols. Use this exact structure:
 {
   "condition": {
     "grade": "EXCELLENT|GOOD|FAIR|POOR|WORN",
@@ -1226,12 +1276,29 @@ Analyze the garment carefully. Be specific about visible defects or quality indi
         parts.push({ text: prompt });
 
         const rawResult = await generateWithGemini(parts, { responseMimeType: 'application/json' });
-        const assessment = safeJson(rawResult);
+        const validated = parseLlmJsonWith(rawResult, ConditionAssessmentSchema);
+        if (!validated) throw new Error('Condition assessment was not valid');
+        const clamp100 = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+        const assessment = {
+            ...validated,
+            condition: {
+                ...validated.condition,
+                score: clamp100(validated.condition.score),
+                wearAnalysis: txt(validated.condition.wearAnalysis),
+            },
+            circularRecommendation: {
+                ...validated.circularRecommendation,
+                reasoning: txt(validated.circularRecommendation.reasoning),
+                estimatedValue: String(validated.circularRecommendation.estimatedValue),
+                sustainabilityScore: clamp100(validated.circularRecommendation.sustainabilityScore),
+            },
+            upcycleSuggestions: validated.upcycleSuggestions.map(cleanSuggestion),
+        };
 
         res.json({ data: assessment });
     } catch (error) {
         logger.error('Condition assessment failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -1272,12 +1339,17 @@ Return: { "suggestions": [ ...3 ideas... ] }`;
             logger.warn('Groq upcycle suggestions failed, falling back to Gemini', { error: (groqErr as Error).message });
             raw = await generateWithFallback(prompt);
         }
-        const resJson = safeJson(raw);
+        const parsedUp = parseLlmJsonWith(
+            raw,
+            z.object({ suggestions: z.array(UpcycleSuggestionSchema) }).or(z.array(UpcycleSuggestionSchema)),
+        );
+        if (!parsedUp) throw new Error('Upcycle suggestions were not valid');
+        const list = Array.isArray(parsedUp) ? parsedUp : parsedUp.suggestions;
 
-        res.json({ data: resJson.suggestions });
+        res.json({ data: list.map(cleanSuggestion) });
     } catch (error) {
         logger.error('Upcycle suggestions failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -1303,7 +1375,7 @@ export async function getChatHistory(req: Request, res: Response): Promise<void>
         }
     } catch (error) {
         logger.error('getChatHistory failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -1322,6 +1394,6 @@ export async function getT3PriceRecommendation(req: Request, res: Response): Pro
         res.json({ success: true, data: rec });
     } catch (error: any) {
         logger.error('getT3PriceRecommendation failed', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
+        res.status(500).json(errorBody());
     }
 }

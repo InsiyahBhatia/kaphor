@@ -6,7 +6,6 @@ import {
   Modal,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +15,8 @@ import { KaphorImage } from './KaphorImage';
 import { colors, typography, spacing, radius } from '../theme';
 import { hapticFeedback } from '../utils/haptics';
 import { insightService, GarmentDetailedInsights, AdvisorTip } from '../services/insightService';
+import { Loader } from './common/Loader';
+import { cleanText } from '../utils/formatText';
 
 const { width } = Dimensions.get('window');
 
@@ -48,7 +49,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
       setInsights(data);
     } catch (err: any) {
       console.error('Failed to load listing insights', err);
-      setError(err?.response?.data?.message || 'Could not load listing insights.');
+      setError('Could not load listing insights. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -64,11 +65,11 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
   const getDemandColor = (tier?: string) => {
     switch (tier) {
       case 'HOT ASSET 🔥':
-        return '#FF4500';
+        return colors.error;
       case 'STRONG INTEREST ⭐':
         return colors.gold;
       case 'STEADY MOMENTUM 📈':
-        return '#00E5FF';
+        return colors.teal;
       default:
         return colors.textMuted;
     }
@@ -83,8 +84,8 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.tagIndicator} />
-            <Text style={styles.headerSub}>SELLER DOSSIER</Text>
-            <Text style={styles.headerTitle}>LISTING TELEMETRY</Text>
+            <Text style={styles.headerSub}>FOR SELLERS</Text>
+            <Text style={styles.headerTitle}>LISTING INSIGHTS</Text>
           </View>
           <TouchableOpacity
             style={styles.closeBtn}
@@ -99,14 +100,13 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
         </View>
 
         {loading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={colors.gold} />
-            <Text style={styles.loadingText}>Synthesizing asset telemetry...</Text>
+          <View style={{ flex: 1 }}>
+            <Loader variant="default" message="Loading your listing insights..." />
           </View>
         ) : error ? (
           <View style={styles.centerContainer}>
             <Ionicons name="alert-circle-outline" size={48} color={colors.crimson} />
-            <Text style={styles.errorTitle}>Telemetry Unavailable</Text>
+            <Text style={styles.errorTitle}>Insights unavailable</Text>
             <Text style={styles.errorSubtitle}>{error}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={() => garmentId && loadInsights(garmentId)}>
               <Text style={styles.retryBtnText}>RETRY</Text>
@@ -176,7 +176,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
               <View style={styles.metricBox}>
                 <View style={styles.metricIconRow}>
                   <Ionicons name="heart-outline" size={18} color={colors.crimson} />
-                  <Text style={styles.metricLabel}>SAVES / COVETS</Text>
+                  <Text style={styles.metricLabel}>SAVES</Text>
                 </View>
                 <Text style={styles.metricValue}>{insights.saves}</Text>
                 <Text style={styles.metricSub}>{insights.funnel.viewToSaveRate}% save rate</Text>
@@ -207,10 +207,10 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
               {/* Overall Conversions */}
               <View style={styles.metricBox}>
                 <View style={styles.metricIconRow}>
-                  <Ionicons name="checkmark-circle-outline" size={18} color="#00E676" />
+                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />
                   <Text style={styles.metricLabel}>CONVERSIONS</Text>
                 </View>
-                <Text style={[styles.metricValue, { color: '#00E676' }]}>
+                <Text style={[styles.metricValue, { color: colors.success }]}>
                   {insights.conversions.total}
                 </Text>
                 <Text style={styles.metricSub}>{insights.funnel.overallConversionRate}% overall rate</Text>
@@ -220,7 +220,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
             {/* Conversion Funnel Progress */}
             <View style={styles.funnelSection}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>CONVERSION FUNNEL EFFICIENCY</Text>
+                <Text style={styles.sectionTitle}>FROM VIEWS TO SALES</Text>
               </View>
 
               <View style={styles.funnelCard}>
@@ -270,7 +270,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
                         styles.progressBarFill,
                         {
                           width: `${Math.max(4, Math.min(100, insights.funnel.overallConversionRate))}%`,
-                          backgroundColor: '#00E676',
+                          backgroundColor: colors.success,
                         },
                       ]}
                     />
@@ -282,7 +282,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
             {/* 7-Day Performance Activity Bar Chart */}
             <View style={styles.trendSection}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>7-DAY ENGAGEMENT TRAJECTORY</Text>
+                <Text style={styles.sectionTitle}>LAST 7 DAYS</Text>
                 <Text style={styles.trendLegend}>BAR HEIGHT = DAILY VIEWS</Text>
               </View>
 
@@ -316,7 +316,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
               <View style={styles.sectionHeader}>
                 <View style={styles.aiHeaderRow}>
                   <Ionicons name="sparkles" size={16} color={colors.gold} />
-                  <Text style={styles.sectionTitle}>KAPHOR AI ADVISOR INSIGHTS</Text>
+                  <Text style={styles.sectionTitle}>TIPS FROM KAPHOR AI</Text>
                 </View>
               </View>
 
@@ -335,8 +335,8 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
                       <Text style={styles.impactText}>{tip.impact} IMPACT</Text>
                     </View>
                   </View>
-                  <Text style={styles.tipHeadline}>{tip.headline}</Text>
-                  <Text style={styles.tipDesc}>{tip.description}</Text>
+                  <Text style={styles.tipHeadline}>{cleanText(tip.headline)}</Text>
+                  <Text style={styles.tipDesc}>{cleanText(tip.description)}</Text>
                 </View>
               ))}
             </View>
@@ -345,7 +345,7 @@ export function ListingInsightsModal({ visible, garmentId, onClose }: ListingIns
             <View style={styles.actionFooter}>
               <TouchableOpacity style={styles.editListingBtn} onPress={handleEditPress}>
                 <Ionicons name="create-outline" size={17} color={colors.bg} />
-                <Text style={styles.editListingBtnText}>OPTIMIZE LISTING</Text>
+                <Text style={styles.editListingBtnText}>IMPROVE LISTING</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -381,9 +381,9 @@ const styles = StyleSheet.create({
   },
   headerSub: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    letterSpacing: 1.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 16,
   },
   headerTitle: {
     color: colors.textPrimary,
@@ -410,10 +410,10 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 12,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     marginTop: spacing.md,
-    letterSpacing: 0.5,
   },
   errorTitle: {
     color: colors.textPrimary,
@@ -438,9 +438,9 @@ const styles = StyleSheet.create({
   },
   retryBtnText: {
     color: colors.bg,
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   content: {
     flex: 1,
@@ -475,10 +475,9 @@ const styles = StyleSheet.create({
   },
   brandText: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     maxWidth: 130,
   },
   demandBadge: {
@@ -486,12 +485,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: colors.overlay,
   },
   demandText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
   },
   garmentTitle: {
     color: colors.textPrimary,
@@ -513,15 +512,17 @@ const styles = StyleSheet.create({
   },
   rentalRateText: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   lifecyclePill: {
     marginLeft: 'auto',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: colors.overlayLight,
     color: colors.textSecond,
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 16,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -535,10 +536,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   demandScoreText: {
     color: colors.gold,
@@ -604,8 +604,9 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     color: colors.textSecond,
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   stepCount: {
     color: colors.textPrimary,
@@ -615,7 +616,7 @@ const styles = StyleSheet.create({
   },
   progressBarBg: {
     height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -628,8 +629,9 @@ const styles = StyleSheet.create({
   },
   trendLegend: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 16,
   },
   chartCard: {
     backgroundColor: colors.bgCard,
@@ -655,12 +657,12 @@ const styles = StyleSheet.create({
     width: 14,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 3,
   },
   barFill: {
     width: '100%',
-    backgroundColor: 'rgba(201, 168, 76, 0.35)',
+    backgroundColor: colors.goldLight,
     borderRadius: 3,
   },
   activeBar: {
@@ -690,7 +692,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(201, 168, 76, 0.25)',
+    borderColor: colors.goldLight,
     padding: spacing.md,
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
@@ -702,16 +704,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   tipCategoryBadge: {
-    backgroundColor: 'rgba(201, 168, 76, 0.12)',
+    backgroundColor: colors.goldLight,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radius.sm,
   },
   tipCategoryText: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
   },
   impactBadge: {
     paddingHorizontal: 6,
@@ -719,16 +721,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   highImpact: {
-    backgroundColor: 'rgba(255, 69, 0, 0.15)',
+    backgroundColor: colors.crimsonLight,
   },
   mediumImpact: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: colors.overlayLight,
   },
   impactText: {
     color: colors.textSecond,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
   },
   tipHeadline: {
     color: colors.textPrimary,
@@ -757,9 +759,8 @@ const styles = StyleSheet.create({
   },
   editListingBtnText: {
     color: colors.bg,
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
 });

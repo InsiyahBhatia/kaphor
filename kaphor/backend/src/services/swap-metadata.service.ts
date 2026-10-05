@@ -138,11 +138,15 @@ async function importLegacyRecordIfNeeded(swapId: string): Promise<void> {
 }
 
 /** Read a swap's workflow metadata, creating the default record on first access. */
-export async function getSwapMetadata(swapId: string): Promise<SwapMetadataRecord> {
-  const swap = await db.swap.findUnique({
-    where: { id: swapId },
-    select: { metadata: true },
-  });
+export async function getSwapMetadata(swapId: string, preloadedMetadata?: unknown): Promise<SwapMetadataRecord> {
+  // List endpoints already loaded swaps.metadata with the swap row: reuse it instead of one query per swap.
+  const swap =
+    preloadedMetadata && typeof preloadedMetadata === 'object' && !Array.isArray(preloadedMetadata)
+      ? { metadata: preloadedMetadata }
+      : await db.swap.findUnique({
+          where: { id: swapId },
+          select: { metadata: true },
+        });
 
   if (!swap) {
     throw new Error(`Swap not found: ${swapId}`);

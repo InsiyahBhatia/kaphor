@@ -44,8 +44,8 @@ export default function LegalCenterScreen() {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={16} color={colors.textMuted} />
-          <TextInput
-            placeholder="Search policies (e.g. escrow, taxes, return, privacy)"
+          <TextInput accessibilityLabel="Search policies (e.g. payments, taxes, return, privacy)"
+            placeholder="Search policies (e.g. payments, taxes, return, privacy)"
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -53,7 +53,7 @@ export default function LegalCenterScreen() {
             clearButtonMode="while-editing"
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => setSearchQuery('')}>
               <Ionicons name="close-circle" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           )}
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   chipText: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   docMeta: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.textMuted,
     letterSpacing: 0.6,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statutoryRef: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontFamily: typography.mono,
     color: colors.textSecond,
     lineHeight: 16,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   legalBasisLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textMuted,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   contactLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textMuted,

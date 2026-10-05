@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,8 +20,9 @@ import {
 import { DropdownPicker } from '../../../src/components/DropdownPicker';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useGarmentStore } from '../../../src/store/garmentStore';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { promptPhotoSelection } from '../../../src/utils/imagePicker';
+import { Spinner, Loader } from '../../../src/components/common/Loader';
+import { getErrorMessage } from '../../../src/utils/errors';
 
 export { matchMarketCategory };
 
@@ -503,10 +504,10 @@ export default function SellScreen() {
       const data = err?.response?.data;
       const apiErrors = data?.errors ?? data?.details;
       if (Array.isArray(apiErrors) && apiErrors.length > 0) {
-        const msg = apiErrors.map((e: any) => `${e.field || 'Field'}: ${e.message}`).join('\n');
+        const msg = apiErrors.map((e: any) => String(e.message || 'Please check this field')).join('\n');
         Alert.alert('Validation Error', msg);
       } else {
-        const msg = data?.message || err?.message || 'Failed to list garment. Please try again.';
+        const msg = getErrorMessage(err, 'Failed to list garment. Please try again.');
         Alert.alert('Error', msg);
       }
     } finally {
@@ -597,10 +598,10 @@ export default function SellScreen() {
                 <View key={i} style={styles.imageThumb}>
                   <Image source={{ uri }} style={styles.thumbImg} />
                   <View style={styles.thumbActions}>
-                    <TouchableOpacity style={styles.editBtn} onPress={() => editImage(i)}>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Edit" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.editBtn} onPress={() => editImage(i)}>
                       <Ionicons name="pencil-sharp" size={14} color={colors.white} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.removeBtn} onPress={() => removeImage(i)}>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.removeBtn} onPress={() => removeImage(i)}>
                       <Ionicons name="close-sharp" size={14} color={colors.white} />
                     </TouchableOpacity>
                   </View>
@@ -622,7 +623,7 @@ export default function SellScreen() {
               disabled={aiLoading}
             >
               {aiLoading ? (
-                <ActivityIndicator color={colors.white} />
+                <Spinner color={colors.white} />
               ) : (
                 <>
                   <Ionicons name="sparkles" size={20} color={colors.white} />
@@ -681,9 +682,9 @@ export default function SellScreen() {
               placeholder="SELECT CATEGORY"
             />
 
-            <TextInput style={styles.input} placeholder="TITLE" placeholderTextColor={colors.textMuted} value={title} onChangeText={setTitle} />
-            <TextInput style={[styles.input, { height: 80 }]} placeholder="DESCRIPTION" placeholderTextColor={colors.textMuted} value={description} onChangeText={setDescription} multiline />
-            <TextInput style={styles.input} placeholder="BRAND" placeholderTextColor={colors.textMuted} value={brand} onChangeText={setBrand} />
+            <TextInput accessibilityLabel="TITLE" style={styles.input} placeholder="TITLE" placeholderTextColor={colors.textMuted} value={title} onChangeText={setTitle} />
+            <TextInput accessibilityLabel="DESCRIPTION" style={[styles.input, { height: 80 }]} placeholder="DESCRIPTION" placeholderTextColor={colors.textMuted} value={description} onChangeText={setDescription} multiline />
+            <TextInput accessibilityLabel="BRAND" style={styles.input} placeholder="BRAND" placeholderTextColor={colors.textMuted} value={brand} onChangeText={setBrand} />
 
             {/* T3 Market Price Recommendation Card */}
             {t3Pricing && (
@@ -743,7 +744,7 @@ export default function SellScreen() {
             {/* Dynamic Rates / Pricing according to Listing Type */}
             {listingType === 'RENTAL' ? (
               <>
-                <TextInput
+                <TextInput accessibilityLabel="RENTAL PRICE PER DAY (₹)"
                   style={styles.input}
                   placeholder="RENTAL PRICE PER DAY (₹)"
                   placeholderTextColor={colors.textMuted}
@@ -751,7 +752,7 @@ export default function SellScreen() {
                   onChangeText={setRentalDay}
                   keyboardType="numeric"
                 />
-                <TextInput
+                <TextInput accessibilityLabel="RENTAL PRICE PER WEEK (₹) (optional)"
                   style={styles.input}
                   placeholder="RENTAL PRICE PER WEEK (₹) (optional)"
                   placeholderTextColor={colors.textMuted}
@@ -762,10 +763,10 @@ export default function SellScreen() {
               </>
             ) : listingType === 'SALE' ? (
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ fontFamily: typography.mono, fontSize: 9.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 }}>
+                <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 }}>
                   SELLING PRICE (₹) *
                 </Text>
-                <TextInput
+                <TextInput accessibilityLabel="SELLING PRICE (₹) e.g. 899"
                   style={styles.input}
                   placeholder="SELLING PRICE (₹) e.g. 899"
                   placeholderTextColor={colors.textMuted}
@@ -774,10 +775,10 @@ export default function SellScreen() {
                   keyboardType="numeric"
                 />
 
-                <Text style={{ fontFamily: typography.mono, fontSize: 9.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 }}>
+                <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 }}>
                   ORIGINAL RETAIL PRICE / MRP (₹) (OPTIONAL)
                 </Text>
-                <TextInput
+                <TextInput accessibilityLabel="ORIGINAL COST / MRP (₹) e.g. 2499"
                   style={styles.input}
                   placeholder="ORIGINAL COST / MRP (₹) e.g. 2499"
                   placeholderTextColor={colors.textMuted}
@@ -787,13 +788,13 @@ export default function SellScreen() {
                 />
 
                 {Number(originalPrice) > Number(price) && Number(price) > 0 ? (
-                  <View style={{ marginTop: 8, padding: 10, backgroundColor: 'rgba(15, 92, 70, 0.08)', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(15, 92, 70, 0.25)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ marginTop: 8, padding: 10, backgroundColor: colors.emeraldLight, borderRadius: 6, borderWidth: 1, borderColor: colors.emeraldLight, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name="pricetag" size={15} color={colors.emerald} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: typography.mono, fontSize: 10.5, color: colors.emerald, fontWeight: '800' }}>
+                      <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.emerald, fontWeight: '800' }}>
                         FEED PREVIEW: -{Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)}% OFF MRP
                       </Text>
-                      <Text style={{ fontFamily: typography.body, fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                      <Text style={{ fontFamily: typography.body, fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
                         Listing at ₹{Number(price).toLocaleString('en-IN')} with strikethrough MRP ₹{Number(originalPrice).toLocaleString('en-IN')}.
                       </Text>
                     </View>
@@ -802,7 +803,7 @@ export default function SellScreen() {
               </View>
             ) : (
               <>
-                <TextInput
+                <TextInput accessibilityLabel="ESTIMATED TRADE VALUE (₹) (OPTIONAL)"
                   style={styles.input}
                   placeholder="ESTIMATED TRADE VALUE (₹) (OPTIONAL)"
                   placeholderTextColor={colors.textMuted}
@@ -827,7 +828,7 @@ export default function SellScreen() {
               placeholder="SELECT SIZE"
             />
             {size === 'CUSTOM' && (
-              <TextInput
+              <TextInput accessibilityLabel="ENTER CUSTOM SIZE"
                 style={styles.input}
                 placeholder="ENTER CUSTOM SIZE"
                 placeholderTextColor={colors.textMuted}
@@ -851,13 +852,13 @@ export default function SellScreen() {
               </Text>
             </View>
 
-            <TextInput style={styles.input} placeholder="FABRIC" placeholderTextColor={colors.textMuted} value={fabric} onChangeText={setFabric} />
-            <TextInput style={styles.input} placeholder="COLOR" placeholderTextColor={colors.textMuted} value={color} onChangeText={setColor} />
-            <TextInput style={styles.input} placeholder="STYLE" placeholderTextColor={colors.textMuted} value={styleAttr} onChangeText={setStyleAttr} />
-            <TextInput style={styles.input} placeholder="SLEEVE" placeholderTextColor={colors.textMuted} value={sleeve} onChangeText={setSleeve} />
-            <TextInput style={styles.input} placeholder="SHAPE" placeholderTextColor={colors.textMuted} value={shape} onChangeText={setShape} />
-            <TextInput style={styles.input} placeholder="PATTERN" placeholderTextColor={colors.textMuted} value={pattern} onChangeText={setPattern} />
-            <TextInput style={styles.input} placeholder="WEIGHT" placeholderTextColor={colors.textMuted} value={weight} onChangeText={setWeight} />
+            <TextInput accessibilityLabel="FABRIC" style={styles.input} placeholder="FABRIC" placeholderTextColor={colors.textMuted} value={fabric} onChangeText={setFabric} />
+            <TextInput accessibilityLabel="COLOR" style={styles.input} placeholder="COLOR" placeholderTextColor={colors.textMuted} value={color} onChangeText={setColor} />
+            <TextInput accessibilityLabel="STYLE" style={styles.input} placeholder="STYLE" placeholderTextColor={colors.textMuted} value={styleAttr} onChangeText={setStyleAttr} />
+            <TextInput accessibilityLabel="SLEEVE" style={styles.input} placeholder="SLEEVE" placeholderTextColor={colors.textMuted} value={sleeve} onChangeText={setSleeve} />
+            <TextInput accessibilityLabel="SHAPE" style={styles.input} placeholder="SHAPE" placeholderTextColor={colors.textMuted} value={shape} onChangeText={setShape} />
+            <TextInput accessibilityLabel="PATTERN" style={styles.input} placeholder="PATTERN" placeholderTextColor={colors.textMuted} value={pattern} onChangeText={setPattern} />
+            <TextInput accessibilityLabel="WEIGHT" style={styles.input} placeholder="WEIGHT" placeholderTextColor={colors.textMuted} value={weight} onChangeText={setWeight} />
 
             <View style={styles.row}>
               <TouchableOpacity style={styles.secondaryButton} onPress={prevStep}>
@@ -880,7 +881,7 @@ export default function SellScreen() {
                   {listingType === 'ACCESSORY_SWAP'
                     ? 'SWAP MARKETPLACE (ACCESSORY EXCHANGE)'
                     : listingType === 'RENTAL'
-                      ? 'RENTAL ARCHIVE'
+                      ? 'RENTAL'
                       : 'SHOP MARKETPLACE (BUY & SELL)'}
                 </Text>
               </Text>
@@ -907,7 +908,7 @@ export default function SellScreen() {
             {/* Payout Account Setup or Swap Destination Notice */}
             {listingType === 'ACCESSORY_SWAP' ? (
               <View style={[styles.payoutSection, { borderColor: colors.crimson }]}>
-                <Text style={[styles.payoutSectionTitle, { color: colors.crimson }]}>SWAP VAULT DESTINATION CONFIRMED</Text>
+                <Text style={[styles.payoutSectionTitle, { color: colors.crimson }]}>SWAP DESTINATION CONFIRMED</Text>
                 <Text style={styles.payoutSectionDesc}>
                   This item will be published exclusively to the KaPhor Swap feed for peer-to-peer exchange of accessories & footwear.
                 </Text>
@@ -933,7 +934,7 @@ export default function SellScreen() {
             </Text>
             <TouchableOpacity style={styles.mainButton} onPress={handleSubmit} disabled={submitting}>
               {submitting ? (
-                <ActivityIndicator color={colors.white} />
+                <Spinner color={colors.white} />
               ) : (
                 <Text style={styles.mainButtonText}>
                   {listingType === 'ACCESSORY_SWAP'
@@ -956,11 +957,11 @@ export default function SellScreen() {
     <View style={styles.container}>
       {/* Grand Dossier Loading Screen during AI Magic Fill Analysis */}
       <Modal visible={aiLoading} animationType="fade" transparent={false} statusBarTranslucent>
-        <DossierLoading variant="magic_fill" />
+        <Loader variant="magic_fill" />
       </Modal>
 
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Button"
           onPress={handleBackNavigation}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
@@ -1017,7 +1018,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(26,26,26,0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -1030,12 +1031,12 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   uploadBox: { width: 100, height: 100, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgCard },
-  uploadText: { color: colors.textMuted, fontSize: 10, marginTop: 4, letterSpacing: 2, fontWeight: '700' },
+  uploadText: { color: colors.textMuted, fontSize: 11, marginTop: 4, letterSpacing: 2, fontWeight: '700' },
   input: { height: 56, borderBottomWidth: 1, borderBottomColor: colors.border, color: colors.textPrimary, fontSize: 16, paddingHorizontal: 4 },
   pickerLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 2, marginTop: 16, fontWeight: '700' },
   chipRow: { flexDirection: 'row', marginBottom: 4 },
   chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginRight: 8, backgroundColor: colors.bgCard },
-  chipActive: { borderColor: colors.crimson, backgroundColor: 'rgba(155, 27, 48, 0.05)' },
+  chipActive: { borderColor: colors.crimson, backgroundColor: colors.crimsonLight },
   chipText: { color: colors.textSecond, fontSize: 13, fontWeight: '600' },
   chipTextActive: { color: colors.crimson, fontWeight: '800' },
   mainButton: {
@@ -1069,19 +1070,18 @@ const styles = StyleSheet.create({
   summaryLabel: { color: colors.textSecond, fontSize: 12, fontWeight: '600' },
   summaryValue: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
   payoutSection: {
-    backgroundColor: 'rgba(28,43,74,0.04)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(28,43,74,0.12)',
+    borderColor: colors.overlayLight,
     gap: 10,
   },
   payoutSectionTitle: {
     color: colors.navy,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
-    fontFamily: typography.mono,
+    fontSize: 18,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
   },
   payoutSectionDesc: {
     color: colors.textMuted,
@@ -1102,14 +1102,13 @@ const styles = StyleSheet.create({
   },
   payoutSetupText: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   policyText: { color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18, marginVertical: 16 },
   conditionDescBox: {
-    backgroundColor: 'rgba(26,26,26,0.03)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 12,
     padding: 12,
     marginTop: 8,
@@ -1117,7 +1116,7 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.05)',
+    borderColor: colors.overlayLight,
   },
   conditionDescText: {
     color: colors.textSecond,
@@ -1127,7 +1126,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   swapNoticeBox: {
-    backgroundColor: 'rgba(168, 34, 34, 0.06)',
+    backgroundColor: colors.crimsonLight,
     borderRadius: 12,
     padding: 14,
     marginVertical: 6,
@@ -1135,15 +1134,15 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(168, 34, 34, 0.2)',
+    borderColor: colors.crimsonLight,
   },
   swapNoticeText: {
     color: colors.charcoal,
-    fontSize: 12,
+    fontSize: 14,
     flex: 1,
-    lineHeight: 17,
+    lineHeight: 20,
     fontWeight: '600',
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
   },
   listingTypeTopContainer: {
     marginBottom: 20,
@@ -1160,14 +1159,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   listingTypeTopLabel: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   listingTypeBadge: {
-    backgroundColor: 'rgba(26,26,26,0.06)',
+    backgroundColor: colors.overlayLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 2,
@@ -1175,14 +1173,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   listingTypeBadgeSwap: {
-    backgroundColor: 'rgba(158, 42, 43, 0.08)',
+    backgroundColor: colors.crimsonLight,
     borderColor: colors.crimson,
   },
   listingTypeBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   segmentedRow: {
@@ -1191,7 +1188,7 @@ const styles = StyleSheet.create({
   },
   segmentedBtn: {
     flex: 1,
-    backgroundColor: '#F5F3ED',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
     borderColor: colors.border,
     paddingVertical: 10,
@@ -1206,23 +1203,22 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   segmentedBtnLabel: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   segmentedBtnLabelActive: {
     color: colors.white,
   },
   segmentedBtnSub: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
   },
   segmentedBtnSubActive: {
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.paperGlass,
   },
   listingTypeDescRow: {
     flexDirection: 'row',
@@ -1231,7 +1227,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.06)',
+    borderTopColor: colors.overlayLight,
   },
   listingTypeDescText: {
     fontSize: 11,
@@ -1248,16 +1244,15 @@ const styles = StyleSheet.create({
     marginBottom: -4,
   },
   sectionHeading: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   sectionHeadingSub: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   step2AiButton: {
@@ -1277,15 +1272,14 @@ const styles = StyleSheet.create({
   },
   step2AiButtonText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   t3RecCard: {
-    backgroundColor: '#0d1814',
+    backgroundColor: colors.ink,
     borderWidth: 1,
-    borderColor: 'rgba(15, 92, 70, 0.4)',
+    borderColor: colors.emeraldLight,
     borderRadius: 8,
     padding: 14,
     marginBottom: 16,
@@ -1297,30 +1291,28 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   t3RecTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.emerald,
   },
   t3Badge: {
-    backgroundColor: 'rgba(15, 92, 70, 0.25)',
+    backgroundColor: colors.emeraldLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(15, 92, 70, 0.4)',
+    borderColor: colors.emeraldLight,
   },
   t3BadgeRising: {
-    backgroundColor: 'rgba(15, 92, 70, 0.4)',
+    backgroundColor: colors.emeraldLight,
     borderColor: colors.emerald,
   },
   t3BadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.emerald,
-    letterSpacing: 0.5,
   },
   t3RecRow: {
     flexDirection: 'row',
@@ -1337,7 +1329,7 @@ const styles = StyleSheet.create({
   },
   t3RecSub: {
     fontFamily: typography.body,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1351,19 +1343,18 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   t3ApplyText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.white,
-    letterSpacing: 0.5,
   },
   t3RecDetail: {
     fontFamily: typography.body,
-    fontSize: 9.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     lineHeight: 14,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: colors.borderLight,
     paddingTop: 8,
     marginTop: 4,
   },

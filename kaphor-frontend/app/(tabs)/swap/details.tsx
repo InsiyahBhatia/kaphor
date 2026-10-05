@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   Dimensions,
   Modal,
@@ -23,13 +22,14 @@ import { messageService } from '../../../src/services/messageService';
 import api from '../../../src/services/api';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../src/components/common/VerifiedBadge';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { EstTradeValueBadge } from '../../../src/components/orders/EstTradeValueBadge';
 import { FairValueMatcher } from '../../../src/components/orders/FairValueMatcher';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useAuth } from '../../../src/context/AuthContext';
 import { useAuthStore } from '../../../src/store/authStore';
 import type { SwapTransaction } from '../../../src/types/swap';
+import { Spinner, Loader } from '../../../src/components/common/Loader';
+import { getErrorMessage } from '../../../src/utils/errors';
 
 const { width } = Dimensions.get('window');
 
@@ -37,7 +37,7 @@ const TIMELINE_STEPS = [
   { key: 'REQUESTED', label: 'REQUESTED' },
   { key: 'ACCEPTED', label: 'ACCEPTED' },
   { key: 'AGREEMENT_SIGNED', label: 'AGREEMENT' },
-  { key: 'SHIPPED', label: 'ESCROW & SHIP' },
+  { key: 'SHIPPED', label: 'Deposit & ship' },
   { key: 'COMPLETED', label: 'COMPLETED' },
 ];
 
@@ -65,18 +65,18 @@ export default function SwapDetailsScreen() {
   const handleConfirmReceived = async () => {
     if (!swapId) return;
     Alert.alert(
-      'Confirm Package Delivery',
+      'Confirm Delivery',
       'Are you sure you have received the item in satisfactory condition? Once confirmed by both parties, garment ownership is transferred and your ₹500 security deposit is released.',
       [
-        { text: 'NOT YET', style: 'cancel' },
+        { text: 'Not yet', style: 'cancel' },
         {
-          text: 'YES, CONFIRM',
+          text: 'Yes, confirm',
           onPress: async () => {
             setConfirmingReceived(true);
             try {
               const res = await swapService.confirmReceived(swapId, true);
               if (res?.status === 'COMPLETED') {
-                Alert.alert('Swap Completed', 'Both packages confirmed! Escrow security deposits have been released and garment ownership transferred.');
+                Alert.alert('Swap Completed', 'Both packages arrived! Deposits are refunded and the items are now yours.');
               } else {
                 Alert.alert('Receipt Confirmed!', 'We recorded your delivery confirmation. When your partner also confirms receipt, the swap will finalize automatically.');
               }
@@ -122,7 +122,7 @@ export default function SwapDetailsScreen() {
     } catch (err: any) {
       console.error('Failed to load swap details:', err);
       Alert.alert('Error', 'Unable to load swap request details.', [
-        { text: 'GO BACK', onPress: () => safeBack('/(tabs)/circular') },
+        { text: 'Go back', onPress: () => safeBack('/(tabs)/circular') },
       ]);
     } finally {
       setLoading(false);
@@ -136,7 +136,7 @@ export default function SwapDetailsScreen() {
   }, [loadData]);
 
   if (loading || !swap) {
-    return <DossierLoading variant="swap" />;
+    return <Loader variant="swap" />;
   }
 
   const isInitiator = effectiveUserId ? effectiveUserId === swap.initiatorId : true;
@@ -176,12 +176,12 @@ export default function SwapDetailsScreen() {
   };
 
   const getDisplayGarmentValue = (item: any): string => {
-    if (!item) return 'EST. ₹750';
+    if (!item) return 'Est. ₹750';
     const rawVal = item.price || item.estimatedValue || item.rentalPriceDay;
     if (rawVal != null && !isNaN(rawVal) && rawVal > 0) {
       return `EST. ₹${Math.round(rawVal).toLocaleString('en-IN')}`;
     }
-    return 'EST. ₹750 (SWAP)';
+    return 'Est. ₹750 (swap)';
   };
 
   // Direct Message Handler
@@ -211,7 +211,7 @@ export default function SwapDetailsScreen() {
     Alert.alert(
       accept ? 'Accept Swap Offer?' : 'Decline Swap Offer?',
       accept
-        ? 'Both parties will proceed to digital contract verification and escrow deposit.'
+        ? 'Next, both people sign the agreement and pay the deposit.'
         : 'Are you sure you want to decline this trade offer?',
       [
         { text: 'CANCEL', style: 'cancel' },
@@ -228,7 +228,7 @@ export default function SwapDetailsScreen() {
                   'Next step: Review and sign the digital swap agreement.',
                   [
                     {
-                      text: 'SIGN AGREEMENT NOW',
+                      text: 'Sign agreement now',
                       onPress: () => router.push(`/(tabs)/swap/agreement?swapId=${swap.id}` as any),
                     },
                     { text: 'LATER', onPress: () => loadData() },
@@ -239,7 +239,7 @@ export default function SwapDetailsScreen() {
                 loadData();
               }
             } catch (err: any) {
-              Alert.alert('Error', err?.response?.data?.message || 'Failed to update swap.');
+              Alert.alert('Error', getErrorMessage(err, 'Failed to update swap.'));
             } finally {
               setActionLoading(false);
             }
@@ -254,7 +254,7 @@ export default function SwapDetailsScreen() {
     Alert.alert('Cancel Request', 'Are you sure you want to cancel this swap request?', [
       { text: 'NO', style: 'cancel' },
       {
-        text: 'YES, CANCEL',
+        text: 'Yes, cancel',
         style: 'destructive',
         onPress: async () => {
           setActionLoading(true);
@@ -263,7 +263,7 @@ export default function SwapDetailsScreen() {
             Alert.alert('Cancelled', 'Your swap request has been cancelled.');
             loadData();
           } catch (err: any) {
-            Alert.alert('Error', err?.response?.data?.message || 'Failed to cancel swap.');
+            Alert.alert('Error', getErrorMessage(err, 'Failed to cancel swap.'));
           } finally {
             setActionLoading(false);
           }
@@ -295,7 +295,7 @@ export default function SwapDetailsScreen() {
     >
       {/* Top Navigation Bar */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
           style={styles.backBtn}
           onPress={() => safeBack('/(tabs)/circular')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -303,12 +303,12 @@ export default function SwapDetailsScreen() {
           <Ionicons name="arrow-back" size={20} color={colors.charcoal} />
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerPre}>EXCHANGE DOSSIER</Text>
+          <Text style={styles.headerPre}>Exchange details</Text>
           <Text style={styles.headerTitle} numberOfLines={1}>
             REF #{swap.id.slice(0, 8).toUpperCase()}
           </Text>
         </View>
-        <TouchableOpacity
+        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Chat"
           style={styles.chatHeaderBtn}
           onPress={handleMessagePartner}
           disabled={actionLoading}
@@ -342,7 +342,7 @@ export default function SwapDetailsScreen() {
                 <VerifiedBadge size="compact" showLabel={false} />
               </View>
               <Text style={styles.partnerRole}>
-                {isInitiator ? 'RECIPROCATOR (RECEIVER)' : 'PROPOSER (INITIATOR)'}
+                {isInitiator ? 'RECEIVER' : 'SENDER'}
               </Text>
               {partner?.username && (
                 <Text style={styles.partnerHandle}>@{partner.username}</Text>
@@ -357,7 +357,7 @@ export default function SwapDetailsScreen() {
             activeOpacity={0.8}
           >
             {actionLoading ? (
-              <ActivityIndicator size="small" color={colors.cream} />
+              <Spinner size="small" color={colors.cream} />
             ) : (
               <>
                 <Ionicons name="chatbubbles-outline" size={16} color={colors.cream} />
@@ -372,7 +372,7 @@ export default function SwapDetailsScreen() {
         {/* Status Badge & Lifecycle Stepper */}
         <View style={styles.timelineCard}>
           <View style={styles.statusRow}>
-            <Text style={styles.sectionLabel}>TRANSACTION STATUS</Text>
+            <Text style={styles.sectionLabel}>Transaction status</Text>
             <View style={[styles.statusTag, getStatusTagStyle(swap.status)]}>
               <Text style={styles.statusTagText}>{swap.status}</Text>
             </View>
@@ -429,12 +429,12 @@ export default function SwapDetailsScreen() {
         </View>
 
         {/* Garment Exchange Comparison Dossier */}
-        <Text style={styles.sectionHeading}>EXCHANGE MANIFEST</Text>
+        <Text style={styles.sectionHeading}>Exchange list</Text>
         <View style={styles.manifestGrid}>
           {/* YOU GIVE CARD */}
           <View style={styles.garmentCard}>
             <View style={styles.cardBadgeGive}>
-              <Text style={styles.cardBadgeText}>YOU GIVE</Text>
+              <Text style={styles.cardBadgeText}>You give</Text>
             </View>
             <TouchableOpacity
               style={styles.garmentImgWrap}
@@ -450,8 +450,8 @@ export default function SwapDetailsScreen() {
                 contentFit="cover"
               />
               <View style={styles.zoomPillSmall}>
-                <Ionicons name="scan-outline" size={11} color="#FFFFFF" />
-                <Text style={styles.zoomPillSmallText}>ZOOM</Text>
+                <Ionicons name="scan-outline" size={11} color={colors.white} />
+                <Text style={styles.zoomPillSmallText}>Zoom</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity 
@@ -498,7 +498,7 @@ export default function SwapDetailsScreen() {
           {/* YOU RECEIVE CARD */}
           <View style={styles.garmentCard}>
             <View style={styles.cardBadgeReceive}>
-              <Text style={styles.cardBadgeText}>YOU RECEIVE</Text>
+              <Text style={styles.cardBadgeText}>You receive</Text>
             </View>
             <TouchableOpacity
               style={styles.garmentImgWrap}
@@ -514,8 +514,8 @@ export default function SwapDetailsScreen() {
                 contentFit="cover"
               />
               <View style={styles.zoomPillSmall}>
-                <Ionicons name="scan-outline" size={11} color="#FFFFFF" />
-                <Text style={styles.zoomPillSmallText}>ZOOM</Text>
+                <Ionicons name="scan-outline" size={11} color={colors.white} />
+                <Text style={styles.zoomPillSmallText}>Zoom</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -591,13 +591,13 @@ export default function SwapDetailsScreen() {
           <View style={styles.messageBox}>
             <View style={styles.messageHeaderRow}>
               <Ionicons name="chatbox-ellipses-outline" size={14} color={colors.charcoal} />
-              <Text style={styles.messageLabel}>PROPOSAL MEMO</Text>
+              <Text style={styles.messageLabel}>Proposal memo</Text>
             </View>
             <Text style={styles.messageText}>"{swap.message}"</Text>
           </View>
         )}
 
-        {/* Condition Evidence Gallery */}
+        {/* Condition Photos Gallery */}
         {(() => {
           const conditionPhotoList: string[] = Array.isArray(swap.conditionPhotos)
             ? (swap.conditionPhotos as any as string[])
@@ -611,7 +611,7 @@ export default function SwapDetailsScreen() {
             <View style={styles.evidenceSection}>
               <View style={styles.evidenceHeader}>
                 <Ionicons name="shield-checkmark-outline" size={14} color={colors.charcoal} />
-                <Text style={styles.sectionLabel}>CONDITION EVIDENCE PHOTOS</Text>
+                <Text style={styles.sectionLabel}>Condition evidence photos</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
                 {conditionPhotoList.map((photoUri: string, index: number) => (
@@ -635,12 +635,12 @@ export default function SwapDetailsScreen() {
         {/* Escrow & Security Deposit Summary */}
         <View style={styles.escrowNoticeCard}>
           <View style={styles.escrowNoticeHeader}>
-            <Ionicons name="lock-closed" size={16} color="#8C6D3B" />
-            <Text style={styles.escrowNoticeTitle}>SECURITY ESCROW PROTECTION</Text>
+            <Ionicons name="lock-closed" size={16} color={colors.goldDark} />
+            <Text style={styles.escrowNoticeTitle}>Security payment protection</Text>
           </View>
           <Text style={styles.escrowNoticeBody}>
             Kaphor holds a refundable ₹500 security deposit from each swapper. Deposits are
-            fully refunded once both parties authenticate condition and confirm receipt.
+            fully refunded once both parties check condition and confirm receipt.
           </Text>
         </View>
 
@@ -648,8 +648,8 @@ export default function SwapDetailsScreen() {
         {swap.status === 'COMPLETED' && (
           <View style={styles.reviewCard}>
             <View style={styles.reviewHeader}>
-              <Ionicons name="star" size={18} color="#C9A84C" />
-              <Text style={styles.reviewCardTitle}>SWAP PARTNER REPUTATION</Text>
+              <Ionicons name="star" size={18} color={colors.gold} />
+              <Text style={styles.reviewCardTitle}>Swap partner reputation</Text>
             </View>
 
             {(swap as any).reviews?.[effectiveUserId || ''] ? (
@@ -660,11 +660,11 @@ export default function SwapDetailsScreen() {
                       key={s}
                       name="star"
                       size={18}
-                      color={s <= (swap as any).reviews[effectiveUserId || ''].rating ? '#C9A84C' : colors.bgMuted}
+                      color={s <= (swap as any).reviews[effectiveUserId || ''].rating ? colors.gold : colors.bgMuted}
                     />
                   ))}
                 </View>
-                <Text style={styles.reviewSubmittedLabel}>YOUR REVIEW SUBMITTED</Text>
+                <Text style={styles.reviewSubmittedLabel}>Your review submitted</Text>
                 {(swap as any).reviews[effectiveUserId || ''].comment ? (
                   <Text style={styles.reviewCommentText}>
                     "{(swap as any).reviews[effectiveUserId || ''].comment}"
@@ -678,7 +678,7 @@ export default function SwapDetailsScreen() {
                 </Text>
                 <View style={styles.interactiveStarsRow}>
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <TouchableOpacity
+                    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={`Rate ${star} stars`}
                       key={star}
                       onPress={() => setReviewRating(star)}
                       style={{ padding: 4 }}
@@ -686,12 +686,12 @@ export default function SwapDetailsScreen() {
                       <Ionicons
                         name={star <= reviewRating ? 'star' : 'star-outline'}
                         size={28}
-                        color="#C9A84C"
+                        color={colors.gold}
                       />
                     </TouchableOpacity>
                   ))}
                 </View>
-                <TextInput
+                <TextInput accessibilityLabel="Review comment"
                   placeholder="Share details on packaging, condition accuracy, or communication..."
                   placeholderTextColor={colors.textMuted}
                   value={reviewComment}
@@ -707,11 +707,11 @@ export default function SwapDetailsScreen() {
                   activeOpacity={0.8}
                 >
                   {submittingReview ? (
-                    <ActivityIndicator size="small" color={colors.cream} />
+                    <Spinner size="small" color={colors.cream} />
                   ) : (
                     <>
                       <Ionicons name="checkmark-circle" size={16} color={colors.cream} />
-                      <Text style={styles.submitReviewBtnText}>SUBMIT REVIEW</Text>
+                      <Text style={styles.submitReviewBtnText}>Submit review</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -732,7 +732,7 @@ export default function SwapDetailsScreen() {
               disabled={actionLoading}
             >
               <Ionicons name="chatbubbles-outline" size={15} color={colors.charcoal} />
-              <Text style={styles.secondaryBtnText}>CHAT</Text>
+              <Text style={styles.secondaryBtnText}>Chat</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -741,7 +741,7 @@ export default function SwapDetailsScreen() {
               disabled={actionLoading}
             >
               <Ionicons name="close" size={15} color={colors.red} />
-              <Text style={styles.declineBtnText}>DECLINE</Text>
+              <Text style={styles.declineBtnText}>Decline</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -750,11 +750,11 @@ export default function SwapDetailsScreen() {
               disabled={actionLoading}
             >
               {actionLoading ? (
-                <ActivityIndicator size="small" color={colors.cream} />
+                <Spinner size="small" color={colors.cream} />
               ) : (
                 <>
                   <Ionicons name="checkmark" size={15} color={colors.cream} />
-                  <Text style={styles.acceptBtnText}>ACCEPT</Text>
+                  <Text style={styles.acceptBtnText}>Accept</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -770,7 +770,7 @@ export default function SwapDetailsScreen() {
               disabled={actionLoading}
             >
               <Ionicons name="close-circle-outline" size={16} color={colors.textMuted} />
-              <Text style={styles.cancelBtnText}>CANCEL REQUEST</Text>
+              <Text style={styles.cancelBtnText}>Cancel request</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dockBtn, styles.primaryBtn]}
@@ -778,7 +778,7 @@ export default function SwapDetailsScreen() {
               disabled={actionLoading}
             >
               <Ionicons name="chatbubbles" size={16} color={colors.cream} />
-              <Text style={styles.primaryBtnText}>MESSAGE OWNER</Text>
+              <Text style={styles.primaryBtnText}>Message owner</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -791,14 +791,14 @@ export default function SwapDetailsScreen() {
               onPress={handleMessagePartner}
             >
               <Ionicons name="chatbubbles-outline" size={16} color={colors.charcoal} />
-              <Text style={styles.secondaryBtnText}>CHAT</Text>
+              <Text style={styles.secondaryBtnText}>Chat</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dockBtn, styles.primaryBtn, { flex: 2 }]}
               onPress={() => router.push(`/(tabs)/swap/agreement?swapId=${swap.id}` as any)}
             >
               <Ionicons name="document-text-outline" size={16} color={colors.cream} />
-              <Text style={styles.primaryBtnText}>REVIEW & SIGN AGREEMENT</Text>
+              <Text style={styles.primaryBtnText}>Review & sign agreement</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -811,14 +811,14 @@ export default function SwapDetailsScreen() {
               onPress={() => router.push(`/(tabs)/swap/agreement?swapId=${swap.id}` as any)}
             >
               <Ionicons name="document-text" size={14} color={colors.charcoal} />
-              <Text style={styles.secondaryBtnText}>AGREEMENT</Text>
+              <Text style={styles.secondaryBtnText}>Agreement</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dockBtn, styles.goldBtn, { flex: 2 }]}
               onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
             >
               <Ionicons name="cube-outline" size={16} color={colors.cream} />
-              <Text style={styles.goldBtnText}>PAY ESCROW & SHIP</Text>
+              <Text style={styles.goldBtnText}>Pay deposit & ship</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -831,7 +831,7 @@ export default function SwapDetailsScreen() {
               onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
             >
               <Ionicons name="cube-outline" size={14} color={colors.charcoal} />
-              <Text style={styles.secondaryBtnText}>TRACKING</Text>
+              <Text style={styles.secondaryBtnText}>Tracking</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dockBtn, styles.forestBtn, { flex: 2 }]}
@@ -840,11 +840,11 @@ export default function SwapDetailsScreen() {
               activeOpacity={0.85}
             >
               {confirmingReceived ? (
-                <ActivityIndicator color={colors.cream} size="small" />
+                <Spinner color={colors.cream} size="small" />
               ) : (
                 <>
                   <Ionicons name="checkmark-done-circle" size={16} color={colors.cream} />
-                  <Text style={styles.forestBtnText}>CONFIRM PACKAGE RECEIVED</Text>
+                  <Text style={styles.forestBtnText}>Confirm package received</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -855,7 +855,7 @@ export default function SwapDetailsScreen() {
         {swap.status === 'COMPLETED' && (
           <View style={styles.completedNotice}>
             <Ionicons name="checkmark-circle" size={18} color={colors.forest} />
-            <Text style={styles.completedNoticeText}>SWAP COMPLETE & DEPOSITS RELEASED</Text>
+            <Text style={styles.completedNoticeText}>Swap complete & deposits released</Text>
           </View>
         )}
       </View>
@@ -869,17 +869,17 @@ export default function SwapDetailsScreen() {
         statusBarTranslucent
       >
         <View style={styles.modalBackdrop}>
-          <TouchableOpacity 
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" 
             style={[styles.modalCloseBtn, { top: Math.max(insets.top + 10, 44) }]} 
             onPress={() => setSelectedPhoto(null)}
             hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           >
-            <Ionicons name="close" size={28} color="#FFFFFF" />
+            <Ionicons name="close" size={28} color={colors.white} />
           </TouchableOpacity>
 
           <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
-            <Ionicons name="scan-outline" size={13} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.zoomInstructionText}>PINCH TO ZOOM</Text>
+            <Ionicons name="scan-outline" size={13} color={colors.paperGlass} />
+            <Text style={styles.zoomInstructionText}>Pinch to zoom</Text>
           </View>
 
           {selectedPhoto && (
@@ -909,15 +909,15 @@ function getStatusTagStyle(status: string) {
   switch (status) {
     case 'ACCEPTED':
     case 'AGREEMENT_SIGNED':
-      return { backgroundColor: '#EBF3ED', borderColor: colors.forest };
+      return { backgroundColor: colors.emeraldLight, borderColor: colors.forest };
     case 'SHIPPED':
     case 'BOTH_SHIPPED':
-      return { backgroundColor: '#FDF6E2', borderColor: '#8C6D3B' };
+      return { backgroundColor: colors.goldLight, borderColor: colors.goldDark };
     case 'COMPLETED':
-      return { backgroundColor: '#EBF3ED', borderColor: colors.forest };
+      return { backgroundColor: colors.emeraldLight, borderColor: colors.forest };
     case 'REJECTED':
     case 'CANCELLED':
-      return { backgroundColor: '#FDECEC', borderColor: colors.red };
+      return { backgroundColor: colors.crimsonLight, borderColor: colors.red };
     default:
       return { backgroundColor: colors.bgMuted, borderColor: colors.charcoal };
   }
@@ -956,11 +956,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerPre: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    color: colors.textMuted,
-    letterSpacing: 1.5,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.textMuted, includeFontPadding: false, },
   headerTitle: {
     fontFamily: typography.headings,
     fontSize: 18,
@@ -991,9 +989,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
-    borderColor: '#C9A84C',
+    borderColor: colors.gold,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginTop: 8,
@@ -1015,19 +1013,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chatPartnerBannerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   chatPartnerBannerSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
     marginTop: 3,
-    lineHeight: 14,
-  },
+    lineHeight: 20, includeFontPadding: false, },
   partnerInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1061,18 +1055,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   partnerRole: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    marginTop: 2,
-    letterSpacing: 0.5,
-  },
+    marginTop: 2, includeFontPadding: false, },
   partnerHandle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textSecond,
-    marginTop: 1,
-  },
+    marginTop: 1, includeFontPadding: false, },
   directChatBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1084,11 +1075,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   directChatBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
     color: colors.cream,
-    fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
 
   // Timeline & Stepper
@@ -1108,12 +1098,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionLabel: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    color: colors.textMuted,
-    letterSpacing: 1,
-    fontWeight: '800',
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.textMuted, includeFontPadding: false, },
   statusTag: {
     borderWidth: 1.5,
     borderColor: colors.charcoal,
@@ -1122,12 +1109,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   statusTagText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   stepperContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1161,9 +1145,8 @@ const styles = StyleSheet.create({
     borderColor: colors.forest,
   },
   stepNumber: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '700',
     color: colors.textMuted,
   },
   stepNumberActive: {
@@ -1171,12 +1154,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   stepLabel: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    lineHeight: 11,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    lineHeight: 19,
     color: colors.textMuted,
-    textAlign: 'center',
-  },
+    textAlign: 'center', includeFontPadding: false, },
   stepLabelActive: {
     color: colors.charcoal,
     fontWeight: '800',
@@ -1231,19 +1213,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardBadgeReceive: {
-    backgroundColor: '#8C6D3B',
+    backgroundColor: colors.goldDark,
     paddingVertical: 5,
     paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    color: colors.cream,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.cream, includeFontPadding: false, },
   garmentImgWrap: {
     width: '100%',
     height: 140,
@@ -1260,12 +1239,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   garmentBrand: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-    fontWeight: '700',
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 16,
+    color: colors.textMuted, includeFontPadding: false, },
   garmentTitle: {
     fontFamily: typography.headings,
     fontSize: 13.5,
@@ -1284,22 +1260,17 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   garmentSize: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    color: colors.textSecond,
-    fontWeight: '700',
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 16,
+    color: colors.textSecond, includeFontPadding: false, },
   garmentCondition: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    color: colors.forest,
-    fontWeight: '800',
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
   garmentValue: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
     color: colors.charcoal,
-    fontWeight: '800',
     marginTop: 4,
   },
   exchangeDivider: {
@@ -1332,12 +1303,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   messageLabel: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: colors.textMuted,
-    letterSpacing: 1,
-    fontWeight: '800',
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.textMuted, includeFontPadding: false, },
   messageText: {
     fontFamily: typography.accent,
     fontSize: 14,
@@ -1379,22 +1347,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2,
     right: 2,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 5,
     paddingVertical: 2,
   },
   photoIndexText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
     color: colors.cream,
-    fontWeight: '700',
   },
 
   // Escrow Notice
   escrowNoticeCard: {
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
-    borderColor: '#D4C4A3',
+    borderColor: colors.borderLight,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
@@ -1405,19 +1372,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   escrowNoticeTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    color: '#8C6D3B',
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.goldDark, includeFontPadding: false, },
   escrowNoticeBody: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textSecond,
-    lineHeight: 16,
-    marginTop: 4,
-  },
+    lineHeight: 23,
+    marginTop: 4, includeFontPadding: false, },
 
   // Action Dock
   actionDock: {
@@ -1450,11 +1413,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.forest,
   },
   acceptBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '800',
     color: colors.cream,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   declineBtn: {
     borderWidth: 1.5,
@@ -1462,11 +1424,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   declineBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '800',
     color: colors.red,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   cancelBtn: {
     borderWidth: 1.5,
@@ -1474,21 +1435,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   cancelBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '800',
     color: colors.textMuted,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   primaryBtn: {
     backgroundColor: colors.charcoal,
   },
   primaryBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '800',
     color: colors.cream,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   secondaryBtn: {
     borderWidth: 1.5,
@@ -1496,31 +1455,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   secondaryBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '800',
     color: colors.charcoal,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   goldBtn: {
-    backgroundColor: '#8C6D3B',
+    backgroundColor: colors.goldDark,
   },
   goldBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11.5,
-    fontWeight: '800',
     color: colors.cream,
-    letterSpacing: 0.6,
+    letterSpacing: 0.2,
   },
   forestBtn: {
     backgroundColor: colors.forest,
   },
   forestBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '800',
     color: colors.cream,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   completedNotice: {
     flexDirection: 'row',
@@ -1530,12 +1486,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   completedNoticeText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    color: colors.forest,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
 
   // Review Card
   reviewCard: {
@@ -1553,16 +1506,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   reviewCardTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    color: colors.charcoal,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   reviewSubmittedBox: {
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
-    borderColor: '#D4C4A3',
+    borderColor: colors.borderLight,
     padding: 12,
     alignItems: 'center',
     marginTop: 4,
@@ -1573,12 +1523,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   reviewSubmittedLabel: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#8C6D3B',
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.goldDark, includeFontPadding: false, },
   reviewCommentText: {
     fontFamily: typography.accent,
     fontSize: 13,
@@ -1591,12 +1538,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   reviewInstruction: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textSecond,
-    lineHeight: 15,
-    marginBottom: 8,
-  },
+    lineHeight: 22,
+    marginBottom: 8, includeFontPadding: false, },
   interactiveStarsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -1608,7 +1554,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: 12,
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     fontSize: 11,
     color: colors.charcoal,
     textAlignVertical: 'top',
@@ -1625,17 +1571,16 @@ const styles = StyleSheet.create({
     minHeight: 46,
   },
   submitReviewBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11.5,
-    fontWeight: '800',
     color: colors.cream,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
 
   // Modal
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.95)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1643,7 +1588,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     zIndex: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 22,
     width: 44,
     height: 44,
@@ -1657,18 +1602,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
   },
   zoomInstructionText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
+    color: colors.white,
+    fontSize: 17,
+    fontFamily: typography.handBold, includeFontPadding: false, },
   zoomPillSmall: {
     position: 'absolute',
     bottom: 6,
@@ -1676,17 +1618,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 10,
   },
   zoomPillSmallText: {
-    color: '#FFFFFF',
-    fontSize: 9.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-  },
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: typography.handBold, includeFontPadding: false, },
   modalImage: {
     width: width * 0.9,
     height: width * 1.2,

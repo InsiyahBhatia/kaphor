@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import db, { prisma } from '../lib/prisma';
 import { hashPassword, comparePassword } from '../utils/hash';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
+import { signAccessToken, signRefreshToken, verifyRefreshToken, hashToken } from '../utils/jwt';
+import { persistRefreshToken, REFRESH_EXPIRES_MS } from '../services/auth.service';
 import { logger } from '../lib/logger';
 import { isAccountLocked, recordFailedLogin, clearFailedLogins } from '../services/authLock.service';
 import { auditLog } from '../services/audit.service';
@@ -9,7 +10,12 @@ import crypto from 'crypto';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.service';
 
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid credentials';
-const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
+// Pre-computed argon2 hash used to equalise login timing when the account does not exist.
+let dummyHashPromise: Promise<string> | null = null;
+function getDummyHash(): Promise<string> {
+  if (!dummyHashPromise) dummyHashPromise = hashPassword(crypto.randomBytes(16).toString('hex'));
+  return dummyHashPromise;
+}
 
 function userPayload(user: any) {
   let cleanUsername = user.username;
@@ -60,6 +66,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     const passwordHash = await hashPassword(password);
     const styleVector = Array(16).fill(0);
     const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenHash = hashToken(verificationToken, 'verify');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
     const user = await prisma.user.create({
@@ -69,7 +76,7 @@ export async function register(req: Request, res: Response): Promise<void> {
         displayName: displayName.trim(),
         passwordHash,
         styleVector,
-        verificationToken,
+        verificationToken: verificationTokenHash,
         verificationExpires,
       },
       select: { id: true, email: true, username: true, displayName: true, role: true },
@@ -99,13 +106,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       role: user.role,
     });
     const refreshToken = signRefreshToken(user.id);
-    await db.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + REFRESH_EXPIRES_MS),
-      },
-    });
+    await persistRefreshToken(user.id, refreshToken);
     res.status(201).json({
       data: {
         user: userPayload(user),
@@ -120,10 +121,10 @@ export async function register(req: Request, res: Response): Promise<void> {
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
-  const email = (req.body?.email as string)?.toLowerCase?.()?.trim?.() ?? '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.toLowerCase().trim() : '';
   const password = req.body?.password;
 
-  if (!email || !password) {
+  if (!email || typeof password !== 'string' || !password) {
     res.status(401).json({
       error: 'UNAUTHORIZED',
       message: INVALID_CREDENTIALS_MESSAGE,
@@ -148,6 +149,8 @@ export async function login(req: Request, res: Response): Promise<void> {
     });
 
     if (!user || !user.isActive) {
+      // Burn the same CPU as a real password check so response time does not reveal the account state.
+      await comparePassword(String(password), await getDummyHash());
       await recordFailedLogin(email);
       res.status(401).json({
         error: 'UNAUTHORIZED',
@@ -158,6 +161,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
 
     if (!user.passwordHash) {
+      await comparePassword(String(password), await getDummyHash());
       await recordFailedLogin(email);
       res.status(401).json({
         error: 'UNAUTHORIZED',
@@ -167,7 +171,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const valid = await comparePassword(password, user.passwordHash);
+    const valid = await comparePassword(String(password), user.passwordHash);
     if (!valid) {
       await recordFailedLogin(email);
       await auditLog({ action: 'LOGIN_FAILURE', metadata: { email }, req });
@@ -193,13 +197,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       role: user.role,
     });
     const refreshToken = signRefreshToken(user.id);
-    await db.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + REFRESH_EXPIRES_MS),
-      },
-    });
+    await persistRefreshToken(user.id, refreshToken);
 
     res.status(200).json({
       data: {
@@ -215,8 +213,8 @@ export async function login(req: Request, res: Response): Promise<void> {
 }
 
 export async function googleLogin(req: Request, res: Response): Promise<void> {
-  const { idToken } = req.body;
-  if (!idToken) {
+  const idToken = req.body?.idToken;
+  if (!idToken || typeof idToken !== 'string' || idToken.length > 4096) {
     res.status(400).json({ error: 'BAD_REQUEST', message: 'ID token required' });
     return;
   }
@@ -233,12 +231,8 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
       },
     });
   } catch (err: any) {
-    const message = err?.message || 'Failed to process Google login';
-    const status = message.includes('deactivated') ? 401
-      : message.includes('no email') ? 400
-      : 401;
-    logger.error('Google login failed', { error: message });
-    res.status(status).json({ error: 'UNAUTHORIZED', message });
+    logger.error('Google login failed', { error: err?.message });
+    res.status(401).json({ error: 'UNAUTHORIZED', message: 'Google sign-in failed' });
   }
 }
 
@@ -248,7 +242,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
   const refreshToken =
     typeof req.body?.refreshToken === 'string' ? req.body.refreshToken.trim() : null;
   if (refreshToken) {
-    await db.refreshToken.deleteMany({ where: { token: refreshToken } }).catch(() => {});
+    await db.refreshToken.deleteMany({ where: { token: hashToken(refreshToken, 'refresh') } }).catch(() => {});
   }
   res.status(200).json({ data: { message: 'Logged out' } });
 }
@@ -259,21 +253,25 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
     res.status(401).json({ error: 'UNAUTHORIZED', message: 'Refresh token required', statusCode: 401 });
     return;
   }
+  const fail = (message = 'Session expired. Please log in again.') =>
+    res.status(401).json({ error: 'UNAUTHORIZED', message, statusCode: 401 });
+
   try {
     const { userId } = verifyRefreshToken(token);
-    const stored = await (db as any).refreshToken.findUnique({ where: { token } });
+    const tokenHash = hashToken(token, 'refresh');
+    const stored = await prisma.refreshToken.findUnique({ where: { token: tokenHash } });
 
-    // 1. Detect Token Reuse (Security: rotation breach)
-    if (!stored || stored.expiresAt < new Date()) {
-      logger.warn('Refresh token reuse detected or expired', { userId, token: token.slice(0, 8) + '...' });
-      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Session expired. Please log in again.', statusCode: 401 });
+    if (!stored || stored.userId !== userId || stored.expiresAt < new Date()) {
+      logger.warn('Refresh token unknown or expired', { userId });
+      fail();
       return;
     }
-    if ((stored as any).isRevoked) {
-      logger.warn('Refresh token already revoked (possible reuse attempt)', { userId, token: token.slice(0, 8) + '...' });
-      // Token was already rotated by a previous refresh — the client has stale tokens.
-      // Don't revoke all sessions here; just let the client know to re-authenticate.
-      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Session expired. Please log in again.', statusCode: 401 });
+
+    // Reuse of an already-rotated token means it may have been stolen: kill every session for this user.
+    if (stored.isRevoked) {
+      logger.warn('Refresh token reuse detected, revoking all sessions', { userId });
+      await prisma.refreshToken.updateMany({ where: { userId }, data: { isRevoked: true } });
+      fail();
       return;
     }
 
@@ -283,37 +281,33 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
     });
 
     if (!user || !user.isActive) {
-      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Invalid or deactivated user', statusCode: 401 });
+      fail('Invalid or deactivated user');
       return;
     }
 
-    // 2. Rotate Token atomically: revoke old + create new in a $transaction
+    // Rotate atomically: revoke old + create new
     const newRefreshToken = signRefreshToken(user.id);
+    const newHash = hashToken(newRefreshToken, 'refresh');
     await prisma.$transaction(async (tx) => {
-      const revoked = await (tx as any).refreshToken.updateMany({
-        where: { token, isRevoked: false },
-        data: { isRevoked: true, replacedBy: newRefreshToken },
+      const revoked = await tx.refreshToken.updateMany({
+        where: { token: tokenHash, isRevoked: false },
+        data: { isRevoked: true, replacedBy: newHash },
       });
-
       if (revoked.count === 0) {
-        // Race lost — token was already revoked by another request (reuse detected)
-        await (tx as any).refreshToken.updateMany({
-          where: { userId },
-          data: { isRevoked: true },
-        });
+        // Lost a race: the same token was used twice at once.
+        await tx.refreshToken.updateMany({ where: { userId }, data: { isRevoked: true } });
         throw new Error('TOKEN_REUSE_DETECTED');
       }
-
-      await (tx as any).refreshToken.create({
+      await tx.refreshToken.create({
         data: {
-          token: newRefreshToken,
+          token: newHash,
           userId: user.id,
           expiresAt: new Date(Date.now() + REFRESH_EXPIRES_MS),
         },
       });
     });
 
-    const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role });
+    const accessToken = signAccessToken({ id: user.id, email: user.email, role: String(user.role) });
     res.status(200).json({
       data: {
         user: { id: user.id, email: user.email, role: user.role },
@@ -322,47 +316,50 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
       },
     });
   } catch (error: any) {
-    const message = error?.message === 'TOKEN_REUSE_DETECTED'
-      ? 'Token reuse detected. All sessions revoked.'
-      : 'Invalid or expired refresh token';
-    res.status(401).json({ error: 'UNAUTHORIZED', message, statusCode: 401 });
+    if (error?.message === 'TOKEN_REUSE_DETECTED') logger.warn('Refresh token reuse (race) detected');
+    fail('Invalid or expired refresh token');
   }
 }
 
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
-  const { email } = req.body;
+  const email = typeof req.body?.email === 'string' ? req.body.email.toLowerCase().trim() : '';
   if (!email) {
     res.status(400).json({ error: 'BAD_REQUEST', message: 'Email required' });
     return;
   }
 
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
-  if (user) {
-    const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1h
-    await (db as any).user.update({
-      where: { id: user.id },
-      data: { verificationToken: token, verificationExpires: expires }
-    });
-    await sendPasswordResetEmail(user.email, token);
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (user && user.isActive) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 60 * 60 * 1000); // 1h
+      // Only the hash is stored. The raw token exists only in the email.
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { verificationToken: hashToken(token, 'reset'), verificationExpires: expires },
+      });
+      await sendPasswordResetEmail(user.email, token);
+    }
+  } catch (err) {
+    // Never let errors change the response: same reply whether or not the account exists.
+    logger.error('forgotPassword failed', { error: err instanceof Error ? err.message : String(err) });
   }
 
-  // Always return 200 to prevent email enumeration
   res.status(200).json({ data: { message: 'If the email exists, a reset link has been sent.' } });
 }
 
 export async function resetPassword(req: Request, res: Response): Promise<void> {
-  const { token, password } = req.body;
-  if (!token || !password) {
+  const { token, password } = req.body || {};
+  if (typeof token !== 'string' || typeof password !== 'string' || !token || !password) {
     res.status(400).json({ error: 'BAD_REQUEST', message: 'Token and new password required' });
     return;
   }
 
   const user = await prisma.user.findFirst({
     where: {
-      verificationToken: token,
-      verificationExpires: { gte: new Date() }
-    }
+      verificationToken: hashToken(token, 'reset'),
+      verificationExpires: { gte: new Date() },
+    },
   });
 
   if (!user) {
@@ -371,14 +368,20 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   }
 
   const passwordHash = await hashPassword(password);
-  await (db as any).user.update({
-    where: { id: user.id },
-    data: {
-      passwordHash,
-      verificationToken: null,
-      verificationExpires: null
-    }
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        verificationToken: null,
+        verificationExpires: null,
+        failedLoginAttempts: 0,
+        lockUntil: null,
+      },
+    }),
+    // A password reset signs the user out everywhere.
+    prisma.refreshToken.updateMany({ where: { userId: user.id }, data: { isRevoked: true } }),
+  ]);
 
   await auditLog({ userId: user.id, action: 'PASSWORD_RESET', req });
   res.status(200).json({ data: { message: 'Password reset successful.' } });
@@ -386,16 +389,16 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
 export async function verifyEmail(req: Request, res: Response): Promise<void> {
   const { token } = req.params;
-  if (!token) {
+  if (!token || token.length > 200) {
     res.status(400).json({ error: 'BAD_REQUEST', message: 'Token required' });
     return;
   }
 
   const user = await prisma.user.findFirst({
     where: {
-      verificationToken: token,
-      verificationExpires: { gte: new Date() }
-    }
+      verificationToken: hashToken(token, 'verify'),
+      verificationExpires: { gte: new Date() },
+    },
   });
 
   if (!user) {
@@ -403,13 +406,14 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  await (db as any).user.update({
+  // Mark the email as verified. Never touch isActive here: that flag is how admins ban accounts.
+  await prisma.user.update({
     where: { id: user.id },
     data: {
-      isActive: true, // Mark as active/verified
+      isVerified: true,
       verificationToken: null,
-      verificationExpires: null
-    }
+      verificationExpires: null,
+    },
   });
 
   await auditLog({ userId: user.id, action: 'EMAIL_VERIFIED', req });

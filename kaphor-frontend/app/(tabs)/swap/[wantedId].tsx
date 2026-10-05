@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, TextInput, Modal, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, TextInput, Modal, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { isAccessoryCategory } from '../../../src/constants/market';
+import { Spinner, Loader } from '../../../src/components/common/Loader';
+import { getErrorMessage } from '../../../src/utils/errors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -59,14 +60,14 @@ export default function SwapWithWantedScreen() {
         { text: 'OK', onPress: () => safeBack('/(tabs)/swap') },
       ]);
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || 'Swap request failed.');
+      Alert.alert('Error', getErrorMessage(err, 'Swap request failed.'));
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
-    return <DossierLoading variant="swap" />;
+    return <Loader variant="swap" />;
   }
 
   return (
@@ -75,13 +76,13 @@ export default function SwapWithWantedScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           onPress={() => safeBack('/(tabs)/swap')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>SWAP REQUEST</Text>
+        <Text style={styles.headerTitle}>Swap request</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -104,19 +105,19 @@ export default function SwapWithWantedScreen() {
             >
               <KaphorImage uri={(garment as any)?.primaryImage || garment.images?.[0]} style={styles.wantedImage} contentFit="cover" />
               <View style={styles.zoomPillSmall}>
-                <Ionicons name="scan-outline" size={10} color="#FFFFFF" />
-                <Text style={styles.zoomPillSmallText}>ZOOM</Text>
+                <Ionicons name="scan-outline" size={10} color={colors.white} />
+                <Text style={styles.zoomPillSmallText}>Zoom</Text>
               </View>
             </TouchableOpacity>
             <View style={styles.wantedInfo}>
-              <Text style={styles.label}>YOU WANT</Text>
+              <Text style={styles.label}>You want</Text>
               <Text style={styles.wantedTitle}>{garment.title}</Text>
-              <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Archive').toUpperCase()}</Text>
+              <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Closet').toUpperCase()}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' }}>
-                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.textMuted }}>
+                <Text style={{ fontSize: 16, fontFamily: typography.handwritten, color: colors.textMuted, includeFontPadding: false }}>
                   SIZE: {garment.size || 'OS'}
                 </Text>
-                <Text style={{ fontSize: 10, fontFamily: typography.mono, color: colors.crimson, fontWeight: '700' }}>
+                <Text style={{ fontSize: 16, fontFamily: typography.handSemi, color: colors.crimson, includeFontPadding: false }}>
                   {(garment.condition || 'PRISTINE').replace('_', ' ')}
                 </Text>
               </View>
@@ -128,12 +129,12 @@ export default function SwapWithWantedScreen() {
           <Ionicons name="swap-vertical" size={32} color={colors.red} />
         </View>
 
-        <Text style={styles.sectionTitle}>SELECT AN ACCESSORY TO OFFER</Text>
+        <Text style={styles.sectionTitle}>Select an accessory to offer</Text>
         {myGarments.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>You don't have any accessories listed for swap yet.</Text>
             <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { prefillListingType: 'ACCESSORY_SWAP', listingType: 'ACCESSORY_SWAP', fresh: Date.now().toString() } } as any)}>
-              <Text style={styles.linkText}>LIST AN ACCESSORY</Text>
+              <Text style={styles.linkText}>List an accessory</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -154,8 +155,8 @@ export default function SwapWithWantedScreen() {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>MESSAGE THE OWNER (OPTIONAL)</Text>
-        <TextInput
+        <Text style={styles.sectionTitle}>Message the owner (optional)</Text>
+        <TextInput accessibilityLabel="Note to the owner"
           style={styles.messageInput}
           placeholder="Add a note about condition, timing, or delivery…"
           placeholderTextColor={colors.textMuted}
@@ -171,7 +172,7 @@ export default function SwapWithWantedScreen() {
           onPress={handleSwap}
           disabled={!selectedOffer || submitting}
         >
-          {submitting ? <ActivityIndicator color={colors.cream} /> : <Text style={styles.swapBtnText}>SEND SWAP REQUEST</Text>}
+          {submitting ? <Spinner color={colors.cream} /> : <Text style={styles.swapBtnText}>Send swap request</Text>}
         </TouchableOpacity>
       </View>
 
@@ -184,17 +185,17 @@ export default function SwapWithWantedScreen() {
         statusBarTranslucent
       >
         <View style={styles.zoomModalBackdrop}>
-          <TouchableOpacity 
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" 
             style={[styles.closeZoomBtn, { top: Math.max(insets.top + 10, 44) }]}
             onPress={() => setZoomImageUri(null)}
             hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           >
-            <Ionicons name="close" size={28} color="#FFFFFF" />
+            <Ionicons name="close" size={28} color={colors.white} />
           </TouchableOpacity>
 
           <View style={[styles.zoomInstructionWrap, { top: Math.max(insets.top + 18, 52) }]}>
-            <Ionicons name="scan-outline" size={13} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.zoomInstructionText}>PINCH TO ZOOM</Text>
+            <Ionicons name="scan-outline" size={13} color={colors.paperGlass} />
+            <Text style={styles.zoomInstructionText}>Pinch to zoom</Text>
           </View>
 
           {zoomImageUri && (
@@ -224,16 +225,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { justifyContent: 'center', alignItems: 'center' },
   header: { paddingHorizontal: 24, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.cream },
-  headerTitle: { color: colors.charcoal, fontSize: 16, fontFamily: typography.mono, fontWeight: '900', letterSpacing: 2 },
+  headerTitle: { color: colors.charcoal, fontSize: 21, fontFamily: typography.handBold, includeFontPadding: false, },
   content: { padding: 20, paddingBottom: 200 },
   wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden' },
   wantedImage: { width: 100, height: 120 },
   wantedInfo: { flex: 1, padding: 16, justifyContent: 'center' },
-  label: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 9, letterSpacing: 1.5, marginBottom: 4, fontWeight: '800' },
+  label: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 16, marginBottom: 4, includeFontPadding: false, },
   wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 20 },
-  wantedBrand: { color: colors.red, fontFamily: typography.mono, fontSize: 11, marginTop: 4, fontWeight: '700' },
+  wantedBrand: { color: colors.red, fontFamily: typography.handSemi, fontSize: 16, marginTop: 4, includeFontPadding: false, },
   arrowContainer: { alignItems: 'center', marginVertical: 16 },
-  sectionTitle: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 16 },
+  sectionTitle: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 16, marginBottom: 16, includeFontPadding: false, },
   messageInput: {
     backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal,
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
@@ -241,8 +242,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { color: colors.textMuted, fontFamily: typography.mono, fontSize: 12 },
-  linkText: { color: colors.red, fontFamily: typography.mono, fontSize: 11, fontWeight: '800', letterSpacing: 1, marginTop: 12 },
+  emptyText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 17, includeFontPadding: false, },
+  linkText: { color: colors.red, fontFamily: typography.handBold, fontSize: 16, marginTop: 12, includeFontPadding: false, },
   offerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   offerCard: { width: '47%', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', position: 'relative' },
   offerCardSelected: { borderColor: colors.red, borderWidth: 3 },
@@ -266,10 +267,10 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4,
   },
-  swapBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 13, fontWeight: '900', letterSpacing: 2 },
+  swapBtnText: { color: colors.cream, fontFamily: typography.bodyBold, fontSize: 13, letterSpacing: 0.2 },
   zoomModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     zIndex: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 22,
     width: 44,
     height: 44,
@@ -291,18 +292,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
   },
   zoomInstructionText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: typography.handBold, includeFontPadding: false, },
   zoomPillSmall: {
     position: 'absolute',
     bottom: 6,
@@ -310,15 +308,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 10,
   },
   zoomPillSmallText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-  },
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: typography.handBold, includeFontPadding: false, },
 });

@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +21,7 @@ import {
   CreateAddressInput,
 } from '../../../../src/services/addressService';
 import api from '../../../../src/services/api';
+import { Spinner, Loader } from '../../../../src/components/common/Loader';
 
 type ScreenMode = 'select' | 'add' | 'edit';
 
@@ -269,7 +269,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
           </View>
 
           <Text style={styles.label}>FULL NAME *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Recipient name"
             style={[styles.input, errors.fullName && styles.inputError]}
             placeholder="Recipient name"
             placeholderTextColor={colors.textMuted}
@@ -279,7 +279,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
           {errors.fullName ? <Text style={styles.errorText}>{errors.fullName}</Text> : null}
 
           <Text style={styles.label}>PHONE *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="+91 98765 43210"
             style={[styles.input, errors.phone && styles.inputError]}
             placeholder="+91 98765 43210"
             placeholderTextColor={colors.textMuted}
@@ -290,7 +290,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
           {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
 
           <Text style={styles.label}>STREET ADDRESS *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="House / Flat / Street"
             style={[styles.input, errors.line1 && styles.inputError]}
             placeholder="House / Flat / Street"
             placeholderTextColor={colors.textMuted}
@@ -300,7 +300,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
           {errors.line1 ? <Text style={styles.errorText}>{errors.line1}</Text> : null}
 
           <Text style={styles.label}>STREET ADDRESS 2 (OPTIONAL)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Apartment, suite, etc"
             style={styles.input}
             placeholder="Apartment, suite, etc."
             placeholderTextColor={colors.textMuted}
@@ -309,7 +309,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
           />
 
           <Text style={styles.label}>LANDMARK (OPTIONAL)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Nearby landmark"
             style={styles.input}
             placeholder="Nearby landmark"
             placeholderTextColor={colors.textMuted}
@@ -320,7 +320,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={styles.label}>CITY *</Text>
-              <TextInput
+              <TextInput accessibilityLabel="City"
                 style={[styles.input, errors.city && styles.inputError]}
                 placeholder="City"
                 placeholderTextColor={colors.textMuted}
@@ -331,7 +331,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>PINCODE *</Text>
-              <TextInput
+              <TextInput accessibilityLabel="600001"
                 style={[styles.input, errors.pincode && styles.inputError]}
                 placeholder="600001"
                 placeholderTextColor={colors.textMuted}
@@ -345,7 +345,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
           </View>
 
           <Text style={styles.label}>STATE *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="State"
             style={[styles.input, errors.state && styles.inputError]}
             placeholder="State"
             placeholderTextColor={colors.textMuted}
@@ -360,7 +360,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
         <View style={[styles.formFooter, { paddingBottom: Math.max(insets.bottom + 12, 16) }]}>
           <TouchableOpacity style={styles.primaryBtn} onPress={handleSave} disabled={saving}>
             {saving ? (
-              <ActivityIndicator color={colors.cream} />
+              <Spinner color={colors.cream} />
             ) : (
               <Text style={styles.primaryBtnText}>{mode === 'add' ? 'SAVE ADDRESS' : 'UPDATE ADDRESS'}</Text>
             )}
@@ -401,9 +401,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {loading ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color={colors.charcoal} />
-          </View>
+          <Loader variant="default" compact />
         ) : (
           <>
             <Text style={styles.sectionTitle}>SAVED ADDRESSES</Text>
@@ -435,10 +433,10 @@ let resolvedOrderId = currentOrderId || paramOrderId;
                   <Text style={styles.addressPhone}>{addr.phone}</Text>
                 </View>
                 <View style={styles.addressActions}>
-                  <TouchableOpacity onPress={() => handleEdit(addr)} style={styles.actionBtn}>
+                  <TouchableOpacity accessibilityRole="button" accessibilityLabel="Edit" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => handleEdit(addr)} style={styles.actionBtn}>
                     <Ionicons name="create-outline" size={18} color={colors.textMuted} />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => {
+                  <TouchableOpacity accessibilityRole="button" accessibilityLabel="Delete" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => {
                     Alert.alert('Delete Address', 'Are you sure?', [
                       { text: 'Cancel', style: 'cancel' },
                       { text: 'Delete', style: 'destructive', onPress: () => handleDelete(addr.id) },
@@ -494,7 +492,7 @@ let resolvedOrderId = currentOrderId || paramOrderId;
           disabled={!selectedId || saving}
         >
           {saving ? (
-            <ActivityIndicator color={colors.cream} />
+            <Spinner color={colors.cream} />
           ) : (
             <Text style={styles.primaryBtnText}>CONTINUE TO PAYMENT →</Text>
           )}
@@ -523,7 +521,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   step: { alignItems: 'center' },
   stepCircle: {
@@ -535,13 +533,13 @@ const styles = StyleSheet.create({
   stepDone: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
   stepActive: { backgroundColor: colors.red, borderColor: colors.red },
   stepNumber: { fontFamily: typography.mono, fontSize: 11, fontWeight: 'bold', color: colors.cream },
-  stepLabel: { marginTop: 6, fontFamily: typography.mono, fontSize: 8, fontWeight: '800', color: colors.textMuted, letterSpacing: 1 },
+  stepLabel: { marginTop: 6, fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, includeFontPadding: false },
   stepLabelDone: { color: colors.charcoal },
   stepLabelActive: { color: colors.red },
   progressLine: { width: 40, height: 2, backgroundColor: colors.charcoal, marginHorizontal: 6, marginBottom: 18, opacity: 0.2 },
   progressLineDone: { opacity: 0.6 },
 
-  sectionTitle: { fontFamily: typography.mono, fontSize: 10, fontWeight: '900', color: colors.textMuted, letterSpacing: 1.5, marginBottom: 14 },
+  sectionTitle: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, marginBottom: 14, includeFontPadding: false },
 
   // Address Card
   addressCard: {
@@ -559,7 +557,7 @@ const styles = StyleSheet.create({
   },
   addressCardSelected: {
     borderColor: colors.red,
-    backgroundColor: '#FFF8F8',
+    backgroundColor: colors.paperLight,
   },
   addressRadio: {
     width: 22, height: 22, borderRadius: 11,
@@ -574,17 +572,17 @@ const styles = StyleSheet.create({
   addressBody: { flex: 1 },
   addressHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   addressLabelBadge: { backgroundColor: colors.cream, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: colors.charcoal },
-  addressLabelText: { fontFamily: typography.mono, fontSize: 9, fontWeight: '800', color: colors.charcoal },
-  defaultBadge: { fontFamily: typography.mono, fontSize: 8, fontWeight: '900', color: colors.forest, letterSpacing: 0.5 },
-  addressName: { fontFamily: typography.mono, fontSize: 14, fontWeight: '800', color: colors.charcoal, marginBottom: 4 },
-  addressDetail: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, lineHeight: 16, marginBottom: 2 },
+  addressLabelText: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, includeFontPadding: false },
+  defaultBadge: { fontFamily: typography.handBold, fontSize: 17, color: colors.forest, includeFontPadding: false },
+  addressName: { fontFamily: typography.handBold, fontSize: 18, color: colors.charcoal, marginBottom: 4, includeFontPadding: false },
+  addressDetail: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, lineHeight: 21, marginBottom: 2, includeFontPadding: false },
   addressPhone: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4 },
   addressActions: { justifyContent: 'center', gap: 12, marginLeft: 8 },
-  actionBtn: { padding: 6, borderWidth: 1, borderColor: 'rgba(30,31,34,0.15)', alignItems: 'center', justifyContent: 'center' },
+  actionBtn: { padding: 6, borderWidth: 1, borderColor: colors.overlayLight, alignItems: 'center', justifyContent: 'center' },
 
   // Empty
   emptyBox: { alignItems: 'center', padding: 40, gap: 12 },
-  emptyText: { fontFamily: typography.mono, fontSize: 14, color: colors.textMuted },
+  emptyText: { fontFamily: typography.handwritten, fontSize: 18, color: colors.textMuted, includeFontPadding: false },
 
   // Add Button
   addBtn: {
@@ -592,7 +590,7 @@ const styles = StyleSheet.create({
     gap: 8, padding: 16, borderWidth: 2, borderStyle: 'dashed',
     borderColor: colors.charcoal, marginBottom: 24,
   },
-  addBtnText: { fontFamily: typography.mono, fontSize: 12, fontWeight: '800', color: colors.charcoal },
+  addBtnText: { fontFamily: typography.handBold, fontSize: 18, color: colors.charcoal, includeFontPadding: false },
 
   // Selected Summary
   selectedSummary: {
@@ -600,25 +598,25 @@ const styles = StyleSheet.create({
     borderColor: colors.forest, marginBottom: 20,
     borderLeftWidth: 6,
   },
-  summaryTitle: { fontFamily: typography.mono, fontSize: 8, fontWeight: '900', color: colors.forest, letterSpacing: 1, marginBottom: 6 },
-  summaryName: { fontFamily: typography.mono, fontSize: 15, fontWeight: '800', color: colors.charcoal, marginBottom: 4 },
+  summaryTitle: { fontFamily: typography.handBold, fontSize: 17, color: colors.forest, marginBottom: 6, includeFontPadding: false },
+  summaryName: { fontFamily: typography.handBold, fontSize: 19, color: colors.charcoal, marginBottom: 4, includeFontPadding: false },
   summaryDetail: { fontFamily: typography.body, fontSize: 12, color: colors.textMuted, lineHeight: 18 },
   summaryPhone: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, marginTop: 4 },
 
   // Info Box
-  infoBox: { flexDirection: 'row', gap: 10, padding: 14, backgroundColor: 'rgba(30,31,34,0.04)', borderLeftWidth: 4, borderLeftColor: colors.textMuted },
-  infoText: { flex: 1, fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, lineHeight: 16 },
+  infoBox: { flexDirection: 'row', gap: 10, padding: 14, backgroundColor: colors.overlayLight, borderLeftWidth: 4, borderLeftColor: colors.textMuted },
+  infoText: { flex: 1, fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, lineHeight: 21, includeFontPadding: false },
 
   // Form
-  label: { fontFamily: typography.mono, fontSize: 9, fontWeight: '900', color: colors.textMuted, marginBottom: 6, marginTop: 16, letterSpacing: 1 },
+  label: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, marginBottom: 6, marginTop: 16, includeFontPadding: false },
   input: { borderWidth: 1.5, borderColor: colors.charcoal, padding: 14, fontFamily: typography.body, fontSize: 14, color: colors.charcoal, backgroundColor: colors.white },
   inputError: { borderColor: colors.red, borderWidth: 2 },
-  errorText: { fontFamily: typography.mono, fontSize: 9, color: colors.red, marginTop: 4 },
+  errorText: { fontFamily: typography.handwritten, fontSize: 17, color: colors.red, marginTop: 4, includeFontPadding: false },
   row: { flexDirection: 'row' },
   labelRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
   labelChip: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1.5, borderColor: colors.charcoal, backgroundColor: colors.white },
   labelChipActive: { backgroundColor: colors.charcoal },
-  labelChipText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '700', color: colors.charcoal },
+  labelChipText: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, includeFontPadding: false },
   labelChipTextActive: { color: colors.cream },
 
   // Loading
@@ -638,5 +636,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 1, shadowRadius: 0, elevation: 4,
   },
   primaryBtnDisabled: { opacity: 0.6 },
-  primaryBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
+  primaryBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 19, includeFontPadding: false },
 });

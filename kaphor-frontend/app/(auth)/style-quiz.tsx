@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   ScrollView,
   Modal,
   Dimensions,
@@ -27,6 +26,8 @@ import {
   calculateAestheticMatch,
   AestheticAnswers,
 } from '../../src/services/aestheticRecommendationService';
+import { Spinner } from '../../src/components/common/Loader';
+import { KaphorMark } from '../../src/components/common/KaphorLogo';
 
 export const AESTHETIC_IMAGES: Record<string, any> = {
   'Y2K': require('../../assets/style-guide/1.png'),
@@ -103,7 +104,7 @@ const QUESTIONS: QuestionDef[] = [
   {
     id: 4,
     question: 'How would you describe your body shape?',
-    sub: 'Used strictly for fit & sizing, excluded from aesthetic score',
+    sub: 'Only used for fit and sizing',
     isMulti: false,
     options: [
       { key: 'pear', label: 'Pear', sub: 'Hips wider than bust' },
@@ -174,14 +175,14 @@ const QUESTIONS: QuestionDef[] = [
       { key: 'Y2K', label: 'Y2K nostalgia', sub: 'Playful retro-futurism, metallic sheen & 2000s energy' },
       { key: 'Office Siren', label: 'Office Siren', sub: 'Tailored corporate chic with razor-sharp sensual edge' },
       { key: 'Rockstar Girlfriend', label: 'Rockstar Girlfriend', sub: 'Edgy grunge-glam, vintage leather & backstage energy' },
-      { key: 'Sade Girl', label: 'Sade Girl', sub: 'Timeless quiet luxury, backless turtlenecks & gold hoops' },
-      { key: 'Vintage', label: 'Vintage', sub: 'Archival nostalgia, heritage silhouettes & thrifted treasures' },
+      { key: 'Sade Girl', label: 'Sade Girl', sub: 'Timeless, quiet style, backless turtlenecks & gold hoops' },
+      { key: 'Vintage', label: 'Vintage', sub: 'Retro looks, classic shapes & thrifted finds' },
       { key: 'Acubi', label: 'Acubi', sub: 'Subversive minimalism, cyber-basics & muted neutral tones' },
-      { key: 'Business Comfort', label: 'Business Comfort', sub: 'Relaxed modern tailoring, breathable luxury & effortless power' },
+      { key: 'Business Comfort', label: 'Business Comfort', sub: 'Relaxed modern tailoring, easy, breathable & confident' },
       { key: 'Cottagecore', label: 'Cottagecore', sub: 'Romantic rural simplicity, puff sleeves & prairie florals' },
-      { key: 'Dark Academia', label: 'Dark Academia', sub: 'Scholarly brooding elegance, tweed, oxfords & vintage literature' },
+      { key: 'Dark Academia', label: 'Dark Academia', sub: 'Tweed, oxfords and a bookish look' },
       { key: 'Dark Coquette', label: 'Dark Coquette', sub: 'Gothic romanticism, black lace ribbons & bittersweet charm' },
-      { key: 'Fleur Noire', label: 'Fleur Noire', sub: 'Moody dark botanical elegance, nocturnal luxury & noir florals' },
+      { key: 'Fleur Noire', label: 'Fleur Noire', sub: 'Dark florals and moody, night-time style' },
       { key: 'Grunge', label: 'Grunge', sub: 'Raw 90s anti-fashion, distressed flannel & effortless angst' },
       { key: 'Mermaid Core', label: 'Mermaid Core', sub: 'Whimsical ocean sheen, iridescent drapery & seafoam shimmer' },
       { key: 'Minimal Desi', label: 'Minimal Desi', sub: 'Refined modern Indian silhouettes, clean lines & understated grace' },
@@ -343,7 +344,7 @@ export default function StyleQuizScreen() {
 
   const handleProceedToApp = () => {
     hapticFeedback.success();
-    showToast('AESTHETIC MATCH APPLIED', 'success');
+    showToast('Aesthetic match applied', 'success');
     router.replace('/(tabs)');
   };
 
@@ -373,16 +374,16 @@ export default function StyleQuizScreen() {
         <ScrollView style={styles.container} contentContainerStyle={styles.resultScroll} showsVerticalScrollIndicator={false}>
           {/* Header Badge */}
           <View style={styles.resultHeaderCard}>
-            <Text style={styles.resultHeaderRank}>K♦</Text>
-            <Text style={styles.resultSubtitle}>KAPHOR DOSSIER — AESTHETIC-MATCH VERIFIED</Text>
-            <Text style={styles.resultMainTitle}>YOUR STYLE ARCHETYPE</Text>
+            <KaphorMark size={44} />
+            <Text style={styles.resultSubtitle}>Kaphor details — aesthetic-match verified</Text>
+            <Text style={styles.resultMainTitle}>Your style archetype</Text>
           </View>
 
           {/* Primary Match Card */}
           <View style={styles.primaryAestheticCard}>
             <View style={styles.primaryBadgeRow}>
               <View style={styles.aestheticPill}>
-                <Text style={styles.aestheticPillText}>PRIMARY ARCHETYPE</Text>
+                <Text style={styles.aestheticPillText}>Primary archetype</Text>
               </View>
             </View>
 
@@ -404,7 +405,7 @@ export default function StyleQuizScreen() {
                 />
                 <View style={styles.tapToExpandOverlay}>
                   <Ionicons name="expand" size={13} color={colors.cream} />
-                  <Text style={styles.tapToExpandText}>TAP TO EXPAND FULL SCREEN</Text>
+                  <Text style={styles.tapToExpandText}>Tap to expand full screen</Text>
                 </View>
               </TouchableOpacity>
             )}
@@ -428,7 +429,7 @@ export default function StyleQuizScreen() {
             <View style={styles.secondaryAestheticCard}>
               <View style={styles.secondaryHeaderRow}>
                 <View style={styles.closeSecondBadge}>
-                  <Text style={styles.closeSecondBadgeText}>CLOSE SECOND</Text>
+                  <Text style={styles.closeSecondBadgeText}>Close second</Text>
                 </View>
               </View>
               <Text style={styles.secondaryName}>{closeSecond.aesthetic.name.toUpperCase()}</Text>
@@ -447,7 +448,7 @@ export default function StyleQuizScreen() {
                   />
                   <View style={styles.tapToExpandOverlay}>
                     <Ionicons name="expand" size={13} color={colors.cream} />
-                    <Text style={styles.tapToExpandText}>TAP FOR FULL SCREEN</Text>
+                    <Text style={styles.tapToExpandText}>Tap for full screen</Text>
                   </View>
                 </TouchableOpacity>
               )}
@@ -460,7 +461,7 @@ export default function StyleQuizScreen() {
             onPress={handleProceedToApp}
             activeOpacity={0.85}
           >
-            <Text style={styles.exploreBtnText}>EXPLORE CURATED ARCHIVE →</Text>
+            <Text style={styles.exploreBtnText}>Explore selected closet →</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -479,11 +480,11 @@ export default function StyleQuizScreen() {
                   {fullscreenAesthetic?.toUpperCase()}
                 </Text>
                 <Text style={styles.fullscreenAestheticSub}>
-                  AESTHETIC STYLE GUIDE & MOODBOARD POSTER
+                  Aesthetic style guide & moodboard poster
                 </Text>
               </View>
 
-              <TouchableOpacity
+              <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Close"
                 style={styles.fullscreenCloseBtn}
                 onPress={() => setFullscreenAesthetic(null)}
                 activeOpacity={0.8}
@@ -511,7 +512,7 @@ export default function StyleQuizScreen() {
                 activeOpacity={0.85}
               >
                 <Ionicons name="checkmark-circle" size={18} color={colors.charcoal} />
-                <Text style={styles.fullscreenSelectBtnText}>CLOSE FULL SCREEN VIEW</Text>
+                <Text style={styles.fullscreenSelectBtnText}>Close full screen view</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -529,16 +530,16 @@ export default function StyleQuizScreen() {
       {/* HERO SECTION */}
       <View style={styles.heroCard}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={styles.heroRank}>A♠</Text>
+          <KaphorMark size={36} />
           <TouchableOpacity onPress={handleSkip} disabled={submitting}>
-            <Text style={[styles.heroSubTitle, { color: colors.red, fontSize: 10 }]}>[ SKIP QUIZ ]</Text>
+            <Text style={[styles.heroSubTitle, { color: colors.red, fontSize: 11 }]}>[ SKIP QUIZ ]</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.heroTitle}>✦ DOSSIER ✦</Text>
+        <Text style={styles.heroTitle}>✦ DETAILS ✦</Text>
 
         <View style={styles.heroBottomBar}>
           <View>
-            <Text style={styles.heroSubTitle}>AESTHETIC-MATCH ENGINE</Text>
+            <Text style={styles.heroSubTitle}>Aesthetic-match engine</Text>
             <Text style={styles.heroItalic}>{currentQuestion.sub}</Text>
           </View>
           <Text style={styles.heroZero}>{currentIndex + 1}</Text>
@@ -548,11 +549,11 @@ export default function StyleQuizScreen() {
       {/* QUIZ PANEL */}
       <View style={styles.quizPanel}>
         <View style={styles.panelHeader}>
-          <Text style={styles.panelHeaderText}>KAPHOR STYLE PROTOCOL</Text>
+          <Text style={styles.panelHeaderText}>Kaphor style protocol</Text>
           <View style={styles.dotsContainer}>
-            <View style={[styles.dot, { backgroundColor: '#FF5F56' }]} />
-            <View style={[styles.dot, { backgroundColor: '#FFBD2E' }]} />
-            <View style={[styles.dot, { backgroundColor: '#27C93F' }]} />
+            <View style={[styles.dot, { backgroundColor: colors.rose }]} />
+            <View style={[styles.dot, { backgroundColor: colors.gold }]} />
+            <View style={[styles.dot, { backgroundColor: colors.forest }]} />
           </View>
         </View>
 
@@ -639,7 +640,7 @@ export default function StyleQuizScreen() {
                       activeOpacity={0.7}
                     >
                       <Ionicons name="scan-outline" size={13} color={colors.charcoal} />
-                      <Text style={styles.expandFullscreenText}>FULL SCREEN</Text>
+                      <Text style={styles.expandFullscreenText}>Full screen</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -657,7 +658,7 @@ export default function StyleQuizScreen() {
                       />
                       <View style={styles.tapToExpandOverlay}>
                         <Ionicons name="expand" size={13} color={colors.cream} />
-                        <Text style={styles.tapToExpandText}>TAP TO EXPAND FULL SCREEN</Text>
+                        <Text style={styles.tapToExpandText}>Tap to expand full screen</Text>
                       </View>
                     </TouchableOpacity>
                   )}
@@ -681,7 +682,7 @@ export default function StyleQuizScreen() {
                     <Text style={[styles.vibeSelectPillText, isSelected && styles.vibeSelectPillTextActive]}>
                       {isSelected
                         ? `SELECTED AS VIBE #${rankIndex + 1} (TAP TO REMOVE)`
-                        : 'SELECT AS AESTHETIC VIBE'}
+                        : 'Select as aesthetic vibe'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -722,15 +723,15 @@ export default function StyleQuizScreen() {
         {/* Nav Buttons */}
         <View style={styles.navButtonsRow}>
           <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-            <Text style={styles.backBtnText}>PREV</Text>
+            <Text style={styles.backBtnText}>Prev</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.nextBtn} onPress={handleNext} disabled={submitting}>
             {submitting ? (
-              <ActivityIndicator color={colors.cream} size="small" />
+              <Spinner color={colors.cream} size="small" />
             ) : (
               <Text style={styles.nextBtnText}>
-                {currentIndex === QUESTIONS.length - 1 ? 'GENERATE STYLE PROFILE →' : 'NEXT STEP →'}
+                {currentIndex === QUESTIONS.length - 1 ? 'Generate style profile →' : 'Next step →'}
               </Text>
             )}
           </TouchableOpacity>
@@ -753,11 +754,11 @@ export default function StyleQuizScreen() {
               {fullscreenAesthetic?.toUpperCase()}
             </Text>
             <Text style={styles.fullscreenAestheticSub}>
-              AESTHETIC STYLE GUIDE & MOODBOARD
+              Aesthetic style guide & moodboard
             </Text>
           </View>
 
-          <TouchableOpacity
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Close"
             style={styles.fullscreenCloseBtn}
             onPress={() => setFullscreenAesthetic(null)}
             activeOpacity={0.8}
@@ -860,22 +861,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(245, 240, 232, 0.2)',
+    borderTopColor: colors.paperGlass,
     paddingTop: 8,
   },
   heroSubTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: colors.cream,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.cream, includeFontPadding: false, },
   heroItalic: {
-    fontFamily: typography.mono,
-    color: 'rgba(245, 240, 232, 0.6)',
-    fontSize: 9,
-    marginTop: 2,
-  },
+    fontFamily: typography.handwritten,
+    color: colors.paperGlass,
+    fontSize: 16,
+    marginTop: 2, includeFontPadding: false, },
   heroZero: {
     fontFamily: typography.ranks,
     fontSize: 36,
@@ -900,10 +897,8 @@ const styles = StyleSheet.create({
   },
   panelHeaderText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16, includeFontPadding: false, },
   dotsContainer: {
     flexDirection: 'row',
     gap: 4,
@@ -918,15 +913,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   progressText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.red,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
+    marginBottom: 4, includeFontPadding: false, },
   progressTrack: {
     height: 2,
-    backgroundColor: 'rgba(26,26,26,0.1)',
+    backgroundColor: colors.overlayLight,
   },
   progressFill: {
     height: 2,
@@ -952,19 +945,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.12)',
+    borderColor: colors.overlayLight,
     backgroundColor: colors.white,
     borderRadius: 4,
   },
   optionRowActive: {
-    backgroundColor: '#F0E8D5',
+    backgroundColor: colors.goldLight,
     borderColor: colors.red,
   },
   radioOutline: {
     width: 16,
     height: 16,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.25)',
+    borderColor: colors.overlay,
     marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -982,7 +975,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.25)',
+    borderColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -992,26 +985,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red,
   },
   rankCircleText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
     color: colors.textMuted,
-    fontWeight: '800',
   },
   rankCircleTextActive: {
     color: colors.cream,
   },
   optionText: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    color: colors.charcoal,
-    fontWeight: '700',
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 17,
+    color: colors.charcoal, includeFontPadding: false, },
   optionTextActive: {
     color: colors.charcoal,
   },
   optionSubText: {
     fontFamily: typography.body,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1025,7 +1015,7 @@ const styles = StyleSheet.create({
   vibeCardLarge: {
     backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: 'rgba(26,26,26,0.15)',
+    borderColor: colors.overlayLight,
     borderRadius: 8,
     padding: 14,
     marginBottom: 16,
@@ -1038,7 +1028,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 3,
-    backgroundColor: '#FFFEFC',
+    backgroundColor: colors.paperLight,
   },
   vibeCardHeader: {
     flexDirection: 'row',
@@ -1060,7 +1050,7 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.3)',
+    borderColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
@@ -1070,11 +1060,9 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   vibeRankBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   vibeRankBadgeTextActive: {
     color: colors.cream,
   },
@@ -1082,28 +1070,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(26,26,26,0.06)',
+    backgroundColor: colors.overlayLight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.15)',
+    borderColor: colors.overlayLight,
   },
   expandFullscreenText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   vibeImageWrapLarge: {
     width: '100%',
     height: 320,
     borderRadius: 6,
     overflow: 'hidden',
-    backgroundColor: '#F7F5F0',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.12)',
+    borderColor: colors.overlayLight,
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1116,7 +1101,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     right: 8,
-    backgroundColor: 'rgba(26,26,26,0.85)',
+    backgroundColor: colors.overlay,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -1125,12 +1110,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   tapToExpandText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
-    color: colors.cream,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.cream, includeFontPadding: false, },
   vibeCardSubLarge: {
     fontFamily: typography.body,
     fontSize: 12,
@@ -1142,23 +1124,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(26,26,26,0.08)',
+    backgroundColor: colors.overlayLight,
     paddingVertical: 10,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.18)',
+    borderColor: colors.overlay,
   },
   vibeSelectPillActive: {
     backgroundColor: colors.charcoal,
     borderColor: colors.charcoal,
   },
   vibeSelectPillText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   vibeSelectPillTextActive: {
     color: colors.cream,
   },
@@ -1166,7 +1145,7 @@ const styles = StyleSheet.create({
   /* Full Screen Lightbox Modal */
   fullscreenModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(10, 10, 12, 0.96)',
+    backgroundColor: colors.overlay,
     paddingTop: 48,
     paddingBottom: 24,
     paddingHorizontal: 16,
@@ -1178,7 +1157,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
+    borderBottomColor: colors.overlayLight,
   },
   fullscreenAestheticTitle: {
     fontFamily: typography.headings,
@@ -1187,17 +1166,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   fullscreenAestheticSub: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    color: 'rgba(245, 240, 232, 0.6)',
-    marginTop: 2,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.paperGlass,
+    marginTop: 2, includeFontPadding: false, },
   fullscreenCloseBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1218,7 +1195,7 @@ const styles = StyleSheet.create({
   fullscreenBottomBar: {
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    borderTopColor: colors.overlayLight,
   },
   fullscreenSelectBtn: {
     flexDirection: 'row',
@@ -1233,11 +1210,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimson,
   },
   fullscreenSelectBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '900',
     color: colors.charcoal,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   fullscreenSelectBtnTextActive: {
     color: colors.white,
@@ -1248,14 +1224,14 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: 'rgba(26,26,26,0.25)',
-    backgroundColor: '#FAF8F5',
+    borderColor: colors.overlay,
+    backgroundColor: colors.paperLight,
     borderRadius: 6,
     gap: 12,
     marginTop: 6,
   },
   idkOptionCardActive: {
-    backgroundColor: '#F5EBE1',
+    backgroundColor: colors.paperDark,
     borderColor: colors.charcoal,
     borderStyle: 'solid',
   },
@@ -1264,7 +1240,7 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.2)',
+    borderColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -1284,18 +1260,17 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   idkSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
     marginTop: 2,
-    lineHeight: 13,
-  },
+    lineHeight: 19, includeFontPadding: false, },
   idkRadio: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.3)',
+    borderColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -1318,7 +1293,7 @@ const styles = StyleSheet.create({
     marginVertical: 14,
     borderWidth: 1.5,
     borderColor: colors.charcoal,
-    backgroundColor: '#FAF8F5',
+    backgroundColor: colors.paperLight,
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1335,7 +1310,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderWidth: 1.5,
     borderColor: colors.charcoal,
-    backgroundColor: '#FAF8F5',
+    backgroundColor: colors.paperLight,
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1360,10 +1335,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   backBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
     color: colors.charcoal,
-    fontWeight: '800',
   },
   nextBtn: {
     flex: 2.5,
@@ -1373,10 +1347,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nextBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
     color: colors.cream,
-    fontWeight: '800',
   },
 
   // ══════════════════════════════════════════════════════════════════════════════
@@ -1399,12 +1372,10 @@ const styles = StyleSheet.create({
     color: colors.gold,
   },
   resultSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.cream,
-    letterSpacing: 1.5,
-    marginTop: 4,
-  },
+    marginTop: 4, includeFontPadding: false, },
   resultMainTitle: {
     fontFamily: typography.headings,
     fontSize: 26,
@@ -1434,16 +1405,12 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   aestheticPillText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    color: colors.cream,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.cream, includeFontPadding: false, },
   matchPercentBadge: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
-    fontWeight: '900',
     color: colors.red,
   },
   aestheticNameTitle: {
@@ -1454,32 +1421,27 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   aestheticTagline: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handSemi,
+    fontSize: 16,
     color: colors.red,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
+    marginBottom: 8, includeFontPadding: false, },
   aestheticDescription: {
     fontFamily: typography.body,
     fontSize: 13,
-    color: 'rgba(30,31,34,0.75)',
+    color: colors.overlay,
     lineHeight: 20,
     marginBottom: 14,
   },
   dividerLine: {
     height: 1,
-    backgroundColor: 'rgba(26,26,26,0.1)',
+    backgroundColor: colors.overlayLight,
     marginVertical: 12,
   },
   essentialsHeading: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.charcoal,
-    fontWeight: '900',
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
+    marginBottom: 8, includeFontPadding: false, },
   essentialsList: {
     gap: 6,
   },
@@ -1502,9 +1464,9 @@ const styles = StyleSheet.create({
   },
 
   secondaryAestheticCard: {
-    backgroundColor: 'rgba(247, 244, 238, 0.95)',
+    backgroundColor: colors.paperGlass,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.3)',
+    borderColor: colors.overlay,
     padding: 14,
     borderRadius: 6,
     marginBottom: 20,
@@ -1516,22 +1478,18 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   closeSecondBadge: {
-    backgroundColor: 'rgba(26,26,26,0.12)',
+    backgroundColor: colors.overlayLight,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 2,
   },
   closeSecondBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    color: colors.charcoal,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   secondaryMatchPercent: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '800',
     color: colors.charcoal,
   },
   secondaryName: {
@@ -1557,10 +1515,9 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   exploreBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '900',
     color: colors.cream,
-    letterSpacing: 1.5,
+    letterSpacing: 0.2,
   },
 });

@@ -1,0 +1,12 @@
+# Keep line endings the same for everyone (Windows and Mac/Linux)
+* text=auto eol=lf
+*.sh text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.docx binary

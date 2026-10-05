@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { adminService } from '../../../src/services/adminService';
 import { colors, typography } from '../../../src/theme';
 import AdminTopBar from '../../../src/components/admin/AdminTopBar';
 import { Card, SectionLabel, InfoRow, Chip, formatINR } from '../../../src/components/admin/AdminUI';
+import { Loader } from '../../../src/components/common/Loader';
 
 const REFUNDABLE = ['CONFIRMED', 'SHIPPED', 'DELIVERED'];
 
@@ -51,10 +52,10 @@ export default function AdminOrderDetailScreen() {
     ]);
   };
 
-  if (loading) {
+  if (loading && !order) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.ink} />
+        <Loader variant="order" />
       </View>
     );
   }
@@ -146,17 +147,17 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 48 },
 
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  refundNote: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.emerald, letterSpacing: 1 },
+  refundNote: { fontFamily: typography.monoBold, fontSize: 11, color: colors.emerald, letterSpacing: 1 },
 
   itemTitle: { fontFamily: typography.bodyBold, fontSize: 15, color: colors.ink },
-  itemMeta: { fontFamily: typography.mono, fontSize: 9.5, color: colors.textMuted, marginTop: 4, letterSpacing: 1 },
+  itemMeta: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4, letterSpacing: 1 },
   itemFoot: { marginTop: 8, flexDirection: 'row', justifyContent: 'flex-end' },
   itemPrice: { fontFamily: typography.monoBold, fontSize: 13, color: colors.ink },
 
-  muted: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted },
+  muted: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted },
 
-  msgRow: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight || '#ECE8DF' },
-  msgMeta: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted, letterSpacing: 0.5 },
+  msgRow: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight || colors.borderLight },
+  msgMeta: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, letterSpacing: 0.5 },
   msgBody: { fontFamily: typography.body, fontSize: 12, color: colors.ink, marginTop: 3 },
 
   refundBtn: {

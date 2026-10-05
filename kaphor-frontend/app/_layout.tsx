@@ -13,7 +13,9 @@ import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans
 import { PlusJakartaSans_500Medium } from '@expo-google-fonts/plus-jakarta-sans/500Medium';
 import { PlusJakartaSans_600SemiBold } from '@expo-google-fonts/plus-jakarta-sans/600SemiBold';
 import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/700Bold';
-import { Caveat_400Regular } from '@expo-google-fonts/caveat';
+import { Caveat_400Regular } from '@expo-google-fonts/caveat/400Regular';
+import { Caveat_600SemiBold } from '@expo-google-fonts/caveat/600SemiBold';
+import { Caveat_700Bold } from '@expo-google-fonts/caveat/700Bold';
 import { Ionicons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider } from '../src/context/ThemeContext';
@@ -21,12 +23,15 @@ import { AuthProvider } from '../src/context/AuthContext';
 import { StatusBar } from 'expo-status-bar';
 import { Toast } from '../src/components/common/Toast';
 import { NotificationToast } from '../src/components/common/NotificationToast';
-import { LoadingScreen } from '../src/components/common/LoadingScreen';
 import { useAuth } from '../src/context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
+import { warmUpServer } from '../src/services/api';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Wake the (free-plan) backend while fonts and auth load
+warmUpServer();
 
 function PushNotificationManager() {
   usePushNotifications();
@@ -71,10 +76,8 @@ export default function RootLayout() {
     ...Ionicons.font,
     BebasNeue_400Regular,
     IBMPlexMono_400Regular,
-    IBMPlexMono_700Bold,
     PlayfairDisplay_400Regular_Italic,
     PlayfairDisplay_700Bold,
-    IMFellEnglish_400Regular,
     CormorantGaramond_400Regular,
     CormorantGaramond_600SemiBold,
     CormorantGaramond_700Bold,
@@ -83,7 +86,12 @@ export default function RootLayout() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     Caveat_400Regular,
+    Caveat_600SemiBold,
+    Caveat_700Bold,
   });
+
+  // Decorative / rarely used fonts load in the background and never block first paint
+  useFonts({ IBMPlexMono_700Bold, IMFellEnglish_400Regular });
 
   useEffect(() => {
     if (loaded || error) {

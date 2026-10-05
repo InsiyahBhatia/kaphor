@@ -6,7 +6,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -28,6 +27,8 @@ import {
   EditorialIcon,
 } from '../../../src/components/editorial/IllustrationLayer';
 import { promptPhotoSelection } from '../../../src/utils/imagePicker';
+import { Spinner } from '../../../src/components/common/Loader';
+import { cleanText, toBlocks } from '../../../src/utils/formatText';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -90,26 +91,24 @@ const QUICK_COMMANDS = [
   { label: 'Casual everyday styles', prompt: 'Show me comfortable, stylish everyday tops and denims.' },
 ];
 
-function renderFormattedAgentText(text: string) {
-  if (!text) return null;
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, idx) => {
-    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-      return (
-        <Text
-          key={idx}
-          style={{
-            fontFamily: typography.monoBold || typography.body,
-            fontWeight: '700',
-            color: colors.charcoal,
-          }}
-        >
-          {part.slice(2, -2)}
-        </Text>
-      );
-    }
-    return part;
-  });
+/** Clean chat text: line breaks kept, "-" lists shown as real bullets, no markdown or JSON. */
+function renderAgentText(text: string) {
+  const blocks = toBlocks(text);
+  if (blocks.length === 0) return null;
+  return (
+    <View style={{ gap: 6 }}>
+      {blocks.map((b, idx) =>
+        b.type === 'bullet' ? (
+          <View key={idx} style={{ flexDirection: 'row', gap: 8, paddingRight: 4 }}>
+            <Text style={styles.agentBubbleText}>{'\u2022'}</Text>
+            <Text style={[styles.agentBubbleText, { flex: 1 }]}>{b.text}</Text>
+          </View>
+        ) : (
+          <Text key={idx} style={styles.agentBubbleText}>{b.text}</Text>
+        ),
+      )}
+    </View>
+  );
 }
 
 export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fallbackPath?: string } = {}) {
@@ -122,7 +121,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
     {
       id: 'welcome-1',
       role: 'assistant',
-      content: "Hi! I'm KaPhor AI, your personal shopping and style assistant.\n\nTell me what you're looking for, an occasion you're dressing for, or your budget, and I'll find matching pieces from the app archive for you. What would you like to explore today?",
+      content: "Hi! I'm KaPhor AI, your personal shopping and style assistant.\n\nTell me what you're looking for, an occasion you're dressing for, or your budget, and I'll find matching pieces on the app for you. What would you like to explore today?",
       suggestedFollowUps: [
         'Find an outfit for an event',
         'Find a rental under ₹1,000/day',
@@ -210,7 +209,10 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
         setConversationId(resData.conversationId);
       }
 
-      const replyText = resData.reply || resData.text || resData.message || 'I have found matching pieces on the app for your style.';
+      const replyText = cleanText(
+        resData.reply || resData.text || resData.message,
+        'I found a few pieces that could suit you. Take a look below.',
+      );
 
       // Normalize cards / products to guarantee images and URLs are populated
       const rawCards = resData.cards || resData.products || [];
@@ -218,8 +220,8 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
         ...c,
         imageUrl: c.imageUrl || c.images?.[0] || c.image || '',
         price: c.price || 0,
-        brand: c.brand || 'KAPHOR ARCHIVE',
-        title: c.title || 'Curated Garment',
+        brand: c.brand || 'KAPHOR',
+        title: c.title || 'Pre-loved item',
         actionUrl: c.actionUrl || `/(tabs)/shop/${c.id}`,
         actionLabel: c.actionLabel || (c.listingType === 'RENTAL' ? 'REQUEST RENTAL' : c.listingType === 'ACCESSORY_SWAP' ? 'REQUEST SWAP' : 'BUY PIECE'),
         badge: c.badge || (c.listingType === 'RENTAL' ? `RENT ₹${c.rentalPriceDay || 299}/DAY` : c.listingType === 'ACCESSORY_SWAP' ? 'PEER SWAP' : `BUY ₹${c.price || 999}`),
@@ -244,7 +246,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
         {
           id: `err-${Date.now()}`,
           role: 'assistant',
-          content: 'I encountered an issue connecting to the styling engine. Please verify your connection and try again.',
+          content: 'Sorry, I could not reach the stylist right now. Please check your connection and try again.',
         },
       ]);
     } finally {
@@ -277,7 +279,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
-          <Text style={styles.headerDeckEyebrow}>THE DECK</Text>
+          <Text style={styles.headerDeckEyebrow}>KAPHOR</Text>
           <Text style={styles.headerTitle}>AI STYLIST</Text>
         </View>
 
@@ -347,7 +349,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
                   <View style={styles.actionExecutionLogs}>
                     {msg.actionsExecuted.map((act, aIdx) => (
                       <View key={aIdx} style={styles.actionLogPill}>
-                        <Ionicons name="checkmark-circle" size={13} color="#2E7D32" />
+                        <Ionicons name="checkmark-circle" size={13} color={colors.success} />
                         <Text style={styles.actionLogText}>{act.description}</Text>
                       </View>
                     ))}
@@ -356,7 +358,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
 
                 {/* 2. Main Assistant Speech Bubble */}
                 <View style={styles.agentBubble}>
-                  <Text style={styles.agentBubbleText}>{renderFormattedAgentText(msg.content)}</Text>
+                  {renderAgentText(msg.content)}
                 </View>
 
                 {/* 3. Synthesized Outfit Look Card */}
@@ -365,7 +367,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
                     <View style={styles.outfitHeaderRow}>
                       <View style={styles.outfitTagPill}>
                         <Ionicons name="sparkles" size={11} color={colors.cream} />
-                        <Text style={styles.outfitTagText}>AI SYNTHESIZED LOOK</Text>
+                        <Text style={styles.outfitTagText}>OUTFIT IDEA</Text>
                       </View>
                       <Text style={styles.outfitLookTitle}>{msg.outfitLook.title}</Text>
                     </View>
@@ -390,7 +392,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
                               item.isFromWardrobe ? styles.sourceWardrobe : styles.sourceArchive
                             ]}>
                               <Text style={styles.outfitSourceText}>
-                                {item.isFromWardrobe ? 'YOUR CLOSET' : (item.garment.listingType === 'ACCESSORY_SWAP' ? 'SWAP' : (item.garment.listingType || 'ARCHIVE'))}
+                                {item.isFromWardrobe ? 'YOUR CLOSET' : (item.garment.listingType === 'ACCESSORY_SWAP' ? 'SWAP' : (item.garment.listingType || 'BUY'))}
                               </Text>
                             </View>
                           </View>
@@ -491,7 +493,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
 
         {loading && (
           <View style={styles.loadingBubble}>
-            <ActivityIndicator color={colors.charcoal} size="small" />
+            <Spinner color={colors.charcoal} size="small" />
             <Text style={styles.loadingText}>KaPhor AI is analyzing style and finding matching pieces...</Text>
           </View>
         )}
@@ -531,7 +533,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
             <TextInput
               style={styles.textInput}
               placeholder="> QUERY_DATABASE // Ask KaPhor Stylist..."
-              placeholderTextColor="rgba(30,31,34,0.45)"
+              placeholderTextColor={colors.textMuted}
               value={input}
               onChangeText={setInput}
               onFocus={() => {
@@ -556,7 +558,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
             activeOpacity={0.85}
           >
             {loading ? (
-              <ActivityIndicator color={colors.cream} size="small" />
+              <Spinner color={colors.cream} size="small" />
             ) : (
               <Ionicons
                 name="arrow-up"
@@ -585,9 +587,9 @@ const styles = StyleSheet.create({
   },
   headerCenter: { alignItems: 'center' },
   headerDeckEyebrow: {
-    fontFamily: typography.monoBold,
-    fontSize: 9,
-    letterSpacing: 2,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
     color: colors.gold,
     marginBottom: 2,
   },
@@ -615,8 +617,8 @@ const styles = StyleSheet.create({
 
   quickCommandsBar: {
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.paperGlass,
   },
   quickCommandsScroll: {
     paddingHorizontal: 16,
@@ -631,7 +633,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.borderLight,
   },
   quickCommandText: {
     fontFamily: typography.body,
@@ -688,18 +690,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+    backgroundColor: colors.emeraldLight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(46, 125, 50, 0.25)',
+    borderColor: colors.sage,
   },
   actionLogText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    color: '#2E7D32',
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
+    color: colors.success,
   },
 
   agentBubble: {
@@ -754,10 +756,9 @@ const styles = StyleSheet.create({
   },
   outfitTagText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
   },
   outfitLookTitle: {
     fontFamily: typography.body,
@@ -767,8 +768,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   outfitVibeText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginBottom: 12,
   },
@@ -789,7 +791,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgMuted,
     position: 'relative',
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
+    borderColor: colors.borderLight,
   },
   outfitThumbImg: { width: '100%', height: '100%' },
   outfitSourceBadge: {
@@ -800,13 +802,13 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 3,
   },
-  sourceWardrobe: { backgroundColor: '#2E7D32' },
+  sourceWardrobe: { backgroundColor: colors.success },
   sourceArchive: { backgroundColor: colors.charcoal },
   outfitSourceText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
   },
   outfitPieceTitle: {
     fontFamily: typography.body,
@@ -817,11 +819,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   outfitPieceRole: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
     color: colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: 0.5,
   },
   outfitEditorialNote: {
     fontFamily: typography.body,
@@ -830,7 +831,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 18,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.08)',
+    borderTopColor: colors.borderLight,
     paddingTop: 8,
     marginTop: 4,
   },
@@ -840,11 +841,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cardsSectionLabel: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1.5,
     marginBottom: 8,
   },
   cardsCarouselContent: {
@@ -882,21 +882,19 @@ const styles = StyleSheet.create({
   },
   cardBadgeText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
   },
   cardInfo: {
     padding: 10,
     gap: 3,
   },
   cardBrand: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
     color: colors.charcoal,
-    letterSpacing: 0.8,
   },
   cardTitle: {
     fontFamily: typography.body,
@@ -925,10 +923,9 @@ const styles = StyleSheet.create({
   actionBtnSwap: { backgroundColor: colors.forest },
   cardActionBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 16,
   },
 
   followUpsRow: {
@@ -941,12 +938,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: colors.paperGlass,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.18)',
+    borderColor: colors.borderLight,
   },
   followUpText: {
     fontFamily: typography.body,
@@ -964,7 +961,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.borderLight,
     alignSelf: 'flex-start',
   },
   loadingText: {
@@ -1023,7 +1020,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === 'ios' ? 8 : 4,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.borderLight,
     minHeight: 40,
     maxHeight: 100,
     justifyContent: 'center',
@@ -1049,6 +1046,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   sendBtnDisabled: {
-    backgroundColor: 'rgba(30,31,34,0.2)',
+    backgroundColor: colors.borderLight,
   },
 });

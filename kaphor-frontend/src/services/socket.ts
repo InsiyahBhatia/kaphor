@@ -7,7 +7,12 @@ function resolveSocketUrl(): string {
   const fallback = 'https://kaphor-backend.onrender.com';
   const raw = process.env.EXPO_PUBLIC_SOCKET_URL ?? fallback;
 
-  if (!__DEV__ || Platform.OS !== 'android') {
+  // Release builds must use a secure connection
+  if (!__DEV__) {
+    return raw.startsWith('https://') ? raw : fallback;
+  }
+
+  if (Platform.OS !== 'android') {
     return raw;
   }
 
@@ -36,7 +41,6 @@ export function getSocket(): Socket | null {
 }
 
 export function connectSocket(): Socket | null {
-  const token = useAuthStore.getState().accessToken;
   const user = useAuthStore.getState().user;
   if (!user?.id) return null;
 
@@ -45,10 +49,12 @@ export function connectSocket(): Socket | null {
   if (!socket) {
     socket = io(SOCKET_URL, {
       path: '/socket.io',
-      auth: {
-        userId: user.id,
-        token,
-      },
+      // Read the latest token on every (re)connect so refreshed tokens are used
+      auth: (cb) =>
+        cb({
+          userId: useAuthStore.getState().user?.id,
+          token: useAuthStore.getState().accessToken,
+        }),
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -69,3 +75,11 @@ export function connectSocket(): Socket | null {
   return socket;
 }
 
+/** Close the connection and forget it (call on sign out). */
+export function disconnectSocket(): void {
+  if (socket) {
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
+  }
+}

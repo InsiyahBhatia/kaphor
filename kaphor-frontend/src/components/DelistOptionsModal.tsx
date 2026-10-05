@@ -6,12 +6,13 @@ import {
   Modal,
   TouchableOpacity,
   Pressable,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '../theme';
 import { hapticFeedback } from '../utils/haptics';
+import { Spinner } from './common/Loader';
+import { getErrorMessage } from '../utils/errors';
 
 interface DelistOptionsModalProps {
   visible: boolean;
@@ -43,7 +44,7 @@ export function DelistOptionsModal({
       await onPauseToggle(item);
       onClose();
     } catch (err: any) {
-      Alert.alert('Action Failed', err?.message || 'Could not update listing status.');
+      Alert.alert('Action Failed', getErrorMessage(err, 'Could not update listing status.'));
     } finally {
       setLoadingAction(null);
     }
@@ -64,7 +65,7 @@ export function DelistOptionsModal({
               await onMoveToWardrobe(item);
               onClose();
             } catch (err: any) {
-              Alert.alert('Action Failed', err?.message || 'Could not move to wardrobe.');
+              Alert.alert('Action Failed', getErrorMessage(err, 'Could not move to wardrobe.'));
             } finally {
               setLoadingAction(null);
             }
@@ -90,7 +91,7 @@ export function DelistOptionsModal({
               await onDelete(item);
               onClose();
             } catch (err: any) {
-              Alert.alert('Error', err?.message || 'Could not delete listing.');
+              Alert.alert('Error', getErrorMessage(err, 'Could not delete listing.'));
             } finally {
               setLoadingAction(null);
             }
@@ -115,7 +116,7 @@ export function DelistOptionsModal({
               <Text style={styles.title}>MANAGE LISTING</Text>
               <Text style={styles.subtitle} numberOfLines={1}>{item.title}</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="close" size={20} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
@@ -129,11 +130,11 @@ export function DelistOptionsModal({
               disabled={loadingAction !== null}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconWrap, { backgroundColor: isPaused ? 'rgba(30,59,47,0.1)' : 'rgba(217,119,6,0.1)' }]}>
+              <View style={[styles.iconWrap, { backgroundColor: isPaused ? colors.emeraldLight : colors.goldLight }]}>
                 <Ionicons
                   name={isPaused ? 'play-circle-outline' : 'pause-circle-outline'}
                   size={24}
-                  color={isPaused ? colors.forest : '#D97706'}
+                  color={isPaused ? colors.forest : colors.orange}
                 />
               </View>
               <View style={styles.optionTextContainer}>
@@ -147,7 +148,7 @@ export function DelistOptionsModal({
                 </Text>
               </View>
               {loadingAction === 'pause' ? (
-                <ActivityIndicator size="small" color={colors.charcoal} />
+                <Spinner size="small" color={colors.charcoal} />
               ) : (
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               )}
@@ -160,7 +161,7 @@ export function DelistOptionsModal({
               disabled={loadingAction !== null}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconWrap, { backgroundColor: 'rgba(28,43,74,0.1)' }]}>
+              <View style={[styles.iconWrap, { backgroundColor: colors.overlayLight }]}>
                 <Ionicons name="shirt-outline" size={22} color={colors.navy} />
               </View>
               <View style={styles.optionTextContainer}>
@@ -170,7 +171,7 @@ export function DelistOptionsModal({
                 </Text>
               </View>
               {loadingAction === 'wardrobe' ? (
-                <ActivityIndicator size="small" color={colors.navy} />
+                <Spinner size="small" color={colors.navy} />
               ) : (
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               )}
@@ -183,7 +184,7 @@ export function DelistOptionsModal({
               disabled={loadingAction !== null}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconWrap, { backgroundColor: 'rgba(192,57,43,0.1)' }]}>
+              <View style={[styles.iconWrap, { backgroundColor: colors.crimsonLight }]}>
                 <Ionicons name="trash-outline" size={22} color={colors.crimson} />
               </View>
               <View style={styles.optionTextContainer}>
@@ -193,7 +194,7 @@ export function DelistOptionsModal({
                 </Text>
               </View>
               {loadingAction === 'delete' ? (
-                <ActivityIndicator size="small" color={colors.crimson} />
+                <Spinner size="small" color={colors.crimson} />
               ) : (
                 <Ionicons name="chevron-forward" size={18} color={colors.crimson} />
               )}
@@ -213,7 +214,7 @@ export function DelistOptionsModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   sheet: {
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderTopWidth: 2,
     borderColor: colors.charcoal,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -236,13 +237,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   title: {
-    fontFamily: typography.mono,
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 1.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textPrimary,
   },
   subtitle: {
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(30,31,34,0.06)',
+    backgroundColor: colors.overlayLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -275,8 +275,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   deleteCard: {
-    borderColor: 'rgba(192,57,43,0.3)',
-    backgroundColor: 'rgba(192,57,43,0.02)',
+    borderColor: colors.crimsonLight,
+    backgroundColor: colors.crimsonLight,
   },
   iconWrap: {
     width: 44,
@@ -289,10 +289,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textPrimary,
   },
   optionDesc: {
@@ -312,10 +311,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   cancelBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.cream,
   },
 });

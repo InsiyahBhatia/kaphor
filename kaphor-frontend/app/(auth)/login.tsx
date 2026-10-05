@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 import { useGoogleAuth } from '../../src/hooks/useGoogleAuth';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
+import { Spinner } from '../../src/components/common/Loader';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function LoginScreen() {
         automaticallyAdjustKeyboardInsets={true}
         keyboardDismissMode="on-drag"
       >
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           style={styles.backBtn} 
           onPress={() => safeBack('/(auth)/welcome')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -59,25 +60,25 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
-          <TextInput 
+          <TextInput accessibilityLabel="Email" 
             placeholder="EMAIL" 
-            placeholderTextColor="#6B5C52"
+            placeholderTextColor={colors.textMuted}
             style={styles.input}
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
           />
-          <TextInput 
+          <TextInput accessibilityLabel="Password" 
             placeholder="PASSWORD" 
-            placeholderTextColor="#6B5C52"
+            placeholderTextColor={colors.textMuted}
             style={styles.input}
             secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
           <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 4 }} onPress={() => router.push('/(auth)/forgot-password')}>
-            <Text style={{ color: colors.gold, fontSize: 12, letterSpacing: 1, fontWeight: '700' }}>FORGOT PASSWORD?</Text>
+            <Text style={{ color: colors.gold, fontSize: 12, letterSpacing: 1, fontWeight: '700' }}>Forgot password?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -86,9 +87,9 @@ export default function LoginScreen() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color={colors.white} />
+              <Spinner color={colors.white} />
             ) : (
-              <Text style={styles.buttonText}>LOGIN</Text>
+              <Text style={styles.buttonText}>Login</Text>
             )}
           </TouchableOpacity>
 
@@ -104,11 +105,11 @@ export default function LoginScreen() {
             disabled={isLoading || isGoogleLoading}
           >
             {isGoogleLoading ? (
-              <ActivityIndicator color={colors.textPrimary} />
+              <Spinner color={colors.textPrimary} />
             ) : (
               <>
                 <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
-                <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
               </>
             )}
           </TouchableOpacity>

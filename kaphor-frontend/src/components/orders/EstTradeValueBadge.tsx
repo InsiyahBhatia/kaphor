@@ -131,17 +131,14 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   label: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    letterSpacing: 0.8,
-    fontWeight: '800',
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16, includeFontPadding: false, },
   labelSm: {
-    fontSize: 7.5,
+    fontSize: 11,
     letterSpacing: 0.5,
   },
   labelLg: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 1,
   },
   valueText: {
@@ -173,14 +170,14 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   textCopper: {
-    color: '#FFEEDD',
+    color: colors.terracottaLight,
   },
   variantGold: {
-    backgroundColor: '#382810',
-    borderColor: '#C9A84C',
+    backgroundColor: colors.goldDark,
+    borderColor: colors.gold,
   },
   textGold: {
-    color: '#F9D976',
+    color: colors.gold,
   },
   variantSubtle: {
     backgroundColor: colors.bgMuted,

@@ -1,4 +1,5 @@
 import api from './api';
+import { cleanText } from '../utils/formatText';
 
 export interface DailyTrendItem {
   date: string; // YYYY-MM-DD
@@ -72,6 +73,14 @@ export const insightService = {
    */
   getGarmentInsights: async (garmentId: string): Promise<GarmentDetailedInsights> => {
     const { data } = await api.get(`/garments/${garmentId}/insights`);
-    return data.data;
+    const insights: GarmentDetailedInsights = data.data;
+    return {
+      ...insights,
+      advisorTips: (insights?.advisorTips || []).map((tip) => ({
+        ...tip,
+        headline: cleanText(tip.headline),
+        description: cleanText(tip.description),
+      })),
+    };
   },
 };

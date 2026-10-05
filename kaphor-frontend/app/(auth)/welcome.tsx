@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { colors } from '../../src/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, typography } from '../../src/theme';
 import { LegalModal } from '../../src/components/legal/LegalModal';
+import { KaphorMark } from '../../src/components/common/KaphorLogo';
+import { Squiggle } from '../../src/components/common/HandText';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [legalVisible, setLegalVisible] = useState(false);
   const [legalDocId, setLegalDocId] = useState('terms-and-conditions');
 
@@ -16,49 +20,60 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
       <StatusBar style="dark" />
-      <ImageBackground 
-        source={{ uri: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=2080&auto=format&fit=crop' }} 
-        style={styles.background}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.header}>
-            <Text style={styles.logo}>KAPHOR</Text>
-            <Text style={styles.subtitle}>CIRCULAR LUXURY HERITAGE</Text>
-          </View>
 
-          <View style={styles.footer}>
-            <TouchableOpacity 
-              style={styles.button}
-              onPress={() => router.push('/(auth)/register' as any)}
-            >
-              <Text style={styles.buttonText}>GET STARTED</Text>
-            </TouchableOpacity>
+      <View style={styles.brandRow}>
+        <KaphorMark size={34} />
+        <Text style={styles.brandName}>KAPHOR</Text>
+      </View>
 
-            <TouchableOpacity 
-              style={styles.secondaryButton}
-              onPress={() => router.push('/(auth)/login' as any)}
-            >
-              <Text style={styles.secondaryButtonText}>I ALREADY HAVE AN ACCOUNT</Text>
-            </TouchableOpacity>
+      <View style={styles.hero}>
+        <Image
+          source={require('../../assets/editorial/fashion/muse_hero.png')}
+          style={styles.heroImage}
+          resizeMode="contain"
+          accessibilityLabel="A stylish woman in a flowing pink dress with a big bow"
+        />
+      </View>
 
-            <View style={styles.legalNotice}>
-              <Text style={styles.legalNoticeText}>
-                By continuing, you agree to KaPhor's{' '}
-                <Text style={styles.legalNoticeLink} onPress={() => openLegal('terms-and-conditions')}>
-                  Terms of Service
-                </Text>
-                {' & '}
-                <Text style={styles.legalNoticeLink} onPress={() => openLegal('privacy-policy')}>
-                  Privacy Policy
-                </Text>
-                .
-              </Text>
-            </View>
-          </View>
-        </View>
-      </ImageBackground>
+      <View style={styles.copy}>
+        <Text style={styles.headline}>Wear it. Love it.{'\n'}Pass it on.</Text>
+        <Squiggle width={110} />
+        <Text style={styles.note}>buy, rent, swap and fix clothes with people like you</Text>
+      </View>
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push('/(auth)/register' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Get started"
+        >
+          <Text style={styles.buttonText}>Get started</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => router.push('/(auth)/login' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="I already have an account"
+        >
+          <Text style={styles.secondaryButtonText}>I already have an account</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.legalNoticeText}>
+          By continuing, you agree to our{' '}
+          <Text style={styles.legalNoticeLink} onPress={() => openLegal('terms-and-conditions')}>
+            Terms of Service
+          </Text>
+          {' and '}
+          <Text style={styles.legalNoticeLink} onPress={() => openLegal('privacy-policy')}>
+            Privacy Policy
+          </Text>
+          .
+        </Text>
+      </View>
 
       <LegalModal
         visible={legalVisible}
@@ -72,85 +87,94 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.paper,
+    paddingHorizontal: 24,
   },
-  background: {
-    flex: 1,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    padding: 24,
-    justifyContent: 'space-between',
-  },
-  header: {
-    marginTop: 100,
+  brandRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  logo: {
-    fontSize: 54,
-    fontFamily: 'BebasNeue_400Regular',
-    color: colors.textPrimary,
-    letterSpacing: 10,
+  brandName: {
+    fontFamily: typography.condensed,
+    fontSize: 30,
+    letterSpacing: 6,
+    color: colors.ink,
+    includeFontPadding: false,
   },
-  subtitle: {
-    fontSize: 12,
-    color: colors.crimson,
-    letterSpacing: 4,
-    marginTop: 12,
-    fontWeight: '800',
+  hero: {
+    flex: 1,
+    minHeight: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 8,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  copy: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  headline: {
+    fontFamily: typography.headings,
+    fontSize: 30,
+    lineHeight: 36,
+    color: colors.ink,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  note: {
+    marginTop: 8,
+    fontFamily: typography.handSemi,
+    fontSize: 22,
+    lineHeight: 27,
+    color: colors.rose,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   footer: {
-    marginBottom: 60,
+    gap: 12,
   },
   button: {
-    backgroundColor: colors.crimson,
-    height: 60,
-    borderRadius: 16,
+    backgroundColor: colors.rose,
+    height: 56,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: colors.crimson,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
   buttonText: {
     color: colors.white,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 2,
   },
   secondaryButton: {
-    height: 60,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(155, 27, 48, 0.3)',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    backgroundColor: 'transparent',
   },
   secondaryButtonText: {
-    color: colors.crimson,
-    fontSize: 14,
-    letterSpacing: 1,
-    fontWeight: '700',
-  },
-  legalNotice: {
-    marginTop: 18,
-    alignItems: 'center',
-    paddingHorizontal: 12,
+    color: colors.ink,
+    fontFamily: typography.bodyBold,
+    fontSize: 15,
   },
   legalNoticeText: {
-    fontSize: 11,
-    color: 'rgba(0, 0, 0, 0.65)',
+    fontFamily: typography.handwritten,
+    fontSize: 17,
+    lineHeight: 21,
+    color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 16,
-    fontWeight: '500',
+    marginTop: 4,
   },
   legalNoticeLink: {
-    color: colors.crimson,
-    fontWeight: '700',
+    fontFamily: typography.handSemi,
+    color: colors.ink,
     textDecorationLine: 'underline',
   },
 });

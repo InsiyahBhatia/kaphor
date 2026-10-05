@@ -116,9 +116,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   tabLabel: {
-    fontFamily: typography.monoBold,
-    fontSize: 9.5,
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   activeDot: {
     width: 4,

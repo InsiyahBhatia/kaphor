@@ -1,6 +1,6 @@
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
-import { redisGet, redisSet } from '../lib/redis';
+import { cacheGet, cacheSet } from '../lib/cache';
 import { getDownloadUrl } from '../lib/cloudinary';
 import { getEstimatedGarmentValue } from '../utils/pricing';
 import { AESTHETIC_VECTORS } from '../controllers/ai.controller';
@@ -34,13 +34,9 @@ export const RecommendationService = {
    * Blends 20-dim vector cosine similarity, category/brand affinity, and price proximity.
    */
   async getPersonalizedFeed(userId: string, limit: number = 20): Promise<RecommendedGarment[]> {
-    const cacheKey = `for_you:${userId}:${limit}`;
-    const cached = await redisGet(cacheKey);
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch {}
-    }
+    const cacheKey = `reco:for_you:${userId}:${limit}`;
+    const cached = cacheGet<RecommendedGarment[]>(cacheKey);
+    if (cached) return cached;
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -204,8 +200,8 @@ export const RecommendationService = {
       })
     );
 
-    // Cache for 15 minutes
-    await redisSet(cacheKey, JSON.stringify(resolved), 15 * 60);
+    // Short cache (cleared whenever a garment is created/updated/reserved)
+    cacheSet(cacheKey, resolved, 120_000);
     return resolved;
   },
 
@@ -214,13 +210,9 @@ export const RecommendationService = {
    * Finds garments visually and categorically similar to a given garment.
    */
   async getSimilarGarments(garmentId: string, limit: number = 8): Promise<RecommendedGarment[]> {
-    const cacheKey = `similar:${garmentId}:${limit}`;
-    const cached = await redisGet(cacheKey);
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch {}
-    }
+    const cacheKey = `reco:similar:${garmentId}:${limit}`;
+    const cached = cacheGet<RecommendedGarment[]>(cacheKey);
+    if (cached) return cached;
 
     const base = await db.garment.findUnique({
       where: { id: garmentId },
@@ -314,7 +306,7 @@ export const RecommendationService = {
       })
     );
 
-    await redisSet(cacheKey, JSON.stringify(resolved), 30 * 60);
+    cacheSet(cacheKey, resolved, 120_000);
     return resolved;
   },
 
@@ -323,6 +315,10 @@ export const RecommendationService = {
    * Finds high-value occasion & luxury pieces available for lease matching user taste.
    */
   async getRentalRecommendations(userId: string, limit: number = 10): Promise<RecommendedGarment[]> {
+    const cacheKey = `reco:rental:${userId}:${limit}`;
+    const cachedRentals = cacheGet<RecommendedGarment[]>(cacheKey);
+    if (cachedRentals) return cachedRentals;
+
     const user = await db.user.findUnique({
       where: { id: userId },
       select: { styleVector: true, styleAesthetic: true },
@@ -432,7 +428,7 @@ export const RecommendationService = {
     scored.sort((a: any, b: any) => b.fitScore - a.fitScore);
     const topRentals = scored.slice(0, limit);
 
-    return Promise.all(
+    const rentalResult: RecommendedGarment[] = await Promise.all(
       topRentals.map(async (g: any) => {
         const resolvedImages = await Promise.all((g.images || []).map((img: string) => getDownloadUrl(img)));
         let resolvedAvatar = g.seller.avatar;
@@ -458,6 +454,8 @@ export const RecommendationService = {
         };
       })
     );
+    cacheSet(cacheKey, rentalResult, 60_000);
+    return rentalResult;
   },
 
   /**
@@ -466,8 +464,12 @@ export const RecommendationService = {
    * price variance <= 15%.
    */
   async getFairSwapRecommendations(userId: string, limit: number = 8) {
-    // 1. Get user's active/closet accessory pieces
-    const myAccessories = await db.garment.findMany({
+    const cacheKey = `reco:swap:${userId}:${limit}`;
+    const cachedSwaps = cacheGet<any[]>(cacheKey);
+    if (cachedSwaps) return cachedSwaps;
+
+    // 1. Get user's active/closet accessory pieces; 2. marketplace accessory swaps (independent queries, run together)
+    const [myAccessories, marketplaceSwaps] = await Promise.all([db.garment.findMany({
       where: {
         sellerId: userId,
         category: { in: ['ACCESSORIES', 'Accessories', 'Bags', 'Jewelry', 'Watches'] },
@@ -481,10 +483,8 @@ export const RecommendationService = {
         images: true,
         garmentVector: true,
       },
-    });
-
-    // 2. Get marketplace accessory swaps
-    const marketplaceSwaps = await db.garment.findMany({
+      take: 100,
+    }), db.garment.findMany({
       where: {
         sellerId: { not: userId },
         listingType: 'ACCESSORY_SWAP',
@@ -505,7 +505,8 @@ export const RecommendationService = {
           select: { id: true, username: true, avatar: true },
         },
       },
-    });
+      orderBy: { createdAt: 'desc' },
+    })]);
 
     const matches: any[] = [];
 
@@ -577,7 +578,7 @@ export const RecommendationService = {
     const topMatches = matches.slice(0, limit);
 
     // Resolve images
-    return Promise.all(
+    const swapResult = await Promise.all(
       topMatches.map(async (m) => {
         const partnerImages = await Promise.all(
           (m.recommendedSwap.images || []).map((img: string) => getDownloadUrl(img))
@@ -596,5 +597,7 @@ export const RecommendationService = {
         };
       })
     );
+    cacheSet(cacheKey, swapResult, 60_000);
+    return swapResult;
   },
 };

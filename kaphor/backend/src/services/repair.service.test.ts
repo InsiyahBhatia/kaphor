@@ -1,7 +1,16 @@
 /**
  * Unit tests for Repair & Refresh service
  */
-import { buildYouTubeQuery, rankYouTubeResults } from './repair.service';
+import {
+  buildYouTubeQuery,
+  rankYouTubeResults,
+  categoryGroup,
+  damageTags,
+  getVerifiedVideos,
+  getVerifiedBlogs,
+  youtubeSearchUrl,
+} from './repair.service';
+import { VERIFIED_VIDEOS, VERIFIED_BLOGS } from '../data/repair-resources';
 import type { YouTubeVideo } from './repair.service';
 
 function stub(title: string, videoId: string): YouTubeVideo {
@@ -94,5 +103,50 @@ describe('rankYouTubeResults', () => {
     const out = rankYouTubeResults(videos, 'how to repair fix mend cotton shirt tear stain tutorial', 1);
     expect(out.length).toBe(1);
     expect(out[0].videoId).toBe('same');
+  });
+});
+describe('verified resources', () => {
+  it('has well-formed, unique entries', () => {
+    const ids = VERIFIED_VIDEOS.map((v) => v.videoId);
+    expect(new Set(ids).size).toBe(ids.length);
+    ids.forEach((id) => expect(id).toMatch(/^[A-Za-z0-9_-]{11}$/));
+    const urls = VERIFIED_BLOGS.map((b) => b.url);
+    expect(new Set(urls).size).toBe(urls.length);
+    VERIFIED_BLOGS.forEach((b) => {
+      expect(b.url).toMatch(/^https:\/\//);
+      expect(b.title.length).toBeGreaterThan(0);
+      expect(b.time_minutes).toBeGreaterThan(0);
+    });
+  });
+
+  it('maps garment categories to groups', () => {
+    expect(categoryGroup('tshirt')).toBe('shirt');
+    expect(categoryGroup('trousers')).toBe('jeans');
+    expect(categoryGroup('kurti')).toBe('kurta');
+    expect(categoryGroup('other')).toBe('general');
+  });
+
+  it('turns damage text into tags', () => {
+    expect(damageTags(['torn seam', 'missing button'])).toEqual(expect.arrayContaining(['tear', 'seam', 'button']));
+  });
+
+  it('returns only upcycle items for upcycle mode and only repair items for repair mode', () => {
+    const up = getVerifiedBlogs('upcycle', 'jeans', ['hole']);
+    expect(up.length).toBeGreaterThan(0);
+    const upUrls = new Set(VERIFIED_BLOGS.filter((b) => b.mode === 'upcycle').map((b) => b.url));
+    up.forEach((b) => expect(upUrls.has(b.url)).toBe(true));
+    const rep = getVerifiedVideos('repair', 'sweater', ['snag']);
+    expect(rep.length).toBeGreaterThan(0);
+    const repIds = new Set(VERIFIED_VIDEOS.filter((v) => v.mode === 'repair').map((v) => v.videoId));
+    rep.forEach((v) => expect(repIds.has(v.videoId)).toBe(true));
+  });
+
+  it('ranks damage matches first', () => {
+    const vids = getVerifiedVideos('repair', 'dress', ['zipper']);
+    expect(vids[0].title.toLowerCase()).toContain('zipper');
+  });
+
+  it('builds an encoded YouTube search link', () => {
+    expect(youtubeSearchUrl('fix shirt')).toBe('https://www.youtube.com/results?search_query=fix%20shirt');
   });
 });

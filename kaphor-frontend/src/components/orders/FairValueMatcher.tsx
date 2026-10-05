@@ -48,13 +48,13 @@ export function FairValueMatcher({
   const partnerHasSurplus = theirVal > myVal && !isEquitable;
 
   const getStatusColor = () => {
-    if (isEquitable) return '#1E3B2F'; // Forest green
+    if (isEquitable) return colors.emeraldDark; // Forest green
     if (userHasSurplus) return colors.copper; // Copper/amber
-    return '#1C2B4A'; // Deep navy
+    return colors.ink; // Deep navy
   };
 
   const getStatusBadgeText = () => {
-    if (isEquitable) return 'EQUITABLE MATCH (PARITY OK)';
+    if (isEquitable) return 'Equitable match (parity ok)';
     if (userHasSurplus) return `+₹${delta.toLocaleString('en-IN')} YOUR TRADE EQUITY`;
     return `+₹${delta.toLocaleString('en-IN')} COUNTERPART VALUE`;
   };
@@ -65,7 +65,7 @@ export function FairValueMatcher({
       <View style={styles.headerRow}>
         <View style={styles.titleWithIcon}>
           <Ionicons name="scale-outline" size={14} color={colors.charcoal} />
-          <Text style={styles.matcherTitle}>FAIR VALUE MATCHER</Text>
+          <Text style={styles.matcherTitle}>Fair value matcher</Text>
         </View>
 
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
@@ -108,7 +108,7 @@ export function FairValueMatcher({
       <View style={styles.recommendationBox}>
         {isEquitable ? (
           <View style={styles.recContent}>
-            <Ionicons name="checkmark-circle" size={15} color="#1E3B2F" />
+            <Ionicons name="checkmark-circle" size={15} color={colors.emeraldDark} />
             <Text style={styles.recText}>
               <Text style={styles.recTextBold}>Fair 1:1 Barter Confirmed.</Text> Both pieces have balanced appraisal value within standard vintage trade tolerances. No cash equalizer needed.
             </Text>
@@ -119,8 +119,8 @@ export function FairValueMatcher({
             <Text style={styles.recText}>
               <Text style={styles.recTextBold}>Suggested Cash Equalizer: ₹{delta.toLocaleString('en-IN')}.</Text>{' '}
               {userHasSurplus
-                ? `Your garment appraisal is higher. A ₹${delta.toLocaleString('en-IN')} cash sweetener or secondary accessory from the partner balances parity.`
-                : `Their garment appraisal is higher. Adding a ₹${delta.toLocaleString('en-IN')} cash top-up or secondary accessory achieves perfect 50/50 parity.`}
+                ? `Your item is worth more. A ₹${delta.toLocaleString('en-IN')} cash top-up or an extra accessory from your partner makes it fair.`
+                : `Their item is worth more. Adding a ₹${delta.toLocaleString('en-IN')} cash top-up or an extra accessory makes it fair.`}
             </Text>
           </View>
         )}
@@ -134,7 +134,7 @@ export function FairValueMatcher({
             onPress={() => setExpandedDetails(!expandedDetails)}
             activeOpacity={0.7}
           >
-            <Text style={styles.accordionTitle}>APPRAISAL METRICS & ATTRIBUTES</Text>
+            <Text style={styles.accordionTitle}>Price check metrics & attributes</Text>
             <Ionicons
               name={expandedDetails ? 'chevron-up' : 'chevron-down'}
               size={14}
@@ -146,8 +146,8 @@ export function FairValueMatcher({
             <View style={styles.accordionBody}>
               <View style={styles.metricComparisonRow}>
                 <View style={styles.metricColumn}>
-                  <Text style={styles.columnHeader}>YOUR ITEM</Text>
-                  <Text style={styles.metricValBold}>{myGarment?.brand || 'ARCHIVE ITEM'}</Text>
+                  <Text style={styles.columnHeader}>Your item</Text>
+                  <Text style={styles.metricValBold}>{myGarment?.brand || 'CLOSET ITEM'}</Text>
                   <Text style={styles.metricSub}>Condition: {myGarment?.condition || 'PRISTINE'}</Text>
                   <Text style={styles.metricSub}>Cat: {myGarment?.category || 'ACCESSORY'}</Text>
                 </View>
@@ -155,15 +155,15 @@ export function FairValueMatcher({
                 <View style={styles.columnDivider} />
 
                 <View style={styles.metricColumn}>
-                  <Text style={styles.columnHeader}>THEIR ITEM</Text>
-                  <Text style={styles.metricValBold}>{theirGarment?.brand || 'ARCHIVE ITEM'}</Text>
+                  <Text style={styles.columnHeader}>Their item</Text>
+                  <Text style={styles.metricValBold}>{theirGarment?.brand || 'CLOSET ITEM'}</Text>
                   <Text style={styles.metricSub}>Condition: {theirGarment?.condition || 'PRISTINE'}</Text>
                   <Text style={styles.metricSub}>Cat: {theirGarment?.category || 'ACCESSORY'}</Text>
                 </View>
               </View>
 
               <Text style={styles.appraisalDisclaimer}>
-                Appraisal algorithm weights designer brand tier, archival rarity, certified condition rating, and current secondary market transactions.
+                Price checks use the brand, how rare the item is, its condition and recent resale prices.
               </Text>
             </View>
           )}
@@ -175,7 +175,7 @@ export function FairValueMatcher({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FAF8F4',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
     borderColor: colors.charcoal,
     borderRadius: 2,
@@ -210,12 +210,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   statusBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    color: colors.cream,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.cream, includeFontPadding: false, },
 
   // Meter
   meterContainer: {
@@ -223,7 +220,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#E2DEC9',
+    borderColor: colors.borderLight,
     borderRadius: 2,
   },
   meterLabelRow: {
@@ -232,12 +229,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   meterLabel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.textSecond,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 16,
+    color: colors.textSecond, includeFontPadding: false, },
   barTrack: {
     height: 12,
     backgroundColor: colors.bgMuted,
@@ -287,9 +281,8 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   centerBalanceText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
     color: colors.charcoal,
   },
 
@@ -308,12 +301,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   recText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.charcoal,
-    lineHeight: 14,
-    flex: 1,
-  },
+    lineHeight: 20,
+    flex: 1, includeFontPadding: false, },
   recTextBold: {
     fontWeight: '800',
     color: colors.charcoal,
@@ -323,7 +315,7 @@ const styles = StyleSheet.create({
   detailAccordion: {
     marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E2DEC9',
+    borderTopColor: colors.borderLight,
     paddingTop: 8,
   },
   accordionHeader: {
@@ -333,17 +325,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   accordionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   accordionBody: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E2DEC9',
+    borderTopColor: colors.borderLight,
   },
   metricComparisonRow: {
     flexDirection: 'row',
@@ -355,33 +344,29 @@ const styles = StyleSheet.create({
   },
   columnDivider: {
     width: 1,
-    backgroundColor: '#E2DEC9',
+    backgroundColor: colors.paperDark,
     marginHorizontal: 8,
   },
   columnHeader: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.red,
-    marginBottom: 2,
-  },
+    marginBottom: 2, includeFontPadding: false, },
   metricValBold: {
     fontFamily: typography.headings,
     fontSize: 13.5,
     color: colors.charcoal,
   },
   metricSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textSecond,
-    marginTop: 1,
-  },
+    marginTop: 1, includeFontPadding: false, },
   appraisalDisclaimer: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
     fontStyle: 'italic',
-    lineHeight: 11,
-    marginTop: 4,
-  },
+    lineHeight: 19,
+    marginTop: 4, includeFontPadding: false, },
 });

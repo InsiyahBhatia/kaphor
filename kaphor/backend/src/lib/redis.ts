@@ -86,3 +86,16 @@ export async function redisDel(key: string): Promise<void> {
   }
 }
 
+
+/** Close the Redis connection (used during graceful shutdown). */
+export async function closeRedis(): Promise<void> {
+  if (!client) return;
+  try {
+    await client.quit();
+  } catch {
+    client.disconnect();
+  } finally {
+    client = null;
+    isRedisAvailable = false;
+  }
+}

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   Pressable,
   TouchableOpacity,
   Alert,
@@ -22,12 +21,133 @@ import { hapticFeedback } from '../../utils/haptics';
 import { getFormattedGarmentPrice } from '../../utils/priceFormatter';
 import { ListingInsightsModal } from '../../components/ListingInsightsModal';
 import { DelistOptionsModal } from '../../components/DelistOptionsModal';
+import { Loader } from '../../components/common/Loader';
+
+const ListingCard = React.memo(function ListingCard({ item, onInsights, onManage, onOpen, onEdit }: { item: any; onInsights: (id: string) => void; onManage: (item: any) => void; onOpen: (id: string) => void; onEdit: (id: string) => void }) {
+  return (
+    <View style={styles.card}>
+      <Pressable
+        style={styles.cardMain}
+        onPress={() => onOpen(item.id)}
+      >
+        <KaphorImage uri={item.images?.[0]} style={styles.image} width={110} recyclingKey={item.id} />
+        <View style={styles.cardBody}>
+          <View>
+            <View style={styles.topRow}>
+              <Text style={styles.brand} numberOfLines={1}>{item.brand || 'KAPHOR'}</Text>
+              <View style={[styles.statusBadge, !item.isActive && styles.inactiveBadge]}>
+                <Text style={[styles.statusText, !item.isActive && styles.inactiveStatusText]}>
+                  {item.isActive ? (item.lifecycleState || 'LIVE') : 'INACTIVE'}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+          </View>
+
+          <View style={styles.metaRow}>
+            <Text style={styles.metaText}>SIZE: {item.size || 'M'} · {item.category || 'Garment'}</Text>
+            {(() => {
+              const p = getFormattedGarmentPrice(item);
+              return (
+                <Text style={[styles.price, p.isSwap && { color: colors.crimson, fontSize: 11 }]}>
+                  {p.displayPrice}{p.priceUnit || ''}
+                </Text>
+              );
+            })()}
+          </View>
+        </View>
+      </Pressable>
+
+      {/* Live Telemetry Ticker Bar */}
+      <TouchableOpacity
+        style={styles.telemetryBar}
+        onPress={() => {
+          hapticFeedback.light();
+          onInsights(item.id);
+        }}
+        activeOpacity={0.7}
+      >
+        <View style={styles.telemetryItem}>
+          <Ionicons name="eye-outline" size={12} color={colors.gold} />
+          <Text style={styles.telemetryText}>{item.insights?.views ?? item.viewCount ?? 0} views</Text>
+        </View>
+        <View style={styles.telemetryDivider} />
+        <View style={styles.telemetryItem}>
+          <Ionicons name="heart-outline" size={12} color={colors.crimson} />
+          <Text style={styles.telemetryText}>{item.insights?.saves ?? 0} saves</Text>
+        </View>
+        <View style={styles.telemetryDivider} />
+        <View style={styles.telemetryAction}>
+          <Ionicons name="analytics-outline" size={12} color={colors.gold} />
+          <Text style={styles.telemetryActionText}>INSIGHTS ›</Text>
+        </View>
+      </TouchableOpacity>
+
+      {/* Quick Action Toolbar */}
+      <View style={styles.actionBar}>
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.insightsBtn]}
+          onPress={() => {
+            hapticFeedback.light();
+            onInsights(item.id);
+          }}
+        >
+          <Ionicons name="stats-chart-outline" size={14} color={colors.gold} />
+          <Text style={[styles.actionBtnText, { color: colors.gold }]}>INSIGHTS</Text>
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => onOpen(item.id)}
+        >
+          <Ionicons name="eye-outline" size={14} color={colors.textSecond} />
+          <Text style={styles.actionBtnText}>VIEW</Text>
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.editBtn]}
+          onPress={() => onEdit(item.id)}
+        >
+          <Ionicons name="create-outline" size={14} color={colors.textSecond} />
+          <Text style={styles.actionBtnText}>EDIT</Text>
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => onManage(item)}
+        >
+          <Ionicons
+            name={item.isActive ? 'options-outline' : 'pause-circle-outline'}
+            size={14}
+            color={item.isActive ? colors.charcoal : colors.orange}
+          />
+          <Text
+            style={[
+              styles.actionBtnText,
+              { color: item.isActive ? colors.charcoal : colors.orange },
+            ]}
+          >
+            {item.isActive ? 'MANAGE' : 'PAUSED'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
+let cachedListings: any[] | null = null;
 
 export function MyListingsScreen() {
   const router = useRouter();
   useBackHandler('/(tabs)/profile');
-  const [listings, setListings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [listings, setListings] = useState<any[]>(cachedListings ?? []);
+  const [loading, setLoading] = useState(cachedListings === null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedInsightsGarmentId, setSelectedInsightsGarmentId] = useState<string | null>(null);
   const [manageItem, setManageItem] = useState<any | null>(null);
@@ -35,7 +155,8 @@ export function MyListingsScreen() {
   const fetchListings = useCallback(async () => {
     try {
       const data = await userService.getMyListings();
-      setListings(data || []);
+      cachedListings = data || [];
+      setListings(cachedListings as any[]);
     } catch (err) {
       console.error('Failed to fetch listings', err);
     } finally {
@@ -52,6 +173,19 @@ export function MyListingsScreen() {
     useCallback(() => {
       fetchListings();
     }, [fetchListings])
+  );
+
+  const onInsights = useCallback((id: string) => {
+    hapticFeedback.light();
+    setSelectedInsightsGarmentId(id);
+  }, []);
+  const onOpen = useCallback((id: string) => router.push(`/(tabs)/shop/${id}` as any), [router]);
+  const onEdit = useCallback((id: string) => router.push(`/(tabs)/shop/edit/${id}` as any), [router]);
+  const renderItem = useCallback(
+    ({ item }: { item: any }) => (
+      <ListingCard item={item} onInsights={onInsights} onManage={setManageItem} onOpen={onOpen} onEdit={onEdit} />
+    ),
+    [onInsights, onOpen, onEdit]
   );
 
   const onRefresh = () => {
@@ -88,126 +222,10 @@ export function MyListingsScreen() {
     Alert.alert('Deleted', 'Your listing has been permanently removed.');
   };
 
-  const ListingCard = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <Pressable
-        style={styles.cardMain}
-        onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
-      >
-        <KaphorImage uri={item.images?.[0]} style={styles.image} />
-        <View style={styles.cardBody}>
-          <View>
-            <View style={styles.topRow}>
-              <Text style={styles.brand} numberOfLines={1}>{item.brand || 'ATELIER'}</Text>
-              <View style={[styles.statusBadge, !item.isActive && styles.inactiveBadge]}>
-                <Text style={[styles.statusText, !item.isActive && styles.inactiveStatusText]}>
-                  {item.isActive ? (item.lifecycleState || 'LIVE') : 'INACTIVE'}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-          </View>
-
-          <View style={styles.metaRow}>
-            <Text style={styles.metaText}>SIZE: {item.size || 'M'} · {item.category || 'Garment'}</Text>
-            {(() => {
-              const p = getFormattedGarmentPrice(item);
-              return (
-                <Text style={[styles.price, p.isSwap && { color: colors.crimson, fontSize: 11 }]}>
-                  {p.displayPrice}{p.priceUnit || ''}
-                </Text>
-              );
-            })()}
-          </View>
-        </View>
-      </Pressable>
-
-      {/* Live Telemetry Ticker Bar */}
-      <TouchableOpacity
-        style={styles.telemetryBar}
-        onPress={() => {
-          hapticFeedback.light();
-          setSelectedInsightsGarmentId(item.id);
-        }}
-        activeOpacity={0.7}
-      >
-        <View style={styles.telemetryItem}>
-          <Ionicons name="eye-outline" size={12} color={colors.gold} />
-          <Text style={styles.telemetryText}>{item.insights?.views ?? item.viewCount ?? 0} views</Text>
-        </View>
-        <View style={styles.telemetryDivider} />
-        <View style={styles.telemetryItem}>
-          <Ionicons name="heart-outline" size={12} color={colors.crimson} />
-          <Text style={styles.telemetryText}>{item.insights?.saves ?? 0} saves</Text>
-        </View>
-        <View style={styles.telemetryDivider} />
-        <View style={styles.telemetryAction}>
-          <Ionicons name="analytics-outline" size={12} color={colors.gold} />
-          <Text style={styles.telemetryActionText}>INSIGHTS ›</Text>
-        </View>
-      </TouchableOpacity>
-
-      {/* Quick Action Toolbar */}
-      <View style={styles.actionBar}>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.insightsBtn]}
-          onPress={() => {
-            hapticFeedback.light();
-            setSelectedInsightsGarmentId(item.id);
-          }}
-        >
-          <Ionicons name="stats-chart-outline" size={14} color={colors.gold} />
-          <Text style={[styles.actionBtnText, { color: colors.gold }]}>INSIGHTS</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() => router.push(`/(tabs)/shop/${item.id}` as any)}
-        >
-          <Ionicons name="eye-outline" size={14} color={colors.textSecond} />
-          <Text style={styles.actionBtnText}>VIEW</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.editBtn]}
-          onPress={() => router.push(`/(tabs)/shop/edit/${item.id}` as any)}
-        >
-          <Ionicons name="create-outline" size={14} color={colors.textSecond} />
-          <Text style={styles.actionBtnText}>EDIT</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() => setManageItem(item)}
-        >
-          <Ionicons
-            name={item.isActive ? 'options-outline' : 'pause-circle-outline'}
-            size={14}
-            color={item.isActive ? colors.charcoal : '#D97706'}
-          />
-          <Text
-            style={[
-              styles.actionBtnText,
-              { color: item.isActive ? colors.charcoal : '#D97706' },
-            ]}
-          >
-            {item.isActive ? 'MANAGE' : 'PAUSED'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Pressable 
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" 
           onPress={() => safeBack('/(tabs)/profile')} 
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -215,7 +233,7 @@ export function MyListingsScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>MY LISTINGS</Text>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add"
           style={styles.addBtn}
           onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { fresh: Date.now().toString() } } as any)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -225,16 +243,13 @@ export function MyListingsScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.gold} />
-          <Text style={styles.loadingText}>Fetching your listings...</Text>
-        </View>
+        <Loader variant="default" />
       ) : listings.length === 0 ? (
         <View style={styles.center}>
           <Ionicons name="pricetag-outline" size={54} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>No Garments Listed Yet</Text>
           <Text style={styles.emptyText}>
-            List your luxury garments, archival couture, or ethnic wear for sale, rent, or swap.
+            List clothes or ethnic wear to sell, rent or swap.
           </Text>
           <TouchableOpacity
             style={styles.listNowBtn}
@@ -248,7 +263,11 @@ export function MyListingsScreen() {
         <FlatList
           data={listings}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ListingCard item={item} />}
+          renderItem={renderItem}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={7}
+          removeClippedSubviews
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -322,8 +341,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 13,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 19,
     marginTop: spacing.sm,
   },
   emptyTitle: {
@@ -351,11 +371,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   listNowText: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.bg,
-    letterSpacing: 0.5,
   },
   listContent: {
     padding: spacing.md,
@@ -388,10 +407,9 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     maxWidth: 140,
   },
   title: {
@@ -406,8 +424,9 @@ const styles = StyleSheet.create({
   },
   metaText: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     marginBottom: 3,
   },
   price: {
@@ -417,7 +436,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   statusBadge: {
-    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+    backgroundColor: colors.goldLight,
     borderWidth: 1,
     borderColor: colors.gold,
     paddingHorizontal: 6,
@@ -425,14 +444,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   inactiveBadge: {
-    backgroundColor: 'rgba(150, 150, 150, 0.12)',
+    backgroundColor: colors.overlayLight,
     borderColor: colors.border,
   },
   statusText: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   inactiveStatusText: {
     color: colors.textMuted,
@@ -441,7 +460,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: colors.overlayLight,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingHorizontal: spacing.sm,
@@ -454,8 +473,9 @@ const styles = StyleSheet.create({
   },
   telemetryText: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   telemetryDivider: {
     width: 1,
@@ -469,16 +489,15 @@ const styles = StyleSheet.create({
   },
   telemetryActionText: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   actionBar: {
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    backgroundColor: colors.overlayLight,
   },
   actionBtn: {
     flex: 1,
@@ -489,17 +508,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   insightsBtn: {
-    backgroundColor: 'rgba(201, 168, 76, 0.08)',
+    backgroundColor: colors.goldLight,
   },
   editBtn: {
     backgroundColor: 'transparent',
   },
   actionBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textSecond,
-    letterSpacing: 0.5,
   },
   divider: {
     width: 1,

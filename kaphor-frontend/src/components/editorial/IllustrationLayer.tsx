@@ -515,11 +515,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   eyebrow: {
-    fontFamily: typography.monoBold,
-    fontSize: 9,
-    color: colors.goldDark,
-    letterSpacing: 1.2,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 14,
+    color: colors.goldDark, includeFontPadding: false, },
   pageTitle: {
     fontFamily: typography.headings,
     fontSize: 44,
@@ -529,9 +527,7 @@ const styles = StyleSheet.create({
   },
   pageSubtitle: {
     marginTop: 4,
-    fontFamily: typography.monoBold,
-    fontSize: 10,
-    color: colors.crimson,
-    letterSpacing: 1.2,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 15,
+    color: colors.crimson, includeFontPadding: false, },
 });

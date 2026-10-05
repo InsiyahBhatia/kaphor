@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -18,6 +17,7 @@ import { useAuth } from '../../../../src/context/AuthContext';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { VerifiedBadge } from '../../../../src/components/common/VerifiedBadge';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
+import { Loader, Spinner } from '../../../../src/components/common/Loader';
 
 interface ReviewItem {
   id: string;
@@ -202,7 +202,7 @@ export default function PublicSellerProfileScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.topBar}>
-          <TouchableOpacity 
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
             style={styles.backButton} 
             onPress={() => safeBack('/(tabs)/shop')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -212,12 +212,7 @@ export default function PublicSellerProfileScreen() {
           <Text style={styles.topBarTitle}>SELLER SCORECARD</Text>
           <View style={{ width: 24 }} />
         </View>
-        <View style={{ padding: 20, alignItems: 'center', justifyContent: 'center', flex: 1, gap: 12 }}>
-          <ActivityIndicator color={colors.charcoal} size="small" />
-          <Text style={{ fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, letterSpacing: 1 }}>
-            RETRIEVING ATELIER PROFILE...
-          </Text>
-        </View>
+        <Loader variant="seller" compact />
       </View>
     );
   }
@@ -245,7 +240,7 @@ export default function PublicSellerProfileScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           style={styles.backButton} 
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -253,7 +248,7 @@ export default function PublicSellerProfileScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>SELLER SCORECARD</Text>
-        <TouchableOpacity style={styles.topBarReport} onPress={handleReport}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Shield" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.topBarReport} onPress={handleReport}>
           <Ionicons name="shield-outline" size={20} color={colors.charcoal} />
         </TouchableOpacity>
       </View>
@@ -264,7 +259,7 @@ export default function PublicSellerProfileScreen() {
           <KaphorImage uri={profile.avatar || ''} style={styles.avatar} contentFit="cover" />
           {profile.isVerified && (
             <View style={styles.verifiedShieldCorner}>
-              <Ionicons name="shield-checkmark" size={16} color="#C9A84C" />
+              <Ionicons name="shield-checkmark" size={16} color={colors.gold} />
             </View>
           )}
         </View>
@@ -290,7 +285,7 @@ export default function PublicSellerProfileScreen() {
         </View>
 
         <Text style={styles.bioText}>
-          {profile.bio || 'Verified member of the Kaphor luxury circular fashion community.'}
+          {profile.bio || 'Verified member of the Kaphor Circular Fashion community.'}
         </Text>
 
         {/* Action Button */}
@@ -301,7 +296,7 @@ export default function PublicSellerProfileScreen() {
           activeOpacity={0.8}
         >
           {startingChat ? (
-            <ActivityIndicator color={colors.cream} size="small" />
+            <Spinner color={colors.cream} size="small" />
           ) : (
             <>
               <Ionicons name="chatbubbles" size={16} color={colors.cream} />
@@ -315,7 +310,7 @@ export default function PublicSellerProfileScreen() {
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeaderBetween}>
           <View style={styles.sectionCardHeaderNoMargin}>
-            <Ionicons name="star" size={16} color="#C9A84C" />
+            <Ionicons name="star" size={16} color={colors.gold} />
             <Text style={styles.sectionTitle}>REPUTATION & REVIEWS ({reviews.length})</Text>
           </View>
 
@@ -324,7 +319,7 @@ export default function PublicSellerProfileScreen() {
             onPress={() => setShowBreakdown((prev) => !prev)}
             activeOpacity={0.7}
           >
-            <Ionicons name="star" size={12} color="#C9A84C" />
+            <Ionicons name="star" size={12} color={colors.gold} />
             <Text style={styles.ratingSummaryScore}>{avgRating}</Text>
             <Text style={styles.ratingSummaryCount}>({totalReviews})</Text>
             <Ionicons
@@ -343,7 +338,7 @@ export default function PublicSellerProfileScreen() {
                 <Text style={styles.bigRatingText}>{avgRating}</Text>
                 <View style={styles.starsRow}>
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Ionicons key={s} name="star" size={13} color="#C9A84C" />
+                    <Ionicons key={s} name="star" size={13} color={colors.gold} />
                   ))}
                 </View>
                 <Text style={styles.totalReviewsText}>
@@ -408,7 +403,7 @@ export default function PublicSellerProfileScreen() {
                         key={s}
                         name={s <= rev.rating ? 'star' : 'star-outline'}
                         size={11}
-                        color="#C9A84C"
+                        color={colors.gold}
                       />
                     ))}
                   </View>
@@ -441,7 +436,7 @@ export default function PublicSellerProfileScreen() {
         <View style={styles.sectionHeaderBetween}>
           <View style={styles.sectionCardHeaderNoMargin}>
             <Ionicons name="shirt-outline" size={16} color={colors.charcoal} />
-            <Text style={styles.sectionTitle}>CURATED WARDROBE ({listings.length})</Text>
+            <Text style={styles.sectionTitle}>CLOSET ({listings.length})</Text>
           </View>
         </View>
 
@@ -501,7 +496,7 @@ export default function PublicSellerProfileScreen() {
                   {/* Minimal Top Corner Type Badge */}
                   <View style={[
                     styles.imageTileTypeBadge,
-                    isRental ? { backgroundColor: '#6B46C1' } : isSwap ? { backgroundColor: '#8C6D3B' } : { backgroundColor: colors.charcoal }
+                    isRental ? { backgroundColor: colors.ink } : isSwap ? { backgroundColor: colors.goldDark } : { backgroundColor: colors.charcoal }
                   ]}>
                     <Text style={styles.imageTileTypeBadgeText}>{isRental ? 'RENT' : isSwap ? 'SWAP' : 'BUY'}</Text>
                   </View>
@@ -547,18 +542,18 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   topBarTitle: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 1.5,
   },
   topBarReport: {
     padding: 6,
   },
   miss: {
-    fontFamily: typography.mono,
-    fontSize: 13,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.textMuted,
     marginBottom: 14,
   },
@@ -569,9 +564,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   backBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   heroCard: {
@@ -604,19 +599,19 @@ const styles = StyleSheet.create({
     right: -4,
     backgroundColor: colors.charcoal,
     borderWidth: 1.5,
-    borderColor: '#C9A84C',
+    borderColor: colors.gold,
     padding: 3,
   },
   displayName: {
-    fontFamily: typography.mono,
-    fontSize: 16,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 20,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   username: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginTop: 2,
     marginBottom: 10,
@@ -635,9 +630,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   tierBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   trustedBadge: {
@@ -651,18 +646,18 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   trustedBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   bioText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
     textAlign: 'center',
-    lineHeight: 15,
+    lineHeight: 21,
     marginBottom: 16,
     paddingHorizontal: 8,
   },
@@ -684,10 +679,9 @@ const styles = StyleSheet.create({
   },
   messageCtaText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   sectionCard: {
     backgroundColor: colors.white,
@@ -719,39 +713,38 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   sectionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   ratingSummaryPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(201, 168, 76, 0.12)',
+    backgroundColor: colors.goldLight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(201, 168, 76, 0.3)',
+    borderColor: colors.goldLight,
   },
   ratingSummaryScore: {
     fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
   ratingSummaryCount: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 11.5,
     color: colors.textMuted,
   },
   breakdownContainer: {
     marginBottom: 14,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.08)',
+    borderBottomColor: colors.overlayLight,
   },
   scorecardRow: {
     flexDirection: 'row',
@@ -763,7 +756,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingRight: 14,
     borderRightWidth: 1,
-    borderRightColor: 'rgba(30,31,34,0.15)',
+    borderRightColor: colors.overlayLight,
   },
   bigRatingText: {
     fontFamily: typography.headings,
@@ -776,8 +769,9 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   totalReviewsText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
   },
   barsCol: {
@@ -790,34 +784,34 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   barLabel: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
     width: 20,
   },
   barTrack: {
     flex: 1,
     height: 6,
-    backgroundColor: 'rgba(30,31,34,0.1)',
+    backgroundColor: colors.overlayLight,
     borderRadius: 3,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    backgroundColor: '#C9A84C',
+    backgroundColor: colors.gold,
   },
   barCount: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     width: 16,
     textAlign: 'right',
   },
   compactEmptyCard: {
-    backgroundColor: '#FAF8F5',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
+    borderColor: colors.overlayLight,
     padding: 20,
     borderRadius: 4,
     alignItems: 'center',
@@ -826,11 +820,12 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   compactEmptyText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 14,
+    lineHeight: 23,
   },
   horizontalReviewsScroll: {
     flexDirection: 'row',
@@ -839,9 +834,9 @@ const styles = StyleSheet.create({
   },
   reviewCarouselCard: {
     width: 260,
-    backgroundColor: '#FAF8F5',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
     padding: 12,
     borderRadius: 6,
     gap: 8,
@@ -864,21 +859,22 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   reviewerName: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   reviewDate: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
   },
   verifiedPurchaseBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(40, 54, 24, 0.08)',
+    backgroundColor: colors.emeraldLight,
     paddingHorizontal: 6,
     paddingVertical: 3,
     alignSelf: 'flex-start',
@@ -886,16 +882,16 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   verifiedPurchaseText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.forest,
   },
   reviewComment: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.body,
+    fontSize: 13,
     color: colors.charcoal,
-    lineHeight: 15,
+    lineHeight: 18,
   },
   listingsTabRow: {
     flexDirection: 'row',
@@ -907,7 +903,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 2,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
     backgroundColor: colors.white,
   },
   listingTabBtnActive: {
@@ -915,9 +911,9 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   listingTabText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
   },
   listingTabTextActive: {
@@ -935,16 +931,16 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#EDE8DD',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
   },
   imageTileImg: {
     width: '100%',
     height: '100%',
   },
   imagePlaceholder: {
-    backgroundColor: '#EDE8DD',
+    backgroundColor: colors.paper,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -958,18 +954,17 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   imageTileTypeBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.white,
-    letterSpacing: 0.5,
   },
   imageTilePriceOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(26,26,26,0.85)',
+    backgroundColor: colors.overlay,
     paddingVertical: 4,
     paddingHorizontal: 6,
     alignItems: 'center',
@@ -978,7 +973,7 @@ const styles = StyleSheet.create({
   },
   imageTilePriceText: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 11.5,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +25,7 @@ import {
 import type { SwapTransaction, SwapAddress } from '../../../src/types/swap';
 import { KEY_SWAP_PROTECTIONS } from '../../../src/data/legalPolicies';
 import { LegalModal } from '../../../src/components/legal/LegalModal';
+import { Loader, Spinner } from '../../../src/components/common/Loader';
 
 export default function SwapAgreementScreen() {
   const { swapId } = useLocalSearchParams<{ swapId: string }>();
@@ -145,10 +145,10 @@ export default function SwapAgreementScreen() {
 
       Alert.alert(
         'Agreement Signed & Address Shared!',
-        `Your delivery address has been shared with ${swap?.initiator?.id === swapId ? 'the partner' : 'your swap partner'}. Proceed to escrow deposit & shipment coordination.`,
+        `Your delivery address has been shared with ${swap?.initiator?.id === swapId ? 'the partner' : 'your swap partner'}. Next, pay the deposit and arrange shipping.`,
         [
           {
-            text: 'Go to Escrow & Shipping',
+            text: 'Pay Deposit & Ship',
             onPress: () => router.replace(`/(tabs)/swap/shipping?swapId=${swapId}` as any),
           },
           { text: 'Done', onPress: () => safeBack(`/(tabs)/swap/details?swapId=${swapId}`) },
@@ -167,9 +167,7 @@ export default function SwapAgreementScreen() {
     return (
       <View style={styles.container}>
         <Header title="SWAP AGREEMENT" showBack fallbackPath={fallback} />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.charcoal} />
-        </View>
+        <Loader variant="swap" compact />
       </View>
     );
   }
@@ -212,7 +210,7 @@ export default function SwapAgreementScreen() {
         <TouchableOpacity style={styles.chatWithPartnerBar} onPress={handleChatWithPartner} activeOpacity={0.8}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Ionicons name="chatbubbles-outline" size={16} color={colors.charcoal} />
-            <Text style={styles.chatWithPartnerText}>CHAT WITH SWAP PARTNER</Text>
+            <Text style={styles.chatWithPartnerText}>Chat with swap partner</Text>
           </View>
           <Ionicons name="chevron-forward" size={14} color={colors.charcoal} />
         </TouchableOpacity>
@@ -235,9 +233,9 @@ export default function SwapAgreementScreen() {
             <Text style={styles.disclaimerStatuteRef}>IT ACT 2000 § 79</Text>
           </View>
 
-          <Text style={styles.protectionsTitle}>MUTUAL SWAP PROTECTIONS</Text>
+          <Text style={styles.protectionsTitle}>Mutual swap protections</Text>
           <Text style={styles.protectionsSubtitle}>
-            Both parties exchange under KaPhor's verified P2P escrow & fair-trade framework:
+            Both people agree to these swap rules:
           </Text>
 
           {/* 4 Protection Pillars */}
@@ -276,10 +274,10 @@ export default function SwapAgreementScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.agreementConsentTitle}>
-                {termsAccepted ? 'SWAP AGREEMENT ACCEPTED ✓' : 'I ACCEPT THE SWAP AGREEMENT'}
+                {termsAccepted ? 'SWAP AGREEMENT ACCEPTED ✓' : 'I accept the swap agreement'}
               </Text>
               <Text style={styles.agreementConsentDesc}>
-                I confirm the offered item strictly matches photos and condition disclosures, agree to dispatch within 3 business days, and accept mutual barter terms and platform non-liability under Indian law.
+                I confirm the offered item strictly matches photos and condition disclosures, agree to ship within 3 business days, and accept mutual barter terms and platform non-liability under Indian law.
               </Text>
             </View>
           </TouchableOpacity>
@@ -291,7 +289,7 @@ export default function SwapAgreementScreen() {
               activeOpacity={0.7}
             >
               <Ionicons name="document-text-outline" size={14} color={colors.charcoal} />
-              <Text style={styles.legalBtnText}>READ STATUTORY TERMS (5 CLAUSES)</Text>
+              <Text style={styles.legalBtnText}>Read statutory terms (5 clauses)</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -307,7 +305,7 @@ export default function SwapAgreementScreen() {
 
         {/* Signature Status */}
         <View style={styles.signatureCard}>
-          <Text style={styles.sectionTitle}>SIGNATURE STATUS</Text>
+          <Text style={styles.sectionTitle}>Signature status</Text>
 
           <View style={styles.signatureRow}>
             <View style={[styles.signatureDot, initiatorAccepted && styles.signatureDotDone]} />
@@ -341,7 +339,7 @@ export default function SwapAgreementScreen() {
         <View style={styles.depositNote}>
           <Ionicons name="shield-checkmark" size={18} color={colors.navy} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.depositNoteTitle}>SECURITY DEPOSIT</Text>
+            <Text style={styles.depositNoteTitle}>Security deposit</Text>
             <Text style={styles.depositNoteText}>
               A refundable deposit of ₹500 is required from both parties before shipping.
               Deposits are released within 48 hours after both parties confirm receipt.
@@ -351,7 +349,7 @@ export default function SwapAgreementScreen() {
 
         {/* Swap Summary */}
         <View style={styles.summaryCard}>
-          <Text style={styles.sectionTitle}>SWAP SUMMARY</Text>
+          <Text style={styles.sectionTitle}>Swap summary</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>You give:</Text>
             <Text style={styles.summaryValue}>
@@ -377,7 +375,7 @@ export default function SwapAgreementScreen() {
           <View style={styles.addressSectionHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="location" size={16} color={colors.charcoal} />
-              <Text style={styles.sectionTitleNoMargin}>YOUR DELIVERY ADDRESS</Text>
+              <Text style={styles.sectionTitleNoMargin}>Your delivery address</Text>
             </View>
             <TouchableOpacity
               onPress={() => setShowAddressPicker(true)}
@@ -436,8 +434,8 @@ export default function SwapAgreementScreen() {
         <View style={styles.addressModalOverlay}>
           <View style={styles.addressModalContent}>
             <View style={styles.addressModalHeader}>
-              <Text style={styles.addressModalTitle}>SELECT DELIVERY ADDRESS</Text>
-              <TouchableOpacity
+              <Text style={styles.addressModalTitle}>Select delivery address</Text>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                 onPress={() => setShowAddressPicker(false)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
@@ -447,7 +445,7 @@ export default function SwapAgreementScreen() {
             <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
               {addresses.length === 0 ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, textAlign: 'center', marginBottom: 12 }}>
+                  <Text style={{ fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, textAlign: 'center', marginBottom: 12, includeFontPadding: false }}>
                     No addresses found in your address book.
                   </Text>
                     <TouchableOpacity
@@ -524,14 +522,14 @@ export default function SwapAgreementScreen() {
           activeOpacity={0.8}
         >
           {saving ? (
-            <ActivityIndicator color={colors.cream} />
+            <Spinner color={colors.cream} />
           ) : (
             <>
               <Ionicons name="document-text" size={18} color={colors.cream} />
               <Text style={styles.signBtnText}>
                 {termsAccepted
-                  ? 'SIGN AGREEMENT & SHARE ADDRESS'
-                  : 'AGREE TO SWAP TERMS TO SIGN'}
+                  ? 'Sign agreement & share address'
+                  : 'Agree to swap terms to sign'}
               </Text>
             </>
           )}
@@ -545,7 +543,7 @@ export default function SwapAgreementScreen() {
         initialDocId="swap-agreement"
         onAccept={() => setTermsAccepted(true)}
         showAcceptButton={!termsAccepted}
-        acceptButtonText="ACCEPT SWAP TERMS"
+        acceptButtonText="Accept swap terms"
       />
     </View>
   );
@@ -554,42 +552,35 @@ export default function SwapAgreementScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontFamily: typography.mono, fontSize: 14, color: colors.textMuted },
+  errorText: { fontFamily: typography.handwritten, fontSize: 19, color: colors.textMuted, includeFontPadding: false, },
 
   content: { padding: 20, paddingBottom: 120 },
   sectionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.charcoal,
-    letterSpacing: 1.5,
-    marginBottom: 8,
-  },
+    marginBottom: 8, includeFontPadding: false, },
   sectionDesc: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    lineHeight: 16,
-    marginBottom: 20,
-  },
+    lineHeight: 23,
+    marginBottom: 20, includeFontPadding: false, },
 
   statusBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     padding: 14,
-    backgroundColor: 'rgba(30,31,34,0.04)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
+    borderColor: colors.overlayLight,
     marginBottom: 20,
   },
   statusText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
 
   termsCard: {
     backgroundColor: colors.white,
@@ -610,10 +601,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.06)',
+    borderBottomColor: colors.overlayLight,
   },
   termRowAccepted: {
-    backgroundColor: 'rgba(30,59,47,0.03)',
+    backgroundColor: colors.overlayLight,
   },
   termCheckbox: {
     width: 22,
@@ -645,11 +636,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   acceptAllText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '800',
     color: colors.charcoal,
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
 
   signatureCard: {
@@ -669,62 +659,52 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: 'rgba(30,31,34,0.15)',
+    backgroundColor: colors.overlayLight,
   },
   signatureDotDone: { backgroundColor: colors.forest },
   signatureLabel: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   signatureStatus: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    color: colors.textMuted,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.textMuted, includeFontPadding: false, },
   signatureStatusDone: { color: colors.forest },
   bothSignedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: 'rgba(30,59,47,0.06)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(30,59,47,0.15)',
+    borderColor: colors.overlayLight,
   },
   bothSignedText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.forest,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
 
   depositNote: {
     flexDirection: 'row',
     gap: 12,
     padding: 16,
-    backgroundColor: 'rgba(28,43,74,0.04)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(28,43,74,0.12)',
+    borderColor: colors.overlayLight,
     marginBottom: 20,
   },
   depositNoteTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.navy,
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
+    marginBottom: 4, includeFontPadding: false, },
   depositNoteText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.navy,
-    lineHeight: 14,
-  },
+    lineHeight: 20, includeFontPadding: false, },
 
   summaryCard: {
     backgroundColor: colors.white,
@@ -740,11 +720,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryLabel: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 16,
+    color: colors.textMuted, includeFontPadding: false, },
   summaryValue: {
     fontFamily: typography.headings,
     fontSize: 16,
@@ -782,10 +760,9 @@ const styles = StyleSheet.create({
   signBtnDisabled: { opacity: 0.6 },
   signBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
   chatWithPartnerBar: {
     flexDirection: 'row',
@@ -799,12 +776,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chatWithPartnerText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
 
   // Address selection styles
   addressSection: {
@@ -817,19 +791,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionTitleNoMargin: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   changeAddressLink: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '800',
     color: colors.charcoal,
     textDecorationLine: 'underline',
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   selectedAddressCard: {
     backgroundColor: colors.white,
@@ -862,13 +832,11 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   addressTypeBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   addressPhoneText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyMedium,
     fontSize: 11,
     color: colors.textMuted,
     marginBottom: 6,
@@ -890,12 +858,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   selectAddressPlaceholderText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '700',
+    fontFamily: typography.handSemi,
+    fontSize: 16,
     color: colors.charcoal,
-    textAlign: 'center',
-  },
+    textAlign: 'center', includeFontPadding: false, },
 
   // Modal styles
   addressModalOverlay: {
@@ -904,7 +870,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
     zIndex: 999,
   },
@@ -939,11 +905,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addNewAddressBtnText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '800',
     color: colors.cream,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   addressOptionCard: {
     backgroundColor: colors.white,
@@ -955,7 +920,7 @@ const styles = StyleSheet.create({
   addressOptionCardActive: {
     borderWidth: 2.5,
     borderColor: colors.charcoal,
-    backgroundColor: '#fffdf5',
+    backgroundColor: colors.paperLight,
     shadowColor: colors.charcoal,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
@@ -975,8 +940,8 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   addressOptionPhone: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.bodyMedium,
+    fontSize: 11,
     color: colors.textMuted,
     marginBottom: 4,
   },
@@ -994,15 +959,13 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   defaultBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    color: colors.charcoal,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
 
   // Intermediary Disclaimer Styles
   disclaimerCard: {
-    backgroundColor: '#FAF5EE',
+    backgroundColor: colors.paperLight,
     padding: 18,
     borderWidth: 2,
     borderColor: colors.charcoal,
@@ -1035,24 +998,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#1E3B2F',
+    backgroundColor: colors.emeraldDark,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   disclaimerBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    color: colors.white,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.white, includeFontPadding: false, },
   disclaimerStatuteRef: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.textMuted, includeFontPadding: false, },
   protectionsTitle: {
     fontFamily: typography.headings,
     fontSize: 18,
@@ -1074,11 +1031,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: 'rgba(30,31,34,0.03)',
+    backgroundColor: colors.overlayLight,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.08)',
+    borderColor: colors.overlayLight,
   },
   pillarIconWrap: {
     width: 32,
@@ -1091,13 +1048,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   pillarTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.charcoal,
-    letterSpacing: 0.5,
-    marginBottom: 3,
-  },
+    marginBottom: 3, includeFontPadding: false, },
   pillarSummary: {
     fontFamily: typography.body,
     fontSize: 11,
@@ -1127,7 +1081,7 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   agreementCheckboxRowActive: {
-    backgroundColor: 'rgba(30,59,47,0.06)',
+    backgroundColor: colors.overlayLight,
     borderColor: colors.forest,
   },
   masterCheckbox: {
@@ -1146,13 +1100,10 @@ const styles = StyleSheet.create({
     borderColor: colors.forest,
   },
   agreementConsentTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.8,
-    marginBottom: 4,
-  },
+    marginBottom: 4, includeFontPadding: false, },
   agreementConsentDesc: {
     fontFamily: typography.body,
     fontSize: 11.5,
@@ -1170,7 +1121,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
-    backgroundColor: 'rgba(30,31,34,0.04)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
     borderColor: colors.charcoal,
   },
@@ -1186,11 +1137,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   legalBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
     color: colors.charcoal,
-    letterSpacing: 0.6,
+    letterSpacing: 0.2,
   },
   bottomBarNoticeRow: {
     flexDirection: 'row',
@@ -1200,9 +1150,8 @@ const styles = StyleSheet.create({
   },
   bottomDisclaimerNotice: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    lineHeight: 12,
-  },
+    lineHeight: 19, includeFontPadding: false, },
 });

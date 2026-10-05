@@ -1,159 +1,40 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, Platform, TouchableOpacity, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { rentalService } from '../../../src/services/rentalService';
 import { messageService } from '../../../src/services/messageService';
-import { cachedGet, fetchFresh } from '../../../src/services/api';
+import { swrGet } from '../../../src/services/api';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { EditorialPageHeader, HandwrittenNote } from '../../../src/components/editorial/IllustrationLayer';
 import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { colors, typography } from '../../../src/theme';
 import { useAuthStore } from '../../../src/store/authStore';
 
-export default function RentalScreen() {
+function statusColor(status: string) {
+  switch (status) {
+    case 'REQUESTED': return colors.gold;
+    case 'APPROVED': return colors.forest;
+    case 'RESERVED': return colors.copper;
+    case 'ACTIVE': return colors.forest;
+    case 'RETURN_DISPATCHED': return colors.forest;
+    case 'RETURNED': return colors.navy;
+    case 'COMPLETED': return colors.forest;
+    case 'DECLINED': return colors.red;
+    case 'OVERDUE': return colors.red;
+    default: return colors.textMuted;
+  }
+}
+
+const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }: { rental: any; currentUserId?: string }) {
   const router = useRouter();
-  const { tab } = useLocalSearchParams<{ tab?: string }>();
-  const currentUserId = useAuthStore((s) => s.user?.id);
-  const [rentals, setRentals] = useState<any[]>([]);
-  const [myRentals, setMyRentals] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [myRentalsLoading, setMyRentalsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'browse' | 'my'>(tab === 'my' ? 'my' : 'browse');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'borrowing' | 'lending'>('all');
-
-  useEffect(() => {
-    if (tab === 'my') {
-      setActiveTab('my');
-    }
-  }, [tab]);
-
-  const fetchAvailableRentals = async (fresh = false) => {
-    try {
-      const res = fresh
-        ? await fetchFresh('/rentals/available')
-        : await cachedGet('/rentals/available');
-      const list = Array.isArray(res)
-        ? res
-        : (res?.data && Array.isArray(res.data) ? res.data : []);
-      setRentals(list);
-    } catch (err) {
-      console.warn('Failed to load available rentals:', err);
-      setRentals([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMyRentals = async (fresh = false) => {
-    setMyRentalsLoading(true);
-    try {
-      const res = fresh
-        ? await fetchFresh('/rentals/me')
-        : await cachedGet('/rentals/me');
-      const list = Array.isArray(res)
-        ? res
-        : (res?.data && Array.isArray(res.data) ? res.data : []);
-      setMyRentals(list);
-    } catch (err) {
-      console.warn('Failed to load my rentals:', err);
-      setMyRentals([]);
-    } finally {
-      setMyRentalsLoading(false);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchAvailableRentals();
-      if (activeTab === 'my') {
-        fetchMyRentals();
-      }
-    }, [activeTab])
-  );
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    if (activeTab === 'browse') {
-      await fetchAvailableRentals(true);
-    } else {
-      await fetchMyRentals(true);
-    }
-    setRefreshing(false);
-  };
-
-  const statusColor = (status: string) => {
-    switch (status) {
-      case 'REQUESTED': return colors.gold || '#D4AF37';
-      case 'APPROVED': return colors.forest || '#2A7B4C';
-      case 'RESERVED': return colors.copper;
-      case 'ACTIVE': return colors.forest;
-      case 'RETURN_DISPATCHED': return colors.forest;
-      case 'RETURNED': return colors.navy;
-      case 'COMPLETED': return colors.forest;
-      case 'DECLINED': return colors.red;
-      case 'OVERDUE': return colors.red;
-      default: return colors.textMuted;
-    }
-  };
-
-  const renderMyRentals = () => {
-    if (myRentalsLoading && myRentals.length === 0) return <GarmentGridSkeleton count={4} />;
-    if (myRentals.length === 0) {
-      return (
-        <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={40} color={colors.charcoal} />
-          <Text style={styles.emptyText}>NO ACTIVE RENTAL LEASES</Text>
-          <TouchableOpacity style={styles.button} onPress={() => setActiveTab('browse')}>
-            <Text style={styles.buttonText}>EXPLORE AVAILABLE PIECES →</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    const filteredRentals = myRentals.filter((rental: any) => {
-      const isLender = rental.userRole === 'LENDER' || rental.garment?.sellerId === currentUserId;
-      if (roleFilter === 'borrowing') return !isLender;
-      if (roleFilter === 'lending') return isLender;
-      return true;
-    });
-
-    return (
-      <View>
-        {/* Role Selector Chips */}
-        <View style={styles.roleFilterRow}>
-          {[
-            { id: 'all', label: `ALL (${myRentals.length})` },
-            { id: 'borrowing', label: `BORROWING (${myRentals.filter((r: any) => r.userRole !== 'LENDER' && r.garment?.sellerId !== currentUserId).length})` },
-            { id: 'lending', label: `LENDING (${myRentals.filter((r: any) => r.userRole === 'LENDER' || r.garment?.sellerId === currentUserId).length})` },
-          ].map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.roleFilterChip, roleFilter === item.id && styles.roleFilterChipActive]}
-              onPress={() => setRoleFilter(item.id as any)}
-            >
-              <Text style={[styles.roleFilterChipText, roleFilter === item.id && styles.roleFilterChipTextActive]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {filteredRentals.length === 0 ? (
-          <View style={[styles.emptyState, { paddingTop: 30 }]}>
-            <Text style={styles.emptyText}>NO LEASES IN THIS CATEGORY</Text>
-          </View>
-        ) : (
-          filteredRentals.map((rental: any) => {
-            const isLender = rental.userRole === 'LENDER' || rental.garment?.sellerId === currentUserId;
-            const counterpartyName = isLender
-              ? (rental.renter?.displayName || rental.renter?.username || 'Borrower')
-              : (rental.garment?.seller?.displayName || 'Lender / Owner');
-
-            return (
+  const isLender = rental.userRole === 'LENDER' || rental.garment?.sellerId === currentUserId;
+  const counterpartyName = isLender
+    ? (rental.renter?.displayName || rental.renter?.username || 'Borrower')
+    : (rental.garment?.seller?.displayName || 'Lender / Owner');
+  return (
               <TouchableOpacity
-                key={rental.id}
                 style={styles.myRentalCard}
                 onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                 activeOpacity={0.88}
@@ -162,7 +43,7 @@ export default function RentalScreen() {
                 <View style={styles.myRentalHeader}>
                   <View style={[styles.roleBadge, isLender ? styles.roleBadgeLender : styles.roleBadgeBorrower]}>
                     <Text style={[styles.roleBadgeText, isLender ? styles.roleBadgeTextLender : styles.roleBadgeTextBorrower]}>
-                      {isLender ? 'YOU ARE LENDER' : 'YOU ARE BORROWER'}
+                      {isLender ? 'You are lender' : 'You are borrower'}
                     </Text>
                   </View>
                   <View style={[styles.myRentalStatus, { backgroundColor: statusColor(rental.status) }]}>
@@ -183,20 +64,20 @@ export default function RentalScreen() {
                 {/* Dates Timeline */}
                 <View style={styles.myRentalDates}>
                   <View style={styles.myRentalDateBlock}>
-                    <Text style={styles.myRentalDateLabel}>DELIVERY</Text>
+                    <Text style={styles.myRentalDateLabel}>Delivery</Text>
                     <Text style={styles.myRentalDateValue}>
                       {new Date(rental.startDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
                     </Text>
                   </View>
                   <Ionicons name="arrow-forward" size={14} color={colors.textMuted} />
                   <View style={styles.myRentalDateBlock}>
-                    <Text style={styles.myRentalDateLabel}>RETURN DUE</Text>
+                    <Text style={styles.myRentalDateLabel}>Return due</Text>
                     <Text style={styles.myRentalDateValue}>
                       {new Date(rental.endDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
                     </Text>
                   </View>
                   <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                    <Text style={styles.myRentalPriceLabel}>TOTAL LEASE</Text>
+                    <Text style={styles.myRentalPriceLabel}>Total lease</Text>
                     <Text style={styles.myRentalPrice}>
                       ₹{Math.round(rental.totalPrice || 0).toLocaleString('en-IN')}
                     </Text>
@@ -207,7 +88,7 @@ export default function RentalScreen() {
                 <View style={styles.myRentalActionRow}>
                   {rental.status === 'REQUESTED' && isLender ? (
                     <TouchableOpacity
-                      style={[styles.myRentalDossierBtn, { backgroundColor: '#B45309', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
+                      style={[styles.myRentalDossierBtn, { backgroundColor: colors.terracottaDark, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
                       onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                     >
                       <Ionicons name="time" size={13} color={colors.white} />
@@ -215,15 +96,15 @@ export default function RentalScreen() {
                     </TouchableOpacity>
                   ) : rental.status === 'APPROVED' && !isLender ? (
                     <TouchableOpacity
-                      style={[styles.myRentalDossierBtn, { backgroundColor: colors.forest || '#2A7B4C', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
+                      style={[styles.myRentalDossierBtn, { backgroundColor: colors.forest || colors.forest, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
                       onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                     >
                       <Ionicons name="card" size={13} color={colors.white} />
-                      <Text style={styles.myRentalDossierText}>PAY ESCROW DEPOSIT ➔</Text>
+                      <Text style={styles.myRentalDossierText}>PAY DEPOSIT ➔</Text>
                     </TouchableOpacity>
                   ) : (rental.status === 'RETURNED' || rental.status === 'COMPLETED') && (!currentUserId || !rental?.metadata?.reviews?.[currentUserId]) ? (
                     <TouchableOpacity
-                      style={[styles.myRentalDossierBtn, { backgroundColor: '#D97706', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
+                      style={[styles.myRentalDossierBtn, { backgroundColor: colors.orange, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
                       onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}?review=true` as any)}
                     >
                       <Ionicons name="star" size={13} color={colors.white} />
@@ -234,11 +115,11 @@ export default function RentalScreen() {
                       style={styles.myRentalDossierBtn}
                       onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                     >
-                      <Text style={styles.myRentalDossierText}>VIEW LEASE DOSSIER ➔</Text>
+                      <Text style={styles.myRentalDossierText}>VIEW LEASE DETAILS ➔</Text>
                     </TouchableOpacity>
                   )}
 
-                  <TouchableOpacity
+                  <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Chat"
                     style={styles.myRentalChatBtn}
                     onPress={async () => {
                       const otherId = isLender ? rental.renterId : (rental.garment?.sellerId || rental.sellerId);
@@ -261,9 +142,158 @@ export default function RentalScreen() {
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
-            );
-          })
-        )}
+  );
+});
+
+const RentalGridCard = React.memo(function RentalGridCard({ item }: { item: any }) {
+  const router = useRouter();
+  const data = useMemo(
+    () => ({
+      ...item,
+      price: item.rentalPriceDay ? Math.round(item.rentalPriceDay) : item.price ? Math.round(item.price) : 0,
+    }),
+    [item]
+  );
+  const onPress = useCallback(() => router.push(`/(tabs)/rental/${item.id}` as any), [router, item.id]);
+  return (
+    <View style={styles.cardWrapper}>
+      <EditorialGarmentCard item={data} onPress={onPress} style={CARD_STYLE} />
+    </View>
+  );
+});
+
+const Separator = () => <View style={{ height: 12 }} />;
+const CARD_STYLE = { width: '100%', marginRight: 0 } as const;
+
+export default function RentalScreen() {
+  const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const [rentals, setRentals] = useState<any[]>([]);
+  const [myRentals, setMyRentals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [myRentalsLoading, setMyRentalsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'browse' | 'my'>(tab === 'my' ? 'my' : 'browse');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'borrowing' | 'lending'>('all');
+
+  useEffect(() => {
+    if (tab === 'my') {
+      setActiveTab('my');
+    }
+  }, [tab]);
+
+  const toList = (res: any): any[] =>
+    Array.isArray(res) ? res : res?.data && Array.isArray(res.data) ? res.data : [];
+
+  // Stale-while-revalidate: cached rentals paint instantly, fresh data replaces them
+  const fetchAvailableRentals = async () => {
+    try {
+      await swrGet('/rentals/available', (res) => {
+        setRentals(toList(res));
+        setLoading(false);
+      });
+    } catch (err) {
+      console.warn('Failed to load available rentals:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMyRentals = async () => {
+    setMyRentalsLoading(true);
+    try {
+      await swrGet('/rentals/me', (res) => {
+        setMyRentals(toList(res));
+        setMyRentalsLoading(false);
+      });
+    } catch (err) {
+      console.warn('Failed to load my rentals:', err);
+    } finally {
+      setMyRentalsLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAvailableRentals();
+      if (activeTab === 'my') {
+        fetchMyRentals();
+      }
+    }, [activeTab])
+  );
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    if (activeTab === 'browse') {
+      await fetchAvailableRentals();
+    } else {
+      await fetchMyRentals();
+    }
+    setRefreshing(false);
+  };
+
+  const filteredRentals = useMemo(
+    () =>
+      myRentals.filter((rental: any) => {
+        const isLender = rental.userRole === 'LENDER' || rental.garment?.sellerId === currentUserId;
+        if (roleFilter === 'borrowing') return !isLender;
+        if (roleFilter === 'lending') return isLender;
+        return true;
+      }),
+    [myRentals, roleFilter, currentUserId]
+  );
+
+  const roleChips = useMemo(() => {
+    const isLenderOf = (r: any) => r.userRole === 'LENDER' || r.garment?.sellerId === currentUserId;
+    return [
+      { id: 'all', label: `ALL (${myRentals.length})` },
+      { id: 'borrowing', label: `BORROWING (${myRentals.filter((r: any) => !isLenderOf(r)).length})` },
+      { id: 'lending', label: `LENDING (${myRentals.filter(isLenderOf).length})` },
+    ];
+  }, [myRentals, currentUserId]);
+
+  const myRentalKey = useCallback((r: any) => r.id, []);
+  const renderMyRental = useCallback(
+    ({ item }: { item: any }) => <MyRentalCard rental={item} currentUserId={currentUserId} />,
+    [currentUserId]
+  );
+  const rentalKey = myRentalKey;
+  const renderRentalCard = useCallback(({ item }: { item: any }) => <RentalGridCard item={item} />, []);
+
+  const renderMyHeader = () =>
+    myRentals.length === 0 ? null : (
+      <View style={styles.roleFilterRow}>
+        {roleChips.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={[styles.roleFilterChip, roleFilter === item.id && styles.roleFilterChipActive]}
+            onPress={() => setRoleFilter(item.id as any)}
+          >
+            <Text style={[styles.roleFilterChipText, roleFilter === item.id && styles.roleFilterChipTextActive]}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+
+  const renderMyEmpty = () => {
+    if (myRentalsLoading) return <GarmentGridSkeleton count={4} />;
+    if (myRentals.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Ionicons name="calendar-outline" size={40} color={colors.charcoal} />
+          <Text style={styles.emptyText}>No active rental leases</Text>
+          <TouchableOpacity style={styles.button} onPress={() => setActiveTab('browse')}>
+            <Text style={styles.buttonText}>Explore available pieces →</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return (
+      <View style={[styles.emptyState, { paddingTop: 30 }]}>
+        <Text style={styles.emptyText}>No leases in this category</Text>
       </View>
     );
   };
@@ -311,7 +341,7 @@ export default function RentalScreen() {
           }
         >
           <Ionicons name="calendar-sharp" size={48} color={colors.charcoal} />
-          <Text style={styles.emptyText}>NO LEASABLE ASSETS FOUND</Text>
+          <Text style={styles.emptyText}>No leasable assets found</Text>
           <TouchableOpacity style={styles.button} onPress={() => handleRefresh()}>
             <Text style={styles.buttonText}>REFRESH CATALOG ↻</Text>
           </TouchableOpacity>
@@ -319,37 +349,29 @@ export default function RentalScreen() {
             style={[styles.button, { marginTop: 12, backgroundColor: colors.white }]}
             onPress={() => router.push('/(tabs)/shop/sell')}
           >
-            <Text style={[styles.buttonText, { color: colors.charcoal }]}>+ LIST A RENTAL ASSET</Text>
+            <Text style={[styles.buttonText, { color: colors.charcoal }]}>+ LIST A RENTAL ITEM</Text>
           </TouchableOpacity>
         </ScrollView>
       );
     }
 
     return (
-      <ScrollView
+      <FlatList
+        data={rentals}
+        keyExtractor={rentalKey}
+        renderItem={renderRentalCard}
+        numColumns={2}
+        columnWrapperStyle={styles.gridRow}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={styles.browseContent}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.charcoal} />
         }
-      >
-        <View style={styles.grid}>
-          {rentals.map((item: any) => {
-            return (
-              <View key={item.id} style={styles.cardWrapper}>
-                <EditorialGarmentCard
-                  item={{
-                    ...item,
-                    price: item.rentalPriceDay ? Math.round(item.rentalPriceDay) : (item.price ? Math.round(item.price) : 0),
-                  }}
-                  onPress={() => router.push(`/(tabs)/rental/${item.id}` as any)}
-                  style={{ width: '100%', marginRight: 0 }}
-                />
-              </View>
-            );
-          })}
-        </View>
-      </ScrollView>
+      />
     );
   };
 
@@ -357,8 +379,8 @@ export default function RentalScreen() {
     <View style={styles.container}>
       <EditorialPageHeader
         title="RENTALS"
-        subtitle="SHORT-TERM LEASING // OCCASION WEAR"
-        eyebrow="LEASE THE LOOK"
+        subtitle="Rent outfits for events"
+        eyebrow="Lease the look"
         variant="rental"
         style={styles.header}
       >
@@ -368,15 +390,23 @@ export default function RentalScreen() {
       {renderTabBar()}
 
       {activeTab === 'my' ? (
-        <ScrollView
+        <FlatList
+          data={filteredRentals}
+          keyExtractor={myRentalKey}
+          renderItem={renderMyRental}
+          ItemSeparatorComponent={Separator}
+          ListHeaderComponent={renderMyHeader()}
+          ListEmptyComponent={renderMyEmpty}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.myRentalsContainer}
+          initialNumToRender={5}
+          maxToRenderPerBatch={5}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.charcoal} />
           }
-        >
-          {renderMyRentals()}
-        </ScrollView>
+        />
       ) : (
         renderBrowseRentals()
       )}
@@ -391,9 +421,9 @@ const styles = StyleSheet.create({
   },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   title: { fontSize: 42, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
-  subtitle: { fontFamily: typography.bodyBold, fontSize: 10, color: colors.red, letterSpacing: 1.2 },
+  subtitle: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.red, letterSpacing: 1.2 },
 
-  tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(26,26,26,0.1)' },
+  tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.overlayLight },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: colors.charcoal },
   tabText: { fontFamily: typography.bodyBold, fontSize: 11.5, color: colors.textMuted, letterSpacing: 1.2 },
@@ -401,9 +431,11 @@ const styles = StyleSheet.create({
   
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between', paddingTop: 16 },
   cardWrapper: { width: '48%', marginBottom: 24 },
+  gridRow: { justifyContent: 'space-between', paddingHorizontal: 16 },
+  browseContent: { paddingBottom: 100, paddingTop: 16 },
 
   // My Rentals
-  myRentalsContainer: { padding: 16, gap: 12 },
+  myRentalsContainer: { padding: 16 },
   myRentalCard: {
     backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal,
     padding: 16, gap: 10,
@@ -417,41 +449,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   roleBadgeLender: {
-    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    backgroundColor: colors.crimsonLight,
     borderColor: colors.crimson,
   },
   roleBadgeBorrower: {
-    backgroundColor: 'rgba(42, 123, 76, 0.08)',
-    borderColor: colors.forest || '#2A7B4C',
+    backgroundColor: colors.emeraldLight,
+    borderColor: colors.forest || colors.forest,
   },
   roleBadgeText: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold, includeFontPadding: false, },
   roleBadgeTextLender: {
     color: colors.crimson,
   },
   roleBadgeTextBorrower: {
-    color: colors.forest || '#2A7B4C',
+    color: colors.forest || colors.forest,
   },
   myRentalCounterparty: {
-    fontSize: 10,
-    fontFamily: typography.mono,
+    fontSize: 16,
+    fontFamily: typography.handSemi,
     color: colors.textMuted,
-    fontWeight: '700',
-    marginTop: 2,
-  },
+    marginTop: 2, includeFontPadding: false, },
   myRentalTitle: { fontFamily: typography.headings, fontSize: 19, color: colors.charcoal, flex: 1 },
   myRentalStatus: { paddingHorizontal: 8, paddingVertical: 3 },
-  myRentalStatusText: { color: colors.cream, fontFamily: typography.mono, fontSize: 8, fontWeight: '900' },
+  myRentalStatusText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
   myRentalDates: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   myRentalDateBlock: { flex: 1 },
-  myRentalDateLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700', marginBottom: 2 },
-  myRentalDateValue: { fontFamily: typography.mono, fontSize: 12, color: colors.charcoal, fontWeight: '700' },
-  myRentalPriceLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700' },
-  myRentalPrice: { fontFamily: typography.mono, fontSize: 14, color: colors.red, fontWeight: '800' },
+  myRentalDateLabel: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, marginBottom: 2, includeFontPadding: false, },
+  myRentalDateValue: { fontFamily: typography.bodyBold, fontSize: 12, color: colors.charcoal, },
+  myRentalPriceLabel: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.textMuted, },
+  myRentalPrice: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.red, },
   myRentalActionRow: {
     flexDirection: 'row',
     gap: 8,
@@ -468,26 +495,24 @@ const styles = StyleSheet.create({
   },
   myRentalDossierText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
   myRentalChatBtn: {
     width: 44,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5F3ED',
+    backgroundColor: colors.paper,
     borderWidth: 1.5,
     borderColor: colors.charcoal,
   },
   myRentalChatText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
     color: colors.charcoal,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   },
   myRentalReturnBtn: {
     flex: 1,
@@ -498,7 +523,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.charcoal,
   },
-  myRentalReturnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  myRentalReturnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
 
   // Role filter chips
   roleFilterRow: {
@@ -517,22 +542,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   roleFilterChipText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   roleFilterChipTextActive: {
     color: colors.cream,
   },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', flex: 1, padding: 20, paddingTop: 60 },
-  emptyText: { color: colors.charcoal, fontSize: 12, fontFamily: typography.mono, fontWeight: '800', marginVertical: 24, letterSpacing: 2 },
+  emptyText: { color: colors.charcoal, fontSize: 17, fontFamily: typography.handBold, marginVertical: 24, includeFontPadding: false, },
   button: { 
     backgroundColor: colors.charcoal, paddingHorizontal: 28, paddingVertical: 14,
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0
   },
-  buttonText: { color: colors.cream, fontFamily: typography.mono, fontWeight: '800', fontSize: 12, letterSpacing: 1 },
+  buttonText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false, },
 });

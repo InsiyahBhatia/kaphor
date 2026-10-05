@@ -12,8 +12,14 @@ import {
   releaseGarmentReservations,
 } from '../services/garment-claim.service';
 import { cacheClear } from '../lib/cache';
+import { safeEqual } from '../utils/jwt';
 
-const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || '';
+const PAID_RENTAL_STATUSES = ['RESERVED', 'DISPATCHED', 'ACTIVE', 'COMPLETED'];
+
+function hmacHex(secret: string, payload: string | Buffer): string {
+  return crypto.createHmac('sha256', secret).update(payload).digest('hex');
+}
+
 
 function getRazorpayInstance(): Razorpay {
   const keyId = process.env.RAZORPAY_KEY_ID;
@@ -180,9 +186,8 @@ export async function createRazorpayOrderForExistingOrder(req: Request, res: Res
 
     res.json({ data: result });
   } catch (e: any) {
-    const message = e?.message || 'Failed to create Razorpay order';
-    logger.error('createRazorpayOrderForExistingOrder failed', { error: message });
-    res.status(400).json({ error: 'BAD_REQUEST', message });
+    logger.error('createRazorpayOrderForExistingOrder failed', { error: e?.message });
+    res.status(400).json({ error: 'BAD_REQUEST', message: 'Could not create the payment. Please try again.' });
   }
 }
 
@@ -265,9 +270,8 @@ export async function createRazorpayOrderForRental(req: Request, res: Response):
       },
     });
   } catch (e: any) {
-    const message = e?.message || 'Failed to create Razorpay rental order';
-    logger.error('createRazorpayOrderForRental failed', { error: message, stack: e?.stack });
-    res.status(500).json({ error: 'INTERNAL_ERROR', message });
+    logger.error('createRazorpayOrderForRental failed', { error: e?.message, stack: e?.stack });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Could not create the rental payment. Please try again.' });
   }
 }
 
@@ -302,12 +306,18 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
       return;
     }
 
-    const expected = crypto
-      .createHmac('sha256', secret)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex');
+    if (
+      [orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature].some(
+        (v) => typeof v !== 'string' || v.length > 200
+      )
+    ) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid payment details' });
+      return;
+    }
 
-    if (expected !== razorpay_signature) {
+    const expected = hmacHex(secret, `${razorpay_order_id}|${razorpay_payment_id}`);
+
+    if (!safeEqual(expected, razorpay_signature)) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid Razorpay signature' });
       return;
     }
@@ -320,8 +330,15 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         return;
       }
 
-      if (order.razorpayOrderId && order.razorpayOrderId !== razorpay_order_id) {
+      // The Razorpay order id must be the one WE created for this exact order (with the server-side
+      // amount). Without this, someone could pay for a cheap order and "verify" an expensive one.
+      if (!order.razorpayOrderId || order.razorpayOrderId !== razorpay_order_id) {
         res.status(400).json({ error: 'BAD_REQUEST', message: 'Razorpay order mismatch' });
+        return;
+      }
+
+      if (['REFUNDED', 'CANCELLED'].includes(String(order.status))) {
+        res.status(409).json({ error: 'CONFLICT', message: 'This order can no longer be paid' });
         return;
       }
 
@@ -424,12 +441,12 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
         return;
       }
 
-      if (rental.paidAt || ['RESERVED', 'DISPATCHED', 'ACTIVE', 'COMPLETED'].includes(rental.status)) {
+      if (rental.paidAt || PAID_RENTAL_STATUSES.includes(rental.status)) {
         res.status(400).json({ error: 'ALREADY_PAID', message: 'This rental has already been paid and confirmed.' });
         return;
       }
 
-      if (rental.stripeId && rental.stripeId !== razorpay_order_id) {
+      if (!rental.stripeId || rental.stripeId !== razorpay_order_id) {
         res.status(400).json({ error: 'BAD_REQUEST', message: 'Razorpay order mismatch for rental' });
         return;
       }
@@ -443,7 +460,7 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
           stripeId: razorpay_order_id,
           trackingHistory: [
             ...currentHistory,
-            { status: 'RESERVED', timestamp: new Date().toISOString(), note: 'Payment verified and held safely in escrow. Ready for packaging and dispatch.' }
+            { status: 'RESERVED', timestamp: new Date().toISOString(), note: 'Payment verified and held safely until delivery. Ready to pack and ship.' }
           ],
         },
         include: { garment: true },
@@ -517,27 +534,38 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
  */
 export async function razorpayWebhook(req: Request, res: Response): Promise<void> {
   try {
-    const signature = req.headers['x-razorpay-signature'] as string;
-    if (!signature) {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      // Never accept unsigned webhooks.
+      logger.error('RAZORPAY_WEBHOOK_SECRET is not set; rejecting webhook');
+      res.status(503).json({ error: 'UNAVAILABLE' });
+      return;
+    }
+
+    const signature = req.headers['x-razorpay-signature'];
+    const rawBody: Buffer | undefined = Buffer.isBuffer((req as any).rawBody) ? (req as any).rawBody : undefined;
+    if (typeof signature !== 'string' || !rawBody) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing signature header' });
       return;
     }
 
-    // Verify webhook signature
-    if (WEBHOOK_SECRET) {
-      const expected = crypto
-        .createHmac('sha256', WEBHOOK_SECRET)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
-      if (expected !== signature) {
-        logger.warn('Razorpay webhook signature mismatch');
-        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid signature' });
-        return;
-      }
+    // Signature is computed over the exact bytes Razorpay sent (not re-serialised JSON).
+    if (!safeEqual(hmacHex(webhookSecret, rawBody), signature)) {
+      logger.warn('Razorpay webhook signature mismatch');
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid signature' });
+      return;
     }
 
-    const event = req.body.event;
-    const payload = req.body.payload;
+    let body: any;
+    try {
+      body = JSON.parse(rawBody.toString('utf8'));
+    } catch {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid body' });
+      return;
+    }
+
+    const event = body.event;
+    const payload = body.payload;
 
     logger.info('Razorpay webhook received', { event });
 
@@ -556,8 +584,21 @@ export async function razorpayWebhook(req: Request, res: Response): Promise<void
       });
 
       if (order) {
-        if (order.status === 'CONFIRMED') {
-          res.status(200).json({ status: 'already_confirmed' });
+        if (order.status !== 'PENDING') {
+          // Already confirmed / shipped / refunded: Razorpay retries webhooks, so this must be a no-op.
+          res.status(200).json({ status: 'already_processed' });
+          return;
+        }
+
+        // Amount paid must match what we asked for (paise).
+        const paidPaise = Number(payload?.payment?.entity?.amount ?? payload?.order?.entity?.amount_paid);
+        if (Number.isFinite(paidPaise) && paidPaise !== Math.round(order.totalAmount * 100)) {
+          logger.error('Webhook amount mismatch', {
+            orderId: order.id,
+            expected: Math.round(order.totalAmount * 100),
+            paidPaise,
+          });
+          res.status(200).json({ status: 'amount_mismatch' });
           return;
         }
 
@@ -628,14 +669,15 @@ export async function razorpayWebhook(req: Request, res: Response): Promise<void
       });
 
       if (rental) {
-        if (rental.status === 'ACTIVE') {
-          res.status(200).json({ status: 'already_active' });
+        if (rental.paidAt || PAID_RENTAL_STATUSES.includes(rental.status)) {
+          res.status(200).json({ status: 'already_processed' });
           return;
         }
 
+        // Same state the client-side verify step uses: paid and held in escrow until dispatch.
         await db.rental.update({
           where: { id: rental.id },
-          data: { status: 'ACTIVE' },
+          data: { status: 'RESERVED', paidAt: new Date() },
         });
 
         try {

@@ -1,4 +1,6 @@
-import { resolveApiBaseUrl } from './api';
+import api from './api';
+import { colors } from '../theme';
+import { cleanText } from '../utils/formatText';
 import { setSharedRepairAssessment, RepairResult } from './repairService';
 
 /**
@@ -9,7 +11,7 @@ import { setSharedRepairAssessment, RepairResult } from './repairService';
  * condition-check to the working repair pipeline.
  */
 
-const GLIE_API_URL = resolveApiBaseUrl();
+
 
 export interface GLIERequest {
   garment_id: string;
@@ -106,30 +108,23 @@ export async function assessGarment(
     season: req.season,
   };
 
-  const response = await fetch(`${GLIE_API_URL}/repair/assess`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  // Step 3: COMPUTING SCORE
-  onProgress?.(3);
-
-  if (!response.ok) {
-    const errorBody = await response.text().catch(() => '');
-    throw new Error(
-      `Assessment failed (${response.status}): ${errorBody || response.statusText}`
-    );
+  // Step 3: COMPUTING SCORE (sent through the signed-in API client)
+  let data: any;
+  try {
+    const res = await api.post('/repair/assess', payload, { timeout: 60000 });
+    data = res.data;
+  } catch {
+    // Never show raw server text or JSON to the user
+    throw new Error('We could not check this item right now. Please try again in a moment.');
   }
-
-  const data = await response.json();
+  onProgress?.(3);
 
   // Step 4: DETERMINING ROUTE
   onProgress?.(4);
 
   const glie = data?.data?.glie;
   if (!glie) {
-    throw new Error('Assessment returned an unexpected response.');
+    throw new Error('We could not read the result for this item. Please try again.');
   }
 
   // Cache the complete repair & upcycle data in memory so redirecting to
@@ -139,7 +134,11 @@ export async function assessGarment(
     (glie as any).rawRepairResult = data.data;
   }
 
-  return glie as GLIEResponse;
+  const cleaned = glie as GLIEResponse;
+  cleaned.description = cleanText(cleaned.description, '');
+  cleaned.repair_feasibility = cleanText(cleaned.repair_feasibility, '');
+  cleaned.suggested_repair_technique = cleanText(cleaned.suggested_repair_technique, '');
+  return cleaned;
 }
 
 /**
@@ -147,10 +146,10 @@ export async function assessGarment(
  * Hides the raw score — shows only the grade.
  */
 export function conditionGrade(score: number): { label: string; color: string } {
-  if (score >= 0.85) return { label: 'Excellent', color: '#1E3B2F' };
-  if (score >= 0.65) return { label: 'Good', color: '#C95F12' };
-  if (score >= 0.45) return { label: 'Fair', color: '#4A2E1A' };
-  return { label: 'Poor', color: '#A82222' };
+  if (score >= 0.85) return { label: 'Excellent', color: colors.success };
+  if (score >= 0.65) return { label: 'Good', color: colors.orange };
+  if (score >= 0.45) return { label: 'Fair', color: colors.terracottaDark };
+  return { label: 'Poor', color: colors.error };
 }
 
 /**
@@ -170,32 +169,32 @@ export function routeDisplayInfo(decision: string): {
         emoji: '🔄',
         title: 'Resell',
         subtitle: 'This garment has good resale value. List it on the marketplace.',
-        color: '#1E3B2F',
-        bgColor: '#E8F5E9',
+        color: colors.success,
+        bgColor: colors.emeraldLight,
       };
     case 'UPCYCLE':
       return {
         emoji: '♻️',
         title: 'Upcycle & Repair',
         subtitle: 'Give this garment a new life with a creative transformation.',
-        color: '#C95F12',
-        bgColor: '#FFF3E0',
+        color: colors.orange,
+        bgColor: colors.goldLight,
       };
     case 'RECYCLE':
       return {
         emoji: '♻️',
         title: 'Recycle',
         subtitle: 'This garment has reached end of life. We\'ll help recycle it responsibly.',
-        color: '#A82222',
-        bgColor: '#FFEBEE',
+        color: colors.error,
+        bgColor: colors.crimsonLight,
       };
     default:
       return {
         emoji: '❓',
         title: 'Unknown',
         subtitle: 'Could not determine the best route for this garment.',
-        color: '#666',
-        bgColor: '#F5F5F5',
+        color: colors.textMuted,
+        bgColor: colors.paperLight,
       };
   }
 }

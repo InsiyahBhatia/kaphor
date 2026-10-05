@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, Platform, TextInput, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -13,6 +13,27 @@ import {
   MARKET_CONDITIONS, 
   MARKET_SIZES 
 } from '../../../src/constants/market';
+import { getErrorMessage } from '../../../src/utils/errors';
+
+const ShopGridCard = React.memo(function ShopGridCard({
+  item,
+  onOpen,
+  onBuy,
+}: {
+  item: any;
+  onOpen: (id: string) => void;
+  onBuy: (item: any) => void;
+}) {
+  const press = useCallback(() => onOpen(item.id), [onOpen, item.id]);
+  const buy = useCallback(() => onBuy(item), [onBuy, item]);
+  return (
+    <View style={styles.cardWrapper}>
+      <EditorialGarmentCard item={item} onPress={press} onBuyRequest={buy} style={CARD_STYLE} />
+    </View>
+  );
+});
+
+const CARD_STYLE = { width: '100%', marginRight: 0 } as const;
 
 export default function ShopScreen() {
   const router = useRouter();
@@ -20,10 +41,18 @@ export default function ShopScreen() {
   const SIZES = MARKET_SIZES;
   const CONDITIONS = MARKET_CONDITIONS;
 
-  const { garments, isLoading, fetchError, fetchFeed } = useGarmentStore();
+  const garments = useGarmentStore((s) => s.garments);
+  const isLoading = useGarmentStore((s) => s.isLoading);
+  const fetchError = useGarmentStore((s) => s.fetchError);
+  const fetchFeed = useGarmentStore((s) => s.fetchFeed);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
     categories: [] as string[],
@@ -91,12 +120,12 @@ export default function ShopScreen() {
     }
   };
 
-  const handleBuyRequest = async (item: any) => {
+  const handleBuyRequest = useCallback(async (item: any) => {
     try {
       const order = await orderService.requestPurchase(item.id);
       const orderId = order?.orderId;
       if (!orderId) {
-        throw new Error('Could not initiate purchase request');
+        throw new Error('Could not start the purchase request');
       }
       if (order?.isApproved) {
         router.push({
@@ -116,9 +145,9 @@ export default function ShopScreen() {
         );
       }
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || error?.message || 'Could not submit purchase request. Please try again.');
+      Alert.alert('Error', getErrorMessage(error, 'Could not submit purchase request. Please try again.'));
     }
-  };
+  }, [router]);
 
   const toggleFilter = (type: keyof typeof selectedFilters, value: any) => {
     setSelectedFilters(prev => {
@@ -130,107 +159,33 @@ export default function ShopScreen() {
     });
   };
 
-  const showInitialLoader = isLoading && garments.length === 0;
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const saleItems = useMemo(() => {
+    const hasOtherListings = currentUserId
+      ? garments.some((g) => g.sellerId !== currentUserId && (g as any).seller?.id !== currentUserId)
+      : false;
+    return garments.filter(
+      (item) =>
+        item.listingType === 'SALE' &&
+        item.isActive !== false &&
+        !['OWNERSHIP', 'RESERVED_SALE', 'PURCHASE_INTENT'].includes((item as any).lifecycleState || '') &&
+        !(item as any).reservedOrderId &&
+        (hasOtherListings ? (item.sellerId !== currentUserId && (item as any).seller?.id !== currentUserId) : true)
+    );
+  }, [garments, currentUserId]);
 
-  return (
-    <View style={styles.container}>
-      <EditorialPageHeader
-        title="THE ARCHIVE"
-        subtitle="PRE-LOVED PIECES, NEW BEGINNINGS."
-        eyebrow="BUY & SELL"
-        variant="archive"
-        style={styles.header}
-      >
-        <HandwrittenNote>every piece keeps a story moving.</HandwrittenNote>
-        <View style={styles.headerActionRow}>
-          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            <TouchableOpacity
-              style={styles.aiHeaderBtn}
-              onPress={() => router.push('/(tabs)/shop/ai-chat')}
-              activeOpacity={0.85}
-            >
-              <EditorialIcon name="sparkle" size={20} />
-              <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)}>
-              <EditorialIcon name="filter" size={24} />
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.searchBar}>
-          <Text style={styles.searchPrefix}>{'>'}</Text>
-          <TextInput
-            placeholder="QUERY_DATABASE"
-            placeholderTextColor={colors.textMuted}
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-      </EditorialPageHeader>
+  const keyExtractor = useCallback((item: any) => item.id, []);
+  const openItem = useCallback((id: string) => router.push(`/(tabs)/shop/${id}` as any), [router]);
+  const renderItem = useCallback(
+    ({ item }: { item: any }) => (
+      <ShopGridCard item={item} onOpen={openItem} onBuy={handleBuyRequest} />
+    ),
+    [openItem, handleBuyRequest]
+  );
 
-      {showInitialLoader ? (
-        <GarmentGridSkeleton count={6} />
-      ) : (
-        <View style={{ flex: 1 }}>
-          {isLoading && garments.length > 0 && (
-             <View style={{ height: 2, backgroundColor: colors.red, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }} />
-          )}
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={colors.gold}
-                colors={[colors.gold]}
-              />
-            }
-          >
-            <View style={styles.activeFiltersRow}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {categories.map((cat: string) => {
-                  const isActive = selectedFilters.categories.includes(cat) || (cat === 'ALL' && selectedFilters.categories.length === 0);
-                  return (
-                    <TouchableOpacity
-                      key={cat}
-                      style={[styles.filterChip, isActive && styles.activeChip]}
-                      onPress={() => {
-                        if (cat === 'ALL') {
-                          setSelectedFilters(prev => ({ ...prev, categories: [] }));
-                        } else {
-                          toggleFilter('categories', cat);
-                        }
-                      }}
-                    >
-                      <Text style={[styles.filterText, isActive && styles.activeFilterText]}>{cat}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
+  const renderEmpty = () => {
+    if (isLoading) return <GarmentGridSkeleton count={6} />;
 
-            {(() => {
-              const currentUserId = useAuthStore.getState().user?.id;
-              const hasOtherListings = currentUserId
-                ? garments.some((g) => g.sellerId !== currentUserId && (g as any).seller?.id !== currentUserId)
-                : false;
-              const saleItems = garments.filter(
-                (item) =>
-                  item.listingType === 'SALE' &&
-                  item.isActive !== false &&
-                  !['OWNERSHIP', 'RESERVED_SALE', 'PURCHASE_INTENT'].includes((item as any).lifecycleState || '') &&
-                  !(item as any).reservedOrderId &&
-                  (hasOtherListings ? (item.sellerId !== currentUserId && (item as any).seller?.id !== currentUserId) : true)
-              );
-
-              // Display loading skeleton while network fetch is in progress to avoid flashing empty state
-              if (isLoading && saleItems.length === 0) {
-                return <GarmentGridSkeleton count={6} />;
-              }
-
-              if (saleItems.length === 0) {
                 const hasActiveFilters =
                   searchQuery.trim().length > 0 ||
                   selectedFilters.categories.length > 0 ||
@@ -290,23 +245,100 @@ export default function ShopScreen() {
                     </View>
                   </View>
                 );
-              }
-              return (
-                <View style={styles.grid}>
-                  {saleItems.map((item) => (
-                    <View key={item.id} style={styles.cardWrapper}>
-                      <EditorialGarmentCard
-                        item={item}
-                        onPress={() => router.push(`/(tabs)/shop/${item.id}`)}
-                        onBuyRequest={() => handleBuyRequest(item)}
-                        style={{ width: '100%', marginRight: 0 }}
-                      />
-                    </View>
-                  ))}
-                </View>
-              );
-            })()}
-          </ScrollView>
+  };
+
+  const showInitialLoader = isLoading && garments.length === 0;
+
+  return (
+    <View style={styles.container}>
+      <EditorialPageHeader
+        title="THE SHOP"
+        subtitle="PRE-LOVED PIECES, NEW BEGINNINGS."
+        eyebrow="BUY & SELL"
+        variant="archive"
+        style={styles.header}
+      >
+        <HandwrittenNote>every piece keeps a story moving.</HandwrittenNote>
+        <View style={styles.headerActionRow}>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            <TouchableOpacity
+              style={styles.aiHeaderBtn}
+              onPress={() => router.push('/(tabs)/shop/ai-chat')}
+              activeOpacity={0.85}
+            >
+              <EditorialIcon name="sparkle" size={20} />
+              <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)}>
+              <EditorialIcon name="filter" size={24} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.searchBar}>
+          <Text style={styles.searchPrefix}>{'>'}</Text>
+          <TextInput accessibilityLabel="QUERY_DATABASE"
+            placeholder="QUERY_DATABASE"
+            placeholderTextColor={colors.textMuted}
+            style={styles.searchInput}
+            value={searchInput}
+            onChangeText={setSearchInput}
+          />
+        </View>
+      </EditorialPageHeader>
+
+      {showInitialLoader ? (
+        <GarmentGridSkeleton count={6} />
+      ) : (
+        <View style={{ flex: 1 }}>
+          {isLoading && garments.length > 0 && (
+             <View style={{ height: 2, backgroundColor: colors.red, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }} />
+          )}
+          <FlatList
+            data={saleItems}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            numColumns={2}
+            columnWrapperStyle={styles.columnWrap}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            initialNumToRender={6}
+            maxToRenderPerBatch={6}
+            windowSize={7}
+            removeClippedSubviews={Platform.OS === 'android'}
+            ListHeaderComponent={
+            <View style={styles.activeFiltersRow}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {categories.map((cat: string) => {
+                  const isActive = selectedFilters.categories.includes(cat) || (cat === 'ALL' && selectedFilters.categories.length === 0);
+                  return (
+                    <TouchableOpacity
+                      key={cat}
+                      style={[styles.filterChip, isActive && styles.activeChip]}
+                      onPress={() => {
+                        if (cat === 'ALL') {
+                          setSelectedFilters(prev => ({ ...prev, categories: [] }));
+                        } else {
+                          toggleFilter('categories', cat);
+                        }
+                      }}
+                    >
+                      <Text style={[styles.filterText, isActive && styles.activeFilterText]}>{cat}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+            }
+            ListEmptyComponent={renderEmpty}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.gold}
+                colors={[colors.gold]}
+              />
+            }
+          />
 
           {/* FILTER MODAL OVERLAY */}
           {showFilters && (
@@ -412,9 +444,9 @@ const styles = StyleSheet.create({
   },
   sellText: {
     color: colors.cream,
-    fontSize: 15.5,
-    fontFamily: typography.mono,
-    fontWeight: '700',
+    fontSize: 20,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
   },
   searchBar: {
     flexDirection: 'row',
@@ -441,7 +473,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.charcoal,
     fontSize: 18,
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
   },
   loader: {
     flex: 1,
@@ -450,10 +482,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loadingText: {
-    fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 20,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   filterChip: {
     flexDirection: 'row',
@@ -471,9 +503,9 @@ const styles = StyleSheet.create({
   },
   filterText: {
     color: colors.charcoal,
-    fontSize: 15.5,
-    fontFamily: typography.mono,
-    fontWeight: '700',
+    fontSize: 20,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
   },
   activeFilterText: {
     color: colors.cream,
@@ -494,6 +526,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: 'space-between',
   },
+  columnWrap: { justifyContent: 'space-between', paddingHorizontal: 16 },
+  listContent: { paddingBottom: 100 },
   cardWrapper: {
     width: '48%',
     marginBottom: 24,
@@ -502,9 +536,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.08)',
+    borderColor: colors.overlayLight,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -513,7 +547,7 @@ const styles = StyleSheet.create({
   shopCardImageWrap: {
     width: '100%',
     aspectRatio: 0.8,
-    backgroundColor: '#F3EFE9',
+    backgroundColor: colors.paper,
     position: 'relative',
   },
   shopCardImage: {
@@ -524,17 +558,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     left: 8,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.paperGlass,
     paddingHorizontal: 6,
     paddingVertical: 2.5,
     borderRadius: 3,
   },
   conditionPillText: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   shopCardInfo: {
     padding: 10,
@@ -548,17 +581,16 @@ const styles = StyleSheet.create({
   },
   shopBrand: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.4,
   },
   shopSize: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    fontWeight: '700',
   },
   shopTitle: {
     fontFamily: typography.body,
@@ -600,10 +632,10 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
   },
   swapBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    fontWeight: '700',
   },
   filterToggleBtn: {
     width: 40,
@@ -628,12 +660,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   emptyText: {
-    fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 20,
     color: colors.charcoal,
-    fontWeight: '800',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 25,
     marginTop: 8,
   },
   emptyActionBtn: {
@@ -645,10 +677,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   emptyActionText: {
-    fontFamily: typography.monoBold,
-    fontSize: 14.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.cream,
-    letterSpacing: 1.5,
   },
   emptyFallbackRow: {
     flexDirection: 'row',
@@ -666,13 +698,13 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   emptyFallbackText: {
-    fontFamily: typography.monoBold,
-    fontSize: 13,
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(26,26,26,0.5)',
+    backgroundColor: colors.overlay,
     zIndex: 1000,
     justifyContent: 'flex-end',
   },
@@ -699,11 +731,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalSectionLabel: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.red,
-    fontWeight: '800',
-    letterSpacing: 2,
     marginBottom: 12,
     marginTop: 16,
   },
@@ -723,9 +754,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   modalOptionText: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   modalOptionTextActive: {
@@ -736,7 +767,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(26,26,26,0.1)',
+    borderTopColor: colors.overlayLight,
   },
   resetBtn: {
     flex: 1,
@@ -747,9 +778,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resetBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 15.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 20,
     color: colors.charcoal,
   },
   applyBtn: {
@@ -761,17 +792,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   applyBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 15.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 20,
     color: colors.white,
   },
   modalSubLabel: {
-    fontFamily: typography.mono,
-    fontSize: 12,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: 1.5,
     marginBottom: 8,
     marginTop: 4,
   },
@@ -779,7 +809,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     borderColor: colors.charcoal,
-    shadowColor: '#5C0B12',
+    shadowColor: colors.crimsonDark,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -793,10 +823,9 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   aiHeaderBtnText: {
-    color: '#FFFFFF',
-    fontSize: 10.5,
-    fontWeight: '900',
-    fontFamily: typography.monoBold,
-    letterSpacing: 1,
+    color: colors.white,
+    fontSize: 18,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
   },
 });

@@ -115,7 +115,7 @@ export const DropdownPicker: React.FC<DropdownPickerProps> = ({
           <SafeAreaView style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{label} // REFINEMENT</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => setModalVisible(false)}>
                 <Ionicons name="close-sharp" size={24} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
@@ -139,11 +139,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
-    fontWeight: '800',
-    letterSpacing: 2,
     marginBottom: 8,
   },
   trigger: {
@@ -162,14 +161,14 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   triggerText: {
-    fontFamily: typography.mono,
-    fontSize: 14,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(26,26,26,0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -184,7 +183,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(26,26,26,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   modalTitle: {
     fontFamily: typography.headings,
@@ -201,25 +200,26 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(26,26,26,0.05)',
+    borderBottomColor: colors.overlayLight,
     backgroundColor: colors.cream,
   },
   optionItemActive: {
     backgroundColor: colors.white,
   },
   optionLabel: {
-    fontFamily: typography.mono,
-    fontSize: 14,
+    fontFamily: typography.handSemi,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    fontWeight: '600',
   },
   optionLabelActive: {
     color: colors.red,
     fontWeight: '800',
   },
   optionDesc: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginTop: 4,
   },
@@ -229,10 +229,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   headerText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.white,
-    fontWeight: '800',
-    letterSpacing: 2,
   },
 });

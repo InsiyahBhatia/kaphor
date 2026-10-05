@@ -69,3 +69,60 @@ kaphor-frontend/scripts/*.png
 kaphor-frontend/scripts/labeled_*/
 kaphor-frontend/scripts/preview_*/
 kaphor-frontend/scripts/slices/
+
+# ── Added for production hardening ─────────────────────────────
+# Original sticker sheets and old crops used to cut out design elements (large, not shipped)
+kaphor-frontend/assets/_source/
+
+# Build and bundle output
+kaphor-frontend/dist/
+kaphor-frontend/web-build/
+kaphor-frontend/.expo/
+kaphor-frontend/.expo-shared/
+**/*.tsbuildinfo
+kaphor/backend/dist/
+kaphor/backend/coverage/
+coverage/
+
+# User uploads made while running locally (the sample rental photos stay tracked)
+kaphor/backend/uploads/garments/
+kaphor/backend/uploads/profiles/
+kaphor/backend/uploads/glie-temp/
+
+# Secrets and keys (never commit these)
+.env*
+!.env.example
+**/.env.*
+!**/.env.example
+*.keystore
+*.jks
+*.p12
+*.p8
+*.mobileprovision
+**/firebase-service-account*.json
+**/*-firebase-adminsdk-*.json
+**/serviceAccount*.json
+**/service-account*.json
+credentials.json
+
+# Local tools, editors and OS files
+.claude/
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Python scratch (asset scripts)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Logs and temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+tmp/
+temp/

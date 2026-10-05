@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../../src/components/common/Button';
 import { Badge } from '../../../src/components/Badge';
 import { garmentService } from '../../../src/services/garmentService';
-import { Garment } from '../../../src/store/garmentStore';
+import { Garment, useGarmentStore } from '../../../src/store/garmentStore';
 import { useAuth } from '../../../src/context/AuthContext';
 import { useAuthStore } from '../../../src/store/authStore';
 import api from '../../../src/services/api';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { KaphorImage, getCategoryFallbackImage } from '../../../src/components/KaphorImage';
 import { messageService } from '../../../src/services/messageService';
@@ -21,6 +20,7 @@ import { getFormattedGarmentPrice } from '../../../src/utils/priceFormatter';
 import { telemetryService } from '../../../src/services/telemetryService';
 import { recommendationService, RecommendedGarment } from '../../../src/services/recommendationService';
 import { ListingInsightsModal } from '../../../src/components/ListingInsightsModal';
+import { Spinner, Loader } from '../../../src/components/common/Loader';
 
 const { width } = Dimensions.get('window');
 
@@ -31,8 +31,10 @@ export default function GarmentDetailScreen() {
   const { user } = useAuth();
   const authStoreUserId = useAuthStore((s) => s.user?.id);
   useBackHandler('/(tabs)/shop');
-  const [garment, setGarment] = useState<Garment | any>(null);
-  const [loading, setLoading] = useState(true);
+  // Seed from the feed cache so the page appears instantly, then revalidate in the background
+  const seeded = useGarmentStore.getState().garments.find((g) => g.id === (id as string));
+  const [garment, setGarment] = useState<Garment | any>(seeded ?? null);
+  const [loading, setLoading] = useState(!seeded);
   const [startingInquiry, setStartingInquiry] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [togglingLike, setTogglingLike] = useState(false);
@@ -52,7 +54,7 @@ export default function GarmentDetailScreen() {
   }, [id]);
 
   const loadGarment = async () => {
-    setLoading(true);
+    if (!garment) setLoading(true);
     try {
       const data = await garmentService.getGarmentById(id as string);
       setGarment(data);
@@ -82,7 +84,7 @@ export default function GarmentDetailScreen() {
       const orderData = data?.data || data;
       const orderId = orderData?.orderId || orderData?.id;
       if (!orderId) {
-        throw new Error('Could not initiate order session');
+        throw new Error('Could not start the order session');
       }
 
       if (orderData?.isApproved) {
@@ -161,7 +163,7 @@ export default function GarmentDetailScreen() {
   };
 
   if (loading) {
-    return <DossierLoading variant="shop" />;
+    return <Loader variant="shop" />;
   }
 
   if (!garment) {
@@ -171,14 +173,14 @@ export default function GarmentDetailScreen() {
           GARMENT NOT FOUND
         </Text>
         <Text style={{ color: colors.textMuted, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 }}>
-          This asset may have been transferred or archived in another collection.
+          This item may have been removed or moved.
         </Text>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={{ marginTop: 24, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: colors.charcoal, borderRadius: 8 }}
         >
-          <Text style={{ color: colors.cream, fontWeight: '700' }}>RETURN TO ARCHIVE</Text>
+          <Text style={{ color: colors.cream, fontWeight: '700' }}>BACK TO SHOP</Text>
         </TouchableOpacity>
       </View>
     );
@@ -221,14 +223,16 @@ export default function GarmentDetailScreen() {
               brand={garment.brand}
               style={styles.image}
               contentFit="contain"
+              width={500}
+              priority="high"
             />
             <View style={styles.zoomHintBadge}>
-              <Ionicons name="expand-outline" size={14} color="#FFFFFF" />
+              <Ionicons name="expand-outline" size={14} color={colors.white} />
               <Text style={styles.zoomHintText}>TAP TO ZOOM</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
             style={[styles.backButton, { top: topInset }]} 
             onPress={() => safeBack('/(tabs)/shop')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -236,8 +240,8 @@ export default function GarmentDetailScreen() {
             <Ionicons name="chevron-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.wishlistButton, { top: topInset }, isLiked && { backgroundColor: 'rgba(155, 27, 48, 0.1)' }]} 
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Button" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} 
+            style={[styles.wishlistButton, { top: topInset }, isLiked && { backgroundColor: colors.crimsonLight }]} 
             onPress={handleToggleLike}
             disabled={togglingLike}
           >
@@ -270,6 +274,7 @@ export default function GarmentDetailScreen() {
                   brand={garment.brand}
                   style={styles.thumbImg} 
                   contentFit="cover" 
+                  width={64}
                 />
               </TouchableOpacity>
             ))}
@@ -285,12 +290,12 @@ export default function GarmentDetailScreen() {
           statusBarTranslucent
         >
           <View style={styles.zoomModalBackdrop}>
-            <TouchableOpacity 
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" 
               style={[styles.closeZoomBtn, { top: Math.max(insets.top + 10, 44) }]}
               onPress={() => setZoomVisible(false)}
               hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
             >
-              <Ionicons name="close" size={28} color="#FFFFFF" />
+              <Ionicons name="close" size={28} color={colors.white} />
             </TouchableOpacity>
             <View style={styles.zoomImageContainer}>
               <KaphorImage
@@ -299,6 +304,7 @@ export default function GarmentDetailScreen() {
                 brand={garment.brand}
                 style={styles.zoomFullImage}
                 contentFit="contain"
+                width={800}
               />
             </View>
           </View>
@@ -308,9 +314,9 @@ export default function GarmentDetailScreen() {
           {/* Header Title & Pricing */}
           <View style={styles.header}>
             <View style={{ flex: 1, marginRight: 16 }}>
-              <Text style={styles.brand}>{garment.brand || 'KAPHOR ARCHIVE'}</Text>
+              <Text style={styles.brand}>{garment.brand || 'KAPHOR SHOP'}</Text>
               <Text style={styles.categoryLabel}>
-                {(garment.category || 'ARCHIVE').toUpperCase()} {garment.subCategory ? `> ${garment.subCategory.toUpperCase()}` : ''}
+                {(garment.category || 'ITEM').toUpperCase()} {garment.subCategory ? `> ${garment.subCategory.toUpperCase()}` : ''}
               </Text>
               <Text style={styles.title}>{garment.title}</Text>
             </View>
@@ -367,7 +373,7 @@ export default function GarmentDetailScreen() {
             <Ionicons 
               name={priceData.isSwap ? "repeat" : priceData.isRental ? "calendar-outline" : "shield-checkmark-outline"} 
               size={14} 
-              color={priceData.isSwap ? colors.crimson : priceData.isRental ? "#2E7D32" : colors.charcoal} 
+              color={priceData.isSwap ? colors.crimson : priceData.isRental ? colors.forest : colors.charcoal} 
             />
             <Text style={styles.subtextText}>{priceData.subtext}</Text>
           </View>
@@ -376,7 +382,7 @@ export default function GarmentDetailScreen() {
           <View style={styles.badges}>
             <Badge 
               variant={priceData.isSwap ? "condition" : priceData.isRental ? "status" : "fitScore"} 
-              label={priceData.isSwap ? "CIRCULAR SWAP" : priceData.isRental ? "HERITAGE RENTAL" : "AUTHENTICATED ARCHIVE"} 
+              label={priceData.isSwap ? "CIRCULAR SWAP" : priceData.isRental ? "RENTAL" : "CHECKED ITEM"} 
             />
             <Badge 
               variant="condition" 
@@ -392,7 +398,7 @@ export default function GarmentDetailScreen() {
           <View style={styles.infoSection}>
             <Text style={styles.sectionTitle}>DESCRIPTION</Text>
             <Text style={styles.description}>
-              {garment.description || 'Authentic heritage piece inspected and preserved in the Kaphor circular fashion archive.'}
+              {garment.description || 'A checked pre-owned piece from Kaphor.'}
             </Text>
 
             <TouchableOpacity 
@@ -402,18 +408,18 @@ export default function GarmentDetailScreen() {
                 params: { garmentId: id, initialMessage: `I have questions about this ${garment.title}. Can you explain its material, styling, and condition?` }
               })}
             >
-              <Ionicons name="sparkles" size={18} color="#C9A84C" />
+              <Ionicons name="sparkles" size={18} color={colors.gold} />
               <Text style={styles.aiDoubtText}>DOUBTS? ASK KAPHOR AI ASSISTANT</Text>
             </TouchableOpacity>
           </View>
 
           {/* Rich Full Specifications Grid */}
           <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>SPECIFICATIONS & MANIFEST</Text>
+            <Text style={styles.sectionTitle}>DETAILS</Text>
             <View style={styles.specGrid}>
               <View style={styles.specItem}>
                 <Text style={styles.specLabel}>BRAND</Text>
-                <Text style={styles.specValue}>{garment.brand || 'Kaphor Curated Archive'}</Text>
+                <Text style={styles.specValue}>{garment.brand || 'Kaphor'}</Text>
               </View>
 
               <View style={styles.specItem}>
@@ -441,20 +447,20 @@ export default function GarmentDetailScreen() {
               <View style={styles.specItem}>
                 <Text style={styles.specLabel}>SUB-CATEGORY</Text>
                 <Text style={styles.specValue}>
-                  {garment.subCategory || (garment.category === 'Jewelry' ? 'Jewelry & Accessories' : 'Curated Archive')}
+                  {garment.subCategory || (garment.category === 'Jewelry' ? 'Jewelry & Accessories' : 'Pre-owned')}
                 </Text>
               </View>
 
               <View style={styles.specItem}>
                 <Text style={styles.specLabel}>FABRIC / MATERIAL</Text>
                 <Text style={styles.specValue}>
-                  {garment.fabric || cleanMaterials || (garment.category === 'Jewelry' ? 'Metallic / Artisanal Alloy' : 'Premium Textile Blend')}
+                  {garment.fabric || cleanMaterials || (garment.category === 'Jewelry' ? 'Metal / mixed' : 'Mixed fabric')}
                 </Text>
               </View>
 
               <View style={styles.specItem}>
                 <Text style={styles.specLabel}>COLORWAY</Text>
-                <Text style={styles.specValue}>{cleanColors || 'Curated Heritage Tone'}</Text>
+                <Text style={styles.specValue}>{cleanColors || 'Classic color'}</Text>
               </View>
 
               <View style={styles.specItem}>
@@ -476,7 +482,7 @@ export default function GarmentDetailScreen() {
 
               <View style={styles.specItem}>
                 <Text style={styles.specLabel}>PATTERN</Text>
-                <Text style={styles.specValue}>{garment.pattern || 'Solid / Artisanal Weave'}</Text>
+                <Text style={styles.specValue}>{garment.pattern || 'Solid / woven'}</Text>
               </View>
 
               <View style={styles.specItem}>
@@ -504,7 +510,7 @@ export default function GarmentDetailScreen() {
               if (sellerId) {
                 router.push(`/(tabs)/shop/seller/${sellerId}`);
               } else {
-                Alert.alert('Seller Profile', 'This garment is curated directly by the Kaphor Archive.');
+                Alert.alert('Seller Profile', 'This item is sold by Kaphor.');
               }
             }}
             activeOpacity={0.85}
@@ -532,7 +538,7 @@ export default function GarmentDetailScreen() {
               disabled={startingInquiry}
             >
               {startingInquiry ? (
-                <ActivityIndicator size="small" color={colors.crimson} />
+                <Spinner size="small" color={colors.crimson} />
               ) : (
                 <>
                   <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.crimson} />
@@ -550,7 +556,7 @@ export default function GarmentDetailScreen() {
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={styles.noticeTitle}>CIRCULAR SWAP ACTIVE</Text>
                   <Text style={styles.noticeDesc}>
-                    Exchange one of your owned accessories with this item without cash transaction. Escrow protected.
+                    Swap one of your accessories for this item. No cash needed. Payment held safely.
                   </Text>
                 </View>
               </View>
@@ -558,9 +564,9 @@ export default function GarmentDetailScreen() {
 
             {priceData.isRental && (
               <View style={styles.rentalNoticeCard}>
-                <Ionicons name="calendar-outline" size={24} color="#2E7D32" />
+                <Ionicons name="calendar-outline" size={24} color={colors.forest} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[styles.noticeTitle, { color: '#2E7D32' }]}>HERITAGE RENTAL AVAILABLE</Text>
+                  <Text style={[styles.noticeTitle, { color: colors.forest }]}>RENTAL AVAILABLE</Text>
                   <Text style={styles.noticeDesc}>
                     Book this piece for weddings, galas, and special occasions with doorstep hygiene care.
                   </Text>
@@ -574,7 +580,7 @@ export default function GarmentDetailScreen() {
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={styles.saleInfoText}>AUTHENTICATED SALE · FULL OWNERSHIP</Text>
                   <Text style={styles.saleInfoSub}>
-                    Direct physical dispatch with tamper-evident authentication seal.
+                    Shipped to you in a sealed package.
                   </Text>
                 </View>
               </View>
@@ -606,13 +612,13 @@ export default function GarmentDetailScreen() {
                     >
                       <View style={{ height: 155, width: '100%', position: 'relative' }}>
                         {item.images?.[0] ? (
-                          <Image source={{ uri: item.images[0] }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                          <KaphorImage uri={item.images[0]} style={StyleSheet.absoluteFillObject as any} contentFit="cover" width={145} recyclingKey={item.id} />
                         ) : (
                           <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgMuted }]} />
                         )}
                       </View>
                       <View style={{ padding: 8 }}>
-                        <Text style={{ fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted }} numberOfLines={1}>
+                        <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.textMuted }} numberOfLines={1}>
                           {item.brand.toUpperCase()}
                         </Text>
                         <Text style={{ fontFamily: typography.body, fontSize: 12, fontWeight: '700', color: colors.charcoal, marginTop: 2 }} numberOfLines={1}>
@@ -657,7 +663,7 @@ export default function GarmentDetailScreen() {
               <TouchableOpacity
                 style={styles.deleteBtnSmall}
                 onPress={async () => {
-                  Alert.alert('Delete Asset', 'Confirm permanent removal from the archive deck?', [
+                  Alert.alert('Delete Asset', 'Remove this item for good?', [
                     { text: 'CANCEL', style: 'cancel' },
                     { text: 'DELETE', style: 'destructive', onPress: async () => {
                       try {
@@ -691,7 +697,7 @@ export default function GarmentDetailScreen() {
             />
           ) : (
             <Button
-              title={isOwner ? "OWNED BY YOU" : "INITIATE ACCESSORY SWAP"}
+              title={isOwner ? "OWNED BY YOU" : "START ACCESSORY SWAP"}
               onPress={() => router.push(`/(tabs)/swap/${id}`)}
               style={{ flex: 1 }}
               disabled={Boolean(isOwner)}
@@ -731,10 +737,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.paperGlass,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -746,10 +752,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.paperGlass,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -774,10 +780,9 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     color: colors.textMuted,
-    fontSize: 10,
-    fontFamily: typography.mono,
-    letterSpacing: 1.5,
-    fontWeight: '800',
+    fontSize: 17,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
     marginBottom: 4,
   },
   title: {
@@ -817,36 +822,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    backgroundColor: colors.crimsonLight,
   },
   discountTagText: {
-    fontSize: 9,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontSize: 17,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
     color: colors.crimson,
-    letterSpacing: 0.5,
   },
   swapDiscountBadge: {
-    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+    backgroundColor: colors.goldLight,
   },
   swapDiscountText: {
-    color: '#8C6F1E',
+    color: colors.goldDark,
   },
   subtextRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 20,
-    backgroundColor: 'rgba(26,26,26,0.03)',
+    backgroundColor: colors.overlayLight,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   },
   subtextText: {
-    fontSize: 11,
+    fontSize: 17,
     color: colors.textSecond,
-    fontFamily: typography.mono,
-    letterSpacing: 0.3,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
   },
   badges: {
     flexDirection: 'row',
@@ -896,27 +900,26 @@ const styles = StyleSheet.create({
   swapNoticeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(155, 27, 48, 0.05)',
+    backgroundColor: colors.crimsonLight,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(155, 27, 48, 0.2)',
+    borderColor: colors.crimsonLight,
   },
   rentalNoticeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(46, 125, 50, 0.05)',
+    backgroundColor: colors.emeraldLight,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(46, 125, 50, 0.2)',
+    borderColor: colors.emeraldLight,
   },
   noticeTitle: {
-    fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '900',
+    fontSize: 17,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
     color: colors.crimson,
-    letterSpacing: 1,
   },
   noticeDesc: {
     fontSize: 12,
@@ -934,7 +937,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: colors.bg,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -954,7 +957,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: colors.crimson,
-    backgroundColor: 'rgba(155, 27, 48, 0.03)',
+    backgroundColor: colors.crimsonLight,
     marginBottom: 20,
   },
   messageSellerText: {
@@ -974,13 +977,13 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 16,
     padding: 12,
-    backgroundColor: 'rgba(201,168,76,0.08)',
+    backgroundColor: colors.goldLight,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(201,168,76,0.2)',
+    borderColor: colors.goldLight,
   },
   aiDoubtText: {
-    color: '#C9A84C',
+    color: colors.gold,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
@@ -989,23 +992,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(26,26,26,0.05)',
+    backgroundColor: colors.overlayLight,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.1)',
+    borderColor: colors.overlayLight,
   },
   managerText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    fontWeight: '800',
-    letterSpacing: 1,
   },
   editBtnSmall: {
-    backgroundColor: 'rgba(201, 168, 76, 0.12)',
+    backgroundColor: colors.goldLight,
     borderWidth: 1,
     borderColor: colors.gold,
     paddingHorizontal: 10,
@@ -1017,30 +1019,30 @@ const styles = StyleSheet.create({
   },
   editTextSmall: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   deleteBtnSmall: {
-    backgroundColor: 'rgba(155, 27, 48, 0.1)',
+    backgroundColor: colors.crimsonLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
   deleteTextSmall: {
     color: colors.crimson,
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   saleInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(52, 199, 89, 0.05)',
+    backgroundColor: colors.emeraldLight,
     padding: 16,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(52, 199, 89, 0.2)',
+    borderColor: colors.emeraldLight,
   },
   saleInfoText: {
     color: colors.success,
@@ -1061,18 +1063,17 @@ const styles = StyleSheet.create({
   },
   specItem: {
     width: '48%',
-    backgroundColor: 'rgba(26,26,26,0.02)',
+    backgroundColor: colors.overlayLight,
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.06)',
+    borderColor: colors.overlayLight,
   },
   specLabel: {
-    fontSize: 8,
-    fontFamily: typography.mono,
+    fontSize: 17,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
     color: colors.textMuted,
-    fontWeight: '800',
-    letterSpacing: 1,
     marginBottom: 4,
   },
   specValue: {
@@ -1085,7 +1086,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 12,
     right: 12,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: colors.overlay,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -1094,11 +1095,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   zoomHintText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontFamily: typography.mono,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: colors.white,
+    fontSize: 17,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
   },
   thumbScroll: {
     backgroundColor: colors.bgCard,
@@ -1127,7 +1127,7 @@ const styles = StyleSheet.create({
   },
   zoomModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.95)',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1135,7 +1135,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: colors.overlayLight,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -1156,9 +1156,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(201, 168, 76, 0.08)',
+    backgroundColor: colors.goldLight,
     borderWidth: 1,
-    borderColor: 'rgba(201, 168, 76, 0.3)',
+    borderColor: colors.goldLight,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -1173,16 +1173,15 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+    backgroundColor: colors.goldLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sellerBannerTitle: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   sellerBannerSub: {
     color: colors.textMuted,
@@ -1195,26 +1194,25 @@ const styles = StyleSheet.create({
   },
   sellerBannerActionText: {
     color: colors.gold,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   insightsBtnSmall: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+    backgroundColor: colors.goldLight,
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(201, 168, 76, 0.3)',
+    borderColor: colors.goldLight,
   },
   insightsTextSmall: {
     color: colors.gold,
-    fontSize: 10,
-    fontWeight: '800',
-    fontFamily: typography.mono,
+    fontSize: 17,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
   },
 });

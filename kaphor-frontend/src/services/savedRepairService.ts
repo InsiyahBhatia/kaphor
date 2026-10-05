@@ -1,24 +1,23 @@
 /**
- * Saved Repair Sessions Service
+ * Saved Repair Items
  *
- * Persists saved repair guides and YouTube tutorials to AsyncStorage
- * so users can bookmark sessions to their profile for later reference.
+ * Keeps saved YouTube tutorials and blog posts on the device (AsyncStorage)
+ * so people can come back to them later.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { T5GuideResult, YouTubeVideo } from './repairService';
+import { BlogArticle, T5GuideResult, YouTubeVideo } from './repairService';
 
 const STORAGE_KEY = '@kaphor/saved_repair_sessions';
 
 export interface SavedRepairItem {
   id: string;
   savedAt: string;
+  // Blog posts are stored as 'guide' items (title, source and link only)
   type: 'guide' | 'youtube';
   garmentLabel?: string;
   damageTypes?: string[];
-  // Guide-specific
   guide?: T5GuideResult;
-  // YouTube-specific
   video?: YouTubeVideo;
 }
 
@@ -26,9 +25,12 @@ interface SavedRepairStore {
   items: SavedRepairItem[];
 }
 
-/**
- * Load all saved repair items from AsyncStorage
- */
+async function writeItems(items: SavedRepairItem[]): Promise<void> {
+  const store: SavedRepairStore = { items };
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+/** Load all saved items */
 export async function loadSavedRepairs(): Promise<SavedRepairItem[]> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -40,121 +42,76 @@ export async function loadSavedRepairs(): Promise<SavedRepairItem[]> {
   }
 }
 
-/**
- * Check if a specific guide or video is saved
- */
+/** Is this item saved? */
 export async function isRepairSaved(id: string): Promise<boolean> {
   const items = await loadSavedRepairs();
   return items.some((i) => i.id === id);
 }
 
-/**
- * Save a repair guide to local storage
- */
-async function saveRepairGuide(
-  guide: T5GuideResult,
-  garmentLabel?: string,
-  damageTypes?: string[],
-): Promise<void> {
-  const items = await loadSavedRepairs();
-  const id = `guide-${guide.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .slice(0, 48)}`;
-
-  // Don't duplicate
-  if (items.some((i) => i.id === id)) return;
-
-  const newItem: SavedRepairItem = {
-    id,
-    savedAt: new Date().toISOString(),
-    type: 'guide',
-    garmentLabel,
-    damageTypes,
-    guide,
-  };
-
-  const updated: SavedRepairStore = { items: [newItem, ...items] };
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-}
-
-/**
- * Save a YouTube tutorial to local storage
- */
-async function saveRepairYouTube(
-  video: YouTubeVideo,
-  garmentLabel?: string,
-  damageTypes?: string[],
-): Promise<void> {
-  const items = await loadSavedRepairs();
-  const id = `yt-${video.videoId}`;
-
-  // Don't duplicate
-  if (items.some((i) => i.id === id)) return;
-
-  const newItem: SavedRepairItem = {
-    id,
-    savedAt: new Date().toISOString(),
-    type: 'youtube',
-    garmentLabel,
-    damageTypes,
-    video,
-  };
-
-  const updated: SavedRepairStore = { items: [newItem, ...items] };
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-}
-
-/**
- * Remove a saved repair item by id
- */
+/** Remove a saved item */
 export async function removeSavedRepair(id: string): Promise<void> {
   const items = await loadSavedRepairs();
-  const updated: SavedRepairStore = {
-    items: items.filter((i) => i.id !== id),
-  };
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  await writeItems(items.filter((i) => i.id !== id));
 }
 
-/**
- * Toggle save state for a guide
- */
-export async function toggleSaveGuide(
-  guide: T5GuideResult,
-  garmentLabel?: string,
-  damageTypes?: string[],
-): Promise<{ saved: boolean; id: string }> {
-  const id = `guide-${guide.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .slice(0, 48)}`;
-
-  const isSaved = await isRepairSaved(id);
-  if (isSaved) {
-    await removeSavedRepair(id);
-    return { saved: false, id };
-  } else {
-    await saveRepairGuide(guide, garmentLabel, damageTypes);
-    return { saved: true, id };
+/** Save or unsave an item. Returns the new state. */
+async function toggleItem(item: Omit<SavedRepairItem, 'savedAt'>): Promise<{ saved: boolean; id: string }> {
+  const items = await loadSavedRepairs();
+  if (items.some((i) => i.id === item.id)) {
+    await writeItems(items.filter((i) => i.id !== item.id));
+    return { saved: false, id: item.id };
   }
+  await writeItems([{ ...item, savedAt: new Date().toISOString() }, ...items]);
+  return { saved: true, id: item.id };
 }
 
-/**
- * Toggle save state for a YouTube video
- */
-export async function toggleSaveYouTube(
+export function youtubeSaveId(video: YouTubeVideo): string {
+  return `yt-${video.videoId}`;
+}
+
+export function blogSaveId(blog: BlogArticle): string {
+  return `blog-${blog.id}`;
+}
+
+export function guideSaveId(guide: T5GuideResult): string {
+  return `guide-${guide.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48)}`;
+}
+
+/** Save or unsave a YouTube video */
+export function toggleSaveYouTube(
   video: YouTubeVideo,
   garmentLabel?: string,
   damageTypes?: string[],
-): Promise<{ saved: boolean; id: string }> {
-  const id = `yt-${video.videoId}`;
+) {
+  return toggleItem({ id: youtubeSaveId(video), type: 'youtube', garmentLabel, damageTypes, video });
+}
 
-  const isSaved = await isRepairSaved(id);
-  if (isSaved) {
-    await removeSavedRepair(id);
-    return { saved: false, id };
-  } else {
-    await saveRepairYouTube(video, garmentLabel, damageTypes);
-    return { saved: true, id };
-  }
+/** Save or unsave a blog post */
+export function toggleSaveBlog(
+  blog: BlogArticle,
+  mode: 'repair' | 'upcycle',
+  garmentLabel?: string,
+  damageTypes?: string[],
+) {
+  const guide: T5GuideResult = {
+    doc_type: mode,
+    title: blog.title,
+    difficulty: blog.difficulty,
+    time_minutes: blog.time_minutes ?? 30,
+    technique_style: blog.source,
+    tools_required: [],
+    steps: [],
+    source: 'blog',
+    source_url: blog.url,
+  };
+  return toggleItem({ id: blogSaveId(blog), type: 'guide', garmentLabel, damageTypes, guide });
+}
+
+/** Save or unsave a guide (older saved items) */
+export function toggleSaveGuide(
+  guide: T5GuideResult,
+  garmentLabel?: string,
+  damageTypes?: string[],
+) {
+  return toggleItem({ id: guideSaveId(guide), type: 'guide', garmentLabel, damageTypes, guide });
 }

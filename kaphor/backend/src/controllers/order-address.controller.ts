@@ -11,19 +11,48 @@ export async function setOrderShippingAddress(req: AuthRequest, res: Response): 
     if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
     const { orderId } = req.params;
-    const { addressId, address: inlineAddress } = req.body as {
-      addressId?: string;
-      address?: {
-        fullName: string;
-        phone: string;
-        line1: string;
-        line2?: string | null;
-        landmark?: string | null;
-        city: string;
-        state: string;
-        pincode: string;
-      };
+    const { addressId, address: rawInline } = (req.body || {}) as {
+      addressId?: unknown;
+      address?: unknown;
     };
+
+    if (addressId !== undefined && addressId !== null && (typeof addressId !== 'string' || addressId.length > 64)) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid addressId' });
+      return;
+    }
+
+    // Validate + whitelist inline address fields
+    const str = (v: unknown, max: number, required: boolean): string | null | undefined => {
+      if (v === undefined || v === null || v === '') return required ? undefined : null;
+      if (typeof v !== 'string') return undefined;
+      const t = v.trim();
+      if (!t) return required ? undefined : null;
+      if (t.length > max) return undefined;
+      return t;
+    };
+    let inlineAddress:
+      | { fullName: string; phone: string; line1: string; line2: string | null; landmark: string | null; city: string; state: string; pincode: string }
+      | undefined;
+    if (!addressId && rawInline !== undefined && rawInline !== null) {
+      if (typeof rawInline !== 'object' || Array.isArray(rawInline)) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid address' });
+        return;
+      }
+      const a = rawInline as Record<string, unknown>;
+      const fullName = str(a.fullName, 100, true);
+      const phone = str(a.phone, 20, true);
+      const line1 = str(a.line1, 200, true);
+      const line2 = str(a.line2, 200, false);
+      const landmark = str(a.landmark, 200, false);
+      const city = str(a.city, 100, true);
+      const state = str(a.state, 100, true);
+      const pincode = str(a.pincode, 10, true);
+      if (!fullName || !phone || !line1 || !city || !state || !pincode || line2 === undefined || landmark === undefined) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid address fields' });
+        return;
+      }
+      inlineAddress = { fullName, phone, line1, line2, landmark, city, state, pincode };
+    }
 
     // Verify order ownership
     const order = await db.order.findUnique({
@@ -74,8 +103,8 @@ export async function setOrderShippingAddress(req: AuthRequest, res: Response): 
         fullName: inlineAddress.fullName,
         phone: inlineAddress.phone,
         line1: inlineAddress.line1,
-        line2: inlineAddress.line2 ?? null,
-        landmark: inlineAddress.landmark ?? null,
+        line2: inlineAddress.line2,
+        landmark: inlineAddress.landmark,
         city: inlineAddress.city,
         state: inlineAddress.state,
         pincode: inlineAddress.pincode,
@@ -86,14 +115,18 @@ export async function setOrderShippingAddress(req: AuthRequest, res: Response): 
       return;
     }
 
-    const updated = await db.order.update({
-      where: { id: orderId },
+    const result = await db.order.updateMany({
+      where: { id: orderId, buyerId: req.user.id, status: 'PENDING' },
       data: { shippingAddress: shippingAddress as any },
     });
+    if (result.count === 0) {
+      res.status(409).json({ error: 'CONFLICT', message: 'Order is no longer pending' });
+      return;
+    }
 
     res.json({
       data: {
-        orderId: updated.id,
+        orderId: order.id,
         shippingAddress,
       },
     });

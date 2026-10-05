@@ -1,15 +1,39 @@
 import db, { prisma } from '../lib/prisma';
-import { signAccessToken, signRefreshToken } from '../utils/jwt';
+import { signAccessToken, signRefreshToken, hashToken } from '../utils/jwt';
 import { auditLog } from './audit.service';
 import crypto from 'crypto';
 import { Request } from 'express';
 import { logger } from '../lib/logger';
 import { OAuth2Client } from 'google-auth-library';
 
-const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '1091661686962-8v9tqlipbm6jf3gom0bg4q8rj4q41m7v.apps.googleusercontent.com';
-const googleClient = new OAuth2Client(googleWebClientId);
+// Google OAuth client IDs are public identifiers (not secrets). The audience check below makes sure
+// an ID token was issued for OUR app and not for some other app.
+const LEGACY_DEFAULT_GOOGLE_CLIENT_ID = '1091661686962-8v9tqlipbm6jf3gom0bg4q8rj4q41m7v.apps.googleusercontent.com';
 
-const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
+function getGoogleAudiences(): string[] {
+  const fromEnv = [
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  ].filter(Boolean) as string[];
+  return fromEnv.length ? fromEnv : [LEGACY_DEFAULT_GOOGLE_CLIENT_ID];
+}
+
+const googleClient = new OAuth2Client();
+
+export const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Stores a refresh token. Only its SHA-256 hash is saved, so a database leak cannot be replayed. */
+export async function persistRefreshToken(userId: string, refreshToken: string) {
+  await db.refreshToken.create({
+    data: {
+      token: hashToken(refreshToken, 'refresh'),
+      userId,
+      expiresAt: new Date(Date.now() + REFRESH_EXPIRES_MS),
+    },
+  });
+}
 
 function userPayload(user: {
   id: string;
@@ -32,17 +56,9 @@ function userPayload(user: {
 export async function googleLoginUser(idToken: string, req?: Request) {
   let payload: any;
   try {
-    const audiences = [
-      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-      '1091661686962-8v9tqlipbm6jf3gom0bg4q8rj4q41m7v.apps.googleusercontent.com',
-    ].filter(Boolean) as string[];
-
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: audiences,
+      audience: getGoogleAudiences(),
     });
     payload = ticket.getPayload();
   } catch (err: any) {
@@ -56,12 +72,15 @@ export async function googleLoginUser(idToken: string, req?: Request) {
   if (!email) {
     throw new Error('Google account has no email');
   }
+  // Never trust an email Google has not verified: it could be used to take over an existing account.
+  if (payload.email_verified !== true) {
+    throw new Error('Google email is not verified');
+  }
 
   let user = await prisma.user.findFirst({
     where: { OR: [{ googleId }, { email: email.toLowerCase() }] },
   });
 
-  const isAdminEmail = email.toLowerCase() === 'kaphor.team@gmail.com';
   let isNewUser = false;
 
   if (!user) {
@@ -80,7 +99,7 @@ export async function googleLoginUser(idToken: string, req?: Request) {
         styleVector,
         isActive: true,
         isVerified: true,
-        role: isAdminEmail ? 'ADMIN' : 'BOTH',
+        role: 'BOTH', // admins are promoted by hand in the database, never automatically
       },
     });
     await db.impactRecord.create({
@@ -94,14 +113,10 @@ export async function googleLoginUser(idToken: string, req?: Request) {
       },
     });
     await auditLog({ userId: user.id, action: 'USER_REGISTER_OAUTH', resource: 'User', req });
-  } else if (!user.googleId || (isAdminEmail && user.role !== 'ADMIN')) {
+  } else if (!user.googleId) {
     user = await prisma.user.update({
       where: { id: user.id },
-      data: {
-        googleId,
-        isVerified: true,
-        ...(isAdminEmail ? { role: 'ADMIN' } : {}),
-      },
+      data: { googleId, isVerified: true },
     });
   }
 
@@ -112,9 +127,7 @@ export async function googleLoginUser(idToken: string, req?: Request) {
   const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role });
   const refreshToken = signRefreshToken(user.id);
 
-  await db.refreshToken.create({
-    data: { token: refreshToken, userId: user.id, expiresAt: new Date(Date.now() + REFRESH_EXPIRES_MS) },
-  });
+  await persistRefreshToken(user.id, refreshToken);
 
   return { user: userPayload(user), accessToken, refreshToken, isNewUser };
 }

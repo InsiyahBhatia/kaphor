@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, typography } from '../../theme';
 
 export function formatINR(amount: number | null | undefined): string {
@@ -62,6 +62,9 @@ export function IconBtn({
 }) {
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={icon.replace(/-outline$/, '').replace(/-/g, ' ')}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       onPress={onPress}
       disabled={disabled}
       style={[styles.iconBtn, { backgroundColor: bg }, disabled && { opacity: 0.4 }]}
@@ -73,9 +76,10 @@ export function IconBtn({
 }
 
 import { Ionicons } from '@expo/vector-icons';
+import { Loader as SkeletonLoader } from '../common/Loader';
 
 function Loader() {
-  return <ActivityIndicator size="small" color={colors.ink} />;
+  return <SkeletonLoader compact />;
 }
 export { Loader };
 
@@ -109,16 +113,16 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: 'flex-start',
   },
-  chipText: { fontFamily: typography.monoBold, fontSize: 8.5, letterSpacing: 0.8 },
+  chipText: { fontFamily: typography.monoBold, fontSize: 11, letterSpacing: 0.8 },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 9,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight || '#ECE8DF',
+    borderBottomColor: colors.borderLight || colors.borderLight,
   },
-  infoLabel: { fontFamily: typography.monoBold, fontSize: 9, color: colors.textMuted, letterSpacing: 1 },
+  infoLabel: { fontFamily: typography.monoBold, fontSize: 11, color: colors.textMuted, letterSpacing: 1 },
   infoValue: { fontFamily: typography.monoBold, fontSize: 11, color: colors.textPrimary, flexShrink: 1, textAlign: 'right' },
   empty: {
     paddingVertical: 36,
@@ -131,7 +135,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginVertical: 10,
   },
-  emptyText: { fontFamily: typography.monoBold, fontSize: 10, color: colors.textMuted, letterSpacing: 1.2 },
+  emptyText: { fontFamily: typography.monoBold, fontSize: 11, color: colors.textMuted, letterSpacing: 1.2 },
   iconBtn: {
     width: 34,
     height: 34,

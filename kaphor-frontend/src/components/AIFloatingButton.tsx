@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography } from '../theme';
 import { EditorialIcon, EditorialIconName } from './editorial/EditorialIcon';
 
-const INK_GRADIENT = ['#242424', '#141414'] as const;
+const INK_GRADIENT = [colors.ink, colors.ink] as const;
 
 interface MenuItem {
   label: string;
@@ -19,14 +19,14 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
   {
     label: 'AI STYLIST',
-    sublabel: 'Style curation & care chat',
+    sublabel: 'Style ideas and care tips',
     icon: 'sparkle',
     route: '/(tabs)/shop/ai-chat',
     accent: colors.goldDark,
   },
   {
     label: 'CONDITION CHECK',
-    sublabel: 'GLIE wear & tear scan',
+    sublabel: 'Check wear and damage',
     icon: 'search',
     route: '/(tabs)/circular/condition-check',
     accent: colors.crimson,
@@ -109,7 +109,7 @@ export const AIFloatingButton: React.FC = () => {
               onPress={() => navigate(item.route)}
               activeOpacity={0.85}
             >
-              <View style={[styles.menuIconWrap, { borderColor: item.accent + '35', backgroundColor: '#FAF6EE' }]}>
+              <View style={[styles.menuIconWrap, { borderColor: item.accent + '35', backgroundColor: colors.paperLight }]}>
                 <EditorialIcon name={item.icon} size={22} />
               </View>
               <View style={{ flex: 1 }}>
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: colors.overlay,
   },
   fabShell: {
     position: 'absolute',
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
     backgroundColor: colors.ink,
     padding: 3,
-    shadowColor: '#5C0B12',
+    shadowColor: colors.crimsonDark,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FDF8F2',
+    backgroundColor: colors.paperLight,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
     paddingHorizontal: 12,
@@ -214,10 +214,10 @@ const styles = StyleSheet.create({
     width: 6,
   },
   menuTitle: {
-    fontFamily: typography.monoBold,
-    fontSize: 14.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.goldDark,
-    letterSpacing: 1.2,
   },
   menuItem: {
     flexDirection: 'row',
@@ -243,8 +243,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   menuItemSub: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 1,
   },

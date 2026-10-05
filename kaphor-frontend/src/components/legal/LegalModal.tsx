@@ -57,7 +57,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
               <Text style={styles.modalTitle}>KAPHOR</Text>
               <Text style={styles.modalSubtitle}>Legal & Compliance Documents</Text>
             </View>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
               onPress={onClose}
               style={styles.closeBtn}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   modalSubtitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.textMuted,
     marginTop: 2,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   chipText: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   docMeta: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.textMuted,
     letterSpacing: 0.6,
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statutoryRef: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontFamily: typography.mono,
     color: colors.textSecond,
     lineHeight: 16,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   legalBasisLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textMuted,

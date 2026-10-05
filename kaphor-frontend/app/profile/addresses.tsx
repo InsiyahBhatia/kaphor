@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,9 +19,9 @@ import {
   Address,
   CreateAddressInput,
 } from '../../src/services/addressService';
-import { DossierLoading } from '../../src/components/common/DossierLoading';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
 import { hapticFeedback } from '../../src/utils/haptics';
+import { Spinner, Loader } from '../../src/components/common/Loader';
 
 type ScreenMode = 'list' | 'add' | 'edit';
 
@@ -290,7 +289,7 @@ export default function AddressBookScreen() {
       >
         {/* Inline header */}
         <View style={[styles.inlineHeader, { paddingTop: Math.max(insets.top, 16) }]}>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
             onPress={() => {
               setMode('list');
               setErrors({});
@@ -342,10 +341,10 @@ export default function AddressBookScreen() {
           {/* Full Name */}
           <View style={styles.fieldWrapper}>
             <Text style={styles.formLabel}>FULL RECIPIENT NAME *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Priya Sharma"
               style={[styles.input, errors.fullName && styles.inputError]}
               placeholder="e.g. Priya Sharma"
-              placeholderTextColor="rgba(30,31,34,0.35)"
+              placeholderTextColor={colors.textMuted}
               value={form.fullName}
               maxLength={60}
               onChangeText={(t) => {
@@ -370,10 +369,10 @@ export default function AddressBookScreen() {
           {/* Phone Number */}
           <View style={styles.fieldWrapper}>
             <Text style={styles.formLabel}>PHONE NUMBER (10 DIGITS) *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="9876543210"
               style={[styles.input, errors.phone && styles.inputError]}
               placeholder="e.g. 9876543210"
-              placeholderTextColor="rgba(30,31,34,0.35)"
+              placeholderTextColor={colors.textMuted}
               keyboardType="phone-pad"
               maxLength={13}
               value={form.phone}
@@ -400,10 +399,10 @@ export default function AddressBookScreen() {
           {/* Street Address Line 1 */}
           <View style={styles.fieldWrapper}>
             <Text style={styles.formLabel}>STREET ADDRESS (HOUSE / BUILDING / ROAD) *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Flat/House No., Wing, Street name"
               style={[styles.input, errors.line1 && styles.inputError]}
               placeholder="Flat/House No., Wing, Street name"
-              placeholderTextColor="rgba(30,31,34,0.35)"
+              placeholderTextColor={colors.textMuted}
               value={form.line1}
               maxLength={120}
               onChangeText={(t) => {
@@ -428,10 +427,10 @@ export default function AddressBookScreen() {
           {/* Street Address Line 2 */}
           <View style={styles.fieldWrapper}>
             <Text style={styles.formLabel}>APARTMENT / SUITE / AREA (OPTIONAL)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Colony, sector, floor"
               style={styles.input}
               placeholder="Colony, sector, floor"
-              placeholderTextColor="rgba(30,31,34,0.35)"
+              placeholderTextColor={colors.textMuted}
               value={form.line2 || ''}
               maxLength={100}
               onChangeText={(t) => setForm({ ...form, line2: t })}
@@ -441,10 +440,10 @@ export default function AddressBookScreen() {
           {/* Landmark */}
           <View style={styles.fieldWrapper}>
             <Text style={styles.formLabel}>LANDMARK (OPTIONAL)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Near temple, metro station, park"
               style={styles.input}
               placeholder="Near temple, metro station, park..."
-              placeholderTextColor="rgba(30,31,34,0.35)"
+              placeholderTextColor={colors.textMuted}
               value={form.landmark || ''}
               maxLength={80}
               onChangeText={(t) => setForm({ ...form, landmark: t })}
@@ -455,10 +454,10 @@ export default function AddressBookScreen() {
           <View style={styles.halfRow}>
             <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={styles.formLabel}>CITY *</Text>
-              <TextInput
+              <TextInput accessibilityLabel="Mumbai"
                 style={[styles.input, errors.city && styles.inputError]}
                 placeholder="e.g. Mumbai"
-                placeholderTextColor="rgba(30,31,34,0.35)"
+                placeholderTextColor={colors.textMuted}
                 value={form.city}
                 maxLength={50}
                 onChangeText={(t) => {
@@ -482,10 +481,10 @@ export default function AddressBookScreen() {
 
             <View style={{ flex: 1 }}>
               <Text style={styles.formLabel}>PIN CODE (6 DIGITS) *</Text>
-              <TextInput
+              <TextInput accessibilityLabel="400001"
                 style={[styles.input, errors.pincode && styles.inputError]}
                 placeholder="e.g. 400001"
-                placeholderTextColor="rgba(30,31,34,0.35)"
+                placeholderTextColor={colors.textMuted}
                 keyboardType="numeric"
                 maxLength={6}
                 value={form.pincode}
@@ -513,10 +512,10 @@ export default function AddressBookScreen() {
           {/* State */}
           <View style={styles.fieldWrapper}>
             <Text style={styles.formLabel}>STATE *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Maharashtra"
               style={[styles.input, errors.state && styles.inputError]}
               placeholder="e.g. Maharashtra"
-              placeholderTextColor="rgba(30,31,34,0.35)"
+              placeholderTextColor={colors.textMuted}
               value={form.state}
               maxLength={50}
               onChangeText={(t) => {
@@ -548,7 +547,7 @@ export default function AddressBookScreen() {
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator color={colors.cream} />
+              <Spinner color={colors.cream} />
             ) : (
               <Text style={styles.saveBtnText}>
                 {mode === 'add' ? 'SAVE & USE ADDRESS' : 'UPDATE ADDRESS'}
@@ -565,14 +564,14 @@ export default function AddressBookScreen() {
     <View style={{ flex: 1, backgroundColor: colors.cream }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
           onPress={() => safeBack('/(tabs)/profile')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ADDRESS BOOK</Text>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add"
           onPress={() => {
             setForm({ ...EMPTY_FORM });
             setEditId(null);
@@ -598,13 +597,13 @@ export default function AddressBookScreen() {
 
       {loading ? (
         <View style={styles.loader}>
-          <DossierLoading variant="cart" compact />
+          <Loader variant="cart" compact />
         </View>
       ) : addresses.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="location-outline" size={64} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>NO ADDRESSES YET</Text>
-          <Text style={styles.emptySub}>Add your delivery address for insured couriers.</Text>
+          <Text style={styles.emptySub}>Add your delivery address.</Text>
           <TouchableOpacity
             style={styles.addFirstBtn}
             onPress={() => {
@@ -756,16 +755,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   formLabel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
     marginBottom: 6,
-    letterSpacing: 1,
   },
   input: {
     borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.2)',
+    borderColor: colors.overlayLight,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontFamily: typography.body,
@@ -776,7 +774,7 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: colors.red,
     borderWidth: 2,
-    backgroundColor: '#FFF9F9',
+    backgroundColor: colors.white,
   },
   errorRow: {
     flexDirection: 'row',
@@ -785,10 +783,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   errorText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
-    fontWeight: '700',
   },
   halfRow: {
     flexDirection: 'row',
@@ -812,11 +810,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   labelChipText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   labelChipTextActive: {
     color: colors.cream,
@@ -837,10 +834,9 @@ const styles = StyleSheet.create({
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
   },
 
   // ── List Mode ──
@@ -864,19 +860,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(28,43,74,0.06)',
+    backgroundColor: colors.overlayLight,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(28,43,74,0.15)',
+    borderBottomColor: colors.overlayLight,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   selectModeBannerText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.navy,
     flex: 1,
-    letterSpacing: 0.5,
   },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: {
@@ -893,11 +888,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptySub: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 21,
   },
   addFirstBtn: {
     flexDirection: 'row',
@@ -917,10 +913,9 @@ const styles = StyleSheet.create({
   },
   addFirstBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
 
   // ── List Content ──
@@ -957,7 +952,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
     backgroundColor: colors.cream,
   },
   radioCircle: {
@@ -988,11 +983,10 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   cardLabelText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   defaultBadge: {
     flexDirection: 'row',
@@ -1000,18 +994,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   defaultBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.forest,
-    letterSpacing: 0.5,
   },
   setDefaultText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 0.5,
     textDecorationLine: 'underline',
   },
 
@@ -1025,21 +1017,22 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   cardName: {
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.charcoal,
   },
   cardDetail: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    lineHeight: 16,
+    lineHeight: 21,
     flex: 1,
   },
   cardDivider: {
     height: 1,
-    backgroundColor: 'rgba(30,31,34,0.08)',
+    backgroundColor: colors.overlayLight,
     marginVertical: 4,
   },
 
@@ -1049,19 +1042,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
-    backgroundColor: '#F5F2EB',
+    backgroundColor: colors.paper,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
+    borderTopColor: colors.overlayLight,
   },
   selectBtnCtaActive: {
     backgroundColor: colors.charcoal,
   },
   selectBtnCtaText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   selectBtnCtaTextActive: {
     color: colors.cream,
@@ -1071,7 +1063,7 @@ const styles = StyleSheet.create({
   cardActions: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
+    borderTopColor: colors.overlayLight,
   },
   cardActionBtn: {
     flex: 1,
@@ -1081,15 +1073,14 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRightWidth: 1,
-    borderRightColor: 'rgba(30,31,34,0.1)',
+    borderRightColor: colors.overlayLight,
     backgroundColor: colors.white,
   },
   cardActionText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
 
   // ── Add More ──
@@ -1106,11 +1097,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   addMoreText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
 
   // ── Form Mode ──

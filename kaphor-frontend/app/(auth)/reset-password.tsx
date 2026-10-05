@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   ScrollView,
   Platform,
@@ -16,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/services/api';
 import { colors } from '../../src/theme';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
+import { Spinner } from '../../src/components/common/Loader';
+import { getErrorMessage } from '../../src/utils/errors';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -55,7 +56,7 @@ export default function ResetPasswordScreen() {
       });
       setSuccess(true);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Failed to reset password. The link may have expired.';
+      const msg = getErrorMessage(err, 'Failed to reset password. The link may have expired.');
       Alert.alert('Reset Failed', msg);
     } finally {
       setLoading(false);
@@ -69,7 +70,7 @@ export default function ResetPasswordScreen() {
           <View style={styles.iconCircle}>
             <Ionicons name="checkmark-circle-outline" size={56} color={colors.forest} />
           </View>
-          <Text style={styles.title}>PASSWORD RESET</Text>
+          <Text style={styles.title}>Password reset</Text>
           <Text style={styles.subtitle}>
             Your password has been successfully updated. You can now log in with your new credentials.
           </Text>
@@ -78,7 +79,7 @@ export default function ResetPasswordScreen() {
             onPress={() => router.replace('/(auth)/login')}
             activeOpacity={0.85}
           >
-            <Text style={styles.mainBtnText}>GO TO LOGIN</Text>
+            <Text style={styles.mainBtnText}>Go to login</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -97,7 +98,7 @@ export default function ResetPasswordScreen() {
         automaticallyAdjustKeyboardInsets={true}
         keyboardDismissMode="on-drag"
       >
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
           style={styles.backBtn}
           onPress={() => safeBack('/(auth)/login')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -109,16 +110,16 @@ export default function ResetPasswordScreen() {
         <View style={styles.iconCircle}>
           <Ionicons name="key-outline" size={40} color={colors.crimson} />
         </View>
-        <Text style={styles.title}>RESET PASSWORD</Text>
+        <Text style={styles.title}>Reset password</Text>
         <Text style={styles.subtitle}>
           Enter your new password below to secure your KaPhor account.
         </Text>
 
         {!urlToken && (
-          <TextInput
+          <TextInput accessibilityLabel="Reset token"
             style={styles.input}
-            placeholder="RESET TOKEN"
-            placeholderTextColor="#6B5C52"
+            placeholder="Reset token"
+            placeholderTextColor={colors.textMuted}
             value={token}
             onChangeText={setToken}
             autoCapitalize="none"
@@ -126,16 +127,16 @@ export default function ResetPasswordScreen() {
         )}
 
         <View style={styles.passwordWrapper}>
-          <TextInput
+          <TextInput accessibilityLabel="New password"
             style={styles.passwordInput}
-            placeholder="NEW PASSWORD"
-            placeholderTextColor="#6B5C52"
+            placeholder="New password"
+            placeholderTextColor={colors.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
             autoCapitalize="none"
           />
-          <TouchableOpacity
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
             onPress={() => setShowPassword(!showPassword)}
             style={styles.eyeBtn}
           >
@@ -147,10 +148,10 @@ export default function ResetPasswordScreen() {
           </TouchableOpacity>
         </View>
 
-        <TextInput
+        <TextInput accessibilityLabel="Confirm new password"
           style={styles.input}
-          placeholder="CONFIRM NEW PASSWORD"
-          placeholderTextColor="#6B5C52"
+          placeholder="Confirm new password"
+          placeholderTextColor={colors.textMuted}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry={!showPassword}
@@ -164,9 +165,9 @@ export default function ResetPasswordScreen() {
           activeOpacity={0.85}
         >
           {loading ? (
-            <ActivityIndicator color={colors.white} />
+            <Spinner color={colors.white} />
           ) : (
-            <Text style={styles.mainBtnText}>UPDATE PASSWORD</Text>
+            <Text style={styles.mainBtnText}>Update password</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(155, 35, 53, 0.1)',
+    backgroundColor: colors.crimsonLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,

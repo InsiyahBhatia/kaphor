@@ -1,0 +1,45 @@
+/**
+ * Column lists for garment queries.
+ *
+ * `garmentVector` is a Float[] (up to ~512 numbers per row). Loading it for list pages costs tens of
+ * kilobytes per garment on the wire and is never shown to clients, so list endpoints use these selects,
+ * which are every garment column EXCEPT garmentVector. Relations are added by the caller.
+ */
+export const GARMENT_LIST_COLUMNS = {
+  id: true,
+  sellerId: true,
+  title: true,
+  description: true,
+  brand: true,
+  category: true,
+  subCategory: true,
+  size: true,
+  color: true,
+  material: true,
+  fabric: true,
+  style: true,
+  sleeve: true,
+  shape: true,
+  pattern: true,
+  weight: true,
+  condition: true,
+  images: true,
+  tags: true,
+  styleTags: true,
+  lifecycleState: true,
+  listingType: true,
+  reservedOrderId: true,
+  price: true,
+  originalPrice: true,
+  rentalPriceDay: true,
+  rentalPriceWeek: true,
+  recyclableFiber: true,
+  popularityScore: true,
+  diversityScore: true,
+  viewCount: true,
+  isActive: true,
+  materialId: true,
+  reuseCount: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;

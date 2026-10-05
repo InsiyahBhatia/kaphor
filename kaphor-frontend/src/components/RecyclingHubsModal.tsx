@@ -6,7 +6,6 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -70,7 +69,7 @@ export function RecyclingHubsModal({
               </View>
               <Text style={styles.headerTitle}>TEXTILE RECYCLING HUBS</Text>
             </View>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Ionicons name="close" size={22} color={colors.charcoal} />
             </TouchableOpacity>
           </View>
@@ -82,13 +81,13 @@ export function RecyclingHubsModal({
                 <KaphorImage uri={garment.images?.[0] || ''} style={styles.garmentThumb} contentFit="cover" />
                 <View style={styles.garmentInfo}>
                   <Text style={styles.garmentBrand} numberOfLines={1}>
-                    {garment.brand || 'Archival Piece'}
+                    {garment.brand || 'Saved Piece'}
                   </Text>
                   <Text style={styles.garmentTitle} numberOfLines={1}>
                     {garment.title}
                   </Text>
                   <View style={styles.eolBadge}>
-                    <Ionicons name="shield-checkmark" size={10} color="#283618" />
+                    <Ionicons name="shield-checkmark" size={10} color={colors.goldDark} />
                     <Text style={styles.eolBadgeText}>100% ZERO LANDFILL ROUTING</Text>
                   </View>
                 </View>
@@ -188,7 +187,7 @@ export function RecyclingHubsModal({
               <View style={{ flex: 1 }}>
                 <Text style={styles.mailInTitle}>Pan-India Free Mail-In Box</Text>
                 <Text style={styles.mailInSub}>
-                  Free prepaid courier collection satchels sent anywhere across India for unwearable garments.
+                  Free prepaid bags sent anywhere in India for clothes that cannot be worn.
                 </Text>
               </View>
             </View>
@@ -202,7 +201,7 @@ export function RecyclingHubsModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -214,7 +213,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.charcoal,
     borderRadius: 6,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -236,16 +235,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerIconWrap: {
-    backgroundColor: '#283618',
+    backgroundColor: colors.goldDark,
     padding: 4,
     borderRadius: 3,
   },
   headerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 17,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 20,
     color: colors.charcoal,
-    letterSpacing: 0.8,
   },
   scrollContent: {
     padding: 14,
@@ -271,16 +269,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   garmentBrand: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.copper,
-    fontWeight: '800',
-    textTransform: 'uppercase',
   },
   garmentTitle: {
-    fontFamily: typography.mono,
-    fontSize: 14.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.charcoal,
     marginBottom: 4,
   },
@@ -288,34 +285,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(40,54,24,0.1)',
+    backgroundColor: colors.emeraldLight,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 2,
     alignSelf: 'flex-start',
   },
   eolBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#283618',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.goldDark,
   },
   locationBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F5F3EB',
+    backgroundColor: colors.paper,
     padding: 10,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
   },
   locationText: {
-    fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.charcoal,
     flex: 1,
-    lineHeight: 15,
+    lineHeight: 24,
   },
   locationBold: {
     fontWeight: '900',
@@ -327,8 +325,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   loadingText: {
-    fontFamily: typography.mono,
-    fontSize: 13,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.textMuted,
   },
   centersList: {
@@ -349,9 +348,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   centerName: {
-    fontFamily: typography.mono,
-    fontSize: 17,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 20,
     color: colors.charcoal,
   },
   centerCityDist: {
@@ -362,7 +361,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   scorePill: {
-    backgroundColor: 'rgba(40,54,24,0.1)',
+    backgroundColor: colors.emeraldLight,
     paddingHorizontal: 6,
     paddingVertical: 2.5,
     borderRadius: 2,
@@ -371,7 +370,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.mono,
     fontSize: 12,
     fontWeight: '900',
-    color: '#283618',
+    color: colors.goldDark,
   },
   metaRow: {
     flexDirection: 'row',
@@ -379,11 +378,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   metaText: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     flex: 1,
-    lineHeight: 15,
+    lineHeight: 23,
   },
   fiberTagRow: {
     flexDirection: 'row',
@@ -392,29 +392,29 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   fiberTag: {
-    backgroundColor: '#EFECE4',
+    backgroundColor: colors.paper,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 2,
   },
   fiberTagText: {
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.charcoal,
   },
   certText: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.copper,
-    fontWeight: '700',
     marginTop: 2,
-    lineHeight: 14,
+    lineHeight: 23,
   },
   facilityDetailsBox: {
-    backgroundColor: '#F7F5EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.12)',
+    borderColor: colors.overlayLight,
     borderRadius: 3,
     padding: 8,
     marginTop: 4,
@@ -432,55 +432,57 @@ const styles = StyleSheet.create({
     color: colors.forest,
   },
   dropOffInstructions: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontFamily: typography.body,
+    fontSize: 16,
     color: colors.charcoal,
-    lineHeight: 14,
+    lineHeight: 17,
   },
   aiScanCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#F7F5EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
     borderColor: colors.charcoal,
     padding: 12,
     borderRadius: 4,
   },
   aiScanTitle: {
-    fontFamily: typography.mono,
-    fontSize: 15.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 20,
     color: colors.charcoal,
   },
   aiScanSub: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    lineHeight: 15,
+    lineHeight: 23,
     marginTop: 2,
   },
   mailInBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#F0F5ED',
+    backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.forest,
     padding: 10,
     borderRadius: 4,
   },
   mailInTitle: {
-    fontFamily: typography.mono,
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#283618',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
+    color: colors.goldDark,
   },
   mailInSub: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    lineHeight: 15,
+    lineHeight: 23,
     marginTop: 2,
   },
 });

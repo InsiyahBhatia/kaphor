@@ -28,23 +28,28 @@ export async function getNotifications(req: Request, res: Response): Promise<voi
   try {
     if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
-    const { limit = 20, cursor } = req.query;
+    const limitRaw = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : NaN;
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 20;
+    const cursor =
+      typeof req.query.cursor === 'string' && req.query.cursor.length > 0 && req.query.cursor.length <= 64
+        ? req.query.cursor
+        : undefined;
     const skip = cursor ? 1 : 0;
-    const cursorObj = cursor ? { id: cursor as string } : undefined;
+    const cursorObj = cursor ? { id: cursor } : undefined;
 
     const notifications = await db.notification.findMany({
       where: {
         userId: req.user.id,
         type: { notIn: ['DIRECT_MESSAGE', 'NEW_MESSAGE'] },
       },
-      take: Number(limit),
+      take: limit,
       skip,
       cursor: cursorObj,
       orderBy: { createdAt: 'desc' },
     });
 
-    const nextCursor = notifications.length === Number(limit) 
-      ? notifications[notifications.length - 1].id 
+    const nextCursor = notifications.length === limit
+      ? notifications[notifications.length - 1].id
       : null;
 
     res.json({

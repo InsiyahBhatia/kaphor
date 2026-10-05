@@ -1,9 +1,10 @@
 /**
  * Repair & Refresh Service
- * Calls the Kaphor backend POST /api/v1/repair/assess endpoint
+ * Calls the Kaphor backend /repair/assess and /repair/lookup endpoints.
  */
 
 import api from './api';
+import { colors } from '../theme';
 
 export interface RepairInput {
   image_base64?: string;
@@ -37,9 +38,9 @@ export interface BlogArticle {
   source: string;
   difficulty: string;
   time_minutes?: number;
-  summary?: string;
 }
 
+/** Guide bodies are no longer sent by the server. Kept so saved items still load. */
 export interface T5GuideResult {
   doc_type: string;
   title: string;
@@ -100,6 +101,9 @@ export interface RepairResult {
   youtube_query: string;
   repair_youtube_query?: string;
   upcycle_youtube_query?: string;
+  youtube_search_url?: string;
+  repair_youtube_search_url?: string;
+  upcycle_youtube_search_url?: string;
   reading_list: BlogArticle[];
   repair_reading_list?: BlogArticle[];
   upcycle_reading_list?: BlogArticle[];
@@ -130,8 +134,8 @@ export interface RepairLookupInput {
 }
 
 // ── In-Memory Assessment Store ──────────────────────────────────────────────
-// Stores the full repair/upcycle results returned during condition check
-// to eliminate duplicate image uploads, duplicate AI prompts, and delay.
+// Keeps the result from the condition check so this screen does not need a
+// second photo upload or a second server call.
 let _sharedRepairResult: RepairResult | null = null;
 
 export function setSharedRepairAssessment(result: RepairResult | null) {
@@ -142,17 +146,13 @@ export function getSharedRepairAssessment(): RepairResult | null {
   return _sharedRepairResult;
 }
 
-export function clearSharedRepairAssessment() {
-  _sharedRepairResult = null;
-}
-
 export async function assessRepair(input: RepairInput): Promise<RepairResult> {
   try {
     const { data } = await api.post('/repair/assess', input, { timeout: 60000 });
     return data.data;
   } catch (err: any) {
-    console.warn('[RepairService] assessRepair network error, falling back to instant lookup:', err?.message);
-    // Instant metadata lookup fallback so users are never blocked by mobile upload timeouts
+    if (__DEV__) console.warn('[RepairService] assess failed, using quick lookup:', err?.message);
+    // Quick lookup (no photo) so a slow upload never blocks the user
     return await lookupRepairFromAssessment({
       garment_category: input.garment_category,
       fiber_type: input.fiber_type,
@@ -163,30 +163,30 @@ export async function assessRepair(input: RepairInput): Promise<RepairResult> {
 }
 
 /**
- * Instant lookup without re-uploading an image or re-running Gemini Vision.
- * Uses previously computed LLM assessment fields (category, fiber, damage types).
+ * Quick lookup. No photo upload and no second scan.
+ * Uses the category, fabric and damage types we already have.
  */
 export async function lookupRepairFromAssessment(input: RepairLookupInput): Promise<RepairResult> {
   const { data } = await api.post('/repair/lookup', input, { timeout: 15000 });
   return data.data;
 }
 
-/**
- * Format a YouTube video URL from videoId
- */
+/** Link that opens a YouTube video */
 export function youTubeUrl(videoId: string): string {
   return `https://www.youtube.com/watch?v=${videoId}`;
 }
 
-/**
- * Get difficulty color
- */
-export function difficultyColor(difficulty: string): string {
-  switch (difficulty.toLowerCase()) {
-    case 'beginner': return '#1E3B2F';
-    case 'intermediate': return '#C95F12';
-    case 'advanced': return '#A82222';
-    default: return '#666';
-  }
+/** Link that opens a YouTube search */
+export function youTubeSearchUrl(query: string): string {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 }
 
+/** Color for a difficulty label */
+export function difficultyColor(difficulty: string): string {
+  switch ((difficulty || '').toLowerCase()) {
+    case 'beginner': return colors.forest;
+    case 'intermediate': return colors.orange;
+    case 'advanced': return colors.red;
+    default: return colors.textMuted;
+  }
+}

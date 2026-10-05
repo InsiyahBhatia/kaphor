@@ -10,12 +10,12 @@ import {
 
 const router = Router();
 
-router.get('/garment/:id', getGarmentLifecycle);
+router.get('/garment/:id', optionalAuth, getGarmentLifecycle);
 router.get('/partners', getPartners);
 router.get('/recycling-centers', optionalAuth, getRecyclingCenters);
-router.post('/onboard-partner', onboardPartner);
 
 router.use(authenticate);
+router.post('/onboard-partner', onboardPartner);
 router.post('/verify-prep', verifyPrep);
 
 export { router as circularRoutes };

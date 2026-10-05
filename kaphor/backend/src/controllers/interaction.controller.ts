@@ -13,11 +13,36 @@ export async function createInteraction(req: Request, res: Response): Promise<vo
             return;
         }
 
-        const { garmentId, eventType, metadata } = req.body;
+        const { garmentId, eventType, metadata: rawMetadata } = req.body || {};
 
-        if (!eventType || !(eventType in EventType)) {
+        if (typeof eventType !== 'string' || !Object.prototype.hasOwnProperty.call(EventType, eventType)) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid or missing eventType' });
             return;
+        }
+        if (garmentId !== undefined && garmentId !== null && (typeof garmentId !== 'string' || garmentId.length > 64)) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid garmentId' });
+            return;
+        }
+        let metadata: Record<string, unknown> | undefined;
+        if (rawMetadata !== undefined && rawMetadata !== null) {
+            if (typeof rawMetadata !== 'object' || Array.isArray(rawMetadata) || JSON.stringify(rawMetadata).length > 4000) {
+                res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid metadata' });
+                return;
+            }
+            metadata = rawMetadata as Record<string, unknown>;
+        }
+
+        if (garmentId) {
+            const g = await db.garment.findUnique({ where: { id: garmentId }, select: { sellerId: true } });
+            if (!g) {
+                res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found' });
+                return;
+            }
+            // Wear logging credits sustainability impact: only the owner may log wears
+            if (eventType === 'LOG_WEAR' && g.sellerId !== req.user.id) {
+                res.status(403).json({ error: 'FORBIDDEN', message: 'You can only log wears for your own garments' });
+                return;
+            }
         }
 
         const isNonGarmentEvent = eventType === 'SEARCH' || eventType === 'FILTER_APPLY';

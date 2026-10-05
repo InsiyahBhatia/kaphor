@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Modal,
   Dimensions,
 } from 'react-native';
@@ -15,6 +14,7 @@ import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import paymentService from '../../../src/services/paymentService';
 import type { PaymentTransaction } from '../../../src/types/payment';
+import { OrderCardsLoading } from '../../../src/components/common/CardLoadingScreen';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -94,7 +94,7 @@ export default function PaymentHistoryScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="PAYMENT LEDGER" showBack fallbackPath="/(tabs)/profile" />
+      <Header title="PAYMENT HISTORY" showBack fallbackPath="/(tabs)/profile" />
 
       {/* Top Ledger Financial Summary Cards */}
       <View style={styles.summaryContainer}>
@@ -124,12 +124,12 @@ export default function PaymentHistoryScreen() {
           </View>
 
           {/* Active Escrow */}
-          <View style={[styles.summaryCard, { borderColor: '#8C6D3B' }]}>
+          <View style={[styles.summaryCard, { borderColor: colors.goldDark }]}>
             <View style={styles.summaryCardTop}>
-              <Text style={styles.summaryCardLabel}>ESCROW HELD</Text>
-              <Ionicons name="lock-closed" size={13} color="#8C6D3B" />
+              <Text style={styles.summaryCardLabel}>HELD SAFELY</Text>
+              <Ionicons name="lock-closed" size={13} color={colors.goldDark} />
             </View>
-            <Text style={[styles.summaryCardAmount, { color: '#8C6D3B' }]}>
+            <Text style={[styles.summaryCardAmount, { color: colors.goldDark }]}>
               {paymentService.formatAmount(activeEscrow)}
             </Text>
             <Text style={styles.summaryCardSub}>Security Deposits</Text>
@@ -182,8 +182,8 @@ export default function PaymentHistoryScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.charcoal} />
+        <View style={{ flex: 1 }}>
+          <OrderCardsLoading count={5} />
         </View>
       ) : filtered.length === 0 ? (
         <View style={styles.center}>
@@ -289,7 +289,7 @@ export default function PaymentHistoryScreen() {
                   <Ionicons name="receipt-outline" size={18} color={colors.charcoal} />
                   <Text style={styles.modalHeaderTitle}>TRANSACTION RECEIPT</Text>
                 </View>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                   onPress={() => setSelectedReceipt(null)}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
@@ -349,7 +349,7 @@ export default function PaymentHistoryScreen() {
                 <View style={styles.escrowNotice}>
                   <Ionicons name="shield-checkmark" size={16} color={colors.forest} />
                   <Text style={styles.escrowNoticeText}>
-                    Kaphor Escrow Ledger Protection. All rental security deposits and payments are held in verified escrow until successful completion.
+                    Your payment is held safely until the order is done.
                   </Text>
                 </View>
 
@@ -361,7 +361,7 @@ export default function PaymentHistoryScreen() {
                 >
                   <Text style={styles.modalActionBtnText}>
                     {selectedReceipt.linkType === 'rental' || selectedReceipt.type.includes('RENTAL')
-                      ? 'VIEW RENTAL LEASE DOSSIER →'
+                      ? 'VIEW RENTAL DETAILS →'
                       : 'VIEW ASSOCIATED ORDER →'}
                   </Text>
                 </TouchableOpacity>
@@ -409,11 +409,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   summaryCardLabel: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    letterSpacing: 0.5,
   },
   summaryCardAmount: {
     fontFamily: typography.mono,
@@ -422,8 +421,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   summaryCardSub: {
-    fontFamily: typography.mono,
-    fontSize: 7,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
 
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 0,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
     backgroundColor: colors.cream,
   },
   filterRow: {
@@ -454,26 +454,24 @@ const styles = StyleSheet.create({
   },
   filterChipActive: { backgroundColor: colors.charcoal },
   filterChipText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.4,
   },
   filterChipTextActive: { color: colors.cream },
 
   emptyText: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    letterSpacing: 2,
   },
   clearFilter: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
-    fontWeight: '800',
     textDecorationLine: 'underline',
     marginTop: 8,
   },
@@ -505,9 +503,9 @@ const styles = StyleSheet.create({
   },
   cardBody: { flex: 1 },
   cardTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
     marginBottom: 2,
   },
@@ -518,16 +516,14 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   cardType: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.copper,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   cardRefText: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     fontWeight: '700',
   },
@@ -537,8 +533,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardDate: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
   },
   statusBadge: {
@@ -547,11 +544,10 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   statusText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   cardRight: {
     justifyContent: 'center',
@@ -578,9 +574,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   receiptActionText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     textDecorationLine: 'underline',
   },
@@ -588,7 +584,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 18,
@@ -600,7 +596,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.charcoal,
     borderRadius: 6,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -622,11 +618,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modalHeaderTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   modalScroll: {
     padding: 16,
@@ -657,12 +652,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   receiptStatusLabel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
   },
   receiptTable: {
     backgroundColor: colors.white,
@@ -678,20 +671,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tableLabel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    fontWeight: '700',
   },
   tableValue: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 11.5,
     fontWeight: '800',
     color: colors.charcoal,
   },
   tableValueMono: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -700,17 +693,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#EEF4EC',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 1,
     borderColor: colors.forest,
     padding: 10,
     borderRadius: 4,
   },
   escrowNoticeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.body,
+    fontSize: 13,
     color: colors.forest,
-    lineHeight: 12,
+    lineHeight: 15,
     flex: 1,
   },
   modalActionBtn: {
@@ -723,21 +716,19 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   modalActionBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.8,
   },
   modalCloseBtn: {
     alignItems: 'center',
     paddingVertical: 8,
   },
   modalCloseText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    letterSpacing: 1,
   },
 });

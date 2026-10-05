@@ -24,18 +24,18 @@ export function VerifiedBadge({
     );
   };
 
-  const defaultLabel = type === 'seller' ? 'VERIFIED SELLER' : type === 'artisan' ? 'VERIFIED ARTISAN' : 'VERIFIED';
+  const defaultLabel = type === 'seller' ? 'VERIFIED SELLER' : type === 'artisan' ? 'VERIFIED MAKER' : 'VERIFIED';
   const displayLabel = label || defaultLabel;
 
   if (size === 'compact') {
     return (
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Shield checkmark"
         onPress={handlePress}
         style={styles.compactWrap}
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Ionicons name="shield-checkmark" size={14} color="#C9A84C" />
+        <Ionicons name="shield-checkmark" size={14} color={colors.gold} />
       </TouchableOpacity>
     );
   }
@@ -49,7 +49,7 @@ export function VerifiedBadge({
       ]}
       activeOpacity={0.8}
     >
-      <Ionicons name="shield-checkmark" size={size === 'large' ? 14 : 12} color="#C9A84C" />
+      <Ionicons name="shield-checkmark" size={size === 'large' ? 14 : 12} color={colors.gold} />
       {showLabel && (
         <Text style={[styles.badgeText, size === 'large' && styles.badgeTextLarge]}>
           {displayLabel}
@@ -69,24 +69,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#1E1F22',
+    backgroundColor: colors.ink,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: '#C9A84C',
+    borderColor: colors.gold,
   },
   badgeLarge: {
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   badgeText: {
-    color: '#F7F5F0',
+    color: colors.paperLight,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   badgeTextLarge: {
-    fontSize: 9.5,
+    fontSize: 11.5,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,10 +10,13 @@ import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import { telemetryService } from '../../../src/services/telemetryService';
 import { useAuth } from '../../../src/context/AuthContext';
+import { Spinner } from '../../../src/components/common/Loader';
+import { SkeletonPulse } from '../../../src/components/common/CardLoadingScreen';
+import { getErrorMessage } from '../../../src/utils/errors';
 
 const DURATION_PRESETS = [
   { days: 3, label: '3 DAYS', subtitle: 'Weekend Soirée', badge: 'POPULAR' },
-  { days: 7, label: '7 DAYS', subtitle: 'Gala & Travel', badge: 'BEST VALUE' },
+  { days: 7, label: '7 DAYS', subtitle: 'Gala & Travel', badge: 'Best value' },
   { days: 14, label: '14 DAYS', subtitle: 'Extended Season', badge: 'VIP' },
   { days: 1, label: '1 DAY', subtitle: 'Quick Shoot', badge: 'MIN' },
 ];
@@ -220,8 +223,8 @@ export default function RentalReserveScreen() {
 
   const handleReserve = async () => {
     if (isOwner) {
-      setErrorMessage('You are the listed owner of this garment. Circular rentals can only be requested by other archive members.');
-      Alert.alert('Owner Restriction', 'You cannot rent your own listed archive piece.');
+      setErrorMessage('You are the listed owner of this garment. Circular rentals can only be requested by other members.');
+      Alert.alert('Owner Restriction', 'You cannot rent your own listed closet item.');
       return;
     }
 
@@ -285,7 +288,7 @@ export default function RentalReserveScreen() {
 
       Alert.alert(
         'Rental Request Submitted',
-        'Your request has been sent to the garment owner. Once the owner approves your dates, you will be notified to proceed with payment and escrow verification.',
+        'Your request has been sent to the garment owner. Once the owner approves your dates, you will be told when to pay.',
         [
           {
             text: 'View Request Status',
@@ -297,8 +300,7 @@ export default function RentalReserveScreen() {
       router.replace(targetRoute as any);
     } catch (err: any) {
       console.error('[Rental Reservation Failed]:', err?.response?.data || err?.message);
-      const backendMsg = err?.response?.data?.message || err?.response?.data?.error;
-      const msg = backendMsg || err?.message || 'Reservation failed. Please check your selected dates and address.';
+      const msg = getErrorMessage(err, 'Reservation failed. Please check your selected dates and address.');
       setErrorMessage(msg);
       Alert.alert('Rental Notice', msg);
     } finally {
@@ -332,13 +334,13 @@ export default function RentalReserveScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>REQUEST RENTAL & DATES</Text>
+        <Text style={styles.headerTitle}>Request rental & dates</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -352,11 +354,11 @@ export default function RentalReserveScreen() {
         {/* Owner Restriction Notice */}
         {isOwner && (
           <View style={styles.ownerWarningCard}>
-            <Ionicons name="information-circle" size={20} color="#D97706" />
+            <Ionicons name="information-circle" size={20} color={colors.orange} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.ownerWarningTitle}>YOUR LISTED ARCHIVE PIECE</Text>
+              <Text style={styles.ownerWarningTitle}>Your listed closet item</Text>
               <Text style={styles.ownerWarningDesc}>
-                You are the listed owner of this garment. Under platform rules, you cannot place a rental booking on your own archive items.
+                You are the listed owner of this garment. Under platform rules, you cannot place a rental booking on your own closet item.
               </Text>
             </View>
           </View>
@@ -367,10 +369,10 @@ export default function RentalReserveScreen() {
           <View style={styles.errorBannerCard}>
             <Ionicons name="alert-circle" size={20} color={colors.red} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.errorBannerTitle}>RESERVATION NOTICE</Text>
+              <Text style={styles.errorBannerTitle}>Reservation notice</Text>
               <Text style={styles.errorBannerDesc}>{errorMessage}</Text>
             </View>
-            <TouchableOpacity onPress={() => setErrorMessage(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={() => setErrorMessage(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons name="close" size={18} color={colors.red} />
             </TouchableOpacity>
           </View>
@@ -384,20 +386,20 @@ export default function RentalReserveScreen() {
           <View style={styles.availabilityStatusRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               {availabilityState.checking ? (
-                <ActivityIndicator size="small" color={colors.charcoal} />
+                <Spinner size="small" color={colors.charcoal} />
               ) : (
                 <Ionicons
                   name={availabilityState.isAvailable ? 'checkmark-circle' : 'alert-circle'}
                   size={18}
-                  color={availabilityState.isAvailable ? '#2E7D32' : colors.red}
+                  color={availabilityState.isAvailable ? colors.forest : colors.red}
                 />
               )}
               <Text style={[
                 styles.availabilityStatusTitle,
-                { color: availabilityState.isAvailable ? '#2E7D32' : colors.red }
+                { color: availabilityState.isAvailable ? colors.forest : colors.red }
               ]}>
                 {availabilityState.checking
-                  ? 'VERIFYING ATELIER AVAILABILITY...'
+                  ? 'Checking availability...'
                   : availabilityState.isAvailable
                   ? '✓ DATES AVAILABLE TO RENT'
                   : '⚠ DATES CONFLICT WITH EXISTING LEASE'}
@@ -409,7 +411,7 @@ export default function RentalReserveScreen() {
             ]}>
               <Text style={[
                 styles.availabilityPillText,
-                { color: availabilityState.isAvailable ? '#2E7D32' : colors.red }
+                { color: availabilityState.isAvailable ? colors.forest : colors.red }
               ]}>
                 {availabilityState.isAvailable ? 'AVAILABLE' : 'BOOKED'}
               </Text>
@@ -417,13 +419,13 @@ export default function RentalReserveScreen() {
           </View>
           <Text style={styles.availabilityStatusDesc}>
             {availabilityState.isAvailable
-              ? 'Sanitized and cleared in atelier storage. Ready for courier dispatch on your selected event dates.'
+              ? 'Cleaned and ready to ship for your event dates.'
               : 'This garment is already rented out for these dates. Tap either date below to pick an alternate window.'}
           </Text>
         </View>
 
         {/* Interactive Date Timeline / Schedule Card */}
-        <Text style={styles.sectionTitle}>RENTAL SCHEDULE (TAP DATE TO EDIT)</Text>
+        <Text style={styles.sectionTitle}>Rental schedule (tap date to edit)</Text>
         <View style={styles.timelineCard}>
           {/* Start Date Column */}
           <TouchableOpacity
@@ -433,14 +435,14 @@ export default function RentalReserveScreen() {
           >
             <View style={styles.colHeader}>
               <Ionicons name="calendar" size={13} color={colors.crimson} />
-              <Text style={styles.timelineColLabel}>DELIVERY / START</Text>
+              <Text style={styles.timelineColLabel}>Delivery / start</Text>
             </View>
             <Text style={styles.timelineColValue}>
               {startDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', weekday: 'short' })}
             </Text>
             <View style={styles.editBadge}>
               <Ionicons name="pencil" size={10} color={colors.crimson} />
-              <Text style={styles.editBadgeText}>EDIT</Text>
+              <Text style={styles.editBadgeText}>Edit</Text>
             </View>
           </TouchableOpacity>
 
@@ -457,15 +459,15 @@ export default function RentalReserveScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.colHeader}>
-              <Ionicons name="calendar" size={13} color={colors.forest || '#2A7B4C'} />
-              <Text style={styles.timelineColLabel}>RETURN / END</Text>
+              <Ionicons name="calendar" size={13} color={colors.forest || colors.forest} />
+              <Text style={styles.timelineColLabel}>Return / end</Text>
             </View>
             <Text style={styles.timelineColValue}>
               {endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', weekday: 'short' })}
             </Text>
-            <View style={[styles.editBadge, { backgroundColor: 'rgba(42,123,76,0.1)' }]}>
-              <Ionicons name="pencil" size={10} color={colors.forest || '#2A7B4C'} />
-              <Text style={[styles.editBadgeText, { color: colors.forest || '#2A7B4C' }]}>EDIT</Text>
+            <View style={[styles.editBadge, { backgroundColor: colors.emeraldLight }]}>
+              <Ionicons name="pencil" size={10} color={colors.forest || colors.forest} />
+              <Text style={[styles.editBadgeText, { color: colors.forest || colors.forest }]}>Edit</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -473,11 +475,11 @@ export default function RentalReserveScreen() {
         {/* Duration Adjuster Stepper */}
         <View style={styles.stepperCard}>
           <View>
-            <Text style={styles.stepperTitle}>CUSTOM DURATION</Text>
+            <Text style={styles.stepperTitle}>Custom duration</Text>
             <Text style={styles.stepperSubtitle}>Fine-tune exact rental days</Text>
           </View>
           <View style={styles.stepperControls}>
-            <TouchableOpacity
+            <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Remove"
               style={[styles.stepperBtn, days <= 1 && { opacity: 0.3 }]}
               onPress={() => handleAdjustDays(-1)}
               disabled={days <= 1}
@@ -485,7 +487,7 @@ export default function RentalReserveScreen() {
               <Ionicons name="remove" size={18} color={colors.textPrimary} />
             </TouchableOpacity>
             <Text style={styles.stepperValue}>{days} {days === 1 ? 'DAY' : 'DAYS'}</Text>
-            <TouchableOpacity
+            <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Add"
               style={[styles.stepperBtn, days >= 30 && { opacity: 0.3 }]}
               onPress={() => handleAdjustDays(1)}
               disabled={days >= 30}
@@ -496,7 +498,7 @@ export default function RentalReserveScreen() {
         </View>
 
         {/* Quick Presets */}
-        <Text style={[styles.sectionTitle, { marginTop: 12 }]}>POPULAR DURATION PACKAGES</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Popular duration packages</Text>
         <View style={styles.presetsGrid}>
           {DURATION_PRESETS.map((p) => {
             const isSelected = days === p.days;
@@ -530,7 +532,7 @@ export default function RentalReserveScreen() {
 
         {/* Price & Escrow Breakdown */}
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>PRICE & ESCROW BREAKDOWN</Text>
+          <Text style={styles.summaryTitle}>Price breakdown</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>RENTAL FEE ({days} DAYS @ ₹{rate}/DAY)</Text>
             <Text style={styles.summaryValue}>₹{rentalFee.toLocaleString()}</Text>
@@ -538,23 +540,23 @@ export default function RentalReserveScreen() {
           <View style={styles.summaryRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={styles.summaryLabel}>100% REFUNDABLE DEPOSIT</Text>
-              <Ionicons name="shield-checkmark" size={13} color={colors.forest || '#2A7B4C'} />
+              <Ionicons name="shield-checkmark" size={13} color={colors.forest || colors.forest} />
             </View>
-            <Text style={[styles.summaryValue, { color: colors.forest || '#2A7B4C' }]}>
+            <Text style={[styles.summaryValue, { color: colors.forest || colors.forest }]}>
               +₹{refundableDeposit}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>DAMAGE COVER & HYGIENIC STEAM</Text>
+            <Text style={styles.summaryLabel}>Damage cover & hygienic steam</Text>
             <Text style={styles.summaryValue}>+₹{damageInsurance}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>TWO-WAY INSURED COURIER</Text>
+            <Text style={styles.summaryLabel}>Two-way insured courier</Text>
             <Text style={styles.summaryValue}>+₹{deliveryReturnFee}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
-            <Text style={styles.totalLabel}>PAY NOW (INCL. REFUNDABLE DEPOSIT)</Text>
+            <Text style={styles.totalLabel}>Pay now (incl. Refundable deposit)</Text>
             <Text style={styles.totalValue}>₹{grandTotal.toLocaleString()}</Text>
           </View>
           <Text style={styles.depositReturnNotice}>
@@ -563,10 +565,14 @@ export default function RentalReserveScreen() {
         </View>
 
         {/* Delivery Address Section */}
-        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>DELIVERY ADDRESS (INSURED COURIER)</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Delivery address (insured courier)</Text>
         <View style={styles.addressCard}>
           {loadingAddresses ? (
-            <ActivityIndicator size="small" color={colors.crimson} style={{ paddingVertical: 12 }} />
+            <View style={{ paddingVertical: 12, gap: 8 }}>
+              <SkeletonPulse width="40%" height={12} />
+              <SkeletonPulse width="90%" height={12} />
+              <SkeletonPulse width="60%" height={12} />
+            </View>
           ) : selectedAddress ? (
             <View>
               <View style={styles.addressHeaderRow}>
@@ -582,7 +588,7 @@ export default function RentalReserveScreen() {
                   style={styles.changeAddressBtn}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.changeAddressBtnText}>CHANGE</Text>
+                  <Text style={styles.changeAddressBtnText}>Change</Text>
                   <Ionicons name="chevron-forward" size={12} color={colors.crimson} />
                 </TouchableOpacity>
               </View>
@@ -600,7 +606,7 @@ export default function RentalReserveScreen() {
           ) : (
             <View style={styles.emptyAddressBox}>
               <Ionicons name="location-outline" size={26} color={colors.crimson} />
-              <Text style={styles.emptyAddressTitle}>NO DELIVERY ADDRESS SELECTED</Text>
+              <Text style={styles.emptyAddressTitle}>No delivery address selected</Text>
               <Text style={styles.emptyAddressSub}>Please add the delivery destination for this rental</Text>
               <TouchableOpacity
                 style={styles.addAddressCta}
@@ -608,7 +614,7 @@ export default function RentalReserveScreen() {
                 activeOpacity={0.8}
               >
                 <Ionicons name="add" size={16} color={colors.white} />
-                <Text style={styles.addAddressCtaText}>ADD DELIVERY ADDRESS</Text>
+                <Text style={styles.addAddressCtaText}>Add delivery address</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -618,17 +624,17 @@ export default function RentalReserveScreen() {
         <View style={styles.policyCard}>
           <Ionicons name="shield-checkmark" size={22} color={colors.crimson} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.policyTitle}>KAPHOR CIRCULAR ESCROW PROTECTION</Text>
+            <Text style={styles.policyTitle}>Kaphor circular payment protection</Text>
             <Text style={styles.policyText}>
-              Your deposit remains locked in secure escrow. Free returns with doorstep pickup included in every rental.
+              Your deposit is held safely. Free returns with doorstep pickup on every rental.
             </Text>
           </View>
         </View>
 
         {/* Message / Notes */}
         <View style={{ marginTop: 20 }}>
-          <Text style={styles.sectionTitle}>MESSAGE THE OWNER (OPTIONAL)</Text>
-          <TextInput
+          <Text style={styles.sectionTitle}>Message the owner (optional)</Text>
+          <TextInput accessibilityLabel="Notes for the owner"
             style={styles.messageInput}
             placeholder="Add any notes about pickup, fit questions, or event timings…"
             placeholderTextColor={colors.textMuted}
@@ -655,12 +661,12 @@ export default function RentalReserveScreen() {
             {/* Modal Header */}
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalPre}>SELECT CALENDAR DATE</Text>
+                <Text style={styles.modalPre}>Select calendar date</Text>
                 <Text style={styles.modalTitle}>
-                  {pickerMode === 'start' ? 'DELIVERY START DATE' : 'RETURN END DATE'}
+                  {pickerMode === 'start' ? 'Delivery start date' : 'Return end date'}
                 </Text>
               </View>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                 style={styles.closeBtn}
                 onPress={() => setPickerVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -687,13 +693,13 @@ export default function RentalReserveScreen() {
 
             {/* Month Header */}
             <View style={styles.monthHeader}>
-              <TouchableOpacity onPress={prevMonth} style={styles.monthNavBtn}>
+              <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Go back" onPress={prevMonth} style={styles.monthNavBtn}>
                 <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
               <Text style={styles.monthLabel}>
                 {viewDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }).toUpperCase()}
               </Text>
-              <TouchableOpacity onPress={nextMonth} style={styles.monthNavBtn}>
+              <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Next" onPress={nextMonth} style={styles.monthNavBtn}>
                 <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
@@ -787,10 +793,10 @@ export default function RentalReserveScreen() {
           <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalPre}>SELECT DELIVERY DESTINATION</Text>
-                <Text style={styles.modalTitle}>SAVED ADDRESSES</Text>
+                <Text style={styles.modalPre}>Select delivery destination</Text>
+                <Text style={styles.modalTitle}>Saved addresses</Text>
               </View>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                 style={styles.closeBtn}
                 onPress={() => setAddressModalVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -817,7 +823,7 @@ export default function RentalReserveScreen() {
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <Text style={styles.addressItemLabel}>{addr.label.toUpperCase()}</Text>
-                        {addr.isDefault && <Text style={styles.defaultBadge}>DEFAULT</Text>}
+                        {addr.isDefault && <Text style={styles.defaultBadge}>Default</Text>}
                       </View>
                       <Text style={styles.addressItemName}>{addr.fullName} • {addr.phone}</Text>
                       <Text style={styles.addressItemDetails} numberOfLines={2}>
@@ -846,7 +852,7 @@ export default function RentalReserveScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name="add-circle-outline" size={16} color={colors.crimson} />
-              <Text style={styles.manageAddressBtnText}>ADD / MANAGE ADDRESSES</Text>
+              <Text style={styles.manageAddressBtnText}>Add / manage addresses</Text>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -884,11 +890,11 @@ export default function RentalReserveScreen() {
           activeOpacity={0.88}
         >
           {submitting ? (
-            <ActivityIndicator color={colors.white} />
+            <Spinner color={colors.white} />
           ) : isOwner ? (
-            <Text style={styles.reserveBtnText}>CANNOT RENT OWN ASSET</Text>
+            <Text style={styles.reserveBtnText}>Cannot rent own item</Text>
           ) : !availabilityState.isAvailable ? (
-            <Text style={styles.reserveBtnText}>DATES CONFLICT WITH LEASE</Text>
+            <Text style={styles.reserveBtnText}>Dates conflict with lease</Text>
           ) : (
             <Text style={styles.reserveBtnText}>
               REQUEST RENTAL LEASE • ₹{grandTotal.toLocaleString()}
@@ -914,12 +920,9 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 180 },
   sectionTitle: {
     color: colors.textPrimary,
-    fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    marginBottom: 12
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    marginBottom: 12, includeFontPadding: false, },
 
   // Timeline Card
   timelineCard: {
@@ -948,12 +951,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   timelineColLabel: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.textMuted, includeFontPadding: false, },
   timelineColValue: { fontSize: 13, fontWeight: '800', color: colors.textPrimary, marginTop: 2 },
   editBadge: {
     flexDirection: 'row',
@@ -961,23 +961,19 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    backgroundColor: colors.crimsonLight,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   editBadgeText: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.crimson,
-    letterSpacing: 0.5,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.crimson, includeFontPadding: false, },
   timelineArrow: { alignItems: 'center', paddingHorizontal: 10 },
   timelineDaysCount: {
-    fontSize: 9,
-    fontFamily: typography.mono,
-    fontWeight: '900',
+    fontSize: 11,
+    fontFamily: typography.bodyBold,
     color: colors.crimson,
     marginTop: 2
   },
@@ -995,14 +991,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   stepperTitle: {
-    fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: 1,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.textPrimary, includeFontPadding: false, },
   stepperSubtitle: {
-    fontSize: 10,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1028,9 +1021,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   stepperValue: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '900',
     color: colors.crimson,
     minWidth: 56,
     textAlign: 'center',
@@ -1048,17 +1040,17 @@ const styles = StyleSheet.create({
   },
   presetCardActive: {
     borderColor: colors.crimson,
-    backgroundColor: 'rgba(155, 27, 48, 0.05)',
+    backgroundColor: colors.crimsonLight,
   },
   presetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  presetDays: { fontFamily: typography.mono, fontSize: 13, fontWeight: '800', color: colors.textPrimary },
+  presetDays: { fontFamily: typography.bodyBold, fontSize: 13, color: colors.textPrimary },
   presetDaysActive: { color: colors.crimson },
-  presetBadge: { backgroundColor: 'rgba(0,0,0,0.06)', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
+  presetBadge: { backgroundColor: colors.overlayLight, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
   presetBadgeActive: { backgroundColor: colors.crimson },
-  presetBadgeText: { fontSize: 8, fontFamily: typography.mono, fontWeight: '800', color: colors.textMuted },
+  presetBadgeText: { fontSize: 16, fontFamily: typography.handBold, color: colors.textMuted, includeFontPadding: false, },
   presetBadgeTextActive: { color: colors.white },
   presetSubtitle: { fontSize: 11, color: colors.textMuted, marginBottom: 8, fontWeight: '500' },
-  presetPrice: { fontFamily: typography.mono, fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  presetPrice: { fontFamily: typography.bodyBold, fontSize: 15, color: colors.textPrimary },
   presetPriceActive: { color: colors.crimson },
 
   // Summary Card
@@ -1072,30 +1064,27 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     color: colors.textPrimary,
-    fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    marginBottom: 16
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    marginBottom: 16, includeFontPadding: false, },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   summaryLabel: { color: colors.textMuted, fontSize: 11, letterSpacing: 0.5, fontWeight: '600', flex: 1 },
-  summaryValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '700', fontFamily: typography.mono },
+  summaryValue: { color: colors.textPrimary, fontSize: 14, fontFamily: typography.bodyBold },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 14 },
   totalLabel: { color: colors.textPrimary, fontSize: 12, fontWeight: '800', letterSpacing: 1, flex: 1 },
-  totalValue: { color: colors.crimson, fontSize: 22, fontWeight: '800', fontFamily: typography.mono },
-  depositReturnNotice: { fontSize: 10, color: colors.textMuted, fontStyle: 'italic', marginTop: 10, lineHeight: 14 },
+  totalValue: { color: colors.crimson, fontSize: 22, fontFamily: typography.bodyBold },
+  depositReturnNotice: { fontSize: 11, color: colors.textMuted, fontStyle: 'italic', marginTop: 10, lineHeight: 14 },
 
   policyCard: {
     flexDirection: 'row',
     gap: 12,
     padding: 16,
-    backgroundColor: 'rgba(155, 27, 48, 0.04)',
+    backgroundColor: colors.crimsonLight,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(155, 27, 48, 0.15)'
+    borderColor: colors.crimsonLight
   },
-  policyTitle: { color: colors.crimson, fontSize: 11, fontFamily: typography.mono, fontWeight: '800', letterSpacing: 1, marginBottom: 4 },
+  policyTitle: { color: colors.crimson, fontSize: 16, fontFamily: typography.handBold, marginBottom: 4, includeFontPadding: false, },
   policyText: { color: colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16, fontWeight: '500' },
 
   messageInput: {
@@ -1131,11 +1120,10 @@ const styles = StyleSheet.create({
   },
   legalNoticeText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    lineHeight: 12,
-  },
+    lineHeight: 19, includeFontPadding: false, },
   reserveBtn: {
     backgroundColor: colors.crimson,
     height: 56,
@@ -1153,7 +1141,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -1165,7 +1153,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1.5,
     borderColor: colors.border,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -1178,19 +1166,14 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   modalPre: {
-    fontSize: 9,
-    fontFamily: typography.mono,
-    color: colors.crimson,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.crimson, includeFontPadding: false, },
   modalTitle: {
-    fontSize: 14,
-    fontFamily: typography.mono,
-    fontWeight: '900',
+    fontSize: 19,
+    fontFamily: typography.handBold,
     color: colors.textPrimary,
-    marginTop: 2,
-  },
+    marginTop: 2, includeFontPadding: false, },
   closeBtn: {
     width: 32,
     height: 32,
@@ -1214,11 +1197,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   quickJumpText: {
-    fontSize: 10,
-    fontFamily: typography.mono,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
+    fontSize: 16,
+    fontFamily: typography.handSemi,
+    color: colors.textPrimary, includeFontPadding: false, },
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1232,11 +1213,10 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   monthLabel: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '900',
     color: colors.textPrimary,
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
   weekDaysRow: {
     flexDirection: 'row',
@@ -1246,9 +1226,8 @@ const styles = StyleSheet.create({
   weekDayText: {
     width: 36,
     textAlign: 'center',
-    fontSize: 10,
-    fontFamily: typography.mono,
-    fontWeight: '700',
+    fontSize: 11,
+    fontFamily: typography.bodyBold,
     color: colors.textMuted,
   },
   calendarGrid: {
@@ -1265,7 +1244,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   calendarCellRange: {
-    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    backgroundColor: colors.crimsonLight,
   },
   calendarCellSelected: {
     backgroundColor: colors.crimson,
@@ -1276,9 +1255,8 @@ const styles = StyleSheet.create({
   },
   calendarDayText: {
     fontSize: 12,
-    fontWeight: '700',
     color: colors.textPrimary,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
   },
   calendarDayTextSelected: {
     color: colors.white,
@@ -1307,18 +1285,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(155, 27, 48, 0.08)',
+    backgroundColor: colors.crimsonLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   addressLabelBadgeText: {
-    fontSize: 9,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.crimson,
-    letterSpacing: 0.5,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.crimson, includeFontPadding: false, },
   changeAddressBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1327,11 +1302,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   changeAddressBtnText: {
-    fontSize: 10,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontSize: 11,
+    fontFamily: typography.bodyBold,
     color: colors.crimson,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   addressRecipientText: {
     fontSize: 13,
@@ -1355,13 +1329,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   emptyAddressTitle: {
-    fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontSize: 16,
+    fontFamily: typography.handBold,
     color: colors.textPrimary,
-    marginTop: 6,
-    letterSpacing: 1,
-  },
+    marginTop: 6, includeFontPadding: false, },
   emptyAddressSub: {
     fontSize: 11,
     color: colors.textMuted,
@@ -1380,10 +1351,9 @@ const styles = StyleSheet.create({
   },
   addAddressCtaText: {
     color: colors.white,
-    fontSize: 10,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: 11,
+    fontFamily: typography.bodyBold,
+    letterSpacing: 0.2,
   },
 
   // Address Picker Modal Items
@@ -1399,24 +1369,20 @@ const styles = StyleSheet.create({
   },
   addressItemRowSelected: {
     borderColor: colors.crimson,
-    backgroundColor: 'rgba(155, 27, 48, 0.04)',
+    backgroundColor: colors.crimsonLight,
   },
   addressItemLabel: {
-    fontSize: 9,
-    fontFamily: typography.mono,
-    fontWeight: '800',
-    color: colors.crimson,
-  },
+    fontSize: 16,
+    fontFamily: typography.handBold,
+    color: colors.crimson, includeFontPadding: false, },
   defaultBadge: {
-    fontSize: 8,
-    fontFamily: typography.mono,
-    fontWeight: '700',
-    color: colors.forest || '#2A7B4C',
-    backgroundColor: 'rgba(42, 123, 76, 0.1)',
+    fontSize: 16,
+    fontFamily: typography.handSemi,
+    color: colors.forest || colors.forest,
+    backgroundColor: colors.emeraldLight,
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 4,
-  },
+    borderRadius: 4, includeFontPadding: false, },
   addressItemName: {
     fontSize: 12,
     fontWeight: '700',
@@ -1460,10 +1426,9 @@ const styles = StyleSheet.create({
   },
   manageAddressBtnText: {
     fontSize: 11,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontFamily: typography.bodyBold,
     color: colors.crimson,
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
 
   // ── Availability Verification Card ─────────────────────────────
@@ -1479,11 +1444,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   availabilityCardOk: {
-    backgroundColor: 'rgba(46, 125, 50, 0.05)',
-    borderColor: '#2E7D32',
+    backgroundColor: colors.emeraldLight,
+    borderColor: colors.forest,
   },
   availabilityCardWarn: {
-    backgroundColor: 'rgba(168, 34, 34, 0.05)',
+    backgroundColor: colors.crimsonLight,
     borderColor: colors.red,
   },
   availabilityStatusRow: {
@@ -1493,28 +1458,22 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   availabilityStatusTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 17, includeFontPadding: false, },
   availabilityPill: {
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 4,
   },
   availabilityPillOk: {
-    backgroundColor: 'rgba(46, 125, 50, 0.15)',
+    backgroundColor: colors.emeraldLight,
   },
   availabilityPillWarn: {
-    backgroundColor: 'rgba(168, 34, 34, 0.15)',
+    backgroundColor: colors.crimsonLight,
   },
   availabilityPillText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16, includeFontPadding: false, },
   availabilityStatusDesc: {
     fontFamily: typography.body,
     fontSize: 11.5,
@@ -1524,8 +1483,8 @@ const styles = StyleSheet.create({
 
   // ── Calendar Booked State ──────────────────────────────────────
   calendarCellBooked: {
-    backgroundColor: 'rgba(168, 34, 34, 0.08)',
-    borderColor: 'rgba(168, 34, 34, 0.25)',
+    backgroundColor: colors.crimsonLight,
+    borderColor: colors.crimsonLight,
   },
   calendarDayTextBooked: {
     color: colors.red,
@@ -1545,21 +1504,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+    backgroundColor: colors.terracottaLight,
     borderWidth: 1.5,
-    borderColor: '#D97706',
+    borderColor: colors.orange,
     borderRadius: 14,
     padding: 14,
     marginBottom: 16,
   },
   ownerWarningTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#D97706',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.orange,
+    marginBottom: 2, includeFontPadding: false, },
   ownerWarningDesc: {
     fontFamily: typography.body,
     fontSize: 11.5,
@@ -1572,7 +1528,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    backgroundColor: 'rgba(168, 34, 34, 0.08)',
+    backgroundColor: colors.crimsonLight,
     borderWidth: 1.5,
     borderColor: colors.red,
     borderRadius: 14,
@@ -1580,13 +1536,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorBannerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.red,
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
+    marginBottom: 2, includeFontPadding: false, },
   errorBannerDesc: {
     fontFamily: typography.body,
     fontSize: 11.5,
@@ -1597,20 +1550,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(155, 27, 48, 0.06)',
+    backgroundColor: colors.crimsonLight,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(155, 27, 48, 0.2)',
+    borderColor: colors.crimsonLight,
     marginBottom: 8,
   },
   approvalNoticeText: {
     flex: 1,
-    fontSize: 10,
-    fontFamily: typography.mono,
+    fontSize: 16,
+    fontFamily: typography.handSemi,
     color: colors.crimson,
-    fontWeight: '700',
-    lineHeight: 14,
-  },
+    lineHeight: 20, includeFontPadding: false, },
 });

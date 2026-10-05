@@ -26,7 +26,7 @@ export default function CircularScreen() {
 
   return (
     <View style={styles.screen}>
-      <Header title="CIRCULAR HUB" />
+      <Header title="Circular hub" />
 
       <ScrollView
         style={styles.container}
@@ -37,10 +37,10 @@ export default function CircularScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderLeft}>
             <Text style={[styles.sectionIndex, { color: colors.terracotta }]}>01</Text>
-            <Text style={styles.sectionTitle}>AI INTELLIGENCE ENGINES</Text>
+            <Text style={styles.sectionTitle}>Ai intelligence engines</Text>
           </View>
           <View style={styles.sectionTagTerracotta}>
-            <Text style={styles.sectionTagTerracottaText}>V2.4 MODEL</Text>
+            <Text style={styles.sectionTagTerracottaText}>V2.4 model</Text>
           </View>
         </View>
 
@@ -53,21 +53,21 @@ export default function CircularScreen() {
           <View style={styles.cardTopRow}>
             <View style={styles.badgeTerracotta}>
               <Ionicons name="sparkles" size={11} color={colors.terracottaDark} />
-              <Text style={styles.badgeTerracottaText}>NEURAL STYLIST</Text>
+              <Text style={styles.badgeTerracottaText}>Neural stylist</Text>
             </View>
             <View style={styles.badgeGold}>
-              <Text style={styles.badgeGoldText}>♔ CURATED MATCH</Text>
+              <Text style={styles.badgeGoldText}>♔ TOP MATCH</Text>
             </View>
           </View>
 
           <View style={styles.cardBodyRow}>
-            <View style={[styles.iconBoxTerracotta, { backgroundColor: '#FAF6EE', borderColor: colors.goldDark, borderWidth: 1 }]}>
+            <View style={[styles.iconBoxTerracotta, { backgroundColor: colors.paperLight, borderColor: colors.goldDark, borderWidth: 1 }]}>
               <EditorialIcon name="sparkle" size={24} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardHeadline}>KAPHOR AI ADVISOR</Text>
+              <Text style={styles.cardHeadline}>Kaphor ai advisor</Text>
               <Text style={styles.cardSub}>
-                Instant style curation, fabric care guidelines & real-time valuation intelligence.
+                Style picks, fabric care tips and live price checks.
               </Text>
             </View>
           </View>
@@ -86,7 +86,7 @@ export default function CircularScreen() {
           </View>
 
           <View style={styles.actionBtnTerracotta}>
-            <Text style={styles.actionBtnTerracottaText}>LAUNCH AI STYLIST & CARE CHAT</Text>
+            <Text style={styles.actionBtnTerracottaText}>Launch ai stylist & care chat</Text>
             <Ionicons name="arrow-forward" size={14} color={colors.white} />
           </View>
         </TouchableOpacity>
@@ -98,18 +98,18 @@ export default function CircularScreen() {
           activeOpacity={0.88}
         >
           <View style={styles.cardCompactLeft}>
-            <View style={[styles.iconBoxInk, { backgroundColor: '#FAF6EE', borderColor: colors.crimson, borderWidth: 1 }]}>
+            <View style={[styles.iconBoxInk, { backgroundColor: colors.paperLight, borderColor: colors.crimson, borderWidth: 1 }]}>
               <EditorialIcon name="search" size={24} />
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.cardCompactTitle}>AI CONDITION SCAN</Text>
+                <Text style={styles.cardCompactTitle}>Ai condition scan</Text>
                 <View style={styles.badgeGoldTiny}>
-                  <Text style={styles.badgeGoldTinyText}>GLIE SCANNER</Text>
+                  <Text style={styles.badgeGoldTinyText}>Glie scanner</Text>
                 </View>
               </View>
               <Text style={styles.cardCompactSub}>
-                Autonomous computer-vision inspection for fiber wear, seams & resale routing.
+                Quick AI check of fabric wear and seams to pick repair, resale or recycle.
               </Text>
             </View>
           </View>
@@ -120,10 +120,10 @@ export default function CircularScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderLeft}>
             <Text style={[styles.sectionIndex, { color: colors.emerald }]}>02</Text>
-            <Text style={styles.sectionTitle}>SUSTAINABILITY & IMPACT</Text>
+            <Text style={styles.sectionTitle}>Sustainability & impact</Text>
           </View>
           <TouchableOpacity onPress={() => router.push('/(tabs)/impact')}>
-            <Text style={styles.sectionActionEmerald}>FULL AUDIT →</Text>
+            <Text style={styles.sectionActionEmerald}>Full audit →</Text>
           </TouchableOpacity>
         </View>
 
@@ -136,9 +136,9 @@ export default function CircularScreen() {
           <View style={styles.impactHeader}>
             <View style={styles.badgeEmerald}>
               <Ionicons name="leaf" size={11} color={colors.emeraldLight} />
-              <Text style={styles.badgeEmeraldText}>VERIFIED CONSERVATION</Text>
+              <Text style={styles.badgeEmeraldText}>Verified conservation</Text>
             </View>
-            <Text style={styles.impactSubtitle}>LIVE CIRCULAR LEDGER</Text>
+            <Text style={styles.impactSubtitle}>Live circular ledger</Text>
           </View>
 
           {/* Live Stats Row */}
@@ -148,7 +148,7 @@ export default function CircularScreen() {
                 {typeof carbonSaved === 'number' ? carbonSaved.toFixed(1) : carbonSaved}
               </Text>
               <Text style={styles.statUnits}>KG CO₂</Text>
-              <Text style={styles.statSub}>OFFSET</Text>
+              <Text style={styles.statSub}>Offset</Text>
             </View>
 
             <View style={styles.statRule} />
@@ -157,16 +157,16 @@ export default function CircularScreen() {
               <Text style={styles.statNumber}>
                 {typeof waterSaved === 'number' ? waterSaved.toLocaleString('en-IN') : waterSaved}
               </Text>
-              <Text style={styles.statUnits}>LITRES</Text>
-              <Text style={styles.statSub}>WATER</Text>
+              <Text style={styles.statUnits}>Litres</Text>
+              <Text style={styles.statSub}>Water</Text>
             </View>
 
             <View style={styles.statRule} />
 
             <View style={styles.statCol}>
               <Text style={styles.statNumber}>{itemsCirculated}</Text>
-              <Text style={styles.statUnits}>PIECES</Text>
-              <Text style={styles.statSub}>CIRCULATED</Text>
+              <Text style={styles.statUnits}>Pieces</Text>
+              <Text style={styles.statSub}>Circulated</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -175,10 +175,10 @@ export default function CircularScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderLeft}>
             <Text style={[styles.sectionIndex, { color: colors.goldDark }]}>03</Text>
-            <Text style={styles.sectionTitle}>UPCYCLE STUDIO</Text>
+            <Text style={styles.sectionTitle}>Upcycle studio</Text>
           </View>
           <TouchableOpacity onPress={() => router.push('/(tabs)/circular/upcycle')}>
-            <Text style={styles.sectionActionGold}>ALL GUIDES (5) →</Text>
+            <Text style={styles.sectionActionGold}>All guides (5) →</Text>
           </TouchableOpacity>
         </View>
 
@@ -191,7 +191,7 @@ export default function CircularScreen() {
           <View style={styles.cardTopRow}>
             <View style={styles.badgeEmerald}>
               <Ionicons name="leaf-sharp" size={10} color={colors.emeraldLight} />
-              <Text style={styles.badgeEmeraldText}>ZERO WASTE FASHION</Text>
+              <Text style={styles.badgeEmeraldText}>Zero waste fashion</Text>
             </View>
             <View style={styles.badgeGold}>
               <Text style={styles.badgeGoldText}>15+ DIY VIDEOS</Text>
@@ -199,13 +199,13 @@ export default function CircularScreen() {
           </View>
 
           <View style={styles.cardBodyRow}>
-            <View style={[styles.iconBoxInk, { backgroundColor: '#FAF6EE', borderColor: colors.goldDark, borderWidth: 1 }]}>
+            <View style={[styles.iconBoxInk, { backgroundColor: colors.paperLight, borderColor: colors.goldDark, borderWidth: 1 }]}>
               <EditorialIcon name="scissors" size={24} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardHeadline}>UPCYCLE ATELIER</Text>
+              <Text style={styles.cardHeadline}>Upcycle studio</Text>
               <Text style={styles.cardSub}>
-                Transform old denim, shirts, sarees & basics into bespoke bags, vests and accessories with step-by-step video tutorials.
+                Turn old denim, shirts and sarees into new bags and vests. Step-by-step videos.
               </Text>
             </View>
           </View>
@@ -230,7 +230,7 @@ export default function CircularScreen() {
           </View>
 
           <View style={styles.actionBtnGold}>
-            <Text style={styles.actionBtnGoldText}>EXPLORE 5 UPCYCLE WORKSHOPS</Text>
+            <Text style={styles.actionBtnGoldText}>Explore 5 upcycle workshops</Text>
             <Ionicons name="arrow-forward" size={14} color={colors.white} />
           </View>
         </TouchableOpacity>
@@ -239,7 +239,7 @@ export default function CircularScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderLeft}>
             <Text style={[styles.sectionIndex, { color: colors.ink }]}>04</Text>
-            <Text style={styles.sectionTitle}>CIRCULAR MARKETPLACE</Text>
+            <Text style={styles.sectionTitle}>Circular marketplace</Text>
           </View>
         </View>
 
@@ -251,15 +251,15 @@ export default function CircularScreen() {
             activeOpacity={0.88}
           >
             <View style={styles.pathwayHead}>
-              <View style={[styles.pathwayIconWrap, { backgroundColor: '#FAF6EE', borderColor: colors.crimsonLight, borderWidth: 1 }]}>
+              <View style={[styles.pathwayIconWrap, { backgroundColor: colors.paperLight, borderColor: colors.crimsonLight, borderWidth: 1 }]}>
                 <EditorialIcon name="tag" size={20} />
               </View>
               <Text style={[styles.pathwayIndex, { color: colors.crimson }]}>01</Text>
             </View>
-            <Text style={styles.pathwayName}>SELL</Text>
+            <Text style={styles.pathwayName}>Sell</Text>
             <Text style={styles.pathwayDesc}>List pre-loved designer pieces for direct P2P sale</Text>
             <View style={styles.pathwayFoot}>
-              <Text style={[styles.pathwayCta, { color: colors.crimson }]}>LIST PIECE</Text>
+              <Text style={[styles.pathwayCta, { color: colors.crimson }]}>List piece</Text>
               <Ionicons name="arrow-forward" size={12} color={colors.crimson} />
             </View>
           </TouchableOpacity>
@@ -271,15 +271,15 @@ export default function CircularScreen() {
             activeOpacity={0.88}
           >
             <View style={styles.pathwayHead}>
-              <View style={[styles.pathwayIconWrap, { backgroundColor: '#FAF6EE', borderColor: colors.goldLight, borderWidth: 1 }]}>
+              <View style={[styles.pathwayIconWrap, { backgroundColor: colors.paperLight, borderColor: colors.goldLight, borderWidth: 1 }]}>
                 <EditorialIcon name="rental" size={20} />
               </View>
               <Text style={[styles.pathwayIndex, { color: colors.goldDark }]}>02</Text>
             </View>
-            <Text style={styles.pathwayName}>RENT</Text>
-            <Text style={styles.pathwayDesc}>Borrow couture & occasion wear for short-term leases</Text>
+            <Text style={styles.pathwayName}>Rent</Text>
+            <Text style={styles.pathwayDesc}>Borrow fashion & occasion wear for short-term leases</Text>
             <View style={styles.pathwayFoot}>
-              <Text style={[styles.pathwayCta, { color: colors.goldDark }]}>EXPLORE LEASES</Text>
+              <Text style={[styles.pathwayCta, { color: colors.goldDark }]}>Explore leases</Text>
               <Ionicons name="arrow-forward" size={12} color={colors.goldDark} />
             </View>
           </TouchableOpacity>
@@ -291,15 +291,15 @@ export default function CircularScreen() {
             activeOpacity={0.88}
           >
             <View style={styles.pathwayHead}>
-              <View style={[styles.pathwayIconWrap, { backgroundColor: '#FAF6EE', borderColor: colors.emeraldLight, borderWidth: 1 }]}>
+              <View style={[styles.pathwayIconWrap, { backgroundColor: colors.paperLight, borderColor: colors.emeraldLight, borderWidth: 1 }]}>
                 <EditorialIcon name="swap" size={20} />
               </View>
               <Text style={[styles.pathwayIndex, { color: colors.emerald }]}>03</Text>
             </View>
-            <Text style={styles.pathwayName}>SWAP</Text>
+            <Text style={styles.pathwayName}>Swap</Text>
             <Text style={styles.pathwayDesc}>Trade fashion items cashless with deposit protection</Text>
             <View style={styles.pathwayFoot}>
-              <Text style={[styles.pathwayCta, { color: colors.emeraldDark }]}>BARTER VAULT</Text>
+              <Text style={[styles.pathwayCta, { color: colors.emeraldDark }]}>Barter saved</Text>
               <Ionicons name="arrow-forward" size={12} color={colors.emeraldDark} />
             </View>
           </TouchableOpacity>
@@ -311,15 +311,15 @@ export default function CircularScreen() {
             activeOpacity={0.88}
           >
             <View style={styles.pathwayHead}>
-              <View style={[styles.pathwayIconWrap, { backgroundColor: '#FAF6EE', borderColor: colors.terracottaLight, borderWidth: 1 }]}>
+              <View style={[styles.pathwayIconWrap, { backgroundColor: colors.paperLight, borderColor: colors.terracottaLight, borderWidth: 1 }]}>
                 <EditorialIcon name="thread" size={20} />
               </View>
               <Text style={[styles.pathwayIndex, { color: colors.terracottaDark }]}>04</Text>
             </View>
-            <Text style={styles.pathwayName}>REPAIR & REFRESH</Text>
+            <Text style={styles.pathwayName}>Repair & refresh</Text>
             <Text style={styles.pathwayDesc}>Guides to mend, revive & refresh your clothes yourself</Text>
             <View style={styles.pathwayFoot}>
-              <Text style={[styles.pathwayCta, { color: colors.terracottaDark }]}>VIEW GUIDES</Text>
+              <Text style={[styles.pathwayCta, { color: colors.terracottaDark }]}>View guides</Text>
               <Ionicons name="arrow-forward" size={12} color={colors.terracottaDark} />
             </View>
           </TouchableOpacity>
@@ -332,18 +332,18 @@ export default function CircularScreen() {
           activeOpacity={0.88}
         >
           <View style={styles.recoveryLeft}>
-            <View style={[styles.recoveryIconBox, { backgroundColor: '#FAF6EE', borderColor: colors.emerald, borderWidth: 1 }]}>
+            <View style={[styles.recoveryIconBox, { backgroundColor: colors.paperLight, borderColor: colors.emerald, borderWidth: 1 }]}>
               <EditorialIcon name="recycle" size={24} />
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.recoveryHeadline}>RECYCLING HUBS</Text>
+                <Text style={styles.recoveryHeadline}>Recycling hubs</Text>
                 <View style={styles.badgeEmeraldTiny}>
-                  <Text style={styles.badgeEmeraldTinyText}>VERIFIED</Text>
+                  <Text style={styles.badgeEmeraldTinyText}>Verified</Text>
                 </View>
               </View>
               <Text style={styles.recoverySub}>
-                Zero-landfill textile drop-off & recovery facilities across India.
+                Places across India where old clothes can be dropped off and recycled.
               </Text>
             </View>
           </View>
@@ -394,11 +394,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   sectionTitle: {
-    fontFamily: typography.monoBold,
-    fontSize: 10,
-    color: colors.ink,
-    letterSpacing: 1.5,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.ink, includeFontPadding: false, },
   sectionTagTerracotta: {
     backgroundColor: colors.terracottaLight,
     paddingHorizontal: 6,
@@ -408,23 +406,17 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   sectionTagTerracottaText: {
-    fontFamily: typography.monoBold,
-    fontSize: 8,
-    color: colors.terracottaDark,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.terracottaDark, includeFontPadding: false, },
   sectionActionEmerald: {
-    fontFamily: typography.monoBold,
-    fontSize: 9.5,
-    color: colors.emerald,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.emerald, includeFontPadding: false, },
   sectionActionGold: {
-    fontFamily: typography.monoBold,
-    fontSize: 9.5,
-    color: colors.goldDark,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.goldDark, includeFontPadding: false, },
 
   // ── AI ADVISOR CARD (TERRACOTTA) ──
   aiAdvisorCard: {
@@ -476,12 +468,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   cardSub: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
     marginTop: 3,
-    lineHeight: 14.5,
-  },
+    lineHeight: 21, includeFontPadding: false, },
   badgeTerracotta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -494,11 +485,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   badgeTerracottaText: {
-    fontFamily: typography.monoBold,
-    fontSize: 8,
-    color: colors.terracottaDark,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.terracottaDark, includeFontPadding: false, },
   badgeGold: {
     backgroundColor: colors.goldLight,
     borderWidth: 1,
@@ -508,11 +497,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   badgeGoldText: {
-    fontFamily: typography.monoBold,
-    fontSize: 8,
-    color: colors.goldDark,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.goldDark, includeFontPadding: false, },
   pillRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -528,11 +515,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   pillTerracottaText: {
-    fontFamily: typography.monoBold,
-    fontSize: 8,
-    color: colors.terracottaDark,
-    letterSpacing: 0.6,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.terracottaDark, includeFontPadding: false, },
   actionBtnTerracotta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -543,11 +528,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   actionBtnTerracottaText: {
-    fontFamily: typography.monoBold,
-    fontSize: 9.5,
-    color: colors.white,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.white, includeFontPadding: false, },
 
   // ── CONDITION SCAN COMPACT ──
   conditionCard: {
@@ -579,12 +562,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   cardCompactSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    lineHeight: 12,
-    marginTop: 2,
-  },
+    lineHeight: 19,
+    marginTop: 2, includeFontPadding: false, },
   badgeGoldTiny: {
     backgroundColor: colors.goldLight,
     borderWidth: 1,
@@ -594,15 +576,13 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   badgeGoldTinyText: {
-    fontFamily: typography.monoBold,
-    fontSize: 7.5,
-    color: colors.goldDark,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.goldDark, includeFontPadding: false, },
 
   // ── SUSTAINABILITY & IMPACT CARD ──
   impactCard: {
-    backgroundColor: '#F3FAF6',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 2,
     borderColor: colors.emerald,
     borderRadius: 2,
@@ -629,17 +609,13 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   badgeEmeraldText: {
-    fontFamily: typography.monoBold,
-    fontSize: 8,
-    color: colors.emeraldLight,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.emeraldLight, includeFontPadding: false, },
   impactSubtitle: {
-    fontFamily: typography.monoBold,
-    fontSize: 8,
-    color: colors.emeraldDark,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.emeraldDark, includeFontPadding: false, },
   statsScoreboard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -657,22 +633,20 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
   statUnits: {
-    fontFamily: typography.monoBold,
-    fontSize: 8.5,
+    fontFamily: typography.bodyMedium,
+    fontSize: 11,
     color: colors.emeraldDark,
-    letterSpacing: 1,
+    letterSpacing: 0.2,
     marginTop: 2,
   },
   statSub: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    color: colors.emerald,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.emerald, includeFontPadding: false, },
   statRule: {
     width: 1,
     height: 34,
-    backgroundColor: 'rgba(15, 92, 70, 0.25)',
+    backgroundColor: colors.emeraldLight,
   },
 
   // ── UPCYCLE HERO CARD (GOLD & CRAFT) ──
@@ -697,10 +671,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   garmentPillColoredText: {
-    fontFamily: typography.monoBold,
-    fontSize: 8.5,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16, includeFontPadding: false, },
   actionBtnGold: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -711,11 +683,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   actionBtnGoldText: {
-    fontFamily: typography.monoBold,
-    fontSize: 9.5,
-    color: colors.cream,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.cream, includeFontPadding: false, },
 
   // ── 2x2 PATHWAY GRID ──
   pathwayGrid: {
@@ -763,12 +733,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   pathwayDesc: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    lineHeight: 13,
-    minHeight: 38,
-  },
+    lineHeight: 19,
+    minHeight: 38, includeFontPadding: false, },
   pathwayFoot: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -779,9 +748,9 @@ const styles = StyleSheet.create({
     borderTopColor: colors.bgMuted,
   },
   pathwayCta: {
-    fontFamily: typography.monoBold,
-    fontSize: 8.5,
-    letterSpacing: 0.8,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
 
   // ── RECOVERY CARD ──
@@ -789,7 +758,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F2F9F5',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 2,
     borderColor: colors.emerald,
     borderRadius: 2,
@@ -832,16 +801,13 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   badgeEmeraldTinyText: {
-    fontFamily: typography.monoBold,
-    fontSize: 7.5,
-    color: colors.emeraldDark,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 16,
+    color: colors.emeraldDark, includeFontPadding: false, },
   recoverySub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
     marginTop: 2,
-    lineHeight: 12,
-  },
+    lineHeight: 19, includeFontPadding: false, },
 });

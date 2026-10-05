@@ -8,7 +8,6 @@ import {
   TextInput,
   Image,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -28,6 +27,9 @@ import {
 } from '../../../../src/constants/market';
 import { DropdownPicker } from '../../../../src/components/DropdownPicker';
 import { DelistOptionsModal } from '../../../../src/components/DelistOptionsModal';
+import { Spinner, Loader } from '../../../../src/components/common/Loader';
+import { KaphorImage } from '../../../../src/components/KaphorImage';
+import { getErrorMessage } from '../../../../src/utils/errors';
 
 export default function EditListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -85,7 +87,7 @@ export default function EditListingScreen() {
         setGarmentData(g);
       }
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || 'Could not load listing details.');
+      Alert.alert('Error', getErrorMessage(err, 'Could not load listing details.'));
       safeBack('/(tabs)/profile');
     } finally {
       setLoading(false);
@@ -145,7 +147,7 @@ export default function EditListingScreen() {
         { text: 'OK', onPress: () => safeBack('/(tabs)/profile') },
       ]);
     } catch (err: any) {
-      Alert.alert('Save Failed', err?.response?.data?.message || 'Failed to update listing.');
+      Alert.alert('Save Failed', getErrorMessage(err, 'Failed to update listing.'));
     } finally {
       setSaving(false);
     }
@@ -181,9 +183,8 @@ export default function EditListingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.gold} />
-        <Text style={styles.loadingText}>Loading listing data...</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+        <Loader variant="product" message="Loading listing data..." />
       </SafeAreaView>
     );
   }
@@ -192,7 +193,7 @@ export default function EditListingScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           onPress={() => safeBack('/my-listings')} 
           style={styles.backBtn} 
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -223,7 +224,7 @@ export default function EditListingScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.imageScroll}>
                 {images.map((uri, idx) => (
                   <View key={idx} style={styles.imageWrap}>
-                    <Image source={{ uri }} style={styles.thumbImage} resizeMode="cover" />
+                    <KaphorImage uri={uri} style={styles.thumbImage as any} contentFit="cover" width={100} />
                     {idx === 0 && (
                       <View style={styles.coverTag}>
                         <Text style={styles.coverTagText}>COVER</Text>
@@ -273,7 +274,7 @@ export default function EditListingScreen() {
                 <Text style={styles.fieldLabel}>SALE PRICE (₹)</Text>
                 <View style={styles.priceInputRow}>
                   <Text style={styles.currencySymbol}>₹</Text>
-                  <TextInput
+                  <TextInput accessibilityLabel="0"
                     style={styles.priceInput}
                     keyboardType="numeric"
                     placeholder="0"
@@ -291,7 +292,7 @@ export default function EditListingScreen() {
                   <Text style={styles.fieldLabel}>PER DAY (₹)</Text>
                   <View style={styles.priceInputRow}>
                     <Text style={styles.currencySymbol}>₹</Text>
-                    <TextInput
+                    <TextInput accessibilityLabel="0"
                       style={styles.priceInput}
                       keyboardType="numeric"
                       placeholder="0"
@@ -305,7 +306,7 @@ export default function EditListingScreen() {
                   <Text style={styles.fieldLabel}>PER WEEK (₹)</Text>
                   <View style={styles.priceInputRow}>
                     <Text style={styles.currencySymbol}>₹</Text>
-                    <TextInput
+                    <TextInput accessibilityLabel="Optional"
                       style={styles.priceInput}
                       keyboardType="numeric"
                       placeholder="Optional"
@@ -330,7 +331,7 @@ export default function EditListingScreen() {
                   <Text style={styles.fieldLabel}>ESTIMATED TRADE VALUE (₹) (OPTIONAL)</Text>
                   <View style={styles.priceInputRow}>
                     <Text style={styles.currencySymbol}>₹</Text>
-                    <TextInput
+                    <TextInput accessibilityLabel="Optional (1:1 trade)"
                       style={styles.priceInput}
                       keyboardType="numeric"
                       placeholder="Optional (1:1 trade)"
@@ -350,7 +351,7 @@ export default function EditListingScreen() {
 
             <View style={styles.inputWrap}>
               <Text style={styles.fieldLabel}>TITLE</Text>
-              <TextInput
+              <TextInput accessibilityLabel="Sabyasachi Velvet Bandhgala"
                 style={styles.textInput}
                 placeholder="e.g. Sabyasachi Velvet Bandhgala"
                 placeholderTextColor={colors.textMuted}
@@ -360,8 +361,8 @@ export default function EditListingScreen() {
             </View>
 
             <View style={styles.inputWrap}>
-              <Text style={styles.fieldLabel}>BRAND / ATELIER</Text>
-              <TextInput
+              <Text style={styles.fieldLabel}>BRAND / LABEL</Text>
+              <TextInput accessibilityLabel="Raw Mango, Anita Dongre, Vintage"
                 style={styles.textInput}
                 placeholder="e.g. Raw Mango, Anita Dongre, Vintage"
                 placeholderTextColor={colors.textMuted}
@@ -417,8 +418,8 @@ export default function EditListingScreen() {
             </View>
 
             <View style={styles.inputWrap}>
-              <Text style={styles.fieldLabel}>DESCRIPTION & PROVENANCE</Text>
-              <TextInput
+              <Text style={styles.fieldLabel}>DESCRIPTION & HISTORY</Text>
+              <TextInput accessibilityLabel="Share the story, weave, craftsmanship, or care instructions"
                 style={[styles.textInput, styles.multilineInput]}
                 placeholder="Share the story, weave, craftsmanship, or care instructions..."
                 placeholderTextColor={colors.textMuted}
@@ -432,10 +433,10 @@ export default function EditListingScreen() {
 
           {/* Additional Details */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>ARCHIVAL ATTRIBUTES</Text>
+            <Text style={styles.sectionTitle}>ITEM DETAILS</Text>
             <View style={styles.inputWrap}>
               <Text style={styles.fieldLabel}>FABRIC / MATERIAL</Text>
-              <TextInput
+              <TextInput accessibilityLabel="Mulberry Silk, Pashmina, Chanderi"
                 style={styles.textInput}
                 placeholder="e.g. Mulberry Silk, Pashmina, Chanderi"
                 placeholderTextColor={colors.textMuted}
@@ -446,7 +447,7 @@ export default function EditListingScreen() {
 
             <View style={styles.inputWrap}>
               <Text style={styles.fieldLabel}>COLOR</Text>
-              <TextInput
+              <TextInput accessibilityLabel="Crimson, Ivory, Emerald"
                 style={styles.textInput}
                 placeholder="e.g. Crimson, Ivory, Emerald"
                 placeholderTextColor={colors.textMuted}
@@ -457,7 +458,7 @@ export default function EditListingScreen() {
 
             <View style={styles.inputWrap}>
               <Text style={styles.fieldLabel}>STYLE / SILHOUETTE</Text>
-              <TextInput
+              <TextInput accessibilityLabel="Traditional, Contemporary, Fusion"
                 style={styles.textInput}
                 placeholder="e.g. Traditional, Contemporary, Fusion"
                 placeholderTextColor={colors.textMuted}
@@ -505,7 +506,7 @@ export default function EditListingScreen() {
               disabled={deleting}
             >
               {deleting ? (
-                <ActivityIndicator size="small" color={colors.crimson} />
+                <Spinner size="small" color={colors.crimson} />
               ) : (
                 <>
                   <Ionicons name="trash-outline" size={18} color={colors.crimson} />
@@ -524,7 +525,7 @@ export default function EditListingScreen() {
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator color={colors.bg} />
+              <Spinner color={colors.bg} />
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={20} color={colors.bg} />
@@ -562,8 +563,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 14,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   header: {
     flexDirection: 'row',
@@ -592,19 +594,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   activePill: {
-    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 1,
     borderColor: colors.success,
   },
   inactivePill: {
-    backgroundColor: 'rgba(150, 150, 150, 0.15)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
     borderColor: colors.textMuted,
   },
   statusPillText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textPrimary,
   },
   scrollContent: {
@@ -615,12 +617,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.gold,
-    letterSpacing: 1.5,
     marginBottom: spacing.sm,
-    textTransform: 'uppercase',
   },
   imageScroll: {
     gap: spacing.sm,
@@ -648,10 +649,10 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   coverTagText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.white,
   },
   typeRow: {
     flexDirection: 'row',
@@ -667,12 +668,12 @@ const styles = StyleSheet.create({
   },
   typeCardSelected: {
     borderColor: colors.gold,
-    backgroundColor: 'rgba(201, 168, 76, 0.08)',
+    backgroundColor: colors.goldLight,
   },
   typeLabel: {
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.textPrimary,
     marginBottom: 4,
   },
@@ -681,7 +682,7 @@ const styles = StyleSheet.create({
   },
   typeDesc: {
     fontFamily: typography.body,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.textMuted,
     lineHeight: 14,
   },
@@ -692,11 +693,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   fieldLabel: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textSecond,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   priceInputRow: {
     flexDirection: 'row',
@@ -778,9 +779,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gold,
   },
   sizeText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textPrimary,
   },
   sizeTextActive: {
@@ -798,12 +799,12 @@ const styles = StyleSheet.create({
   },
   conditionCardActive: {
     borderColor: colors.gold,
-    backgroundColor: 'rgba(201, 168, 76, 0.08)',
+    backgroundColor: colors.goldLight,
   },
   conditionLabel: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textPrimary,
   },
   conditionLabelActive: {
@@ -811,7 +812,7 @@ const styles = StyleSheet.create({
   },
   conditionDesc: {
     fontFamily: typography.body,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -825,9 +826,9 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   toggleTitle: {
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.textPrimary,
   },
   toggleSub: {
@@ -839,16 +840,15 @@ const styles = StyleSheet.create({
   },
   dangerSection: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(155, 27, 48, 0.25)',
+    borderTopColor: colors.crimsonLight,
     paddingTop: spacing.md,
     marginTop: spacing.md,
   },
   dangerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.crimson,
-    letterSpacing: 1,
-    fontWeight: 'bold',
   },
   dangerSub: {
     fontFamily: typography.body,
@@ -866,14 +866,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.crimson,
-    backgroundColor: 'rgba(155, 27, 48, 0.06)',
+    backgroundColor: colors.crimsonLight,
   },
   deleteButtonText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.crimson,
-    letterSpacing: 0.5,
   },
   footer: {
     padding: spacing.md,
@@ -894,10 +893,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: 'bold',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.bg,
-    letterSpacing: 1,
   },
 });

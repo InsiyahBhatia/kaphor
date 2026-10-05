@@ -1,3 +1,4 @@
+import { peek, remember, hydrate } from '../../src/utils/swrCache';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -6,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  ActivityIndicator,
   RefreshControl,
   Image,
   Modal,
@@ -37,6 +37,7 @@ import {
 } from '../../src/components/editorial/IllustrationLayer';
 import { AESTHETIC_PROFILES, AestheticId } from '../../src/services/aestheticRecommendationService';
 import { AESTHETIC_IMAGES } from '../(auth)/style-quiz';
+import { Spinner } from '../../src/components/common/Loader';
 
 type ProfileTab = 'ACTIVITY' | 'CLOSET' | 'ACCOUNT';
 
@@ -45,12 +46,13 @@ export default function ProfileScreen() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<ProfileTab>('ACTIVITY');
-  const [profile, setProfile] = useState<any>(null);
-  const [styleProfile, setStyleProfile] = useState<any>(null);
-  const [savedAssets, setSavedAssets] = useState<any[]>([]);
+  const cacheKey = `profile:${user?.id ?? 'anon'}`;
+  const [profile, setProfile] = useState<any>(() => peek(`${cacheKey}:me`) ?? null);
+  const [styleProfile, setStyleProfile] = useState<any>(() => peek(`${cacheKey}:style`) ?? null);
+  const [savedAssets, setSavedAssets] = useState<any[]>(() => peek(`${cacheKey}:saved`) ?? []);
   const [unreadNotifs, setUnreadNotifs] = useState<number>(0);
   const [activeOrdersCount, setActiveOrdersCount] = useState<number>(0);
-  const [impactData, setImpactData] = useState<any>(null);
+  const [impactData, setImpactData] = useState<any>(() => peek(`${cacheKey}:impact`) ?? null);
   const [updatingAvatar, setUpdatingAvatar] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [fullscreenAesthetic, setFullscreenAesthetic] = useState<string | null>(null);
@@ -63,37 +65,41 @@ export default function ProfileScreen() {
     try {
       const data = await userService.getMe();
       setProfile(data);
+      remember(`${cacheKey}:me`, data);
     } catch {
-      setProfile(null);
+      // keep whatever we already show
     }
-  }, []);
+  }, [cacheKey]);
 
   const fetchSavedAssets = useCallback(async () => {
     try {
       const data = await garmentService.getWishlist();
       setSavedAssets(data || []);
+      remember(`${cacheKey}:saved`, data || []);
     } catch {
-      setSavedAssets([]);
+      // keep cached
     }
-  }, []);
+  }, [cacheKey]);
 
   const fetchStyleProfile = useCallback(async () => {
     try {
       const data = await aiService.getStyleProfile();
       setStyleProfile(data);
+      remember(`${cacheKey}:style`, data);
     } catch {
-      setStyleProfile(null);
+      // keep cached
     }
-  }, []);
+  }, [cacheKey]);
 
   const fetchImpact = useCallback(async () => {
     try {
       const data = await impactService.getMyImpact();
       setImpactData(data);
+      remember(`${cacheKey}:impact`, data);
     } catch {
-      setImpactData(null);
+      // keep cached
     }
-  }, []);
+  }, [cacheKey]);
 
   const loadAllData = useCallback(async (isPull = false) => {
     if (isPull) setRefreshing(true);
@@ -126,8 +132,19 @@ export default function ProfileScreen() {
   }, [fetchProfile, fetchSavedAssets, fetchStyleProfile, fetchImpact]);
 
   useEffect(() => {
-    loadAllData(false);
-  }, [loadAllData]);
+    let alive = true;
+    (async () => {
+      const [me, st, sv, im] = await Promise.all([
+        hydrate(`${cacheKey}:me`), hydrate(`${cacheKey}:style`), hydrate(`${cacheKey}:saved`), hydrate(`${cacheKey}:impact`),
+      ]);
+      if (!alive) return;
+      setProfile((p: any) => p ?? me ?? null);
+      setStyleProfile((p: any) => p ?? st ?? null);
+      setSavedAssets((p: any[]) => (p.length ? p : sv ?? []));
+      setImpactData((p: any) => p ?? im ?? null);
+    })();
+    return () => { alive = false; };
+  }, [cacheKey]);
 
   useFocusEffect(
     useCallback(() => {
@@ -208,7 +225,7 @@ export default function ProfileScreen() {
         }
       }
       setEditingBio(false);
-      Alert.alert('Bio Updated', 'Your curator bio has been updated.');
+      Alert.alert('Bio Updated', 'Your bio has been updated.');
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Failed to update bio.');
     } finally {
@@ -216,7 +233,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const displayName = profile?.displayName || user?.displayName || 'Curator';
+  const displayName = profile?.displayName || user?.displayName || 'Member';
   const role = profile?.role || user?.role || 'MEMBER';
   const avatar = profile?.avatar || (user as any)?.avatar || user?.avatarUrl;
   const isVerified = Boolean(profile?.isVerified ?? (user as any)?.isVerified);
@@ -235,15 +252,15 @@ export default function ProfileScreen() {
   const carbonSaved = impactData?.impactRecord?.carbonSavedKg ?? 0;
   const waterSaved = impactData?.impactRecord?.waterSavedL ?? 0;
   const itemsCirculated = impactData?.impactRecord?.itemsCirculated ?? 0;
-  const currentTier = impactData?.tier || 'SEEDLING CURATOR';
+  const currentTier = impactData?.tier || 'SEEDLING MEMBER';
   const progressPercent = Math.min(100, Math.max(0, impactData?.progressPercentage ?? 25));
 
   return (
     <View style={styles.container}>
       <Header
-        title="CURATOR ATELIER"
+        title="MY PROFILE"
         rightElement={
-          <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutBtn} hitSlop={12}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Log out" onPress={handleLogout} style={styles.headerLogoutBtn} hitSlop={12}>
             <Ionicons name="log-out-outline" size={20} color={colors.charcoal} />
           </TouchableOpacity>
         }
@@ -287,7 +304,7 @@ export default function ProfileScreen() {
               )}
               <View style={styles.cameraOverlayBadge}>
                 {updatingAvatar ? (
-                  <ActivityIndicator size="small" color={colors.white} />
+                  <Spinner size="small" color={colors.white} />
                 ) : (
                   <Ionicons name="camera" size={11} color={colors.white} />
                 )}
@@ -303,13 +320,13 @@ export default function ProfileScreen() {
               </View>
 
               <Text style={styles.emailText} numberOfLines={1}>
-                {user?.email || profile?.email || 'curator@kaphor.luxury'}
+                {user?.email || profile?.email || 'member@kaphor.app'}
               </Text>
 
               <View style={styles.memberTagRow}>
                 <View style={styles.rolePill}>
                   <Text style={styles.rolePillText}>
-                    {role === 'ADMIN' ? 'ADMIN' : isVerified ? 'VERIFIED CURATOR' : 'CIRCULAR MEMBER'}
+                    {role === 'ADMIN' ? 'ADMIN' : isVerified ? 'VERIFIED MEMBER' : 'CIRCULAR MEMBER'}
                   </Text>
                 </View>
                 <View style={styles.tierPill}>
@@ -350,7 +367,7 @@ export default function ProfileScreen() {
               {/* Curator Bio */}
               <View style={styles.bioContainer}>
                 <Text style={styles.bioText} numberOfLines={3}>
-                  {bio || 'Curating timeless archives with conscious circular care.'}
+                  {bio || 'Loves fashion that lasts.'}
                 </Text>
                 <TouchableOpacity
                   style={styles.editBioBtn}
@@ -399,7 +416,7 @@ export default function ProfileScreen() {
               activeOpacity={0.75}
             >
               <Text style={styles.metricValue}>{savedAssets.length}</Text>
-              <Text style={styles.metricLabel}>SAVED VAULT</Text>
+              <Text style={styles.metricLabel}>SAVED ITEMS</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -447,7 +464,7 @@ export default function ProfileScreen() {
                     <Ionicons name="sparkles" size={13} color={colors.white} />
                   </View>
                   <View>
-                    <Text style={styles.aestheticCardLabel}>STYLE ARCHETYPE DOSSIER</Text>
+                    <Text style={styles.aestheticCardLabel}>YOUR STYLE</Text>
                     <Text style={styles.aestheticCardStatus}>
                       {isAestheticVerified
                         ? `${(aestheticMeta?.name || 'SADE GIRL').toUpperCase()} · TAP TO ${isArchetypeExpanded ? 'COLLAPSE' : 'EXPAND'}`
@@ -501,7 +518,7 @@ export default function ProfileScreen() {
                     </Text>
                   </View>
                   <View style={styles.expandDossierBtn}>
-                    <Text style={styles.expandDossierBtnText}>VIEW DOSSIER ▾</Text>
+                    <Text style={styles.expandDossierBtnText}>VIEW DETAILS ▾</Text>
                   </View>
                 </TouchableOpacity>
               )}
@@ -552,7 +569,7 @@ export default function ProfileScreen() {
                   {/* Complete Archival Essentials Checklist */}
                   {aestheticMeta?.essentials && aestheticMeta.essentials.length > 0 && (
                     <View style={styles.profileEssentialsSection}>
-                      <Text style={styles.profileEssentialsHeading}>■ ARCHIVAL ESSENTIALS</Text>
+                      <Text style={styles.profileEssentialsHeading}>■ STYLE BASICS</Text>
                       <View style={styles.profileEssentialsList}>
                         {aestheticMeta.essentials.map((item, idx) => (
                           <View key={idx} style={styles.profileEssentialRow}>
@@ -590,7 +607,7 @@ export default function ProfileScreen() {
                       activeOpacity={0.85}
                     >
                       <Text style={styles.exploreAestheticBtnText}>
-                        EXPLORE {aestheticMeta?.name?.toUpperCase() || 'CURATED'} ARCHIVE
+                        EXPLORE {aestheticMeta?.name?.toUpperCase() || 'STYLE'} PICKS
                       </Text>
                       <Ionicons name="arrow-forward" size={13} color={colors.cream} />
                     </TouchableOpacity>
@@ -617,14 +634,14 @@ export default function ProfileScreen() {
                     activeOpacity={0.85}
                   >
                     <Ionicons name="chevron-up" size={13} color={colors.charcoal} />
-                    <Text style={styles.collapseDossierBtnText}>COLLAPSE DOSSIER ▴</Text>
+                    <Text style={styles.collapseDossierBtnText}>HIDE DETAILS ▴</Text>
                   </TouchableOpacity>
                 </View>
               ) : !isAestheticVerified ? (
                 <View style={styles.aestheticPendingBody}>
                   <Text style={styles.pendingAestheticTitle}>Discover Your Style Archetype</Text>
                   <Text style={styles.pendingAestheticDesc}>
-                    Take our 8-question Aesthetic Match questionnaire to unlock your personal fashion profile, tailored circular recommendations, and curated wardrobe staples.
+                    Answer 8 quick questions to find your style and get picks made for you.
                   </Text>
                   <TouchableOpacity
                     style={styles.startQuizCta}
@@ -651,12 +668,12 @@ export default function ProfileScreen() {
                 <Ionicons name="leaf" size={14} color={colors.white} />
               </View>
               <View>
-                <Text style={styles.impactCardTitle}>CIRCULAR DOSSIER</Text>
+                <Text style={styles.impactCardTitle}>IMPACT DETAILS</Text>
                 <Text style={styles.impactTierSubtitle}>{currentTier}</Text>
               </View>
             </View>
             <View style={styles.impactActionBadge}>
-              <Text style={styles.impactActionText}>VIEW DOSSIER</Text>
+              <Text style={styles.impactActionText}>VIEW DETAILS</Text>
               <Ionicons name="arrow-forward" size={11} color={colors.forest} />
             </View>
           </View>
@@ -787,7 +804,7 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>OCCASIONAL RENTALS</Text>
-                <Text style={styles.cardSubtitle}>Explore luxury couture leases & approval queue</Text>
+                <Text style={styles.cardSubtitle}>Rent clothes and approve requests</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
@@ -803,7 +820,7 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>CIRCULAR SWAPS</Text>
-                <Text style={styles.cardSubtitle}>Trade luxury accessories with deposit escrow</Text>
+                <Text style={styles.cardSubtitle}>Swap accessories safely</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
@@ -818,7 +835,7 @@ export default function ProfileScreen() {
                 <Ionicons name="receipt-outline" size={18} color={colors.charcoal} />
               </View>
               <View style={styles.cardInfoCol}>
-                <Text style={styles.cardTitle}>PAYMENT LEDGER</Text>
+                <Text style={styles.cardTitle}>PAYMENT HISTORY</Text>
                 <Text style={styles.cardSubtitle}>Invoices, security deposits & transactions</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -840,7 +857,7 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>DIGITAL CLOSET</Text>
-                <Text style={styles.cardSubtitle}>Curate personal archive & log wear lifecycle</Text>
+                <Text style={styles.cardSubtitle}>Your closet and how often you wear things</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
@@ -874,8 +891,8 @@ export default function ProfileScreen() {
                 <Ionicons name="heart-outline" size={18} color={colors.crimson} />
               </View>
               <View style={styles.cardInfoCol}>
-                <Text style={styles.cardTitle}>SAVED VAULT</Text>
-                <Text style={styles.cardSubtitle}>Wishlist & curated watched archive pieces</Text>
+                <Text style={styles.cardTitle}>SAVED ITEMS</Text>
+                <Text style={styles.cardSubtitle}>Items you saved and are watching</Text>
               </View>
               <View style={styles.countBadgeNeutral}>
                 <Text style={styles.countBadgeNeutralText}>{savedAssets.length} SAVED</Text>
@@ -893,7 +910,7 @@ export default function ProfileScreen() {
                 <Ionicons name="sparkles-outline" size={18} color={colors.gold} />
               </View>
               <View style={styles.cardInfoCol}>
-                <Text style={styles.cardTitle}>AI STYLE DOSSIER</Text>
+                <Text style={styles.cardTitle}>AI STYLE DETAILS</Text>
                 <Text style={styles.cardSubtitle}>Gemini aesthetic preferences & fit silhouette</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -939,7 +956,7 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.cardInfoCol}>
                 <Text style={styles.cardTitle}>SHIPPING ADDRESSES</Text>
-                <Text style={styles.cardSubtitle}>Delivery destinations & dispatch origins</Text>
+                <Text style={styles.cardSubtitle}>Where we send things and where you ship from</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </TouchableOpacity>
@@ -1020,7 +1037,7 @@ export default function ProfileScreen() {
                 onPress={() => navigateTo('/(admin)')}
                 activeOpacity={0.85}
               >
-                <View style={[styles.cardIconBox, { backgroundColor: 'rgba(168,34,34,0.08)' }]}>
+                <View style={[styles.cardIconBox, { backgroundColor: colors.crimsonLight }]}>
                   <Ionicons name="shield" size={18} color={colors.crimson} />
                 </View>
                 <View style={styles.cardInfoCol}>
@@ -1038,7 +1055,7 @@ export default function ProfileScreen() {
               activeOpacity={0.85}
             >
               <Ionicons name="log-out-outline" size={16} color={colors.crimson} />
-              <Text style={styles.logoutButtonText}>SIGN OUT OF ATELIER</Text>
+              <Text style={styles.logoutButtonText}>SIGN OUT</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1064,7 +1081,7 @@ export default function ProfileScreen() {
                 AESTHETIC STYLE GUIDE & MOODBOARD POSTER
               </Text>
             </View>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={styles.profileModalCloseBtn}
               onPress={() => setFullscreenAesthetic(null)}
               activeOpacity={0.8}
@@ -1112,13 +1129,13 @@ export default function ProfileScreen() {
         >
           <TouchableOpacity activeOpacity={1} style={styles.bioModalCard}>
             <View style={styles.bioModalHeader}>
-              <Text style={styles.bioModalTitle}>EDIT CURATOR BIO</Text>
-              <TouchableOpacity onPress={() => setEditingBio(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={styles.bioModalTitle}>EDIT BIO</Text>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={() => setEditingBio(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={20} color={colors.charcoal} />
               </TouchableOpacity>
             </View>
 
-            <TextInput
+            <TextInput accessibilityLabel="Write a brief bio about your style perspective"
               style={styles.bioTextInput}
               placeholder="Write a brief bio about your style perspective..."
               placeholderTextColor={colors.textMuted}
@@ -1141,7 +1158,7 @@ export default function ProfileScreen() {
                 disabled={savingBio}
               >
                 {savingBio ? (
-                  <ActivityIndicator size="small" color={colors.white} />
+                  <Spinner size="small" color={colors.white} />
                 ) : (
                   <Text style={styles.bioSaveText}>SAVE BIO</Text>
                 )}
@@ -1245,8 +1262,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   emailText: {
-    fontSize: 10,
-    fontFamily: typography.mono,
+    fontSize: 17,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
     color: colors.textSecond,
     marginTop: 2,
     marginBottom: 6,
@@ -1264,10 +1282,9 @@ const styles = StyleSheet.create({
   },
   rolePillText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   topProfileQuickActions: {
     flexDirection: 'row',
@@ -1294,11 +1311,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   topQuickBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.6,
   },
   topQuickBadge: {
     backgroundColor: colors.charcoal,
@@ -1311,7 +1327,7 @@ const styles = StyleSheet.create({
   },
   topQuickBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.white,
   },
@@ -1323,14 +1339,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
   },
   establishedText: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
+    fontSize: 18,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
     color: colors.charcoal,
-    fontWeight: '700',
-    letterSpacing: 0.5,
   },
 
   // ── Metric Quick Bar ───────────────────────────────────────────
@@ -1363,7 +1378,7 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     fontFamily: typography.mono,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
     marginTop: 2,
@@ -1409,32 +1424,30 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   impactTierSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    fontWeight: '800',
-    letterSpacing: 0.5,
   },
   impactActionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(30,59,47,0.08)',
+    backgroundColor: colors.emeraldLight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: 'rgba(30,59,47,0.25)',
+    borderColor: colors.emeraldLight,
   },
   impactActionText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.forest,
-    letterSpacing: 0.5,
   },
   tierProgressTrack: {
     height: 4,
-    backgroundColor: 'rgba(30,59,47,0.12)',
+    backgroundColor: colors.emeraldLight,
     marginBottom: 12,
     borderRadius: 2,
     overflow: 'hidden',
@@ -1447,11 +1460,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: 'rgba(30,59,47,0.15)',
+    borderColor: colors.emeraldLight,
   },
   impactMetricCol: {
     flex: 1,
@@ -1460,7 +1473,7 @@ const styles = StyleSheet.create({
   impactDividerCol: {
     width: 1,
     height: 24,
-    backgroundColor: 'rgba(30,59,47,0.2)',
+    backgroundColor: colors.emeraldLight,
   },
   impactMetricNum: {
     fontFamily: typography.headings,
@@ -1469,18 +1482,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   impactUnit: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.forest,
     fontWeight: '800',
   },
   impactMetricLabel: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 1,
-    letterSpacing: 0.6,
   },
 
   // ── 3. Segmented Navigation Tabs ───────────────────────────────
@@ -1514,11 +1526,10 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   segmentTabText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.8,
   },
   segmentTabTextActive: {
     color: colors.white,
@@ -1547,7 +1558,7 @@ const styles = StyleSheet.create({
   cardIconBox: {
     width: 38,
     height: 38,
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
@@ -1557,18 +1568,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.6,
   },
   cardSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginTop: 2,
-    lineHeight: 13,
+    lineHeight: 21,
   },
   badgePillActive: {
     backgroundColor: colors.forest,
@@ -1577,10 +1588,9 @@ const styles = StyleSheet.create({
   },
   badgePillActiveText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   countBadgeNeutral: {
     backgroundColor: colors.bgMuted,
@@ -1591,10 +1601,9 @@ const styles = StyleSheet.create({
   },
   countBadgeNeutralText: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   statusPill: {
     paddingHorizontal: 6,
@@ -1602,10 +1611,9 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   unreadBadge: {
     backgroundColor: colors.crimson,
@@ -1618,7 +1626,7 @@ const styles = StyleSheet.create({
   unreadBadgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11.5,
     fontWeight: '900',
   },
 
@@ -1641,10 +1649,9 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: colors.crimson,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
 
   // ── 6. Style Archetype Dossier Card ────────────────────────────
@@ -1684,32 +1691,29 @@ const styles = StyleSheet.create({
   },
   aestheticCardLabel: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.2,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   aestheticCardStatus: {
-    color: 'rgba(245, 240, 232, 0.65)',
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: colors.goldDark,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   retakeQuizBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: colors.overlayLight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 3,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: colors.borderLight,
   },
   retakeQuizText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   aestheticBody: {
     padding: 14,
@@ -1728,7 +1732,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   matchScoreBadge: {
-    backgroundColor: 'rgba(168, 34, 34, 0.12)',
+    backgroundColor: colors.crimsonLight,
     paddingHorizontal: 7,
     paddingVertical: 2.5,
     borderRadius: 3,
@@ -1736,7 +1740,7 @@ const styles = StyleSheet.create({
   matchScoreText: {
     color: colors.crimson,
     fontFamily: typography.mono,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '900',
   },
   aestheticTagline: {
@@ -1749,7 +1753,7 @@ const styles = StyleSheet.create({
   aestheticDescriptionText: {
     fontFamily: typography.body,
     fontSize: 12.5,
-    color: 'rgba(30,31,34,0.78)',
+    color: colors.inkSoft,
     lineHeight: 19,
     marginBottom: 12,
   },
@@ -1761,7 +1765,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1.5,
     borderColor: colors.charcoal,
-    backgroundColor: '#FAF8F5',
+    backgroundColor: colors.paperLight,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -1774,7 +1778,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     right: 8,
-    backgroundColor: 'rgba(26,26,26,0.85)',
+    backgroundColor: colors.overlay,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -1783,26 +1787,24 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   profileTapToExpandText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   profileEssentialsSection: {
-    backgroundColor: '#FAF8F5',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.12)',
+    borderColor: colors.overlayLight,
     padding: 12,
     borderRadius: 6,
     marginBottom: 14,
   },
   profileEssentialsHeading: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.8,
     marginBottom: 8,
   },
   profileEssentialsList: {
@@ -1826,9 +1828,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   profileSecondaryCard: {
-    backgroundColor: 'rgba(247, 244, 238, 0.95)',
+    backgroundColor: colors.goldDark,
     borderWidth: 1,
-    borderColor: 'rgba(26,26,26,0.18)',
+    borderColor: colors.overlayLight,
     padding: 10,
     borderRadius: 4,
     marginBottom: 12,
@@ -1840,20 +1842,19 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   profileSecondaryBadge: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.5,
-    backgroundColor: 'rgba(26,26,26,0.08)',
+    backgroundColor: colors.overlayLight,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 2,
   },
   profileSecondaryMatch: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.crimson,
   },
   profileSecondaryName: {
@@ -1864,7 +1865,7 @@ const styles = StyleSheet.create({
   },
   profileSecondaryTagline: {
     fontFamily: typography.body,
-    fontSize: 10.5,
+    fontSize: 11.5,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1883,10 +1884,9 @@ const styles = StyleSheet.create({
   },
   exploreAestheticBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   profileFullscreenBtn: {
     flexDirection: 'row',
@@ -1896,21 +1896,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.25)',
+    borderColor: colors.overlayLight,
     backgroundColor: colors.white,
   },
   profileFullscreenBtnText: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
 
   /* Profile Fullscreen Lightbox Modal */
   profileModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(10, 10, 12, 0.98)',
+    backgroundColor: colors.ink,
     paddingTop: 48,
     paddingBottom: 24,
     paddingHorizontal: 16,
@@ -1922,7 +1921,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
+    borderBottomColor: colors.borderLight,
   },
   profileModalTitle: {
     fontFamily: typography.headings,
@@ -1931,17 +1930,17 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   profileModalSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    color: 'rgba(245, 240, 232, 0.6)',
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.goldDark,
     marginTop: 2,
-    letterSpacing: 0.5,
   },
   profileModalCloseBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1962,7 +1961,7 @@ const styles = StyleSheet.create({
   profileModalBottomBar: {
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    borderTopColor: colors.borderLight,
   },
   profileModalDoneBtn: {
     flexDirection: 'row',
@@ -1974,11 +1973,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   profileModalDoneText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   aestheticPendingBody: {
     padding: 14,
@@ -2005,17 +2003,16 @@ const styles = StyleSheet.create({
   },
   startQuizCtaText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
 
   // ── Monogram Avatar, Bio & Tier Styles ──
   avatarMonogram: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: colors.ink,
     borderWidth: 2,
-    borderColor: colors.gold || '#D4AF37',
+    borderColor: colors.gold || colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2023,21 +2020,21 @@ const styles = StyleSheet.create({
     fontFamily: typography.mono,
     fontSize: 22,
     fontWeight: '900',
-    color: colors.cream || '#FAF8F5',
+    color: colors.cream || colors.paperLight,
     letterSpacing: 1,
   },
   tierPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+    backgroundColor: colors.goldLight,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: colors.gold || '#D4AF37',
+    borderColor: colors.gold || colors.gold,
   },
   tierText: {
-    fontSize: 8,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.charcoal,
     fontWeight: '800',
@@ -2047,10 +2044,10 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.08)',
+    borderTopColor: colors.overlayLight,
   },
   bioText: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     color: colors.textSecond,
     lineHeight: 15,
     fontStyle: 'italic',
@@ -2063,11 +2060,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   editBioBtnText: {
-    fontSize: 8.5,
-    fontFamily: typography.mono,
-    fontWeight: '800',
+    fontSize: 18,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
 
   // ── Collapsible Aesthetic Bar ──
@@ -2076,7 +2072,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FAF8F5',
+    backgroundColor: colors.paperLight,
     gap: 10,
   },
   aestheticCollapsedName: {
@@ -2086,20 +2082,21 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   aestheticCollapsedTagline: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 2,
   },
   matchScoreBadgeCompact: {
-    backgroundColor: colors.forest || '#2A7B4C',
+    backgroundColor: colors.forest || colors.forest,
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 3,
   },
   matchScoreTextCompact: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.white,
     letterSpacing: 0.5,
@@ -2112,10 +2109,9 @@ const styles = StyleSheet.create({
   },
   expandDossierBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   collapseDossierBtn: {
     flexDirection: 'row',
@@ -2125,14 +2121,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
+    borderTopColor: colors.overlayLight,
   },
   collapseDossierBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
 
   // ── Edit Bio Modal ──
@@ -2152,11 +2147,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   bioModalTitle: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   bioTextInput: {
     borderWidth: 1.5,
@@ -2164,11 +2158,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     minHeight: 80,
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     fontSize: 11,
     color: colors.charcoal,
     textAlignVertical: 'top',
-    backgroundColor: '#FAF8F5',
+    backgroundColor: colors.paperLight,
   },
   bioModalActions: {
     flexDirection: 'row',
@@ -2184,11 +2178,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bioCancelText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   bioSaveBtn: {
     flex: 2,
@@ -2198,10 +2191,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bioSaveText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.8,
   },
 });

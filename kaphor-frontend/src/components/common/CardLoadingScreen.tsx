@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Animated, DimensionValue, Text, ScrollView } from 'react-native';
 import { colors, typography } from '../../theme';
 
@@ -9,27 +9,37 @@ interface SkeletonPulseProps {
   borderRadius?: number;
 }
 
-export function SkeletonPulse({ style, width, height, borderRadius = 3 }: SkeletonPulseProps) {
-  const pulseAnim = useRef(new Animated.Value(0.35)).current;
+// One shared pulse for every skeleton block on screen (a single animation, not one per block)
+const sharedPulse = new Animated.Value(0.35);
+let pulseUsers = 0;
+let pulseLoop: Animated.CompositeAnimation | null = null;
 
+function usePulse() {
   useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 0.85,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 0.35,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [pulseAnim]);
+    pulseUsers += 1;
+    if (!pulseLoop) {
+      pulseLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(sharedPulse, { toValue: 0.85, duration: 800, useNativeDriver: true }),
+          Animated.timing(sharedPulse, { toValue: 0.35, duration: 800, useNativeDriver: true }),
+        ])
+      );
+      pulseLoop.start();
+    }
+    return () => {
+      pulseUsers -= 1;
+      if (pulseUsers <= 0 && pulseLoop) {
+        pulseLoop.stop();
+        pulseLoop = null;
+        pulseUsers = 0;
+      }
+    };
+  }, []);
+  return sharedPulse;
+}
+
+export function SkeletonPulse({ style, width, height, borderRadius = 3 }: SkeletonPulseProps) {
+  const pulseAnim = usePulse();
 
   return (
     <Animated.View
@@ -56,7 +66,7 @@ export function MessageCardsLoading({ count = 5 }: { count?: number }) {
     <View style={styles.container}>
       <View style={styles.syncBanner}>
         <SkeletonPulse width={8} height={8} borderRadius={4} style={{ backgroundColor: colors.ink }} />
-        <Text style={styles.syncText}>SYNCING ATELIER ARCHIVE...</Text>
+        <Text style={styles.syncText}>Loading messages…</Text>
       </View>
 
       {Array.from({ length: count }).map((_, idx) => (
@@ -169,7 +179,7 @@ export function OrderCardsLoading({ count = 4 }: { count?: number }) {
     <View style={styles.container}>
       <View style={styles.syncBanner}>
         <SkeletonPulse width={8} height={8} borderRadius={4} style={{ backgroundColor: colors.ink }} />
-        <Text style={styles.syncText}>LOADING TRANSACTIONS LEDGER...</Text>
+        <Text style={styles.syncText}>Loading your orders…</Text>
       </View>
 
       {Array.from({ length: count }).map((_, idx) => (
@@ -208,8 +218,8 @@ export function CenterCardsLoading({ count = 3 }: { count?: number }) {
   return (
     <View style={{ gap: 10 }}>
       <View style={styles.syncBanner}>
-        <SkeletonPulse width={8} height={8} borderRadius={4} style={{ backgroundColor: colors.forest || '#1E3B2F' }} />
-        <Text style={styles.syncText}>LOCATING VERIFIED TEXTILE HUBS...</Text>
+        <SkeletonPulse width={8} height={8} borderRadius={4} style={{ backgroundColor: colors.forest }} />
+        <Text style={styles.syncText}>Finding recycling centres…</Text>
       </View>
 
       {Array.from({ length: count }).map((_, idx) => (
@@ -342,7 +352,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   skeletonBase: {
-    backgroundColor: 'rgba(20,20,20,0.12)',
+    backgroundColor: colors.overlayLight,
   },
   syncBanner: {
     flexDirection: 'row',
@@ -354,7 +364,7 @@ const styles = StyleSheet.create({
   },
   syncText: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.8,
@@ -387,7 +397,7 @@ const styles = StyleSheet.create({
   },
   avatarSkeleton: {
     borderWidth: 1,
-    borderColor: 'rgba(20,20,20,0.1)',
+    borderColor: colors.overlayLight,
   },
   messageCardMiddle: {
     flex: 1,
@@ -417,9 +427,9 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: '#EFECE4',
+    backgroundColor: colors.paperDark,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(20,20,20,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   chatMessagesArea: {
     flex: 1,
@@ -446,7 +456,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   bubbleBoxRight: {
-    backgroundColor: '#E6E4DC',
+    backgroundColor: colors.paperDark,
     borderColor: colors.ink,
   },
   chatInputBarSkeleton: {
@@ -478,7 +488,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(20,20,20,0.08)',
+    borderTopColor: colors.overlayLight,
     marginTop: 4,
   },
   centerCardSkeleton: {
@@ -511,7 +521,7 @@ const styles = StyleSheet.create({
   garmentImageSkeletonBox: {
     width: '100%',
     aspectRatio: 0.85,
-    backgroundColor: '#ECE8DF',
+    backgroundColor: colors.paperDark,
     position: 'relative',
   },
   garmentPillSkeleton: {

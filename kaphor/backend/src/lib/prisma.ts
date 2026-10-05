@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client';
+import { invalidateGarmentCaches } from './cache';
+import { invalidateAuthUser } from './authCache';
 
 const enableQueryLogs = process.env.PRISMA_QUERY_LOGS === 'true';
 
@@ -8,8 +10,25 @@ const prisma = new PrismaClient({
       ? enableQueryLogs
         ? ['query', 'error', 'warn']
         : ['error', 'warn']
-      : ['error'],
+      : ['error', 'warn'],
 });
+
+// Writes that change what the public garment feed / detail pages show. Any of them clears the response caches,
+// so no controller can forget to invalidate. A bare viewCount bump is excluded (it happens on every detail view).
+const GARMENT_WRITE_OPS = new Set(['create', 'createMany', 'update', 'updateMany', 'upsert', 'delete', 'deleteMany']);
+function isViewCountOnly(args: any): boolean {
+  const data = args?.data;
+  if (!data || typeof data !== 'object') return false;
+  const keys = Object.keys(data);
+  return keys.length === 1 && keys[0] === 'viewCount';
+}
+const invalidateOnWrite = {
+  async $allOperations({ operation, args, query }: any) {
+    const result = await query(args);
+    if (GARMENT_WRITE_OPS.has(operation) && !isViewCountOnly(args)) invalidateGarmentCaches();
+    return result;
+  },
+};
 
 const RETRYABLE_DB_ERRORS = [
   /server has closed the connection/i,
@@ -59,6 +78,7 @@ const db = prisma.$extends({
         if (!user) throw new Error("User not found");
         
         const mark = `_deleted_${Date.now()}`;
+        invalidateAuthUser();
         return prisma.user.update({
           where: args.where,
           data: { 
@@ -72,7 +92,30 @@ const db = prisma.$extends({
     },
   },
   query: {
+    garment: invalidateOnWrite,
+    rental: invalidateOnWrite,
     user: {
+      // Any write to users may change role / isActive: drop cached auth lookups so changes apply immediately.
+      async update({ args, query }: any) {
+        const result = await query(args);
+        invalidateAuthUser((args?.where as any)?.id);
+        return result;
+      },
+      async updateMany({ args, query }: any) {
+        const result = await query(args);
+        invalidateAuthUser();
+        return result;
+      },
+      async upsert({ args, query }: any) {
+        const result = await query(args);
+        invalidateAuthUser();
+        return result;
+      },
+      async deleteMany({ args, query }: any) {
+        const result = await query(args);
+        invalidateAuthUser();
+        return result;
+      },
       async findMany({ args, query }) {
         args.where = { isActive: true, ...args.where };
         return query(args);

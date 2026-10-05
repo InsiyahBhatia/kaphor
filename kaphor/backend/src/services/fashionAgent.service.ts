@@ -4,6 +4,7 @@ import { getDownloadUrl } from '../lib/cloudinary';
 import { generateWithGroq } from './groq.service';
 import { generateWithGemini } from './gemini.service';
 
+import { parseLlmJson, cleanChatReply } from '../lib/llmOutput';
 export interface AgentActionLog {
   tool: string;
   description: string;
@@ -668,11 +669,11 @@ export async function createOutfitLook(
 
   return {
     title: occasion,
-    vibe: 'Refined & Harmonious',
-    occasion: 'Curated Ensemble',
+    vibe: 'Clean and balanced',
+    occasion: 'Complete look',
     editorialNote: useWardrobe
-      ? 'A balanced ensemble combining a piece from your wardrobe with perfectly paired complementary pieces.'
-      : 'A balanced ensemble with distinct, coordinated pieces styled for a complete look.',
+      ? 'A balanced look combining a piece from your wardrobe with perfectly paired complementary pieces.'
+      : 'A balanced look with distinct, coordinated pieces styled for a complete look.',
     items,
   };
 }
@@ -747,7 +748,8 @@ ${visualSummary ? `Item Image Analysis: "${visualSummary}"` : ''}`;
       temperature: 0.1,
       maxTokens: 512,
     });
-    const parsed = JSON.parse(raw);
+    const parsed: any = parseLlmJson(raw);
+    if (!parsed || typeof parsed !== 'object') throw new Error('Intent JSON invalid');
     return {
       intent: parsed.intent || 'STYLING_ADVICE',
       isStylingAdvice: Boolean(parsed.isStylingAdvice ?? (parsed.intent === 'STYLING_ADVICE')),
@@ -765,7 +767,8 @@ ${visualSummary ? `Item Image Analysis: "${visualSummary}"` : ''}`;
         responseMimeType: 'application/json',
         temperature: 0.1,
       });
-      const parsed = JSON.parse(rawGemini);
+      const parsed: any = parseLlmJson(rawGemini);
+      if (!parsed || typeof parsed !== 'object') throw new Error('Intent JSON invalid');
       return {
         intent: parsed.intent || 'STYLING_ADVICE',
         isStylingAdvice: Boolean(parsed.isStylingAdvice ?? (parsed.intent === 'STYLING_ADVICE')),
@@ -980,10 +983,10 @@ CRITICAL BREVITY & FORMATTING RULES (STRICTLY ENFORCE):
 1. NEVER write a heavy paragraph or wall of text. Keep your entire reply short, punchy, and under 60-70 words!
 2. Format your response exactly like this:
    - A friendly 1-sentence intro.
-   - Exactly 2 to 3 bullet points, each on its own line:
-     • **Combo / Vibe Name**: 1 concise sentence describing the bottom, cut, or layering (e.g. • **Chocolate Brown**: Ground it with tailored wide-leg trousers or a pleated skirt for a rich 90s contrast.)
-   - A brief 1-sentence wrap-up referencing the curated pieces below.
-3. Use bolding for each combo name with **Bold Name**.
+   - Exactly 2 to 3 bullet points, each on its own line starting with the bullet character:
+     • Combo Name: 1 concise sentence describing the bottom, cut, or layering (e.g. • Chocolate Brown: Ground it with tailored wide-leg trousers or a pleated skirt for a rich 90s contrast.)
+   - A brief 1-sentence wrap-up pointing to the pieces below.
+3. Plain text only. Do NOT use markdown symbols such as ** or # or backticks, and never reply in JSON.
 4. ANATOMICAL REALITY: A TOP must always be styled with bottoms (jeans, trousers, skirts, shorts) or outerwear. NEVER recommend wearing a top with another top (no blouses/shirts over tops).
 5. ONLY reference items from "Available complementary pieces on the app" below if they genuinely fit the vibe.
 
@@ -1002,7 +1005,7 @@ CRITICAL RULES:
 2. The user wants to shop, rent, swap, or buy items. Recommend matching pieces from "Available pieces found on the app" below by exact title and brand.
 3. Never say "I couldn't find", "unable to recommend", or "check the app directly" when pieces ARE listed below.
 4. Keep your reply short, warm, and natural: strictly 2 to 3 simple sentences.
-5. The user sees interactive product cards below your message, so do not use markdown lists or item IDs.
+5. The user sees interactive product cards below your message, so do not use markdown symbols (** or #), JSON or item IDs. Plain text only.
 ${budgetContext ? `6. ${budgetContext}` : ''}
 
 The user asked: "${message}".
@@ -1033,6 +1036,11 @@ ${wantsWardrobe ? `User's closet items: ${wardrobeSummary}` : ''}`;
       }
     }
   }
+
+  // Never let markdown or JSON-looking text reach the user
+  reply = cleanChatReply(reply, cards.length > 0
+    ? 'Here are a few pieces that could work for you. Take a look below.'
+    : 'Tell me a bit more about the occasion and I will suggest some looks.');
 
   // Guard: If a SHOPPING prompt returned a negative/fallback message but we actually have cards, override it
   const negativePhrases = [

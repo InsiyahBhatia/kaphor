@@ -4,6 +4,43 @@ import { logger } from '../lib/logger';
 import { createNotification } from '../services/notification.service';
 import { emitToUser, emitToConversation } from '../lib/socket';
 
+const BLOCKING_RENTAL_STATUSES = ['APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED'];
+
+function cleanStr(v: unknown, max: number): string | undefined {
+    if (typeof v !== 'string') return undefined;
+    const t = v.trim();
+    return t.length > 0 ? t.slice(0, max) : undefined;
+}
+
+function parseJsonObject(v: unknown, maxLen: number): Record<string, unknown> | null | undefined {
+    // undefined => invalid; null => absent
+    if (v === undefined || v === null || v === '') return null;
+    let obj: unknown = v;
+    if (typeof v === 'string') {
+        if (v.length > maxLen) return undefined;
+        try { obj = JSON.parse(v); } catch { return undefined; }
+    }
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return undefined;
+    if (JSON.stringify(obj).length > maxLen) return undefined;
+    return obj as Record<string, unknown>;
+}
+
+/**
+ * Resolve a rental by its id; falls back to stripeId only among rentals the caller participates in
+ * (stripeId is client-influenced, so it must never resolve to someone else's rental).
+ */
+async function findRentalByRef(ref: string, uid: string, include: any): Promise<any | null> {
+    const byId = await db.rental.findUnique({ where: { id: ref }, include });
+    if (byId) return byId;
+    return db.rental.findFirst({
+        where: {
+            stripeId: ref,
+            OR: [{ renterId: uid }, { garment: { sellerId: uid } }],
+        },
+        include,
+    });
+}
+
 export async function getAvailableRentals(req: Request, res: Response): Promise<void> {
     try {
         const { category, startDate, endDate, priceMax, excludeMine } = req.query;
@@ -15,11 +52,11 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
             lifecycleState: 'LISTED'
         };
 
-        if (category) {
-            query.category = String(category);
+        if (category && typeof category === 'string') {
+            query.category = category.slice(0, 100);
         }
 
-        if (priceMax) {
+        if (priceMax && Number.isFinite(Number(priceMax))) {
             query.rentalPriceDay = { lte: Math.round(Number(priceMax)) };
         }
 
@@ -30,7 +67,9 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
         }
 
         // OPTIMIZATION: Only include rentals (N+1) when date filter is provided
-        const hasDateFilter = Boolean(startDate && endDate);
+        const hasDateFilter = Boolean(startDate && endDate) &&
+            !Number.isNaN(new Date(String(startDate)).getTime()) &&
+            !Number.isNaN(new Date(String(endDate)).getTime());
 
         let garments;
 
@@ -107,9 +146,9 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const { garmentId, startDate, endDate, days: inputDays, message, shippingAddress, metadata } = req.body;
+        const { garmentId, startDate, endDate, days: inputDays, message, shippingAddress, metadata } = req.body || {};
 
-        if (!garmentId) {
+        if (!garmentId || typeof garmentId !== 'string') {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Garment ID is required' });
             return;
         }
@@ -129,12 +168,21 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             reqStart = new Date(startDate);
             reqEnd = new Date(reqStart);
             reqEnd.setDate(reqEnd.getDate() + Number(inputDays));
-        } else if (inputDays) {
+        } else if (inputDays && Number.isFinite(Number(inputDays))) {
             reqStart = new Date(today);
             reqEnd = new Date(today);
             reqEnd.setDate(reqEnd.getDate() + Number(inputDays));
         } else {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Valid dates or rental duration required' });
+            return;
+        }
+
+        if (Number.isNaN(reqStart.getTime()) || Number.isNaN(reqEnd.getTime())) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid dates' });
+            return;
+        }
+        if (reqStart.getTime() > today.getTime() + 365 * 24 * 60 * 60 * 1000) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Start date is too far in the future' });
             return;
         }
 
@@ -158,7 +206,7 @@ export async function createRental(req: Request, res: Response): Promise<void> {
             where: { id: String(garmentId) },
             include: {
                 rentals: {
-                    where: { status: { in: ['APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED'] } }
+                    where: { status: { in: BLOCKING_RENTAL_STATUSES as any } }
                 }
             }
         });
@@ -171,6 +219,22 @@ export async function createRental(req: Request, res: Response): Promise<void> {
         if (garment.sellerId === req.user.id) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Cannot rent your own garment' });
             return;
+        }
+
+        if (!garment.isActive || garment.lifecycleState !== 'LISTED') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'This garment is not available for rent' });
+            return;
+        }
+
+        const parsedShipping = parseJsonObject(shippingAddress, 4000);
+        const parsedMeta = parseJsonObject(metadata, 4000);
+        if (parsedShipping === undefined || parsedMeta === undefined) {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid shipping address or metadata' });
+            return;
+        }
+        if (parsedMeta) {
+            // Server-owned keys must not be client-controlled
+            delete (parsedMeta as any).reviews;
         }
 
         // Check for conflicts
@@ -224,8 +288,8 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                 totalPrice: amount,
                 status: 'REQUESTED',
                 message: typeof message === 'string' && message.trim().length > 0 ? message.trim().slice(0, 2000) : null,
-                shippingAddress: shippingAddress ? (typeof shippingAddress === 'string' ? JSON.parse(shippingAddress) : shippingAddress) : null,
-                metadata: metadata ? (typeof metadata === 'string' ? JSON.parse(metadata) : metadata) : null,
+                shippingAddress: (parsedShipping ?? null) as any,
+                metadata: (parsedMeta ?? null) as any,
                 trackingHistory: initialHistory,
             },
             include: {
@@ -334,13 +398,13 @@ export async function createRental(req: Request, res: Response): Promise<void> {
  */
 export async function calculateRentalBreakdown(req: Request, res: Response): Promise<void> {
     try {
-        const { garmentId, days: daysInput } = req.body;
-        if (!garmentId) {
+        const { garmentId, days: daysInput } = req.body || {};
+        if (!garmentId || typeof garmentId !== 'string') {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'garmentId is required' });
             return;
         }
 
-        const days = Math.max(1, Math.min(30, Number(daysInput) || 3));
+        const days = Math.max(1, Math.min(30, Math.floor(Number(daysInput)) || 3));
 
         const garment = await db.garment.findUnique({
             where: { id: String(garmentId) },
@@ -403,22 +467,14 @@ export async function getRentalEscrow(req: Request, res: Response): Promise<void
 
         const { id } = req.params;
         const cleanId = String(id || '').trim();
-        const rental = await db.rental.findFirst({
-            where: {
-                OR: [
-                    { id: cleanId },
-                    { stripeId: cleanId },
-                ]
-            },
-            include: { garment: true }
-        });
+        const rental = await findRentalByRef(cleanId, req.user.id, { garment: true });
 
         if (!rental) {
             res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
             return;
         }
 
-        if (rental.renterId !== req.user.id && rental.garment.sellerId !== req.user.id) {
+        if (rental.renterId !== req.user.id && rental.garment.sellerId !== req.user.id && (req.user as any).role !== 'ADMIN') {
             res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied' });
             return;
         }
@@ -454,15 +510,7 @@ export async function releaseRentalDeposit(req: Request, res: Response): Promise
 
         const { id } = req.params;
         const cleanId = String(id || '').trim();
-        const rental = await db.rental.findFirst({
-            where: {
-                OR: [
-                    { id: cleanId },
-                    { stripeId: cleanId },
-                ]
-            },
-            include: { garment: true }
-        });
+        const rental = await findRentalByRef(cleanId, req.user.id, { garment: true });
 
         if (!rental) {
             res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
@@ -480,8 +528,9 @@ export async function releaseRentalDeposit(req: Request, res: Response): Promise
         }
 
         const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
-        await db.rental.update({
-            where: { id: rental.id },
+        // Atomic status guard: a deposit can only be released once.
+        const released = await db.rental.updateMany({
+            where: { id: rental.id, status: 'RETURNED' },
             data: {
                 status: 'COMPLETED',
                 depositRefundedAt: new Date(),
@@ -491,6 +540,10 @@ export async function releaseRentalDeposit(req: Request, res: Response): Promise
                 ]
             }
         });
+        if (released.count !== 1) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Deposit already released or rental state changed' });
+            return;
+        }
 
         try {
             await createNotification({
@@ -589,6 +642,9 @@ export async function getMyRentals(req: Request, res: Response): Promise<void> {
         const rentals = await Promise.all(
             rawRentals.map(async (rental: any) => {
                 const userRole = rental.renterId === uid ? 'RENTER' : 'LENDER';
+                if (userRole === 'LENDER' && ['REQUESTED', 'APPROVED', 'DECLINED', 'CANCELLED'].includes(String(rental.status))) {
+                    rental = { ...rental, shippingAddress: null };
+                }
                 let resolvedImages = rental.garment?.images || [];
                 if (Array.isArray(resolvedImages) && resolvedImages.length > 0) {
                     resolvedImages = await Promise.all(resolvedImages.map((img: string) => getDownloadUrl(img)));
@@ -638,7 +694,8 @@ export async function getRentalById(req: Request, res: Response): Promise<void> 
             where: {
                 OR: [
                     { id: cleanId },
-                    { stripeId: cleanId },
+                    { stripeId: cleanId, renterId: uid },
+                    { stripeId: cleanId, garment: { sellerId: uid } },
                     { garmentId: cleanId, renterId: uid },
                     { garmentId: cleanId, garment: { sellerId: uid } },
                 ]
@@ -713,32 +770,48 @@ export async function getRentalById(req: Request, res: Response): Promise<void> 
         const isAdmin = (req.user as any).role === 'ADMIN';
 
         if (!isRenter && !isLender && !isAdmin) {
-            res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to view this rental dossier' });
+            res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to view this rental' });
             return;
         }
 
         const userRole = isRenter ? 'RENTER' : 'LENDER';
 
+        // Counterparty contact details / shipping address are revealed only once the deal progresses.
+        const status = String(rental.status);
+        const pastApproval = !['REQUESTED', 'DECLINED', 'CANCELLED', 'EXPIRED'].includes(status);
+        const paid = !['REQUESTED', 'APPROVED', 'DECLINED', 'CANCELLED', 'EXPIRED'].includes(status);
+        const safeRental: any = { ...rental };
+        if (!isAdmin) {
+            if (isLender && !isRenter) {
+                if (!paid) safeRental.shippingAddress = null;
+                if (safeRental.renter && !pastApproval) safeRental.renter = { ...safeRental.renter, phone: null, email: null };
+            } else if (isRenter && !isLender) {
+                if (safeRental.garment?.seller && !paid) {
+                    safeRental.garment = { ...safeRental.garment, seller: { ...safeRental.garment.seller, phone: null, email: null } };
+                }
+            }
+        }
+
         const { getDownloadUrl } = await import('../lib/cloudinary');
-        let resolvedImages = rental.garment?.images || [];
+        let resolvedImages = safeRental.garment?.images || [];
         if (Array.isArray(resolvedImages) && resolvedImages.length > 0) {
             resolvedImages = await Promise.all(resolvedImages.map((img: string) => getDownloadUrl(img)));
         }
-        let renterAvatar = rental.renter?.avatar;
+        let renterAvatar = safeRental.renter?.avatar;
         if (renterAvatar) renterAvatar = await getDownloadUrl(renterAvatar);
-        let lenderAvatar = rental.garment?.seller?.avatar;
+        let lenderAvatar = safeRental.garment?.seller?.avatar;
         if (lenderAvatar) lenderAvatar = await getDownloadUrl(lenderAvatar);
 
         res.json({
             data: {
-                ...rental,
+                ...safeRental,
                 userRole,
-                garment: rental.garment ? {
-                    ...rental.garment,
+                garment: safeRental.garment ? {
+                    ...safeRental.garment,
                     images: resolvedImages,
-                    seller: rental.garment.seller ? { ...rental.garment.seller, avatar: lenderAvatar } : undefined,
+                    seller: safeRental.garment.seller ? { ...safeRental.garment.seller, avatar: lenderAvatar } : undefined,
                 } : null,
-                renter: rental.renter ? { ...rental.renter, avatar: renterAvatar } : null,
+                renter: safeRental.renter ? { ...safeRental.renter, avatar: renterAvatar } : null,
             }
         });
     } catch (error) {
@@ -776,8 +849,27 @@ export async function approveRentalRequest(req: Request, res: Response): Promise
         }
 
         const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
-        const updated = await db.rental.update({
-            where: { id },
+        // Re-check availability: the garment must still be listed and no overlapping booking may exist.
+        if (!rental.garment.isActive || rental.garment.lifecycleState !== 'LISTED') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Garment is no longer available' });
+            return;
+        }
+        const overlapping = await db.rental.findFirst({
+            where: {
+                garmentId: rental.garmentId,
+                id: { not: rental.id },
+                status: { in: BLOCKING_RENTAL_STATUSES as any },
+                startDate: { lte: rental.endDate },
+                endDate: { gte: rental.startDate },
+            },
+            select: { id: true },
+        });
+        if (overlapping) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Garment is already booked for these dates' });
+            return;
+        }
+        const apr = await db.rental.updateMany({
+            where: { id, status: 'REQUESTED' },
             data: {
                 status: 'APPROVED',
                 approvedAt: new Date(),
@@ -786,8 +878,12 @@ export async function approveRentalRequest(req: Request, res: Response): Promise
                     { status: 'APPROVED', timestamp: new Date().toISOString(), note: 'Rental request approved by lender. 24-hour payment window opened.' }
                 ]
             },
-            include: { garment: true, renter: true }
         });
+        if (apr.count !== 1) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
+            return;
+        }
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
 
         try {
             await createNotification({
@@ -814,7 +910,7 @@ export async function approveRentalRequest(req: Request, res: Response): Promise
                 });
             }
             if (conv) {
-                const approveText = `✨ [RENTAL APPROVED] I have approved your rental dates for "${rental.garment.title}"! You can now proceed to payment in the lease dossier.\n• Lease ID: ${rental.id}`;
+                const approveText = `✨ [RENTAL APPROVED] I have approved your rental dates for "${rental.garment.title}"! You can now proceed to payment in the rental details.\n• Lease ID: ${rental.id}`;
                 const chatMsg = await db.directMessage.create({
                     data: {
                         conversationId: conv.id,
@@ -858,7 +954,7 @@ export async function declineRentalRequest(req: Request, res: Response): Promise
         }
 
         const { id } = req.params;
-        const { reason } = req.body || {};
+        const reason = cleanStr((req.body || {}).reason, 1000);
 
         const rental = await db.rental.findUnique({
             where: { id },
@@ -881,18 +977,22 @@ export async function declineRentalRequest(req: Request, res: Response): Promise
         }
 
         const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
-        const updated = await db.rental.update({
-            where: { id },
+        const dec = await db.rental.updateMany({
+            where: { id, status: 'REQUESTED' },
             data: {
                 status: 'DECLINED',
-                declineReason: reason ? String(reason).trim().slice(0, 1000) : null,
+                declineReason: reason ?? null,
                 trackingHistory: [
                     ...currentHistory,
                     { status: 'DECLINED', timestamp: new Date().toISOString(), note: reason ? `Declined by lender: ${reason}` : 'Declined by lender' }
                 ]
             },
-            include: { garment: true, renter: true }
         });
+        if (dec.count !== 1) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
+            return;
+        }
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
 
         try {
             await createNotification({
@@ -979,31 +1079,48 @@ export async function confirmRentalPayment(req: Request, res: Response): Promise
             return;
         }
 
-        if (rental.status !== 'APPROVED' && rental.status !== 'REQUESTED') {
+        const isAdmin = (req.user as any).role === 'ADMIN';
+
+        // Payment is verified server-side by the Razorpay verify endpoint (which sets paidAt/RESERVED).
+        // A client assertion alone must never mark a rental as paid.
+        if (!isAdmin) {
+            if (rental.paidAt && rental.status !== 'APPROVED' && rental.status !== 'REQUESTED') {
+                res.json({ data: rental });
+                return;
+            }
+            res.status(402).json({ error: 'PAYMENT_NOT_VERIFIED', message: 'Payment has not been verified yet' });
+            return;
+        }
+
+        if (rental.status !== 'APPROVED') {
             res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot confirm payment for rental in status: ${rental.status}` });
             return;
         }
 
         const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
-        const updated = await db.rental.update({
-            where: { id },
+        const pay = await db.rental.updateMany({
+            where: { id, status: 'APPROVED' },
             data: {
                 status: 'RESERVED',
                 paidAt: new Date(),
-                stripeId: razorpayOrderId || paymentId || rental.stripeId,
+                stripeId: cleanStr(razorpayOrderId, 100) || cleanStr(paymentId, 100) || rental.stripeId,
                 trackingHistory: [
                     ...currentHistory,
-                    { status: 'RESERVED', timestamp: new Date().toISOString(), note: 'Payment verified and held safely in escrow. Awaiting garment dispatch.' }
+                    { status: 'RESERVED', timestamp: new Date().toISOString(), note: 'Payment verified and held safely until delivery. Waiting for the garment to ship.' }
                 ]
             },
-            include: { garment: true, renter: true }
         });
+        if (pay.count !== 1) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
+            return;
+        }
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
 
         try {
             await createNotification({
                 userId: rental.garment.sellerId,
                 type: 'RENTAL_RESERVED',
-                title: '💳 Payment Secured in Escrow!',
+                title: '💳 Payment Secured!',
                 body: `Borrower completed payment for "${rental.garment.title}". Please prepare the piece for dispatch.`,
                 data: { rentalId: rental.id, garmentId: rental.garmentId },
             });
@@ -1026,7 +1143,8 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
         }
 
         const { id } = req.params;
-        const { trackingNumber, carrier } = req.body || {};
+        const trackingNumber = cleanStr((req.body || {}).trackingNumber, 100);
+        const carrier = cleanStr((req.body || {}).carrier, 100);
 
         const rental = await db.rental.findUnique({
             where: { id },
@@ -1043,15 +1161,16 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
             return;
         }
 
-        if (rental.status !== 'RESERVED' && rental.status !== 'APPROVED') {
+        // Only a paid (RESERVED) rental may be dispatched; APPROVED means payment has not happened yet.
+        if (rental.status !== 'RESERVED') {
             res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot dispatch rental in status: ${rental.status}` });
             return;
         }
 
         const selectedCarrier = carrier || 'BlueDart';
         const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
-        const updated = await db.rental.update({
-            where: { id },
+        const disp = await db.rental.updateMany({
+            where: { id, status: 'RESERVED' },
             data: {
                 status: 'DISPATCHED',
                 trackingNumber: trackingNumber || null,
@@ -1068,8 +1187,12 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
                     }
                 ]
             },
-            include: { garment: true, renter: true }
         });
+        if (disp.count !== 1) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
+            return;
+        }
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
 
         try {
             await createNotification({
@@ -1113,14 +1236,15 @@ export async function confirmRentalDelivery(req: Request, res: Response): Promis
             return;
         }
 
-        if (rental.status !== 'DISPATCHED' && rental.status !== 'RESERVED') {
+        // Delivery can only be confirmed after the lender has dispatched.
+        if (rental.status !== 'DISPATCHED') {
             res.status(400).json({ error: 'BAD_REQUEST', message: `Cannot confirm delivery for status: ${rental.status}` });
             return;
         }
 
         const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
-        const updated = await db.rental.update({
-            where: { id },
+        const dlv = await db.rental.updateMany({
+            where: { id, status: 'DISPATCHED' },
             data: {
                 status: 'ACTIVE',
                 deliveredAt: new Date(),
@@ -1129,8 +1253,12 @@ export async function confirmRentalDelivery(req: Request, res: Response): Promis
                     { status: 'ACTIVE', timestamp: new Date().toISOString(), note: 'Delivery confirmed by borrower. Active lease period officially started.' }
                 ]
             },
-            include: { garment: true, renter: true }
         });
+        if (dlv.count !== 1) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
+            return;
+        }
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
 
         try {
             await createNotification({
@@ -1159,7 +1287,8 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
         }
 
         const { id } = req.params;
-        const { returnTracking, returnCarrier } = req.body || {};
+        const returnTracking = cleanStr((req.body || {}).returnTracking, 100);
+        const returnCarrier = cleanStr((req.body || {}).returnCarrier, 100);
 
         const rental = await db.rental.findUnique({
             where: { id },
@@ -1183,8 +1312,8 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
 
         const selectedCarrier = returnCarrier || 'Delhivery';
         const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
-        const updated = await db.rental.update({
-            where: { id },
+        const ret = await db.rental.updateMany({
+            where: { id, status: rental.status },
             data: {
                 status: 'RETURN_DISPATCHED',
                 returnTracking: returnTracking || null,
@@ -1201,8 +1330,12 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
                     }
                 ]
             },
-            include: { garment: true, renter: true }
         });
+        if (ret.count !== 1) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
+            return;
+        }
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
 
         if (updated?.garment) {
             try {
@@ -1254,8 +1387,8 @@ export async function confirmReturnDelivery(req: Request, res: Response): Promis
         }
 
         const currentHistory = Array.isArray(rental.trackingHistory) ? (rental.trackingHistory as any[]) : [];
-        const updated = await db.rental.update({
-            where: { id },
+        const rcv = await db.rental.updateMany({
+            where: { id, status: rental.status },
             data: {
                 status: 'RETURNED',
                 returnDeliveredAt: new Date(),
@@ -1264,8 +1397,12 @@ export async function confirmReturnDelivery(req: Request, res: Response): Promis
                     { status: 'RETURNED', timestamp: new Date().toISOString(), note: 'Return package delivered to owner. 48-hour inspection window active.' }
                 ]
             },
-            include: { garment: true, renter: true }
         });
+        if (rcv.count !== 1) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
+            return;
+        }
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
 
         try {
             await createNotification({
@@ -1294,8 +1431,9 @@ export async function postRentalReview(req: Request, res: Response): Promise<voi
         }
 
         const { id } = req.params;
-        const { rating, comment } = req.body;
-        const numRating = Number(rating);
+        const rating = (req.body || {}).rating;
+        const comment = cleanStr((req.body || {}).comment, 2000);
+        const numRating = typeof rating === 'number' || typeof rating === 'string' ? Number(rating) : NaN;
 
         if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Rating must be an integer 1–5' });
@@ -1317,6 +1455,11 @@ export async function postRentalReview(req: Request, res: Response): Promise<voi
             return;
         }
 
+        if (rental.status !== 'RETURNED' && rental.status !== 'COMPLETED') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'Rental must be returned before it can be reviewed' });
+            return;
+        }
+
         const isRenter = rental.renterId === req.user.id;
         const targetUserId = isRenter ? rental.garment.sellerId : rental.renterId;
 
@@ -1328,7 +1471,7 @@ export async function postRentalReview(req: Request, res: Response): Promise<voi
             reviewerId: req.user.id,
             reviewerName: (req.user as any).displayName || (req.user as any).username || 'Rental Partner',
             rating: numRating,
-            comment: typeof comment === 'string' ? comment.trim().slice(0, 2000) : null,
+            comment: comment ?? null,
             createdAt: new Date().toISOString(),
             role: isRenter ? 'RENTER' : 'LENDER',
         };
@@ -1345,7 +1488,8 @@ export async function postRentalReview(req: Request, res: Response): Promise<voi
         });
 
         // Also upsert into db.review so it links to the garment and counts in ratings
-        if (rental.garmentId) {
+        // Only the renter reviews the garment (a lender must not rate their own listing)
+        if (rental.garmentId && isRenter) {
             try {
                 await db.review.upsert({
                     where: {
@@ -1358,11 +1502,11 @@ export async function postRentalReview(req: Request, res: Response): Promise<voi
                         userId: req.user.id,
                         garmentId: rental.garmentId,
                         rating: numRating,
-                        comment: typeof comment === 'string' ? comment.trim().slice(0, 2000) : null,
+                        comment: comment ?? null,
                     },
                     update: {
                         rating: numRating,
-                        comment: typeof comment === 'string' ? comment.trim().slice(0, 2000) : null,
+                        comment: comment ?? null,
                     }
                 });
             } catch (rErr) {
@@ -1412,7 +1556,7 @@ export async function checkRentalAvailability(req: Request, res: Response): Prom
                 rentalPriceDay: true,
                 rentalPriceWeek: true,
                 rentals: {
-                    where: { status: { in: ['RESERVED', 'ACTIVE'] } },
+                    where: { status: { in: ['APPROVED', 'RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED'] } },
                     select: { startDate: true, endDate: true }
                 }
             }

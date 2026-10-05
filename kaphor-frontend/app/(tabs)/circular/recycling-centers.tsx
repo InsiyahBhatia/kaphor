@@ -22,7 +22,7 @@ function CenterCard({ center, router }: { center: RecyclingCenter; router: Route
           </Text>
         </View>
         <View style={styles.scorePill}>
-          <Ionicons name="shield-checkmark" size={12} color="#283618" />
+          <Ionicons name="shield-checkmark" size={12} color={colors.emeraldDark} />
           <Text style={styles.scoreText}>{center.zeroLandfillScore}%</Text>
         </View>
       </View>
@@ -93,7 +93,7 @@ export default function RecyclingCentersScreen() {
 
   return (
     <View style={styles.screen}>
-      <Header title="RECYCLING HUBS" subtitle="CERTIFIED TEXTILE RECYCLING" showBack />
+      <Header title="Recycling hubs" subtitle="Certified textile recycling" showBack />
 
       <ScrollView
         style={styles.container}
@@ -133,7 +133,7 @@ export default function RecyclingCentersScreen() {
             {others.length > 0 && (
               <View style={[styles.groupHeader, { marginTop: 8 }]}>
                 <Ionicons name="map-outline" size={15} color={colors.goldDark} />
-                <Text style={styles.groupHeaderText}>OTHER VERIFIED HUBS (PAN-INDIA)</Text>
+                <Text style={styles.groupHeaderText}>Other verified hubs (PAN-India)</Text>
               </View>
             )}
             {others.length > 0 && (
@@ -156,7 +156,7 @@ export default function RecyclingCentersScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.aiScanTitle}>Unsure if it can be repaired?</Text>
             <Text style={styles.aiScanSub}>
-              Run our AI Multimodal Fiber & Condition Assessment to decide between Repair, Resale, or Certified Recycling →
+              Use our AI check to decide: repair, resell or recycle →
             </Text>
           </View>
         </TouchableOpacity>
@@ -167,7 +167,7 @@ export default function RecyclingCentersScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.mailInTitle}>Pan-India Free Mail-In Box</Text>
             <Text style={styles.mailInSub}>
-              Free prepaid courier collection satchels sent anywhere across India for unwearable garments.
+              Free prepaid bags sent anywhere in India for clothes you cannot wear.
             </Text>
           </View>
         </View>
@@ -194,19 +194,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F3FAF6',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 1,
     borderColor: colors.emerald,
     padding: 12,
     borderRadius: 2,
   },
   locationText: {
-    fontFamily: typography.mono,
-    fontSize: 15.5,
+    fontFamily: typography.handwritten,
+    fontSize: 21,
     color: colors.ink,
     flex: 1,
-    lineHeight: 16,
-  },
+    lineHeight: 25, includeFontPadding: false, },
   locationBold: {
     fontWeight: '900',
     color: colors.emeraldDark,
@@ -218,11 +217,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   groupHeaderText: {
-    fontFamily: typography.monoBold,
-    fontSize: 14.5,
-    color: colors.ink,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 20,
+    color: colors.ink, includeFontPadding: false, },
   centersList: {
     gap: 12,
   },
@@ -252,44 +249,39 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   centerCityDist: {
-    fontFamily: typography.mono,
-    fontSize: 14.5,
-    fontWeight: '700',
+    fontFamily: typography.handSemi,
+    fontSize: 20,
     color: colors.emerald,
-    marginTop: 3,
-  },
+    marginTop: 3, includeFontPadding: false, },
   centerDescription: {
-    fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontFamily: typography.handwritten,
+    fontSize: 20,
     color: colors.textSecond,
-    lineHeight: 16,
-  },
+    lineHeight: 24, includeFontPadding: false, },
   scorePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(40,54,24,0.1)',
+    backgroundColor: colors.overlayLight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 2,
   },
   scoreText: {
-    fontFamily: typography.monoBold,
-    fontSize: 13.5,
-    color: '#283618',
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 19,
+    color: colors.emeraldDark, includeFontPadding: false, },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
   },
   metaText: {
-    fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontFamily: typography.handwritten,
+    fontSize: 20,
     color: colors.textSecond,
     flex: 1,
-    lineHeight: 16,
-  },
+    lineHeight: 24, includeFontPadding: false, },
   fiberTagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -303,61 +295,53 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   fiberTagText: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: colors.ink,
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 19,
+    color: colors.ink, includeFontPadding: false, },
   certText: {
-    fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontFamily: typography.handSemi,
+    fontSize: 19,
     color: colors.goldDark,
-    fontWeight: '700',
     marginTop: 2,
-    lineHeight: 14,
-  },
+    lineHeight: 23, includeFontPadding: false, },
   aiScanCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#F7F5EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
     borderColor: colors.ink,
     padding: 14,
     borderRadius: 2,
   },
   aiScanTitle: {
-    fontFamily: typography.monoBold,
-    fontSize: 15.5,
-    color: colors.ink,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 21,
+    color: colors.ink, includeFontPadding: false, },
   aiScanSub: {
-    fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontFamily: typography.handwritten,
+    fontSize: 20,
     color: colors.textSecond,
-    lineHeight: 15,
-    marginTop: 2,
-  },
+    lineHeight: 24,
+    marginTop: 2, includeFontPadding: false, },
   mailInBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#F3FAF6',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 1,
     borderColor: colors.emerald,
     padding: 12,
     borderRadius: 2,
   },
   mailInTitle: {
-    fontFamily: typography.monoBold,
-    fontSize: 15,
-    color: colors.emeraldDark,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 20,
+    color: colors.emeraldDark, includeFontPadding: false, },
   mailInSub: {
-    fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontFamily: typography.handwritten,
+    fontSize: 20,
     color: colors.ink,
-    lineHeight: 15,
-    marginTop: 3,
-  },
+    lineHeight: 24,
+    marginTop: 3, includeFontPadding: false, },
 });

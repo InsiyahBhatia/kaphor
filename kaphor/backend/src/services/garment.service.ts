@@ -23,7 +23,7 @@ export async function getFeedGarments(params: FeedParams) {
   const cached = cacheGet<{ items: any[]; nextCursor: string | null }>(cacheKey);
   if (cached) return cached;
 
-  const limit = params.limit ?? DEFAULT_FEED_LIMIT;
+  const limit = Math.min(Math.max(Math.floor(params.limit ?? DEFAULT_FEED_LIMIT) || DEFAULT_FEED_LIMIT, 1), 100);
   const where: Record<string, unknown> = {
     isActive: true,
     lifecycleState: { in: ['LISTED', 'INTEREST', 'CIRCULATION'] },
@@ -77,7 +77,8 @@ export async function getFeedGarments(params: FeedParams) {
   }
 
   if (params.condition) {
-    const conditions = params.condition.split(',').filter(Boolean) as GarmentCondition[];
+    const validConditions = ['PRISTINE', 'MINOR_WEAR', 'UPCYCLE', 'RECYCLE_ONLY'];
+    const conditions = params.condition.split(',').filter((c) => validConditions.includes(c)) as GarmentCondition[];
     if (conditions.length > 0) {
       where.condition = { in: conditions };
     }

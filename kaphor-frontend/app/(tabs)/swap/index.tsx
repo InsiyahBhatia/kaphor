@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, Platform, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGarmentStore } from '../../../src/store/garmentStore';
@@ -12,183 +12,39 @@ import { KaphorImage } from '../../../src/components/KaphorImage';
 import { messageService } from '../../../src/services/messageService';
 import { colors, typography } from '../../../src/theme';
 import { isAccessoryCategory } from '../../../src/constants/market';
-import api from '../../../src/services/api';
+import api, { swrGet } from '../../../src/services/api';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import { navigateToLiveSwapStage } from '../../../src/utils/swapNavigation';
 
-export default function SwapFeedScreen() {
-  const router = useRouter();
-  const { garments, isLoading, fetchFeed } = useGarmentStore();
-  const { user } = useAuth();
-  const authStoreUserId = useAuthStore((s) => s.user?.id);
-  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
-  const [mySwaps, setMySwaps] = useState<any[]>([]);
-  const [browseItems, setBrowseItems] = useState<any[]>([]);
-  const [swapsLoading, setSwapsLoading] = useState(false);
-  const [browseLoading, setBrowseLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'browse' | 'requests'>('browse');
-
-  const effectiveUserId = user?.id || resolvedUserId || authStoreUserId;
-
-  // Fetch available swappable accessories directly from backend
-  const fetchBrowseItems = async () => {
-    setBrowseLoading(true);
-    try {
-      const [feedRes, meRes] = await Promise.all([
-        api.get('/swaps/feed').catch(() => ({ data: { data: [] } })),
-        api.get('/users/me').catch(() => ({ data: { data: null } })),
-      ]);
-      const list = Array.isArray(feedRes.data?.data) ? feedRes.data.data : [];
-      setBrowseItems(list);
-      if (meRes.data?.data?.id) {
-        setResolvedUserId(meRes.data.data.id);
-      }
-    } catch {
-      setBrowseItems([]);
-    } finally {
-      setBrowseLoading(false);
-    }
+function statusBadge(status: string) {
+  const colors_map: Record<string, string> = {
+    REQUESTED: colors.copper,
+    ACCEPTED: colors.forest,
+    REJECTED: colors.red,
+    COMPLETED: colors.navy,
+    CANCELLED: colors.textMuted,
   };
-
-  // Fetch user's swap requests (fresh live data)
-  const fetchMySwaps = async () => {
-    setSwapsLoading(true);
-    try {
-      const { data } = await api.get('/swaps');
-      const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
-      setMySwaps(list);
-    } catch {
-      setMySwaps([]);
-    } finally {
-      setSwapsLoading(false);
-    }
-  };
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    hapticFeedback.light();
-    await Promise.all([
-      fetchBrowseItems(),
-      fetchFeed({ listingType: 'ACCESSORY_SWAP' }),
-      fetchMySwaps(),
-    ]);
-    setRefreshing(false);
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchBrowseItems();
-      fetchFeed({ listingType: 'ACCESSORY_SWAP' });
-      fetchMySwaps();
-    }, [])
+  return (
+    <View style={[styles.statusBadge, { backgroundColor: colors_map[status] || colors.textMuted }]}>
+      <Text style={styles.statusBadgeText}>{status}</Text>
+    </View>
   );
+}
 
-  // Use items from /swaps/feed first; fallback to store garments.
-  // ALWAYS strictly filter out any item that belongs to the current user!
-  const rawCandidateItems = browseItems.length > 0 ? browseItems : (browseLoading ? [] : garments);
-  const swappableItems = rawCandidateItems.filter((g) => {
-    const isAcc = isAccessoryCategory(g.category, g.subCategory) || g.listingType === 'ACCESSORY_SWAP';
-    if (!isAcc) return false;
-    if (effectiveUserId) {
-      if (g.sellerId === effectiveUserId || (g as any).seller?.id === effectiveUserId) {
-        return false;
-      }
-    }
-    return true;
-  });
-
-  const handleCardPress = (item: any) => {
-    if (effectiveUserId && (item.sellerId === effectiveUserId || item.seller?.id === effectiveUserId)) {
-      Alert.alert('Your Archive Item', 'You own this accessory and cannot swap with yourself. Browse items listed by other members.', [
-        { text: 'OK' }
-      ]);
-      return;
-    }
-    // Show swap item detail screen first then the user can tap "INITIATE ACCESSORY SWAP" to open the offer screen
-    router.push(`/(tabs)/shop/${item.id}` as any);
-  };
-
-  // ── Message Partner handler ───────────────────────────────────
-  const handleMessagePartner = async (swap: any) => {
-    const isIncoming = swap.receiverId === effectiveUserId;
-    const partner = isIncoming ? swap.initiator : swap.receiver;
-    if (!partner?.id) {
-      Alert.alert('Notice', 'Partner profile information is currently unavailable.');
-      return;
-    }
-    try {
-      const garmentId = (swap.garmentWanted as any)?.id || (swap.garmentOffered as any)?.id;
-      const conversation = await messageService.getOrCreateConversation(partner.id, garmentId);
-      router.push(`/messages/${conversation.id}` as any);
-    } catch (err) {
-      Alert.alert('Error', 'Could not open conversation with partner.');
-    }
-  };
-
-  // ── Accept/Reject handlers ────────────────────────────────────
-  const handleRespond = async (swapId: string, accept: boolean) => {
-    try {
-      await api.patch(`/swaps/${swapId}`, { action: accept ? 'ACCEPTED' : 'REJECTED' });
-      if (accept) {
-        // Navigate to agreement screen
-        router.push(`/(tabs)/swap/agreement?swapId=${swapId}`);
-      } else {
-        Alert.alert('Declined', 'The swap request has been declined.');
-        fetchMySwaps();
-      }
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Failed to respond.');
-    }
-  };
-
-  const handleComplete = async (swapId: string) => {
-    try {
-      await api.post(`/swaps/${swapId}/complete`);
-      Alert.alert('Completed!', 'Garment ownership has been transferred.');
-      fetchMySwaps();
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Failed to complete swap.');
-    }
-  };
-
-  const handleConfirmReceived = async (swapId: string) => {
-    try {
-      await api.post(`/swaps/${swapId}/confirm-received`, { conditionSatisfied: true });
-      Alert.alert('Confirmed!', 'You have confirmed receipt. Waiting for the other party to confirm.');
-      fetchMySwaps();
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Failed to confirm receipt.');
-    }
-  };
-
-  const statusBadge = (status: string) => {
-    const colors_map: Record<string, string> = {
-      REQUESTED: colors.copper,
-      ACCEPTED: colors.forest,
-      REJECTED: colors.red,
-      COMPLETED: colors.navy,
-      CANCELLED: colors.textMuted,
-    };
-    return (
-      <View style={[styles.statusBadge, { backgroundColor: colors_map[status] || colors.textMuted }]}>
-        <Text style={styles.statusBadgeText}>{status}</Text>
-      </View>
-    );
-  };
-
-  const renderSwapRequests = () => {
-    if (swapsLoading) return <GarmentGridSkeleton count={4} />;
-    if (mySwaps.length === 0) {
-      return (
-        <View style={styles.emptyState}>
-          <Ionicons name="swap-horizontal-outline" size={40} color={colors.charcoal} />
-          <Text style={styles.emptyText}>NO SWAP REQUESTS</Text>
-          <Text style={styles.emptySubtext}>Go to Browse to find items to swap</Text>
-        </View>
-      );
-    }
-    return mySwaps.map((swap: any) => {
+const SwapRequestCard = React.memo(function SwapRequestCard({
+  swap,
+  effectiveUserId,
+  onMessage,
+  onRespond,
+}: {
+  swap: any;
+  effectiveUserId?: string | null;
+  onMessage: (swap: any) => void;
+  onRespond: (swapId: string, accept: boolean) => void;
+}) {
+  const router = useRouter();
+  const handleMessagePartner = onMessage;
+  const handleRespond = onRespond;
       const isIncoming = swap.receiverId === effectiveUserId;
       const partner = isIncoming ? swap.initiator : swap.receiver;
 
@@ -234,9 +90,8 @@ export default function SwapFeedScreen() {
 
       return (
         <TouchableOpacity
-          key={swap.id}
           style={styles.swapRequestCard}
-          onPress={() => navigateToLiveSwapStage(router, swap, effectiveUserId)}
+          onPress={() => navigateToLiveSwapStage(router, swap, effectiveUserId ?? undefined)}
           activeOpacity={0.88}
         >
           <View style={styles.swapRequestHeader}>
@@ -253,7 +108,7 @@ export default function SwapFeedScreen() {
                   {partner?.displayName || partner?.username || 'Swap Partner'}
                 </Text>
                 <Text style={styles.swapRequestLabel}>
-                  {isIncoming ? 'INCOMING REQUEST' : 'OUTGOING REQUEST'}
+                  {isIncoming ? 'Incoming request' : 'Outgoing request'}
                 </Text>
               </View>
             </View>
@@ -300,7 +155,7 @@ export default function SwapFeedScreen() {
               onPress={() => handleMessagePartner(swap)}
             >
               <Ionicons name="chatbubbles-outline" size={14} color={colors.charcoal} />
-              <Text style={styles.messageBtnText}>MESSAGE</Text>
+              <Text style={styles.messageBtnText}>Message</Text>
             </TouchableOpacity>
 
             {swap.status === 'REQUESTED' && isIncoming && (
@@ -310,14 +165,14 @@ export default function SwapFeedScreen() {
                   onPress={() => handleRespond(swap.id, true)}
                 >
                   <Ionicons name="checkmark" size={14} color={colors.cream} />
-                  <Text style={styles.swapActionText}>ACCEPT</Text>
+                  <Text style={styles.swapActionText}>Accept</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.swapActionBtn, { backgroundColor: colors.red, borderColor: colors.red }]}
                   onPress={() => handleRespond(swap.id, false)}
                 >
                   <Ionicons name="close" size={14} color={colors.cream} />
-                  <Text style={styles.swapActionText}>REJECT</Text>
+                  <Text style={styles.swapActionText}>Reject</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -329,14 +184,14 @@ export default function SwapFeedScreen() {
                   onPress={() => router.push(`/(tabs)/swap/agreement?swapId=${swap.id}` as any)}
                 >
                   <Ionicons name="document-text" size={12} color={colors.cream} />
-                  <Text style={styles.swapActionText}>AGREEMENT</Text>
+                  <Text style={styles.swapActionText}>Agreement</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.swapActionBtn, { backgroundColor: '#8C6D3B' }]}
+                  style={[styles.swapActionBtn, { backgroundColor: colors.goldDark }]}
                   onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
                 >
                   <Ionicons name="cube" size={12} color={colors.cream} />
-                  <Text style={styles.swapActionText}>ESCROW</Text>
+                  <Text style={styles.swapActionText}>Deposit</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -347,7 +202,7 @@ export default function SwapFeedScreen() {
                 onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
               >
                 <Ionicons name="cube" size={14} color={colors.cream} />
-                <Text style={styles.swapActionText}>TRACK & DELIVER</Text>
+                <Text style={styles.swapActionText}>Track & deliver</Text>
               </TouchableOpacity>
             )}
 
@@ -357,7 +212,7 @@ export default function SwapFeedScreen() {
                 onPress={() => router.push(`/(tabs)/swap/shipping?swapId=${swap.id}` as any)}
               >
                 <Ionicons name="star" size={12} color={colors.cream} />
-                <Text style={styles.swapActionText}>REVIEW</Text>
+                <Text style={styles.swapActionText}>Review</Text>
               </TouchableOpacity>
             )}
 
@@ -365,13 +220,211 @@ export default function SwapFeedScreen() {
               style={[styles.swapActionBtn, styles.detailsBtn]}
               onPress={() => router.push(`/(tabs)/swap/details?swapId=${swap.id}` as any)}
             >
-              <Text style={styles.detailsBtnText}>DETAILS</Text>
+              <Text style={styles.detailsBtnText}>Details</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       );
-    });
+});
+
+const SwapBrowseCard = React.memo(function SwapBrowseCard({ item, onPress }: { item: any; onPress: (item: any) => void }) {
+  const data = useMemo(
+    () => ({
+      ...item,
+      price: item.price ? Math.round(item.price) : item.estimatedValue ? Math.round(item.estimatedValue) : 0,
+    }),
+    [item]
+  );
+  const press = useCallback(() => onPress(item), [onPress, item]);
+  return (
+    <View style={styles.cardWrapper}>
+      <EditorialGarmentCard item={data} onPress={press} style={CARD_STYLE} />
+    </View>
+  );
+});
+
+const CARD_STYLE = { width: '100%', marginRight: 0 } as const;
+
+export default function SwapFeedScreen() {
+  const router = useRouter();
+  const garments = useGarmentStore((st) => st.garments);
+  const isLoading = useGarmentStore((st) => st.isLoading);
+  const fetchFeed = useGarmentStore((st) => st.fetchFeed);
+  const { user } = useAuth();
+  const authStoreUserId = useAuthStore((s) => s.user?.id);
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
+  const [mySwaps, setMySwaps] = useState<any[]>([]);
+  const [browseItems, setBrowseItems] = useState<any[]>([]);
+  const [swapsLoading, setSwapsLoading] = useState(false);
+  const [browseLoading, setBrowseLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'browse' | 'requests'>('browse');
+
+  const effectiveUserId = user?.id || resolvedUserId || authStoreUserId;
+
+  // Stale-while-revalidate: cached swaps/feed paint instantly, then refresh in the background
+  const fetchBrowseItems = async () => {
+    setBrowseLoading(true);
+    try {
+      await Promise.all([
+        swrGet('/swaps/feed', (res: any) => {
+          const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+          setBrowseItems(list);
+          setBrowseLoading(false);
+        }).catch(() => {}),
+        api
+          .get('/users/me')
+          .then((meRes) => {
+            if (meRes.data?.data?.id) setResolvedUserId(meRes.data.data.id);
+          })
+          .catch(() => {}),
+      ]);
+    } finally {
+      setBrowseLoading(false);
+    }
   };
+
+  const fetchMySwaps = async () => {
+    setSwapsLoading(true);
+    try {
+      await swrGet('/swaps', (res: any) => {
+        const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+        setMySwaps(list);
+        setSwapsLoading(false);
+      });
+    } catch {
+      // keep whatever we already show
+    } finally {
+      setSwapsLoading(false);
+    }
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    hapticFeedback.light();
+    await Promise.all([
+      fetchBrowseItems(),
+      fetchFeed({ listingType: 'ACCESSORY_SWAP' }),
+      fetchMySwaps(),
+    ]);
+    setRefreshing(false);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchBrowseItems();
+      fetchFeed({ listingType: 'ACCESSORY_SWAP' });
+      fetchMySwaps();
+    }, [])
+  );
+
+  // Use items from /swaps/feed first; fallback to store garments.
+  // ALWAYS strictly filter out any item that belongs to the current user!
+  const rawCandidateItems = browseItems.length > 0 ? browseItems : (browseLoading ? [] : garments);
+  const swappableItems = useMemo(() => rawCandidateItems.filter((g) => {
+    const isAcc = isAccessoryCategory(g.category, g.subCategory) || g.listingType === 'ACCESSORY_SWAP';
+    if (!isAcc) return false;
+    if (effectiveUserId) {
+      if (g.sellerId === effectiveUserId || (g as any).seller?.id === effectiveUserId) {
+        return false;
+      }
+    }
+    return true;
+  }), [rawCandidateItems, effectiveUserId]);
+
+  const handleCardPress = useCallback((item: any) => {
+    if (effectiveUserId && (item.sellerId === effectiveUserId || item.seller?.id === effectiveUserId)) {
+      Alert.alert('Your Item', 'You own this accessory and cannot swap with yourself. Browse items listed by other members.', [
+        { text: 'OK' }
+      ]);
+      return;
+    }
+    // Show swap item detail screen first then the user can tap "Initiate accessory swap" to open the offer screen
+    router.push(`/(tabs)/shop/${item.id}` as any);
+  }, [effectiveUserId, router]);
+
+  // ── Message Partner handler ───────────────────────────────────
+  const handleMessagePartner = useCallback(async (swap: any) => {
+    const isIncoming = swap.receiverId === effectiveUserId;
+    const partner = isIncoming ? swap.initiator : swap.receiver;
+    if (!partner?.id) {
+      Alert.alert('Notice', 'Partner profile information is currently unavailable.');
+      return;
+    }
+    try {
+      const garmentId = (swap.garmentWanted as any)?.id || (swap.garmentOffered as any)?.id;
+      const conversation = await messageService.getOrCreateConversation(partner.id, garmentId);
+      router.push(`/messages/${conversation.id}` as any);
+    } catch (err) {
+      Alert.alert('Error', 'Could not open conversation with partner.');
+    }
+  }, [effectiveUserId, router]);
+
+  // ── Accept/Reject handlers ────────────────────────────────────
+  const handleRespond = useCallback(async (swapId: string, accept: boolean) => {
+    try {
+      await api.patch(`/swaps/${swapId}`, { action: accept ? 'ACCEPTED' : 'REJECTED' });
+      if (accept) {
+        // Navigate to agreement screen
+        router.push(`/(tabs)/swap/agreement?swapId=${swapId}`);
+      } else {
+        Alert.alert('Declined', 'The swap request has been declined.');
+        fetchMySwaps();
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Failed to respond.');
+    }
+  }, [router]);
+
+  const handleComplete = async (swapId: string) => {
+    try {
+      await api.post(`/swaps/${swapId}/complete`);
+      Alert.alert('Completed!', 'Garment ownership has been transferred.');
+      fetchMySwaps();
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Failed to complete swap.');
+    }
+  };
+
+  const handleConfirmReceived = async (swapId: string) => {
+    try {
+      await api.post(`/swaps/${swapId}/confirm-received`, { conditionSatisfied: true });
+      Alert.alert('Confirmed!', 'You have confirmed receipt. Waiting for the other party to confirm.');
+      fetchMySwaps();
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Failed to confirm receipt.');
+    }
+  };
+
+  const requestKey = useCallback((x: any) => x.id, []);
+  const renderRequest = useCallback(
+    ({ item }: { item: any }) => (
+      <SwapRequestCard swap={item} effectiveUserId={effectiveUserId} onMessage={handleMessagePartner} onRespond={handleRespond} />
+    ),
+    [effectiveUserId, handleMessagePartner, handleRespond]
+  );
+  const renderBrowse = useCallback(({ item }: { item: any }) => <SwapBrowseCard item={item} onPress={handleCardPress} />, [handleCardPress]);
+
+  const renderRequestsEmpty = () => {
+    if (swapsLoading) return <GarmentGridSkeleton count={4} />;
+    return (
+      <View style={styles.emptyState}>
+        <Ionicons name="swap-horizontal-outline" size={40} color={colors.charcoal} />
+        <Text style={styles.emptyText}>No swap requests</Text>
+        <Text style={styles.emptySubtext}>Go to Browse to find items to swap</Text>
+      </View>
+    );
+  };
+
+  const renderBrowseEmpty = () =>
+    isLoading || browseLoading ? (
+      <GarmentGridSkeleton count={6} />
+    ) : (
+      <View style={styles.emptyState}>
+        <Ionicons name="swap-horizontal-outline" size={40} color={colors.charcoal} />
+        <Text style={styles.emptyText}>No swappable assets</Text>
+      </View>
+    );
 
   // ── Tab Bar ────────────────────────────────────────────────────
   const renderTabBar = () => (
@@ -381,7 +434,7 @@ export default function SwapFeedScreen() {
         onPress={() => setActiveTab('browse')}
       >
         <Text style={[styles.tabText, activeTab === 'browse' && styles.tabTextActive]}>
-          BROWSE
+          Browse
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -407,14 +460,14 @@ export default function SwapFeedScreen() {
     <View style={styles.container}>
       <EditorialPageHeader
         title="SWAP"
-        subtitle="PEER-TO-PEER EXCHANGE"
-        eyebrow="CASHLESS BARTER"
+        subtitle="Swap with members"
+        eyebrow="Cashless barter"
         variant="swap"
         style={styles.header}
       >
         <View style={styles.headerActions}>
           <HandwrittenNote>trade value, not waste.</HandwrittenNote>
-          <TouchableOpacity
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Add"
             style={styles.sellBtn}
             onPress={() => router.push({ pathname: '/(tabs)/shop/sell', params: { prefillListingType: 'ACCESSORY_SWAP', listingType: 'ACCESSORY_SWAP', fresh: Date.now().toString() } } as any)}
           >
@@ -425,54 +478,53 @@ export default function SwapFeedScreen() {
 
       {renderTabBar()}
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.crimson}
-            colors={[colors.crimson]}
-          />
-        }
-      >
-        {activeTab === 'requests' ? (
-          <View style={styles.requestsContainer}>
-            {renderSwapRequests()}
-          </View>
-        ) : (
-          <>
-            {isLoading ? (
-              <GarmentGridSkeleton count={6} />
-            ) : (
-              <View style={styles.grid}>
-                {swappableItems.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <Ionicons name="swap-horizontal-outline" size={40} color={colors.charcoal} />
-                    <Text style={styles.emptyText}>NO SWAPPABLE ASSETS</Text>
-                  </View>
-                ) : (
-                  swappableItems.map((item) => {
-                    return (
-                      <View key={item.id} style={styles.cardWrapper}>
-                        <EditorialGarmentCard
-                          item={{
-                            ...item,
-                            price: item.price ? Math.round(item.price) : (item.estimatedValue ? Math.round(item.estimatedValue) : 0),
-                          }}
-                          onPress={() => handleCardPress(item)}
-                          style={{ width: '100%', marginRight: 0 }}
-                        />
-                      </View>
-                    );
-                  })
-                )}
-              </View>
-            )}
-          </>
-        )}
-      </ScrollView>
+      {activeTab === 'requests' ? (
+        <FlatList
+          key="requests"
+          data={mySwaps}
+          keyExtractor={requestKey}
+          renderItem={renderRequest}
+          ListEmptyComponent={renderRequestsEmpty}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.requestsList}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.crimson}
+              colors={[colors.crimson]}
+            />
+          }
+        />
+      ) : (
+        <FlatList
+          key="browse"
+          data={swappableItems}
+          keyExtractor={requestKey}
+          renderItem={renderBrowse}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
+          ListEmptyComponent={renderBrowseEmpty}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.browseList}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.crimson}
+              colors={[colors.crimson]}
+            />
+          }
+        />
+      )}
     </View>
   );
 }
@@ -485,17 +537,20 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   title: { fontSize: 42, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
-  subtitle: { fontFamily: typography.mono, fontSize: 10, color: colors.red, fontWeight: '800', letterSpacing: 1 },
+  subtitle: { fontFamily: typography.handBold, fontSize: 16, color: colors.red, includeFontPadding: false, },
   sellBtn: { width: 40, height: 40, backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.charcoal },
 
   // Tab bar
-  tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(26,26,26,0.1)', backgroundColor: colors.cream },
+  tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.overlayLight, backgroundColor: colors.cream },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: colors.charcoal },
-  tabText: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, fontWeight: '700', letterSpacing: 1 },
+  tabText: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
   tabTextActive: { color: colors.charcoal, fontWeight: '900' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between', paddingTop: 16 },
+  gridRow: { justifyContent: 'space-between', paddingHorizontal: 16 },
+  browseList: { paddingBottom: 120, paddingTop: 16 },
+  requestsList: { paddingBottom: 120, paddingHorizontal: 16, paddingTop: 12, gap: 12 },
   cardWrapper: { width: '48%', marginBottom: 24 },
 
   // Swap Requests
@@ -512,29 +567,29 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgMuted, alignItems: 'center', justifyContent: 'center',
   },
   partnerName: { fontFamily: typography.headings, fontSize: 14, color: colors.charcoal, letterSpacing: 0.5 },
-  swapRequestLabel: { fontFamily: typography.mono, fontSize: 8, fontWeight: '800', color: colors.textMuted, letterSpacing: 1 },
+  swapRequestLabel: { fontFamily: typography.handBold, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3 },
-  statusBadgeText: { color: colors.cream, fontFamily: typography.mono, fontSize: 8, fontWeight: '900' },
+  statusBadgeText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
   swapItemsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   swapItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   itemThumbWrap: { width: 36, height: 36, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgMuted },
   itemThumb: { width: '100%', height: '100%' },
-  swapItemLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700', marginBottom: 2 },
+  swapItemLabel: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, marginBottom: 2, includeFontPadding: false, },
   swapItemName: { fontFamily: typography.headings, fontSize: 14, color: colors.charcoal },
-  swapMessage: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, fontStyle: 'italic', paddingLeft: 4 },
+  swapMessage: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, fontStyle: 'italic', paddingLeft: 4, includeFontPadding: false, },
   swapActions: { flexDirection: 'row', gap: 6, marginTop: 4 },
   swapActionBtn: {
     flex: 1, flexDirection: 'row', height: 36, justifyContent: 'center', alignItems: 'center', gap: 4,
     borderWidth: 1.5, borderColor: colors.charcoal,
   },
-  swapActionText: { color: colors.cream, fontFamily: typography.mono, fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+  swapActionText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
   messageBtn: { backgroundColor: colors.white, borderColor: colors.charcoal },
-  messageBtnText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+  messageBtnText: { color: colors.charcoal, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.2 },
   detailsBtn: { backgroundColor: colors.bgMuted, borderColor: colors.charcoal },
-  detailsBtnText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+  detailsBtnText: { color: colors.charcoal, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.2 },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 },
-  emptyText: { fontFamily: typography.mono, fontSize: 12, color: colors.charcoal, fontWeight: '800', letterSpacing: 1 },
-  emptySubtext: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted },
+  emptyText: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, includeFontPadding: false, },
+  emptySubtext: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
 });
 

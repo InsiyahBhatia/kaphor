@@ -1,3 +1,4 @@
+import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { redisDel } from '../lib/redis';
@@ -58,29 +59,29 @@ export async function getPublicUserSummary(req: Request, res: Response): Promise
       res.status(404).json({ error: 'NOT_FOUND', message: 'User not found' });
       return;
     }
-    const [peerReviews, garmentReviews] = await Promise.all([
-      db.peerReview.findMany({
+    // Count ratings in the database (GROUP BY) instead of downloading every review row.
+    const [peerRatingGroups, garmentRatingGroups] = await Promise.all([
+      db.peerReview.groupBy({
+        by: ['rating'],
         where: { sellerId: user.id },
-        select: { rating: true },
+        _count: { _all: true },
       }),
-      db.review.findMany({
+      db.review.groupBy({
+        by: ['rating'],
         where: { garment: { sellerId: user.id } },
-        select: { rating: true },
+        _count: { _all: true },
       }),
     ]);
-    const allReviews = [...peerReviews, ...garmentReviews];
-    const peerReviewCount = allReviews.length;
-    const peerReviewAvg =
-      peerReviewCount > 0
-        ? allReviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / peerReviewCount
-        : null;
-    const ratingBreakdown = {
-      5: allReviews.filter((r: { rating: number }) => r.rating === 5).length,
-      4: allReviews.filter((r: { rating: number }) => r.rating === 4).length,
-      3: allReviews.filter((r: { rating: number }) => r.rating === 3).length,
-      2: allReviews.filter((r: { rating: number }) => r.rating === 2).length,
-      1: allReviews.filter((r: { rating: number }) => r.rating === 1).length,
-    };
+    const ratingBreakdown: Record<1 | 2 | 3 | 4 | 5, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    let peerReviewCount = 0;
+    let ratingSum = 0;
+    for (const g of [...peerRatingGroups, ...garmentRatingGroups] as Array<{ rating: number; _count: { _all: number } }>) {
+      const n = g._count._all;
+      peerReviewCount += n;
+      ratingSum += g.rating * n;
+      if (g.rating >= 1 && g.rating <= 5) ratingBreakdown[g.rating as 1 | 2 | 3 | 4 | 5] += n;
+    }
+    const peerReviewAvg = peerReviewCount > 0 ? ratingSum / peerReviewCount : null;
     const trustedSeller = (peerReviewCount >= 3 && (peerReviewAvg ?? 0) >= 4) || user.isVerified;
     const resolvedUser = await resolveUserMedia(user);
 
@@ -91,6 +92,7 @@ export async function getPublicUserSummary(req: Request, res: Response): Promise
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
+      select: GARMENT_LIST_COLUMNS,
     });
     const resolvedListings = await resolveGarmentsMedia(listings);
 
@@ -175,7 +177,13 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
     try {
         if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
-        const { displayName, bio, location, styleAesthetic, username } = req.body;
+        const body = req.body || {};
+        const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : undefined);
+        const displayName = str(body.displayName, 60);
+        const bio = str(body.bio, 500);
+        const location = str(body.location, 100);
+        const styleAesthetic = str(body.styleAesthetic, 60);
+        const username = body.username;
 
         let cleanUsername: string | undefined = undefined;
         if (username !== undefined) {
@@ -288,7 +296,8 @@ export async function getMyListings(req: Request, res: Response): Promise<void> 
                 price: true, rentalPriceDay: true, rentalPriceWeek: true,
                 listingType: true, condition: true, lifecycleState: true,
                 isActive: true, viewCount: true, createdAt: true
-            }
+            },
+            take: 200,
         });
 
         const garmentIds = garments.map((g: any) => g.id);
@@ -326,7 +335,8 @@ export async function getMyWardrobe(req: Request, res: Response): Promise<void> 
                 price: true, rentalPriceDay: true, rentalPriceWeek: true,
                 listingType: true, condition: true, lifecycleState: true,
                 isActive: true, createdAt: true
-            }
+            },
+            take: 300,
         });
 
         // 2. Garments from confirmed, shipped, or delivered buyer orders
@@ -416,57 +426,58 @@ export async function addWardrobeItems(req: Request, res: Response): Promise<voi
     try {
         if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
-        const { items } = req.body;
-        if (!Array.isArray(items) || items.length === 0) {
+        const { items } = req.body || {};
+        if (!Array.isArray(items) || items.length === 0 || items.length > 30) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'items array is required' });
             return;
         }
 
+        const txt = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
         const validConditions = ['PRISTINE', 'MINOR_WEAR', 'UPCYCLE', 'RECYCLE_ONLY'];
-        const createdGarments = [];
-
-        for (const item of items) {
+        // Build every create up front and run them in ONE transaction (was 2 sequential queries per item).
+        const ownerId = req.user!.id;
+        const createOps = items.map((item: any) => {
             const condition = validConditions.includes(item.condition) ? item.condition : 'PRISTINE';
             const price = item.price != null ? Math.round(Number(item.price)) : (item.estimatedPrice != null ? Math.round(Number(item.estimatedPrice)) : null);
             const rentalDay = item.rentalPriceDay != null ? Math.round(Number(item.rentalPriceDay)) : (item.suggestedRentalPriceDay != null ? Math.round(Number(item.suggestedRentalPriceDay)) : null);
             const rentalWeek = item.rentalPriceWeek != null ? Math.round(Number(item.rentalPriceWeek)) : (item.suggestedRentalPriceWeek != null ? Math.round(Number(item.suggestedRentalPriceWeek)) : null);
 
-            const garment = await db.garment.create({
+            return db.garment.create({
                 data: {
-                    sellerId: req.user.id,
-                    title: item.title || 'Digital Wardrobe Piece',
-                    description: item.description || 'Digitized into digital closet via Google Wardrobe AI.',
-                    brand: item.brand || 'Contemporary',
-                    category: item.category || 'Tops',
-                    subCategory: item.subCategory || null,
-                    size: item.size || 'M',
-                    color: Array.isArray(item.color) ? item.color : [item.color || 'Neutral'],
-                    material: Array.isArray(item.material) ? item.material : [item.material || 'Cotton'],
+                    sellerId: ownerId,
+                    title: txt(item.title, 120) || 'Digital Wardrobe Piece',
+                    description: txt(item.description, 2000) || 'Digitized into digital closet via Google Wardrobe AI.',
+                    brand: txt(item.brand, 80) || 'Contemporary',
+                    category: txt(item.category, 60) || 'Tops',
+                    subCategory: txt(item.subCategory, 60) || null,
+                    size: txt(item.size, 20) || 'M',
+                    color: Array.isArray(item.color) ? item.color.slice(0, 10).map((c: unknown) => txt(c, 40)).filter(Boolean) : [txt(item.color, 40) || 'Neutral'],
+                    material: Array.isArray(item.material) ? item.material.slice(0, 10).map((c: unknown) => txt(c, 40)).filter(Boolean) : [txt(item.material, 40) || 'Cotton'],
                     condition,
-                    images: Array.isArray(item.images) ? item.images : [item.imageUrl || item.image].filter(Boolean),
+                    images: (Array.isArray(item.images) ? item.images : [item.imageUrl || item.image]).slice(0, 8).map((u: unknown) => txt(u, 2048)).filter(Boolean),
                     tags: ['digital-wardrobe', 'digitized'],
-                    styleTags: [item.category || 'wardrobe'],
+                    styleTags: [txt(item.category, 60) || 'wardrobe'],
                     garmentVector: Array.from({ length: 16 }, () => Number((Math.random() * 0.4 - 0.2).toFixed(4))),
                     lifecycleState: 'OWNERSHIP',
-                    listingType: item.listingType || 'SALE',
+                    listingType: ['SALE', 'RENTAL', 'ACCESSORY_SWAP'].includes(item.listingType) ? item.listingType : 'SALE',
                     price,
                     rentalPriceDay: rentalDay,
                     rentalPriceWeek: rentalWeek,
                     isActive: false, // Private in user's digital wardrobe until listed
                 },
             });
+        });
 
-            // Log wear/circular ownership event
-            await db.behaviourEvent.create({
-                data: {
-                    userId: req.user.id,
-                    garmentId: garment.id,
-                    eventType: 'LOG_WEAR',
-                },
-            }).catch(() => {});
+        const createdGarments: any[] = await db.$transaction(createOps);
 
-            createdGarments.push(garment);
-        }
+        // Log wear/circular ownership events for all items in a single insert
+        await db.behaviourEvent.createMany({
+            data: createdGarments.map((g: any) => ({
+                userId: req.user!.id,
+                garmentId: g.id,
+                eventType: 'LOG_WEAR',
+            })),
+        }).catch(() => {});
 
         await redisDel(`user:${req.user.id}:wardrobe`).catch(() => {});
 
@@ -477,7 +488,7 @@ export async function addWardrobeItems(req: Request, res: Response): Promise<voi
         });
     } catch (error: any) {
         logger.error('addWardrobeItems failed', { error: error.message });
-        res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
+        res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to add wardrobe items' });
     }
 }
 
@@ -489,6 +500,7 @@ export async function getMyPurchases(req: Request, res: Response): Promise<void>
         const orders = await db.order.findMany({
             where: { buyerId: req.user.id },
             orderBy: { createdAt: 'desc' },
+            take: 100,
             include: {
                 items: {
                     include: {
@@ -522,6 +534,7 @@ export async function getUserReviews(req: Request, res: Response): Promise<void>
             db.peerReview.findMany({
                 where: { sellerId: userId, reviewerId: { not: userId } },
                 orderBy: { createdAt: 'desc' },
+                take: 100,
                 include: {
                     reviewer: {
                         select: { id: true, displayName: true, avatar: true, username: true, isVerified: true }
@@ -545,6 +558,7 @@ export async function getUserReviews(req: Request, res: Response): Promise<void>
             db.review.findMany({
                 where: { garment: { sellerId: userId }, userId: { not: userId } },
                 orderBy: { createdAt: 'desc' },
+                take: 100,
                 include: {
                     user: {
                         select: { id: true, displayName: true, avatar: true, username: true, isVerified: true }
@@ -608,18 +622,23 @@ export async function submitIdentityVerification(req: Request, res: Response): P
             res.status(401).json({ error: 'UNAUTHORIZED' });
             return;
         }
-        const { verificationType, idNumber, documentUrl } = req.body;
-        if (!verificationType || !idNumber) {
+        const { verificationType, idNumber, documentUrl } = req.body || {};
+        if (
+            typeof verificationType !== 'string' || verificationType.length > 40 ||
+            typeof idNumber !== 'string' || idNumber.trim().length < 4 || idNumber.length > 40 ||
+            (documentUrl != null && (typeof documentUrl !== 'string' || documentUrl.length > 2048))
+        ) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'verificationType and idNumber are required' });
             return;
         }
 
+        // Users can never verify themselves. This only queues the request; an admin approves it
+        // (PATCH /admin/verifications/:id), which is what turns the verified badge on.
         const idNumberLast4 = String(idNumber).trim().slice(-4);
         const updated = await db.user.update({
             where: { id: req.user.id },
             data: {
-                isVerified: true,
-                verificationStatus: 'VERIFIED',
+                verificationStatus: 'PENDING_REVIEW',
                 verificationType,
                 idNumberLast4,
                 verificationDocUrl: documentUrl || null,
@@ -637,7 +656,7 @@ export async function submitIdentityVerification(req: Request, res: Response): P
 
         res.json({
             data: updated,
-            message: 'Identity successfully verified! Your verified luxury trust badge is now active.',
+            message: 'Thanks! Your ID has been submitted and will be reviewed shortly.',
         });
     } catch (error) {
         logger.error('submitIdentityVerification failed', { error });
@@ -676,8 +695,8 @@ export async function savePushToken(req: Request, res: Response): Promise<void> 
             res.status(401).json({ error: 'UNAUTHORIZED' });
             return;
         }
-        const { pushToken } = req.body;
-        if (!pushToken || typeof pushToken !== 'string') {
+        const { pushToken } = req.body || {};
+        if (!pushToken || typeof pushToken !== 'string' || pushToken.length > 300) {
             res.status(400).json({ error: 'INVALID_TOKEN', message: 'Valid pushToken string is required' });
             return;
         }

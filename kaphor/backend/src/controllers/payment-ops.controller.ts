@@ -9,6 +9,16 @@ import {
 } from '../services/payout.service';
 import { createNotification } from '../services/notification.service';
 import { releaseGarmentReservations } from '../services/garment-claim.service';
+import { z } from 'zod';
+
+const payoutAccountSchema = z.object({
+  accountHolderName: z.string().trim().min(2).max(100),
+  accountNumber: z.string().trim().regex(/^\d{6,20}$/, 'Invalid account number').optional().or(z.literal('')),
+  ifsc: z.string().trim().regex(/^[A-Za-z]{4}0[A-Za-z0-9]{6}$/, 'Invalid IFSC').optional().or(z.literal('')),
+  bankName: z.string().trim().max(100).optional(),
+  upiId: z.string().trim().regex(/^[\w.\-]{2,256}@[A-Za-z]{2,64}$/, 'Invalid UPI ID').optional().or(z.literal('')),
+  isDefault: z.boolean().optional(),
+});
 
 function getRazorpayInstance(): Razorpay | null {
   const keyId = process.env.RAZORPAY_KEY_ID;
@@ -45,14 +55,15 @@ export async function createPayoutAccount(req: Request, res: Response): Promise<
       res.status(401).json({ error: 'UNAUTHORIZED' });
       return;
     }
-    const { accountHolderName, accountNumber, ifsc, bankName, upiId, isDefault } = req.body;
-    if (!accountHolderName || (!accountNumber && !upiId)) {
+    const parsed = payoutAccountSchema.safeParse(req.body);
+    if (!parsed.success || (!parsed.data.accountNumber && !parsed.data.upiId)) {
       res.status(400).json({
         error: 'BAD_REQUEST',
         message: 'Account holder name and account number (or UPI ID) are required',
       });
       return;
     }
+    const { accountHolderName, accountNumber, ifsc, bankName, upiId, isDefault } = parsed.data;
 
     const account = await addPayoutAccount(req.user.id, {
       accountHolderName,
@@ -295,8 +306,8 @@ export async function requestRefund(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { orderId, reason, amount } = req.body;
-    if (!orderId) {
+    const { orderId, reason, amount } = req.body || {};
+    if (!orderId || typeof orderId !== 'string') {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'orderId is required' });
       return;
     }
@@ -311,36 +322,71 @@ export async function requestRefund(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    if (order.buyerId !== req.user.id && order.sellerId !== req.user.id && (req.user as any).role !== 'ADMIN') {
+    const isAdmin = (req.user as any).role === 'ADMIN';
+    const isSeller = order.sellerId === req.user.id;
+    const isBuyer = order.buyerId === req.user.id;
+    if (!isAdmin && !isSeller && !isBuyer) {
       res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized to request refund for this order' });
       return;
     }
 
-    const refundAmount = amount ? Number(amount) : order.totalAmount;
+    // Who may refund, and when:
+    // - the buyer: only after paying and before the item ships (after that, open a dispute)
+    // - the seller or an admin: any time after payment
+    // Unpaid, cancelled and already refunded orders can never be refunded (also makes this idempotent).
+    const allowedStatuses = isAdmin || isSeller ? ['CONFIRMED', 'SHIPPED', 'DELIVERED'] : ['CONFIRMED'];
+    if (!allowedStatuses.includes(String(order.status))) {
+      res.status(409).json({ error: 'CONFLICT', message: 'This order cannot be refunded in its current state' });
+      return;
+    }
+
+    // Amount is decided by the server. Only seller/admin may ask for a smaller (partial) amount.
+    let refundAmount = order.totalAmount;
+    if (amount !== undefined && amount !== null && (isAdmin || isSeller)) {
+      const requested = Number(amount);
+      if (!Number.isFinite(requested) || requested <= 0 || requested > order.totalAmount) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid refund amount' });
+        return;
+      }
+      refundAmount = requested;
+    }
+
+    // Claim the refund atomically so two parallel requests cannot both refund.
+    const claim = await db.order.updateMany({
+      where: { id: orderId, status: { in: allowedStatuses as any } },
+      data: { status: 'REFUNDED' },
+    });
+    if (claim.count === 0) {
+      res.status(409).json({ error: 'CONFLICT', message: 'This order has already been refunded' });
+      return;
+    }
 
     // Trigger Razorpay refund API if payment ID exists
     const razorpay = getRazorpayInstance();
     if (razorpay && order.razorpayPaymentId) {
       try {
         await razorpay.payments.refund(order.razorpayPaymentId, {
-          amount: refundAmount,
+          amount: Math.round(refundAmount * 100), // Razorpay wants paise
           notes: {
-            reason: reason || 'Customer requested refund',
+            reason: String(reason || 'Customer requested refund').slice(0, 200),
             orderId: order.id,
           },
         });
       } catch (rpErr) {
-        logger.warn('Razorpay refund API call notice (may be test/sandbox mode)', {
+        logger.error('Razorpay refund failed', {
+          orderId: order.id,
           error: rpErr instanceof Error ? rpErr.message : String(rpErr),
         });
+        if (process.env.NODE_ENV === 'production') {
+          // Put the order back so support can retry; do not tell the user the money moved.
+          await db.order.update({ where: { id: orderId }, data: { status: order.status } });
+          res.status(502).json({ error: 'REFUND_FAILED', message: 'Refund could not be processed. Please try again later.' });
+          return;
+        }
       }
     }
 
-    // Update order status
-    const updated = await db.order.update({
-      where: { id: orderId },
-      data: { status: 'REFUNDED' },
-    });
+    const updated = await db.order.findUniqueOrThrow({ where: { id: orderId } });
 
     // Relist garments back to LISTED and active, restoring the original seller
     // and clearing any reservation pointer.

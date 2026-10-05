@@ -26,7 +26,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
     quickTake: [
       'These terms form a binding contract between you and KaPhor when you register, list, buy, sell, rent, or swap on the Platform.',
       'KaPhor is an electronic intermediary under Section 79 of the IT Act — listings and transactions are direct, peer-to-peer agreements between users.',
-      'Payments and escrow run through RBI-authorized payment aggregators; KaPhor never stores card or banking credentials.',
+      'Payments and held funds run through RBI-authorized payment aggregators; KaPhor never stores card or banking credentials.',
       'Disputes are resolved through our Grievance Officer and, where not resolved, through arbitration or competent consumer forums — preserving all your statutory rights.',
     ],
     clauses: [
@@ -51,7 +51,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '4. Platform Role & Intermediary Status',
         content:
-          'KaPhor is an electronic marketplace and communications facilitator under Section 79 of the Information Technology Act, 2000. We do not manufacture items, hold title to traded goods, or warrant merchantability. Every sale, rental, and swap is a direct, private agreement between the transacting users; KaPhor provides the matching, communication, escrow, and logistics software infrastructure that connects them.',
+          'KaPhor is an electronic marketplace and communications facilitator under Section 79 of the Information Technology Act, 2000. We do not manufacture items, hold title to traded goods, or warrant merchantability. Every sale, rental, and swap is a direct, private agreement between the transacting users; KaPhor provides the matching, communication, secure payment, and logistics software infrastructure that connects them.',
         legalBasis: 'Information Technology Act, 2000, Section 79 (intermediary safe harbour, conditional on due diligence).',
       },
       {
@@ -61,9 +61,9 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
         legalBasis: 'Information Technology Rules, 2021, Rule 3(1)(d); Consumer Protection (E-Commerce) Rules, 2020, Rule 4.',
       },
       {
-        heading: '6. Payments, Escrow & Settlement',
+        heading: '6. Payments, Held Funds & Payouts',
         content:
-          'All payments are processed through RBI-authorized payment aggregators such as Razorpay or Stripe. KaPhor does not collect or retain card or banking credentials. Seller, rental, and swap proceeds are held in escrow settlement accounts and disbursed after delivery verification and the expiry of the applicable return window.',
+          'All payments are processed through RBI-authorized payment aggregators such as Razorpay or Stripe. KaPhor does not collect or retain card or banking credentials. Seller, rental, and swap proceeds are held in secure settlement accounts and disbursed after delivery verification and the expiry of the applicable return window.',
         legalBasis: 'Payment and Settlement Systems Act, 2007; RBI Master Directions on Payment Aggregators and Gateways.',
       },
       {
@@ -124,7 +124,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
     badge: 'DPDP ACT 2023',
     statutoryReference: 'Digital Personal Data Protection Act, 2023 & DPDP Rules 2025 • Information Technology Act, 2000 • Consumer Protection Act, 2019',
     quickTake: [
-      'We collect only the minimum personal data necessary for the marketplace, escrow, AI condition checks, and impact tracking to function.',
+      'We collect only the minimum personal data necessary for the marketplace, secure payments, AI condition checks, and impact tracking to function.',
       'Your data is never sold or shared with data brokers or advertisers — it is disclosed only to regulated processors who need it to deliver the service.',
       'You can withdraw consent, access, correct, or erase your data, and delete your account, directly from within the app at any time.',
       'All storage and transfers comply with the DPDP Act 2023; credentials are stored as one-way cryptographic hashes and traffic is encrypted end-to-end.',
@@ -139,7 +139,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '2. Personal Data We Collect',
         content:
-          'We collect only such personal data as is necessary for the specified purposes, itemised below:\n\n• Account & identity data — name, verified phone number, email address, login credentials (stored solely as a one-way cryptographic hash), and, if you register through Google Sign-In, your Google profile information.\n\n• Profile & style data — avatar or photo, city, style quiz responses, and the derived Style Vector used for discovery and recommendations.\n\n• Garment & listing data — photographs, descriptions, brand, size, fabric content, condition notes, and AI condition-check scans that you upload.\n\n• Transaction data — order, rental, swap, escrow, payout and refund details, together with the delivery address and logistics partner details required to fulfil them.\n\n• Usage data — searches performed, listings viewed, saved or wishlisted, swap interactions, and other in-app behaviour signals.\n\n• Device & technical data — device model, operating system, app version, IP address, and push-notification tokens.\n\n• Support & correspondence data — the contents of any communication you send to us.\n\nWe do not collect precise real-time GPS location, contact lists, call logs, or health information.',
+          'We collect only such personal data as is necessary for the specified purposes, itemised below:\n\n• Account & identity data — name, verified phone number, email address, login credentials (stored solely as a one-way cryptographic hash), and, if you register through Google Sign-In, your Google profile information.\n\n• Profile & style data — avatar or photo, city, style quiz responses, and the derived Style Vector used for discovery and recommendations.\n\n• Garment & listing data — photographs, descriptions, brand, size, fabric content, condition notes, and AI condition-check scans that you upload.\n\n• Transaction data — order, rental, swap, secure payment, payout and refund details, together with the delivery address and logistics partner details required to fulfil them.\n\n• Usage data — searches performed, listings viewed, saved or wishlisted, swap interactions, and other in-app behaviour signals.\n\n• Device & technical data — device model, operating system, app version, IP address, and push-notification tokens.\n\n• Support & correspondence data — the contents of any communication you send to us.\n\nWe do not collect precise real-time GPS location, contact lists, call logs, or health information.',
         legalBasis: 'DPDP Act, 2023, Section 5 (notice itemising specific categories of personal data and purposes); DPDP Rules, 2025, Rule 3; aligned to Apple App Privacy and Google Play Data Safety data-type inventories.',
       },
       {
@@ -151,7 +151,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '4. Purposes of Processing',
         content:
-          'We process personal data solely for lawful, specified purposes, including: (i) creating and maintaining your account and enabling buying, selling, renting, and swapping; (ii) verifying eligibility (a minimum age of 18 years) and safeguarding the community; (iii) personalising discovery and recommendations through your Style Vector and behaviour signals; (iv) running the AI condition and fiber assessment (the "AI Scan") to route garments towards resale, repair, or certified recycling; (v) estimating environmental impact for your Impact Record; (vi) processing payments, escrow settlements, statutory taxes (TCS/TDS), and refunds; (vii) delivering transactional, notification, and customer-service communications; and (viii) detecting fraud and meeting legal obligations.',
+          'We process personal data solely for lawful, specified purposes, including: (i) creating and maintaining your account and enabling buying, selling, renting, and swapping; (ii) verifying eligibility (a minimum age of 18 years) and safeguarding the community; (iii) personalising discovery and recommendations through your Style Vector and behaviour signals; (iv) running the AI condition and fiber assessment (the "AI Scan") to route garments towards resale, repair, or certified recycling; (v) estimating environmental impact for your Impact Record; (vi) processing payments, secure settlements, statutory taxes (TCS/TDS), and refunds; (vii) delivering transactional, notification, and customer-service communications; and (viii) detecting fraud and meeting legal obligations.',
         legalBasis: 'DPDP Act, 2023, Sections 4 and 6; Payment and Settlement Systems Act, 2007; CGST Act, 2017, Section 52.',
       },
       {
@@ -269,7 +269,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '5. Pricing, Fees & Payout Schedule',
         content:
-          'You set the sale price subject to the Platform fee rules disclosed at listing. Net proceeds, after fees and statutory deductions, are held in escrow and disbursed to your linked payout account within 5–7 business days following delivery confirmation and the expiry of the return window.',
+          'You set the sale price subject to the Platform fee rules disclosed at listing. Net proceeds, after fees and statutory deductions, are held safely and paid out to your linked payout account within 5–7 business days following delivery confirmation and the expiry of the return window.',
         legalBasis: 'Payment and Settlement Systems Act, 2007; RBI directions applicable to payment aggregators.',
       },
       {
@@ -279,15 +279,15 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
         legalBasis: 'CGST Act, 2017, Section 52; Income Tax Act, 1961, Section 194-O.',
       },
       {
-        heading: '7. Shipping, Dispatch & Fulfilment',
+        heading: '7. Shipping & Delivery',
         content:
-          'Sellers must dispatch items securely within the timeline stated in the listing using verifiable courier tracking as required by the transaction flow. Orders not dispatched within the stated window may be cancelled automatically, with escrow returned to the buyer.',
+          'Sellers must ship items securely within the timeline stated in the listing using verifiable delivery tracking as required by the transaction flow. Orders not shipped within the stated window may be cancelled automatically, with held funds returned to the buyer.',
         legalBasis: 'Consumer Protection (E-Commerce) Rules, 2020; Sale of Goods Act, 1930.',
       },
       {
         heading: '8. Returns, Refunds & Chargebacks',
         content:
-          'Approved returns under the Refund Policy are deducted from your escrow balance. Where a dispute determines that a sale was materially misdescribed, the buyer is refunded, return logistics are charged to you, and repeat violations attract enforcement action.',
+          'Approved returns under the Refund Policy are deducted from your held balance. Where a dispute determines that a sale was materially misdescribed, the buyer is refunded, return logistics are charged to you, and repeat violations attract enforcement action.',
         legalBasis: 'Consumer Protection Act, 2019; Consumer Protection (E-Commerce) Rules, 2020, Rule 5.',
       },
       {
@@ -327,13 +327,13 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '2. Rental Period, Pricing & Return Date',
         content:
-          'The rental period, rental fee, and return date are stated in the booking confirmation. The rental commences on despatch and ends on the agreed return date. Extensions are subject to owner approval and additional charges.',
+          'The rental period, rental fee, and return date are stated in the booking confirmation. The rental starts when the item is shipped and ends on the agreed return date. Extensions are subject to owner approval and additional charges.',
         legalBasis: 'Indian Contract Act, 1872, Sections 148 and 163.',
       },
       {
         heading: '3. Security Deposit & Inspection',
         content:
-          'Renters provide a refundable security deposit prior to despatch. On return, the owner or a designated fulfilment partner performs a condition inspection. The deposit is refunded within 3–5 business days, minus documented cleaning, repair, or late-return deductions.',
+          'Renters provide a refundable security deposit before shipping. On return, the owner or a designated fulfilment partner performs a condition inspection. The deposit is refunded within 3–5 business days, minus documented cleaning, repair, or late-return deductions.',
         legalBasis: 'Indian Contract Act, 1872, Section 151 (bailee duty of reasonable care).',
       },
       {
@@ -351,7 +351,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '6. Return & Reverse Logistics',
         content:
-          'Items must be returned in the provided protective packaging on or before the return date using the label and instructions provided. Returns dispatched after the return date remain the renter risk until delivery confirmation.',
+          'Items must be returned in the provided protective packaging on or before the return date using the label and instructions provided. Returns shipped after the return date remain the renter risk until delivery confirmation.',
         legalBasis: 'Indian Contract Act, 1872, Section 161.',
       },
       {
@@ -363,7 +363,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '8. Limitation of Platform Liability',
         content:
-          'KaPhor provides the rental matching, deposit escrow, and communications infrastructure under Section 79 of the Information Technology Act, 2000 and is not a party to the bailment. Liability between owner and renter is governed by the bailment provisions set out above.',
+          'KaPhor provides the rental matching, secure deposit, and communications infrastructure under Section 79 of the Information Technology Act, 2000 and is not a party to the bailment. Liability between owner and renter is governed by the bailment provisions set out above.',
         legalBasis: 'Information Technology Act, 2000, Section 79; Consumer Protection Act, 2019.',
       },
     ],
@@ -378,7 +378,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
     quickTake: [
       'A swap is a binding barter contract in which two users mutually agree to exchange garments.',
       'Title to each garment transfers strictly upon mutual delivery confirmation by both parties.',
-      'Both parties commit a ₹500 refundable escrow security deposit to guarantee dispatch within 3 business days.',
+      'Both parties commit a ₹500 refundable secure deposit to guarantee shipping within 3 business days.',
       'Items that arrive significantly not as described may be disputed within 48 hours of delivery.',
     ],
     clauses: [
@@ -395,15 +395,15 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
         legalBasis: 'Sale of Goods Act, 1930, Section 22 (transfer of title by agreement); Indian Contract Act, 1872.',
       },
       {
-        heading: '3. Escrow Security Deposit',
+        heading: '3. Secure Deposit',
         content:
-          'Both parties pledge a ₹500 refundable escrow security deposit upon signing the swap agreement. The deposit guarantees each side dispatch of its garment and is automatically released to both parties upon mutual delivery confirmation.',
+          'Both parties pledge a ₹500 refundable secure deposit upon signing the swap agreement. The deposit guarantees that each side ships its garment and is automatically released to both parties upon mutual delivery confirmation.',
         legalBasis: 'Indian Contract Act, 1872, Section 73 (compensation for breach of contract).',
       },
       {
-        heading: '4. Dispatch Commitment',
+        heading: '4. Shipping Promise',
         content:
-          'Each party must pack its garment securely and dispatch it with verifiable courier tracking within 3 business days of the agreement. Failure to dispatch results in cancellation of the swap and release of escrow funds to the compliant user.',
+          'Each party must pack its garment securely and ship it with verifiable delivery tracking within 3 business days of the agreement. Failure to ship results in cancellation of the swap and release of held funds to the compliant user.',
         legalBasis: 'Indian Contract Act, 1872, Sections 73 and 74 (compensation and reasonable pre-estimate of loss).',
       },
       {
@@ -415,19 +415,19 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '6. 48-Hour Unboxing & Dispute Window',
         content:
-          'You must record clear unboxing video or photographs on arrival, and any claim for damage, soiling, or material misdescription must be filed within 48 hours of delivery. Claims are mediated by the Platform with escrow withheld pending resolution.',
+          'You must record clear unboxing video or photographs on arrival, and any claim for damage, soiling, or material misdescription must be filed within 48 hours of delivery. Claims are mediated by the Platform with held funds withheld pending resolution.',
         legalBasis: 'Consumer Protection (E-Commerce) Rules, 2020; Indian Evidence Act, 1872.',
       },
       {
         heading: '7. Failed Swaps & Reverse Logistics',
         content:
-          'If a swap fails after one party has dispatched (such as recipient non-fulfilment, cancellation, or an unresolved dispute), KaPhor coordinates reverse courier return of the dispatched garment and releases escrow funds to the compliant user.',
+          'If a swap fails after one party has shipped (such as recipient non-fulfilment, cancellation, or an unresolved dispute), KaPhor coordinates a return delivery of the shipped garment and releases held funds to the compliant user.',
         legalBasis: 'Consumer Protection Act, 2019 (protection from unfair practices in platform transactions).',
       },
       {
         heading: '8. Intermediary Non-Liability',
         content:
-          'KaPhor provides the matchmaking, messaging, and escrow software infrastructure under Section 79 of the Information Technology Act, 2000 and is not a party to the barter contract. KaPhor assumes no warranty or merchantability obligation regarding swapped garments.',
+          'KaPhor provides the matchmaking, messaging, and secure payment software infrastructure under Section 79 of the Information Technology Act, 2000 and is not a party to the barter contract. KaPhor assumes no warranty or merchantability obligation regarding swapped garments.',
         legalBasis: 'Information Technology Act, 2000, Section 79.',
       },
     ],
@@ -440,9 +440,9 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
     badge: 'E-COMMERCE RULES 2020',
     statutoryReference: 'Consumer Protection (E-Commerce) Rules, 2020, Rule 5 • Consumer Protection Act, 2019 • CGST Act, 2017, Section 52',
     quickTake: [
-      'You may initiate a return within 48 hours of delivery if an item is materially misdescribed, defective, or significantly different from its listing.',
+      'You may start a return within 48 hours of delivery if an item is materially misdescribed, defective, or significantly different from its listing.',
       'Refunds are returned to the original payment source within 5–7 banking business days of approved return receipt.',
-      'Orders may be cancelled without penalty at any time before the seller dispatches the item.',
+      'Orders may be cancelled without penalty at any time before the seller ships the item.',
       'Because statutory TCS is collected on completed transactions, return-related tax adjustments follow the standard GST settlement cycle.',
     ],
     clauses: [
@@ -459,9 +459,9 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
         legalBasis: 'Consumer Protection (E-Commerce) Rules, 2020, Rule 6.',
       },
       {
-        heading: '3. How to Initiate a Return',
+        heading: '3. How to Start a Return',
         content:
-          'Navigate to your Order History, open the completed order, and select Request Return, choosing the return reason and uploading evidence. You will receive a return label and dispatch instructions after the request is auto-approved, and funds remain held in escrow until resolution.',
+          'Navigate to your Order History, open the completed order, and select Request Return, choosing the return reason and uploading evidence. You will receive a return label and shipping instructions after the request is auto-approved, and funds remain held safely until resolution.',
         legalBasis: 'Consumer Protection Act, 2019; Consumer Protection (E-Commerce) Rules, 2020, Rule 5.',
       },
       {
@@ -473,7 +473,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '5. Cancellation Policy',
         content:
-          'You may cancel an order without any penalty up until the seller dispatches the item. After dispatch, cancellation is governed by the return process above, and a request after delivery requires valid return grounds as set out in clause 1.',
+          'You may cancel an order without any penalty up until the seller ships the item. After shipping, cancellation is governed by the return process above, and a request after delivery requires valid return grounds as set out in clause 1.',
         legalBasis: 'Consumer Protection (E-Commerce) Rules, 2020, Rule 5; Indian Contract Act, 1872.',
       },
       {
@@ -620,8 +620,8 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
 export const KEY_SWAP_PROTECTIONS = [
   {
     icon: 'shield-checkmark',
-    title: 'Automated Escrow Deposit',
-    summary: '₹500 refundable security deposit held in automated escrow until both parties confirm receipt.',
+    title: 'Automated Secure Deposit',
+    summary: '₹500 refundable security deposit held safely until both parties confirm receipt.',
   },
   {
     icon: 'repeat',

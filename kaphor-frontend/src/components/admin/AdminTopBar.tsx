@@ -57,7 +57,7 @@ export default function AdminTopBar({
   return (
     <View style={[styles.wrapper, { paddingTop: Math.max(insets.top + 8, 44) }]}>
       <View style={styles.topRow}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
           style={styles.backBtn}
           onPress={handleBack}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -77,7 +77,7 @@ export default function AdminTopBar({
         </View>
 
         {onRefresh && (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Refresh"
             style={styles.refreshBtn}
             onPress={onRefresh}
             disabled={refreshing}
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontSize: 11,
     color: colors.textMuted,
     letterSpacing: 1.8,
     marginTop: 2,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   navChipText: {
     fontFamily: typography.monoBold,
-    fontSize: 9,
+    fontSize: 11,
     color: colors.ink,
     letterSpacing: 0.8,
   },

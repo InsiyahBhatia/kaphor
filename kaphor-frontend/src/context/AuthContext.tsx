@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { safeStorage } from '../utils/storage';
-import { persistTokens, clearStoredTokens } from '../services/api';
+import { persistTokens, clearStoredTokens, clearApiCache } from '../services/api';
 import { useAuthStore, type AuthUser } from '../store/authStore';
+import { forget as forgetSwr } from '../utils/swrCache';
 
 interface User {
   id: string;
@@ -75,6 +76,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useAuthStore.getState().logout();
     await safeStorage.deleteItem(AUTH_DATA_KEY);
     await clearStoredTokens();
+    clearApiCache();
+    forgetSwr();
+    await safeStorage.clearUserCaches();
+    try {
+      const { disconnectSocket } = await import('../services/socket');
+      disconnectSocket();
+    } catch {
+      /* socket was never started */
+    }
   };
 
   useEffect(() => {
@@ -141,12 +151,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // If refresh token was genuinely rejected, api interceptor cleared it
           const remainingRefresh = await safeStorage.getItem('kaphor_refresh_token');
           if (!remainingRefresh) {
-            console.log('Session expired or revoked (401/403), clearing session');
             await clearLocalSession();
             return;
           }
         }
-        console.log('Backend cold start / slow response, keeping cached session');
       }
 
       // Connect socket now that user session is active
@@ -154,7 +162,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { connectSocket } = await import('../services/socket');
         connectSocket();
       } catch (sockErr) {
-        console.log('Socket connect warning on boot:', sockErr);
       }
     } catch (e) {
       console.warn('Error loading auth data', e);
@@ -187,7 +194,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { connectSocket } = await import('../services/socket');
       connectSocket();
     } catch (sockErr) {
-      console.log('Socket connect warning on persistSession:', sockErr);
     }
   }
 

@@ -1,7 +1,9 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
+import { colors } from '../../theme';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 import { hapticFeedback } from '../../utils/haptics';
+import { Spinner } from './Loader';
 
 interface ButtonProps {
   title: string;
@@ -46,7 +48,7 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={disabled || loading}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? 'white' : '#9B1B30'} />
+        <Spinner color={isPrimary ? colors.white : colors.rose} />
       ) : (
         <Text style={[
           styles.textBase,
@@ -74,8 +76,8 @@ const styles = StyleSheet.create({
   md: { height: 50, paddingHorizontal: 20 },
   lg: { height: 60, paddingHorizontal: 32 },
   
-  primary: { backgroundColor: '#9B1B30' },
-  secondary: { borderWidth: 1, borderColor: '#9B1B30' },
+  primary: { backgroundColor: colors.rose },
+  secondary: { borderWidth: 1, borderColor: colors.rose },
   ghost: { backgroundColor: 'transparent' },
   disabled: { opacity: 0.5 },
 
@@ -84,8 +86,8 @@ const styles = StyleSheet.create({
   mdText: { fontSize: 14 },
   lgText: { fontSize: 16 },
 
-  primaryText: { color: 'white' },
-  secondaryText: { color: '#9B1B30' },
-  ghostText: { color: '#C9A84C' },
-  disabledText: { color: '#6B5C52' },
+  primaryText: { color: colors.white },
+  secondaryText: { color: colors.rose },
+  ghostText: { color: colors.gold },
+  disabledText: { color: colors.textMuted },
 });

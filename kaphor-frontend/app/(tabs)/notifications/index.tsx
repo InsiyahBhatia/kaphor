@@ -18,11 +18,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useNotificationStore, NotificationItem } from '../../../src/store/notificationStore';
 import { swapService } from '../../../src/services/swapService';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { Loader } from '../../../src/components/common/Loader';
 
 type NotificationCategory = 'UNREAD' | 'SWAP' | 'SELLING' | 'RENTAL' | 'REVIEWS';
+
+const keyExtractor = (n: NotificationItem) => n.id;
+const Separator = () => <View style={{ height: 10 }} />;
 
 function formatRelativeTime(dateString: string): string {
   try {
@@ -246,8 +249,8 @@ export default function NotificationsScreen() {
         icon: 'chatbubble-ellipses',
         label: 'MESSAGE',
         cta: 'REPLY IN CHAT →',
-        color: '#2D5A27',
-        bg: 'rgba(45,90,39,0.1)',
+        color: colors.inkSoft,
+        bg: colors.emeraldLight,
       };
     }
     if (type.startsWith('SWAP_')) {
@@ -255,8 +258,8 @@ export default function NotificationsScreen() {
         icon: 'swap-horizontal',
         label: 'SWAP',
         cta: 'VIEW ACTIVE STAGE →',
-        color: '#8C6D3B',
-        bg: 'rgba(140,109,59,0.12)',
+        color: colors.goldDark,
+        bg: colors.goldLight,
       };
     }
     if (type.startsWith('ORDER_')) {
@@ -264,8 +267,8 @@ export default function NotificationsScreen() {
         icon: 'bag-check',
         label: 'SELLING',
         cta: 'TRACK ORDER →',
-        color: '#1E3A8A',
-        bg: 'rgba(30,58,138,0.1)',
+        color: colors.ink,
+        bg: colors.overlayLight,
       };
     }
     if (type.startsWith('RENTAL_')) {
@@ -273,8 +276,8 @@ export default function NotificationsScreen() {
         icon: 'calendar',
         label: 'RENTAL',
         cta: 'VIEW LEASE →',
-        color: '#6B46C1',
-        bg: 'rgba(107,70,193,0.1)',
+        color: colors.ink,
+        bg: colors.overlayLight,
       };
     }
     if (type === 'PEER_REVIEW') {
@@ -282,8 +285,8 @@ export default function NotificationsScreen() {
         icon: 'star',
         label: 'REVIEW',
         cta: 'LEAVE REVIEW →',
-        color: '#D97706',
-        bg: 'rgba(217,119,6,0.12)',
+        color: colors.orange,
+        bg: colors.goldLight,
       };
     }
     return {
@@ -291,7 +294,7 @@ export default function NotificationsScreen() {
       label: 'ALERT',
       cta: 'VIEW DETAILS →',
       color: colors.charcoal,
-      bg: 'rgba(30,31,34,0.08)',
+      bg: colors.overlayLight,
     };
   };
 
@@ -320,12 +323,92 @@ export default function NotificationsScreen() {
     REVIEWS: bellNotifications.filter((n) => n.type === 'PEER_REVIEW').length,
   };
 
+  const renderNotification = ({ item: n }: { item: NotificationItem }) => {
+        const meta = getCategoryMeta(n.type);
+
+        return (
+          <TouchableOpacity
+            key={n.id}
+            style={[styles.card, !n.isRead && styles.cardUnread]}
+            onPress={() => handlePressNotification(n)}
+            activeOpacity={0.88}
+          >
+            {/* Left Icon Wrap */}
+            <View style={[styles.iconWrap, { backgroundColor: meta.bg }]}>
+              <Ionicons name={meta.icon as any} size={20} color={meta.color} />
+            </View>
+
+            {/* Card Main Info */}
+            <View style={styles.cardContent}>
+              <View style={styles.cardHeaderRow}>
+                <View style={[styles.typeBadge, { borderColor: meta.color }]}>
+                  <Text style={[styles.typeBadgeText, { color: meta.color }]}>
+                    {meta.label}
+                  </Text>
+                </View>
+                <Text style={styles.cardTime}>
+                  {formatRelativeTime(n.createdAt)}
+                </Text>
+              </View>
+
+              <Text style={[styles.cardTitle, !n.isRead && styles.cardTitleUnread]} numberOfLines={1}>
+                {n.title}
+              </Text>
+
+              <Text style={styles.cardBody} numberOfLines={2}>
+                {n.body}
+              </Text>
+
+              <View style={styles.ctaRow}>
+                <Text style={[styles.ctaText, { color: meta.color }]}>
+                  {meta.cta}
+                </Text>
+              </View>
+            </View>
+
+            {/* Card Right Actions */}
+            <View style={styles.cardRightActions}>
+              {!n.isRead && (
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Confirm"
+                  style={styles.quickMarkReadBtn}
+                  onPress={() => {
+                    try {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    } catch {}
+                    markAsRead(n.id);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="checkmark" size={14} color={colors.forest || colors.inkSoft} />
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
+                style={styles.deleteCardBtn}
+                onPress={() => {
+                  try {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  } catch {}
+                  deleteNotification(n.id);
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close" size={14} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Unread indicator ribbon */}
+            {!n.isRead && <View style={styles.unreadRibbon} />}
+          </TouchableOpacity>
+        );
+  };
+
   return (
     <View style={styles.container}>
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <TouchableOpacity 
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
             onPress={() => safeBack('/(tabs)/profile')} 
             style={styles.backBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -342,7 +425,7 @@ export default function NotificationsScreen() {
 
           <View style={styles.headerActions}>
             {bellUnreadCount > 0 && (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Checkmark done"
                 onPress={handleMarkAllRead}
                 style={styles.actionBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -351,7 +434,7 @@ export default function NotificationsScreen() {
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Filters"
               onPress={() => setShowSettingsModal(true)}
               style={styles.actionBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -360,7 +443,7 @@ export default function NotificationsScreen() {
             </TouchableOpacity>
 
             {bellNotifications.length > 0 && (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Delete"
                 onPress={handleClearAll}
                 style={styles.actionBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -410,23 +493,23 @@ export default function NotificationsScreen() {
       </View>
 
       {/* Content List with Pull-to-Refresh */}
-      <ScrollView
+      <FlatList
+        data={filteredNotifications}
+        keyExtractor={keyExtractor}
+        renderItem={renderNotification}
         contentContainerStyle={styles.content}
+        ItemSeparatorComponent={Separator}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.charcoal}
-            colors={[colors.charcoal]}
-          />
-        }
-      >
-        {loading && !refreshing ? (
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
+        ListEmptyComponent={
+          loading && notifications.length === 0 ? (
           <View style={{ marginTop: 40 }}>
-            <DossierLoading variant="notifications" compact />
+            <Loader variant="notifications" compact />
           </View>
-        ) : filteredNotifications.length === 0 ? (
+          ) : (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconCircle}>
               <Ionicons
@@ -444,90 +527,17 @@ export default function NotificationsScreen() {
                 : 'Real-time updates about your swaps, orders, rentals, and reviews will appear here.'}
             </Text>
           </View>
-        ) : (
-          <View style={styles.list}>
-            {filteredNotifications.map((n) => {
-              const meta = getCategoryMeta(n.type);
-
-              return (
-                <TouchableOpacity
-                  key={n.id}
-                  style={[styles.card, !n.isRead && styles.cardUnread]}
-                  onPress={() => handlePressNotification(n)}
-                  activeOpacity={0.88}
-                >
-                  {/* Left Icon Wrap */}
-                  <View style={[styles.iconWrap, { backgroundColor: meta.bg }]}>
-                    <Ionicons name={meta.icon as any} size={20} color={meta.color} />
-                  </View>
-
-                  {/* Card Main Info */}
-                  <View style={styles.cardContent}>
-                    <View style={styles.cardHeaderRow}>
-                      <View style={[styles.typeBadge, { borderColor: meta.color }]}>
-                        <Text style={[styles.typeBadgeText, { color: meta.color }]}>
-                          {meta.label}
-                        </Text>
-                      </View>
-                      <Text style={styles.cardTime}>
-                        {formatRelativeTime(n.createdAt)}
-                      </Text>
-                    </View>
-
-                    <Text style={[styles.cardTitle, !n.isRead && styles.cardTitleUnread]} numberOfLines={1}>
-                      {n.title}
-                    </Text>
-
-                    <Text style={styles.cardBody} numberOfLines={2}>
-                      {n.body}
-                    </Text>
-
-                    <View style={styles.ctaRow}>
-                      <Text style={[styles.ctaText, { color: meta.color }]}>
-                        {meta.cta}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Card Right Actions */}
-                  <View style={styles.cardRightActions}>
-                    {!n.isRead && (
-                      <TouchableOpacity
-                        style={styles.quickMarkReadBtn}
-                        onPress={() => {
-                          try {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          } catch {}
-                          markAsRead(n.id);
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Ionicons name="checkmark" size={14} color={colors.forest || '#2D5A27'} />
-                      </TouchableOpacity>
-                    )}
-
-                    <TouchableOpacity
-                      style={styles.deleteCardBtn}
-                      onPress={() => {
-                        try {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        } catch {}
-                        deleteNotification(n.id);
-                      }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Ionicons name="close" size={14} color={colors.textMuted} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Unread indicator ribbon */}
-                  {!n.isRead && <View style={styles.unreadRibbon} />}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
+          )
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.charcoal}
+            colors={[colors.charcoal]}
+          />
+        }
+      />
 
       {/* Preferences / Settings Modal */}
       <Modal
@@ -547,7 +557,7 @@ export default function NotificationsScreen() {
                 <Text style={styles.modalTitle}>NOTIFICATION PREFERENCES</Text>
                 <Text style={styles.modalSubtitle}>Customize alerts and real-time banner behavior</Text>
               </View>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={styles.modalCloseBtn}
                 onPress={() => setShowSettingsModal(false)}
               >
@@ -564,7 +574,7 @@ export default function NotificationsScreen() {
                 <Switch
                   value={preferences.banners}
                   onValueChange={(val) => setPreference('banners', val)}
-                  trackColor={{ false: '#D1D5DB', true: colors.charcoal }}
+                  trackColor={{ false: colors.borderLight, true: colors.charcoal }}
                   thumbColor={colors.white}
                 />
               </View>
@@ -577,7 +587,7 @@ export default function NotificationsScreen() {
                 <Switch
                   value={preferences.haptics}
                   onValueChange={(val) => setPreference('haptics', val)}
-                  trackColor={{ false: '#D1D5DB', true: colors.charcoal }}
+                  trackColor={{ false: colors.borderLight, true: colors.charcoal }}
                   thumbColor={colors.white}
                 />
               </View>
@@ -590,7 +600,7 @@ export default function NotificationsScreen() {
                 <Switch
                   value={preferences.orders}
                   onValueChange={(val) => setPreference('orders', val)}
-                  trackColor={{ false: '#D1D5DB', true: colors.charcoal }}
+                  trackColor={{ false: colors.borderLight, true: colors.charcoal }}
                   thumbColor={colors.white}
                 />
               </View>
@@ -603,7 +613,7 @@ export default function NotificationsScreen() {
                 <Switch
                   value={preferences.swaps}
                   onValueChange={(val) => setPreference('swaps', val)}
-                  trackColor={{ false: '#D1D5DB', true: colors.charcoal }}
+                  trackColor={{ false: colors.borderLight, true: colors.charcoal }}
                   thumbColor={colors.white}
                 />
               </View>
@@ -616,7 +626,7 @@ export default function NotificationsScreen() {
                 <Switch
                   value={preferences.messages}
                   onValueChange={(val) => setPreference('messages', val)}
-                  trackColor={{ false: '#D1D5DB', true: colors.charcoal }}
+                  trackColor={{ false: colors.borderLight, true: colors.charcoal }}
                   thumbColor={colors.white}
                 />
               </View>
@@ -638,7 +648,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: colors.paperLight,
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? 54 : 40,
@@ -661,18 +671,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontFamily: typography.mono,
-    fontSize: 14,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 1.2,
   },
   subtitle: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: 0.8,
     marginTop: 2,
   },
   headerActions: {
@@ -710,17 +718,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   categoryChipText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.8,
   },
   categoryChipTextActive: {
     color: colors.cream,
   },
   chipBadge: {
-    backgroundColor: 'rgba(30,31,34,0.1)',
+    backgroundColor: colors.overlayLight,
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 8,
@@ -730,7 +737,7 @@ const styles = StyleSheet.create({
   },
   chipBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -751,26 +758,26 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: '#F0ECE1',
+    backgroundColor: colors.paper,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: colors.charcoal,
   },
   emptyText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
     color: colors.charcoal,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontSize: 17,
     marginTop: 4,
   },
   emptySubtext: {
-    fontFamily: typography.mono,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
     color: colors.textMuted,
-    fontSize: 9.5,
+    fontSize: 18,
     textAlign: 'center',
-    lineHeight: 15,
+    lineHeight: 23,
   },
   list: {
     gap: 10,
@@ -781,7 +788,7 @@ const styles = StyleSheet.create({
     padding: 14,
     backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.14)',
+    borderColor: colors.overlayLight,
     borderRadius: 8,
     gap: 12,
     position: 'relative',
@@ -789,9 +796,9 @@ const styles = StyleSheet.create({
   },
   cardUnread: {
     borderColor: colors.charcoal,
-    backgroundColor: '#FFFEFA',
+    backgroundColor: colors.white,
     borderLeftWidth: 4,
-    borderLeftColor: '#C9A84C',
+    borderLeftColor: colors.gold,
   },
   iconWrap: {
     width: 38,
@@ -816,40 +823,38 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   typeBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   cardTime: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    fontWeight: '700',
   },
   cardTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   cardTitleUnread: {
     fontWeight: '900',
   },
   cardBody: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    color: 'rgba(30,31,34,0.78)',
-    lineHeight: 14,
+    fontFamily: typography.body,
+    fontSize: 14,
+    color: colors.inkSoft,
+    lineHeight: 17,
   },
   ctaRow: {
     marginTop: 4,
   },
   ctaText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   cardRightActions: {
     flexDirection: 'row',
@@ -860,7 +865,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#EBF3ED',
+    backgroundColor: colors.emeraldLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -874,11 +879,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderTopRightRadius: 6,
-    backgroundColor: '#C9A84C',
+    backgroundColor: colors.gold,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   modalSheet: {
@@ -895,18 +900,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   modalTitle: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   modalSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -924,14 +929,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   prefLabel: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   prefDesc: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 2,
     maxWidth: '85%',
@@ -944,11 +950,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   doneBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 1,
   },
 });
 

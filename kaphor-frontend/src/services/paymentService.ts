@@ -23,6 +23,7 @@ import type {
   RentalPaymentBreakdown,
   PaymentStatus,
 } from '../types/payment';
+import { colors } from '../theme';
 
 const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? '';
 
@@ -133,15 +134,15 @@ const paymentService = {
    */
   getStatusMeta(status: PaymentStatus): { label: string; color: string } {
     const map: Record<PaymentStatus, { label: string; color: string }> = {
-      PENDING: { label: 'PENDING', color: '#C95F12' },
-      PAID: { label: 'PAID', color: '#1E3B2F' },
-      HELD_IN_ESCROW: { label: 'HELD', color: '#1C2B4A' },
-      RELEASED_TO_SELLER: { label: 'PAID OUT', color: '#1E3B2F' },
-      REFUNDED: { label: 'REFUNDED', color: '#4A2E1A' },
-      PARTIALLY_REFUNDED: { label: 'PARTIAL REFUND', color: '#C95F12' },
-      FAILED: { label: 'FAILED', color: '#A82222' },
+      PENDING: { label: 'PENDING', color: colors.orange },
+      PAID: { label: 'PAID', color: colors.forest },
+      HELD_IN_ESCROW: { label: 'HELD', color: colors.ink },
+      RELEASED_TO_SELLER: { label: 'PAID OUT', color: colors.forest },
+      REFUNDED: { label: 'REFUNDED', color: colors.terracottaDark },
+      PARTIALLY_REFUNDED: { label: 'PARTIAL REFUND', color: colors.orange },
+      FAILED: { label: 'FAILED', color: colors.rose },
     };
-    return map[status] ?? { label: status, color: '#9A8E7E' };
+    return map[status] ?? { label: status, color: colors.textMuted };
   },
 
   // ─── SELLER PAYOUTS ──────────────────────────────────────────

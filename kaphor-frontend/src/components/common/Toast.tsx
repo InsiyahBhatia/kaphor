@@ -41,8 +41,6 @@ export function Toast() {
           type === 'error' && styles.errorText,
           type === 'success' && styles.successText
         ]}>
-          {type === 'error' && 'ERROR // '}
-          {type === 'success' && 'SUCCESS // '}
           {message}
         </Text>
       </Animated.View>
@@ -80,11 +78,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   toastText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.handSemi,
     color: colors.white,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: 19,
+    lineHeight: 24,
   },
   errorText: {
     color: colors.white,

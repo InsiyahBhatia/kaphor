@@ -1,5 +1,6 @@
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
+import { cacheWrap } from '../lib/cache';
 
 export class ImpactService {
     static async updateImpactOnTransaction(orderId: string) {
@@ -180,7 +181,8 @@ export class ImpactService {
      * Attempts to find the best matching material baseline for a garment.
      */
     static async findMatchingMaterialId(title: string, category: string, fabric?: string | null): Promise<string | null> {
-        const allMaterials = await db.materialImpact.findMany();
+        // The materials table is static reference data: cache it for 10 minutes instead of reading it on every call.
+        const allMaterials: any[] = await cacheWrap<any[]>('market:materials', 600_000, () => db.materialImpact.findMany());
         
         const searchStr = `${title} ${fabric || ''} ${category}`.toLowerCase();
 

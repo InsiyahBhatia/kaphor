@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { userService } from './userService';
+import { colors } from '../theme';
 
 // Configure how incoming notifications are presented on the device
 if (Platform.OS !== 'web') {
@@ -33,7 +34,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       name: 'Kaphor Alerts & Updates',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#C49A45',
+      lightColor: colors.gold,
       sound: 'default',
       enableVibrate: true,
       showBadge: true,
@@ -46,7 +47,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       name: 'Kaphor Direct Messages',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 200, 100, 200],
-      lightColor: '#1A1A1A',
+      lightColor: colors.ink,
       sound: 'default',
       enableVibrate: true,
       showBadge: true,
@@ -59,7 +60,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       name: 'Kaphor Orders & Swaps',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 300, 150, 300],
-      lightColor: '#0F5C46',
+      lightColor: colors.forest,
       sound: 'default',
       enableVibrate: true,
       showBadge: true,

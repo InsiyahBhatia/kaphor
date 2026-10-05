@@ -3,9 +3,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { orderService, TransactionOrder } from '../../../src/services/orderService';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
+import { Loader } from '../../../src/components/common/Loader';
 
 export default function OrderConfirmedScreen() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export default function OrderConfirmedScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.center}>
-          <DossierLoading variant="confirmed" compact />
+          <Loader variant="confirmed" compact />
         </View>
       </View>
     );
@@ -94,7 +94,7 @@ export default function OrderConfirmedScreen() {
             <View style={styles.timelineContent}>
               <Text style={styles.timelineTitle}>2. Item Shipped</Text>
               <Text style={styles.timelineText}>
-                Seller marks the item as shipped once dispatched.
+                The seller marks the item as shipped once it is sent.
               </Text>
             </View>
           </View>
@@ -168,10 +168,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 2,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   scrollContent: {
     padding: 24,
@@ -189,7 +188,7 @@ const styles = StyleSheet.create({
     width: 104,
     height: 104,
     borderRadius: 52,
-    backgroundColor: 'rgba(30,59,47,0.08)',
+    backgroundColor: colors.emeraldLight,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -206,10 +205,9 @@ const styles = StyleSheet.create({
   },
   successBadgeText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
 
   heading: {
@@ -221,11 +219,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subheading: {
-    fontFamily: typography.mono,
-    fontSize: 13,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 24,
     paddingHorizontal: 20,
     marginBottom: 32,
   },
@@ -249,7 +248,7 @@ const styles = StyleSheet.create({
   },
   orderIdLabel: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 1,
@@ -264,14 +263,15 @@ const styles = StyleSheet.create({
   },
   orderIdDivider: {
     height: 1,
-    backgroundColor: 'rgba(30,31,34,0.1)',
+    backgroundColor: colors.overlayLight,
     marginVertical: 12,
   },
   orderIdHint: {
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    lineHeight: 16,
+    lineHeight: 21,
   },
 
   timeline: {
@@ -279,11 +279,10 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   sectionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 1.5,
     marginBottom: 20,
   },
   timelineStep: {
@@ -306,9 +305,9 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   timelineTitle: {
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
     color: colors.charcoal,
     marginBottom: 4,
   },
@@ -347,16 +346,16 @@ const styles = StyleSheet.create({
   },
   impactTitle: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   impactText: {
-    color: 'rgba(247,245,240,0.85)',
-    fontFamily: typography.mono,
-    fontSize: 11,
-    lineHeight: 17,
+    color: colors.goldDark,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
+    lineHeight: 21,
   },
 
   // Footer
@@ -389,10 +388,9 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
   },
   secondaryBtn: {
     height: 44,
@@ -404,10 +402,9 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   homeBtn: {
     height: 36,
@@ -416,8 +413,9 @@ const styles = StyleSheet.create({
   },
   homeBtnText: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     textDecorationLine: 'underline',
   },
 });

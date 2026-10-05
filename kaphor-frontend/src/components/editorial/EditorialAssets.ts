@@ -1,51 +1,75 @@
 import { ImageSourcePropType } from 'react-native';
 
 export const EditorialIcons = {
+  // navigation / commerce
   home: require('../../../assets/editorial/icons/home.png'),
   shop: require('../../../assets/editorial/icons/bag.png'),
   bag: require('../../../assets/editorial/icons/bag.png'),
   tote: require('../../../assets/editorial/icons/tote.png'),
+  handbag: require('../../../assets/editorial/icons/handbag.png'),
+  cart: require('../../../assets/editorial/icons/cart.png'),
   hanger: require('../../../assets/editorial/icons/hanger.png'),
   dress: require('../../../assets/editorial/icons/dress.png'),
   swap: require('../../../assets/editorial/icons/swap.png'),
-  rental: require('../../../assets/editorial/icons/hanger.png'),
+  rental: require('../../../assets/editorial/icons/rental.png'),
   calendar: require('../../../assets/editorial/icons/calendar.png'),
   clock: require('../../../assets/editorial/icons/clock.png'),
   profile: require('../../../assets/editorial/icons/profile.png'),
   search: require('../../../assets/editorial/icons/search.png'),
+  // social / status
   heart: require('../../../assets/editorial/icons/heart.png'),
   heartFilled: require('../../../assets/editorial/icons/heart_filled.png'),
   bookmark: require('../../../assets/editorial/icons/bookmark.png'),
   bell: require('../../../assets/editorial/icons/bell.png'),
   mail: require('../../../assets/editorial/icons/mail.png'),
   chat: require('../../../assets/editorial/icons/chat.png'),
+  help: require('../../../assets/editorial/icons/help.png'),
   camera: require('../../../assets/editorial/icons/camera.png'),
   upload: require('../../../assets/editorial/icons/upload.png'),
+  verified: require('../../../assets/editorial/icons/verified.png'),
+  shield: require('../../../assets/editorial/icons/shield.png'),
+  // controls
   gear: require('../../../assets/editorial/icons/gear.png'),
   filter: require('../../../assets/editorial/icons/filter.png'),
   grid: require('../../../assets/editorial/icons/grid.png'),
   check: require('../../../assets/editorial/icons/check.png'),
   close: require('../../../assets/editorial/icons/close.png'),
   plus: require('../../../assets/editorial/icons/plus.png'),
+  minus: require('../../../assets/editorial/icons/minus.png'),
+  trash: require('../../../assets/editorial/icons/trash.png'),
+  // circular / craft
   recycle: require('../../../assets/editorial/icons/recycle.png'),
   leaf: require('../../../assets/editorial/icons/leaf.png'),
   scissors: require('../../../assets/editorial/icons/scissors.png'),
   thread: require('../../../assets/editorial/icons/thread.png'),
   sewing: require('../../../assets/editorial/icons/sewing.png'),
+  tape: require('../../../assets/editorial/icons/tape.png'),
+  yarn: require('../../../assets/editorial/icons/yarn.png'),
+  buttons: require('../../../assets/editorial/icons/buttons.png'),
+  // accents / wardrobe
   sparkle: require('../../../assets/editorial/icons/sparkle.png'),
   star: require('../../../assets/editorial/icons/star.png'),
   tag: require('../../../assets/editorial/icons/tag.png'),
   wallet: require('../../../assets/editorial/icons/wallet.png'),
+  card: require('../../../assets/editorial/icons/card.png'),
   shoe: require('../../../assets/editorial/icons/shoe.png'),
+  boots: require('../../../assets/editorial/icons/boots.png'),
   hat: require('../../../assets/editorial/icons/hat.png'),
   stack: require('../../../assets/editorial/icons/stack.png'),
   sunglasses: require('../../../assets/editorial/icons/sunglasses.png'),
-  ring: require('../../../assets/editorial/icons/ring.png'),
-  verified: require('../../../assets/editorial/icons/verified.png'),
-  shield: require('../../../assets/editorial/icons/shield.png'),
+  necklace: require('../../../assets/editorial/icons/necklace.png'),
+  // legacy alias: `ring` was the pearl necklace, kept so old call sites keep working
+  ring: require('../../../assets/editorial/icons/necklace.png'),
+  bow: require('../../../assets/editorial/icons/bow.png'),
 } as const;
 
 export type EditorialIconName = keyof typeof EditorialIcons;
+
+/** Never throws: unknown / undefined names fall back to the sparkle icon. */
+export function getEditorialIcon(name?: string | null): ImageSourcePropType {
+  const hit = name ? (EditorialIcons as Record<string, ImageSourcePropType>)[name] : undefined;
+  return hit ?? EditorialIcons.sparkle;
+}
 
 export const EditorialFashion = {
   museHero: require('../../../assets/editorial/fashion/muse_hero.png'),

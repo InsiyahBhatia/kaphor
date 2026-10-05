@@ -6,6 +6,7 @@
 
 import { logger } from '../../lib/logger';
 import { generateWithGemini } from '../gemini.service';
+import { extractFirstJson, stripCodeFences, toReadableText } from '../../lib/llmOutput';
 import { generateWithGroqVision } from '../groq.service';
 
 export interface GeminiSubScores {
@@ -156,7 +157,7 @@ export async function callGeminiVision(
       success: false,
       data: null,
       model: 'none',
-      error: err.message,
+      error: 'Image analysis is unavailable right now.',
     };
   }
 }
@@ -166,11 +167,11 @@ export async function callGeminiVision(
  * back on a 0–100 scale. Clamped then normalized to [0,1].
  */
 function parseGroqResponse(text: string): Omit<GeminiSubScores, 'description'> | null {
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return null;
+  const block = extractFirstJson(stripCodeFences(text)) ?? extractFirstJson(text);
+  if (!block) return null;
 
   try {
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(block);
     const clamp = (val: any, d = 0.5): number => {
       const n = Number(val);
       if (isNaN(n)) return d;
@@ -196,11 +197,11 @@ function parseGroqResponse(text: string): Omit<GeminiSubScores, 'description'> |
  */
 function parseGeminiResponse(text: string): GeminiSubScores | null {
   // Try to find JSON block
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return null;
+  const block = extractFirstJson(stripCodeFences(text)) ?? extractFirstJson(text);
+  if (!block) return null;
 
   try {
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(block);
 
     // Ensure numeric fields are clamped to [0,1]
     const clamp = (val: any, defaultVal: number = 0.5): number => {
@@ -215,7 +216,7 @@ function parseGeminiResponse(text: string): GeminiSubScores | null {
       stain_ratio: clamp(parsed.stain_ratio, 0),
       fiber_degradation_score: clamp(parsed.fiber_degradation_score || parsed.fiber_degradation, 0),
       damage_types: Array.isArray(parsed.damage_types) ? parsed.damage_types.map(String) : ['none'],
-      description: typeof parsed.description === 'string' ? parsed.description : '',
+      description: typeof parsed.description === 'string' ? toReadableText(parsed.description) : '',
     };
   } catch (e) {
     logger.warn('[GLIE/Gemini] JSON parse failed', { error: (e as Error).message, text: text.slice(0, 200) });

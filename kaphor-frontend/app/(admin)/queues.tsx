@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { adminService } from '../../src/services/adminService';
 import api from '../../src/services/api';
 import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Chip, Empty } from '../../src/components/admin/AdminUI';
+import { Loader } from '../../src/components/common/Loader';
 
 function QueueSection({
   title, count, children,
@@ -52,8 +53,8 @@ function QueueRow({
   );
 }
 
-function Spinner() {
-  return <ActivityIndicator size="small" color={colors.ink} style={{ paddingVertical: 20 }} />;
+function QueueSpinner() {
+  return <Loader compact />;
 }
 
 export default function AdminQueuesScreen() {
@@ -110,7 +111,7 @@ export default function AdminQueuesScreen() {
       <AdminTopBar title="OPERATIONS" subtitle={`${sUp + sRep + sVer + sBes + sSwap + sRent + sCirc} ITEMS PENDING`} onRefresh={refetch} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <QueueSection title="Upcycle requests" count={sUp}>
-          {upcycles === null ? <Spinner /> : upcycles.length === 0 ? <Empty text="No pending reviews" /> : null}
+          {upcycles === null ? <QueueSpinner /> : upcycles.length === 0 ? <Empty text="No pending reviews" /> : null}
           {upcycles?.map((u: any) => (
             <QueueRow
               key={u.id}
@@ -126,7 +127,7 @@ export default function AdminQueuesScreen() {
         </QueueSection>
 
         <QueueSection title="User reports" count={sRep}>
-          {reports === null ? <Spinner /> : reports.length === 0 ? <Empty text="No pending reports" /> : null}
+          {reports === null ? <QueueSpinner /> : reports.length === 0 ? <Empty text="No pending reports" /> : null}
           {reports?.map((r: any) => (
             <QueueRow
               key={r.id}
@@ -142,7 +143,7 @@ export default function AdminQueuesScreen() {
         </QueueSection>
 
         <QueueSection title="KYC verifications" count={sVer}>
-          {verifications === null ? <Spinner /> : verifications.length === 0 ? <Empty text="No pending reviews" /> : null}
+          {verifications === null ? <QueueSpinner /> : verifications.length === 0 ? <Empty text="No pending reviews" /> : null}
           {verifications?.map((v: any) => (
             <QueueRow
               key={v.id}
@@ -156,12 +157,12 @@ export default function AdminQueuesScreen() {
           ))}
         </QueueSection>
 
-        <QueueSection title="Bespoke consultations" count={sBes}>
-          {bespoke === null ? <Spinner /> : bespoke.length === 0 ? <Empty text="No pending requests" /> : null}
+        <QueueSection title="Custom consultations" count={sBes}>
+          {bespoke === null ? <QueueSpinner /> : bespoke.length === 0 ? <Empty text="No pending requests" /> : null}
           {bespoke?.map((b: any) => (
             <QueueRow
               key={b.id}
-              title={b.description || 'Bespoke request'}
+              title={b.description || 'Custom request'}
               meta={`${b.user?.displayName ?? 'User'} · ${b.contactEmail ?? '—'}`}
               status={b.status}
             >
@@ -172,7 +173,7 @@ export default function AdminQueuesScreen() {
         </QueueSection>
 
         <QueueSection title="Swaps" count={sSwap}>
-          {swaps === null ? <Spinner /> : swaps.length === 0 ? <Empty text="No active swaps" /> : null}
+          {swaps === null ? <QueueSpinner /> : swaps.length === 0 ? <Empty text="No active swaps" /> : null}
           {swaps?.filter((x) => x.status === 'REQUESTED' || x.status === 'ACCEPTED').map((sw: any) => (
             <QueueRow
               key={sw.id}
@@ -194,7 +195,7 @@ export default function AdminQueuesScreen() {
         </QueueSection>
 
         <QueueSection title="Rentals" count={sRent}>
-          {rentals === null ? <Spinner /> : rentals.length === 0 ? <Empty text="No rentals to action" /> : null}
+          {rentals === null ? <QueueSpinner /> : rentals.length === 0 ? <Empty text="No rentals to action" /> : null}
           {rentals?.filter((x) => x.status === 'RETURN_DISPATCHED' || x.status === 'RETURNED').map((r: any) => (
             <QueueRow
               key={r.id}
@@ -213,7 +214,7 @@ export default function AdminQueuesScreen() {
         </QueueSection>
 
         <QueueSection title="Circular pickups" count={sCirc}>
-          {circular === null ? <Spinner /> : circular.length === 0 ? <Empty text="No scheduled pickups" /> : null}
+          {circular === null ? <QueueSpinner /> : circular.length === 0 ? <Empty text="No scheduled pickups" /> : null}
           {circular?.map((c: any) => (
             <QueueRow
               key={c.id}
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
   sectionHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionTitle: { fontFamily: typography.headings, fontSize: 16, color: colors.ink, letterSpacing: 1.2 },
   sectionCountBadge: { backgroundColor: colors.ink, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 2 },
-  sectionCount: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.cream },
+  sectionCount: { fontFamily: typography.monoBold, fontSize: 11, color: colors.cream },
   sectionBody: { gap: 10, paddingTop: 10 },
 
   rowCard: {
@@ -271,9 +272,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   rowTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
-  rowMeta: { fontFamily: typography.mono, fontSize: 9.5, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
+  rowMeta: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
   rowExtra: { fontFamily: typography.body, fontSize: 11.5, color: colors.ink, marginTop: 6 },
-  rowFoot: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight || '#ECE8DF' },
+  rowFoot: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight || colors.borderLight },
 
   actBtn: {
     borderWidth: 1.5,
@@ -286,5 +287,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 0,
   },
-  actText: { fontFamily: typography.monoBold, fontSize: 8.5, letterSpacing: 1 },
+  actText: { fontFamily: typography.monoBold, fontSize: 11, letterSpacing: 1 },
 });

@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../../src/services/api';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import { colors, typography } from '../../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Loader } from '../../../src/components/common/Loader';
 
 export default function StudioScreen() {
   const router = useRouter();
@@ -29,8 +29,8 @@ export default function StudioScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 24 }]} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>UPCYCLE LAB</Text>
-        <Text style={styles.subtitle}>PHYSICAL RECONSTRUCTION // LEGACY DIVISION</Text>
+        <Text style={styles.title}>Upcycle lab</Text>
+        <Text style={styles.subtitle}>Physical reconstruction // legacy division</Text>
       </View>
 
       <TouchableOpacity
@@ -41,7 +41,7 @@ export default function StudioScreen() {
           <Ionicons name="construct-sharp" size={24} color={colors.white} />
         </View>
         <View style={{ flex: 1, marginLeft: 16 }}>
-          <Text style={styles.bespokeTitle}>REPAIR & REFRESH</Text>
+          <Text style={styles.bespokeTitle}>Repair & refresh</Text>
           <Text style={styles.bespokeSubtitle}>AI-powered repair guides, tutorials & upcycling ideas</Text>
         </View>
         <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
@@ -55,8 +55,8 @@ export default function StudioScreen() {
           <Ionicons name="flash-sharp" size={24} color={colors.white} />
         </View>
         <View style={{ flex: 1, marginLeft: 16 }}>
-          <Text style={styles.bespokeTitle}>BESPOKE OVERRIDE</Text>
-          <Text style={styles.bespokeSubtitle}>Commission a custom reconstructed asset</Text>
+          <Text style={styles.bespokeTitle}>Custom override</Text>
+          <Text style={styles.bespokeSubtitle}>Commission a custom reconstructed item</Text>
         </View>
         <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
       </TouchableOpacity>
@@ -69,23 +69,23 @@ export default function StudioScreen() {
           <Ionicons name="cut-sharp" size={24} color={colors.white} />
         </View>
         <View style={{ flex: 1, marginLeft: 16 }}>
-          <Text style={styles.bespokeTitle}>UPCYCLE LAB</Text>
-          <Text style={styles.bespokeSubtitle}>Curated video tutorials for transforming your clothes</Text>
+          <Text style={styles.bespokeTitle}>Upcycle lab</Text>
+          <Text style={styles.bespokeSubtitle}>Selected video tutorials for transforming your clothes</Text>
         </View>
         <Ionicons name="arrow-forward-sharp" size={20} color={colors.charcoal} />
       </TouchableOpacity>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>SYSTEM DOSSIERS // FIELD GUIDES</Text>
+        <Text style={styles.sectionTitle}>System dossiers // field guides</Text>
       </View>
 
       {loading ? (
         <View style={styles.loader}>
-          <DossierLoading variant="studio" compact />
+          <Loader variant="studio" compact />
         </View>
       ) : tutorials.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>NO DATA AVAILABLE IN SECTOR</Text>
+          <Text style={styles.emptyText}>No data available in sector</Text>
         </View>
       ) : (
         <View style={styles.grid}>
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 24, paddingBottom: 100 },
   header: { marginBottom: 32 },
   title: { fontSize: 48, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
-  subtitle: { fontSize: 10, fontFamily: typography.mono, color: colors.red, letterSpacing: 1, fontWeight: '800', marginTop: 8 },
+  subtitle: { fontSize: 16, fontFamily: typography.handBold, color: colors.red, marginTop: 8, includeFontPadding: false, },
   
   bespokeCard: {
     flexDirection: 'row',
@@ -126,17 +126,17 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   bespokeIconBox: { width: 48, height: 48, backgroundColor: colors.red, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.charcoal },
-  bespokeTitle: { color: colors.charcoal, fontSize: 13, fontFamily: typography.mono, fontWeight: '800', letterSpacing: 1 },
-  bespokeSubtitle: { color: colors.textPrimary, fontSize: 11, fontFamily: typography.mono, marginTop: 4 },
+  bespokeTitle: { color: colors.charcoal, fontSize: 18, fontFamily: typography.handBold, includeFontPadding: false, },
+  bespokeSubtitle: { color: colors.textPrimary, fontSize: 16, fontFamily: typography.handwritten, marginTop: 4, includeFontPadding: false, },
   
   sectionHeader: { borderBottomWidth: 2, borderBottomColor: colors.charcoal, paddingBottom: 12, marginBottom: 24 },
-  sectionTitle: { color: colors.charcoal, fontSize: 12, fontFamily: typography.mono, fontWeight: '800', letterSpacing: 2 },
+  sectionTitle: { color: colors.charcoal, fontSize: 17, fontFamily: typography.handBold, includeFontPadding: false, },
   
   loader: { alignItems: 'center', marginTop: 60, gap: 16 },
-  loadingText: { color: colors.charcoal, fontFamily: typography.mono, fontSize: 12, fontWeight: '700' },
+  loadingText: { color: colors.charcoal, fontFamily: typography.handSemi, fontSize: 17, includeFontPadding: false, },
   
   emptyState: { alignItems: 'center', marginTop: 60, padding: 32, borderWidth: 2, borderColor: colors.charcoal, borderStyle: 'dashed' },
-  emptyText: { color: colors.charcoal, fontSize: 12, fontFamily: typography.mono, fontWeight: '800', letterSpacing: 1 },
+  emptyText: { color: colors.charcoal, fontSize: 17, fontFamily: typography.handBold, includeFontPadding: false, },
   
   grid: { gap: 20 },
   card: {

@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { adminService } from '../../src/services/adminService';
 import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Chip, Empty, formatINR } from '../../src/components/admin/AdminUI';
+import { Loader } from '../../src/components/common/Loader';
 
 const STATUSES = ['ALL', 'PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'REFUNDED', 'CANCELLED'];
 
@@ -51,7 +52,7 @@ export default function AdminOrdersScreen() {
 
       <View style={styles.searchBar}>
         <Ionicons name="search" size={16} color={colors.textMuted} />
-        <TextInput
+        <TextInput accessibilityLabel="Order id, buyer, seller, garment"
           style={styles.searchInput}
           placeholder="ORDER ID, BUYER, SELLER, GARMENT…"
           placeholderTextColor={colors.textMuted}
@@ -62,7 +63,7 @@ export default function AdminOrdersScreen() {
           }}
         />
         {q !== '' && (
-          <TouchableOpacity onPress={() => setQ('')}>
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Remove" onPress={() => setQ('')}>
             <Ionicons name="close-circle" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         )}
@@ -76,9 +77,9 @@ export default function AdminOrdersScreen() {
         ))}
       </ScrollView>
 
-      {loading ? (
+      {loading && !data ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.ink} />
+          <Loader compact />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   statusChipActive: { backgroundColor: colors.ink },
-  statusChipText: { fontFamily: typography.monoBold, fontSize: 9, color: colors.ink, letterSpacing: 0.8 },
+  statusChipText: { fontFamily: typography.monoBold, fontSize: 11, color: colors.ink, letterSpacing: 0.8 },
   statusChipTextActive: { color: colors.cream },
 
   list: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
@@ -180,10 +181,10 @@ const styles = StyleSheet.create({
   },
   orderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   orderId: { fontFamily: typography.monoBold, fontSize: 11, color: colors.ink, letterSpacing: 1 },
-  orderDate: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted },
+  orderDate: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted },
   orderTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink, marginTop: 6 },
-  orderParties: { fontFamily: typography.mono, fontSize: 9.5, color: colors.textMuted, marginTop: 4 },
-  orderFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight || '#ECE8DF' },
+  orderParties: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4 },
+  orderFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight || colors.borderLight },
   orderAmount: { fontFamily: typography.monoBold, fontSize: 14, color: colors.ink },
 
   pager: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 12 },
@@ -200,6 +201,6 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  pagerText: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.ink, letterSpacing: 1 },
-  pagerInfo: { fontFamily: typography.monoBold, fontSize: 10, color: colors.textMuted },
+  pagerText: { fontFamily: typography.monoBold, fontSize: 11, color: colors.ink, letterSpacing: 1 },
+  pagerInfo: { fontFamily: typography.monoBold, fontSize: 11, color: colors.textMuted },
 });

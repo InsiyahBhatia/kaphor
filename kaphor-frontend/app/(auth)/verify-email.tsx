@@ -4,12 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/services/api';
 import { colors } from '../../src/theme';
+import { Loader } from '../../src/components/common/Loader';
+import { getErrorMessage } from '../../src/utils/errors';
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
@@ -32,8 +33,7 @@ export default function VerifyEmailScreen() {
         setSuccess(true);
       } catch (err: any) {
         setErrorMessage(
-          err?.response?.data?.message ||
-            'Verification link is invalid or expired. Please request a new one.'
+          getErrorMessage(err, 'Verification link is invalid or expired. Please request a new one.')
         );
       } finally {
         setLoading(false);
@@ -48,40 +48,40 @@ export default function VerifyEmailScreen() {
       <View style={styles.center}>
         {loading ? (
           <>
-            <ActivityIndicator size="large" color={colors.crimson} />
-            <Text style={styles.title}>VERIFYING EMAIL</Text>
-            <Text style={styles.subtitle}>Securing your KaPhor luxury circular account...</Text>
+            <Loader compact variant="checkout" message="" />
+            <Text style={styles.title}>Verifying email</Text>
+            <Text style={styles.subtitle}>Securing your KaPhor designer circular account...</Text>
           </>
         ) : success ? (
           <>
-            <View style={[styles.iconCircle, { backgroundColor: 'rgba(56, 142, 60, 0.1)' }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.emeraldLight }]}>
               <Ionicons name="checkmark-done-circle-outline" size={56} color={colors.forest} />
             </View>
-            <Text style={styles.title}>EMAIL VERIFIED</Text>
+            <Text style={styles.title}>Email verified</Text>
             <Text style={styles.subtitle}>
-              Your email has been successfully confirmed. You're ready to explore sustainable luxury.
+              Your email has been successfully confirmed. You're ready to explore sustainable fashion.
             </Text>
             <TouchableOpacity
               style={styles.mainBtn}
               onPress={() => router.replace('/(auth)/login')}
               activeOpacity={0.85}
             >
-              <Text style={styles.mainBtnText}>CONTINUE TO LOGIN</Text>
+              <Text style={styles.mainBtnText}>Continue to login</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
-            <View style={[styles.iconCircle, { backgroundColor: 'rgba(211, 47, 47, 0.1)' }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.crimsonLight }]}>
               <Ionicons name="alert-circle-outline" size={56} color={colors.crimson} />
             </View>
-            <Text style={styles.title}>VERIFICATION FAILED</Text>
+            <Text style={styles.title}>Verification failed</Text>
             <Text style={styles.subtitle}>{errorMessage}</Text>
             <TouchableOpacity
               style={styles.mainBtn}
               onPress={() => router.replace('/(auth)/login')}
               activeOpacity={0.85}
             >
-              <Text style={styles.mainBtnText}>BACK TO LOGIN</Text>
+              <Text style={styles.mainBtnText}>Back to login</Text>
             </TouchableOpacity>
           </>
         )}

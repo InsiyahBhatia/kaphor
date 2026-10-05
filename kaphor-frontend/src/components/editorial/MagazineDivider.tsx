@@ -64,11 +64,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   labelText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    letterSpacing: 1.5,
-    color: colors.textMuted,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 14,
+    color: colors.textMuted, includeFontPadding: false, },
   diamond: {
     paddingHorizontal: 8,
   },

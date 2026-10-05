@@ -47,7 +47,7 @@ export function OrderTrackerStepper({ type, status, style }: OrderTrackerStepper
 
     steps = [
       { key: 'RESERVED', label: 'RESERVED', isComplete: isReserved, isCurrent: status === 'RESERVED' },
-      { key: 'ACTIVE', label: 'ACTIVE LEASE', isComplete: isActive, isCurrent: status === 'ACTIVE' },
+      { key: 'ACTIVE', label: 'Active lease', isComplete: isActive, isCurrent: status === 'ACTIVE' },
       { key: 'RETURNED', label: 'RETURNED', isComplete: isReturned, isCurrent: status === 'RETURNED' },
       { key: 'COMPLETED', label: 'REFUNDED', isComplete: isReturned, isCurrent: isReturned },
     ];
@@ -60,7 +60,7 @@ export function OrderTrackerStepper({ type, status, style }: OrderTrackerStepper
     steps = [
       { key: 'REQUEST', label: 'OFFERED', isComplete: true, isCurrent: status === 'REQUESTED' },
       { key: 'AGREEMENT', label: 'AGREED', isComplete: isAgreed, isCurrent: ['ACCEPTED', 'AGREEMENT_PENDING', 'AGREEMENT_SIGNED', 'ADDRESS_SHARED'].includes(status) },
-      { key: 'SHIPPED', label: 'IN TRANSIT', isComplete: isShipped, isCurrent: ['SHIPPED', 'BOTH_SHIPPED', 'DELIVERED'].includes(status) },
+      { key: 'SHIPPED', label: 'In transit', isComplete: isShipped, isCurrent: ['SHIPPED', 'BOTH_SHIPPED', 'DELIVERED'].includes(status) },
       { key: 'COMPLETED', label: 'SWAPPED', isComplete: isCompleted, isCurrent: isCompleted },
     ];
   }
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   trackLineBg: {
     flex: 1,
-    backgroundColor: '#E4DFD5',
+    backgroundColor: colors.paperDark,
   },
   stepsRow: {
     flexDirection: 'row',
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: '#D4CFC5',
+    borderColor: colors.borderLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   circleCurrent: {
-    backgroundColor: '#1E1F22',
+    backgroundColor: colors.ink,
     borderColor: colors.copper,
     borderWidth: 2,
     shadowColor: colors.copper,
@@ -177,16 +177,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.copper,
   },
   dotPending: {
-    backgroundColor: '#CCC7BC',
+    backgroundColor: colors.paperDark,
   },
   stepLabel: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handSemi,
+    fontSize: 16,
     color: colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
+    textAlign: 'center', includeFontPadding: false, },
   stepLabelActive: {
     color: colors.charcoal,
     fontWeight: '800',
@@ -199,19 +196,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFF0F0',
+    backgroundColor: colors.crimsonLight,
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: '#F5C2C2',
+    borderColor: colors.blush,
     borderRadius: 4,
     marginVertical: 4,
   },
   cancelledText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.red,
-    letterSpacing: 0.8,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.red, includeFontPadding: false, },
 });

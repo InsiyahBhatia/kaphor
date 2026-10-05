@@ -1,0 +1,1085 @@
+{
+ "items": [
+  {
+   "out": "editorial/icons/home.png",
+   "sheet": "icons",
+   "at": [
+    88,
+    101
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/hanger.png",
+   "sheet": "icons",
+   "at": [
+    1321,
+    243
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/dress.png",
+   "sheet": "icons",
+   "at": [
+    88,
+    243
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/bag.png",
+   "sheet": "icons",
+   "at": [
+    1047,
+    101
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/tag.png",
+   "sheet": "icons",
+   "at": [
+    773,
+    101
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/calendar.png",
+   "sheet": "icons",
+   "at": [
+    910,
+    101
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/mail.png",
+   "sheet": "icons",
+   "at": [
+    1184,
+    101
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/bell.png",
+   "sheet": "icons",
+   "at": [
+    1321,
+    101
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/profile.png",
+   "sheet": "icons",
+   "at": [
+    1458,
+    101
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/star.png",
+   "sheet": "icons",
+   "at": [
+    910,
+    243
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/heart_filled.png",
+   "sheet": "icons",
+   "at": [
+    1458,
+    243
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/bookmark.png",
+   "sheet": "icons",
+   "at": [
+    362,
+    378
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/camera.png",
+   "sheet": "icons",
+   "at": [
+    1047,
+    378
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/recycle.png",
+   "sheet": "icons",
+   "at": [
+    773,
+    378
+   ],
+   "auto": true,
+   "kind": "icon",
+   "merge": 13
+  },
+  {
+   "out": "editorial/icons/leaf.png",
+   "sheet": "icons",
+   "at": [
+    910,
+    378
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/stack.png",
+   "sheet": "icons",
+   "at": [
+    636,
+    243
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/shoe.png",
+   "sheet": "icons",
+   "at": [
+    499,
+    243
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/swap.png",
+   "sheet": "icons",
+   "at": [
+    362,
+    512
+   ],
+   "auto": true,
+   "kind": "icon",
+   "merge": 13
+  },
+  {
+   "out": "editorial/icons/rental.png",
+   "sheet": "icons",
+   "at": [
+    636,
+    378
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/gear.png",
+   "sheet": "icons",
+   "at": [
+    88,
+    640
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/wallet.png",
+   "sheet": "icons",
+   "at": [
+    362,
+    640
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/chat.png",
+   "sheet": "icons",
+   "at": [
+    636,
+    640
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/help.png",
+   "sheet": "icons",
+   "at": [
+    773,
+    640
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/shield.png",
+   "sheet": "icons",
+   "at": [
+    1458,
+    512
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/tape.png",
+   "sheet": "icons",
+   "at": [
+    636,
+    775
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/trash.png",
+   "sheet": "icons",
+   "at": [
+    1321,
+    378
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/sparkle.png",
+   "sheet": "icons",
+   "at": [
+    461,
+    769
+   ],
+   "auto": true,
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/heart.png",
+   "from_file": "editorial_old/icons/heart.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/verified.png",
+   "from_file": "editorial_old/icons/verified.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/check.png",
+   "from_file": "editorial_old/icons/check.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/close.png",
+   "from_file": "editorial_old/icons/close.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/plus.png",
+   "from_file": "editorial_old/icons/plus.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/minus.png",
+   "from_file": "editorial_old/icons/minus.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/upload.png",
+   "from_file": "editorial_old/icons/upload.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/search.png",
+   "from_file": "editorial_old/icons/search.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/cart.png",
+   "from_file": "editorial_old/icons/cart.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/tote.png",
+   "from_file": "editorial_old/icons/tote.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/clock.png",
+   "from_file": "editorial_old/icons/clock.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/scissors.png",
+   "from_file": "editorial_old/icons/scissors.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/sewing.png",
+   "from_file": "editorial_old/icons/sewing.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/thread.png",
+   "from_file": "editorial_old/icons/thread.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/sunglasses.png",
+   "from_file": "editorial_old/icons/sunglasses.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/hat.png",
+   "from_file": "editorial_old/icons/hat.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/necklace.png",
+   "from_file": "editorial_old/icons/ring.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/boots.png",
+   "from_file": "editorial_old/icons/boots.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/bow.png",
+   "from_file": "editorial_old/icons/bow.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/yarn.png",
+   "from_file": "editorial_old/icons/yarn.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/buttons.png",
+   "from_file": "editorial_old/icons/buttons.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/card.png",
+   "from_file": "editorial_old/icons/card.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/handbag.png",
+   "from_file": "editorial_old/icons/handbag.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/grid.png",
+   "from_file": "editorial_old/icons/grid.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/icons/filter.png",
+   "from_file": "editorial_old/icons/grid.png",
+   "kind": "icon"
+  },
+  {
+   "out": "editorial/fashion/muse_hero.png",
+   "sheet": "Watercolour Fashion Muse with Flowing Ribbons",
+   "box": [
+    0,
+    0,
+    1536,
+    1024
+   ],
+   "keep_frac": 0.5,
+   "max_side": 1000
+  },
+  {
+   "out": "editorial/fashion/paris_figure_01.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    1190,
+    0,
+    1536,
+    375
+   ],
+   "keep_frac": 0.8
+  },
+  {
+   "out": "editorial/fashion/paris_figure_02.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    0,
+    0,
+    290,
+    350
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/fashion/paris_figure_03.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    295,
+    0,
+    640,
+    345
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     600,
+     290,
+     640,
+     350
+    ]
+   ]
+  },
+  {
+   "out": "editorial/fashion/paris_figure_05.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    940,
+    10,
+    1175,
+    335
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/fashion/paris_figure_07.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    610,
+    30,
+    1010,
+    380
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     940,
+     60,
+     1012,
+     215
+    ],
+    [
+     605,
+     50,
+     655,
+     235
+    ],
+    [
+     885,
+     5,
+     950,
+     90
+    ]
+   ]
+  },
+  {
+   "out": "editorial/fashion/paris_figure_10.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    0,
+    350,
+    300,
+    600
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     185,
+     545,
+     275,
+     605
+    ],
+    [
+     0,
+     540,
+     60,
+     605
+    ],
+    [
+     130,
+     572,
+     195,
+     602
+    ],
+    [
+     120,
+     585,
+     200,
+     605
+    ]
+   ]
+  },
+  {
+   "out": "editorial/fashion/paris_figure_15.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    0,
+    555,
+    420,
+    1024
+   ],
+   "keep_frac": 0.2,
+   "exclude": [
+    [
+     300,
+     810,
+     360,
+     865
+    ]
+   ]
+  },
+  {
+   "out": "editorial/fashion/paris_figure_29.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    1205,
+    635,
+    1536,
+    1024
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     1200,
+     630,
+     1250,
+     705
+    ]
+   ]
+  },
+  {
+   "out": "editorial/fashion/style_figure_01.png",
+   "sheet": "all styles",
+   "box": [
+    1290,
+    0,
+    1774,
+    215
+   ],
+   "keep_frac": 0.1
+  },
+  {
+   "out": "editorial/fashion/style_figure_06.png",
+   "sheet": "all styles",
+   "box": [
+    0,
+    100,
+    300,
+    450
+   ],
+   "keep_frac": 0.1
+  },
+  {
+   "out": "editorial/fashion/style_figure_13.png",
+   "sheet": "all styles",
+   "box": [
+    1130,
+    310,
+    1774,
+    560
+   ],
+   "keep_frac": 0.1
+  },
+  {
+   "out": "editorial/fashion/style_figure_26.png",
+   "sheet": "all styles",
+   "box": [
+    1100,
+    520,
+    1774,
+    887
+   ],
+   "keep_frac": 0.1
+  },
+  {
+   "out": "editorial/ribbons/flowing_ribbon_left.png",
+   "sheet": "Vintage Thrift Fashion Sticker Collage",
+   "box": [
+    330,
+    15,
+    745,
+    445
+   ],
+   "keep_frac": 0.25,
+   "flip": true
+  },
+  {
+   "out": "editorial/ribbons/flowing_ribbon_right.png",
+   "sheet": "Vintage Thrift Fashion Sticker Collage",
+   "box": [
+    330,
+    15,
+    745,
+    445
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/ribbons/editorial_sticker_01.png",
+   "sheet": "Vintage Thrift Fashion Sticker Collage",
+   "box": [
+    20,
+    15,
+    360,
+    320
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/ribbons/editorial_sticker_02.png",
+   "sheet": "Vintage Thrift Fashion Sticker Collage",
+   "box": [
+    550,
+    10,
+    880,
+    370
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/ribbons/editorial_sticker_03.png",
+   "sheet": "Vintage Thrift Fashion Sticker Collage",
+   "box": [
+    1025,
+    340,
+    1270,
+    725
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/ribbons/editorial_sticker_04.png",
+   "sheet": "Vintage Thrift Fashion Sticker Collage",
+   "box": [
+    830,
+    10,
+    1040,
+    400
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/couture/couture_item_01.png",
+   "sheet": "Vintage Thrift Fashion Sticker Collage",
+   "box": [
+    1170,
+    40,
+    1520,
+    385
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/couture/couture_item_02.png",
+   "sheet": "Vintage Thrift Fashion Sticker Collage",
+   "box": [
+    1005,
+    60,
+    1175,
+    320
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/couture/couture_item_03.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    455,
+    430,
+    625,
+    550
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/couture/couture_item_04.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    685,
+    660,
+    930,
+    750
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/couture/couture_item_05.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    520,
+    585,
+    650,
+    700
+   ],
+   "keep_frac": 0.25,
+   "bg_delta": 0,
+   "close": 11
+  },
+  {
+   "out": "editorial/accents/editorial_accent_01.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    10,
+    250,
+    170,
+    405
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/accents/editorial_accent_02.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    875,
+    485,
+    1165,
+    630
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     845,
+     440,
+     935,
+     565
+    ]
+   ]
+  },
+  {
+   "out": "editorial/accents/editorial_accent_03.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    1110,
+    780,
+    1235,
+    1005
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/accents/paris_sketch_01.png",
+   "sheet": "76d5efc9-6b18-4169-a3f9-816158f076ae",
+   "box": [
+    860,
+    350,
+    1000,
+    585
+   ],
+   "keep_frac": 0.6
+  },
+  {
+   "out": "editorial/accents/paris_sketch_02.png",
+   "sheet": "Watercolour Thrift Fashion Sticker Collage",
+   "box": [
+    1000,
+    50,
+    1536,
+    610
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/accents/paris_sketch_03.png",
+   "sheet": "Watercolour Thrift Fashion Sticker Collage",
+   "box": [
+    0,
+    20,
+    630,
+    550
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/botanical/botanical_vintage_01.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    1050,
+    0,
+    1180,
+    250
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/botanical/botanical_vintage_02.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    1140,
+    225,
+    1290,
+    505
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/botanical/botanical_vintage_03.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    810,
+    20,
+    1035,
+    335
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/botanical/botanical_vintage_04.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    695,
+    0,
+    795,
+    255
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/botanical/botanical_vintage_05.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    1345,
+    495,
+    1525,
+    665
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/botanical/botanical_vintage_06.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    565,
+    25,
+    695,
+    235
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/botanical/botanical_vintage_07.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    1185,
+    0,
+    1300,
+    135
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/botanical/botanical_vintage_08.png",
+   "sheet": "Vintage Thrift Sticker Collection",
+   "box": [
+    1245,
+    0,
+    1525,
+    285
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/indian/muse_pink_banarasi.png",
+   "sheet": "indian",
+   "box": [
+    170,
+    10,
+    355,
+    300
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/indian/muse_ivory_gajra.png",
+   "sheet": "indian",
+   "box": [
+    0,
+    0,
+    170,
+    275
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/indian/royal_crimson_lehenga.png",
+   "sheet": "indian",
+   "box": [
+    335,
+    85,
+    525,
+    340
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     330,
+     90,
+     392,
+     210
+    ],
+    [
+     330,
+     210,
+     356,
+     270
+    ]
+   ]
+  },
+  {
+   "out": "editorial/indian/jharokha_window_garlands.png",
+   "sheet": "indian",
+   "box": [
+    1355,
+    0,
+    1536,
+    295
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/indian/udaipur_lake_palace.png",
+   "sheet": "indian",
+   "box": [
+    0,
+    680,
+    380,
+    870
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     225,
+     655,
+     345,
+     745
+    ],
+    [
+     370,
+     735,
+     400,
+     870
+    ]
+   ]
+  },
+  {
+   "out": "editorial/indian/royal_crimson_potli.png",
+   "sheet": "indian",
+   "box": [
+    245,
+    305,
+    380,
+    465
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     240,
+     300,
+     306,
+     357
+    ]
+   ]
+  },
+  {
+   "out": "editorial/indian/pink_lotus_flower.png",
+   "sheet": "indian",
+   "box": [
+    1210,
+    268,
+    1335,
+    370
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/indian/royal_white_elephant.png",
+   "sheet": "indian",
+   "box": [
+    1010,
+    510,
+    1265,
+    710
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/indian/pichwai_sacred_cow.png",
+   "sheet": "indian",
+   "box": [
+    125,
+    840,
+    360,
+    1020
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     120,
+     836,
+     215,
+     855
+    ]
+   ]
+  },
+  {
+   "out": "editorial/indian/brass_glowing_diya.png",
+   "sheet": "indian",
+   "box": [
+    925,
+    475,
+    1030,
+    575
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/indian/royal_zari_mojaris.png",
+   "sheet": "indian",
+   "box": [
+    995,
+    720,
+    1145,
+    865
+   ],
+   "keep_frac": 0.25
+  },
+  {
+   "out": "editorial/indian/royal_embroidered_parasol.png",
+   "sheet": "indian",
+   "box": [
+    50,
+    282,
+    212,
+    420
+   ],
+   "keep_frac": 0.25,
+   "exclude": [
+    [
+     185,
+     280,
+     215,
+     300
+    ]
+   ]
+  }
+ ]
+}

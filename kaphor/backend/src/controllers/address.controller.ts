@@ -3,6 +3,44 @@ import { AuthRequest } from '../middleware/auth';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 
+const MAX_ADDRESSES_PER_USER = 20;
+const FIELD_LIMITS: Record<string, number> = {
+  label: 50, fullName: 100, phone: 20, line1: 200, line2: 200, landmark: 200, city: 100, state: 100, pincode: 10,
+};
+const REQUIRED_FIELDS = ['label', 'fullName', 'phone', 'line1', 'city', 'state', 'pincode'];
+
+/** Whitelists + validates address fields. Returns error string or sanitized fields. */
+function sanitizeAddressInput(
+  raw: unknown,
+  partial: boolean
+): { error: string } | { fields: Record<string, string | null> } {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { error: 'Invalid address payload' };
+  const src = raw as Record<string, unknown>;
+  const fields: Record<string, string | null> = {};
+  for (const key of Object.keys(FIELD_LIMITS)) {
+    const v = src[key];
+    if (v === undefined) {
+      if (!partial && REQUIRED_FIELDS.includes(key)) return { error: `${key} is required` };
+      continue;
+    }
+    if (v === null) {
+      if (REQUIRED_FIELDS.includes(key)) return { error: `${key} is required` };
+      fields[key] = null;
+      continue;
+    }
+    if (typeof v !== 'string' && typeof v !== 'number') return { error: `${key} is invalid` };
+    const s = String(v).trim();
+    if (s.length > FIELD_LIMITS[key]) return { error: `${key} is too long` };
+    if (!s && REQUIRED_FIELDS.includes(key)) return { error: `${key} is required` };
+    fields[key] = s || null;
+  }
+  return { fields };
+}
+
+function isIdParam(v: unknown): v is string {
+  return typeof v === 'string' && v.length > 0 && v.length <= 64;
+}
+
 /**
  * GET /users/me/addresses — list all saved addresses for current user
  */
@@ -13,6 +51,7 @@ export async function listAddresses(req: AuthRequest, res: Response): Promise<vo
     const addresses = await db.address.findMany({
       where: { userId: req.user.id },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+      take: 100,
       select: {
         id: true,
         label: true,
@@ -43,8 +82,20 @@ export async function createAddress(req: AuthRequest, res: Response): Promise<vo
   try {
     if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
-    const data = req.body; // validated by middleware
+    const sanitized = sanitizeAddressInput(req.body, false);
+    if ('error' in sanitized) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: sanitized.error });
+      return;
+    }
+    const f = sanitized.fields;
+    const data = { ...f, isDefault: req.body?.isDefault === true || req.body?.isDefault === 'true' } as Record<string, any>;
     const userId = req.user.id;
+
+    const existingCount = await db.address.count({ where: { userId } });
+    if (existingCount >= MAX_ADDRESSES_PER_USER) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Address limit reached' });
+      return;
+    }
 
     // If setting as default, unset all other defaults first
     if (data.isDefault) {
@@ -86,7 +137,14 @@ export async function updateAddress(req: AuthRequest, res: Response): Promise<vo
     if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
     const { id } = req.params;
-    const data = req.body as Record<string, unknown>;
+    if (!isIdParam(id)) { res.status(404).json({ error: 'NOT_FOUND', message: 'Address not found' }); return; }
+    const sanitized = sanitizeAddressInput(req.body, true);
+    if ('error' in sanitized) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: sanitized.error });
+      return;
+    }
+    const data: Record<string, unknown> = { ...sanitized.fields };
+    if (req.body?.isDefault !== undefined) data.isDefault = req.body.isDefault === true || req.body.isDefault === 'true';
     const userId = req.user.id;
 
     // Verify ownership
@@ -135,6 +193,7 @@ export async function deleteAddress(req: AuthRequest, res: Response): Promise<vo
     if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
     const { id } = req.params;
+    if (!isIdParam(id)) { res.status(404).json({ error: 'NOT_FOUND', message: 'Address not found' }); return; }
     const userId = req.user.id;
 
     const existing = await db.address.findFirst({ where: { id, userId } });
@@ -143,7 +202,7 @@ export async function deleteAddress(req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    await db.address.delete({ where: { id } });
+    await db.address.deleteMany({ where: { id, userId } });
 
     // If the deleted address was default, assign a new default
     if (existing.isDefault) {
@@ -174,6 +233,7 @@ export async function setDefaultAddress(req: AuthRequest, res: Response): Promis
     if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
     const { id } = req.params;
+    if (!isIdParam(id)) { res.status(404).json({ error: 'NOT_FOUND', message: 'Address not found' }); return; }
     const userId = req.user.id;
 
     const existing = await db.address.findFirst({ where: { id, userId } });

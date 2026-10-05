@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/services/api';
 import { colors } from '../../src/theme';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
+import { Spinner } from '../../src/components/common/Loader';
+import { getErrorMessage } from '../../src/utils/errors';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -20,7 +22,7 @@ export default function ForgotPasswordScreen() {
       await api.post('/auth/forgot-password', { email });
       setSent(true);
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || 'Failed to send reset email.');
+      Alert.alert('Error', getErrorMessage(err, 'Failed to send reset email.'));
     } finally {
       setSending(false);
     }
@@ -31,10 +33,10 @@ export default function ForgotPasswordScreen() {
       <View style={styles.container}>
         <View style={styles.center}>
           <Ionicons name="mail-outline" size={64} color={colors.crimson} />
-          <Text style={styles.title}>CHECK YOUR EMAIL</Text>
+          <Text style={styles.title}>Check your email</Text>
           <Text style={styles.subtitle}>We've sent a password reset link to {email}</Text>
           <TouchableOpacity style={styles.mainBtn} onPress={() => router.replace('/(auth)/login')}>
-            <Text style={styles.mainBtnText}>BACK TO LOGIN</Text>
+            <Text style={styles.mainBtnText}>Back to login</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -53,7 +55,7 @@ export default function ForgotPasswordScreen() {
         automaticallyAdjustKeyboardInsets={true}
         keyboardDismissMode="on-drag"
       >
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           style={styles.backBtn} 
           onPress={() => safeBack('/(auth)/login')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -62,19 +64,19 @@ export default function ForgotPasswordScreen() {
         </TouchableOpacity>
         <View style={styles.center}>
           <Ionicons name="lock-open-outline" size={48} color={colors.crimson} />
-          <Text style={styles.title}>FORGOT PASSWORD</Text>
+          <Text style={styles.title}>Forgot password</Text>
           <Text style={styles.subtitle}>Enter your email and we'll send you a reset link</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Email address"
             style={styles.input}
-            placeholder="EMAIL ADDRESS"
-            placeholderTextColor="#6B5C52"
+            placeholder="Email address"
+            placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
           <TouchableOpacity style={styles.mainBtn} onPress={handleSend} disabled={sending}>
-            {sending ? <ActivityIndicator color={colors.white} /> : <Text style={styles.mainBtnText}>SEND RESET LINK</Text>}
+            {sending ? <Spinner color={colors.white} /> : <Text style={styles.mainBtnText}>Send reset link</Text>}
           </TouchableOpacity>
         </View>
       </ScrollView>

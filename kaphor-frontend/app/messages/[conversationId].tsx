@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Alert,
   Image,
   Modal,
@@ -45,6 +44,8 @@ import { useNotificationStore } from '../../src/store/notificationStore';
 import { swapService } from '../../src/services/swapService';
 import { navigateToLiveSwapStage } from '../../src/utils/swapNavigation';
 import type { SwapTransaction } from '../../src/types/swap';
+import { Spinner } from '../../src/components/common/Loader';
+import { getErrorMessage } from '../../src/utils/errors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -174,6 +175,112 @@ function SwipeableMessageBubble({ children, onSwipeReply, isMine }: SwipeableMes
   );
 }
 
+export interface ComposerHandle {
+  setText: (t: string) => void;
+  getText: () => string;
+}
+
+interface ComposerBarProps {
+  replyingTo: QuotedReplyInfo | null;
+  hasImage: boolean;
+  sending: boolean;
+  isKeyboardVisible: boolean;
+  bottomInset: number;
+  onTyping: () => void;
+  onSend: () => void;
+  onPickImage: () => void;
+  onCamera: () => void;
+  onFocusScroll: () => void;
+}
+
+const ATTACH_HIT = { top: 6, bottom: 6, left: 6, right: 6 };
+const SEND_HIT = { top: 10, bottom: 10, left: 10, right: 10 };
+
+/** Owns the text state so typing only re-renders this bar, not the whole chat screen. */
+const ComposerBar = React.memo(
+  React.forwardRef<ComposerHandle, ComposerBarProps>(function ComposerBar(props, ref) {
+    const { replyingTo, hasImage, sending, isKeyboardVisible, bottomInset, onTyping, onSend, onPickImage, onCamera, onFocusScroll } = props;
+    const [text, setText] = useState('');
+    const [focused, setFocused] = useState(false);
+    const textRef = useRef('');
+    React.useImperativeHandle(
+      ref,
+      () => ({
+        setText: (t: string) => {
+          textRef.current = t;
+          setText(t);
+        },
+        getText: () => textRef.current,
+      }),
+      []
+    );
+    const handleChange = useCallback(
+      (t: string) => {
+        textRef.current = t;
+        setText(t);
+        onTyping();
+      },
+      [onTyping]
+    );
+    const canSend = (!!text.trim() || hasImage) && !sending;
+    return (
+      <View
+        style={[
+          styles.inputContainer,
+          { paddingBottom: isKeyboardVisible ? 8 : Math.max(bottomInset, Platform.OS === 'android' ? 12 : 8) },
+        ]}
+      >
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add"
+          style={styles.attachBtn}
+          onPress={onPickImage}
+          activeOpacity={0.75}
+          hitSlop={ATTACH_HIT}
+        >
+          <Ionicons name="add" size={24} color={colors.charcoal} />
+        </TouchableOpacity>
+
+        <View style={[styles.inputWrapper, focused && styles.inputWrapperFocused]}>
+          <TextInput accessibilityLabel="Type a message"
+            style={styles.input}
+            placeholder={replyingTo ? `Replying to ${replyingTo.senderName}...` : 'Message...'}
+            placeholderTextColor={colors.textMuted}
+            value={text}
+            onChangeText={handleChange}
+            onFocus={() => {
+              setFocused(true);
+              onFocusScroll();
+            }}
+            onBlur={() => setFocused(false)}
+            multiline
+            maxLength={4000}
+          />
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Take photo"
+            style={styles.cameraQuickBtn}
+            onPress={onCamera}
+            activeOpacity={0.7}
+            hitSlop={ATTACH_HIT}
+          >
+            <Ionicons name="camera" size={20} color={focused ? colors.charcoal : colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Arrow up" hitSlop={SEND_HIT}
+          style={[styles.sendBtn, canSend ? styles.sendBtnActive : styles.sendBtnDisabled]}
+          onPress={onSend}
+          disabled={!canSend}
+          activeOpacity={0.85}
+        >
+          {sending ? (
+            <Spinner color={colors.cream} size="small" />
+          ) : (
+            <Ionicons name="arrow-up" size={20} color={canSend ? colors.cream : colors.textMuted} />
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  })
+);
+
 export default function DirectChatScreen() {
   const insets = useSafeAreaInsets();
   const { conversationId, swapId: swapIdParam } = useLocalSearchParams<{ conversationId: string; swapId?: string }>();
@@ -194,8 +301,12 @@ export default function DirectChatScreen() {
     };
   }, [conversationId, setActiveConversationId]);
 
+  // Cap rendered history; older messages load on demand
+  const [historyLimit, setHistoryLimit] = useState(150);
+  const loadEarlier = useCallback(() => setHistoryLimit((n) => n + 150), []);
+
   // Separate reactions from normal message bubbles and map by messageId
-  const { displayMessages, reactionsByMessageId } = useMemo(() => {
+  const { displayMessages, reactionsByMessageId, hasEarlier } = useMemo(() => {
     const reactionsMap: Record<string, { emoji: string; count: number; userReacted: boolean }[]> = {};
     const visibleMsgs: DirectMessageItem[] = [];
 
@@ -241,9 +352,11 @@ export default function DirectChatScreen() {
       }
     }
 
-    return { displayMessages: visibleMsgs, reactionsByMessageId: reactionsMap };
-  }, [messages, user?.id]);
-  const [inputText, setInputText] = useState('');
+    const capped = visibleMsgs.length > historyLimit ? visibleMsgs.slice(-historyLimit) : visibleMsgs;
+    return { displayMessages: capped, reactionsByMessageId: reactionsMap, hasEarlier: visibleMsgs.length > capped.length };
+  }, [messages, user?.id, historyLimit]);
+  const composerRef = useRef<ComposerHandle>(null);
+  const setInputText = useCallback((t: string) => composerRef.current?.setText(t), []);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<QuotedReplyInfo | null>(null);
@@ -252,7 +365,6 @@ export default function DirectChatScreen() {
   const [sending, setSending] = useState(false);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [isInputFocused, setInputFocused] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadWhileScrolled, setUnreadWhileScrolled] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -377,7 +489,7 @@ export default function DirectChatScreen() {
       setMessages(data.messages);
       useNotificationStore.getState().fetchUnreadMessageCount();
       // Persist to offline cache
-      AsyncStorage.setItem(cacheChatKey, JSON.stringify({ detail: data, messages: data.messages })).catch(() => {});
+      AsyncStorage.setItem(cacheChatKey, JSON.stringify({ detail: { ...data, messages: [] }, messages: data.messages.slice(-100) })).catch(() => {});
     } catch (e: any) {
       console.error('Failed to load conversation', e);
       if (messagesRef.current.length === 0) {
@@ -484,8 +596,7 @@ export default function DirectChatScreen() {
     }
   };
 
-  const handleInputChange = (text: string) => {
-    setInputText(text);
+  const handleInputChange = useCallback(() => {
 
     const socket = getSocket();
     if (socket && conversationId && user?.id) {
@@ -500,7 +611,7 @@ export default function DirectChatScreen() {
         socket.emit('stop_typing', { conversationId, userId: user.id });
       }, 1500);
     }
-  };
+  }, [conversationId, user?.id, user?.displayName]);
 
   const openCameraDirectly = async () => {
     try {
@@ -632,7 +743,7 @@ export default function DirectChatScreen() {
   };
 
   const handleSend = async () => {
-    const text = inputText.trim();
+    const text = (composerRef.current?.getText() ?? '').trim();
     const hasImage = !!selectedImage;
     if ((!text && !hasImage) || !conversationId || sending) return;
 
@@ -754,7 +865,7 @@ export default function DirectChatScreen() {
               await messageService.deleteConversation(conversationId);
               safeBack('/(tabs)/messages');
             } catch (err: any) {
-              Alert.alert('Error', err?.response?.data?.message || 'Could not delete conversation.');
+              Alert.alert('Error', getErrorMessage(err, 'Could not delete conversation.'));
             }
           },
         },
@@ -896,7 +1007,7 @@ export default function DirectChatScreen() {
     >
       {/* Top Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           onPress={() => safeBack('/(tabs)/messages')} 
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -924,7 +1035,7 @@ export default function DirectChatScreen() {
         </TouchableOpacity>
 
         <View style={styles.headerRightActions}>
-          <TouchableOpacity 
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cube" 
             style={styles.profileBtn} 
             onPress={handleOpenTransactionsHub}
             hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
@@ -932,7 +1043,7 @@ export default function DirectChatScreen() {
             <Ionicons name="cube-outline" size={20} color={colors.charcoal} />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Person circle" 
             style={styles.profileBtn} 
             onPress={() => other?.id && router.push(`/(tabs)/shop/seller/${other.id}` as any)}
             hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
@@ -940,7 +1051,7 @@ export default function DirectChatScreen() {
             <Ionicons name="person-circle-outline" size={24} color={colors.charcoal} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.reportBtn} onPress={handleReport} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Shield" style={styles.reportBtn} onPress={handleReport} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
             <Ionicons name="shield-outline" size={18} color={colors.charcoal} />
           </TouchableOpacity>
 
@@ -950,7 +1061,7 @@ export default function DirectChatScreen() {
             hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
             accessibilityLabel="Delete Conversation"
           >
-            <Ionicons name="trash-outline" size={18} color={colors.red || '#C1413A'} />
+            <Ionicons name="trash-outline" size={18} color={colors.red || colors.rose} />
           </TouchableOpacity>
         </View>
       </View>
@@ -970,9 +1081,9 @@ export default function DirectChatScreen() {
             </View>
             <View style={[
               styles.swapStageStatusPill,
-              swapDetails?.status === 'COMPLETED' ? { backgroundColor: '#1E3B2F' } :
-              swapDetails?.status === 'SHIPPED' || swapDetails?.status === 'BOTH_SHIPPED' ? { backgroundColor: '#8C6D3B' } :
-              { backgroundColor: '#3A3A3C' }
+              swapDetails?.status === 'COMPLETED' ? { backgroundColor: colors.emeraldDark } :
+              swapDetails?.status === 'SHIPPED' || swapDetails?.status === 'BOTH_SHIPPED' ? { backgroundColor: colors.goldDark } :
+              { backgroundColor: colors.inkSoft }
             ]}>
               <Text style={styles.swapStageStatusText}>
                 {swapDetails?.status ? swapDetails.status.replace(/_/g, ' ') : 'ACTIVE TRADE'}
@@ -986,10 +1097,11 @@ export default function DirectChatScreen() {
             <View style={styles.swapItemCol}>
               <View style={styles.swapThumbWrap}>
                 {swapDetails?.offeredGarment?.images?.[0] || swapDetails?.garmentOffered?.images?.[0] ? (
-                  <Image
-                    source={{ uri: swapDetails.offeredGarment?.images?.[0] || swapDetails.garmentOffered?.images?.[0] }}
-                    style={styles.swapThumb}
-                    resizeMode="cover"
+                  <KaphorImage
+                    uri={swapDetails.offeredGarment?.images?.[0] || swapDetails.garmentOffered?.images?.[0]}
+                    style={styles.swapThumb as any}
+                    width={80}
+                    contentFit="cover"
                   />
                 ) : (
                   <View style={[styles.swapThumb, styles.swapThumbPlaceholder]}>
@@ -1022,10 +1134,11 @@ export default function DirectChatScreen() {
             <View style={styles.swapItemCol}>
               <View style={styles.swapThumbWrap}>
                 {swapDetails?.wantedGarment?.images?.[0] || swapDetails?.garmentWanted?.images?.[0] ? (
-                  <Image
-                    source={{ uri: swapDetails.wantedGarment?.images?.[0] || swapDetails.garmentWanted?.images?.[0] }}
-                    style={styles.swapThumb}
-                    resizeMode="cover"
+                  <KaphorImage
+                    uri={swapDetails.wantedGarment?.images?.[0] || swapDetails.garmentWanted?.images?.[0]}
+                    style={styles.swapThumb as any}
+                    width={80}
+                    contentFit="cover"
                   />
                 ) : (
                   <View style={[styles.swapThumb, styles.swapThumbPlaceholder]}>
@@ -1075,7 +1188,7 @@ export default function DirectChatScreen() {
           <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
             {(effectiveGarment || garment)?.id && (
               <TouchableOpacity
-                style={[styles.viewOrderBtn, { backgroundColor: '#EDE8DD', borderWidth: 1, borderColor: colors.charcoal }]}
+                style={[styles.viewOrderBtn, { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.charcoal }]}
                 onPress={() => setModalGarment((effectiveGarment || garment) ?? null)}
                 activeOpacity={0.8}
               >
@@ -1119,7 +1232,7 @@ export default function DirectChatScreen() {
           <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
             {(effectiveGarment || garment)?.id && (
               <TouchableOpacity
-                style={[styles.viewOrderBtn, { backgroundColor: '#EDE8DD', borderWidth: 1, borderColor: colors.charcoal }]}
+                style={[styles.viewOrderBtn, { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.charcoal }]}
                 onPress={() => setModalGarment((effectiveGarment || garment) ?? null)}
                 activeOpacity={0.8}
               >
@@ -1127,7 +1240,7 @@ export default function DirectChatScreen() {
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              style={[styles.viewOrderBtn, { backgroundColor: colors.forest || '#1E3B2F' }]}
+              style={[styles.viewOrderBtn, { backgroundColor: colors.forest || colors.emeraldDark }]}
               onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
               activeOpacity={0.8}
             >
@@ -1161,22 +1274,22 @@ export default function DirectChatScreen() {
             <View style={styles.garmentCardMain}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <Text style={styles.garmentCardBrand}>
-                  {effectiveGarment.brand?.toUpperCase() || 'KAPHOR ARCHIVE'}
+                  {effectiveGarment.brand?.toUpperCase() || 'KAPHOR'}
                 </Text>
                 <View
                   style={[
                     styles.intentModeBadge,
                     garmentMode === 'RENT'
-                      ? { backgroundColor: '#F3E8FF', borderColor: '#8B5CF6' }
+                      ? { backgroundColor: colors.paperDark, borderColor: colors.ink }
                       : garmentMode === 'SWAP'
-                      ? { backgroundColor: '#FEF3C7', borderColor: '#D97706' }
-                      : { backgroundColor: '#ECFDF5', borderColor: '#10B981' },
+                      ? { backgroundColor: colors.paperDark, borderColor: colors.orange }
+                      : { backgroundColor: colors.emeraldLight, borderColor: colors.forest },
                   ]}
                 >
                   <Text
                     style={[
                       styles.intentModeBadgeText,
-                      { color: garmentMode === 'RENT' ? '#6B21A8' : garmentMode === 'SWAP' ? '#92400E' : '#065F46' },
+                      { color: garmentMode === 'RENT' ? colors.ink : garmentMode === 'SWAP' ? colors.terracottaDark : colors.forest },
                     ]}
                   >
                     {isMyGarment
@@ -1242,7 +1355,7 @@ export default function DirectChatScreen() {
               </TouchableOpacity>
             ) : garmentMode === 'RENT' ? (
               <TouchableOpacity
-                style={[styles.garmentActionBtn, { backgroundColor: '#6B46C1' }]}
+                style={[styles.garmentActionBtn, { backgroundColor: colors.ink }]}
                 onPress={() => router.push(`/(tabs)/rental/${effectiveGarment.id}` as any)}
                 activeOpacity={0.8}
               >
@@ -1250,7 +1363,7 @@ export default function DirectChatScreen() {
               </TouchableOpacity>
             ) : garmentMode === 'SWAP' ? (
               <TouchableOpacity
-                style={[styles.garmentActionBtn, { backgroundColor: '#8C6D3B' }]}
+                style={[styles.garmentActionBtn, { backgroundColor: colors.goldDark }]}
                 onPress={() => router.push(`/(tabs)/swap/${effectiveGarment.id}` as any)}
                 activeOpacity={0.8}
               >
@@ -1258,7 +1371,7 @@ export default function DirectChatScreen() {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={[styles.garmentActionBtn, { backgroundColor: colors.forest || '#1E3B2F' }]}
+                style={[styles.garmentActionBtn, { backgroundColor: colors.forest || colors.emeraldDark }]}
                 onPress={() => router.push(`/(tabs)/shop/${effectiveGarment.id}` as any)}
                 activeOpacity={0.8}
               >
@@ -1304,7 +1417,7 @@ export default function DirectChatScreen() {
                         activeGarmentsTab === 'seller' && styles.wardrobeTabMiniTextActive,
                       ]}
                     >
-                      YOUR ATELIER ({sellerGarments.length})
+                      YOUR ITEMS ({sellerGarments.length})
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1312,7 +1425,7 @@ export default function DirectChatScreen() {
                 <Text style={styles.wardrobeStripTitle} numberOfLines={1}>
                   {counterpartyGarments.length > 0
                     ? (other?.displayName ? `${other.displayName.toUpperCase()}'S PIECES (${counterpartyGarments.length})` : 'SELLER WARDROBE')
-                    : `YOUR ATELIER PIECES (${sellerGarments.length})`}
+                    : `YOUR ITEMS (${sellerGarments.length})`}
                 </Text>
               )}
             </View>
@@ -1343,7 +1456,7 @@ export default function DirectChatScreen() {
                     />
                     <View style={styles.wardrobeStripCardBody}>
                       <Text style={styles.wardrobeStripCardBrand} numberOfLines={1}>
-                        {cg.brand?.toUpperCase() || 'ARCHIVE'}
+                        {cg.brand?.toUpperCase() || 'KAPHOR'}
                       </Text>
                       <Text style={styles.wardrobeStripCardTitle} numberOfLines={1}>
                         {cg.title}
@@ -1360,7 +1473,7 @@ export default function DirectChatScreen() {
                   <TouchableOpacity
                     style={[
                       styles.wardrobeStripLinkBtn,
-                      isLinked && { backgroundColor: '#1E3B2F' },
+                      isLinked && { backgroundColor: colors.emeraldDark },
                     ]}
                     onPress={() => handleLinkGarment(cg)}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -1375,20 +1488,20 @@ export default function DirectChatScreen() {
         </View>
       ) : !order && !rental ? (
         isRentalInquiry ? (
-          <View style={[styles.rentalCoordinationBar, { backgroundColor: '#F9F6FE', borderBottomColor: '#6B46C1' }]}>
+          <View style={[styles.rentalCoordinationBar, { backgroundColor: colors.paperDark, borderBottomColor: colors.paperDark }]}>
             <TouchableOpacity
               style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}
               onPress={() => router.push('/(tabs)/rental' as any)}
               activeOpacity={0.8}
             >
-              <View style={[styles.rentalIconBox, { backgroundColor: '#6B46C1' }]}>
+              <View style={[styles.rentalIconBox, { backgroundColor: colors.ink }]}>
                 <Ionicons name="calendar" size={16} color={colors.cream} />
               </View>
               <View style={styles.rentalCoordinationInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.rentalCoordinationTitle}>RENTAL INQUIRY & LEASING</Text>
-                  <View style={[styles.rentalStatusChip, { backgroundColor: 'rgba(107,70,193,0.15)' }]}>
-                    <Text style={[styles.rentalStatusChipText, { color: '#6B46C1' }]}>RENT</Text>
+                  <View style={[styles.rentalStatusChip, { backgroundColor: colors.overlayLight }]}>
+                    <Text style={[styles.rentalStatusChipText, { color: colors.ink }]}>RENT</Text>
                   </View>
                 </View>
                 <Text style={styles.rentalCoordinationSub} numberOfLines={1}>
@@ -1398,14 +1511,14 @@ export default function DirectChatScreen() {
             </TouchableOpacity>
             <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
               <TouchableOpacity
-                style={[styles.viewOrderBtn, { backgroundColor: '#EDE8DD', borderWidth: 1, borderColor: colors.charcoal }]}
+                style={[styles.viewOrderBtn, { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.charcoal }]}
                 onPress={() => router.push('/(tabs)/rental?tab=my' as any)}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.viewOrderText, { color: colors.charcoal }]}>LEASES</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.viewOrderBtn, { backgroundColor: '#6B46C1' }]}
+                style={[styles.viewOrderBtn, { backgroundColor: colors.ink }]}
                 onPress={() => router.push('/(tabs)/rental' as any)}
                 activeOpacity={0.8}
               >
@@ -1414,20 +1527,20 @@ export default function DirectChatScreen() {
             </View>
           </View>
         ) : isSwapInquiry ? (
-          <View style={[styles.rentalCoordinationBar, { backgroundColor: '#FAF7EE', borderBottomColor: '#8C6D3B' }]}>
+          <View style={[styles.rentalCoordinationBar, { backgroundColor: colors.paperLight, borderBottomColor: colors.goldDark }]}>
             <TouchableOpacity
               style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}
               onPress={() => router.push('/(tabs)/swap' as any)}
               activeOpacity={0.8}
             >
-              <View style={[styles.rentalIconBox, { backgroundColor: '#8C6D3B' }]}>
+              <View style={[styles.rentalIconBox, { backgroundColor: colors.goldDark }]}>
                 <Ionicons name="swap-horizontal" size={16} color={colors.cream} />
               </View>
               <View style={styles.rentalCoordinationInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.rentalCoordinationTitle}>SWAP & TRADE INQUIRY</Text>
-                  <View style={[styles.rentalStatusChip, { backgroundColor: 'rgba(140,109,59,0.15)' }]}>
-                    <Text style={[styles.rentalStatusChipText, { color: '#8C6D3B' }]}>SWAP</Text>
+                  <View style={[styles.rentalStatusChip, { backgroundColor: colors.goldLight }]}>
+                    <Text style={[styles.rentalStatusChipText, { color: colors.goldDark }]}>SWAP</Text>
                   </View>
                 </View>
                 <Text style={styles.rentalCoordinationSub} numberOfLines={1}>
@@ -1437,35 +1550,35 @@ export default function DirectChatScreen() {
             </TouchableOpacity>
             <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
               <TouchableOpacity
-                style={[styles.viewOrderBtn, { backgroundColor: '#EDE8DD', borderWidth: 1, borderColor: colors.charcoal }]}
+                style={[styles.viewOrderBtn, { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.charcoal }]}
                 onPress={() => router.push('/(tabs)/orders?tab=swaps' as any)}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.viewOrderText, { color: colors.charcoal }]}>TRADES</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.viewOrderBtn, { backgroundColor: '#8C6D3B' }]}
+                style={[styles.viewOrderBtn, { backgroundColor: colors.goldDark }]}
                 onPress={() => router.push('/(tabs)/swap' as any)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.viewOrderText}>VAULT →</Text>
+                <Text style={styles.viewOrderText}>SAVED →</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={styles.directSellerBar}>
             <View style={styles.directIconCircle}>
-              <Ionicons name="storefront" size={16} color={colors.forest || '#2D5A27'} />
+              <Ionicons name="storefront" size={16} color={colors.forest || colors.inkSoft} />
             </View>
             <View style={styles.directSellerInfo}>
-              <Text style={styles.directSellerTitle}>DIRECT ATELIER CHAT</Text>
+              <Text style={styles.directSellerTitle}>DIRECT CHAT</Text>
               <Text style={styles.directSellerSub} numberOfLines={1}>
                 Direct negotiation, custom styling & closet deals
               </Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
               <TouchableOpacity
-                style={[styles.viewOrderBtn, { backgroundColor: '#EDE8DD', borderWidth: 1, borderColor: colors.charcoal }]}
+                style={[styles.viewOrderBtn, { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.charcoal }]}
                 onPress={() => router.push('/(tabs)/orders' as any)}
                 activeOpacity={0.8}
               >
@@ -1483,7 +1596,10 @@ export default function DirectChatScreen() {
         )
       ) : null}
 
-      {/* Message List */}
+      {/* Message List: skeleton only on first load with nothing cached */}
+      {loading && messages.length === 0 ? (
+        <ConversationChatLoading />
+      ) : (
       <FlatList
         ref={flatListRef}
         data={displayMessages}
@@ -1494,7 +1610,18 @@ export default function DirectChatScreen() {
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        ListHeaderComponent={null}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews={Platform.OS === 'android'}
+        ListHeaderComponent={
+          hasEarlier ? (
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Load earlier messages" onPress={loadEarlier} style={{ alignSelf: 'center', paddingVertical: 10 }}>
+              <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.textMuted }}>LOAD EARLIER MESSAGES</Text>
+            </TouchableOpacity>
+          ) : null
+        }
         onContentSizeChange={() => {
           if (!showScrollBottom) {
             flatListRef.current?.scrollToEnd({ animated: false });
@@ -1687,11 +1814,11 @@ export default function DirectChatScreen() {
                             <Text
                               style={[
                                 styles.inBubbleSnippetBrand,
-                                isMine ? { color: '#EAE6DB' } : { color: colors.copper },
+                                isMine ? { color: colors.paperDark } : { color: colors.copper },
                               ]}
                               numberOfLines={1}
                             >
-                              {displayGarment.brand?.toUpperCase() || 'ARCHIVE'}
+                              {displayGarment.brand?.toUpperCase() || 'KAPHOR'}
                             </Text>
                             <Text
                               style={[
@@ -1705,7 +1832,7 @@ export default function DirectChatScreen() {
                             <Text
                               style={[
                                 styles.inBubbleSnippetPrice,
-                                isMine ? { color: '#C9A84C' } : { color: colors.charcoal },
+                                isMine ? { color: colors.gold } : { color: colors.charcoal },
                               ]}
                             >
                               {isRentalMsg || displayGarment.rentalPriceDay
@@ -1719,7 +1846,7 @@ export default function DirectChatScreen() {
                             style={[
                               styles.inBubbleSnippetBtn,
                               isMine
-                                ? { backgroundColor: 'rgba(255,255,255,0.2)' }
+                                ? { backgroundColor: colors.overlayLight }
                                 : { backgroundColor: colors.charcoal },
                             ]}
                           >
@@ -1766,7 +1893,7 @@ export default function DirectChatScreen() {
                         style={[
                           styles.chatTransactionActionBtn,
                           isMine
-                            ? { backgroundColor: 'rgba(255,255,255,0.25)', borderColor: 'rgba(255,255,255,0.4)' }
+                            ? { backgroundColor: colors.borderLight, borderColor: colors.borderLight }
                             : { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
                         ]}
                         onPress={() => router.push(swapId ? `/(tabs)/swap/details?swapId=${swapId}` as any : '/(tabs)/orders?tab=swaps' as any)}
@@ -1785,10 +1912,10 @@ export default function DirectChatScreen() {
                         style={[
                           styles.chatTransactionActionBtn,
                           parsed.text?.includes('[RENTAL APPROVED]')
-                            ? { backgroundColor: colors.forest || '#2A7B4C', borderColor: colors.forest || '#2A7B4C' }
+                            ? { backgroundColor: colors.forest || colors.forest, borderColor: colors.forest || colors.forest }
                             : isMine
-                            ? { backgroundColor: 'rgba(255,255,255,0.25)', borderColor: 'rgba(255,255,255,0.4)' }
-                            : { backgroundColor: '#B45309', borderColor: '#B45309' },
+                            ? { backgroundColor: colors.borderLight, borderColor: colors.borderLight }
+                            : { backgroundColor: colors.orange, borderColor: colors.orange },
                         ]}
                         onPress={() => {
                           const rentalIdMatch = parsed.text?.match(/Lease ID:\s*([a-zA-Z0-9_-]+)/);
@@ -1810,8 +1937,8 @@ export default function DirectChatScreen() {
                         />
                         <Text style={[styles.chatTransactionActionText, { color: colors.white }]}>
                           {parsed.text?.includes('[RENTAL APPROVED]')
-                            ? (isMine ? 'VIEW LEASE DOSSIER ➔' : 'PROCEED TO PAYMENT ➔')
-                            : (isMine ? 'VIEW RENTAL DOSSIER ➔' : 'REVIEW & APPROVE DATES ➔')}
+                            ? (isMine ? 'VIEW LEASE DETAILS ➔' : 'PROCEED TO PAYMENT ➔')
+                            : (isMine ? 'VIEW RENTAL DETAILS ➔' : 'REVIEW & APPROVE DATES ➔')}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -1842,7 +1969,7 @@ export default function DirectChatScreen() {
                         <Ionicons
                           name={item.readAt ? 'checkmark-done' : 'checkmark'}
                           size={13}
-                          color={item.readAt ? '#C9A84C' : 'rgba(247,244,235,0.7)'}
+                          color={item.readAt ? colors.gold : colors.goldDark}
                           style={{ marginLeft: 3 }}
                         />
                       )}
@@ -1878,6 +2005,7 @@ export default function DirectChatScreen() {
           );
         }}
       />
+      )}
 
       {/* Floating Scroll-to-Bottom Button */}
       {showScrollBottom && (
@@ -1921,7 +2049,7 @@ export default function DirectChatScreen() {
         <View style={styles.imagePreviewBar}>
           <KaphorImage uri={selectedImage} style={styles.imagePreviewThumb} contentFit="cover" />
           <Text style={styles.imagePreviewText}>Image attached</Text>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.removeImageBtn}
             onPress={() => setSelectedImage(null)}
           >
@@ -1936,14 +2064,14 @@ export default function DirectChatScreen() {
           <View style={styles.replyBarAccent} />
           <View style={styles.replyBarContent}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="arrow-undo" size={12} color={colors.forest || '#2D5A27'} />
+              <Ionicons name="arrow-undo" size={12} color={colors.forest || colors.inkSoft} />
               <Text style={styles.replyBarSender}>Replying to {replyingTo.senderName}</Text>
             </View>
             <Text style={styles.replyBarText} numberOfLines={1}>
               {replyingTo.content}
             </Text>
           </View>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
             style={styles.cancelReplyBtn}
             onPress={() => setReplyingTo(null)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -1953,71 +2081,20 @@ export default function DirectChatScreen() {
         </View>
       )}
 
-      {/* Proper Modern Pill Input Bar */}
-      <View
-        style={[
-          styles.inputContainer,
-          {
-            paddingBottom: isKeyboardVisible
-              ? 8
-              : Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 8),
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.attachBtn}
-          onPress={pickImage}
-          activeOpacity={0.75}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-        >
-          <Ionicons name="add" size={24} color={colors.charcoal} />
-        </TouchableOpacity>
-
-        <View style={[styles.inputWrapper, isInputFocused && styles.inputWrapperFocused]}>
-          <TextInput
-            style={styles.input}
-            placeholder={replyingTo ? `Replying to ${replyingTo.senderName}...` : "Message..."}
-            placeholderTextColor="rgba(30,31,34,0.4)"
-            value={inputText}
-            onChangeText={handleInputChange}
-            onFocus={() => {
-              setInputFocused(true);
-              setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
-            }}
-            onBlur={() => setInputFocused(false)}
-            multiline
-            maxLength={4000}
-          />
-          <TouchableOpacity
-            style={styles.cameraQuickBtn}
-            onPress={openCameraDirectly}
-            activeOpacity={0.7}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          >
-            <Ionicons name="camera" size={20} color={isInputFocused ? colors.charcoal : colors.textMuted} />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.sendBtn,
-            (!inputText.trim() && !selectedImage) || sending ? styles.sendBtnDisabled : styles.sendBtnActive,
-          ]}
-          onPress={handleSend}
-          disabled={(!inputText.trim() && !selectedImage) || sending}
-          activeOpacity={0.85}
-        >
-          {sending ? (
-            <ActivityIndicator color={colors.cream} size="small" />
-          ) : (
-            <Ionicons
-              name="arrow-up"
-              size={20}
-              color={(!inputText.trim() && !selectedImage) ? colors.textMuted : colors.cream}
-            />
-          )}
-        </TouchableOpacity>
-      </View>
+      {/* Pill input bar (input state isolated in ComposerBar) */}
+      <ComposerBar
+        ref={composerRef}
+        replyingTo={replyingTo}
+        hasImage={!!selectedImage}
+        sending={sending}
+        isKeyboardVisible={isKeyboardVisible}
+        bottomInset={insets.bottom}
+        onTyping={handleInputChange}
+        onSend={handleSend}
+        onPickImage={pickImage}
+        onCamera={openCameraDirectly}
+        onFocusScroll={() => setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150)}
+      />
 
       {/* Full-Screen Zoomable Image Viewer Modal */}
       <Modal
@@ -2028,16 +2105,16 @@ export default function DirectChatScreen() {
         statusBarTranslucent
       >
         <View style={styles.fullImageModal}>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
             style={styles.closeFullImageBtn}
             onPress={() => setViewingImage(null)}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
           >
-            <Ionicons name="close" size={28} color="#FFFFFF" />
+            <Ionicons name="close" size={28} color={colors.white} />
           </TouchableOpacity>
 
           <View style={styles.zoomInstructionWrap}>
-            <Ionicons name="scan-outline" size={12} color="rgba(255,255,255,0.7)" />
+            <Ionicons name="scan-outline" size={12} color={colors.paperGlass} />
             <Text style={styles.zoomInstructionText}>PINCH TO ZOOM</Text>
           </View>
 
@@ -2104,8 +2181,8 @@ export default function DirectChatScreen() {
               onPress={() => actionMessage && handleStartReply(actionMessage)}
               activeOpacity={0.8}
             >
-              <View style={[styles.actionIconBox, { backgroundColor: '#EBF3ED' }]}>
-                <Ionicons name="arrow-undo" size={16} color={colors.forest || '#2D5A27'} />
+              <View style={[styles.actionIconBox, { backgroundColor: colors.emeraldLight }]}>
+                <Ionicons name="arrow-undo" size={16} color={colors.forest || colors.inkSoft} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.actionItemTitle}>Reply to Message</Text>
@@ -2126,7 +2203,7 @@ export default function DirectChatScreen() {
               }}
               activeOpacity={0.8}
             >
-              <View style={[styles.actionIconBox, { backgroundColor: '#F5F0E8' }]}>
+              <View style={[styles.actionIconBox, { backgroundColor: colors.paper }]}>
                 <Ionicons name="copy-outline" size={16} color={colors.charcoal} />
               </View>
               <View style={{ flex: 1 }}>
@@ -2144,8 +2221,8 @@ export default function DirectChatScreen() {
                 }}
                 activeOpacity={0.8}
               >
-                <View style={[styles.actionIconBox, { backgroundColor: '#E8EFF9' }]}>
-                  <Ionicons name="expand-outline" size={16} color={colors.navy || '#1E3A8A'} />
+                <View style={[styles.actionIconBox, { backgroundColor: colors.paperDark }]}>
+                  <Ionicons name="expand-outline" size={16} color={colors.navy || colors.ink} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.actionItemTitle}>View Photo</Text>
@@ -2182,9 +2259,9 @@ export default function DirectChatScreen() {
             <View style={styles.garmentModalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="shirt-outline" size={16} color={colors.charcoal} />
-                <Text style={styles.garmentModalHeaderTitle}>GARMENT DOSSIER & TERMS</Text>
+                <Text style={styles.garmentModalHeaderTitle}>ITEM DETAILS & TERMS</Text>
               </View>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                 onPress={() => setModalGarment(null)}
                 style={styles.garmentModalCloseBtn}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2260,10 +2337,10 @@ export default function DirectChatScreen() {
                       style={[
                         styles.garmentModeBanner,
                         mode === 'RENT'
-                          ? { backgroundColor: '#F3E8FF', borderColor: '#8B5CF6' }
+                          ? { backgroundColor: colors.paperDark, borderColor: colors.ink }
                           : mode === 'SWAP'
-                          ? { backgroundColor: '#FEF3C7', borderColor: '#D97706' }
-                          : { backgroundColor: '#ECFDF5', borderColor: '#10B981' },
+                          ? { backgroundColor: colors.paperDark, borderColor: colors.orange }
+                          : { backgroundColor: colors.emeraldLight, borderColor: colors.forest },
                       ]}
                     >
                       <Ionicons
@@ -2275,7 +2352,7 @@ export default function DirectChatScreen() {
                             : 'pricetag-outline'
                         }
                         size={18}
-                        color={mode === 'RENT' ? '#6B21A8' : mode === 'SWAP' ? '#92400E' : '#065F46'}
+                        color={mode === 'RENT' ? colors.ink : mode === 'SWAP' ? colors.terracottaDark : colors.forest}
                       />
                       <View style={{ flex: 1 }}>
                         <Text
@@ -2283,7 +2360,7 @@ export default function DirectChatScreen() {
                             styles.garmentModeBannerTitle,
                             {
                               color:
-                                mode === 'RENT' ? '#6B21A8' : mode === 'SWAP' ? '#92400E' : '#065F46',
+                                mode === 'RENT' ? colors.ink : mode === 'SWAP' ? colors.terracottaDark : colors.forest,
                             },
                           ]}
                         >
@@ -2299,8 +2376,8 @@ export default function DirectChatScreen() {
                           {mode === 'RENT'
                             ? 'Available for short-term lease & events. Fully covered under Kaphor Damage Protection.'
                             : mode === 'SWAP'
-                            ? 'Circular wardrobe trade piece. Direct courier exchange with authenticity audit.'
-                            : 'Direct purchase item. Dispatched with buyer protection & tracked courier.'}
+                            ? 'Swap item. Sent by delivery and checked first.'
+                            : 'Buy now. Shipped with buyer protection and tracking.'}
                         </Text>
                       </View>
                     </View>
@@ -2311,7 +2388,7 @@ export default function DirectChatScreen() {
               {modalGarment && (
                 <View style={styles.garmentModalTitleSection}>
                   <Text style={styles.garmentModalBrand}>
-                    {modalGarment.brand?.toUpperCase() || 'KAPHOR ARCHIVE'}
+                    {modalGarment.brand?.toUpperCase() || 'KAPHOR'}
                   </Text>
                   <Text style={styles.garmentModalTitle}>{modalGarment.title}</Text>
 
@@ -2333,7 +2410,7 @@ export default function DirectChatScreen() {
                       </View>
                     ) : getGarmentMode(modalGarment) === 'SWAP' ? (
                       <View>
-                        <Text style={styles.garmentModalPrice}>SWAP VAULT PIECE</Text>
+                        <Text style={styles.garmentModalPrice}>SWAP ITEM</Text>
                         <Text style={styles.garmentModalSecondaryPrice}>
                           Estimated Valuation: ₹{modalGarment.price?.toLocaleString('en-IN') || 'Negotiable'}
                         </Text>
@@ -2347,7 +2424,7 @@ export default function DirectChatScreen() {
                             : 'Contact Seller'}
                         </Text>
                         <Text style={styles.garmentModalSecondaryPrice}>
-                          Free standard dispatch & inspection
+                          Free standard shipping & check
                         </Text>
                       </View>
                     )}
@@ -2372,7 +2449,7 @@ export default function DirectChatScreen() {
                   </View>
                   <View style={styles.garmentSpecBox}>
                     <Text style={styles.garmentSpecLabel}>AUTHENTICITY</Text>
-                    <Text style={[styles.garmentSpecValue, { color: colors.forest || '#166534' }]}>
+                    <Text style={[styles.garmentSpecValue, { color: colors.forest || colors.forest }]}>
                       VERIFIED
                     </Text>
                   </View>
@@ -2385,7 +2462,7 @@ export default function DirectChatScreen() {
                   <Text style={styles.garmentModalSectionHeading}>DESCRIPTION & FIT NOTES</Text>
                   <Text style={styles.garmentModalDescText}>
                     {modalGarment.description ||
-                      'Authentic archival piece curated from private collector wardrobe. Hand-inspected and verified for craftsmanship.'}
+                      'Pre-owned piece, checked by hand.'}
                   </Text>
                 </View>
               )}
@@ -2413,7 +2490,7 @@ export default function DirectChatScreen() {
                         </TouchableOpacity>
                       ) : mode === 'RENT' ? (
                         <TouchableOpacity
-                          style={[styles.garmentModalPrimaryBtn, { backgroundColor: '#6B46C1' }]}
+                          style={[styles.garmentModalPrimaryBtn, { backgroundColor: colors.ink }]}
                           onPress={() => {
                             setModalGarment(null);
                             router.push(`/(tabs)/rental/${modalGarment.id}` as any);
@@ -2424,7 +2501,7 @@ export default function DirectChatScreen() {
                         </TouchableOpacity>
                       ) : mode === 'SWAP' ? (
                         <TouchableOpacity
-                          style={[styles.garmentModalPrimaryBtn, { backgroundColor: '#8C6D3B' }]}
+                          style={[styles.garmentModalPrimaryBtn, { backgroundColor: colors.goldDark }]}
                           onPress={() => {
                             setModalGarment(null);
                             router.push(`/(tabs)/swap/${modalGarment.id}` as any);
@@ -2435,7 +2512,7 @@ export default function DirectChatScreen() {
                         </TouchableOpacity>
                       ) : (
                         <TouchableOpacity
-                          style={[styles.garmentModalPrimaryBtn, { backgroundColor: colors.forest || '#1E3B2F' }]}
+                          style={[styles.garmentModalPrimaryBtn, { backgroundColor: colors.forest || colors.emeraldDark }]}
                           onPress={() => {
                             setModalGarment(null);
                             router.push(`/(tabs)/shop/${modalGarment.id}` as any);
@@ -2472,8 +2549,8 @@ export default function DirectChatScreen() {
                         style={[
                           styles.garmentModalSecondaryBtn,
                           {
-                            backgroundColor: effectiveGarment?.id === modalGarment.id ? '#EBF3ED' : '#FAF7EE',
-                            borderColor: effectiveGarment?.id === modalGarment.id ? '#1E3B2F' : '#C9A84C',
+                            backgroundColor: effectiveGarment?.id === modalGarment.id ? colors.emeraldLight : colors.paperLight,
+                            borderColor: effectiveGarment?.id === modalGarment.id ? colors.emeraldDark : colors.gold,
                             borderWidth: 1,
                           },
                         ]}
@@ -2485,12 +2562,12 @@ export default function DirectChatScreen() {
                         <Ionicons
                           name={effectiveGarment?.id === modalGarment.id ? 'checkmark-circle' : 'link'}
                           size={16}
-                          color={effectiveGarment?.id === modalGarment.id ? '#1E3B2F' : colors.charcoal}
+                          color={effectiveGarment?.id === modalGarment.id ? colors.emeraldDark : colors.charcoal}
                         />
                         <Text
                           style={[
                             styles.garmentModalSecondaryBtnText,
-                            effectiveGarment?.id === modalGarment.id && { color: '#1E3B2F' },
+                            effectiveGarment?.id === modalGarment.id && { color: colors.emeraldDark },
                           ]}
                         >
                           {effectiveGarment?.id === modalGarment.id
@@ -2537,7 +2614,7 @@ export default function DirectChatScreen() {
                 <Ionicons name="cube" size={18} color={colors.charcoal} />
                 <Text style={styles.garmentModalHeaderTitle}>PRODUCTS & TRANSACTIONS HUB</Text>
               </View>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
                 onPress={() => setShowTransactionsHub(false)}
                 style={styles.garmentModalCloseBtn}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2558,7 +2635,7 @@ export default function DirectChatScreen() {
                       contentFit="cover"
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.hubGarmentBrand}>{effectiveGarment.brand?.toUpperCase() || 'ARCHIVE'}</Text>
+                      <Text style={styles.hubGarmentBrand}>{effectiveGarment.brand?.toUpperCase() || 'KAPHOR'}</Text>
                       <Text style={styles.hubGarmentTitle} numberOfLines={1}>{effectiveGarment.title}</Text>
                       <Text style={styles.hubGarmentPrice}>
                         {garmentMode === 'RENT'
@@ -2579,12 +2656,12 @@ export default function DirectChatScreen() {
                         <Text style={styles.hubActionMiniText}>VIEW</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[styles.hubActionMiniBtn, { backgroundColor: '#FBEBEB', borderColor: '#DC2626' }]}
+                        style={[styles.hubActionMiniBtn, { backgroundColor: colors.crimsonLight, borderColor: colors.rose }]}
                         onPress={() => {
                           handleLinkGarment(null);
                         }}
                       >
-                        <Text style={[styles.hubActionMiniText, { color: '#DC2626' }]}>UNLINK</Text>
+                        <Text style={[styles.hubActionMiniText, { color: colors.rose }]}>UNLINK</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -2635,7 +2712,7 @@ export default function DirectChatScreen() {
                             activeGarmentsTab === 'seller' && styles.hubTabPillTextActive,
                           ]}
                         >
-                          YOUR ATELIER ({sellerGarments.length})
+                          YOUR ITEMS ({sellerGarments.length})
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -2661,7 +2738,7 @@ export default function DirectChatScreen() {
                           <TouchableOpacity
                             style={[
                               styles.hubGarmentPillBtn,
-                              isLinked && { backgroundColor: '#1E3B2F' },
+                              isLinked && { backgroundColor: colors.emeraldDark },
                             ]}
                             onPress={() => {
                               handleLinkGarment(g);
@@ -2690,8 +2767,8 @@ export default function DirectChatScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.hubLinkIcon, { backgroundColor: '#F3E8FF' }]}>
-                    <Ionicons name="calendar-outline" size={16} color="#6B21A8" />
+                  <View style={[styles.hubLinkIcon, { backgroundColor: colors.paperDark }]}>
+                    <Ionicons name="calendar-outline" size={16} color={colors.ink} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.hubLinkTitle}>Browse Rental Pieces</Text>
@@ -2708,8 +2785,8 @@ export default function DirectChatScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.hubLinkIcon, { backgroundColor: '#EBF3ED' }]}>
-                    <Ionicons name="document-text-outline" size={16} color={colors.forest || '#1E3B2F'} />
+                  <View style={[styles.hubLinkIcon, { backgroundColor: colors.emeraldLight }]}>
+                    <Ionicons name="document-text-outline" size={16} color={colors.forest || colors.emeraldDark} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.hubLinkTitle}>My Active Leases & Returns</Text>
@@ -2726,7 +2803,7 @@ export default function DirectChatScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.hubLinkIcon, { backgroundColor: '#F5F0E8' }]}>
+                  <View style={[styles.hubLinkIcon, { backgroundColor: colors.paper }]}>
                     <Ionicons name="bag-check-outline" size={16} color={colors.charcoal} />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -2744,11 +2821,11 @@ export default function DirectChatScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.hubLinkIcon, { backgroundColor: '#FEF3C7' }]}>
-                    <Ionicons name="swap-horizontal" size={16} color="#92400E" />
+                  <View style={[styles.hubLinkIcon, { backgroundColor: colors.paperDark }]}>
+                    <Ionicons name="swap-horizontal" size={16} color={colors.terracottaDark} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.hubLinkTitle}>Swap Deals & Trade Vault</Text>
+                    <Text style={styles.hubLinkTitle}>Swap deals</Text>
                     <Text style={styles.hubLinkSub}>Manage circular wardrobe proposals</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -2763,14 +2840,14 @@ export default function DirectChatScreen() {
                     }}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.hubLinkIcon, { backgroundColor: '#E8EFF9' }]}>
-                      <Ionicons name="storefront-outline" size={16} color="#1E3A8A" />
+                    <View style={[styles.hubLinkIcon, { backgroundColor: colors.paperDark }]}>
+                      <Ionicons name="storefront-outline" size={16} color={colors.ink} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.hubLinkTitle}>
                         {other.displayName ? `${other.displayName}'s Wardrobe` : 'Seller Profile'}
                       </Text>
-                      <Text style={styles.hubLinkSub}>Browse all items in seller's public archive</Text>
+                      <Text style={styles.hubLinkSub}>Browse all items from this seller</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                   </TouchableOpacity>
@@ -2795,7 +2872,7 @@ export default function DirectChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: colors.paperLight,
   },
   center: {
     justifyContent: 'center',
@@ -2828,14 +2905,15 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   headerName: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   headerHandle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   headerRightActions: {
@@ -2852,13 +2930,13 @@ const styles = StyleSheet.create({
   garmentDetailCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(30,31,34,0.12)',
+    borderBottomColor: colors.overlayLight,
     gap: 10,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -2887,7 +2965,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2,
     right: 2,
-    backgroundColor: 'rgba(30,31,34,0.7)',
+    backgroundColor: colors.overlay,
     borderRadius: 3,
     padding: 2,
   },
@@ -2895,11 +2973,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   garmentCardBrand: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.copper,
-    letterSpacing: 0.5,
   },
   intentModeBadge: {
     paddingHorizontal: 5,
@@ -2908,34 +2985,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   intentModeBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
-    letterSpacing: 0.4,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   garmentCardTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
     marginTop: 1,
   },
   garmentCardPrice: {
     fontFamily: typography.mono,
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.charcoal,
   },
   specMiniPill: {
-    backgroundColor: '#F1EFEA',
+    backgroundColor: colors.paper,
     paddingHorizontal: 4,
     paddingVertical: 1.5,
     borderRadius: 2,
   },
   specMiniPillText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
   },
   garmentCardActions: {
@@ -2949,17 +3025,16 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingHorizontal: 7,
     paddingVertical: 6,
-    backgroundColor: '#F1EFEA',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.3)',
+    borderColor: colors.overlayLight,
     borderRadius: 3,
   },
   garmentDetailsBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.4,
   },
   garmentActionBtn: {
     paddingHorizontal: 9,
@@ -2969,17 +3044,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   garmentActionBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   wardrobeStripContainer: {
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     paddingVertical: 8,
     borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(140,109,59,0.2)',
+    borderBottomColor: colors.goldLight,
   },
   wardrobeStripHeader: {
     flexDirection: 'row',
@@ -2989,15 +3063,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   wardrobeStripTitle: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   wardrobeStripSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
   },
   wardrobeStripScroll: {
@@ -3011,7 +3085,7 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
     gap: 8,
     minWidth: 140,
     maxWidth: 180,
@@ -3027,30 +3101,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   wardrobeStripCardBrand: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.copper,
   },
   wardrobeStripCardTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   wardrobeStripCardPrice: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     marginTop: 1,
   },
   swapCoordinationBar: {
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1.5,
-    borderBottomColor: '#C9A84C',
+    borderBottomColor: colors.gold,
   },
   swapHeaderRow: {
     flexDirection: 'row',
@@ -3068,11 +3142,10 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   swapHeaderBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.white,
-    letterSpacing: 0.6,
   },
   swapStageStatusPill: {
     paddingHorizontal: 7,
@@ -3080,11 +3153,10 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   swapStageStatusText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.white,
-    letterSpacing: 0.6,
   },
   swapItemsRow: {
     flexDirection: 'row',
@@ -3094,7 +3166,7 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#E2DEC9',
+    borderColor: colors.paperDark,
   },
   swapItemCol: {
     flex: 1,
@@ -3105,7 +3177,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 6,
     overflow: 'hidden',
-    backgroundColor: '#F0EAE1',
+    backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 4,
@@ -3118,14 +3190,14 @@ const styles = StyleSheet.create({
   swapThumbPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#EAE6DB',
+    backgroundColor: colors.paperDark,
   },
   swapRoleTagOffered: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(30, 59, 47, 0.85)',
+    backgroundColor: colors.emeraldDark,
     paddingVertical: 1,
     alignItems: 'center',
   },
@@ -3134,20 +3206,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(140, 109, 59, 0.85)',
+    backgroundColor: colors.goldDark,
     paddingVertical: 1,
     alignItems: 'center',
   },
   swapRoleTagText: {
-    fontFamily: typography.mono,
-    fontSize: 6.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.white,
-    letterSpacing: 0.5,
   },
   swapItemTitle: {
     fontFamily: typography.body,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.charcoal,
     textAlign: 'center',
@@ -3155,7 +3226,7 @@ const styles = StyleSheet.create({
   },
   swapItemPrice: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 11.5,
     fontWeight: '900',
     color: colors.crimson,
     marginTop: 1,
@@ -3169,24 +3240,23 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
-    borderColor: '#C9A84C',
+    borderColor: colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
   },
   swapCenterHint: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
-    color: '#8C6D3B',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
+    color: colors.goldDark,
   },
   orderCoordinationBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F7F4EB',
+    backgroundColor: colors.paperLight,
     padding: 10,
     borderBottomWidth: 1.5,
     borderBottomColor: colors.forest,
@@ -3204,35 +3274,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   orderCoordinationTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   orderStatusChip: {
-    backgroundColor: 'rgba(40,54,24,0.12)',
+    backgroundColor: colors.emeraldLight,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 2,
   },
   orderStatusChipText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.forest,
-    letterSpacing: 0.5,
   },
   orderCoordinationSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 2,
   },
   rentalCoordinationBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F8F5',
+    backgroundColor: colors.paperLight,
     padding: 10,
     borderBottomWidth: 1.5,
     borderBottomColor: colors.forest,
@@ -3250,11 +3319,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rentalCoordinationTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   rentalStatusChip: {
     backgroundColor: colors.forest,
@@ -3263,15 +3331,15 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   rentalStatusChipText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   rentalCoordinationSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -3282,10 +3350,9 @@ const styles = StyleSheet.create({
   },
   viewOrderText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   directSellerBar: {
     flexDirection: 'row',
@@ -3293,32 +3360,32 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
     gap: 10,
   },
   directIconCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(45,90,39,0.1)',
+    backgroundColor: colors.emeraldLight,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(45,90,39,0.2)',
+    borderColor: colors.emeraldLight,
   },
   directSellerInfo: {
     flex: 1,
   },
   directSellerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '900',
-    color: colors.forest || '#2D5A27',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
+    color: colors.forest || colors.inkSoft,
   },
   directSellerSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -3329,10 +3396,9 @@ const styles = StyleSheet.create({
   },
   viewClosetText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   safetyNotice: {
     flexDirection: 'row',
@@ -3340,20 +3406,20 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 5,
     paddingHorizontal: 12,
-    backgroundColor: 'rgba(30,59,47,0.06)',
+    backgroundColor: colors.emeraldLight,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,59,47,0.1)',
+    borderBottomColor: colors.emeraldLight,
   },
   safetyNoticeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.forest,
-    fontWeight: '700',
   },
   quickChipsWrapper: {
-    backgroundColor: '#FAF9F6',
+    backgroundColor: colors.paperLight,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.08)',
+    borderBottomColor: colors.overlayLight,
   },
   quickChipsScroll: {
     flexDirection: 'row',
@@ -3374,21 +3440,21 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   quickChipText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   garmentModalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
   },
   garmentModalBackdrop: {
     ...StyleSheet.absoluteFillObject,
   },
   garmentModalSheet: {
-    backgroundColor: '#FAF9F6',
+    backgroundColor: colors.paperLight,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     maxHeight: SCREEN_HEIGHT * 0.88,
@@ -3404,14 +3470,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   garmentModalHeaderTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.8,
   },
   garmentModalCloseBtn: {
     padding: 4,
@@ -3436,13 +3501,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 8,
-    backgroundColor: 'rgba(30,31,34,0.05)',
+    backgroundColor: colors.overlayLight,
   },
   galleryDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(30,31,34,0.25)',
+    backgroundColor: colors.overlayLight,
   },
   galleryDotActive: {
     width: 14,
@@ -3457,36 +3522,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   garmentModeBannerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     marginBottom: 2,
   },
   garmentModeBannerSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    lineHeight: 12,
+    lineHeight: 23,
   },
   garmentModalTitleSection: {
     backgroundColor: colors.white,
     padding: 14,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
+    borderColor: colors.overlayLight,
   },
   garmentModalBrand: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.copper,
-    letterSpacing: 0.6,
   },
   garmentModalTitle: {
-    fontFamily: typography.mono,
-    fontSize: 14,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
     marginVertical: 4,
   },
@@ -3494,7 +3558,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.08)',
+    borderTopColor: colors.overlayLight,
   },
   garmentModalPrice: {
     fontFamily: typography.mono,
@@ -3503,13 +3567,13 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   garmentModalPriceUnit: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.textMuted,
   },
   garmentModalSecondaryPrice: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -3525,19 +3589,18 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
+    borderColor: colors.overlayLight,
   },
   garmentSpecLabel: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    letterSpacing: 0.5,
   },
   garmentSpecValue: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
     marginTop: 2,
   },
@@ -3546,21 +3609,20 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.1)',
+    borderColor: colors.overlayLight,
   },
   garmentModalSectionHeading: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
-    letterSpacing: 0.6,
     marginBottom: 6,
   },
   garmentModalDescText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontFamily: typography.body,
+    fontSize: 14,
     color: colors.charcoal,
-    lineHeight: 15,
+    lineHeight: 18,
   },
   garmentModalActions: {
     gap: 8,
@@ -3575,11 +3637,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   garmentModalPrimaryBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.8,
   },
   garmentModalSecondaryBtn: {
     flexDirection: 'row',
@@ -3593,20 +3654,19 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   garmentModalSecondaryBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.6,
   },
   garmentModalLinkBtn: {
     alignItems: 'center',
     paddingVertical: 6,
   },
   garmentModalLinkText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     textDecorationLine: 'underline',
   },
@@ -3615,22 +3675,21 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   dateDividerPill: {
-    backgroundColor: '#EBE8DF',
+    backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 3,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 1.5,
     elevation: 1,
   },
   dateDividerText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 0.5,
   },
   messagesList: {
     paddingHorizontal: 16,
@@ -3673,9 +3732,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   bubbleText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    lineHeight: 16,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
+    lineHeight: 21,
   },
   myBubbleText: {
     color: colors.cream,
@@ -3687,16 +3747,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(196,30,58,0.1)',
+    backgroundColor: colors.crimsonLight,
     padding: 4,
     marginTop: 6,
     borderRadius: 4,
   },
   flaggedWarningText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
-    fontWeight: '700',
   },
   timeRow: {
     flexDirection: 'row',
@@ -3705,11 +3765,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   timeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
   },
   myTimeText: {
-    color: 'rgba(247,244,235,0.6)',
+    color: colors.goldDark,
   },
   theirTimeText: {
     color: colors.textMuted,
@@ -3719,8 +3780,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   typingText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     fontStyle: 'italic',
     color: colors.textMuted,
   },
@@ -3729,9 +3791,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#EBE8DF',
+    backgroundColor: colors.paper,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
+    borderTopColor: colors.overlayLight,
     gap: 10,
   },
   imagePreviewThumb: {
@@ -3741,9 +3803,9 @@ const styles = StyleSheet.create({
   },
   imagePreviewText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   removeImageBtn: {
@@ -3754,9 +3816,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 12,
     paddingTop: 8,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: colors.paperLight,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.08)',
+    borderTopColor: colors.overlayLight,
     gap: 8,
   },
   attachBtn: {
@@ -3767,9 +3829,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.12)',
+    borderColor: colors.overlayLight,
     marginBottom: 2,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -3781,13 +3843,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.14)',
+    borderColor: colors.overlayLight,
     borderRadius: 22,
     paddingLeft: 14,
     paddingRight: 6,
     minHeight: 44,
     maxHeight: 120,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 2,
@@ -3800,7 +3862,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     fontSize: 13,
     color: colors.charcoal,
     lineHeight: 18,
@@ -3826,20 +3888,20 @@ const styles = StyleSheet.create({
   },
   sendBtnActive: {
     backgroundColor: colors.charcoal,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
     elevation: 3,
   },
   sendBtnDisabled: {
-    backgroundColor: '#EBE8DF',
+    backgroundColor: colors.paper,
     shadowOpacity: 0,
     elevation: 0,
   },
   fullImageModal: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.94)',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -3852,7 +3914,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3866,17 +3928,16 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   sellerPill: {
-    backgroundColor: 'rgba(196,112,79,0.15)',
+    backgroundColor: colors.terracottaLight,
   },
   buyerPill: {
-    backgroundColor: 'rgba(40,54,24,0.12)',
+    backgroundColor: colors.emeraldLight,
   },
   roleBadgePillText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
   zoomInstructionWrap: {
     position: 'absolute',
@@ -3885,20 +3946,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: colors.borderLight,
     zIndex: 10,
   },
   zoomInstructionText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.85)',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.paperGlass,
   },
   // WhatsApp-style Quote Container inside Bubble
   quoteContainer: {
@@ -3908,19 +3968,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   myQuoteContainer: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: colors.overlayLight,
   },
   theirQuoteContainer: {
-    backgroundColor: 'rgba(30,31,34,0.06)',
+    backgroundColor: colors.overlayLight,
   },
   quoteAccentBar: {
     width: 3.5,
   },
   myQuoteAccent: {
-    backgroundColor: '#C9A84C',
+    backgroundColor: colors.gold,
   },
   theirQuoteAccent: {
-    backgroundColor: colors.forest || '#2D5A27',
+    backgroundColor: colors.forest || colors.inkSoft,
   },
   quoteContent: {
     flex: 1,
@@ -3928,25 +3988,25 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   quoteSender: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     marginBottom: 1,
   },
   myQuoteSender: {
-    color: '#C9A84C',
+    color: colors.gold,
   },
   theirQuoteSender: {
-    color: colors.forest || '#2D5A27',
+    color: colors.forest || colors.inkSoft,
   },
   quoteText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    lineHeight: 12,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
+    lineHeight: 21,
   },
   myQuoteText: {
-    color: 'rgba(247,244,235,0.75)',
+    color: colors.goldDark,
   },
   theirQuoteText: {
     color: colors.textMuted,
@@ -3955,15 +4015,15 @@ const styles = StyleSheet.create({
   replyPreviewBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F0E6',
+    backgroundColor: colors.paper,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.12)',
+    borderTopColor: colors.overlayLight,
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderLeftColor: 'rgba(30,31,34,0.08)',
-    borderRightColor: 'rgba(30,31,34,0.08)',
+    borderLeftColor: colors.overlayLight,
+    borderRightColor: colors.overlayLight,
     marginHorizontal: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -3972,22 +4032,22 @@ const styles = StyleSheet.create({
   replyBarAccent: {
     width: 3,
     height: '100%',
-    backgroundColor: colors.forest || '#2D5A27',
+    backgroundColor: colors.forest || colors.inkSoft,
     borderRadius: 2,
   },
   replyBarContent: {
     flex: 1,
   },
   replyBarSender: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '900',
-    color: colors.forest || '#2D5A27',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
+    color: colors.forest || colors.inkSoft,
   },
   replyBarText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
     marginTop: 1,
   },
@@ -3997,7 +4057,7 @@ const styles = StyleSheet.create({
   // Message Actions Modal Sheet
   actionModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   actionModalSheet: {
@@ -4013,14 +4073,13 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     marginBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   actionModalTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 1.5,
   },
   actionModalItem: {
     flexDirection: 'row',
@@ -4028,7 +4087,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.06)',
+    borderBottomColor: colors.overlayLight,
   },
   actionIconBox: {
     width: 36,
@@ -4038,30 +4097,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionItemTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   actionItemSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 1,
   },
   actionModalCancel: {
     marginTop: 14,
     paddingVertical: 12,
-    backgroundColor: '#F5F0E8',
+    backgroundColor: colors.paper,
     borderRadius: 8,
     alignItems: 'center',
   },
   actionModalCancelText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   // Swipe to reply styles
   swipeContainer: {
@@ -4081,11 +4140,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#EBF3ED',
+    backgroundColor: colors.emeraldLight,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(45,90,39,0.2)',
+    borderColor: colors.emeraldLight,
   },
   // Floating Scroll to Bottom
   floatingScrollBtn: {
@@ -4097,7 +4156,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -4110,7 +4169,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: colors.forest || '#2D5A27',
+    backgroundColor: colors.forest || colors.inkSoft,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -4121,14 +4180,14 @@ const styles = StyleSheet.create({
     borderColor: colors.white,
   },
   floatingScrollBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
   },
   // Reaction Bar
   reactionBarContainer: {
-    backgroundColor: '#F5F0E8',
+    backgroundColor: colors.paper,
     borderRadius: 28,
     paddingVertical: 6,
     paddingHorizontal: 8,
@@ -4149,7 +4208,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -4178,27 +4237,27 @@ const styles = StyleSheet.create({
   reactionBadgePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.14)',
+    borderColor: colors.overlayLight,
     borderRadius: 12,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 2,
   },
   reactionBadgePillActive: {
-    backgroundColor: '#FAF5EA',
+    backgroundColor: colors.paperLight,
     borderColor: colors.charcoal,
   },
   reactionBadgeEmoji: {
     fontSize: 12,
   },
   reactionBadgeCount: {
-    fontSize: 9.5,
+    fontSize: 11.5,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.textMuted,
@@ -4218,7 +4277,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -4226,31 +4285,29 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   toastText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
   // Wardrobe strip tabs & link button
   wardrobeTabMini: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
-    backgroundColor: '#EAE6DB',
+    backgroundColor: colors.paperDark,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
   },
   wardrobeTabMiniActive: {
     backgroundColor: colors.charcoal,
     borderColor: colors.charcoal,
   },
   wardrobeTabMiniText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.4,
   },
   wardrobeTabMiniTextActive: {
     color: colors.cream,
@@ -4266,11 +4323,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   wardrobeStripLinkBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.white,
-    letterSpacing: 0.4,
   },
   // In-Message Deal Card (ListHeaderComponent)
   inMessageDealCard: {
@@ -4280,9 +4336,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 3,
@@ -4292,11 +4348,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2DEC9',
+    borderBottomColor: colors.paperDark,
   },
   inMessageDealModeBadge: {
     flexDirection: 'row',
@@ -4308,16 +4364,15 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   inMessageDealModeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.white,
-    letterSpacing: 0.5,
   },
   inMessageDealUnlinkText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.copper,
   },
   inMessageDealContent: {
@@ -4334,46 +4389,45 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   inMessageDealBrand: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.copper,
   },
   inMessageDealTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
     marginTop: 1,
   },
   inMessageDealPrice: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 11.5,
     fontWeight: '900',
-    color: colors.forest || '#1E3B2F',
+    color: colors.forest || colors.emeraldDark,
     marginTop: 2,
   },
   inMessageDealAction: {
     paddingHorizontal: 8,
     paddingVertical: 6,
-    backgroundColor: '#EDE8DD',
+    backgroundColor: colors.paper,
     borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.charcoal,
   },
   inMessageDealActionText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.4,
   },
   inMessageSellerBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FAF7EE',
+    backgroundColor: colors.paperLight,
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 6,
@@ -4381,12 +4435,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#E2DEC9',
+    borderColor: colors.paperDark,
   },
   inMessageSellerBannerText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   // In-Bubble Product Snippet
@@ -4400,36 +4454,36 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   inBubbleSnippetMine: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: colors.borderLight,
   },
   inBubbleSnippetTheir: {
-    backgroundColor: '#F7F4EB',
+    backgroundColor: colors.paperLight,
     borderWidth: 1,
-    borderColor: '#E2DEC9',
+    borderColor: colors.paperDark,
   },
   inBubbleSnippetThumb: {
     width: 40,
     height: 40,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.2)',
+    borderColor: colors.overlayLight,
   },
   inBubbleSnippetBrand: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   inBubbleSnippetTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     marginTop: 1,
   },
   inBubbleSnippetPrice: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '900',
     marginTop: 2,
   },
@@ -4439,21 +4493,19 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   inBubbleSnippetBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
-    letterSpacing: 0.4,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   // Transactions Hub Modal Styles
   hubSection: {
     gap: 8,
   },
   hubSectionLabel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    letterSpacing: 1.2,
   },
   hubGarmentCard: {
     flexDirection: 'row',
@@ -4473,72 +4525,73 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   hubGarmentBrand: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.copper,
   },
   hubGarmentTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   hubGarmentPrice: {
     fontFamily: typography.mono,
-    fontSize: 9.5,
+    fontSize: 11.5,
     fontWeight: '900',
-    color: colors.forest || '#1E3B2F',
+    color: colors.forest || colors.emeraldDark,
     marginTop: 2,
   },
   hubActionMiniBtn: {
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 3,
-    backgroundColor: '#EDE8DD',
+    backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.charcoal,
     alignItems: 'center',
   },
   hubActionMiniText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   hubEmptyCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#F5F2EA',
+    backgroundColor: colors.paper,
     padding: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#E2DEC9',
+    borderColor: colors.paperDark,
   },
   hubEmptyText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
-    lineHeight: 14,
+    lineHeight: 21,
   },
   hubTabPill: {
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 4,
-    backgroundColor: '#EAE6DB',
+    backgroundColor: colors.paperDark,
     borderWidth: 1,
-    borderColor: '#D4CFC2',
+    borderColor: colors.borderLight,
   },
   hubTabPillActive: {
     backgroundColor: colors.charcoal,
     borderColor: colors.charcoal,
   },
   hubTabPillText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
   },
   hubTabPillTextActive: {
@@ -4550,7 +4603,7 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#E2DEC9',
+    borderColor: colors.paperDark,
     alignItems: 'center',
   },
   hubGarmentPillThumb: {
@@ -4558,22 +4611,22 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
     marginBottom: 6,
   },
   hubGarmentPillTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
     textAlign: 'center',
     width: '100%',
   },
   hubGarmentPillPrice: {
     fontFamily: typography.mono,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '900',
-    color: colors.forest || '#1E3B2F',
+    color: colors.forest || colors.emeraldDark,
     marginTop: 2,
     marginBottom: 6,
   },
@@ -4585,9 +4638,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   hubGarmentPillBtnText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.cream,
   },
   hubLinkItem: {
@@ -4596,7 +4649,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#EDE8DD',
+    borderBottomColor: colors.paper,
   },
   hubLinkIcon: {
     width: 32,
@@ -4606,14 +4659,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   hubLinkTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10.5,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   hubLinkSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -4630,9 +4684,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   chatTransactionActionText: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
 });

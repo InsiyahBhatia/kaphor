@@ -52,12 +52,12 @@ const UPCYCLE_DATA: UpcycleCategory[] = [
     icon: 'cut-outline',
     image: require('../../../assets/upcycle/jeans.png'),
     tutorials: [
-      { label: 'JEANS POUCH', url: 'https://youtube.com/shorts/o08upOyjZg0' },
+      { label: 'Jeans pouch', url: 'https://youtube.com/shorts/o08upOyjZg0' },
       { label: 'KEYCHAIN', url: 'https://youtube.com/shorts/C84XqM9n9yM' },
-      { label: 'SHOULDER BAG', url: 'https://youtube.com/shorts/tyhXeOIIRWk' },
-      { label: 'DENIM VEST', url: 'https://youtube.com/shorts/Qd9Hbq42toU' },
-      { label: 'DENIM TIES', url: 'https://youtube.com/shorts/FGB9LtrBWsg' },
-      { label: 'DENIM SKIRT', url: 'https://youtube.com/shorts/zfYrMeWjZjM' },
+      { label: 'Shoulder bag', url: 'https://youtube.com/shorts/tyhXeOIIRWk' },
+      { label: 'Denim vest', url: 'https://youtube.com/shorts/Qd9Hbq42toU' },
+      { label: 'Denim ties', url: 'https://youtube.com/shorts/FGB9LtrBWsg' },
+      { label: 'Denim skirt', url: 'https://youtube.com/shorts/zfYrMeWjZjM' },
     ],
     inspirations: [],
   },
@@ -65,17 +65,17 @@ const UPCYCLE_DATA: UpcycleCategory[] = [
     id: 'shirt',
     garment: 'SHIRT',
     tagline: 'Your old shirt — creatively reimagined',
-    accentColor: '#C85A32',
-    accentLight: '#FCEEE8',
-    accentDark: '#8B3617',
+    accentColor: colors.terracotta,
+    accentLight: colors.terracottaLight,
+    accentDark: colors.terracottaDark,
     icon: 'shirt-outline',
     image: require('../../../assets/upcycle/shirt.png'),
     tutorials: [
-      { label: 'PLAID-IT UP', url: 'https://youtube.com/shorts/Ej01U_CfXM8' },
-      { label: 'TIE-IT UP', url: 'https://youtube.com/shorts/sGG5oNH7u2A' },
-      { label: 'SKIRT-IT UP', url: 'https://youtube.com/shorts/FpLDyrKg-KU' },
-      { label: 'PAINT-IT UP', url: 'https://youtube.com/shorts/L5vFfCdzy5U' },
-      { label: 'BUTTON & PATCH', url: 'https://youtube.com/shorts/pMja3OU-kos' },
+      { label: 'Plaid-it up', url: 'https://youtube.com/shorts/Ej01U_CfXM8' },
+      { label: 'Tie-it up', url: 'https://youtube.com/shorts/sGG5oNH7u2A' },
+      { label: 'Skirt-it up', url: 'https://youtube.com/shorts/FpLDyrKg-KU' },
+      { label: 'Paint-it up', url: 'https://youtube.com/shorts/L5vFfCdzy5U' },
+      { label: 'Button & patch', url: 'https://youtube.com/shorts/pMja3OU-kos' },
     ],
     inspirations: [],
   },
@@ -83,16 +83,16 @@ const UPCYCLE_DATA: UpcycleCategory[] = [
     id: 'tshirt',
     garment: 'T-SHIRT',
     tagline: 'Elevate your boring basics',
-    accentColor: '#141414',
-    accentLight: '#EAE6DF',
-    accentDark: '#000000',
+    accentColor: colors.ink,
+    accentLight: colors.paperDark,
+    accentDark: colors.ink,
     icon: 'color-palette-outline',
     image: require('../../../assets/upcycle/tshirt.png'),
     tutorials: [
-      { label: 'BUTTON PATCH', url: 'https://youtube.com/shorts/pMja3OU-kos' },
-      { label: 'CUTTING ART', url: 'https://youtu.be/zQDyu7O9O5g' },
-      { label: 'FABRIC PAINTING', url: 'https://youtube.com/shorts/6jDXF95oGoQ' },
-      { label: 'BLEACH ART', url: 'https://youtube.com/shorts/pYDTvFYWx8I' },
+      { label: 'Button patch', url: 'https://youtube.com/shorts/pMja3OU-kos' },
+      { label: 'Cutting art', url: 'https://youtu.be/zQDyu7O9O5g' },
+      { label: 'Fabric painting', url: 'https://youtube.com/shorts/6jDXF95oGoQ' },
+      { label: 'Bleach art', url: 'https://youtube.com/shorts/pYDTvFYWx8I' },
     ],
     inspirations: [],
   },
@@ -100,25 +100,25 @@ const UPCYCLE_DATA: UpcycleCategory[] = [
     id: 'saree',
     garment: 'SAREE',
     tagline: "Got mom's old saree? Turn it into something new",
-    accentColor: '#B8337A',
-    accentLight: '#FCEEF5',
-    accentDark: '#7A1A4A',
+    accentColor: colors.rose,
+    accentLight: colors.crimsonLight,
+    accentDark: colors.crimsonDark,
     icon: 'sparkles-outline',
     image: require('../../../assets/upcycle/saree.png'),
     tutorials: [],
-    inspirations: ['A TOP', 'A SHARARA', 'A DRESS', 'A SHIRT', 'A BAG'],
+    inspirations: ['A TOP', 'A sharara', 'A dress', 'A shirt', 'A bag'],
   },
   {
     id: 'socks',
     garment: 'SOCKS',
     tagline: 'Why leave out the socks? Give them new life',
-    accentColor: '#0F5C46',
-    accentLight: '#E6F4EF',
-    accentDark: '#072B20',
+    accentColor: colors.success,
+    accentLight: colors.emeraldLight,
+    accentDark: colors.emeraldDark,
     icon: 'happy-outline',
     image: require('../../../assets/upcycle/socks.png'),
     tutorials: [],
-    inspirations: ['HAND WARMERS', 'SOFT TOY', 'SMALL POUCH', 'LEG WARMERS'],
+    inspirations: ['HAND WARMERS', 'Soft toy', 'Small pouch', 'Leg warmers'],
   },
 ];
 
@@ -141,7 +141,7 @@ function TutorialPill({ tutorial, accent, accentLight, accentDark }: {
   };
   return (
     <TouchableOpacity style={[styles.pill, { backgroundColor: accentLight, borderColor: accent }]} onPress={handlePress} activeOpacity={0.75}>
-      <Ionicons name="logo-youtube" size={11} color="#FF0000" />
+      <Ionicons name="logo-youtube" size={11} color={colors.error} />
       <Text style={[styles.pillText, { color: accentDark }]}>{tutorial.label}</Text>
       <Ionicons name="open-outline" size={10} color={accentDark} style={{ opacity: 0.6 }} />
     </TouchableOpacity>
@@ -169,15 +169,15 @@ function UpcycleCard({ category }: { category: UpcycleCategory }) {
           <Image source={category.image} style={styles.cardImage} resizeMode="cover" />
           <View style={styles.cardImageOverlay}>
             <View style={[styles.expandBadge, { backgroundColor: category.accentColor }]}>
-              <Ionicons name="expand-outline" size={12} color="#FFF" />
-              <Text style={styles.expandBadgeText}>VIEW POSTER</Text>
+              <Ionicons name="expand-outline" size={12} color={colors.white} />
+              <Text style={styles.expandBadgeText}>View poster</Text>
             </View>
           </View>
         </TouchableOpacity>
         <View style={styles.cardBody}>
           <View style={styles.cardTitleRow}>
             <View style={[styles.cardIconBox, { backgroundColor: category.accentColor }]}>
-              <Ionicons name={category.icon} size={16} color="#FFF" />
+              <Ionicons name={category.icon} size={16} color={colors.white} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cardGarment, { color: category.accentDark }]}>UPCYCLE YOUR {category.garment}</Text>
@@ -187,8 +187,8 @@ function UpcycleCard({ category }: { category: UpcycleCategory }) {
           {category.tutorials.length > 0 && (
             <>
               <View style={styles.pillSectionHeader}>
-                <Ionicons name="logo-youtube" size={10} color="#FF0000" />
-                <Text style={styles.pillSectionTitle}>WATCH & MAKE</Text>
+                <Ionicons name="logo-youtube" size={10} color={colors.error} />
+                <Text style={styles.pillSectionTitle}>Watch & make</Text>
               </View>
               <View style={styles.pillRow}>
                 {category.tutorials.map((t) => (
@@ -201,7 +201,7 @@ function UpcycleCard({ category }: { category: UpcycleCategory }) {
             <>
               <View style={styles.pillSectionHeader}>
                 <Ionicons name="bulb-outline" size={10} color={category.accentColor} />
-                <Text style={[styles.pillSectionTitle, { color: category.accentDark }]}>INSPIRATION IDEAS</Text>
+                <Text style={[styles.pillSectionTitle, { color: category.accentDark }]}>Inspiration ideas</Text>
               </View>
               <View style={styles.pillRow}>
                 {category.inspirations.map((label) => (
@@ -212,7 +212,7 @@ function UpcycleCard({ category }: { category: UpcycleCategory }) {
           )}
           <TouchableOpacity style={[styles.repairCta, { borderColor: category.accentColor }]} onPress={() => router.push('/(tabs)/studio/repair-refresh' as any)} activeOpacity={0.8}>
             <Ionicons name="color-palette-sharp" size={13} color={category.accentDark} />
-            <Text style={[styles.repairCtaText, { color: category.accentDark }]}>REPAIR & REFRESH GUIDES</Text>
+            <Text style={[styles.repairCtaText, { color: category.accentDark }]}>Repair & refresh guides</Text>
             <Ionicons name="chevron-forward" size={12} color={category.accentDark} />
           </TouchableOpacity>
         </View>
@@ -220,7 +220,7 @@ function UpcycleCard({ category }: { category: UpcycleCategory }) {
       <Modal visible={posterVisible} transparent animationType="fade" onRequestClose={() => setPosterVisible(false)}>
         <View style={styles.modalBackdrop}>
           <TouchableOpacity style={styles.modalClose} onPress={() => setPosterVisible(false)} activeOpacity={0.85}>
-            <Ionicons name="close" size={22} color="#FFF" />
+            <Ionicons name="close" size={22} color={colors.white} />
           </TouchableOpacity>
           <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
             <Image source={category.image} style={styles.modalImage} resizeMode="contain" />
@@ -239,9 +239,9 @@ export default function UpcycleScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
       <EditorialPageHeader
-        title="UPCYCLE STUDIO"
-        subtitle="OLD GARMENTS, NEW POSSIBILITIES"
-        eyebrow="ZERO WASTE ATELIER"
+        title="Upcycle studio"
+        subtitle="Old garments, new possibilities"
+        eyebrow="Zero waste studio"
         variant="upcycle"
       >
         <HandwrittenNote style={{ marginTop: 10 }}>
@@ -252,13 +252,13 @@ export default function UpcycleScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Visual Narrative: OLD GARMENT -> CUT -> REWORK -> NEW PIECE */}
         <View style={styles.narrativeCard}>
-          <Text style={styles.narrativeTitle}>THE ATELIER CYCLE</Text>
+          <Text style={styles.narrativeTitle}>How upcycling works</Text>
           <View style={styles.narrativeRow}>
             <View style={styles.narrativeStep}>
               <View style={styles.narrativeIconWrap}>
                 <EditorialIcon name="hanger" size={20} />
               </View>
-              <Text style={styles.narrativeStepLabel}>OLD GARMENT</Text>
+              <Text style={styles.narrativeStepLabel}>Old garment</Text>
             </View>
             <Text style={styles.narrativeArrow}>→</Text>
             <View style={styles.narrativeStep}>
@@ -272,21 +272,21 @@ export default function UpcycleScreen() {
               <View style={styles.narrativeIconWrap}>
                 <EditorialIcon name="sewing" size={20} />
               </View>
-              <Text style={styles.narrativeStepLabel}>REWORK</Text>
+              <Text style={styles.narrativeStepLabel}>Rework</Text>
             </View>
             <Text style={styles.narrativeArrow}>→</Text>
             <View style={styles.narrativeStep}>
               <View style={styles.narrativeIconWrap}>
                 <EditorialIcon name="sparkle" size={20} />
               </View>
-              <Text style={styles.narrativeStepLabel}>NEW PIECE</Text>
+              <Text style={styles.narrativeStepLabel}>New piece</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.sectionHeader}>
           <View style={styles.sectionDot} />
-          <Text style={styles.sectionTitle}>CHOOSE YOUR GARMENT</Text>
+          <Text style={styles.sectionTitle}>Choose your garment</Text>
         </View>
         {UPCYCLE_DATA.map((cat) => (
           <UpcycleCard key={cat.id} category={cat} />
@@ -300,25 +300,23 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 100 },
   narrativeCard: {
-    backgroundColor: '#FAF7F0',
+    backgroundColor: colors.paperLight,
     borderWidth: 1.5,
     borderColor: colors.ink,
     padding: 14,
     marginBottom: 20,
-    shadowColor: '#171717',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
   narrativeTitle: {
-    fontFamily: typography.monoBold,
-    fontSize: 9.5,
+    fontFamily: typography.handwritten,
+    fontSize: 15,
     color: colors.ink,
-    letterSpacing: 1.2,
     marginBottom: 12,
-    textAlign: 'center',
-  },
+    textAlign: 'center', includeFontPadding: false, },
   narrativeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -333,59 +331,56 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: 'rgba(23, 23, 23, 0.2)',
+    borderColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
   },
   narrativeStepLabel: {
-    fontFamily: typography.monoBold,
-    fontSize: 8,
-    color: colors.inkSoft,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handwritten,
+    fontSize: 13,
+    color: colors.inkSoft, includeFontPadding: false, },
   narrativeArrow: {
-    fontFamily: typography.monoBold,
-    fontSize: 14,
+    fontFamily: typography.handwritten,
+    fontSize: 19,
     color: colors.rose,
-    marginBottom: 16,
-  },
+    marginBottom: 16, includeFontPadding: false, },
   heroBanner: { flexDirection: 'row', backgroundColor: colors.ink, padding: 16, marginBottom: 18, borderWidth: 2, borderColor: colors.ink, shadowColor: colors.ink, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.18, shadowRadius: 0, elevation: 4 },
   heroBannerLeft: { flex: 1, paddingRight: 12 },
   heroBannerBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.emerald, alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 3, marginBottom: 8 },
-  heroBannerBadgeText: { fontFamily: typography.mono, fontSize: 7.5, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
-  heroBannerTitle: { fontFamily: typography.headings, fontSize: 42, color: '#FFF', lineHeight: 40, letterSpacing: 1.5, marginBottom: 10 },
-  heroBannerSub: { fontFamily: typography.mono, fontSize: 9, color: colors.bgMuted, lineHeight: 14 },
+  heroBannerBadgeText: { fontFamily: typography.handBold, fontSize: 13, color: colors.white, includeFontPadding: false, },
+  heroBannerTitle: { fontFamily: typography.headings, fontSize: 42, color: colors.white, lineHeight: 40, letterSpacing: 1.5, marginBottom: 10 },
+  heroBannerSub: { fontFamily: typography.handwritten, fontSize: 14, color: colors.bgMuted, lineHeight: 22, includeFontPadding: false, },
   heroBannerRight: { alignItems: 'center', justifyContent: 'center', gap: 8 },
   heroBannerStat: { alignItems: 'center' },
   heroBannerStatNum: { fontFamily: typography.headings, fontSize: 32, color: colors.gold, letterSpacing: 1 },
-  heroBannerStatLabel: { fontFamily: typography.mono, fontSize: 7.5, fontWeight: '900', color: colors.bgMuted, letterSpacing: 0.5, textAlign: 'center' },
+  heroBannerStatLabel: { fontFamily: typography.handBold, fontSize: 13, color: colors.bgMuted, textAlign: 'center', includeFontPadding: false, },
   heroBannerDivider: { width: 30, height: 1, backgroundColor: colors.bgMuted, opacity: 0.4 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   sectionDot: { width: 8, height: 8, backgroundColor: colors.emerald, borderRadius: 1 },
-  sectionTitle: { fontFamily: typography.mono, fontSize: 11, fontWeight: '900', color: colors.emeraldDark, letterSpacing: 1.5 },
+  sectionTitle: { fontFamily: typography.handBold, fontSize: 16, color: colors.emeraldDark, includeFontPadding: false, },
   card: { backgroundColor: colors.white, borderWidth: 2, marginBottom: 16, shadowColor: colors.ink, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.1, shadowRadius: 0, elevation: 3 },
   cardImageWrapper: { width: '100%', height: 200, overflow: 'hidden', position: 'relative' },
   cardImage: { width: '100%', height: '100%' },
   cardImageOverlay: { position: 'absolute', bottom: 8, right: 8 },
   expandBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4 },
-  expandBadgeText: { fontFamily: typography.mono, fontSize: 8, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
+  expandBadgeText: { fontFamily: typography.handBold, fontSize: 13, color: colors.white, includeFontPadding: false, },
   cardBody: { padding: 12 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
   cardIconBox: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: colors.ink },
-  cardGarment: { fontFamily: typography.mono, fontSize: 12, fontWeight: '900', letterSpacing: 0.8 },
-  cardTagline: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginTop: 2, lineHeight: 13 },
+  cardGarment: { fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false, },
+  cardTagline: { fontFamily: typography.handwritten, fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 20, includeFontPadding: false, },
   pillSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 7 },
-  pillSectionTitle: { fontFamily: typography.mono, fontSize: 8.5, fontWeight: '900', color: colors.ink, letterSpacing: 1 },
+  pillSectionTitle: { fontFamily: typography.handBold, fontSize: 14, color: colors.ink, includeFontPadding: false, },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 5, borderWidth: 1.5 },
-  pillText: { fontFamily: typography.mono, fontSize: 8.5, fontWeight: '900', letterSpacing: 0.5 },
+  pillText: { fontFamily: typography.handBold, fontSize: 14, includeFontPadding: false, },
   repairCta: { flexDirection: 'row', alignItems: 'center', gap: 7, borderWidth: 1.5, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: colors.cream, marginTop: 4 },
-  repairCtaText: { flex: 1, fontFamily: typography.mono, fontSize: 8.5, fontWeight: '900', letterSpacing: 0.5 },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center' },
-  modalClose: { position: 'absolute', top: 50, right: 20, zIndex: 10, backgroundColor: 'rgba(255,255,255,0.1)', padding: 10, borderRadius: 50 },
+  repairCtaText: { flex: 1, fontFamily: typography.bodyBold, fontSize: 8.5, letterSpacing: 0.2 },
+  modalBackdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center' },
+  modalClose: { position: 'absolute', top: 50, right: 20, zIndex: 10, backgroundColor: colors.overlayLight, padding: 10, borderRadius: 50 },
   modalScroll: { alignItems: 'center', paddingVertical: 80, paddingHorizontal: 12 },
   modalImage: { width: SCREEN_W - 24, height: (SCREEN_W - 24) * 1.4 },
   modalCaption: { position: 'absolute', bottom: 40, alignSelf: 'center', paddingHorizontal: 16, paddingVertical: 7 },
-  modalCaptionText: { fontFamily: typography.mono, fontSize: 11, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
+  modalCaptionText: { fontFamily: typography.handBold, fontSize: 16, color: colors.white, includeFontPadding: false, },
 });

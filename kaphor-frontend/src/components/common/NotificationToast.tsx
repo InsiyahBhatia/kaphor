@@ -290,18 +290,18 @@ export function NotificationToast() {
 
   const getCategoryInfo = (type: string) => {
     if (type === 'DIRECT_MESSAGE') {
-      return { icon: 'chatbubble-ellipses', label: 'MESSAGE', color: '#38A169', bg: 'rgba(56,161,105,0.2)' };
+      return { icon: 'chatbubble-ellipses', label: 'MESSAGE', color: colors.forest, bg: colors.emeraldLight };
     }
     if (type.startsWith('SWAP_')) {
-      return { icon: 'swap-horizontal', label: 'SWAP', color: '#C9A84C', bg: 'rgba(201,168,76,0.2)' };
+      return { icon: 'swap-horizontal', label: 'SWAP', color: colors.gold, bg: colors.goldLight };
     }
     if (type.startsWith('ORDER_')) {
-      return { icon: 'bag-check', label: 'ORDER', color: '#2B6CB0', bg: 'rgba(43,108,176,0.2)' };
+      return { icon: 'bag-check', label: 'ORDER', color: colors.ink, bg: colors.overlayLight };
     }
     if (type.startsWith('RENTAL_')) {
-      return { icon: 'calendar', label: 'RENTAL', color: '#805AD5', bg: 'rgba(128,90,213,0.2)' };
+      return { icon: 'calendar', label: 'RENTAL', color: colors.ink, bg: colors.overlayLight };
     }
-    return { icon: 'notifications', label: 'ALERT', color: '#C41E3A', bg: 'rgba(196,30,58,0.2)' };
+    return { icon: 'notifications', label: 'ALERT', color: colors.rose, bg: colors.crimsonLight };
   };
 
   const catInfo = getCategoryInfo(toast.type);
@@ -341,7 +341,7 @@ export function NotificationToast() {
           </Text>
         </View>
 
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close"
           style={styles.closeBtn}
           onPress={dismiss}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -377,13 +377,13 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E1F22',
+    backgroundColor: colors.ink,
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#C9A84C',
-    shadowColor: '#000',
+    borderColor: colors.gold,
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -414,24 +414,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   badgeText: {
-    fontFamily: typography.mono,
-    fontSize: 7.5,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
   title: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#FFF',
-    letterSpacing: 0.5,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.white,
     flex: 1,
   },
   body: {
-    fontFamily: typography.mono,
-    fontSize: 9.5,
-    color: 'rgba(255,255,255,0.75)',
-    lineHeight: 14,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
+    color: colors.paperGlass,
+    lineHeight: 23,
   },
   closeBtn: {
     padding: 6,
@@ -441,6 +440,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     height: 2.5,
-    backgroundColor: '#C9A84C',
+    backgroundColor: colors.gold,
   },
 });

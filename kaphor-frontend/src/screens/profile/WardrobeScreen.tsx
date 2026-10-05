@@ -17,12 +17,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../theme';
 import { KaphorImage } from '../../components/KaphorImage';
 import { Header } from '../../components/common/Header';
-import { DossierLoading } from '../../components/common/DossierLoading';
 import { GarmentGridSkeleton } from '../../components/common/CardLoadingScreen';
 import { RecyclingHubsModal } from '../../components/RecyclingHubsModal';
 import { cachedGet, fetchFresh, invalidateCache } from '../../services/api';
 import api from '../../services/api';
 import { hapticFeedback } from '../../utils/haptics';
+import { Loader } from '../../components/common/Loader';
+import { getErrorMessage } from '../../utils/errors';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -37,7 +38,7 @@ interface StateConfig {
 
 const STATE_CONFIG: Record<string, StateConfig> = {
   OWNERSHIP: { label: 'OWNED', color: colors.forest, icon: 'checkmark-circle', description: 'In your possession' },
-  RENTED: { label: 'ON RENTAL', color: '#6B46C1', icon: 'time', description: 'Active rental in your wardrobe' },
+  RENTED: { label: 'ON RENTAL', color: colors.ink, icon: 'time', description: 'Active rental in your wardrobe' },
   SELL_INTENT: { label: 'SELL READY', color: colors.orange, icon: 'pricetag', description: 'Ready to be relisted' },
   DECLINE: { label: 'DECLINED', color: colors.copper, icon: 'trending-down', description: 'Showing low interest' },
   CIRCULATION: { label: 'CIRCULATING', color: colors.navy, icon: 'refresh', description: 'Active circular rotation' },
@@ -100,11 +101,11 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
               <Text style={[styles.actionBtnText, { color: colors.charcoal }]}>SELL</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionBtn, { borderColor: '#8C6D3B', paddingHorizontal: 6 }]}
+              style={[styles.actionBtn, { borderColor: colors.goldDark, paddingHorizontal: 6 }]}
               onPress={() => onAction('RECYCLE_HUBS', item)}
               accessibilityLabel="Recycle this garment"
             >
-              <Ionicons name="leaf-outline" size={12} color="#8C6D3B" />
+              <Ionicons name="leaf-outline" size={12} color={colors.goldDark} />
             </TouchableOpacity>
           </>
         )}
@@ -119,16 +120,16 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
         )}
         {state === 'RENTED' && (
           <TouchableOpacity
-            style={[styles.actionBtn, { borderColor: '#6B46C1', flex: 1, backgroundColor: 'rgba(107,70,193,0.06)' }]}
+            style={[styles.actionBtn, { borderColor: colors.ink, flex: 1, backgroundColor: colors.overlayLight }]}
             onPress={() => onAction('VIEW_RENTAL', item)}
           >
-            <Ionicons name="time" size={13} color="#6B46C1" />
-            <Text style={[styles.actionBtnText, { color: '#6B46C1' }]}>VIEW RENTAL</Text>
+            <Ionicons name="time" size={13} color={colors.ink} />
+            <Text style={[styles.actionBtnText, { color: colors.ink }]}>VIEW RENTAL</Text>
           </TouchableOpacity>
         )}
         {state === 'CIRCULATION' && (
           <TouchableOpacity
-            style={[styles.actionBtn, { borderColor: colors.navy, flex: 1, backgroundColor: 'rgba(30,58,138,0.06)' }]}
+            style={[styles.actionBtn, { borderColor: colors.navy, flex: 1, backgroundColor: colors.overlayLight }]}
             onPress={() => onAction('VIEW', item)}
           >
             <Ionicons name="eye" size={13} color={colors.navy} />
@@ -137,7 +138,7 @@ const WardrobeItemCard = React.memo(({ item, onAction }: WardrobeItemProps) => {
         )}
         {state === 'REUSE_UPCYCLE_RECYCLE' && (
           <TouchableOpacity
-            style={[styles.actionBtn, { borderColor: colors.forest, flex: 1, backgroundColor: 'rgba(40,54,24,0.06)' }]}
+            style={[styles.actionBtn, { borderColor: colors.forest, flex: 1, backgroundColor: colors.emeraldLight }]}
             onPress={() => onAction('RECYCLE_HUBS', item)}
           >
             <Ionicons name="location" size={13} color={colors.forest} />
@@ -209,7 +210,7 @@ function WardrobeStats({
         </View>
         {rented > 0 ? (
           <View style={styles.statBox}>
-            <Text style={[styles.statValue, { color: '#6B46C1' }]}>{rented}</Text>
+            <Text style={[styles.statValue, { color: colors.ink }]}>{rented}</Text>
             <Text style={styles.statLabel}>ON RENTAL</Text>
           </View>
         ) : null}
@@ -230,7 +231,7 @@ function WardrobeStats({
         activeOpacity={0.8}
       >
         <View style={styles.recycleIconWrap}>
-          <Ionicons name="location" size={15} color="#283618" />
+          <Ionicons name="location" size={15} color={colors.goldDark} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.recycleBannerTitle}>END-OF-LIFE TEXTILE ROUTING</Text>
@@ -248,7 +249,7 @@ function WardrobeStats({
         <View style={{ flex: 1 }}>
           <Text style={styles.impactBannerTitle}>CLOSET IMPACT MULTIPLIER</Text>
           <Text style={styles.impactBannerSub}>
-            Tap "I WORE THIS" to log rewearing. Each wear prevents ~0.35kg CO₂ and credits your verified Impact Dossier.
+            Tap "I WORE THIS" to log each wear. Each wear saves about 0.35kg CO₂.
           </Text>
         </View>
       </View>
@@ -344,7 +345,7 @@ export function WardrobeScreen() {
 
           Alert.alert(
             'Impact Saved',
-            `+${co2} kg CO₂ & +${water}L Water saved by wearing what you own${wearCountText}!\n\nYour wardrobe utilization increased and decay was reset.`
+            `+${co2} kg CO₂ & +${water}L Water saved by wearing what you own${wearCountText}!\n\nYou wore more of your closet and decay was reset.`
           );
           invalidateCache('/users/me/wardrobe');
           invalidateCache('/impact');
@@ -381,7 +382,7 @@ export function WardrobeScreen() {
           break;
       }
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || err?.message || 'Action failed');
+      Alert.alert('Error', getErrorMessage(err, 'Action failed'));
     }
   };
 
@@ -398,7 +399,7 @@ export function WardrobeScreen() {
           <Ionicons name="shirt-outline" size={64} color={colors.charcoal} style={{ opacity: 0.3 }} />
           <Text style={styles.emptyTitle}>YOUR CLOSET IS EMPTY</Text>
           <Text style={styles.emptySubtext}>
-            Curate your luxury collection by listing archive pieces for sale, rent, or swap, or explore the circular marketplace.
+            List clothes to sell, rent or swap, or browse the marketplace.
           </Text>
           <View style={styles.emptyActionButtons}>
             <TouchableOpacity
@@ -406,7 +407,7 @@ export function WardrobeScreen() {
               onPress={() => router.push('/(tabs)/shop/sell')}
             >
               <Ionicons name="add" size={16} color={colors.white} />
-              <Text style={styles.listEmptyBtnText}>LIST AN ARCHIVE PIECE</Text>
+              <Text style={styles.listEmptyBtnText}>LIST AN ITEM</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.shopBtn}
@@ -488,15 +489,15 @@ const styles = StyleSheet.create({
     shadowColor: colors.charcoal, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
   },
   statValue: { fontSize: 32, fontFamily: typography.headings, color: colors.forest },
-  statLabel: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '800', marginTop: 2, letterSpacing: 1 },
+  statLabel: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, marginTop: 2, includeFontPadding: false },
 
   // Recycling Guide Banner
   recycleBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F5ED',
+    backgroundColor: colors.paper,
     borderWidth: 1.5,
-    borderColor: '#283618',
+    borderColor: colors.goldDark,
     padding: 12,
     gap: 10,
     marginBottom: 10,
@@ -506,30 +507,30 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(40,54,24,0.12)',
+    backgroundColor: colors.emeraldLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   recycleBannerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
-    color: '#283618',
-    letterSpacing: 0.8,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
+    color: colors.goldDark,
     marginBottom: 2,
   },
   recycleBannerSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    lineHeight: 12,
+    lineHeight: 23,
   },
 
   // Impact Banner
   impactBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3EFE6',
+    backgroundColor: colors.paper,
     borderWidth: 1.5,
     borderColor: colors.forest,
     padding: 12,
@@ -539,31 +540,31 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(40,54,24,0.12)',
+    backgroundColor: colors.emeraldLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   impactBannerTitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.forest,
-    letterSpacing: 1,
     marginBottom: 2,
   },
   impactBannerSub: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    lineHeight: 12,
+    lineHeight: 23,
   },
 
   // Section header
   sectionHeader: { marginBottom: 16 },
-  sectionTitle: { fontFamily: typography.mono, fontSize: 11, color: colors.charcoal, fontWeight: '800', letterSpacing: 1, marginBottom: 8 },
+  sectionTitle: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, marginBottom: 8, includeFontPadding: false },
   legendHint: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, fontWeight: '700' },
+  legendText: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, includeFontPadding: false },
 
   // Grid
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
@@ -585,13 +586,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 6, paddingVertical: 3,
   },
-  stateBadgeText: { color: colors.white, fontFamily: typography.mono, fontSize: 7, fontWeight: '900', letterSpacing: 0.5 },
+  stateBadgeText: { color: colors.white, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false },
 
   // Card info
   cardInfo: { padding: 10 },
-  cardBrand: { fontFamily: typography.mono, fontSize: 8, color: colors.red, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
+  cardBrand: { fontFamily: typography.handBold, fontSize: 17, color: colors.red, includeFontPadding: false },
   cardTitle: { fontFamily: typography.headings, fontSize: 16, color: colors.charcoal, marginTop: 2 },
-  cardStateDesc: { fontFamily: typography.mono, fontSize: 8, color: colors.textMuted, marginTop: 4 },
+  cardStateDesc: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, marginTop: 4, includeFontPadding: false },
 
   // Actions
   cardActions: { flexDirection: 'row', gap: 4, paddingHorizontal: 8, paddingBottom: 8 },
@@ -600,17 +601,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6, borderWidth: 1.5, borderColor: colors.charcoal,
     backgroundColor: colors.cream,
   },
-  actionBtnText: { fontFamily: typography.mono, fontSize: 7.5, fontWeight: '900', letterSpacing: 0.5 },
+  actionBtnText: { fontFamily: typography.handBold, fontSize: 18, includeFontPadding: false },
 
   // Empty state
-  emptyTitle: { fontFamily: typography.mono, fontSize: 14, color: colors.charcoal, fontWeight: '800', letterSpacing: 1, marginTop: 16, textAlign: 'center' },
-  emptySubtext: { fontFamily: typography.mono, fontSize: 10, color: colors.textMuted, lineHeight: 16, textAlign: 'center' },
+  emptyTitle: { fontFamily: typography.handBold, fontSize: 18, color: colors.charcoal, marginTop: 16, textAlign: 'center', includeFontPadding: false },
+  emptySubtext: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, lineHeight: 21, textAlign: 'center', includeFontPadding: false },
   shopBtn: {
     backgroundColor: colors.charcoal, paddingVertical: 12, paddingHorizontal: 24,
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
   },
-  shopBtnText: { color: colors.cream, fontFamily: typography.mono, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  shopBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false },
 
   // Empty State Actions
   emptyActionButtons: {
@@ -637,9 +638,8 @@ const styles = StyleSheet.create({
   },
   listEmptyBtnText: {
     color: colors.white,
-    fontFamily: typography.mono,
-    fontSize: 11.5,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
   },
 });

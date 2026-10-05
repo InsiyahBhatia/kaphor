@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
@@ -7,6 +7,7 @@ import { colors } from '../../src/theme';
 import { useGoogleAuth } from '../../src/hooks/useGoogleAuth';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
 import { LegalModal } from '../../src/components/legal/LegalModal';
+import { Spinner } from '../../src/components/common/Loader';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -28,18 +29,18 @@ export default function RegisterScreen() {
 
   const getPasswordStrength = (pass: string) => {
     if (pass.length === 0) return null;
-    if (pass.length < 10) return { label: 'TOO SHORT (MIN 10)', color: '#9B1B30' };
+    if (pass.length < 10) return { label: 'Too short (min 10)', color: colors.rose };
     const hasUpper = /[A-Z]/.test(pass);
     const hasLower = /[a-z]/.test(pass);
     const hasNum = /[0-9]/.test(pass);
     const hasSpecial = /[@$!%*?&]/.test(pass);
-    if (hasUpper && hasLower && hasNum && hasSpecial) return { label: 'STRONG', color: '#4CAF50' };
+    if (hasUpper && hasLower && hasNum && hasSpecial) return { label: 'STRONG', color: colors.forest };
     const missing: string[] = [];
     if (!hasUpper) missing.push('uppercase');
     if (!hasLower) missing.push('lowercase');
     if (!hasNum) missing.push('number');
     if (!hasSpecial) missing.push('special (@$!%*?&)');
-    return { label: `NEEDS: ${missing.join(', ')}`, color: '#C9A84C' };
+    return { label: `NEEDS: ${missing.join(', ')}`, color: colors.gold };
   };
 
   const strength = getPasswordStrength(password);
@@ -70,7 +71,7 @@ export default function RegisterScreen() {
       // Backend returns field errors as `errors` (legacy) or `details` (zod validate())
       const apiErrors = data?.errors ?? data?.details;
       if (apiErrors && Array.isArray(apiErrors) && apiErrors.length > 0) {
-        const msg = apiErrors.map((e: any) => `${e.field}: ${e.message}`).join('\n');
+        const msg = apiErrors.map((e: any) => `${e.message}`).join('\n');
         Alert.alert('Validation Error', msg);
       } else if (data?.message) {
         Alert.alert('Registration Failed', data.message);
@@ -109,7 +110,7 @@ export default function RegisterScreen() {
         automaticallyAdjustKeyboardInsets={true}
         keyboardDismissMode="on-drag"
       >
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           style={styles.backBtn} 
           onPress={() => safeBack('/(auth)/welcome')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -118,18 +119,18 @@ export default function RegisterScreen() {
         </TouchableOpacity>
         <View style={styles.header}>
           <Text style={styles.title}>Join Kaphor</Text>
-          <Text style={styles.subtitle}>Begin your circular luxury journey</Text>
+          <Text style={styles.subtitle}>Begin your circular fashion journey</Text>
         </View>
 
       <View style={styles.form}>
-        <TextInput 
-          placeholder="DISLAY NAME (E.G. INSIYAH)" 
+        <TextInput accessibilityLabel="Display name" 
+          placeholder="Display name (e.g. Insiyah)" 
           placeholderTextColor={colors.textMuted}
           style={styles.input}
           value={displayName}
           onChangeText={setDisplayName}
         />
-        <TextInput 
+        <TextInput accessibilityLabel="Username" 
           placeholder="USERNAME" 
           placeholderTextColor={colors.textMuted}
           style={styles.input}
@@ -137,7 +138,7 @@ export default function RegisterScreen() {
           onChangeText={setUsername}
           autoCapitalize="none"
         />
-        <TextInput 
+        <TextInput accessibilityLabel="Email" 
           placeholder="EMAIL" 
           placeholderTextColor={colors.textMuted}
           style={styles.input}
@@ -147,7 +148,7 @@ export default function RegisterScreen() {
           autoCapitalize="none"
         />
         <View>
-          <TextInput 
+          <TextInput accessibilityLabel="Password" 
             placeholder="PASSWORD" 
             placeholderTextColor={colors.textMuted}
             style={styles.input}
@@ -164,7 +165,7 @@ export default function RegisterScreen() {
 
         {/* Terms & Privacy Consent Checkbox */}
         <View style={styles.termsConsentCard}>
-          <TouchableOpacity
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Agree to terms"
             style={styles.checkboxTouch}
             onPress={() => setAgreeToTerms(!agreeToTerms)}
             activeOpacity={0.7}
@@ -198,9 +199,9 @@ export default function RegisterScreen() {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color={colors.white} />
+            <Spinner color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
+            <Text style={styles.buttonText}>Create account</Text>
           )}
         </TouchableOpacity>
 
@@ -216,11 +217,11 @@ export default function RegisterScreen() {
           disabled={isLoading || isGoogleLoading}
         >
           {isGoogleLoading ? (
-            <ActivityIndicator color={colors.textPrimary} />
+            <Spinner color={colors.textPrimary} />
           ) : (
             <>
               <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
-              <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
             </>
           )}
         </TouchableOpacity>
@@ -229,7 +230,7 @@ export default function RegisterScreen() {
           style={styles.footerLink}
           onPress={() => router.push('/(auth)/login')}
         >
-          <Text style={styles.footerText}>ALREADY HAVE AN ACCOUNT? LOGIN</Text>
+          <Text style={styles.footerText}>Already have an account? Login</Text>
         </TouchableOpacity>
       </View>
       </ScrollView>
@@ -241,7 +242,7 @@ export default function RegisterScreen() {
         initialDocId={legalDocId}
         onAccept={() => setAgreeToTerms(true)}
         showAcceptButton={!agreeToTerms}
-        acceptButtonText="ACCEPT & CONTINUE"
+        acceptButtonText="Accept & continue"
       />
     </KeyboardAvoidingView>
   );
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   strengthText: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 1,
     marginTop: 4,
     fontWeight: '800',

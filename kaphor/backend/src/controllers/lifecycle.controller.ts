@@ -17,6 +17,10 @@ export async function initiateResell(req: Request, res: Response): Promise<void>
     }
 
     const { id } = req.params;
+    if (typeof id !== 'string' || id.length === 0 || id.length > 64) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found' });
+      return;
+    }
     const garment = await db.garment.findUnique({ where: { id } });
 
     if (!garment) {
@@ -37,14 +41,19 @@ export async function initiateResell(req: Request, res: Response): Promise<void>
       return;
     }
 
-    const updated = await db.garment.update({
-      where: { id },
+    // Atomic transition guarded by owner + current state
+    const moved = await db.garment.updateMany({
+      where: { id, sellerId: req.user.id, lifecycleState: 'OWNERSHIP', reservedOrderId: null },
       data: { lifecycleState: 'SELL_INTENT' },
     });
+    if (moved.count === 0) {
+      res.status(409).json({ error: 'CONFLICT', message: 'Garment state changed; please refresh' });
+      return;
+    }
 
     logger.info('Garment marked for resale', { garmentId: id, userId: req.user.id });
 
-    res.json({ data: { id: updated.id, lifecycleState: updated.lifecycleState } });
+    res.json({ data: { id, lifecycleState: 'SELL_INTENT' } });
   } catch (err) {
     logger.error('initiateResell failed', { error: err instanceof Error ? err.message : String(err) });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -63,6 +72,10 @@ export async function relistGarment(req: Request, res: Response): Promise<void> 
     }
 
     const { id } = req.params;
+    if (typeof id !== 'string' || id.length === 0 || id.length > 64) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found' });
+      return;
+    }
     const garment = await db.garment.findUnique({ where: { id } });
 
     if (!garment) {
@@ -83,14 +96,19 @@ export async function relistGarment(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const updated = await db.garment.update({
-      where: { id },
+    const relisted = await db.garment.updateMany({
+      where: { id, sellerId: req.user.id, lifecycleState: 'SELL_INTENT', reservedOrderId: null },
       data: {
         lifecycleState: 'LISTED',
         isActive: true,
         reuseCount: { increment: 1 },
       },
     });
+    if (relisted.count === 0) {
+      res.status(409).json({ error: 'CONFLICT', message: 'Garment state changed; please refresh' });
+      return;
+    }
+    const updated = await db.garment.findUniqueOrThrow({ where: { id } });
 
     logger.info('Garment relisted', { garmentId: id, userId: req.user.id, reuseCount: updated.reuseCount });
 
@@ -113,6 +131,10 @@ export async function markCircularEnd(req: Request, res: Response): Promise<void
     }
 
     const { id } = req.params;
+    if (typeof id !== 'string' || id.length === 0 || id.length > 64) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found' });
+      return;
+    }
     const garment = await db.garment.findUnique({ where: { id } });
 
     if (!garment) {
@@ -134,13 +156,19 @@ export async function markCircularEnd(req: Request, res: Response): Promise<void
       return;
     }
 
-    const updated = await db.garment.update({
-      where: { id },
+    // Atomic: only one request wins the transition (prevents duplicate notifications / impact records)
+    const ended = await db.garment.updateMany({
+      where: { id, sellerId: req.user.id, lifecycleState: { in: allowableStates as any }, reservedOrderId: null },
       data: {
         lifecycleState: 'REUSE_UPCYCLE_RECYCLE',
         isActive: false,
       },
     });
+    if (ended.count === 0) {
+      res.status(409).json({ error: 'CONFLICT', message: 'Garment state changed; please refresh' });
+      return;
+    }
+    const updated = { id, lifecycleState: 'REUSE_UPCYCLE_RECYCLE' };
 
     // Notify the owner about circular completion
     await createNotification({

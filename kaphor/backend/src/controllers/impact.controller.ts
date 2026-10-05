@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
+import { errorBody } from '../lib/llmOutput';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { IMPACT_CONSTANTS, calculateTier } from '../lib/impact.constants';
+import { cacheWrap } from '../lib/cache';
+import { setPublicCache } from '../lib/httpCache';
 
 export async function getMyImpact(req: Request, res: Response): Promise<void> {
     try {
@@ -12,7 +15,12 @@ export async function getMyImpact(req: Request, res: Response): Promise<void> {
 
         const user = await db.user.findUnique({
             where: { id: req.user.id },
-            include: { impactRecord: true }
+            select: {
+                displayName: true,
+                avatar: true,
+                createdAt: true,
+                impactRecord: true,
+            }
         });
 
         if (!user) {
@@ -54,7 +62,7 @@ export async function getMyImpact(req: Request, res: Response): Promise<void> {
         });
     } catch (error) {
         logger.error('Failed fetching impact record', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -84,36 +92,42 @@ export async function getImpactReport(req: Request, res: Response): Promise<void
         });
     } catch (error) {
         logger.error('Failed fetching impact generic report', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
 export async function getPlatformSummary(req: Request, res: Response): Promise<void> {
     try {
-        const [totalGarments, activeUsers, aggregates] = await Promise.all([
-            db.garment.count({ where: { isActive: true } }),
-            db.user.count({ where: { isActive: true } }),
-            db.impactRecord.aggregate({
-                _sum: {
-                    carbonSavedKg: true,
-                    waterSavedL: true,
-                    itemsCirculated: true,
+        // Global numbers are identical for every visitor and change slowly: cache for 60s.
+        const payload = await cacheWrap('stats:platform-summary', 60_000, async () => {
+            const [totalGarments, activeUsers, aggregates] = await Promise.all([
+                db.garment.count({ where: { isActive: true } }),
+                db.user.count({ where: { isActive: true } }),
+                db.impactRecord.aggregate({
+                    _sum: {
+                        carbonSavedKg: true,
+                        waterSavedL: true,
+                        itemsCirculated: true,
+                    },
+                }),
+            ]);
+
+            const garmentsRescued = (aggregates._sum.itemsCirculated || 0) + totalGarments;
+            const co2Saved = Math.round((aggregates._sum.carbonSavedKg || 0) + garmentsRescued * 2.8);
+            const waterSaved = Math.round((aggregates._sum.waterSavedL || 0) + garmentsRescued * 1400);
+
+            return {
+                data: {
+                    garmentsRescued: Math.max(garmentsRescued, 142),
+                    co2Saved: Math.max(co2Saved, 420),
+                    waterSaved: Math.max(waterSaved, 180000),
+                    activeUsers: Math.max(activeUsers, 58),
                 },
-            }),
-        ]);
-
-        const garmentsRescued = (aggregates._sum.itemsCirculated || 0) + totalGarments;
-        const co2Saved = Math.round((aggregates._sum.carbonSavedKg || 0) + garmentsRescued * 2.8);
-        const waterSaved = Math.round((aggregates._sum.waterSavedL || 0) + garmentsRescued * 1400);
-
-        res.json({
-            data: {
-                garmentsRescued: Math.max(garmentsRescued, 142),
-                co2Saved: Math.max(co2Saved, 420),
-                waterSaved: Math.max(waterSaved, 180000),
-                activeUsers: Math.max(activeUsers, 58),
-            },
+            };
         });
+
+        setPublicCache(req, res, 60);
+        res.json(payload);
     } catch (error: any) {
         logger.error('Failed fetching platform impact summary', { error: error.message });
         res.json({

@@ -33,7 +33,7 @@ garmentRouter.get('/me', authenticate, getSellerGarments);
 garmentRouter.get('/wishlist', authenticate, getWishlistGarments);
 garmentRouter.get('/browse', optionalAuth, getGarments);
 garmentRouter.get('/:id/insights', authenticate, getGarmentInsights);
-garmentRouter.get('/:id', getGarmentById);
+garmentRouter.get('/:id', optionalAuth, getGarmentById);
 garmentRouter.get('/:id/lifecycle', authenticate, getGarmentLifecycle);
 garmentRouter.get('/:id/compatibility', authenticate, getCompatibilityScore);
 

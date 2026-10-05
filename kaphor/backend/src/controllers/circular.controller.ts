@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { errorBody } from '../lib/llmOutput';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 
@@ -591,9 +592,19 @@ export function generateContaminationChecklist(
 export async function getGarmentLifecycle(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    const garment = await db.garment.findUnique({ where: { id } });
+    if (typeof id !== 'string' || id.length === 0 || id.length > 64) {
+      res.status(404).json({ error: 'NOT_FOUND' });
+      return;
+    }
+    const garment = await db.garment.findUnique({
+      where: { id },
+      select: { sellerId: true, isActive: true, lifecycleState: true, recyclableFiber: true, condition: true },
+    });
 
-    if (!garment) {
+    // Public read: only live marketplace garments (or the owner's own garment) are visible
+    const isOwner = Boolean((req as any).user?.id && (req as any).user.id === garment?.sellerId);
+    const isPublic = Boolean(garment?.isActive) && garment?.lifecycleState !== 'OWNERSHIP' && garment?.lifecycleState !== 'DECLINE';
+    if (!garment || !(isOwner || isPublic)) {
       res.status(404).json({ error: 'NOT_FOUND' });
       return;
     }
@@ -613,7 +624,7 @@ export async function getGarmentLifecycle(req: Request, res: Response): Promise<
     });
   } catch (error) {
     logger.error('Failed fetching lifecycle', { error });
-    res.status(500).json({ error: 'INTERNAL_ERROR' });
+    res.status(500).json(errorBody());
   }
 }
 
@@ -622,14 +633,14 @@ export async function getPartners(req: Request, res: Response): Promise<void> {
     res.json({ data: VERIFIED_RECYCLER_DIRECTORY });
   } catch (error) {
     logger.error('Failed fetching partners', { error });
-    res.status(500).json({ error: 'INTERNAL_ERROR' });
+    res.status(500).json(errorBody());
   }
 }
 
 export async function getRecyclingCenters(req: Request, res: Response): Promise<void> {
   try {
-    let city = (req.query.city as string)?.trim();
-    let pincode = (req.query.pincode as string)?.trim();
+    let city = typeof req.query.city === 'string' ? req.query.city.trim().slice(0, 100) : undefined;
+    let pincode = typeof req.query.pincode === 'string' ? req.query.pincode.trim().slice(0, 10) : undefined;
     let userLocationSource = 'QUERY';
 
     if ((!city || !pincode) && (req as any).user?.id) {
@@ -689,15 +700,63 @@ export async function getRecyclingCenters(req: Request, res: Response): Promise<
 
 export async function onboardPartner(req: Request, res: Response): Promise<void> {
   try {
-    const { name, city, state, address, phone, acceptedFibers, operatingHours, ppeVentilationDoc } = req.body;
+    if (!(req as any).user?.id) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+    const body = (req.body || {}) as Record<string, unknown>;
+    const text = (v: unknown, max: number): string | null | undefined => {
+      if (v === undefined || v === null || v === '') return undefined;
+      if (typeof v !== 'string') return null;
+      const t = v.trim();
+      return t.length > max ? null : t || undefined;
+    };
+    const name = text(body.name, 150);
+    const city = text(body.city, 100);
+    const state = text(body.state, 100);
+    const address = text(body.address, 300);
+    const phone = text(body.phone, 20);
+    const operatingHours = text(body.operatingHours, 100);
+    const ppeVentilationDoc = body.ppeVentilationDoc;
 
     if (!name || !city || !address || !phone) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Facility name, city, address, and phone are required' });
       return;
     }
+    if (state === null || operatingHours === null) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid facility details' });
+      return;
+    }
+    if (!/^[+\d][\d\s\-()]{5,19}$/.test(phone)) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid phone number' });
+      return;
+    }
+    let fibers: string[] = ['Cotton', 'Mixed Textiles'];
+    if (body.acceptedFibers !== undefined) {
+      if (
+        !Array.isArray(body.acceptedFibers) ||
+        body.acceptedFibers.length > 15 ||
+        body.acceptedFibers.some((f: unknown) => typeof f !== 'string' || f.length > 50)
+      ) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid acceptedFibers' });
+        return;
+      }
+      fibers = (body.acceptedFibers as string[]).map((f) => f.trim()).filter(Boolean);
+    }
+
+    // Cap in-memory self-onboarded registrations so the public directory cannot be flooded
+    const selfOnboarded = VERIFIED_RECYCLER_DIRECTORY.filter((f) => f.id.startsWith('partner-')).length;
+    if (selfOnboarded >= 100) {
+      res.status(429).json({ error: 'LIMIT_REACHED', message: 'Partner registrations are temporarily closed' });
+      return;
+    }
+    if (VERIFIED_RECYCLER_DIRECTORY.some((f) => f.name.toLowerCase() === name.toLowerCase() && f.city.toLowerCase() === city.toLowerCase())) {
+      res.status(409).json({ error: 'CONFLICT', message: 'A facility with this name already exists in this city' });
+      return;
+    }
 
     const newPartner: RecyclerFacility = {
-      id: `partner-${Date.now()}`,
+      id: `partner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name,
       city,
       state: state || city,
@@ -705,7 +764,7 @@ export async function onboardPartner(req: Request, res: Response): Promise<void>
       address,
       phone,
       operatingHours: operatingHours || 'Mon-Sat: 09:00 - 18:00',
-      acceptedFibers: Array.isArray(acceptedFibers) ? acceptedFibers : ['Cotton', 'Mixed Textiles'],
+      acceptedFibers: fibers.length ? fibers : ['Cotton', 'Mixed Textiles'],
       certifications: ['Self-Reported Facility Registration'],
       doorstepPickup: true,
       dropOffAvailable: true,
@@ -723,7 +782,7 @@ export async function onboardPartner(req: Request, res: Response): Promise<void>
     };
 
     VERIFIED_RECYCLER_DIRECTORY.unshift(newPartner);
-    logger.info(`New recycling facility onboarded: ${name} in ${city}`);
+    logger.info('New recycling facility onboarded', { name, city, userId: (req as any).user.id });
 
     res.status(201).json({
       data: {
@@ -739,13 +798,24 @@ export async function onboardPartner(req: Request, res: Response): Promise<void>
 
 export async function verifyPrep(req: Request, res: Response): Promise<void> {
   try {
-    const { garmentId, prepCompleted } = req.body;
-    if (!garmentId) {
+    const garmentId = req.body?.garmentId;
+    const prepCompleted = req.body?.prepCompleted === true;
+    if (typeof garmentId !== 'string' || !garmentId || garmentId.length > 64) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'garmentId required' });
       return;
     }
+    const userId = (req as any).user?.id as string | undefined;
+    if (!userId) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+    const owned = await db.garment.findFirst({ where: { id: garmentId, sellerId: userId }, select: { id: true } });
+    if (!owned) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Garment not found' });
+      return;
+    }
 
-    logger.info(`Prep verified for garment ${garmentId}: ${prepCompleted}`);
+    logger.info('Prep verified for garment', { garmentId, prepCompleted, userId });
     res.json({
       data: {
         garmentId,
@@ -755,7 +825,7 @@ export async function verifyPrep(req: Request, res: Response): Promise<void> {
     });
   } catch (error) {
     logger.error('Failed prep verification', { error });
-    res.status(500).json({ error: 'INTERNAL_ERROR' });
+    res.status(500).json(errorBody());
   }
 }
 

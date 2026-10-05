@@ -1,13 +1,19 @@
 /**
  * Repair & Refresh Service
  *
- * Orchestrates: GLIE condition assessment → T5 guide lookup → YouTube tutorial search
+ * Builds short lists of YouTube tutorials and blog posts for repairing or
+ * upcycling a garment. Results are filtered by garment category and damage type.
+ * Verified fallback links live in ../data/repair-resources.
  */
 
 import { assessGarment, initGLIE } from './glie';
-import { queryT5, queryBlogReads, loadT5 } from './glie/t5-guides';
 import { logger } from '../lib/logger';
 import type { AssessGarmentInput, AssessGarmentResult } from './glie';
+import {
+  VERIFIED_VIDEOS,
+  VERIFIED_BLOGS,
+  type ResourceMode,
+} from '../data/repair-resources';
 
 // ── YouTube Search ───────────────────────────────────────────────────────────
 
@@ -116,265 +122,145 @@ export function rankYouTubeResults(
   return combined.slice(0, maxResults);
 }
 
-/**
- * Curated video fallback library organized by garment category & decision
- */
-const CATEGORY_CURATED_VIDEOS: Record<
-  string,
-  { repair: YouTubeVideo[]; upcycle: YouTubeVideo[] }
-> = {
-  dress: {
-    repair: [
-      {
-        videoId: 'x4rY5pL9w2M',
-        title: 'How to Hem a Dress by Hand (Invisible Blind Stitch Tutorial)',
-        channelTitle: 'Handmade Wardrobe & Sewing Lab',
-        thumbnail: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: '7zU4yv9V-F4',
-        title: 'Invisible Ladder Stitch Tutorial: How to Mend Torn Dress Seams by Hand',
-        channelTitle: 'Handmade Wardrobe & Mending',
-        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'P9kL2mQ4w1Z',
-        title: 'How to Fix an Invisible Dress Zipper That Wont Close or Splits',
-        channelTitle: 'Gear & Garment Repair Lab',
-        thumbnail: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'm8KpL3v9qXw',
-        title: 'How to Shorten Dress Straps & Fix Gaping Armholes Without a Machine',
-        channelTitle: 'Artisan Alterations Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-    upcycle: [
-      {
-        videoId: 'k9LmP4sQ2wR',
-        title: 'DIY Two-Piece Matching Set from Old Dress (Crop Top & Wrap Skirt)',
-        channelTitle: 'Thrift Flip & Rework Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'x8_G4bB1s-8',
-        title: 'Transform a Long Maxi Dress into a Tiered Cottagecore Mini Sundress',
-        channelTitle: 'DIY Fashion Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: '7zU4yv9V-F4',
-        title: 'How to Upcycle an Outdated Formal Gown into a Modern Slip Skirt',
-        channelTitle: 'Upcycle Stitches & Reworks',
-        thumbnail: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'w2PnL8qR5vT',
-        title: 'Add a Smocked Shirred Bodice to Reshape an Oversized Vintage Dress',
-        channelTitle: 'Circular Fashion DIY',
-        thumbnail: 'https://images.unsplash.com/photo-1485968579580-b6d095142e6e?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-  },
-  jeans: {
-    repair: [
-      {
-        videoId: 'x8_G4bB1s-8',
-        title: 'How to Fix Holes in Jeans with Japanese Sashiko Visible Mending',
-        channelTitle: 'Vintage & Mended Denim',
-        thumbnail: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'P9kL2mQ4w1Z',
-        title: 'Heavy-Duty Denim Crotch Blowout Reconstruction & Reinforcement',
-        channelTitle: 'Gear & Garment Repair Lab',
-        thumbnail: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: '7zU4yv9V-F4',
-        title: 'Invisible Ladder Stitch Tutorial: How to Mend Torn Pockets & Seams',
-        channelTitle: 'Handmade Wardrobe & Mending',
-        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-    upcycle: [
-      {
-        videoId: '7zU4yv9V-F4',
-        title: 'DIY Old Jeans into Cute Aesthetic Tote Bag Tutorial',
-        channelTitle: 'Upcycle Stitches & Reworks',
-        thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'x8_G4bB1s-8',
-        title: 'How to Cut & Distress Old Jeans into Summer Denim Shorts',
-        channelTitle: 'DIY Fashion Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-  },
-  sweater: {
-    repair: [
-      {
-        videoId: 'M5pL3rQ9v8Y',
-        title: 'How to Swiss Darn a Knitwear Sweater & Repair Moth Holes',
-        channelTitle: 'Knit & Mend Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: '7zU4yv9V-F4',
-        title: 'Fix Snags and Pulled Threads in a Knitted Sweater without Cutting',
-        channelTitle: 'Handmade Wardrobe & Mending',
-        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-    upcycle: [
-      {
-        videoId: 'w2PnL8qR5vT',
-        title: 'Thrift Flip: Wool Sweater into Matching Balaclava & Mittens',
-        channelTitle: 'Circular Fashion DIY',
-        thumbnail: 'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-  },
-  shirt: {
-    repair: [
-      {
-        videoId: 'P9kL2mQ4w1Z',
-        title: 'How to Fix a Torn Button or Hole in a Shirt Placket with Interfacing',
-        channelTitle: 'Gear & Garment Repair Lab',
-        thumbnail: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: '7zU4yv9V-F4',
-        title: 'How to Sew a Button on a Shirt with a Sturdy Thread Shank (Never Pulls Free)',
-        channelTitle: 'Handmade Wardrobe & Mending',
-        thumbnail: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'x4rY5pL9w2M',
-        title: 'How to Repair a Frayed Shirt Collar by Turning & Inverting by Hand',
-        channelTitle: 'Artisan Alterations Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1589310243389-96a5483213a8?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'm8KpL3v9qXw',
-        title: 'Invisible Ladder Stitch for Torn Underarm Seams on Shirts and Blouses',
-        channelTitle: 'Handmade Wardrobe & Sewing Lab',
-        thumbnail: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-    upcycle: [
-      {
-        videoId: 'k9LmP4sQ2wR',
-        title: 'Transform an Oversized Button-Down Shirt into a Corset Wrap Crop Top',
-        channelTitle: 'Thrift Flip & Rework Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'x8_G4bB1s-8',
-        title: 'Turn an Old Men Button-Down Shirt into a Zero-Waste Chef Apron',
-        channelTitle: 'DIY Fashion Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: '7zU4yv9V-F4',
-        title: 'Refashion an Oversized Flannel Shirt into a Quilted Reversible Vest',
-        channelTitle: 'Upcycle Stitches & Reworks',
-        thumbnail: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-  },
-  general: {
-    repair: [
-      {
-        videoId: '7zU4yv9V-F4',
-        title: 'Invisible Ladder Stitch Tutorial: How to Mend Torn Seams by Hand',
-        channelTitle: 'Handmade Wardrobe & Mending',
-        thumbnail: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: 'P9kL2mQ4w1Z',
-        title: 'How to Fix a Broken Zipper with Pliers in 2 Minutes (No Sewing)',
-        channelTitle: 'Gear & Garment Repair Lab',
-        thumbnail: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-    upcycle: [
-      {
-        videoId: 'k9LmP4sQ2wR',
-        title: 'Transform an Oversized Button-Down Shirt into a Corset Wrap Crop Top',
-        channelTitle: 'Thrift Flip & Rework Studio',
-        thumbnail: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-      {
-        videoId: '7zU4yv9V-F4',
-        title: 'DIY Upcycling Project: Transform Old Clothes into Stylish Essentials',
-        channelTitle: 'Upcycle Stitches & Reworks',
-        thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop',
-        publishedAt: '2024-01-01',
-      },
-    ],
-  },
-};
+// ── Verified resource matching ───────────────────────────────────────────────
 
-function getCuratedVideos(decision: 'REPAIR' | 'UPCYCLE', category?: string): YouTubeVideo[] {
-  const normCat = (category || '').toLowerCase();
-  let catKey = 'general';
-  if (normCat.includes('shirt') || normCat.includes('top') || normCat.includes('blouse') || normCat.includes('polo')) {
-    catKey = 'shirt';
-  } else if (normCat.includes('dress') || normCat.includes('gown') || normCat.includes('frock')) {
-    catKey = 'dress';
-  } else if (normCat.includes('jean') || normCat.includes('denim')) {
-    catKey = 'jeans';
-  } else if (normCat.includes('sweater') || normCat.includes('knit') || normCat.includes('cardigan') || normCat.includes('hoodie')) {
-    catKey = 'sweater';
-  } else if (CATEGORY_CURATED_VIDEOS[normCat]) {
-    catKey = normCat;
-  }
-  const group = CATEGORY_CURATED_VIDEOS[catKey] || CATEGORY_CURATED_VIDEOS['general'];
-  return decision === 'UPCYCLE' ? group.upcycle : group.repair;
+export interface BlogArticle {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  difficulty: string;
+  time_minutes: number;
 }
 
+const MAX_VIDEOS = 5;
+const MAX_BLOGS = 5;
+
+/** Map the app's garment categories to the category groups used in the data file. */
+export function categoryGroup(category?: string): string {
+  const c = (category || '').toLowerCase();
+  if (/(shirt|top|blouse|polo|tee)/.test(c)) return 'shirt';
+  if (/(dress|gown|frock)/.test(c)) return 'dress';
+  if (/(jean|denim|trouser|pant|short)/.test(c)) return 'jeans';
+  if (/(sweater|knit|cardigan|hoodie|sweatshirt|jumper)/.test(c)) return 'sweater';
+  if (/(saree|sari|lehenga)/.test(c)) return 'saree';
+  if (/(kurta|kurti|salwar)/.test(c)) return 'kurta';
+  if (/(jacket|blazer|coat)/.test(c)) return 'jacket';
+  if (/skirt/.test(c)) return 'skirt';
+  if (/(active|legging|sport)/.test(c)) return 'activewear';
+  return 'general';
+}
+
+const DAMAGE_PATTERNS: [string, RegExp][] = [
+  ['hole', /hole/],
+  ['tear', /(tear|torn|rip)/],
+  ['seam', /seam/],
+  ['button', /button/],
+  ['zipper', /(zip)/],
+  ['stain', /(stain|dirt|ink|oil|paint|mold)/],
+  ['hem', /hem/],
+  ['snag', /(snag|pull)/],
+  ['pilling', /pill/],
+  ['fray', /fray/],
+  ['collar', /collar/],
+  ['cuff', /cuff/],
+  ['lining', /lining/],
+  ['burn', /burn/],
+  ['stretch', /stretch/],
+  ['scuff', /(scuff|scratch)/],
+];
+
+export function damageTags(damages: string[] = []): string[] {
+  const tags = new Set<string>();
+  for (const d of damages) {
+    const text = (d || '').toLowerCase();
+    for (const [tag, re] of DAMAGE_PATTERNS) {
+      if (re.test(text)) tags.add(tag);
+    }
+  }
+  return [...tags];
+}
+
+function scoreResource(
+  item: { mode: ResourceMode; categories: string[]; damages: string[] },
+  mode: ResourceMode,
+  group: string,
+  tags: string[],
+): number {
+  if (item.mode !== mode) return -1;
+  let score = 0;
+  if (item.categories.includes(group)) score += 10;
+  else if (item.categories.includes('general')) score += 2;
+  else return -1;
+  if (mode === 'repair') {
+    for (const t of tags) if (item.damages.includes(t)) score += 4;
+  }
+  return score;
+}
+
+function pickBest<T extends { mode: ResourceMode; categories: string[]; damages: string[] }>(
+  items: T[],
+  mode: ResourceMode,
+  group: string,
+  tags: string[],
+  max: number,
+): T[] {
+  return items
+    .map((item) => ({ item, score: scoreResource(item, mode, group, tags) }))
+    .filter((s) => s.score >= 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max)
+    .map((s) => s.item);
+}
+
+export function youtubeThumbnail(videoId: string): string {
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+}
+
+export function youtubeSearchUrl(query: string): string {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+}
+
+/** Verified videos for a mode, garment group and damage tags. */
+export function getVerifiedVideos(
+  mode: ResourceMode,
+  category?: string,
+  damages: string[] = [],
+  max: number = MAX_VIDEOS,
+): YouTubeVideo[] {
+  return pickBest(VERIFIED_VIDEOS, mode, categoryGroup(category), damageTags(damages), max).map((v) => ({
+    videoId: v.videoId,
+    title: v.title,
+    channelTitle: v.channelTitle,
+    thumbnail: youtubeThumbnail(v.videoId),
+    publishedAt: '',
+  }));
+}
+
+/** Verified blog posts for a mode, garment group and damage tags. */
+export function getVerifiedBlogs(
+  mode: ResourceMode,
+  category?: string,
+  damages: string[] = [],
+  max: number = MAX_BLOGS,
+): BlogArticle[] {
+  return pickBest(VERIFIED_BLOGS, mode, categoryGroup(category), damageTags(damages), max).map((b) => ({
+    id: b.id,
+    title: b.title,
+    url: b.url,
+    source: b.source,
+    difficulty: b.difficulty,
+    time_minutes: b.time_minutes,
+  }));
+}
+
+/** Live YouTube search. Returns an empty list when the API is unavailable. */
 async function searchYouTubeTutorials(
   query: string,
-  maxResults: number = 6,
-  fallbackDecision?: 'REPAIR' | 'UPCYCLE',
+  maxResults: number = MAX_VIDEOS,
   garmentCategory?: string,
 ): Promise<YouTubeVideo[]> {
-  const decision = fallbackDecision || 'REPAIR';
-  const fallbacks = getCuratedVideos(decision, garmentCategory);
-
-  if (!YOUTUBE_API_KEY) {
-    logger.warn('[Repair] YOUTUBE_API_KEY not configured — returning category-tailored curated library');
-    return fallbacks.slice(0, maxResults);
-  }
+  if (!YOUTUBE_API_KEY) return [];
 
   try {
     const fetchResults = async (categoryFilter?: string) => {
@@ -415,7 +301,7 @@ async function searchYouTubeTutorials(
 
     const items: any[] = data?.items || [];
     if (items.length === 0) {
-      return fallbacks.slice(0, maxResults);
+      return [];
     }
 
     const videos = items
@@ -432,10 +318,10 @@ async function searchYouTubeTutorials(
       .filter((v: YouTubeVideo) => v.videoId);
 
     const ranked = rankYouTubeResults(videos, query, maxResults, garmentCategory);
-    return ranked.length > 0 ? ranked : fallbacks.slice(0, maxResults);
+    return ranked;
   } catch (err: any) {
     logger.error('[Repair] YouTube search error', { error: err.message });
-    return fallbacks.slice(0, maxResults);
+    return [];
   }
 }
 
@@ -512,6 +398,10 @@ export interface RepairAssessmentInput {
   condition_score?: number;
 }
 
+/**
+ * Kept for response compatibility. Guide bodies are no longer sent, so the
+ * guide lists in the response are always empty.
+ */
 export interface T5GuideResult {
   doc_type: string;
   title: string;
@@ -540,15 +430,15 @@ export interface RepairAssessmentResult {
   youtube_query: string;
   repair_youtube_query?: string;
   upcycle_youtube_query?: string;
-  /** Curated blog articles users can open in a browser to read full tutorials */
-  reading_list: { id: string; title: string; url: string; source: string; difficulty: string }[];
-  repair_reading_list: { id: string; title: string; url: string; source: string; difficulty: string }[];
-  upcycle_reading_list: { id: string; title: string; url: string; source: string; difficulty: string }[];
+  /** Link to a YouTube search, used when no tutorial matches */
+  youtube_search_url: string;
+  repair_youtube_search_url: string;
+  upcycle_youtube_search_url: string;
+  reading_list: BlogArticle[];
+  repair_reading_list: BlogArticle[];
+  upcycle_reading_list: BlogArticle[];
 }
 
-/**
- * Full repair assessment: GLIE + T5 guides + YouTube tutorials (segregated for Repair vs Upcycling)
- */
 const RECOGNIZED_DAMAGE_KEYWORDS = [
   'tear', 'hole', 'holes', 'stain', 'stains', 'fade', 'fading', 'rip', 'rips', 'broken', 'worn',
   'fray', 'frayed', 'fraying', 'snag', 'snags', 'pilling', 'discolored', 'crack', 'scratch',
@@ -558,13 +448,101 @@ const RECOGNIZED_DAMAGE_KEYWORDS = [
   'hem', 'underarm', 'lining',
 ];
 
+/** When the category is vague, guess it from the damage text. */
+function resolveCategory(category: string | undefined, fullText: string): string {
+  let resolved = (category || '').toLowerCase();
+  if (!resolved || resolved === 'other' || resolved === 'clothing') {
+    if (/\b(shirt|blouse|polo|button-down|top|tshirt|t-shirt|button|buttons|buttonhole|placket|collar|cuff)\b/i.test(fullText)) {
+      resolved = 'shirt';
+    } else if (/\b(dress|gown|frock|skirt)\b/i.test(fullText)) {
+      resolved = 'dress';
+    } else if (/\b(jeans|denim|pants|trousers)\b/i.test(fullText)) {
+      resolved = 'jeans';
+    } else if (/\b(sweater|cardigan|knitwear|hoodie)\b/i.test(fullText)) {
+      resolved = 'sweater';
+    }
+  }
+  return resolved;
+}
+
+function extractDamageTypes(known: string[], fullText: string): string[] {
+  const extra = fullText.split(/[\s,.-]+/).filter((w) => RECOGNIZED_DAMAGE_KEYWORDS.includes(w));
+  return [...new Set([...known, ...extra])];
+}
+
+/** Merge live search results with verified fallbacks, without duplicates. */
+function withFallback(live: YouTubeVideo[], fallback: YouTubeVideo[], max: number): YouTubeVideo[] {
+  const seen = new Set<string>();
+  return [...live, ...fallback]
+    .filter((v) => {
+      if (!v.videoId || seen.has(v.videoId)) return false;
+      seen.add(v.videoId);
+      return true;
+    })
+    .slice(0, max);
+}
+
+/**
+ * Build the resource lists (videos + blogs) for both the repair and upcycle tabs.
+ */
+async function buildResources(args: {
+  fiberType: string;
+  category: string;
+  damageTypes: string[];
+}) {
+  const { fiberType, category, damageTypes } = args;
+  const repairQuery = buildYouTubeQuery(
+    category,
+    fiberType,
+    damageTypes.length > 0 ? damageTypes : ['repair'],
+    'REPAIR',
+  );
+  const upcycleQuery = buildYouTubeQuery(
+    category,
+    fiberType,
+    damageTypes.length > 0 ? damageTypes : ['upcycle'],
+    'UPCYCLE',
+  );
+
+  const [repairLive, upcycleLive] = await Promise.all([
+    searchYouTubeTutorials(repairQuery, MAX_VIDEOS, category),
+    searchYouTubeTutorials(upcycleQuery, MAX_VIDEOS, category),
+  ]);
+
+  const repairVideos = withFallback(repairLive, getVerifiedVideos('repair', category, damageTypes), MAX_VIDEOS);
+  const upcycleVideos = withFallback(upcycleLive, getVerifiedVideos('upcycle', category, damageTypes), MAX_VIDEOS);
+
+  const repairBlogs = getVerifiedBlogs('repair', category, damageTypes);
+  const upcycleBlogs = getVerifiedBlogs('upcycle', category, damageTypes);
+
+  return {
+    guides: [] as T5GuideResult[],
+    repair_guides: [] as T5GuideResult[],
+    upcycle_guides: [] as T5GuideResult[],
+    youtube: repairVideos.length > 0 ? repairVideos : upcycleVideos,
+    repair_youtube: repairVideos,
+    upcycle_youtube: upcycleVideos,
+    youtube_query: repairQuery,
+    repair_youtube_query: repairQuery,
+    upcycle_youtube_query: upcycleQuery,
+    youtube_search_url: youtubeSearchUrl(repairQuery),
+    repair_youtube_search_url: youtubeSearchUrl(repairQuery),
+    upcycle_youtube_search_url: youtubeSearchUrl(upcycleQuery),
+    reading_list: repairBlogs.length > 0 ? repairBlogs : upcycleBlogs,
+    repair_reading_list: repairBlogs,
+    upcycle_reading_list: upcycleBlogs,
+  };
+}
+
+/**
+ * Full repair assessment: GLIE condition score plus repair and upcycle resources.
+ */
 export async function assessRepair(
   input: RepairAssessmentInput,
 ): Promise<RepairAssessmentResult> {
-  // Ensure GLIE data is loaded
   initGLIE();
 
-  // Fast-path: If no image is supplied but LLM assessment metadata is provided, reuse directly!
+  // No image: reuse the metadata and skip the vision call
   if (!input.image_base64 || input.image_base64.length < 50) {
     return lookupRepairFromAssessment({
       garment_category: input.garment_category,
@@ -577,7 +555,6 @@ export async function assessRepair(
     });
   }
 
-  // ── Step 1: Run GLIE condition assessment ──────────────────────
   const glieInput: AssessGarmentInput = {
     image_base64: input.image_base64,
     fiber_type: input.fiber_type,
@@ -592,7 +569,7 @@ export async function assessRepair(
   try {
     glieResult = await assessGarment(glieInput);
   } catch (err: any) {
-    logger.warn('[Repair] assessGarment encountered error, using resilient fallback', { error: err.message });
+    logger.warn('[Repair] assessGarment failed, using fallback', { error: err?.message });
     glieResult = {
       glie_score: 55,
       routing_decision: 'UPCYCLE',
@@ -610,13 +587,13 @@ export async function assessRepair(
       carbon_saved_kg: 8.5,
       water_saved_litres: 2400,
       trees_equivalent: 1,
-      repair_feasibility: 'Moderate repair feasible — standard sewing or mending tools.',
-      suggested_repair_technique: 'Visible mending & upcycling rework',
+      repair_feasibility: 'Can be repaired with basic sewing tools.',
+      suggested_repair_technique: 'Visible mending or upcycling',
       suggested_price_inr: input.original_price_inr ? Math.round(input.original_price_inr * 0.45) : undefined,
-      description: `Assessed ${input.fiber_type || 'Cotton'} ${input.garment_category || 'garment'}. Wear analysis complete.`,
+      description: `${input.fiber_type || 'Cotton'} ${input.garment_category || 'garment'}.`,
       rag_context: {
         examples_used: 1,
-        guides_matched: 5,
+        guides_matched: 0,
         market_listings_matched: 0,
         prompt_tokens_estimated: 0,
         gemini_model: 'algorithmic-rag-fallback',
@@ -624,7 +601,6 @@ export async function assessRepair(
     };
   }
 
-  // ── Step 2: Get T5 repair & upcycle guides (segregated) ─────────
   const fullText = [
     input.damage_description || '',
     input.style_tags || '',
@@ -633,94 +609,24 @@ export async function assessRepair(
     glieResult.repair_feasibility || '',
   ].join(' ').toLowerCase();
 
-  let resolvedCat = (input.garment_category || '').toLowerCase();
-  if (!resolvedCat || resolvedCat === 'other' || resolvedCat === 'clothing') {
-    if (/\b(shirt|blouse|polo|button-down|top|tshirt|t-shirt|button|buttons|buttonhole|placket|collar|cuff)\b/i.test(fullText)) {
-      resolvedCat = 'shirt';
-    } else if (/\b(dress|gown|frock|skirt)\b/i.test(fullText)) {
-      resolvedCat = 'dress';
-    } else if (/\b(jeans|denim|pants|trousers)\b/i.test(fullText)) {
-      resolvedCat = 'jeans';
-    } else if (/\b(sweater|cardigan|knitwear|hoodie)\b/i.test(fullText)) {
-      resolvedCat = 'sweater';
-    }
-  }
+  const resolvedCat = resolveCategory(input.garment_category, fullText);
   (glieResult as any).garment_category = resolvedCat || input.garment_category;
   (glieResult as any).fiber_type = input.fiber_type;
 
-  const damageTypes = glieResult.damage_breakdown.damage_types || [];
-  const extraTypes = fullText
-    .split(/[\s,.-]+/)
-    .filter(w => RECOGNIZED_DAMAGE_KEYWORDS.includes(w));
+  const allDamageTypes = extractDamageTypes(glieResult.damage_breakdown.damage_types || [], fullText);
 
-  const allDamageTypes = [...new Set([...damageTypes, ...extraTypes])];
-  const queryDamage = allDamageTypes.length > 0 ? allDamageTypes : ['tear', 'stain', 'fading'];
+  const resources = await buildResources({
+    fiberType: input.fiber_type,
+    category: resolvedCat,
+    damageTypes: allDamageTypes,
+  });
 
-  const repairGuides = queryT5(input.fiber_type, queryDamage, resolvedCat, 'repair');
-  const upcycleGuides = queryT5(input.fiber_type, queryDamage, resolvedCat, 'upcycle');
-  const allGuides = queryT5(input.fiber_type, queryDamage, resolvedCat);
-
-  // ── Step 2b: Curated reading lists (real articles with URLs) ──
-  const mapReadingList = (docs: any[]) =>
-    docs.map((g) => ({
-      id: g.source_url || g.title,
-      title: g.title,
-      url: g.source_url || '',
-      source: g.source || 'blog',
-      difficulty: g.difficulty || 'beginner',
-      time_minutes: g.time_minutes || 30,
-      summary: g.summary || g.pro_tip || '',
-    }));
-
-  const repairReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4, 'repair')
-  );
-  const upcycleReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4, 'upcycle')
-  );
-  const allReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4)
-  );
-
-  // ── Step 3: Search YouTube for repair & upcycle tutorials (parallel) ──
-  const repairQuery = buildYouTubeQuery(
-    resolvedCat,
-    input.fiber_type,
-    allDamageTypes.length > 0 ? allDamageTypes : ['repair'],
-    'REPAIR',
-  );
-  const upcycleQuery = buildYouTubeQuery(
-    resolvedCat,
-    input.fiber_type,
-    allDamageTypes.length > 0 ? allDamageTypes : ['upcycle'],
-    'UPCYCLE',
-  );
-
-  const [repairVideos, upcycleVideos] = await Promise.all([
-    searchYouTubeTutorials(repairQuery, 6, 'REPAIR', resolvedCat),
-    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE', resolvedCat),
-  ]);
-
-  return {
-    glie: glieResult,
-    guides: allGuides,
-    repair_guides: repairGuides,
-    upcycle_guides: upcycleGuides,
-    youtube: repairVideos.length > 0 ? repairVideos : upcycleVideos,
-    repair_youtube: repairVideos,
-    upcycle_youtube: upcycleVideos,
-    youtube_query: repairQuery,
-    repair_youtube_query: repairQuery,
-    upcycle_youtube_query: upcycleQuery,
-    reading_list: allReadingList,
-    repair_reading_list: repairReadingList,
-    upcycle_reading_list: upcycleReadingList,
-  };
+  return { glie: glieResult, ...resources };
 }
 
 /**
- * Instant repair/upcycle lookup from previously generated LLM assessment.
- * ZERO re-upload, ZERO Gemini Vision re-analysis, ZERO duplicate cost or wait time.
+ * Instant lookup from an assessment the app already has.
+ * No image upload and no vision call.
  */
 export async function lookupRepairFromAssessment(
   input: RepairLookupInput,
@@ -730,76 +636,19 @@ export async function lookupRepairFromAssessment(
   const fullText = [
     input.damage_description || '',
     input.repair_feasibility || '',
-    (input as any).description || '',
-    (input as any).suggested_repair_technique || '',
   ].join(' ').toLowerCase();
 
-  let resolvedCat = (input.garment_category || '').toLowerCase();
-  if (!resolvedCat || resolvedCat === 'other' || resolvedCat === 'clothing') {
-    if (/\b(shirt|blouse|polo|button-down|top|tshirt|t-shirt|button|buttons|buttonhole|placket|collar|cuff)\b/i.test(fullText)) {
-      resolvedCat = 'shirt';
-    } else if (/\b(dress|gown|frock|skirt)\b/i.test(fullText)) {
-      resolvedCat = 'dress';
-    } else if (/\b(jeans|denim|pants|trousers)\b/i.test(fullText)) {
-      resolvedCat = 'jeans';
-    } else if (/\b(sweater|cardigan|knitwear|hoodie)\b/i.test(fullText)) {
-      resolvedCat = 'sweater';
-    }
-  }
+  const resolvedCat = resolveCategory(input.garment_category, fullText);
+  const allDamageTypes = extractDamageTypes(input.damage_types || [], fullText);
 
-  const damageTypes = input.damage_types || [];
-  const extraTypes = fullText
-    .split(/[\s,.-]+/)
-    .filter((w) => RECOGNIZED_DAMAGE_KEYWORDS.includes(w));
-
-  const allDamageTypes = [...new Set([...damageTypes, ...extraTypes])];
-  const queryDamage = allDamageTypes.length > 0 ? allDamageTypes : ['tear', 'stain', 'fading'];
-
-  const repairGuides = queryT5(input.fiber_type, queryDamage, resolvedCat, 'repair');
-  const upcycleGuides = queryT5(input.fiber_type, queryDamage, resolvedCat, 'upcycle');
-  const allGuides = queryT5(input.fiber_type, queryDamage, resolvedCat);
-
-  const mapReadingList = (docs: any[]) =>
-    docs.map((g) => ({
-      id: g.source_url || g.title,
-      title: g.title,
-      url: g.source_url || '',
-      source: g.source || 'blog',
-      difficulty: g.difficulty || 'beginner',
-      time_minutes: g.time_minutes || 30,
-      summary: g.summary || g.pro_tip || '',
-    }));
-
-  const repairReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4, 'repair')
-  );
-  const upcycleReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4, 'upcycle')
-  );
-  const allReadingList = mapReadingList(
-    queryBlogReads(input.fiber_type, queryDamage, resolvedCat, 4)
-  );
-
-  const repairQuery = buildYouTubeQuery(
-    resolvedCat,
-    input.fiber_type,
-    allDamageTypes.length > 0 ? allDamageTypes : ['repair'],
-    'REPAIR',
-  );
-  const upcycleQuery = buildYouTubeQuery(
-    resolvedCat,
-    input.fiber_type,
-    allDamageTypes.length > 0 ? allDamageTypes : ['upcycle'],
-    'UPCYCLE',
-  );
-
-  const [repairVideos, upcycleVideos] = await Promise.all([
-    searchYouTubeTutorials(repairQuery, 6, 'REPAIR', resolvedCat),
-    searchYouTubeTutorials(upcycleQuery, 6, 'UPCYCLE', resolvedCat),
-  ]);
+  const resources = await buildResources({
+    fiberType: input.fiber_type,
+    category: resolvedCat,
+    damageTypes: allDamageTypes,
+  });
 
   const conditionScore = input.condition_score ?? 0.45;
-  const feasibility = input.repair_feasibility || 'Repair feasible with standard sewing or mending tools.';
+  const feasibility = input.repair_feasibility || 'Can be repaired with basic sewing tools.';
 
   const synthesizedGlie: any = {
     glie_score: Math.round(conditionScore * 100),
@@ -819,34 +668,19 @@ export async function lookupRepairFromAssessment(
     water_saved_litres: 2400,
     trees_equivalent: 1,
     repair_feasibility: feasibility,
-    suggested_repair_technique: 'Visible mending & upcycling rework',
+    suggested_repair_technique: 'Visible mending or upcycling',
     suggested_price_inr: input.original_price_inr ? Math.round(input.original_price_inr * 0.4) : undefined,
-    description: `Assessed ${input.fiber_type} ${resolvedCat || input.garment_category}. ${feasibility}`,
+    description: `${input.fiber_type} ${resolvedCat || input.garment_category}. ${feasibility}`,
     garment_category: resolvedCat || input.garment_category,
     fiber_type: input.fiber_type,
     rag_context: {
       examples_used: 1,
-      guides_matched: allGuides.length,
+      guides_matched: 0,
       market_listings_matched: 0,
       prompt_tokens_estimated: 0,
       gemini_model: 'shared-llm-context',
     },
   };
 
-  return {
-    glie: synthesizedGlie,
-    guides: allGuides,
-    repair_guides: repairGuides,
-    upcycle_guides: upcycleGuides,
-    youtube: repairVideos.length > 0 ? repairVideos : upcycleVideos,
-    repair_youtube: repairVideos,
-    upcycle_youtube: upcycleVideos,
-    youtube_query: repairQuery,
-    repair_youtube_query: repairQuery,
-    upcycle_youtube_query: upcycleQuery,
-    reading_list: allReadingList,
-    repair_reading_list: repairReadingList,
-    upcycle_reading_list: upcycleReadingList,
-  };
+  return { glie: synthesizedGlie, ...resources };
 }
-

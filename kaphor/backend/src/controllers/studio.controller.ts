@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { errorBody } from '../lib/llmOutput';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { createNotification } from '../services/notification.service';
@@ -92,7 +93,7 @@ export async function getTutorials(req: Request, res: Response): Promise<void> {
         res.json({ data: filtered });
     } catch (error) {
         logger.error('Failed fetching tutorials', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -101,7 +102,7 @@ export async function getTransformations(req: Request, res: Response): Promise<v
         res.json({ data: MOCK_TRANSFORMATIONS });
     } catch (error) {
         logger.error('Failed fetching transformations', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }
 
@@ -174,6 +175,6 @@ export async function createBespokeRequest(req: Request, res: Response): Promise
         res.status(201).json({ data: request });
     } catch (error) {
         logger.error('Failed creating bespoke request', { error });
-        res.status(500).json({ error: 'INTERNAL_ERROR' });
+        res.status(500).json(errorBody());
     }
 }

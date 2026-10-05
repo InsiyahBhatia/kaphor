@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,8 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../../src/theme';
 import paymentService from '../../src/services/paymentService';
 import type { SellerPayoutAccount } from '../../src/types/payment';
-import { DossierLoading } from '../../src/components/common/DossierLoading';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
+import { Spinner, Loader } from '../../src/components/common/Loader';
 
 type ScreenMode = 'list' | 'add' | 'edit';
 type PayoutMethod = 'BANK' | 'UPI';
@@ -247,7 +246,7 @@ export default function PayoutAccountsScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={[styles.inlineHeader, { paddingTop: Math.max(insets.top, 16) }]}>
-          <TouchableOpacity onPress={() => { setMode('list'); setErrors({}); setEditId(null); setForm({...EMPTY_FORM}); }}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => { setMode('list'); setErrors({}); setEditId(null); setForm({...EMPTY_FORM}); }}>
             <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
           <Text style={styles.inlineHeaderTitle}>{title}</Text>
@@ -263,7 +262,7 @@ export default function PayoutAccountsScreen() {
         >
           {/* Account Holder Name */}
           <Text style={styles.formLabel}>ACCOUNT HOLDER NAME *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Name as on bank account"
             style={[styles.input, errors.accountHolderName && styles.inputError]}
             placeholder="Name as on bank account"
             placeholderTextColor={colors.textMuted}
@@ -305,7 +304,7 @@ export default function PayoutAccountsScreen() {
               )}
               {/* Bank Account Number */}
               <Text style={styles.formLabel}>ACCOUNT NUMBER *</Text>
-              <TextInput
+              <TextInput accessibilityLabel="9–18 digit account number"
                 style={[styles.input, errors.accountNumber && styles.inputError]}
                 placeholder="9–18 digit account number"
                 placeholderTextColor={colors.textMuted}
@@ -318,7 +317,7 @@ export default function PayoutAccountsScreen() {
 
               {/* Confirm Account Number */}
               <Text style={styles.formLabel}>CONFIRM ACCOUNT NUMBER *</Text>
-              <TextInput
+              <TextInput accessibilityLabel="Re-enter account number"
                 style={[styles.input, errors.confirmAccountNumber && styles.inputError]}
                 placeholder="Re-enter account number"
                 placeholderTextColor={colors.textMuted}
@@ -331,7 +330,7 @@ export default function PayoutAccountsScreen() {
 
               {/* IFSC Code */}
               <Text style={styles.formLabel}>IFSC CODE *</Text>
-              <TextInput
+              <TextInput accessibilityLabel=", SBIN0001234"
                 style={[styles.input, errors.ifsc && styles.inputError]}
                 placeholder="e.g., SBIN0001234"
                 placeholderTextColor={colors.textMuted}
@@ -347,7 +346,7 @@ export default function PayoutAccountsScreen() {
 
               {/* Bank Name */}
               <Text style={styles.formLabel}>BANK NAME *</Text>
-              <TextInput
+              <TextInput accessibilityLabel=", State Bank of India"
                 style={[styles.input, errors.bankName && styles.inputError]}
                 placeholder="e.g., State Bank of India"
                 placeholderTextColor={colors.textMuted}
@@ -360,7 +359,7 @@ export default function PayoutAccountsScreen() {
             <>
               {/* UPI ID */}
               <Text style={styles.formLabel}>UPI ID *</Text>
-              <TextInput
+              <TextInput accessibilityLabel=", name@upi"
                 style={[styles.input, errors.upiId && styles.inputError]}
                 placeholder="e.g., name@upi"
                 placeholderTextColor={colors.textMuted}
@@ -391,7 +390,7 @@ export default function PayoutAccountsScreen() {
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator color={colors.cream} />
+              <Spinner color={colors.cream} />
             ) : (
               <Text style={styles.saveBtnText}>
                 {mode === 'add' ? 'SAVE ACCOUNT' : 'UPDATE ACCOUNT'}
@@ -408,14 +407,14 @@ export default function PayoutAccountsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.cream }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity 
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
           onPress={() => safeBack('/(tabs)/profile')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>PAYOUT ACCOUNTS</Text>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           onPress={() => { setForm({ ...EMPTY_FORM }); setEditId(null); setErrors({}); setMode('add'); }}
         >
           <Ionicons name="add" size={28} color={colors.charcoal} />
@@ -424,7 +423,7 @@ export default function PayoutAccountsScreen() {
 
       {loading ? (
         <View style={styles.loader}>
-          <DossierLoading variant="cart" compact />
+          <Loader variant="cart" compact />
         </View>
       ) : accounts.length === 0 ? (
         <View style={styles.emptyState}>
@@ -581,13 +580,12 @@ export default function PayoutAccountsScreen() {
 const styles = StyleSheet.create({
   // ── Shared ──
   formLabel: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginBottom: 6,
     marginTop: 16,
-    letterSpacing: 1,
   },
   input: {
     borderWidth: 1.5,
@@ -600,52 +598,54 @@ const styles = StyleSheet.create({
   },
   inputError: { borderColor: colors.red, borderWidth: 2 },
   errorText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.red,
     marginTop: 4,
   },
   hintText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
     marginTop: 4,
-    lineHeight: 14,
+    lineHeight: 21,
   },
   editSecurityNote: {
     flexDirection: 'row',
     gap: 10,
     padding: 14,
-    backgroundColor: 'rgba(28,43,74,0.06)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(28,43,74,0.2)',
+    borderColor: colors.overlayLight,
     marginBottom: 8,
     marginTop: 8,
     alignItems: 'center',
   },
   editSecurityNoteText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.body,
+    fontSize: 13,
     color: colors.navy,
-    lineHeight: 14,
+    lineHeight: 17,
   },
   securityNote: {
     flexDirection: 'row',
     gap: 10,
     padding: 14,
-    backgroundColor: 'rgba(30,59,47,0.05)',
+    backgroundColor: colors.emeraldLight,
     borderWidth: 1,
-    borderColor: 'rgba(30,59,47,0.15)',
+    borderColor: colors.emeraldLight,
     marginTop: 24,
     alignItems: 'center',
   },
   securityNoteText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.body,
+    fontSize: 13,
     color: colors.forest,
-    lineHeight: 14,
+    lineHeight: 17,
   },
   saveBtn: {
     backgroundColor: colors.charcoal,
@@ -665,10 +665,9 @@ const styles = StyleSheet.create({
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
   },
   methodRow: {
     flexDirection: 'row',
@@ -689,9 +688,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
   },
   methodChipText: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   methodChipTextActive: {
@@ -730,11 +729,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptySub: {
-    fontFamily: typography.mono,
-    fontSize: 12,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 23,
   },
   addFirstBtn: {
     flexDirection: 'row',
@@ -749,10 +749,9 @@ const styles = StyleSheet.create({
   },
   addFirstBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 19,
   },
 
   // ── Info Banner ──
@@ -760,18 +759,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     padding: 14,
-    backgroundColor: 'rgba(28,43,74,0.04)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(28,43,74,0.12)',
+    borderColor: colors.overlayLight,
     marginBottom: 16,
     alignItems: 'flex-start',
   },
   infoBannerText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.body,
+    fontSize: 13,
     color: colors.navy,
-    lineHeight: 14,
+    lineHeight: 17,
   },
 
   // ── List Content ──
@@ -802,7 +801,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
     backgroundColor: colors.cream,
   },
   cardMethodBadge: {
@@ -814,11 +813,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   cardMethodText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 1,
   },
   defaultBadge: {
     flexDirection: 'row',
@@ -826,11 +824,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   defaultBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.forest,
-    letterSpacing: 0.5,
   },
   // Card Body
   cardBody: {
@@ -842,16 +839,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   cardTitle: {
-    fontFamily: typography.mono,
-    fontSize: 14,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
   },
   cardDetail: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    lineHeight: 18,
+    lineHeight: 21,
     flex: 1,
   },
 
@@ -859,7 +857,7 @@ const styles = StyleSheet.create({
   cardActions: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
+    borderTopColor: colors.overlayLight,
   },
   cardActionBtn: {
     flex: 1,
@@ -869,14 +867,13 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
     borderRightWidth: 1,
-    borderRightColor: 'rgba(30,31,34,0.1)',
+    borderRightColor: colors.overlayLight,
   },
   cardActionText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
 
   // Add More
@@ -892,11 +889,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   addMoreText: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 18,
     color: colors.charcoal,
-    letterSpacing: 0.5,
   },
 
   // Payout History
@@ -908,22 +904,22 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30,31,34,0.1)',
+    borderTopColor: colors.overlayLight,
   },
   historyToggleText: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   emptyHistory: {
     padding: 24,
     alignItems: 'center',
   },
   emptyHistoryText: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   historyCard: {
@@ -947,8 +943,9 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   historyDate: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.textMuted,
   },
   historyStatus: {
@@ -956,11 +953,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   historyStatusText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 17,
     color: colors.cream,
-    letterSpacing: 0.5,
   },
 
   // ── Form Mode ──

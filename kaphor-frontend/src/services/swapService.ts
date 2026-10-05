@@ -19,6 +19,7 @@ import type {
   SwapTracking,
   SwapGarmentSnapshot,
 } from '../types/swap';
+import { colors } from '../theme';
 
 export const swapService = {
   // ─── LISTING / FEED ──────────────────────────────────────────
@@ -231,8 +232,8 @@ export const swapService = {
     // REQUESTED → owner can accept/reject
     if (swap.status === 'REQUESTED' && isReceiver) {
       actions.push(
-        { id: 'accept', label: 'ACCEPT REQUEST', icon: 'checkmark-circle', color: '#1E3B2F', action: 'accept' },
-        { id: 'reject', label: 'DECLINE', icon: 'close-circle', color: '#A82222', action: 'reject' },
+        { id: 'accept', label: 'ACCEPT REQUEST', icon: 'checkmark-circle', color: colors.forest, action: 'accept' },
+        { id: 'reject', label: 'DECLINE', icon: 'close-circle', color: colors.rose, action: 'reject' },
       );
     }
 
@@ -246,7 +247,7 @@ export const swapService = {
           id: 'sign',
           label: 'SIGN AGREEMENT',
           icon: 'document-text',
-          color: '#1E1F22',
+          color: colors.ink,
           action: 'sign',
         });
       }
@@ -262,7 +263,7 @@ export const swapService = {
           id: 'share_address',
           label: 'SHARE ADDRESS',
           icon: 'location',
-          color: '#1C2B4A',
+          color: colors.ink,
           action: 'share_address',
         });
       } else {
@@ -271,7 +272,7 @@ export const swapService = {
           id: 'pay_deposit',
           label: 'PAY SECURITY DEPOSIT (₹500)',
           icon: 'shield-checkmark',
-          color: '#C95F12',
+          color: colors.orange,
           action: 'pay_deposit',
         });
       }
@@ -289,7 +290,7 @@ export const swapService = {
           id: 'pay_deposit',
           label: 'PAY SECURITY DEPOSIT (₹500)',
           icon: 'shield-checkmark',
-          color: '#C95F12',
+          color: colors.orange,
           action: 'pay_deposit',
         });
       } else if (!alreadyShipped) {
@@ -297,7 +298,7 @@ export const swapService = {
           id: 'ship',
           label: 'MARK AS SHIPPED',
           icon: 'cube',
-          color: '#1C2B4A',
+          color: colors.ink,
           action: 'ship',
         });
       }
@@ -312,7 +313,7 @@ export const swapService = {
         id: 'confirm_received',
         label: 'CONFIRM RECEIVED',
         icon: 'checkmark-done',
-        color: '#1E3B2F',
+        color: colors.forest,
         action: 'confirm_received',
       });
     }
@@ -323,7 +324,7 @@ export const swapService = {
         id: 'dispute',
         label: 'OPEN DISPUTE',
         icon: 'warning',
-        color: '#C95F12',
+        color: colors.orange,
         action: 'dispute',
       });
       if (!swap.disputedAt) {
@@ -331,7 +332,7 @@ export const swapService = {
           id: 'confirm_received',
           label: 'CONFIRM & COMPLETE',
           icon: 'checkmark-done',
-          color: '#1E3B2F',
+          color: colors.forest,
           action: 'confirm_received',
         });
       }
@@ -343,7 +344,7 @@ export const swapService = {
         id: 'cancel',
         label: 'CANCEL SWAP',
         icon: 'close',
-        color: '#A82222',
+        color: colors.rose,
         action: 'cancel',
       });
     }
@@ -354,7 +355,7 @@ export const swapService = {
         id: 'dispute',
         label: 'OPEN DISPUTE',
         icon: 'warning',
-        color: '#C95F12',
+        color: colors.orange,
         action: 'dispute',
       });
     }
@@ -373,21 +374,21 @@ export const swapService = {
   /** Get the status display info */
   getStatusMeta(status: SwapStatus): { label: string; color: string } {
     const map: Record<SwapStatus, { label: string; color: string }> = {
-      REQUESTED: { label: 'Request Sent', color: '#C95F12' },
-      AGREEMENT_PENDING: { label: 'Awaiting Agreement', color: '#C95F12' },
-      AGREEMENT_SIGNED: { label: 'Agreed', color: '#1E3B2F' },
-      ADDRESS_SHARED: { label: 'Address Shared', color: '#1C2B4A' },
-      SHIPPING_PENDING: { label: 'Awaiting Shipping', color: '#1C2B4A' },
-      SHIPPED: { label: 'Shipped', color: '#1C2B4A' },
-      BOTH_SHIPPED: { label: 'Both Shipped', color: '#1C2B4A' },
-      IN_TRANSIT: { label: 'In Transit', color: '#1C2B4A' },
-      DELIVERED: { label: 'Received', color: '#1E3B2F' },
-      BOTH_DELIVERED: { label: 'Both Received', color: '#1E3B2F' },
-      COMPLETED: { label: 'Completed', color: '#1E3B2F' },
-      DISPUTED: { label: 'Dispute Open', color: '#A82222' },
-      CANCELLED: { label: 'Cancelled', color: '#9A8E7E' },
+      REQUESTED: { label: 'Request Sent', color: colors.orange },
+      AGREEMENT_PENDING: { label: 'Awaiting Agreement', color: colors.orange },
+      AGREEMENT_SIGNED: { label: 'Agreed', color: colors.forest },
+      ADDRESS_SHARED: { label: 'Address Shared', color: colors.ink },
+      SHIPPING_PENDING: { label: 'Awaiting Shipping', color: colors.ink },
+      SHIPPED: { label: 'Shipped', color: colors.ink },
+      BOTH_SHIPPED: { label: 'Both Shipped', color: colors.ink },
+      IN_TRANSIT: { label: 'In Transit', color: colors.ink },
+      DELIVERED: { label: 'Received', color: colors.forest },
+      BOTH_DELIVERED: { label: 'Both Received', color: colors.forest },
+      COMPLETED: { label: 'Completed', color: colors.forest },
+      DISPUTED: { label: 'Dispute Open', color: colors.rose },
+      CANCELLED: { label: 'Cancelled', color: colors.textMuted },
     };
-    return map[status] ?? { label: status, color: '#9A8E7E' };
+    return map[status] ?? { label: status, color: colors.textMuted };
   },
 
   /** Submit a peer review for a completed swap */

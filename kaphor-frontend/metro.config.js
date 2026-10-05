@@ -3,6 +3,13 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
+config.transformer = {
+  ...config.transformer,
+  getTransformOptions: async () => ({
+    transform: { experimentalImportSupport: false, inlineRequires: true },
+  }),
+};
+
 // Force Metro to resolve zustand to CJS files so that import.meta is completely avoided in browser/web bundles
 const zustandRoot = path.resolve(__dirname, 'node_modules/zustand');
 

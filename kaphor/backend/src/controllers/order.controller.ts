@@ -16,14 +16,14 @@ export async function createInquiryOrder(req: Request, res: Response): Promise<v
             return;
         }
 
-        const { garmentId } = req.body;
-        if (!garmentId) {
+        const { garmentId } = req.body || {};
+        if (!garmentId || typeof garmentId !== 'string' || garmentId.length > 64) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing garmentId' });
             return;
         }
 
         const garment = await db.garment.findUnique({
-            where: { id: String(garmentId) },
+            where: { id: garmentId },
         });
 
         if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP' || garment.lifecycleState === 'RESERVED_SALE') {
@@ -93,19 +93,24 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
             return;
         }
 
-        const { garmentId } = req.body;
+        const { garmentId } = req.body || {};
 
-        if (!garmentId) {
+        if (!garmentId || typeof garmentId !== 'string' || garmentId.length > 64) {
             res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing garmentId' });
             return;
         }
 
         const garment = await db.garment.findUnique({
-            where: { id: String(garmentId) }
+            where: { id: garmentId }
         });
 
         if (!garment || !garment.isActive || garment.lifecycleState === 'OWNERSHIP' || garment.lifecycleState === 'RESERVED_SALE') {
             res.status(400).json({ error: 'UNAVAILABLE', message: 'Garment is no longer available' });
+            return;
+        }
+
+        if (garment.listingType !== 'SALE') {
+            res.status(400).json({ error: 'BAD_REQUEST', message: 'This garment is not listed for sale' });
             return;
         }
 
@@ -360,11 +365,19 @@ export async function approveOrderRequest(req: Request, res: Response): Promise<
             return;
         }
 
-        const updatedOrder = await db.order.update({
-            where: { id: orderId },
+        // Atomic: only approve while still PENDING (guards against concurrent reject/payment)
+        const approved = await db.order.updateMany({
+            where: { id: orderId, sellerId: req.user.id, status: 'PENDING' },
             data: {
                 notes: JSON.stringify({ approvalStatus: 'APPROVED', approvedAt: new Date().toISOString() }),
             },
+        });
+        if (approved.count === 0) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Order is no longer pending' });
+            return;
+        }
+        const updatedOrder = await db.order.findUnique({
+            where: { id: orderId },
             include: { items: { include: { garment: true } } },
         });
 
@@ -440,7 +453,7 @@ export async function rejectOrderRequest(req: Request, res: Response): Promise<v
             return;
         }
         const { orderId } = req.params;
-        const { reason } = req.body;
+        const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 500) : '';
         const order = await db.order.findUnique({
             where: { id: orderId },
             include: { items: { include: { garment: true } } },
@@ -454,24 +467,33 @@ export async function rejectOrderRequest(req: Request, res: Response): Promise<v
             return;
         }
 
-        await db.order.update({
-            where: { id: orderId },
+        // Atomic: only a PENDING (unpaid) order can be declined; paid orders are escrow-protected
+        const cancelled = await db.order.updateMany({
+            where: { id: orderId, sellerId: req.user.id, status: 'PENDING' },
             data: {
                 status: 'CANCELLED',
                 notes: JSON.stringify({ approvalStatus: 'REJECTED', reason: reason || 'Seller declined' }),
             },
         });
+        if (cancelled.count === 0) {
+            res.status(409).json({ error: 'CONFLICT', message: 'Order can no longer be declined' });
+            return;
+        }
 
-        // Release garment reservations back to LISTED
+        // Release garment reservations back to LISTED (only those held by this order)
         const garmentIds = order.items.map((i: any) => i.garmentId);
         if (garmentIds.length > 0) {
             await db.garment.updateMany({
-                where: { id: { in: garmentIds } },
+                where: { id: { in: garmentIds }, reservedOrderId: order.id },
                 data: {
                     lifecycleState: 'LISTED',
                     reservedOrderId: null,
                     isActive: true,
                 },
+            });
+            await db.garment.updateMany({
+                where: { id: { in: garmentIds }, reservedOrderId: null, lifecycleState: 'PURCHASE_INTENT' },
+                data: { lifecycleState: 'LISTED' },
             });
         }
         cacheClear('feed:');

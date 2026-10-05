@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   Platform,
 } from 'react-native';
@@ -17,8 +16,8 @@ import { Header } from '../../../src/components/common/Header';
 import paymentService from '../../../src/services/paymentService';
 import { rentalService } from '../../../src/services/rentalService';
 import { invalidateCache } from '../../../src/services/api';
-import { DossierLoading } from '../../../src/components/common/DossierLoading';
 import type { RentalPaymentBreakdown } from '../../../src/types/payment';
+import { Spinner, Loader } from '../../../src/components/common/Loader';
 
 type PaymentMethodType = 'upi' | 'card' | 'netbanking' | 'wallet';
 
@@ -33,30 +32,30 @@ interface PaymentMethodOption {
 const PAYMENT_METHODS: PaymentMethodOption[] = [
   {
     id: 'upi',
-    title: 'UPI / QR CODE',
+    title: 'UPI / QR code',
     subtitle: 'Google Pay, PhonePe, Paytm, BHIM & UPI IDs',
     badge: 'INSTANT • ZERO FEE',
     icon: 'flash-outline',
   },
   {
     id: 'card',
-    title: 'CREDIT / DEBIT CARD',
+    title: 'Credit / debit card',
     subtitle: 'Visa, Mastercard, RuPay, Maestro & Amex',
-    badge: 'ALL MAJOR CARDS',
+    badge: 'All major cards',
     icon: 'card-outline',
   },
   {
     id: 'netbanking',
-    title: 'NET BANKING',
+    title: 'Net banking',
     subtitle: 'HDFC, ICICI, SBI, Axis, Kotak & 50+ Banks',
-    badge: 'DIRECT SECURE',
+    badge: 'Direct secure',
     icon: 'business-outline',
   },
   {
     id: 'wallet',
-    title: 'MOBILE WALLETS',
+    title: 'Mobile wallets',
     subtitle: 'Paytm Wallet, PhonePe, MobiKwik',
-    badge: 'QUICK PAY',
+    badge: 'Quick pay',
     icon: 'wallet-outline',
   },
 ];
@@ -94,7 +93,7 @@ export default function RentalPaymentScreen() {
           if (rental?.paidAt || ['RESERVED', 'DISPATCHED', 'ACTIVE', 'COMPLETED'].includes(rental?.status)) {
             Alert.alert(
               'Already Paid',
-              'This rental lease has already been paid and secured into escrow.',
+              'This rental lease has already been paid.',
               [
                 {
                   text: 'View Lease',
@@ -164,7 +163,7 @@ export default function RentalPaymentScreen() {
         amount: Math.round(amountRupees * 100), // convert to paise for Razorpay checkout
         currency: rp.currency || 'INR',
         order_id: rp.razorpayOrderId,
-        name: 'Kaphor Luxury Circular Fashion',
+        name: 'Kaphor Circular Fashion',
         description: `Rental (${days} days) + Security Deposit`,
         prefill: { contact: '', email: '' },
         theme: { color: colors.charcoal },
@@ -187,7 +186,7 @@ export default function RentalPaymentScreen() {
             invalidateCache(['/rentals', '/users/me/wardrobe']);
             Alert.alert(
               'Payment Received',
-              'Your rental payment was received. We are confirming your lease dossier now.',
+              'Your rental payment was received. We are confirming your rental now.',
             );
             router.replace(`/(tabs)/rental/lease/${rentalOrderId}` as any);
           } finally {
@@ -207,7 +206,7 @@ export default function RentalPaymentScreen() {
       if (e?.response?.data?.error === 'ALREADY_PAID' || e?.response?.data?.message?.includes('already been paid')) {
         Alert.alert(
           'Payment Completed',
-          'This rental has already been paid and secured into escrow.',
+          'This rental has already been paid.',
           [
             {
               text: 'View Lease',
@@ -230,9 +229,9 @@ export default function RentalPaymentScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="RENTAL PAYMENT" showBack fallbackPath={fallbackUrl} />
+        <Header title="Rental payment" showBack fallbackPath={fallbackUrl} />
         <View style={styles.center}>
-          <DossierLoading variant="checkout" compact />
+          <Loader variant="checkout" compact />
         </View>
       </View>
     );
@@ -250,7 +249,7 @@ export default function RentalPaymentScreen() {
           <View style={[styles.stepCircle, styles.stepDone]}>
             <Ionicons name="checkmark" size={14} color={colors.cream} />
           </View>
-          <Text style={[styles.stepLabel, styles.stepLabelDone]}>DETAILS</Text>
+          <Text style={[styles.stepLabel, styles.stepLabelDone]}>Details</Text>
         </View>
         <View style={[styles.progressLine, styles.progressLineDone]} />
         <View style={styles.step}>
@@ -267,7 +266,7 @@ export default function RentalPaymentScreen() {
       >
         {/* Payment Breakdown */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PAYMENT BREAKDOWN</Text>
+          <Text style={styles.sectionTitle}>Payment breakdown</Text>
           <View style={styles.card}>
             <View style={styles.row}>
               <Text style={styles.label}>Rental Fee ({days} days)</Text>
@@ -319,7 +318,7 @@ export default function RentalPaymentScreen() {
 
             <View style={styles.divider} />
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>TOTAL DUE TODAY</Text>
+              <Text style={styles.totalLabel}>Total due today</Text>
               <Text style={styles.totalValue}>{fmt(totalAmount)}</Text>
             </View>
           </View>
@@ -338,8 +337,8 @@ export default function RentalPaymentScreen() {
         {/* Payment Method Selector */}
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>PAYMENT METHOD</Text>
-            <Text style={styles.sectionTitleSubtitle}>CHOOSE PREFERENCE</Text>
+            <Text style={styles.sectionTitle}>Payment method</Text>
+            <Text style={styles.sectionTitleSubtitle}>Choose preference</Text>
           </View>
           <View style={styles.methodsContainer}>
             {PAYMENT_METHODS.map((item) => {
@@ -430,7 +429,7 @@ export default function RentalPaymentScreen() {
           activeOpacity={0.8}
         >
           {processing ? (
-            <ActivityIndicator color={colors.cream} size="small" />
+            <Spinner color={colors.cream} size="small" />
           ) : (
             <>
               <Text style={styles.payBtnText}>
@@ -456,7 +455,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30,31,34,0.1)',
+    borderBottomColor: colors.overlayLight,
   },
   step: { alignItems: 'center' },
   stepCircle: {
@@ -472,19 +471,15 @@ const styles = StyleSheet.create({
   stepDone: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
   stepActive: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
   stepNumber: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: 'bold',
     color: colors.cream,
   },
   stepLabel: {
     marginTop: 6,
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
-    color: colors.textMuted,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.textMuted, includeFontPadding: false, },
   stepLabelDone: { color: colors.charcoal },
   stepLabelActive: { color: colors.charcoal },
   progressLine: {
@@ -500,13 +495,10 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20, paddingBottom: 160 },
   section: { marginBottom: 28 },
   sectionTitle: {
-    fontFamily: typography.mono,
-    fontSize: 10,
-    fontWeight: '900',
+    fontFamily: typography.handBold,
+    fontSize: 16,
     color: colors.textMuted,
-    letterSpacing: 1.5,
-    marginBottom: 14,
-  },
+    marginBottom: 14, includeFontPadding: false, },
 
   card: {
     backgroundColor: colors.white,
@@ -526,15 +518,12 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 12,
-    fontWeight: '700',
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 17, includeFontPadding: false, },
   value: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 13,
-    fontWeight: '800',
   },
 
   insuranceRow: {
@@ -542,9 +531,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 12,
-    backgroundColor: 'rgba(30,59,47,0.05)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(30,59,47,0.15)',
+    borderColor: colors.overlayLight,
     marginBottom: 14,
   },
   checkbox: {
@@ -559,21 +548,17 @@ const styles = StyleSheet.create({
   checkboxActive: { backgroundColor: colors.forest, borderColor: colors.forest },
   insuranceInfo: { flex: 1 },
   insuranceLabel: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.forest,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
   insuranceDesc: {
-    fontFamily: typography.mono,
-    fontSize: 8,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    marginTop: 2,
-  },
+    marginTop: 2, includeFontPadding: false, },
   insurancePrice: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '800',
     color: colors.forest,
   },
 
@@ -589,11 +574,8 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     color: colors.charcoal,
-    fontFamily: typography.mono,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 18, includeFontPadding: false, },
   totalValue: {
     color: colors.charcoal,
     fontFamily: typography.headings,
@@ -604,18 +586,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     padding: 16,
-    backgroundColor: 'rgba(28,43,74,0.05)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(28,43,74,0.15)',
+    borderColor: colors.overlayLight,
     marginBottom: 28,
   },
   depositNoteText: {
     flex: 1,
-    fontFamily: typography.mono,
-    fontSize: 10,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.navy,
-    lineHeight: 16,
-  },
+    lineHeight: 23, includeFontPadding: false, },
 
   // Payment Methods Selector
   sectionTitleRow: {
@@ -625,12 +606,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitleSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.red,
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 16,
+    color: colors.red, includeFontPadding: false, },
   methodsContainer: {
     gap: 10,
   },
@@ -638,7 +616,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     padding: 14,
     borderWidth: 2,
-    borderColor: 'rgba(30,31,34,0.15)',
+    borderColor: colors.overlayLight,
     shadowColor: colors.charcoal,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.1,
@@ -702,12 +680,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   methodTitle: {
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.charcoal,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.charcoal, includeFontPadding: false, },
   methodTitleActive: {
     color: colors.charcoal,
   },
@@ -716,28 +691,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: 'rgba(30,31,34,0.2)',
+    borderColor: colors.overlay,
   },
   methodBadgeActive: {
     backgroundColor: colors.charcoal,
     borderColor: colors.charcoal,
   },
   methodBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8,
-    fontWeight: '800',
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16,
+    color: colors.textMuted, includeFontPadding: false, },
   methodBadgeTextActive: {
     color: colors.cream,
   },
   methodSubtitle: {
-    fontFamily: typography.mono,
-    fontSize: 9,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
     color: colors.textMuted,
-    lineHeight: 13,
-  },
+    lineHeight: 19, includeFontPadding: false, },
   securityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -745,17 +716,14 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 4,
     paddingVertical: 10,
-    backgroundColor: 'rgba(40, 54, 24, 0.06)',
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(40, 54, 24, 0.2)',
+    borderColor: colors.overlay,
   },
   securityBadgeText: {
-    fontFamily: typography.mono,
-    fontSize: 8.5,
-    fontWeight: '700',
-    color: colors.forest,
-    letterSpacing: 0.5,
-  },
+    fontFamily: typography.handSemi,
+    fontSize: 16,
+    color: colors.forest, includeFontPadding: false, },
 
   bottomBar: {
     position: 'absolute',
@@ -776,11 +744,8 @@ const styles = StyleSheet.create({
   },
   bottomTotalLabel: {
     color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
+    fontFamily: typography.handBold,
+    fontSize: 16, includeFontPadding: false, },
   bottomTotalValue: {
     color: colors.charcoal,
     fontFamily: typography.headings,
@@ -804,9 +769,8 @@ const styles = StyleSheet.create({
   payBtnDisabled: { opacity: 0.7 },
   payBtnText: {
     color: colors.cream,
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 2,
+    letterSpacing: 0.2,
   },
 });

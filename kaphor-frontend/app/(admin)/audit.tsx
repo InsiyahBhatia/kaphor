@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { adminService } from '../../src/services/adminService';
 import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Empty } from '../../src/components/admin/AdminUI';
+import { Loader } from '../../src/components/common/Loader';
+import { objectToPairs } from '../../src/utils/formatText';
 
 export default function AdminAuditScreen() {
   const [data, setData] = useState<any>({ data: [], meta: { total: 0, pages: 1, page: 1 } });
@@ -31,9 +33,9 @@ export default function AdminAuditScreen() {
   return (
     <View style={styles.container}>
       <AdminTopBar title="AUDIT TRAIL" subtitle={`${meta.total} EVENTS · PAGE ${meta.page}/${meta.pages}`} onRefresh={load} />
-      {loading ? (
+      {loading && !data ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.ink} />
+          <Loader compact />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -41,17 +43,23 @@ export default function AdminAuditScreen() {
           {data?.data?.map((l: any) => (
             <View key={l.id} style={styles.logCard}>
               <View style={styles.logHead}>
-                <Text style={styles.logAction}>{l.action.replace(/_/g, ' ')}</Text>
+                <Text style={styles.logAction}>{String(l.action ?? '').replace(/_/g, ' ')}</Text>
                 <Text style={styles.logTime}>{new Date(l.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</Text>
               </View>
               <Text style={styles.logActor}>
                 {l.user?.displayName ?? l.user?.email ?? 'SYSTEM'} · {l.resource ?? '—'}
               </Text>
               {l.ip ? <Text style={styles.logIp}>IP {l.ip}</Text> : null}
-              {l.metadata && (
-                <Text style={styles.logMeta} numberOfLines={1}>
-                  {JSON.stringify(l.metadata)}
-                </Text>
+              {objectToPairs(l.metadata, 60).length > 0 && (
+                <View style={styles.metaWrap}>
+                  {objectToPairs(l.metadata, 60).slice(0, 8).map((m) => (
+                    <View key={m.label} style={styles.metaChip}>
+                      <Text style={styles.logMeta} numberOfLines={1}>
+                        {m.label}: {m.value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
               )}
             </View>
           ))}
@@ -95,7 +103,15 @@ const styles = StyleSheet.create({
   logTime: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted },
   logActor: { fontFamily: typography.monoBold, fontSize: 9.5, color: colors.ink, marginTop: 6 },
   logIp: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted, marginTop: 3 },
-  logMeta: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textMuted, marginTop: 4 },
+  logMeta: { fontFamily: typography.mono, fontSize: 8.5, color: colors.textSecond },
+  metaWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  metaChip: {
+    backgroundColor: colors.paperDark,
+    borderRadius: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    maxWidth: '100%',
+  },
 
   pager: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 12 },
   pagerBtn: {

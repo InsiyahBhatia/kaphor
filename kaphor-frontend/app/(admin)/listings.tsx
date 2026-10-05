@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { adminService } from '../../src/services/adminService';
 import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Chip, Empty, formatINR } from '../../src/components/admin/AdminUI';
+import { Loader } from '../../src/components/common/Loader';
 
 const LIFECYCLES = [
   'ALL', 'LISTED', 'PURCHASE_INTENT', 'INTEREST', 'SELL_INTENT',
@@ -79,7 +80,7 @@ export default function AdminListingsScreen() {
       <AdminTopBar title="LISTINGS" subtitle={`${data?.meta?.total ?? 0} GARMENTS`} onRefresh={load} />
       <View style={styles.searchBar}>
         <Ionicons name="search" size={16} color={colors.textMuted} />
-        <TextInput
+        <TextInput accessibilityLabel="Title, brand, category"
           style={styles.searchInput}
           placeholder="TITLE, BRAND, CATEGORY…"
           placeholderTextColor={colors.textMuted}
@@ -87,7 +88,7 @@ export default function AdminListingsScreen() {
           onChangeText={setQ}
         />
         {q !== '' && (
-          <TouchableOpacity onPress={() => setQ('')}>
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Remove" onPress={() => setQ('')}>
             <Ionicons name="close-circle" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         )}
@@ -105,9 +106,9 @@ export default function AdminListingsScreen() {
         ))}
       </ScrollView>
 
-      {loading ? (
+      {loading && !data ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.ink} />
+          <Loader compact />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -130,10 +131,10 @@ export default function AdminListingsScreen() {
                 <Text style={styles.seller}>BY {g.seller?.displayName?.toUpperCase() ?? '—'}</Text>
               </View>
               <View style={styles.actions}>
-                <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.charcoal }]} onPress={() => togglePause(g)} disabled={busyId === `p-${g.id}`}>
+                <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={g.isActive ? 'Pause listing' : 'Activate listing'} style={[styles.iconBtn, { backgroundColor: colors.charcoal }]} onPress={() => togglePause(g)} disabled={busyId === `p-${g.id}`}>
                   <Ionicons name={g.isActive ? 'pause' : 'play'} size={14} color={colors.white} />
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.crimson }]} onPress={() => removeGarment(g)} disabled={busyId === `d-${g.id}`}>
+                <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Delete" style={[styles.iconBtn, { backgroundColor: colors.crimson }]} onPress={() => removeGarment(g)} disabled={busyId === `d-${g.id}`}>
                   <Ionicons name="trash-outline" size={14} color={colors.white} />
                 </TouchableOpacity>
               </View>
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   toggleChipActive: { backgroundColor: colors.ink },
-  toggleText: { fontFamily: typography.monoBold, fontSize: 9, color: colors.ink },
+  toggleText: { fontFamily: typography.monoBold, fontSize: 11, color: colors.ink },
   toggleTextActive: { color: colors.cream },
 
   chipRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   statusChipActive: { backgroundColor: colors.ink },
-  statusChipText: { fontFamily: typography.monoBold, fontSize: 8.5, color: colors.ink },
+  statusChipText: { fontFamily: typography.monoBold, fontSize: 11, color: colors.ink },
   statusChipTextActive: { color: colors.cream },
 
   list: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
@@ -213,9 +214,9 @@ const styles = StyleSheet.create({
   },
   cardInfo: { flex: 1 },
   cardTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
-  cardMeta: { fontFamily: typography.mono, fontSize: 9, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
+  cardMeta: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  seller: { fontFamily: typography.monoBold, fontSize: 8.5, color: colors.textMuted, marginTop: 8, letterSpacing: 1 },
+  seller: { fontFamily: typography.monoBold, fontSize: 11, color: colors.textMuted, marginTop: 8, letterSpacing: 1 },
   actions: { justifyContent: 'center', gap: 8, paddingLeft: 8 },
   iconBtn: {
     width: 34,

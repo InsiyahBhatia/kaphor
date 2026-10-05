@@ -85,9 +85,24 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   fetchNotifications: async (forceFresh = false) => {
-    set({ loading: true });
+    const hadData = get().notifications.length > 0;
+    // Only show a skeleton when there is nothing to show yet
+    if (!hadData) {
+      set({ loading: true });
+      // Instant paint from the persisted copy while the network request runs
+      try {
+        const raw = await AsyncStorage.getItem('@kaphor_cache_/notifications');
+        if (raw && get().notifications.length === 0) {
+          const persisted = JSON.parse(raw);
+          if (Array.isArray(persisted)) {
+            const l = persisted.filter((n: NotificationItem) => n.type !== 'DIRECT_MESSAGE' && n.type !== 'NEW_MESSAGE');
+            set({ notifications: l, unreadCount: l.filter((n: NotificationItem) => !n.isRead).length, loading: false });
+          }
+        }
+      } catch {}
+    }
     try {
-      const data = forceFresh
+      const data = forceFresh || get().notifications.length > 0
         ? await fetchFresh('/notifications')
         : await cachedGet('/notifications');
       const rawList = Array.isArray(data) ? data : [];
@@ -95,7 +110,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       const unread = list.filter((n: NotificationItem) => !n.isRead).length;
       set({ notifications: list, unreadCount: unread, loading: false });
     } catch {
-      set({ notifications: [], loading: false });
+      // Keep whatever is on screen when the refresh fails
+      set({ loading: false });
     }
   },
 

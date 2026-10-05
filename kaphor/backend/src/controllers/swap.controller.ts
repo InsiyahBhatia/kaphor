@@ -51,6 +51,60 @@ const ALLOWED_SWAP_CATEGORIES = new Set([
   'juttis',
 ]);
 
+/** Trim + length-cap a string field; returns undefined if not a non-empty string. */
+function cleanStr(v: unknown, max: number): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const t = v.trim();
+  return t.length > 0 ? t.slice(0, max) : undefined;
+}
+
+/**
+ * Completes a swap exactly once: status-guarded (ACCEPTED -> COMPLETED) so concurrent or
+ * repeated calls cannot double-transfer ownership or double-release the deposit.
+ * Returns false if another call already completed (or cancelled) the swap.
+ */
+async function finalizeSwapOnce(id: string, swap: any): Promise<boolean> {
+  const done: boolean = await (db as any).$transaction(async (tx: any) => {
+    const r = await tx.swap.updateMany({
+      where: { id, status: 'ACCEPTED' },
+      data: { status: 'COMPLETED', completedAt: new Date() },
+    });
+    if (r.count !== 1) return false;
+
+    // Offered garment moves to receiver; wanted garment moves to initiator
+    const a = await tx.garment.updateMany({
+      where: { id: swap.garmentOffered, sellerId: swap.initiatorId },
+      data: { sellerId: swap.receiverId, lifecycleState: 'OWNERSHIP', isActive: false },
+    });
+    const b = await tx.garment.updateMany({
+      where: { id: swap.garmentWanted, sellerId: swap.receiverId },
+      data: { sellerId: swap.initiatorId, lifecycleState: 'OWNERSHIP', isActive: false },
+    });
+    if (a.count !== 1 || b.count !== 1) {
+      throw new Error('SWAP_OWNERSHIP_MISMATCH');
+    }
+
+    const carbonSaved = 10;
+    const waterSaved = 1000;
+    for (const uid of [swap.initiatorId, swap.receiverId]) {
+      await tx.impactRecord.upsert({
+        where: { userId: uid },
+        update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
+        create: { userId: uid, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved },
+      });
+    }
+    return true;
+  });
+  if (done) {
+    await updateSwapMetadata(id, (m) => {
+      m.initiatorReceived = true;
+      m.receiverReceived = true;
+      if (!m.depositReleasedAt) m.depositReleasedAt = new Date().toISOString();
+    });
+  }
+  return done;
+}
+
 function normalizeCategory(category: string | null | undefined): string {
   return (category ?? '').trim().toLowerCase();
 }
@@ -67,6 +121,20 @@ function isAccessoryGarment(garment: any): boolean {
     Array.from(ALLOWED_SWAP_CATEGORIES).some((t) => cat.includes(t) || sub.includes(t))
   );
 }
+
+const SWAP_GARMENT_SELECT = {
+  id: true,
+  title: true,
+  brand: true,
+  images: true,
+  category: true,
+  subCategory: true,
+  size: true,
+  condition: true,
+  price: true,
+  listingType: true,
+  sellerId: true,
+} as const;
 
 /** Format garment into clean snapshot for swap UI */
 function toGarmentSnapshot(g: any, resolvedFirstImage?: string): any {
@@ -89,7 +157,7 @@ function toGarmentSnapshot(g: any, resolvedFirstImage?: string): any {
 
 /** Transform internal swap + metadata into client SwapTransaction */
 async function formatSwapTransaction(swap: any, currentUserId?: string, resolvedImages?: Record<string, string>): Promise<any> {
-  const meta = await getSwapMetadata(swap.id);
+  const meta = await getSwapMetadata(swap.id, swap.metadata);
 
   // Compute composite status
   let compositeStatus = swap.status;
@@ -287,10 +355,12 @@ export async function getSwaps(req: Request, res: Response): Promise<void> {
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        // Only the fields the swap snapshot uses (skips garmentVector and other heavy columns).
+        offeredGarment: { select: SWAP_GARMENT_SELECT },
+        wantedGarment: { select: SWAP_GARMENT_SELECT },
       },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
 
     const imageLookup = await resolveSwapMediaBatch(swaps);
@@ -356,10 +426,11 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
       return;
     }
 
-    const { garmentOfferedId, garmentWantedId, message, conditionPhotos } = req.body;
+    const { garmentOfferedId, garmentWantedId, conditionPhotos } = req.body || {};
+    const message = cleanStr(req.body?.message, 1000);
     const initiatorId = req.user.id;
 
-    if (!garmentOfferedId || !garmentWantedId) {
+    if (!garmentOfferedId || !garmentWantedId || typeof garmentOfferedId !== 'string' || typeof garmentWantedId !== 'string') {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Both garments are required' });
       return;
     }
@@ -397,6 +468,25 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
     }
     if (!offeredGarment.isActive || !wantedGarment.isActive) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'One or both garments are no longer active' });
+      return;
+    }
+    if (offeredGarment.lifecycleState !== 'LISTED' || wantedGarment.lifecycleState !== 'LISTED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'One or both garments are not available for swap' });
+      return;
+    }
+
+    // Prevent duplicate open proposals for the same pair
+    const existingSwap = await db.swap.findFirst({
+      where: {
+        initiatorId,
+        garmentOffered: offeredGarment.id,
+        garmentWanted: wantedGarment.id,
+        status: { in: ['REQUESTED', 'ACCEPTED'] },
+      },
+      select: { id: true },
+    });
+    if (existingSwap) {
+      res.status(409).json({ error: 'CONFLICT', message: 'A swap proposal for these items is already open' });
       return;
     }
 
@@ -589,18 +679,29 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
     }
 
     if (isAccepted) {
-      await (db as any).$transaction(async (tx: any) => {
-        await tx.swap.update({
-          where: { id },
+      if (!swap.offeredGarment?.isActive || !swap.wantedGarment?.isActive ||
+          swap.offeredGarment.sellerId !== swap.initiatorId || swap.wantedGarment.sellerId !== swap.receiverId) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'One or both garments are no longer available' });
+        return;
+      }
+      const won = await (db as any).$transaction(async (tx: any) => {
+        const r = await tx.swap.updateMany({
+          where: { id, status: 'REQUESTED', receiverId: req.user!.id },
           data: { status: 'ACCEPTED' },
         });
+        if (r.count !== 1) return false;
 
         // Reserve garments so they cannot be purchased while swap is underway
         await tx.garment.updateMany({
           where: { id: { in: [swap.garmentOffered, swap.garmentWanted] } },
           data: { isActive: false },
         });
+        return true;
       });
+      if (!won) {
+        res.status(409).json({ error: 'CONFLICT', message: 'Swap proposal is no longer pending' });
+        return;
+      }
 
       emitToUser(swap.initiatorId, 'swap:accepted', { swapId: swap.id });
 
@@ -663,10 +764,14 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
         logger.warn('Failed to post accept message to conversation', { error: err });
       }
     } else {
-      await db.swap.update({
-        where: { id },
+      const rej = await db.swap.updateMany({
+        where: { id, status: 'REQUESTED', receiverId: req.user.id },
         data: { status: 'REJECTED' },
       });
+      if (rej.count !== 1) {
+        res.status(409).json({ error: 'CONFLICT', message: 'Swap proposal is no longer pending' });
+        return;
+      }
 
       emitToUser(swap.initiatorId, 'swap:rejected', { swapId: swap.id });
 
@@ -817,7 +922,20 @@ export async function signSwapAgreement(req: Request, res: Response): Promise<vo
  */
 export async function getSwapAgreement(req: Request, res: Response): Promise<void> {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
     const { id } = req.params;
+    const agSwap = await db.swap.findUnique({ where: { id }, select: { initiatorId: true, receiverId: true } });
+    if (!agSwap) {
+      res.status(404).json({ error: 'NOT_FOUND' });
+      return;
+    }
+    if (agSwap.initiatorId !== req.user.id && agSwap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN' });
+      return;
+    }
     const meta = await getSwapMetadata(id);
     res.json({
       data: {
@@ -859,9 +977,18 @@ export async function shareSwapAddress(req: Request, res: Response): Promise<voi
     }
 
     const { id } = req.params;
-    const address: SwapAddressData = req.body;
+    const rawAddr = req.body || {};
+    const address: SwapAddressData = {
+      fullName: cleanStr(rawAddr.fullName, 100) as string,
+      phone: (cleanStr(rawAddr.phone, 20) ?? '') as string,
+      line1: cleanStr(rawAddr.line1, 200) as string,
+      line2: cleanStr(rawAddr.line2, 200),
+      city: (cleanStr(rawAddr.city, 100) ?? '') as string,
+      state: (cleanStr(rawAddr.state, 100) ?? '') as string,
+      pincode: cleanStr(typeof rawAddr.pincode === 'number' ? String(rawAddr.pincode) : rawAddr.pincode, 12) as string,
+    };
 
-    if (!address || !address.fullName || !address.line1 || !address.pincode) {
+    if (!address.fullName || !address.line1 || !address.pincode) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Complete delivery address is required' });
       return;
     }
@@ -882,6 +1009,11 @@ export async function shareSwapAddress(req: Request, res: Response): Promise<voi
 
     if (swap.status !== 'ACCEPTED') {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Addresses can only be shared on an accepted swap' });
+      return;
+    }
+    const addrMeta = await getSwapMetadata(id);
+    if (!(addrMeta.initiatorAcceptedTerms && addrMeta.receiverAcceptedTerms)) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Both parties must sign the agreement before sharing addresses' });
       return;
     }
 
@@ -932,6 +1064,15 @@ export async function getShippingAddress(req: Request, res: Response): Promise<v
       return;
     }
 
+    if (swap.initiatorId !== req.user.id && swap.receiverId !== req.user.id) {
+      res.status(403).json({ error: 'FORBIDDEN' });
+      return;
+    }
+    if (swap.status !== 'ACCEPTED' && swap.status !== 'COMPLETED') {
+      res.json({ data: null, message: 'Addresses are not available for this swap.' });
+      return;
+    }
+
     const meta = await getSwapMetadata(id);
     const bothSigned = !!(meta.initiatorAcceptedTerms && meta.receiverAcceptedTerms);
 
@@ -965,12 +1106,26 @@ export async function markSwapShipped(req: Request, res: Response): Promise<void
     }
 
     const { id } = req.params;
-    const tracking: SwapTrackingData = req.body;
+    const rawTrack = req.body || {};
+    const courierPartner = cleanStr(rawTrack.courierPartner, 100);
+    const trackingNumber = cleanStr(
+      typeof rawTrack.trackingNumber === 'number' ? String(rawTrack.trackingNumber) : rawTrack.trackingNumber,
+      100
+    );
 
-    if (!tracking || !tracking.courierPartner || !tracking.trackingNumber) {
+    if (!courierPartner || !trackingNumber) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Courier partner and tracking number are required' });
       return;
     }
+    const trackingUrlRaw = cleanStr(rawTrack.trackingUrl, 500);
+    const tracking: SwapTrackingData = {
+      courierPartner,
+      trackingNumber,
+      trackingUrl: trackingUrlRaw && /^https?:\/\//i.test(trackingUrlRaw) ? trackingUrlRaw : undefined,
+      shippedAt: new Date().toISOString(),
+    };
+    const estDelivery = cleanStr(rawTrack.estimatedDelivery, 40);
+    if (estDelivery && !Number.isNaN(Date.parse(estDelivery))) tracking.estimatedDelivery = estDelivery;
 
     const swap = await db.swap.findUnique({ where: { id } });
     if (!swap) {
@@ -998,7 +1153,10 @@ export async function markSwapShipped(req: Request, res: Response): Promise<void
       return;
     }
 
-    tracking.shippedAt = tracking.shippedAt || new Date().toISOString();
+    if (shipMeta.dispute && shipMeta.dispute.status === 'OPEN') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap has an open dispute' });
+      return;
+    }
 
     await updateSwapMetadata(id, (meta) => {
       if (isInitiator) {
@@ -1084,6 +1242,17 @@ export async function confirmSwapReceived(req: Request, res: Response): Promise<
       return;
     }
 
+    // A party can only confirm receipt once the counterparty has shipped, and not during a dispute.
+    const preMeta = await getSwapMetadata(id);
+    if (preMeta.dispute && preMeta.dispute.status === 'OPEN') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap has an open dispute' });
+      return;
+    }
+    if (!(isInitiator ? preMeta.receiverTracking : preMeta.initiatorTracking)) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Your partner has not shipped yet' });
+      return;
+    }
+
     const meta = await updateSwapMetadata(id, (meta) => {
       if (isInitiator) {
         meta.initiatorReceived = true;
@@ -1094,57 +1263,23 @@ export async function confirmSwapReceived(req: Request, res: Response): Promise<
 
     const bothConfirmed = meta.initiatorReceived && meta.receiverReceived;
 
-    // If both confirmed, execute atomic transfer
+    // If both confirmed, execute atomic transfer (status-guarded: runs exactly once)
     if (bothConfirmed) {
-      await updateSwapMetadata(id, (m) => {
-        m.depositReleasedAt = new Date().toISOString();
-      });
-
-      await (db as any).$transaction(async (tx: any) => {
-        await tx.swap.update({
+      const finalized = await finalizeSwapOnce(id, swap);
+      if (!finalized) {
+        // Already completed by a concurrent call; just return current state.
+        const cur = await db.swap.findUnique({
           where: { id },
-          data: {
-            status: 'COMPLETED',
-            completedAt: new Date(),
+          include: {
+            initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
+            receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
+            offeredGarment: true,
+            wantedGarment: true,
           },
         });
-
-        // 1. Swap ownership of offered garment to receiver
-        await tx.garment.update({
-          where: { id: swap.garmentOffered },
-          data: {
-            sellerId: swap.receiverId,
-            lifecycleState: 'OWNERSHIP',
-            isActive: false,
-          },
-        });
-
-        // 2. Swap ownership of wanted garment to initiator
-        await tx.garment.update({
-          where: { id: swap.garmentWanted },
-          data: {
-            sellerId: swap.initiatorId,
-            lifecycleState: 'OWNERSHIP',
-            isActive: false,
-          },
-        });
-
-        // 3. Update sustainability impact for both users
-        const carbonSaved = 10;
-        const waterSaved = 1000;
-
-        await tx.impactRecord.upsert({
-          where: { userId: swap.initiatorId },
-          update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
-          create: { userId: swap.initiatorId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved },
-        });
-
-        await tx.impactRecord.upsert({
-          where: { userId: swap.receiverId },
-          update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
-          create: { userId: swap.receiverId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved },
-        });
-      });
+        res.json({ data: await formatSwapTransaction(cur, req.user.id) });
+        return;
+      }
 
       // Socket & in-app notifications
       emitToUser(swap.initiatorId, 'swap:completed', { swapId: id });
@@ -1267,54 +1402,16 @@ export async function completeSwap(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    await updateSwapMetadata(id, (meta) => {
-      meta.initiatorReceived = true;
-      meta.receiverReceived = true;
-      meta.depositReleasedAt = new Date().toISOString();
-    });
+    if (completionMeta.dispute && completionMeta.dispute.status === 'OPEN') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap has an open dispute' });
+      return;
+    }
 
-    await (db as any).$transaction(async (tx: any) => {
-      await tx.swap.update({
-        where: { id },
-        data: {
-          status: 'COMPLETED',
-          completedAt: new Date(),
-        },
-      });
-
-      await tx.garment.update({
-        where: { id: swap.garmentOffered },
-        data: {
-          sellerId: swap.receiverId,
-          lifecycleState: 'OWNERSHIP',
-          isActive: false,
-        },
-      });
-
-      await tx.garment.update({
-        where: { id: swap.garmentWanted },
-        data: {
-          sellerId: swap.initiatorId,
-          lifecycleState: 'OWNERSHIP',
-          isActive: false,
-        },
-      });
-
-      const carbonSaved = 10;
-      const waterSaved = 1000;
-
-      await tx.impactRecord.upsert({
-        where: { userId: swap.initiatorId },
-        update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
-        create: { userId: swap.initiatorId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved },
-      });
-
-      await tx.impactRecord.upsert({
-        where: { userId: swap.receiverId },
-        update: { itemsCirculated: { increment: 1 }, carbonSavedKg: { increment: carbonSaved }, waterSavedL: { increment: waterSaved } },
-        create: { userId: swap.receiverId, itemsCirculated: 1, carbonSavedKg: carbonSaved, waterSavedL: waterSaved },
-      });
-    });
+    const completed = await finalizeSwapOnce(id, swap);
+    if (!completed) {
+      res.status(409).json({ error: 'CONFLICT', message: 'Swap is already completed or no longer active' });
+      return;
+    }
 
     emitToUser(swap.initiatorId, 'swap:completed', { swapId: id });
     emitToUser(swap.receiverId, 'swap:completed', { swapId: id });
@@ -1405,9 +1502,10 @@ export async function paySecurityDeposit(req: Request, res: Response): Promise<v
       }
     }
 
+    // Only record a pending order here; escrow is credited after signature verification.
     await updateSwapMetadata(id, (m) => {
-      m.securityDepositPaidBy = userId;
-      m.depositEscrowId = razorpayOrderId;
+      const pend = ((m as any).pendingDepositOrders ||= {}) as Record<string, string>;
+      pend[userId] = razorpayOrderId;
     });
 
     res.json({
@@ -1474,7 +1572,10 @@ export async function verifySecurityDeposit(req: Request, res: Response): Promis
 
     const { id } = req.params;
     const userId = req.user.id;
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const body = req.body || {};
+    const razorpay_order_id = cleanStr(body.razorpay_order_id, 100);
+    const razorpay_payment_id = cleanStr(body.razorpay_payment_id, 100);
+    const razorpay_signature = cleanStr(body.razorpay_signature, 200);
 
     const swap = await db.swap.findUnique({ where: { id } });
     if (!swap) {
@@ -1486,18 +1587,54 @@ export async function verifySecurityDeposit(req: Request, res: Response): Promis
       res.status(403).json({ error: 'FORBIDDEN', message: 'Not authorized for this swap' });
       return;
     }
+    if (swap.status !== 'ACCEPTED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Deposits can only be paid on an accepted swap' });
+      return;
+    }
 
-    // Verify signature if credentials and signature provided
+    // Signature is mandatory whenever Razorpay credentials are configured.
     const secret = process.env.RAZORPAY_KEY_SECRET;
-    if (secret && razorpay_signature && razorpay_order_id && razorpay_payment_id) {
+    if (secret) {
+      if (!razorpay_signature || !razorpay_order_id || !razorpay_payment_id) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Payment verification details are required' });
+        return;
+      }
       const expected = crypto
         .createHmac('sha256', secret)
         .update(`${razorpay_order_id}|${razorpay_payment_id}`)
         .digest('hex');
-      if (expected !== razorpay_signature) {
-        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid Razorpay signature' });
+      const a = Buffer.from(expected);
+      const b = Buffer.from(razorpay_signature);
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid payment signature' });
         return;
       }
+    }
+
+    // The order being verified must be one this user created for THIS swap.
+    const pendingMeta = await getSwapMetadata(id);
+    const pendingOrderId = ((pendingMeta as any).pendingDepositOrders || {})[userId];
+    if (razorpay_order_id && pendingOrderId && razorpay_order_id !== pendingOrderId) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Payment does not match this swap' });
+      return;
+    }
+    if (secret && !pendingOrderId) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'No pending deposit order for this swap' });
+      return;
+    }
+    const alreadyPaid = userId === swap.initiatorId ? pendingMeta.initiatorDepositPaid : pendingMeta.receiverDepositPaid;
+    if (alreadyPaid) {
+      res.json({
+        success: true,
+        message: 'Security deposit confirmed and held in escrow',
+        data: {
+          swapId: id,
+          depositPaid: true,
+          amount: pendingMeta.securityDepositAmount || 500,
+          paidAt: pendingMeta.securityDepositPaidAt,
+        },
+      });
+      return;
     }
 
     const isInitiator = swap.initiatorId === userId;
@@ -1523,8 +1660,8 @@ export async function verifySecurityDeposit(req: Request, res: Response): Promis
       await createNotification({
         userId: partnerId,
         type: 'SWAP_ACCEPTED',
-        title: '🛡️ Escrow Deposit Secured!',
-        body: `${(req.user as any)?.displayName || 'Your partner'} has deposited the ₹500 refundable security escrow.`,
+        title: '🛡️ Deposit Secured!',
+        body: `${(req.user as any)?.displayName || 'Your partner'} has deposited the ₹500 refundable security deposit.`,
         data: { swapId: id },
       });
     } catch (notifErr) {
@@ -1563,7 +1700,9 @@ export async function openDispute(req: Request, res: Response): Promise<void> {
     }
 
     const { id } = req.params;
-    const { reason, description, evidencePhotos = [] } = req.body;
+    const reason = cleanStr(req.body?.reason, 200);
+    const description = cleanStr(req.body?.description, 3000);
+    const evidencePhotos: unknown = req.body?.evidencePhotos ?? [];
 
     if (!reason || !description) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'reason and description are required' });
@@ -1580,6 +1719,11 @@ export async function openDispute(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    if (swap.status !== 'ACCEPTED' && swap.status !== 'COMPLETED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'A dispute can only be opened on an active or completed swap' });
+      return;
+    }
+
     const otherUserId = swap.initiatorId === req.user.id ? swap.receiverId : swap.initiatorId;
 
     const dispute = {
@@ -1587,15 +1731,26 @@ export async function openDispute(req: Request, res: Response): Promise<void> {
       openedBy: req.user.id,
       reason,
       description,
-      evidencePhotos: Array.isArray(evidencePhotos) ? evidencePhotos : [],
+      evidencePhotos: (Array.isArray(evidencePhotos) ? evidencePhotos : [])
+        .filter((p: any) => typeof p === 'string' && p.length > 0 && p.length <= 40000)
+        .slice(0, 6) as string[],
       status: 'OPEN' as const,
     };
 
+    let alreadyOpen = false;
     await updateSwapMetadata(id, (m) => {
+      if (m.dispute && m.dispute.status === 'OPEN') {
+        alreadyOpen = true;
+        return;
+      }
       m.dispute = dispute;
       m.disputedAt = new Date().toISOString();
       m.disputeReason = reason;
     });
+    if (alreadyOpen) {
+      res.status(409).json({ error: 'CONFLICT', message: 'A dispute is already open for this swap' });
+      return;
+    }
 
     emitToUser(otherUserId, 'swap:disputed', { swapId: id, reason });
 
@@ -1682,6 +1837,10 @@ export async function cancelSwap(req: Request, res: Response): Promise<void> {
       res.status(400).json({ error: 'ALREADY_COMPLETED', message: 'Cannot cancel a completed swap' });
       return;
     }
+    if (swap.status !== 'REQUESTED' && swap.status !== 'ACCEPTED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap is no longer active' });
+      return;
+    }
 
     const meta = await getSwapMetadata(id);
     if (meta.initiatorTracking && meta.receiverTracking) {
@@ -1689,16 +1848,26 @@ export async function cancelSwap(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    await db.swap.update({
-      where: { id },
-      data: { status: 'REJECTED' },
+    const wasAccepted = swap.status === 'ACCEPTED';
+    const cancelled = await (db as any).$transaction(async (tx: any) => {
+      const r = await tx.swap.updateMany({
+        where: { id, status: swap.status },
+        data: { status: 'REJECTED' },
+      });
+      if (r.count !== 1) return false;
+      // Reactivate the reserved garments (only reserved on ACCEPTED) — cancellation must not destroy listings.
+      if (wasAccepted) {
+        await tx.garment.updateMany({
+          where: { id: { in: [swap.garmentOffered, swap.garmentWanted] }, lifecycleState: 'LISTED' },
+          data: { isActive: true },
+        });
+      }
+      return true;
     });
-
-    // Reactivate the reserved garments — cancellation must not destroy listings.
-    await db.garment.updateMany({
-      where: { id: { in: [swap.garmentOffered, swap.garmentWanted] } },
-      data: { isActive: true },
-    });
+    if (!cancelled) {
+      res.status(409).json({ error: 'CONFLICT', message: 'Swap state changed, please refresh' });
+      return;
+    }
 
     await updateSwapMetadata(id, (m) => {
       m.cancelledAt = new Date().toISOString();
@@ -1751,9 +1920,10 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
     }
 
     const { id } = req.params;
-    const { rating, comment } = req.body;
+    const rating = req.body?.rating;
+    const comment = cleanStr(req.body?.comment, 1000);
 
-    const numRating = Number(rating);
+    const numRating = typeof rating === 'number' || typeof rating === 'string' ? Number(rating) : NaN;
     if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
       res.status(400).json({ error: 'BAD_REQUEST', message: 'Rating must be an integer between 1 and 5' });
       return;
@@ -1777,30 +1947,39 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
       return;
     }
 
+    if (swap.status !== 'COMPLETED') {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Swap must be completed before reviewing' });
+      return;
+    }
+
     const isInitiator = swap.initiatorId === req.user.id;
     const otherUserId = isInitiator ? swap.receiverId : swap.initiatorId;
     const receivedGarmentId = isInitiator ? swap.garmentWanted : swap.garmentOffered;
-
-    const meta = await getSwapMetadata(id);
-    const reviews = meta.reviews || {};
-
-    if (reviews[req.user.id]) {
-      res.status(409).json({ error: 'CONFLICT', message: 'You have already submitted a review for this swap' });
-      return;
-    }
 
     const newReview = {
       reviewerId: req.user.id,
       reviewerName: req.user.displayName || 'Swap Partner',
       rating: numRating,
-      comment: typeof comment === 'string' ? comment.trim().slice(0, 1000) : undefined,
+      comment,
       createdAt: new Date().toISOString(),
     };
 
-    reviews[req.user.id] = newReview;
-    await updateSwapMetadata(id, (m) => {
-      m.reviews = reviews;
+    // Atomic (row-locked) duplicate check + write
+    let duplicate = false;
+    const savedMeta = await updateSwapMetadata(id, (m) => {
+      const r: any = m.reviews || {};
+      if (r[req.user!.id]) {
+        duplicate = true;
+        return;
+      }
+      r[req.user!.id] = newReview;
+      m.reviews = r;
     });
+    if (duplicate) {
+      res.status(409).json({ error: 'CONFLICT', message: 'You have already submitted a review for this swap' });
+      return;
+    }
+    const reviews = savedMeta.reviews || {};
 
     // Persist in relational db.review for the received garment
     if (receivedGarmentId) {
@@ -1816,11 +1995,11 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
             userId: req.user.id,
             garmentId: receivedGarmentId,
             rating: numRating,
-            comment: typeof comment === 'string' ? comment.trim().slice(0, 1000) : null,
+            comment: comment ?? null,
           },
           update: {
             rating: numRating,
-            comment: typeof comment === 'string' ? comment.trim().slice(0, 1000) : null,
+            comment: comment ?? null,
           },
         });
       } catch (dbErr) {
