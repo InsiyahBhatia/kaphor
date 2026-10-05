@@ -114,10 +114,10 @@ export default function SwapWithWantedScreen() {
               <Text style={styles.wantedTitle}>{garment.title}</Text>
               <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Closet').toUpperCase()}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' }}>
-                <Text style={{ fontSize: 16, fontFamily: typography.handwritten, color: colors.textMuted, includeFontPadding: false }}>
+                <Text style={{ fontSize: 13, fontFamily: typography.handwritten, color: colors.textMuted, includeFontPadding: false }}>
                   SIZE: {garment.size || 'OS'}
                 </Text>
-                <Text style={{ fontSize: 16, fontFamily: typography.handSemi, color: colors.crimson, includeFontPadding: false }}>
+                <Text style={{ fontSize: 12, fontFamily: typography.handSemi, color: colors.crimson, includeFontPadding: false }}>
                   {(garment.condition || 'PRISTINE').replace('_', ' ')}
                 </Text>
               </View>
@@ -230,11 +230,11 @@ const styles = StyleSheet.create({
   wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden' },
   wantedImage: { width: 100, height: 120 },
   wantedInfo: { flex: 1, padding: 16, justifyContent: 'center' },
-  label: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 16, marginBottom: 4, includeFontPadding: false, },
-  wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 20 },
-  wantedBrand: { color: colors.red, fontFamily: typography.handSemi, fontSize: 16, marginTop: 4, includeFontPadding: false, },
+  label: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 11, marginBottom: 4, includeFontPadding: false, },
+  wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 18 },
+  wantedBrand: { color: colors.red, fontFamily: typography.handSemi, fontSize: 12, marginTop: 4, includeFontPadding: false, },
   arrowContainer: { alignItems: 'center', marginVertical: 16 },
-  sectionTitle: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 16, marginBottom: 16, includeFontPadding: false, },
+  sectionTitle: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 14, marginBottom: 16, includeFontPadding: false, },
   messageInput: {
     backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal,
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
@@ -242,8 +242,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 17, includeFontPadding: false, },
-  linkText: { color: colors.red, fontFamily: typography.handBold, fontSize: 16, marginTop: 12, includeFontPadding: false, },
+  emptyText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 13, includeFontPadding: false, },
+  linkText: { color: colors.red, fontFamily: typography.handBold, fontSize: 12, marginTop: 12, includeFontPadding: false, },
   offerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   offerCard: { width: '47%', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', position: 'relative' },
   offerCardSelected: { borderColor: colors.red, borderWidth: 3 },

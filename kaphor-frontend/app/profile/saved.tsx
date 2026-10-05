@@ -424,11 +424,11 @@ const styles = StyleSheet.create({
   emptySub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: 8,
-    lineHeight: 23,
+    lineHeight: 18,
   },
   ctaButton: {
     marginTop: 32,
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
 
   // ── Tab Bar ────────────────────────────────────────────────────
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   tabTextActive: {
@@ -483,13 +483,13 @@ const styles = StyleSheet.create({
   tabEmptyText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   tabEmptyAction: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     textDecorationLine: 'underline',
     marginTop: 4,
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
   },
 
   // ── Repairs Section ────────────────────────────────────────────
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
   repairSubTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
 
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
   repairTypeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.cream,
   },
   repairDiffBadge: {
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
   repairDiffText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
   },
   repairTitle: {
     fontFamily: typography.headings,
@@ -603,14 +603,14 @@ const styles = StyleSheet.create({
   repairTechnique: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     marginBottom: 8,
   },
   repairGarment: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     marginBottom: 8,
     fontStyle: 'italic',
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
   repairStepBullet: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.charcoal,
   },
   repairStepText: {
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   repairMoreSteps: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     marginLeft: 14,
   },
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
   repairToolsLabel: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
   },
   repairRemoveBtn: {
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
   repairRemoveText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.red,
   },
 
@@ -726,13 +726,13 @@ const styles = StyleSheet.create({
   youtubeChannel: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
   },
   youtubeGarment: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     fontStyle: 'italic',
     marginTop: 4,

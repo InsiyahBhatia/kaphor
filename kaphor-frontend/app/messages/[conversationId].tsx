@@ -2907,13 +2907,13 @@ const styles = StyleSheet.create({
   headerName: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 15,
     color: colors.charcoal,
   },
   headerHandle: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   headerRightActions: {
@@ -2975,7 +2975,7 @@ const styles = StyleSheet.create({
   garmentCardBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.copper,
   },
   intentModeBadge: {
@@ -2987,12 +2987,12 @@ const styles = StyleSheet.create({
   intentModeBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
   },
   garmentCardTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     marginTop: 1,
   },
@@ -3011,7 +3011,7 @@ const styles = StyleSheet.create({
   specMiniPillText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.textMuted,
   },
   garmentCardActions: {
@@ -3033,7 +3033,7 @@ const styles = StyleSheet.create({
   garmentDetailsBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   garmentActionBtn: {
@@ -3046,7 +3046,7 @@ const styles = StyleSheet.create({
   garmentActionBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.cream,
   },
   wardrobeStripContainer: {
@@ -3065,13 +3065,13 @@ const styles = StyleSheet.create({
   wardrobeStripTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   wardrobeStripSubtitle: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.textMuted,
   },
   wardrobeStripScroll: {
@@ -3103,13 +3103,13 @@ const styles = StyleSheet.create({
   wardrobeStripCardBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.copper,
   },
   wardrobeStripCardTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   wardrobeStripCardPrice: {
@@ -3144,7 +3144,7 @@ const styles = StyleSheet.create({
   swapHeaderBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.white,
   },
   swapStageStatusPill: {
@@ -3155,7 +3155,7 @@ const styles = StyleSheet.create({
   swapStageStatusText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.white,
   },
   swapItemsRow: {
@@ -3213,7 +3213,7 @@ const styles = StyleSheet.create({
   swapRoleTagText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 10,
     color: colors.white,
   },
   swapItemTitle: {
@@ -3250,7 +3250,7 @@ const styles = StyleSheet.create({
   swapCenterHint: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.goldDark,
   },
   orderCoordinationBar: {
@@ -3276,7 +3276,7 @@ const styles = StyleSheet.create({
   orderCoordinationTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   orderStatusChip: {
@@ -3288,13 +3288,13 @@ const styles = StyleSheet.create({
   orderStatusChipText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.forest,
   },
   orderCoordinationSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -3321,7 +3321,7 @@ const styles = StyleSheet.create({
   rentalCoordinationTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   rentalStatusChip: {
@@ -3333,13 +3333,13 @@ const styles = StyleSheet.create({
   rentalStatusChipText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.cream,
   },
   rentalCoordinationSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -3352,7 +3352,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
   },
   directSellerBar: {
     flexDirection: 'row',
@@ -3379,13 +3379,13 @@ const styles = StyleSheet.create({
   directSellerTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.forest || colors.inkSoft,
   },
   directSellerSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -3398,7 +3398,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
   },
   safetyNotice: {
     flexDirection: 'row',
@@ -3413,7 +3413,7 @@ const styles = StyleSheet.create({
   safetyNoticeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.forest,
   },
   quickChipsWrapper: {
@@ -3442,7 +3442,7 @@ const styles = StyleSheet.create({
   quickChipText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   garmentModalOverlay: {
@@ -3475,7 +3475,7 @@ const styles = StyleSheet.create({
   garmentModalHeaderTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 15,
     color: colors.charcoal,
   },
   garmentModalCloseBtn: {
@@ -3524,15 +3524,15 @@ const styles = StyleSheet.create({
   garmentModeBannerTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     marginBottom: 2,
   },
   garmentModeBannerSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.charcoal,
-    lineHeight: 23,
+    lineHeight: 18,
   },
   garmentModalTitleSection: {
     backgroundColor: colors.white,
@@ -3544,13 +3544,13 @@ const styles = StyleSheet.create({
   garmentModalBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.copper,
   },
   garmentModalTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 15,
     color: colors.charcoal,
     marginVertical: 4,
   },
@@ -3594,13 +3594,13 @@ const styles = StyleSheet.create({
   garmentSpecLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.textMuted,
   },
   garmentSpecValue: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.charcoal,
     marginTop: 2,
   },
@@ -3614,7 +3614,7 @@ const styles = StyleSheet.create({
   garmentModalSectionHeading: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.textMuted,
     marginBottom: 6,
   },
@@ -3639,7 +3639,7 @@ const styles = StyleSheet.create({
   garmentModalPrimaryBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.cream,
   },
   garmentModalSecondaryBtn: {
@@ -3656,7 +3656,7 @@ const styles = StyleSheet.create({
   garmentModalSecondaryBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   garmentModalLinkBtn: {
@@ -3666,7 +3666,7 @@ const styles = StyleSheet.create({
   garmentModalLinkText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     textDecorationLine: 'underline',
   },
@@ -3688,7 +3688,7 @@ const styles = StyleSheet.create({
   dateDividerText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.textMuted,
   },
   messagesList: {
@@ -3734,8 +3734,8 @@ const styles = StyleSheet.create({
   bubbleText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
-    lineHeight: 21,
+    fontSize: 14,
+    lineHeight: 20,
   },
   myBubbleText: {
     color: colors.cream,
@@ -3755,7 +3755,7 @@ const styles = StyleSheet.create({
   flaggedWarningText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.red,
   },
   timeRow: {
@@ -3767,7 +3767,7 @@ const styles = StyleSheet.create({
   timeText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
   },
   myTimeText: {
     color: colors.goldDark,
@@ -3782,7 +3782,7 @@ const styles = StyleSheet.create({
   typingText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     fontStyle: 'italic',
     color: colors.textMuted,
   },
@@ -3805,7 +3805,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   removeImageBtn: {
@@ -3936,7 +3936,7 @@ const styles = StyleSheet.create({
   roleBadgePillText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 10,
     color: colors.charcoal,
   },
   zoomInstructionWrap: {
@@ -3957,7 +3957,7 @@ const styles = StyleSheet.create({
   zoomInstructionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.paperGlass,
   },
   // WhatsApp-style Quote Container inside Bubble
@@ -3990,7 +3990,7 @@ const styles = StyleSheet.create({
   quoteSender: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     marginBottom: 1,
   },
   myQuoteSender: {
@@ -4002,8 +4002,8 @@ const styles = StyleSheet.create({
   quoteText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 18,
   },
   myQuoteText: {
     color: colors.goldDark,
@@ -4041,13 +4041,13 @@ const styles = StyleSheet.create({
   replyBarSender: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.forest || colors.inkSoft,
   },
   replyBarText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
     marginTop: 1,
   },
@@ -4078,7 +4078,7 @@ const styles = StyleSheet.create({
   actionModalTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.textMuted,
   },
   actionModalItem: {
@@ -4099,13 +4099,13 @@ const styles = StyleSheet.create({
   actionItemTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.charcoal,
   },
   actionItemSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -4119,7 +4119,7 @@ const styles = StyleSheet.create({
   actionModalCancelText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.charcoal,
   },
   // Swipe to reply styles
@@ -4182,7 +4182,7 @@ const styles = StyleSheet.create({
   floatingScrollBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10,
     color: colors.cream,
   },
   // Reaction Bar
@@ -4287,7 +4287,7 @@ const styles = StyleSheet.create({
   toastText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.cream,
   },
   // Wardrobe strip tabs & link button
@@ -4306,7 +4306,7 @@ const styles = StyleSheet.create({
   wardrobeTabMiniText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.charcoal,
   },
   wardrobeTabMiniTextActive: {
@@ -4325,7 +4325,7 @@ const styles = StyleSheet.create({
   wardrobeStripLinkBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.white,
   },
   // In-Message Deal Card (ListHeaderComponent)
@@ -4366,13 +4366,13 @@ const styles = StyleSheet.create({
   inMessageDealModeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.white,
   },
   inMessageDealUnlinkText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.copper,
   },
   inMessageDealContent: {
@@ -4391,13 +4391,13 @@ const styles = StyleSheet.create({
   inMessageDealBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.copper,
   },
   inMessageDealTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     marginTop: 1,
   },
@@ -4419,7 +4419,7 @@ const styles = StyleSheet.create({
   inMessageDealActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   inMessageSellerBanner: {
@@ -4440,7 +4440,7 @@ const styles = StyleSheet.create({
   inMessageSellerBannerText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   // In-Bubble Product Snippet
@@ -4473,12 +4473,12 @@ const styles = StyleSheet.create({
   inBubbleSnippetBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
   },
   inBubbleSnippetTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     marginTop: 1,
   },
   inBubbleSnippetPrice: {
@@ -4495,7 +4495,7 @@ const styles = StyleSheet.create({
   inBubbleSnippetBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
   },
   // Transactions Hub Modal Styles
   hubSection: {

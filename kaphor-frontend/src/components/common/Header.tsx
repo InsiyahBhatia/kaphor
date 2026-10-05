@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: colors.textMuted,
     fontFamily: typography.handwritten,
-    fontSize: 18,
+    fontSize: 13,
     letterSpacing: 0.2,
     marginTop: 0,
     textAlign: 'center',

@@ -223,10 +223,10 @@ export default function SwapDetailScreen() {
               <Text style={styles.wantedTitle}>{garment.title}</Text>
               <Text style={styles.wantedBrand}>{(garment.brand || 'Kaphor Closet').toUpperCase()}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' }}>
-                <Text style={{ fontSize: 16, fontFamily: typography.handwritten, color: colors.textMuted, includeFontPadding: false }}>
+                <Text style={{ fontSize: 13, fontFamily: typography.handwritten, color: colors.textMuted, includeFontPadding: false }}>
                   SIZE: {garment.size || 'OS'}
                 </Text>
-                <Text style={{ fontSize: 16, fontFamily: typography.handSemi, color: colors.crimson, includeFontPadding: false }}>
+                <Text style={{ fontSize: 12, fontFamily: typography.handSemi, color: colors.crimson, includeFontPadding: false }}>
                   {(garment.condition || 'PRISTINE').replace('_', ' ')}
                 </Text>
               </View>
@@ -234,7 +234,7 @@ export default function SwapDetailScreen() {
                 onPress={() => router.push(`/(tabs)/shop/${targetGarmentId}` as any)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}
               >
-                <Text style={{ fontSize: 16, fontFamily: typography.handSemi, color: colors.gold, includeFontPadding: false }}>
+                <Text style={{ fontSize: 13, fontFamily: typography.handSemi, color: colors.gold, includeFontPadding: false }}>
                   View full piece details →
                 </Text>
               </TouchableOpacity>
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   stepDotActive: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
   stepDotText: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.charcoal },
   stepDotTextActive: { color: colors.cream },
-  stepLabel: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
+  stepLabel: { fontFamily: typography.handSemi, fontSize: 11, color: colors.textMuted, includeFontPadding: false, },
   stepLabelActive: { color: colors.charcoal, fontWeight: '900' },
 
   securityNotice: {
@@ -573,17 +573,17 @@ const styles = StyleSheet.create({
   securityNoticeText: {
     flex: 1,
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.navy,
-    lineHeight: 20, includeFontPadding: false, },
+    lineHeight: 18, includeFontPadding: false, },
 
   wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', marginBottom: 8 },
   wantedCardOwn: { borderColor: colors.crimson, backgroundColor: colors.paperLight },
   wantedImage: { width: 100, height: 120 },
   wantedInfo: { flex: 1, padding: 16, justifyContent: 'center' },
-  label: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 16, marginBottom: 4, includeFontPadding: false, },
-  wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 20 },
-  wantedBrand: { color: colors.red, fontFamily: typography.handSemi, fontSize: 16, marginTop: 4, includeFontPadding: false, },
+  label: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 11, marginBottom: 4, includeFontPadding: false, },
+  wantedTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 18 },
+  wantedBrand: { color: colors.red, fontFamily: typography.handSemi, fontSize: 12, marginTop: 4, includeFontPadding: false, },
 
   ownGarmentContainer: {
     backgroundColor: colors.white,
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   },
   fairCountPillText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 11,
     color: colors.forest, includeFontPadding: false, },
   filterChipRow: {
     flexDirection: 'row',
@@ -693,13 +693,13 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 11,
     color: colors.charcoal, includeFontPadding: false, },
   filterChipTextActive: {
     color: colors.cream,
   },
-  sectionTitle: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
-  sectionSubtext: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, lineHeight: 20, marginBottom: 12, marginTop: -12, includeFontPadding: false, },
+  sectionTitle: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 14, includeFontPadding: false, },
+  sectionSubtext: { fontFamily: typography.handwritten, fontSize: 12, color: colors.textMuted, lineHeight: 17, marginBottom: 12, marginTop: -12, includeFontPadding: false, },
   messageInput: {
     backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.charcoal,
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
@@ -707,8 +707,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 17, includeFontPadding: false, },
-  linkText: { color: colors.red, fontFamily: typography.handBold, fontSize: 16, marginTop: 12, includeFontPadding: false, },
+  emptyText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 13, includeFontPadding: false, },
+  linkText: { color: colors.red, fontFamily: typography.handBold, fontSize: 12, marginTop: 12, includeFontPadding: false, },
   offerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   offerCard: { width: '47%', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', position: 'relative' },
   offerCardSelected: { borderColor: colors.charcoal, borderWidth: 2, backgroundColor: colors.overlayLight },
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   cardValuationText: {
     color: colors.cream,
     fontFamily: typography.handBold,
-    fontSize: 16, includeFontPadding: false, },
+    fontSize: 10, includeFontPadding: false, },
   parityTag: {
     position: 'absolute',
     bottom: 6,
@@ -748,14 +748,14 @@ const styles = StyleSheet.create({
   parityTagText: {
     color: colors.white,
     fontFamily: typography.handBold,
-    fontSize: 16, includeFontPadding: false, },
+    fontSize: 10, includeFontPadding: false, },
   offerCardInfo: {
     padding: 8,
     backgroundColor: colors.white,
   },
   offerCategory: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2, includeFontPadding: false, },
   offerImage: { width: '100%', height: 150 },
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', gap: 4,
     backgroundColor: colors.white,
   },
-  photoAddText: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
+  photoAddText: { fontFamily: typography.handSemi, fontSize: 11, color: colors.textMuted, includeFontPadding: false, },
 
   footer: { 
     padding: 20, 
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   },
   zoomInstructionText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 12,
     fontFamily: typography.handBold, includeFontPadding: false, },
   zoomPillSmall: {
     position: 'absolute',
@@ -846,6 +846,6 @@ const styles = StyleSheet.create({
   },
   zoomPillSmallText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 10,
     fontFamily: typography.handBold, includeFontPadding: false, },
 });

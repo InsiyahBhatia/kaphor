@@ -9,14 +9,15 @@ import { colors, typography } from '../../theme';
  * in the normal body font.
  *
  * Caveat is a small font, so sizes here run a little bigger than normal text.
+ * Now that handwritten/handBold map to PlusJakartaSans, sizes are normalized.
  */
 
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 const SIZES: Record<Size, { fontSize: number; lineHeight: number }> = {
-  sm: { fontSize: 17, lineHeight: 21 },
-  md: { fontSize: 20, lineHeight: 25 },
-  lg: { fontSize: 26, lineHeight: 31 },
-  xl: { fontSize: 34, lineHeight: 38 },
+  sm: { fontSize: 13, lineHeight: 18 },
+  md: { fontSize: 14, lineHeight: 20 },
+  lg: { fontSize: 18, lineHeight: 24 },
+  xl: { fontSize: 24, lineHeight: 30 },
 };
 
 interface HandTextProps extends TextProps {
@@ -57,5 +58,5 @@ export function Squiggle({ width = 96, color = colors.rose }: { width?: number; 
 }
 
 export const handStyles = StyleSheet.create({
-  note: { fontFamily: typography.handwritten, fontSize: 20, lineHeight: 25, color: colors.inkSoft },
+  note: { fontFamily: typography.handwritten, fontSize: 14, lineHeight: 20, color: colors.inkSoft },
 });

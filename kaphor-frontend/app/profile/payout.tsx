@@ -600,17 +600,17 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.red,
     marginTop: 4,
   },
   hintText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 4,
-    lineHeight: 21,
+    lineHeight: 17,
   },
   editSecurityNote: {
     flexDirection: 'row',
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
   },
   methodRow: {
     flexDirection: 'row',
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   methodChipText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.charcoal,
   },
   methodChipTextActive: {
@@ -731,10 +731,10 @@ const styles = StyleSheet.create({
   emptySub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 23,
+    lineHeight: 18,
   },
   addFirstBtn: {
     flexDirection: 'row',
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 14,
   },
 
   // ── Info Banner ──
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
   cardMethodText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.cream,
   },
   defaultBadge: {
@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.forest,
   },
   // Card Body
@@ -841,15 +841,15 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   cardDetail: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
-    lineHeight: 21,
+    lineHeight: 18,
     flex: 1,
   },
 
@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
   cardActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
 
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
   addMoreText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.charcoal,
   },
 
@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
   historyToggleText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   emptyHistory: {
@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
   emptyHistoryText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   historyCard: {
@@ -945,7 +945,7 @@ const styles = StyleSheet.create({
   historyDate: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
   },
   historyStatus: {
@@ -955,7 +955,7 @@ const styles = StyleSheet.create({
   historyStatusText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.cream,
   },
 

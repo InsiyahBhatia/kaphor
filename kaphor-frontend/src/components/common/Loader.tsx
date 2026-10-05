@@ -324,11 +324,11 @@ const styles = StyleSheet.create({
   message: {
     marginTop: spacing.lg,
     fontFamily: typography.handSemi,
-    fontSize: 26,
+    fontSize: 18,
     color: colors.ink,
     textAlign: 'center',
   },
-  messageCompact: { marginTop: spacing.md, fontSize: 21 },
+  messageCompact: { marginTop: spacing.md, fontSize: 16 },
   dotRow: { flexDirection: 'row', gap: 6, marginTop: spacing.md },
   stepRow: { flexDirection: 'row', gap: 6, marginTop: spacing.lg },
   stepBar: { width: 28, height: 3, borderRadius: 2, backgroundColor: colors.borderLight },
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   stepCount: {
     marginTop: spacing.sm,
     fontFamily: typography.handwritten,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
   },
 });

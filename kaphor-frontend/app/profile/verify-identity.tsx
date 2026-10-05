@@ -300,9 +300,9 @@ const styles = StyleSheet.create({
   verifiedSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.textMuted,
-    lineHeight: 23,
+    lineHeight: 18,
   },
   detailsRow: {
     flexDirection: 'row',
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.textMuted,
     marginBottom: 4,
   },
@@ -338,16 +338,16 @@ const styles = StyleSheet.create({
   pendingTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 15,
     color: colors.charcoal,
   },
   pendingText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 21,
+    lineHeight: 18,
   },
   introCard: {
     backgroundColor: colors.charcoal,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   introTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.gold,
   },
   introBody: {
@@ -395,15 +395,15 @@ const styles = StyleSheet.create({
   perkTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   perkDesc: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.textMuted,
-    lineHeight: 23,
+    lineHeight: 17,
   },
   formSection: {
     backgroundColor: colors.white,

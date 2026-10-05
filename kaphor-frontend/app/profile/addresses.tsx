@@ -890,10 +890,10 @@ const styles = StyleSheet.create({
   emptySub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 21,
+    lineHeight: 18,
   },
   addFirstBtn: {
     flexDirection: 'row',
@@ -915,7 +915,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
   },
 
   // ── List Content ──
@@ -985,7 +985,7 @@ const styles = StyleSheet.create({
   cardLabelText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.cream,
   },
   defaultBadge: {
@@ -996,13 +996,13 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.forest,
   },
   setDefaultText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     textDecorationLine: 'underline',
   },
@@ -1019,15 +1019,15 @@ const styles = StyleSheet.create({
   cardName: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.charcoal,
   },
   cardDetail: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
-    lineHeight: 21,
+    lineHeight: 18,
     flex: 1,
   },
   cardDivider: {
