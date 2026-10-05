@@ -12,6 +12,7 @@ import {
   Modal,
   Switch,
   Platform,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

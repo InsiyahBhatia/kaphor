@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
-import { colors } from '../../src/theme';
+import { colors, typography } from '../../src/theme';
 import { useGoogleAuth } from '../../src/hooks/useGoogleAuth';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
 import { LegalModal } from '../../src/components/legal/LegalModal';
 import { Spinner } from '../../src/components/common/Loader';
+import { KaphorMark } from '../../src/components/common/KaphorLogo';
+import { Squiggle } from '../../src/components/common/HandText';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   useBackHandler('/(auth)/welcome');
   const { signUp, isLoading } = useAuth();
   const { loginWithGoogle, isGoogleLoading } = useGoogleAuth();
@@ -68,7 +83,6 @@ export default function RegisterScreen() {
       router.replace('/(auth)/style-quiz');
     } catch (error: any) {
       const data = error?.response?.data;
-      // Backend returns field errors as `errors` (legacy) or `details` (zod validate())
       const apiErrors = data?.errors ?? data?.details;
       if (apiErrors && Array.isArray(apiErrors) && apiErrors.length > 0) {
         const msg = apiErrors.map((e: any) => `${e.message}`).join('\n');
@@ -102,137 +116,180 @@ export default function RegisterScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <StatusBar style="dark" />
       <ScrollView 
-        style={styles.container} 
-        contentContainerStyle={styles.inner} 
+        contentContainerStyle={[
+          styles.inner,
+          { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 24) + 40 }
+        ]} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets={true}
         keyboardDismissMode="on-drag"
       >
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
-          style={styles.backBtn} 
-          onPress={() => safeBack('/(auth)/welcome')}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <View style={styles.header}>
-          <Text style={styles.title}>Join Kaphor</Text>
-          <Text style={styles.subtitle}>Begin your circular fashion journey</Text>
-        </View>
-
-      <View style={styles.form}>
-        <TextInput accessibilityLabel="Display name" 
-          placeholder="Display name (e.g. Insiyah)" 
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          value={displayName}
-          onChangeText={setDisplayName}
-        />
-        <TextInput accessibilityLabel="Username" 
-          placeholder="USERNAME" 
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
-        <TextInput accessibilityLabel="Email" 
-          placeholder="EMAIL" 
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-        />
-        <View>
-          <TextInput accessibilityLabel="Password" 
-            placeholder="PASSWORD" 
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-          {strength && (
-            <Text style={[styles.strengthText, { color: strength.color }]}>
-              PASSWORD STRENGTH: {strength.label}
-            </Text>
-          )}
-        </View>
-
-        {/* Terms & Privacy Consent Checkbox */}
-        <View style={styles.termsConsentCard}>
-          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Agree to terms"
-            style={styles.checkboxTouch}
-            onPress={() => setAgreeToTerms(!agreeToTerms)}
-            activeOpacity={0.7}
+        {/* Top Navigation Row */}
+        <View style={styles.topBar}>
+          <TouchableOpacity 
+            accessibilityRole="button" 
+            accessibilityLabel="Go back" 
+            style={styles.backBtn} 
+            onPress={() => safeBack('/(auth)/welcome')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <View style={[styles.checkboxBox, agreeToTerms && styles.checkboxBoxActive]}>
-              {agreeToTerms && <Ionicons name="checkmark" size={14} color={colors.white} />}
-            </View>
+            <Ionicons name="chevron-back" size={26} color={colors.ink} />
           </TouchableOpacity>
-          <View style={styles.termsTextWrap}>
-            <Text style={styles.termsText}>
-              I confirm I am 18+ and agree to KaPhor's{' '}
-              <Text style={styles.termsLink} onPress={() => openLegal('terms-and-conditions')}>
-                Terms of Use
+
+          <View style={styles.brandRow}>
+            <KaphorMark size={28} />
+            <Text style={styles.brandName}>KAPHOR</Text>
+          </View>
+
+          <View style={styles.topSpacer} />
+        </View>
+
+        <View style={styles.header}>
+          <Text style={styles.title}>Join KaPhor</Text>
+          <Squiggle width={90} />
+          <Text style={styles.subtitle}>begin your circular fashion journey</Text>
+        </View>
+
+        <View style={styles.form}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>DISPLAY NAME</Text>
+            <TextInput 
+              accessibilityLabel="Display name" 
+              placeholder="e.g. Insiyah" 
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+              value={displayName}
+              onChangeText={setDisplayName}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>USERNAME</Text>
+            <TextInput 
+              accessibilityLabel="Username" 
+              placeholder="yourhandle" 
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>EMAIL</Text>
+            <TextInput 
+              accessibilityLabel="Email" 
+              placeholder="name@example.com" 
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>PASSWORD</Text>
+            <TextInput 
+              accessibilityLabel="Password" 
+              placeholder="••••••••••••" 
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+            {strength && (
+              <Text style={[styles.strengthText, { color: strength.color }]}>
+                PASSWORD STRENGTH: {strength.label}
               </Text>
-              {', '}
-              <Text style={styles.termsLink} onPress={() => openLegal('privacy-policy')}>
-                Privacy Policy
+            )}
+          </View>
+
+          {/* Terms & Privacy Consent Checkbox */}
+          <View style={styles.termsConsentCard}>
+            <TouchableOpacity 
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} 
+              accessibilityRole="button" 
+              accessibilityLabel="Agree to terms"
+              style={styles.checkboxTouch}
+              onPress={() => setAgreeToTerms(!agreeToTerms)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkboxBox, agreeToTerms && styles.checkboxBoxActive]}>
+                {agreeToTerms && <Ionicons name="checkmark" size={13} color={colors.white} />}
+              </View>
+            </TouchableOpacity>
+            <View style={styles.termsTextWrap}>
+              <Text style={styles.termsText}>
+                I confirm I am 18+ and agree to KaPhor's{' '}
+                <Text style={styles.termsLink} onPress={() => openLegal('terms-and-conditions')}>
+                  Terms of Use
+                </Text>
+                {', '}
+                <Text style={styles.termsLink} onPress={() => openLegal('privacy-policy')}>
+                  Privacy Policy
+                </Text>
+                {' & '}
+                <Text style={styles.termsLink} onPress={() => openLegal('community-policy')}>
+                  Community Standards
+                </Text>
+                .
               </Text>
-              {' & '}
-              <Text style={styles.termsLink} onPress={() => openLegal('community-policy')}>
-                Community Standards
-              </Text>
-              .
-            </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity 
+            style={[styles.button, isLoading && styles.buttonDisabled]}
+            onPress={handleRegister}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Create account"
+          >
+            {isLoading ? (
+              <Spinner color={colors.white} />
+            ) : (
+              <Text style={styles.buttonText}>Create Account</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or continue with</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TouchableOpacity 
+            style={styles.googleButton}
+            onPress={handleGoogleLogin}
+            disabled={isLoading || isGoogleLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Continue with Google"
+          >
+            {isGoogleLoading ? (
+              <Spinner color={colors.ink} />
+            ) : (
+              <>
+                <Ionicons name="logo-google" size={18} color={colors.ink} />
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
+              </>
+            )}
+          </TouchableOpacity>
+          
+          <View style={styles.footerRow}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+              <Text style={styles.footerLink}>Sign In</Text>
+            </TouchableOpacity>
           </View>
         </View>
-
-        <TouchableOpacity 
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleRegister}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <Spinner color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>Create account</Text>
-          )}
-        </TouchableOpacity>
-
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <TouchableOpacity 
-          style={styles.googleButton}
-          onPress={handleGoogleLogin}
-          disabled={isLoading || isGoogleLoading}
-        >
-          {isGoogleLoading ? (
-            <Spinner color={colors.textPrimary} />
-          ) : (
-            <>
-              <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            </>
-          )}
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.footerLink}
-          onPress={() => router.push('/(auth)/login')}
-        >
-          <Text style={styles.footerText}>Already have an account? Login</Text>
-        </TouchableOpacity>
-      </View>
       </ScrollView>
 
       {/* Reusable Legal Modal */}
@@ -251,59 +308,98 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.paper,
   },
   inner: {
-    padding: 24,
-    paddingBottom: 180,
+    paddingHorizontal: 24,
+    flexGrow: 1,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   backBtn: {
-    marginTop: 20,
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  brandName: {
+    fontFamily: typography.condensed,
+    fontSize: 22,
+    letterSpacing: 4,
+    color: colors.ink,
+    includeFontPadding: false,
+  },
+  topSpacer: {
+    width: 40,
+  },
   header: {
-    marginTop: 10,
-    marginBottom: 30,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   title: {
-    fontSize: 40,
-    fontFamily: 'BebasNeue_400Regular',
-    color: colors.textPrimary,
-    letterSpacing: -1,
+    fontFamily: typography.headings,
+    fontSize: 32,
+    lineHeight: 38,
+    color: colors.ink,
+    textAlign: 'center',
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: colors.textSecond,
-    marginTop: 8,
-    lineHeight: 22,
+    fontFamily: typography.handSemi,
+    fontSize: 20,
+    color: colors.rose,
+    marginTop: 6,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   form: {
-    gap: 20,
-    paddingBottom: 40,
+    gap: 14,
+  },
+  inputContainer: {
+    gap: 6,
+  },
+  inputLabel: {
+    fontFamily: typography.condensed,
+    fontSize: 13,
+    letterSpacing: 1.5,
+    color: colors.inkSoft,
   },
   input: {
-    height: 60,
+    height: 52,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    color: colors.textPrimary,
-    fontSize: 16,
+    borderColor: colors.borderLight,
+    borderRadius: 14,
+    color: colors.ink,
+    fontFamily: typography.body,
+    fontSize: 15,
     paddingHorizontal: 16,
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.paperLight,
+  },
+  strengthText: {
+    fontFamily: typography.condensed,
+    fontSize: 12,
+    letterSpacing: 1,
+    marginTop: 2,
   },
   termsConsentCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.paperLight,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     gap: 12,
-    marginTop: 4,
+    marginTop: 2,
   },
   checkboxTouch: {
     paddingTop: 2,
@@ -313,63 +409,47 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: colors.textMuted,
-    backgroundColor: colors.bg,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxBoxActive: {
-    backgroundColor: colors.crimson,
-    borderColor: colors.crimson,
+    backgroundColor: colors.rose,
+    borderColor: colors.rose,
   },
   termsTextWrap: {
     flex: 1,
   },
   termsText: {
+    fontFamily: typography.body,
     fontSize: 12,
     lineHeight: 18,
     color: colors.textSecond,
   },
   termsLink: {
-    color: colors.crimson,
-    fontWeight: '700',
+    fontFamily: typography.bodyBold,
+    color: colors.rose,
     textDecorationLine: 'underline',
   },
   button: {
-    backgroundColor: colors.crimson,
-    height: 56,
-    borderRadius: 12,
+    backgroundColor: colors.rose,
+    height: 54,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
-    shadowColor: colors.crimson,
+    marginTop: 6,
+    shadowColor: colors.rose,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.22,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   buttonText: {
     color: colors.white,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 2,
-  },
-  footerLink: {
-    marginTop: 16,
-    alignItems: 'center',
-    padding: 8,
-  },
-  footerText: {
-    color: colors.textSecond,
-    fontSize: 12,
-    letterSpacing: 1,
-    fontWeight: '700',
-  },
-  strengthText: {
-    fontSize: 11,
-    letterSpacing: 1,
-    marginTop: 4,
-    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -377,35 +457,50 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 32,
+    marginVertical: 10,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderLight,
   },
   dividerText: {
     color: colors.textMuted,
-    paddingHorizontal: 16,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
+    paddingHorizontal: 12,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
   },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
-    height: 56,
-    borderRadius: 12,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    height: 54,
+    borderRadius: 14,
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
   },
   googleButtonText: {
-    color: colors.textPrimary,
+    color: colors.ink,
+    fontFamily: typography.bodyBold,
+    fontSize: 15,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  footerText: {
+    fontFamily: typography.body,
     fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 1,
+    color: colors.textSecond,
+  },
+  footerLink: {
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
+    color: colors.rose,
+    textDecorationLine: 'underline',
   },
 });

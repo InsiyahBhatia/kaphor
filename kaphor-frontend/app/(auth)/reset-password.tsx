@@ -12,14 +12,19 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../src/services/api';
-import { colors } from '../../src/theme';
+import { colors, typography } from '../../src/theme';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
 import { Spinner } from '../../src/components/common/Loader';
 import { getErrorMessage } from '../../src/utils/errors';
+import { KaphorMark } from '../../src/components/common/KaphorLogo';
+import { Squiggle } from '../../src/components/common/HandText';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   useBackHandler('/(auth)/login');
   const { token: urlToken } = useLocalSearchParams<{ token?: string }>();
 
@@ -65,12 +70,14 @@ export default function ResetPasswordScreen() {
 
   if (success) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+        <StatusBar style="dark" />
         <View style={styles.center}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="checkmark-circle-outline" size={56} color={colors.forest} />
+          <View style={[styles.iconCircle, { backgroundColor: colors.emeraldLight, borderColor: colors.forest }]}>
+            <Ionicons name="checkmark-circle-outline" size={44} color={colors.forest} />
           </View>
           <Text style={styles.title}>Password reset</Text>
+          <Squiggle width={90} />
           <Text style={styles.subtitle}>
             Your password has been successfully updated. You can now log in with your new credentials.
           </Text>
@@ -78,8 +85,10 @@ export default function ResetPasswordScreen() {
             style={styles.mainBtn}
             onPress={() => router.replace('/(auth)/login')}
             activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Go to sign in"
           >
-            <Text style={styles.mainBtnText}>Go to login</Text>
+            <Text style={styles.mainBtnText}>Back to Sign In</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -91,171 +100,256 @@ export default function ResetPasswordScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <StatusBar style="dark" />
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 24) + 40 }
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets={true}
         keyboardDismissMode="on-drag"
       >
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back"
-          style={styles.backBtn}
-          onPress={() => safeBack('/(auth)/login')}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-        </TouchableOpacity>
+        <View style={styles.topBar}>
+          <TouchableOpacity 
+            accessibilityRole="button" 
+            accessibilityLabel="Go back"
+            style={styles.backBtn}
+            onPress={() => safeBack('/(auth)/login')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="chevron-back" size={26} color={colors.ink} />
+          </TouchableOpacity>
+
+          <View style={styles.brandRow}>
+            <KaphorMark size={28} />
+            <Text style={styles.brandName}>KAPHOR</Text>
+          </View>
+
+          <View style={styles.topSpacer} />
+        </View>
 
         <View style={styles.center}>
-        <View style={styles.iconCircle}>
-          <Ionicons name="key-outline" size={40} color={colors.crimson} />
-        </View>
-        <Text style={styles.title}>Reset password</Text>
-        <Text style={styles.subtitle}>
-          Enter your new password below to secure your KaPhor account.
-        </Text>
+          <View style={styles.iconCircle}>
+            <Ionicons name="key-outline" size={40} color={colors.rose} />
+          </View>
+          <Text style={styles.title}>Reset password</Text>
+          <Squiggle width={90} />
+          <Text style={styles.subtitle}>
+            Enter your new password below to secure your KaPhor account.
+          </Text>
 
-        {!urlToken && (
-          <TextInput accessibilityLabel="Reset token"
-            style={styles.input}
-            placeholder="Reset token"
-            placeholderTextColor={colors.textMuted}
-            value={token}
-            onChangeText={setToken}
-            autoCapitalize="none"
-          />
-        )}
+          {!urlToken && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>RESET TOKEN</Text>
+              <TextInput 
+                accessibilityLabel="Reset token"
+                style={styles.input}
+                placeholder="Paste reset token"
+                placeholderTextColor={colors.textMuted}
+                value={token}
+                onChangeText={setToken}
+                autoCapitalize="none"
+              />
+            </View>
+          )}
 
-        <View style={styles.passwordWrapper}>
-          <TextInput accessibilityLabel="New password"
-            style={styles.passwordInput}
-            placeholder="New password"
-            placeholderTextColor={colors.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeBtn}
-          >
-            <Ionicons
-              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={20}
-              color={colors.textMuted}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>NEW PASSWORD</Text>
+            <View style={styles.passwordWrapper}>
+              <TextInput 
+                accessibilityLabel="New password"
+                style={styles.passwordInput}
+                placeholder="New password (min 8 chars)"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity 
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} 
+                accessibilityRole="button" 
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeBtn}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>CONFIRM NEW PASSWORD</Text>
+            <TextInput 
+              accessibilityLabel="Confirm new password"
+              style={styles.input}
+              placeholder="Confirm new password"
+              placeholderTextColor={colors.textMuted}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
             />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.mainBtn, loading && styles.btnDisabled]}
+            onPress={handleReset}
+            disabled={loading}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Update password"
+          >
+            {loading ? (
+              <Spinner color={colors.white} />
+            ) : (
+              <Text style={styles.mainBtnText}>Update Password</Text>
+            )}
           </TouchableOpacity>
         </View>
-
-        <TextInput accessibilityLabel="Confirm new password"
-          style={styles.input}
-          placeholder="Confirm new password"
-          placeholderTextColor={colors.textMuted}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry={!showPassword}
-          autoCapitalize="none"
-        />
-
-        <TouchableOpacity
-          style={styles.mainBtn}
-          onPress={handleReset}
-          disabled={loading}
-          activeOpacity={0.85}
-        >
-          {loading ? (
-            <Spinner color={colors.white} />
-          ) : (
-            <Text style={styles.mainBtnText}>Update password</Text>
-          )}
-        </TouchableOpacity>
-      </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  scrollContent: { padding: 24, paddingBottom: 160, flexGrow: 1 },
-  backBtn: { marginTop: 36, width: 44, height: 44, justifyContent: 'center' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.crimsonLight,
+  container: {
+    flex: 1,
+    backgroundColor: colors.paper,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    flexGrow: 1,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  brandName: {
+    fontFamily: typography.condensed,
+    fontSize: 22,
+    letterSpacing: 4,
+    color: colors.ink,
+    includeFontPadding: false,
+  },
+  topSpacer: {
+    width: 40,
+  },
+  center: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 14,
+    marginVertical: 16,
+  },
+  iconCircle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: colors.paperLight,
+    borderWidth: 1.5,
+    borderColor: colors.borderLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   title: {
+    fontFamily: typography.headings,
     fontSize: 32,
-    fontFamily: 'BebasNeue_400Regular',
-    color: colors.textPrimary,
+    color: colors.ink,
     textAlign: 'center',
-    letterSpacing: 1,
   },
   subtitle: {
-    color: colors.textMuted,
+    color: colors.textSecond,
+    fontFamily: typography.body,
     fontSize: 15,
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 16,
-    fontWeight: '500',
+  },
+  inputContainer: {
+    width: '100%',
+    gap: 6,
+  },
+  inputLabel: {
+    fontFamily: typography.condensed,
+    fontSize: 13,
+    letterSpacing: 1.5,
+    color: colors.inkSoft,
   },
   input: {
     width: '100%',
-    height: 56,
+    height: 52,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     borderRadius: 14,
-    paddingHorizontal: 18,
-    color: colors.textPrimary,
+    paddingHorizontal: 16,
+    color: colors.ink,
+    fontFamily: typography.body,
     fontSize: 15,
-    letterSpacing: 0.5,
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.paperLight,
   },
   passwordWrapper: {
     width: '100%',
-    height: 56,
+    height: 52,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.bgCard,
-    paddingHorizontal: 18,
+    backgroundColor: colors.paperLight,
+    paddingHorizontal: 16,
   },
   passwordInput: {
     flex: 1,
     height: '100%',
-    color: colors.textPrimary,
+    color: colors.ink,
+    fontFamily: typography.body,
     fontSize: 15,
-    letterSpacing: 0.5,
   },
   eyeBtn: {
-    padding: 8,
+    padding: 6,
   },
   mainBtn: {
     width: '100%',
-    height: 56,
-    backgroundColor: colors.crimson,
+    height: 54,
+    backgroundColor: colors.rose,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.crimson,
+    shadowColor: colors.rose,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.22,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
     marginTop: 8,
   },
   mainBtnText: {
     color: colors.white,
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 2,
+    fontFamily: typography.bodyBold,
+    fontSize: 16,
+    letterSpacing: 0.5,
+  },
+  btnDisabled: {
+    opacity: 0.6,
   },
 });

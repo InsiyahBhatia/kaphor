@@ -7,13 +7,18 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../src/services/api';
-import { colors } from '../../src/theme';
+import { colors, typography } from '../../src/theme';
 import { Loader } from '../../src/components/common/Loader';
 import { getErrorMessage } from '../../src/utils/errors';
+import { KaphorMark } from '../../src/components/common/KaphorLogo';
+import { Squiggle } from '../../src/components/common/HandText';
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { token } = useLocalSearchParams<{ token?: string }>();
 
   const [loading, setLoading] = useState(true);
@@ -44,44 +49,59 @@ export default function VerifyEmailScreen() {
   }, [token]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: Math.max(insets.bottom, 24) + 16 }]}>
+      <StatusBar style="dark" />
+      <View style={styles.topBar}>
+        <View style={styles.brandRow}>
+          <KaphorMark size={32} />
+          <Text style={styles.brandName}>KAPHOR</Text>
+        </View>
+      </View>
+
       <View style={styles.center}>
         {loading ? (
           <>
             <Loader compact variant="checkout" message="" />
             <Text style={styles.title}>Verifying email</Text>
+            <Squiggle width={90} />
             <Text style={styles.subtitle}>Securing your KaPhor designer circular account...</Text>
           </>
         ) : success ? (
           <>
-            <View style={[styles.iconCircle, { backgroundColor: colors.emeraldLight }]}>
-              <Ionicons name="checkmark-done-circle-outline" size={56} color={colors.forest} />
+            <View style={[styles.iconCircle, { backgroundColor: colors.emeraldLight, borderColor: colors.forest }]}>
+              <Ionicons name="checkmark-done-circle-outline" size={44} color={colors.forest} />
             </View>
             <Text style={styles.title}>Email verified</Text>
+            <Squiggle width={90} />
             <Text style={styles.subtitle}>
-              Your email has been successfully confirmed. You're ready to explore sustainable fashion.
+              Your email has been successfully confirmed. You're ready to explore sustainable circular fashion.
             </Text>
             <TouchableOpacity
               style={styles.mainBtn}
               onPress={() => router.replace('/(auth)/login')}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Continue to sign in"
             >
-              <Text style={styles.mainBtnText}>Continue to login</Text>
+              <Text style={styles.mainBtnText}>Continue to Sign In</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
-            <View style={[styles.iconCircle, { backgroundColor: colors.crimsonLight }]}>
-              <Ionicons name="alert-circle-outline" size={56} color={colors.crimson} />
+            <View style={[styles.iconCircle, { backgroundColor: colors.crimsonLight, borderColor: colors.rose }]}>
+              <Ionicons name="alert-circle-outline" size={44} color={colors.rose} />
             </View>
             <Text style={styles.title}>Verification failed</Text>
+            <Squiggle width={90} />
             <Text style={styles.subtitle}>{errorMessage}</Text>
             <TouchableOpacity
               style={styles.mainBtn}
               onPress={() => router.replace('/(auth)/login')}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Back to sign in"
             >
-              <Text style={styles.mainBtnText}>Back to login</Text>
+              <Text style={styles.mainBtnText}>Back to Sign In</Text>
             </TouchableOpacity>
           </>
         )}
@@ -91,49 +111,75 @@ export default function VerifyEmailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 24 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.paper, 
+    paddingHorizontal: 24,
+  },
+  topBar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  brandName: {
+    fontFamily: typography.condensed,
+    fontSize: 26,
+    letterSpacing: 5,
+    color: colors.ink,
+    includeFontPadding: false,
+  },
+  center: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    gap: 16,
+  },
   iconCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   title: {
+    fontFamily: typography.headings,
     fontSize: 32,
-    fontFamily: 'BebasNeue_400Regular',
-    color: colors.textPrimary,
+    color: colors.ink,
     textAlign: 'center',
-    letterSpacing: 1,
   },
   subtitle: {
-    color: colors.textMuted,
+    color: colors.textSecond,
+    fontFamily: typography.body,
     fontSize: 15,
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
-    fontWeight: '500',
   },
   mainBtn: {
     width: '100%',
-    height: 56,
-    backgroundColor: colors.crimson,
+    height: 54,
+    backgroundColor: colors.rose,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.crimson,
+    shadowColor: colors.rose,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.22,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
     marginTop: 16,
   },
   mainBtnText: {
     color: colors.white,
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 2,
+    fontFamily: typography.bodyBold,
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
 });

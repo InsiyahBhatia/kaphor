@@ -46,6 +46,7 @@ kaphor/node_modules/
 kaphor-frontend/node_modules/
 kaphor/backend/node_modules/
 kaphor/.env
+kaphor/backend/.env
 kaphor-frontend/.env
 
 # ML research raw datasets, checkpoints, and large weights (>100MB)

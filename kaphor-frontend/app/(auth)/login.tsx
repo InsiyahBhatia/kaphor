@@ -1,15 +1,31 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+  Image,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
-import { colors } from '../../src/theme';
+import { colors, typography } from '../../src/theme';
 import { useGoogleAuth } from '../../src/hooks/useGoogleAuth';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
 import { Spinner } from '../../src/components/common/Loader';
+import { KaphorMark } from '../../src/components/common/KaphorLogo';
+import { Squiggle } from '../../src/components/common/HandText';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   useBackHandler('/(auth)/welcome');
   const { signIn, isLoading } = useAuth();
   const { loginWithGoogle, isGoogleLoading } = useGoogleAuth();
@@ -40,62 +56,108 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <StatusBar style="dark" />
       <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 24) + 40 }
+        ]} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets={true}
         keyboardDismissMode="on-drag"
       >
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" 
-          style={styles.backBtn} 
-          onPress={() => safeBack('/(auth)/welcome')}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Enter your credentials to continue</Text>
+        {/* Top Navigation Row */}
+        <View style={styles.topBar}>
+          <TouchableOpacity 
+            accessibilityRole="button" 
+            accessibilityLabel="Go back" 
+            style={styles.backBtn} 
+            onPress={() => safeBack('/(auth)/welcome')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="chevron-back" size={26} color={colors.ink} />
+          </TouchableOpacity>
+
+          <View style={styles.brandRow}>
+            <KaphorMark size={28} />
+            <Text style={styles.brandName}>KAPHOR</Text>
+          </View>
+
+          <View style={styles.topSpacer} />
         </View>
 
+        {/* Editorial Muse Woman Illustration & Greeting */}
+        <View style={styles.museHeroWrap}>
+          <Image
+            source={require('../../assets/editorial/indian/muse_pink_banarasi.png')}
+            style={styles.museImage}
+            resizeMode="contain"
+            accessibilityLabel="A stylish woman muse in a festive pink saree with gajra"
+          />
+        </View>
+
+        <View style={styles.header}>
+          <Text style={styles.title}>Welcome back</Text>
+          <Squiggle width={90} />
+          <Text style={styles.subtitle}>your circular wardrobe awaits</Text>
+        </View>
+
+        {/* Form */}
         <View style={styles.form}>
-          <TextInput accessibilityLabel="Email" 
-            placeholder="EMAIL" 
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-          />
-          <TextInput accessibilityLabel="Password" 
-            placeholder="PASSWORD" 
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-          <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 4 }} onPress={() => router.push('/(auth)/forgot-password')}>
-            <Text style={{ color: colors.gold, fontSize: 12, letterSpacing: 1, fontWeight: '700' }}>Forgot password?</Text>
-          </TouchableOpacity>
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>EMAIL</Text>
+            <TextInput 
+              accessibilityLabel="Email" 
+              placeholder="name@example.com" 
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <View style={styles.passwordLabelRow}>
+              <Text style={styles.inputLabel}>PASSWORD</Text>
+              <TouchableOpacity 
+                onPress={() => router.push('/(auth)/forgot-password')}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput 
+              accessibilityLabel="Password" 
+              placeholder="••••••••••••" 
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
 
           <TouchableOpacity 
             style={[styles.button, isLoading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Sign in"
           >
             {isLoading ? (
               <Spinner color={colors.white} />
             ) : (
-              <Text style={styles.buttonText}>Login</Text>
+              <Text style={styles.buttonText}>Sign In</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
+            <Text style={styles.dividerText}>or continue with</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -103,16 +165,25 @@ export default function LoginScreen() {
             style={styles.googleButton}
             onPress={handleGoogleLogin}
             disabled={isLoading || isGoogleLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Continue with Google"
           >
             {isGoogleLoading ? (
-              <Spinner color={colors.textPrimary} />
+              <Spinner color={colors.ink} />
             ) : (
               <>
-                <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
+                <Ionicons name="logo-google" size={18} color={colors.ink} />
                 <Text style={styles.googleButtonText}>Continue with Google</Text>
               </>
             )}
           </TouchableOpacity>
+
+          <View style={styles.footerRow}>
+            <Text style={styles.footerText}>New to KaPhor? </Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/register' as any)}>
+              <Text style={styles.footerLink}>Create an account</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -122,67 +193,122 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.paper,
   },
   scrollContent: {
-    padding: 24,
-    paddingBottom: 160,
+    paddingHorizontal: 24,
     flexGrow: 1,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   backBtn: {
-    marginTop: 36,
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  brandName: {
+    fontFamily: typography.condensed,
+    fontSize: 22,
+    letterSpacing: 4,
+    color: colors.ink,
+    includeFontPadding: false,
+  },
+  topSpacer: {
+    width: 40,
+  },
+  museHeroWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 140,
+    marginVertical: 4,
+  },
+  museImage: {
+    width: 140,
+    height: 140,
+  },
   header: {
-    marginTop: 20,
-    marginBottom: 40,
+    alignItems: 'center',
+    marginBottom: 24,
   },
   title: {
-    fontSize: 40,
-    fontFamily: 'BebasNeue_400Regular',
-    color: colors.textPrimary,
-    letterSpacing: -1,
+    fontFamily: typography.headings,
+    fontSize: 32,
+    lineHeight: 38,
+    color: colors.ink,
+    textAlign: 'center',
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: colors.textSecond,
-    marginTop: 8,
-    lineHeight: 22,
+    fontFamily: typography.handSemi,
+    fontSize: 20,
+    color: colors.rose,
+    marginTop: 6,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   form: {
-    gap: 20,
+    gap: 16,
+  },
+  inputContainer: {
+    gap: 6,
+  },
+  inputLabel: {
+    fontFamily: typography.condensed,
+    fontSize: 13,
+    letterSpacing: 1.5,
+    color: colors.inkSoft,
+  },
+  passwordLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  forgotPasswordText: {
+    fontFamily: typography.handSemi,
+    fontSize: 16,
+    color: colors.rose,
+    textDecorationLine: 'underline',
+    includeFontPadding: false,
   },
   input: {
-    height: 60,
+    height: 52,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    color: colors.textPrimary,
-    fontSize: 16,
+    borderColor: colors.borderLight,
+    borderRadius: 14,
+    color: colors.ink,
+    fontFamily: typography.body,
+    fontSize: 15,
     paddingHorizontal: 16,
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.paperLight,
   },
   button: {
-    backgroundColor: colors.crimson,
-    height: 56,
-    borderRadius: 12,
+    backgroundColor: colors.rose,
+    height: 54,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
-    shadowColor: colors.crimson,
+    marginTop: 6,
+    shadowColor: colors.rose,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.22,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   buttonText: {
     color: colors.white,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 2,
+    letterSpacing: 0.5,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -190,35 +316,50 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 32,
+    marginVertical: 14,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderLight,
   },
   dividerText: {
     color: colors.textMuted,
-    paddingHorizontal: 16,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
+    paddingHorizontal: 12,
+    fontFamily: typography.handwritten,
+    fontSize: 16,
   },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
-    height: 56,
-    borderRadius: 12,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    height: 54,
+    borderRadius: 14,
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
   },
   googleButtonText: {
-    color: colors.textPrimary,
+    color: colors.ink,
+    fontFamily: typography.bodyBold,
+    fontSize: 15,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  footerText: {
+    fontFamily: typography.body,
     fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 1,
+    color: colors.textSecond,
+  },
+  footerLink: {
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
+    color: colors.rose,
+    textDecorationLine: 'underline',
   },
 });
