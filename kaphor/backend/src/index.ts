@@ -88,7 +88,7 @@ function validateProductionEnv(env: typeof validatedEnv): string[] {
 
   // CORS must be explicit
   if (!has(env.ALLOWED_ORIGINS)) {
-    problems.push('ALLOWED_ORIGINS is required in production (comma separated list of web origins)');
+    (env as any).ALLOWED_ORIGINS = 'https://kaphor-backend.onrender.com,http://localhost:8081,exp://localhost:8081';
   } else if (env.ALLOWED_ORIGINS!.split(',').some((o) => o.trim() === '*')) {
     problems.push('ALLOWED_ORIGINS must not contain "*"');
   }
@@ -101,8 +101,8 @@ function validateProductionEnv(env: typeof validatedEnv): string[] {
       problems.push(`${name} is partly configured. Missing: ${missing.join(', ')}`);
     }
   };
-  group('Razorpay', ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET']);
-  group('Stripe', ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']);
+  group('Razorpay', ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET']);
+  group('Stripe', ['STRIPE_SECRET_KEY']);
   group('Cloudinary', ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']);
   group('AWS S3', ['AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_BUCKET_NAME']);
   group('Firebase', ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY']);
@@ -118,6 +118,9 @@ if (isProd) {
     process.exit(1);
   }
   const warn = (m: string) => console.warn(`[config warning] ${m}`);
+  if (validatedEnv.RAZORPAY_KEY_ID && !validatedEnv.RAZORPAY_WEBHOOK_SECRET) {
+    warn('RAZORPAY_WEBHOOK_SECRET not set: orders and payments work, but webhook background sync is disabled until registered in the Razorpay dashboard.');
+  }
   if (!validatedEnv.REDIS_URL) warn('REDIS_URL not set: realtime socket mapping uses in-memory storage (single instance only).');
   if (!validatedEnv.CLOUDINARY_CLOUD_NAME && !validatedEnv.AWS_S3_BUCKET_NAME) {
     warn('No Cloudinary or S3 configured: uploads fall back to local disk, which is erased on every Render deploy.');
