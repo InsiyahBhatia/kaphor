@@ -83,6 +83,7 @@ export const typography = {
   // Modern Clean Luxury Body Copy (High readability, elegant geometric sans)
   body: 'PlusJakartaSans_400Regular',
   bodyMedium: 'PlusJakartaSans_500Medium',
+  bodySemi: 'PlusJakartaSans_600SemiBold',
   bodyBold: 'PlusJakartaSans_700Bold',
 
   // Monospace & Editorial Metadata (Stamps, SKUs, Technical Tags)
@@ -92,11 +93,14 @@ export const typography = {
   // Bold Capsule / Poster Condensed
   condensed: 'BebasNeue_400Regular',
 
-  // Handwritten Editorial Annotations & Signatures
+  // Dedicated Handwritten Taglines ONLY (Reserved for hero notes and auth taglines)
+  tagline: 'Caveat_600SemiBold',
   script: 'Caveat_400Regular',
-  handwritten: 'Caveat_400Regular',
-  handSemi: 'Caveat_600SemiBold',
-  handBold: 'Caveat_700Bold',
+
+  // Clean UI Typography (Restores crisp readability across the app, eliminating cursive body text)
+  handwritten: 'PlusJakartaSans_400Regular',
+  handSemi: 'PlusJakartaSans_500Medium',
+  handBold: 'PlusJakartaSans_700Bold',
 } as const;
 
 export const spacing = {

@@ -66,9 +66,9 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '2deg' }],
   },
   noteText: {
-    fontFamily: typography.script || typography.accent,
-    fontSize: 15,
-    lineHeight: 20,
+    fontFamily: typography.tagline,
+    fontSize: 16,
+    lineHeight: 22,
     color: colors.inkSoft,
     letterSpacing: 0.2,
   },

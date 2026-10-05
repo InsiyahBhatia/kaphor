@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subtitle: {
-    fontFamily: typography.handSemi,
+    fontFamily: typography.tagline,
     fontSize: 20,
     color: colors.rose,
     marginTop: 6,

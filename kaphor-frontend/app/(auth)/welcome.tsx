@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   note: {
     marginTop: 8,
-    fontFamily: typography.handSemi,
+    fontFamily: typography.tagline,
     fontSize: 22,
     lineHeight: 27,
     color: colors.rose,
