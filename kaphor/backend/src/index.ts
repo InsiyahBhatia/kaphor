@@ -134,6 +134,7 @@ const { initSocket, closeSocket, getAllowedOrigins } = require('./lib/socket') a
 const { closeRedis } = require('./lib/redis') as typeof import('./lib/redis');
 const rl = require('./middleware/rateLimiters') as typeof import('./middleware/rateLimiters');
 const { initGLIE } = require('./services/glie') as typeof import('./services/glie');
+const { defaultApiCacheHeaders } = require('./lib/httpCache') as typeof import('./lib/httpCache');
 
 const { authRouter } = require('./routes/auth.routes') as typeof import('./routes/auth.routes');
 const { garmentRouter } = require('./routes/garment.routes') as typeof import('./routes/garment.routes');
@@ -228,7 +229,12 @@ app.use(
     frameguard: { action: 'deny' },
   })
 );
-app.use(compression());
+app.use(
+  compression({
+    threshold: 1024,
+    level: 6,
+  })
+);
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 // Mobile apps send no Origin header, so requests without one are allowed.
@@ -326,6 +332,7 @@ app.put(`${baseApiUrl}/garments/:id`, rl.uploadLimiter);
 app.put(`${baseApiUrl}/users/me/avatar`, rl.uploadLimiter);
 
 // ── Routes ──────────────────────────────────────────────────────────────────
+app.use(baseApiUrl, defaultApiCacheHeaders);
 app.use(`${baseApiUrl}/auth`, authRouter);
 app.use(`${baseApiUrl}/garments`, garmentRouter);
 app.use(`${baseApiUrl}/interactions`, interactionRouter);
