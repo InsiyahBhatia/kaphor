@@ -26,6 +26,7 @@ import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { hapticFeedback } from '../../../../src/utils/haptics';
 import { Spinner, Loader } from '../../../../src/components/common/Loader';
+import { peek, hydrate } from '../../../../src/utils/swrCache';
 
 const statusConfig = {
   PENDING:    { label: 'AWAITING PAYMENT',   color: colors.red,        icon: 'time-outline' },
@@ -41,6 +42,12 @@ const timelineSteps = [
   { key: 'SHIPPED',    label: 'Shipped' },
   { key: 'DELIVERED',  label: 'Delivered' },
 ];
+
+// ── Instant-paint session cache ─────────────────────────────────
+// The last viewed copy of each order thread is kept in memory so reopening a
+// tracking screen paints immediately and revalidates in the background
+// (stale-while-revalidate), instead of staring at a full-screen spinner.
+const orderThreadCache = new Map<string, { order: TransactionOrder; messages: OrderMessage[] }>();
 
 function AddressCard({ address }: { address: ShippingAddress }) {
   return (
@@ -156,10 +163,12 @@ export default function OrderThreadScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   useBackHandler('/(tabs)/orders');
-  const [order, setOrder] = useState<TransactionOrder | null>(null);
-  const [messages, setMessages] = useState<OrderMessage[]>([]);
+  // Seed from the session cache so a revisit renders the thread with zero network wait
+  const cachedThread = orderId ? orderThreadCache.get(orderId) : undefined;
+  const [order, setOrder] = useState<TransactionOrder | null>(cachedThread?.order ?? null);
+  const [messages, setMessages] = useState<OrderMessage[]>(cachedThread?.messages ?? []);
   const [draft, setDraft] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedThread);
   const [sending, setSending] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
@@ -189,15 +198,37 @@ export default function OrderThreadScreen() {
     try {
       const [o, msgs] = await Promise.all([
         orderService.getOrder(orderId),
-        orderService.getMessages(orderId).catch(() => []),
+        orderService.getMessages(orderId).catch(() => [] as OrderMessage[]),
       ]);
       setOrder(o);
       setMessages(msgs);
+      orderThreadCache.set(orderId, { order: o, messages: msgs });
     } catch {
-      setOrder(null);
+      // Only show the error state when we have nothing cached to display
+      if (!orderThreadCache.has(orderId)) setOrder(null);
     } finally {
       setLoading(false);
     }
+  }, [orderId]);
+
+  // Cold-start seed: reuse the order copy cached by the orders tracking hub so the
+  // screen renders its data immediately, then loadAll() revalidates over the network.
+  useEffect(() => {
+    if (!orderId || order) return;
+    const seed = (c: any) => {
+      const hit = (c?.ords as TransactionOrder[] | undefined)?.find((x) => x.id === orderId);
+      if (hit) {
+        setOrder((cur) => cur ?? hit);
+        setLoading(false);
+        return true;
+      }
+      return false;
+    };
+    if (seed(peek<any>('orders:all'))) return;
+    hydrate<any>('orders:all').then((c) => {
+      if (c) seed(c);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
   useFocusEffect(
@@ -962,9 +993,9 @@ export default function OrderThreadScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.cream },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cream, gap: 8 },
-  miss: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 18, includeFontPadding: false },
+  miss: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 14, includeFontPadding: false },
   goBackBtn: { borderWidth: 2, borderColor: colors.charcoal, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
-  goBackText: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, includeFontPadding: false },
+  goBackText: { fontFamily: typography.handBold, fontSize: 12, color: colors.charcoal, includeFontPadding: false },
 
   // Header
   header: {
@@ -980,7 +1011,7 @@ const styles = StyleSheet.create({
   backBtn: { padding: 6, marginRight: 4 },
   headerMid: { flex: 1 },
   headerTitle: { fontFamily: typography.headings, fontSize: 18, color: colors.charcoal, letterSpacing: 0.5 },
-  headerSub: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, marginTop: 3, includeFontPadding: false },
+  headerSub: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, marginTop: 3, includeFontPadding: false },
   trustBtn: { padding: 8, borderWidth: 1.5, borderColor: colors.charcoal },
 
   // Status Bar
@@ -994,7 +1025,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.overlayLight,
     backgroundColor: colors.white,
   },
-  statusText: { fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false },
+  statusText: { fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false },
   orderIdText: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, letterSpacing: 0.5 },
 
   // Action Buttons
@@ -1055,7 +1086,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
-  actionBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false },
+  actionBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false },
 
   // List
   msgList: { flex: 1 },
@@ -1088,15 +1119,15 @@ const styles = StyleSheet.create({
   chatActionTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.forest,
   },
   chatActionSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.charcoal,
-    lineHeight: 23,
+    lineHeight: 16,
     marginTop: 2,
   },
   openChatBtn: {
@@ -1108,17 +1139,18 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
   },
 
   // Section Title
   sectionTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.textMuted,
     marginBottom: 12,
     marginTop: 20,
+    letterSpacing: 1,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -1150,12 +1182,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.textMuted,
+    letterSpacing: 0.5,
   },
   summaryValue: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 17,
     color: colors.charcoal,
   },
   summaryDate: {
@@ -1186,20 +1219,20 @@ const styles = StyleSheet.create({
   itemChipText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.charcoal,
     maxWidth: 120,
   },
   itemChipQty: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.textMuted,
   },
   moreItems: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     alignSelf: 'center',
   },
@@ -1283,7 +1316,7 @@ const styles = StyleSheet.create({
   timelineLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.textMuted,
   },
   timelineLabelDone: {
@@ -1293,14 +1326,14 @@ const styles = StyleSheet.create({
   timelineHint: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.red,
     marginTop: 3,
   },
   timelineDate: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 3,
   },
@@ -1343,8 +1376,9 @@ const styles = StyleSheet.create({
   addressLabelText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10.5,
     color: colors.cream,
+    letterSpacing: 0.5,
   },
   addressBody: {
     padding: 16,
@@ -1357,7 +1391,7 @@ const styles = StyleSheet.create({
   nameText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 14,
     color: colors.charcoal,
   },
   detailRow: {
@@ -1367,9 +1401,9 @@ const styles = StyleSheet.create({
   detailText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
-    lineHeight: 21,
+    lineHeight: 18,
     flex: 1,
   },
   addressDivider: {
@@ -1379,10 +1413,10 @@ const styles = StyleSheet.create({
   },
 
   // Messages
-  hint: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 17, lineHeight: 21, textAlign: 'center', paddingHorizontal: 20, marginTop: 8, includeFontPadding: false },
+  hint: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 13, lineHeight: 18, textAlign: 'center', paddingHorizontal: 20, marginTop: 8, includeFontPadding: false },
   bubble: {
     maxWidth: '85%',
-    padding: 14,
+    padding: 12,
     borderWidth: 2,
     borderColor: colors.charcoal,
     marginBottom: 12,
@@ -1395,10 +1429,10 @@ const styles = StyleSheet.create({
   },
   bubbleMine: { alignSelf: 'flex-end', backgroundColor: colors.paperLight, borderColor: colors.charcoal },
   bubbleTheirs: { alignSelf: 'flex-start' },
-  bubbleMeta: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, marginBottom: 6, includeFontPadding: false },
+  bubbleMeta: { fontFamily: typography.handBold, fontSize: 10.5, color: colors.textMuted, marginBottom: 6, includeFontPadding: false },
   bubbleText: { fontFamily: typography.body, fontSize: 15, color: colors.charcoal, lineHeight: 22 },
   bubbleTextMine: { color: colors.charcoal },
-  time: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, marginTop: 8, includeFontPadding: false },
+  time: { fontFamily: typography.handwritten, fontSize: 11, color: colors.textMuted, marginTop: 8, includeFontPadding: false },
 
   // Composer
   composer: {
@@ -1452,17 +1486,17 @@ const styles = StyleSheet.create({
   reviewTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   reviewHint: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 6,
     marginBottom: 10,
-    lineHeight: 21,
+    lineHeight: 16,
   },
   stars: { flexDirection: 'row', gap: 8, marginVertical: 8 },
   reviewInput: {
@@ -1489,7 +1523,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
-  reviewSubmitText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 18, includeFontPadding: false },
+  reviewSubmitText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false },
   disabled: { opacity: 0.6 },
 
   // Next Steps Guidance Banner
@@ -1509,7 +1543,7 @@ const styles = StyleSheet.create({
   nextStepsTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   nextStepsBody: {
@@ -1546,8 +1580,9 @@ const styles = StyleSheet.create({
   itemsDossierTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.charcoal,
+    letterSpacing: 0.5,
   },
   orderGarmentRow: {
     flexDirection: 'row',
@@ -1572,7 +1607,7 @@ const styles = StyleSheet.create({
   orderGarmentBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10.5,
     color: colors.textMuted,
   },
   orderGarmentTitle: {
@@ -1596,7 +1631,7 @@ const styles = StyleSheet.create({
   orderGarmentQty: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.textMuted,
   },
   orderGarmentSizeChip: {
@@ -1608,7 +1643,7 @@ const styles = StyleSheet.create({
   orderGarmentSizeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10,
     color: colors.charcoal,
   },
   viewItemActionCol: {
@@ -1626,7 +1661,7 @@ const styles = StyleSheet.create({
   viewItemPillText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 9.5,
     color: colors.charcoal,
   },
 
@@ -1662,7 +1697,7 @@ const styles = StyleSheet.create({
   reviewPromptTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.terracottaDark,
   },
   reviewPromptSub: {
@@ -1681,7 +1716,7 @@ const styles = StyleSheet.create({
   reviewPromptBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.cream,
   },
 
@@ -1704,7 +1739,7 @@ const styles = StyleSheet.create({
   completedReviewTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   reviewRatingBadge: {
@@ -1740,7 +1775,7 @@ const styles = StyleSheet.create({
   completedReviewMeta: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10.5,
     color: colors.forest,
   },
 
@@ -1786,7 +1821,7 @@ const styles = StyleSheet.create({
   reviewModalSub: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1801,9 +1836,10 @@ const styles = StyleSheet.create({
   reviewRatingHelp: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.charcoal,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   starsRow: {
     flexDirection: 'row',
@@ -1819,7 +1855,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.orange,
     marginBottom: 14,
   },
@@ -1852,7 +1888,7 @@ const styles = StyleSheet.create({
   submitReviewBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.cream,
   },
   cancelReviewBtn: {
@@ -1863,7 +1899,7 @@ const styles = StyleSheet.create({
   cancelReviewBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
   },
 });

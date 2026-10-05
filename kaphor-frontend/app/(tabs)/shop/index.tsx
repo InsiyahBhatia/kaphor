@@ -266,22 +266,27 @@ export default function ShopScreen() {
               onPress={() => router.push('/(tabs)/shop/ai-chat')}
               activeOpacity={0.85}
             >
-              <EditorialIcon name="sparkle" size={20} />
-              <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
+              <View style={styles.aiHeaderBtnInner}>
+                <EditorialIcon name="sparkle" size={16} allowTint tintColor={colors.gold} />
+                <Text style={styles.aiHeaderBtnText}>AI STYLIST</Text>
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)}>
-              <EditorialIcon name="filter" size={24} />
+            <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)} activeOpacity={0.85}>
+              <EditorialIcon name="filter" size={22} allowTint tintColor={colors.cream} />
             </TouchableOpacity>
           </View>
         </View>
         <View style={styles.searchBar}>
           <Text style={styles.searchPrefix}>{'>'}</Text>
-          <TextInput accessibilityLabel="QUERY_DATABASE"
-            placeholder="QUERY_DATABASE"
+          <TextInput accessibilityLabel="Search pieces"
+            placeholder="Search brand, style, category…"
             placeholderTextColor={colors.textMuted}
             style={styles.searchInput}
             value={searchInput}
             onChangeText={setSearchInput}
+            onSubmitEditing={() => setSearchQuery(searchInput.trim())}
+            autoCorrect={false}
+            returnKeyType="search"
           />
         </View>
       </EditorialPageHeader>
@@ -307,6 +312,14 @@ export default function ShopScreen() {
             removeClippedSubviews={Platform.OS === 'android'}
             ListHeaderComponent={
             <View style={styles.activeFiltersRow}>
+              <View style={styles.countRow}>
+                <Text style={styles.resultCount}>
+                  {saleItems.length} {saleItems.length === 1 ? 'PIECE' : 'PIECES'}
+                </Text>
+                <View style={styles.saleTag}>
+                  <Text style={styles.saleTagText}>SALE ONLY</Text>
+                </View>
+              </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {categories.map((cat: string) => {
                   const isActive = selectedFilters.categories.includes(cat) || (cat === 'ALL' && selectedFilters.categories.length === 0);
@@ -484,7 +497,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 20,
+    fontSize: 14,
     color: colors.charcoal,
   },
   filterChip: {
@@ -503,7 +516,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     color: colors.charcoal,
-    fontSize: 20,
+    fontSize: 12,
     fontFamily: typography.handBold,
     includeFontPadding: false,
   },
@@ -567,7 +580,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10,
   },
   shopCardInfo: {
     padding: 10,
@@ -583,13 +596,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.charcoal,
   },
   shopSize: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.textMuted,
   },
   shopTitle: {
@@ -606,7 +619,7 @@ const styles = StyleSheet.create({
   },
   shopPrice: {
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -634,7 +647,7 @@ const styles = StyleSheet.create({
   swapBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
     color: colors.charcoal,
   },
   filterToggleBtn: {
@@ -662,10 +675,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 20,
+    fontSize: 14,
     color: colors.charcoal,
     textAlign: 'center',
-    lineHeight: 25,
+    lineHeight: 20,
     marginTop: 8,
   },
   emptyActionBtn: {
@@ -679,7 +692,7 @@ const styles = StyleSheet.create({
   emptyActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 13,
     color: colors.cream,
   },
   emptyFallbackRow: {
@@ -700,7 +713,7 @@ const styles = StyleSheet.create({
   emptyFallbackText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 12,
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -733,7 +746,7 @@ const styles = StyleSheet.create({
   modalSectionLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.red,
     marginBottom: 12,
     marginTop: 16,
@@ -756,7 +769,7 @@ const styles = StyleSheet.create({
   modalOptionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.charcoal,
   },
   modalOptionTextActive: {
@@ -780,7 +793,7 @@ const styles = StyleSheet.create({
   resetBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 20,
+    fontSize: 14,
     color: colors.charcoal,
   },
   applyBtn: {
@@ -794,13 +807,13 @@ const styles = StyleSheet.create({
   applyBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 20,
+    fontSize: 14,
     color: colors.white,
   },
   modalSubLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 12,
     color: colors.textMuted,
     marginBottom: 8,
     marginTop: 4,
@@ -809,6 +822,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     borderColor: colors.charcoal,
+    backgroundColor: colors.charcoal,
     shadowColor: colors.crimsonDark,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
@@ -819,13 +833,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
   aiHeaderBtnText: {
-    color: colors.white,
-    fontSize: 18,
+    color: colors.cream,
+    fontSize: 12,
     fontFamily: typography.handBold,
     includeFontPadding: false,
+    letterSpacing: 1,
+  },
+  countRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  resultCount: {
+    fontFamily: typography.mono,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  saleTag: {
+    borderWidth: 1,
+    borderColor: colors.forest,
+    backgroundColor: colors.paperLight,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  saleTagText: {
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 9,
+    color: colors.forest,
+    letterSpacing: 0.5,
   },
 });

@@ -66,12 +66,13 @@ export const RecommendationService = {
       userVector = (AESTHETIC_VECTORS as any)[aestheticKey] || AESTHETIC_VECTORS.LUXURY;
     }
 
-    // Fetch candidate active listings (exclude user's own listings if registered)
+    // Fetch candidate active SALE listings only (exclude user's own listings if registered)
     const isRegisteredUser = Boolean(user && user.id);
     let candidates = await db.garment.findMany({
       where: {
         isActive: true,
         lifecycleState: 'LISTED',
+        listingType: 'SALE',          // ← Only show buyable items in "For You"
         reservedOrderId: null,
         rentals: {
           none: {
@@ -80,7 +81,7 @@ export const RecommendationService = {
         },
         ...(isRegisteredUser ? { sellerId: { not: userId } } : {}),
       },
-      take: 40,
+      take: 60,                       // ← Wider pool for better scoring diversity
       select: {
         id: true,
         title: true,
@@ -222,6 +223,7 @@ export const RecommendationService = {
         brand: true,
         color: true,
         material: true,
+        listingType: true,
         garmentVector: true,
       },
     });
@@ -233,6 +235,19 @@ export const RecommendationService = {
         id: { not: garmentId },
         isActive: true,
         lifecycleState: 'LISTED',
+        // Keep the rail consistent with the page: similar items to a buy page are buyable,
+        // similar items to a rental page are rentable. Swap-only listings never appear here.
+        ...(base.listingType === 'RENTAL'
+          ? { listingType: 'RENTAL' as const }
+          : base.listingType === 'SALE'
+            ? { listingType: 'SALE' as const }
+            : {}),
+        reservedOrderId: null,
+        rentals: {
+          none: {
+            status: { in: ['RESERVED', 'DISPATCHED', 'ACTIVE'] },
+          },
+        },
       },
       take: 60,
       select: {

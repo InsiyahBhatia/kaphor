@@ -452,7 +452,7 @@ export default function HomeScreen() {
         if (!raw || hydrated.current) return;
         try {
           const c = JSON.parse(raw);
-          setForYouItems((cur) => (cur.length ? cur : c.forYou || []));
+          setForYouItems((cur) => (cur.length ? cur : (c.forYou || []).filter((g: any) => !g.listingType || g.listingType === 'SALE')));
           setRentalPicks((cur) => (cur.length ? cur : c.rentals || []));
           setFairSwaps((cur) => (cur.length ? cur : c.swaps || []));
           if (c.forYou?.length) setForYouLoading(false);
@@ -475,9 +475,9 @@ export default function HomeScreen() {
       // If personalized feed is empty (new user / no history), gracefully serve top curated editorial pieces
       if (!forYou || forYou.length === 0) {
         try {
-          const res = await api.get('/garments?limit=10');
+          const res = await api.get('/garments?listingType=SALE&limit=10');
           const fallbackCandidates = (res.data?.data || res.data?.garments || res.data || [])
-            .filter((g: any) => g.isActive !== false)
+            .filter((g: any) => g.isActive !== false && g.listingType === 'SALE')
             .map((g: any) => ({
               ...g,
               seller: g.seller || { id: g.sellerId, username: 'Member' },
@@ -503,6 +503,10 @@ export default function HomeScreen() {
           console.warn('Fallback rental fetch error', err);
         }
       }
+
+      // Safety net: the buy-only shelf must never show swap/rental assets
+      // (e.g. server-side cache served before the listingType filter deployed)
+      forYou = (forYou || []).filter((g: any) => !g.listingType || g.listingType === 'SALE');
 
       setForYouItems(forYou || []);
       setRentalPicks(rentals || []);

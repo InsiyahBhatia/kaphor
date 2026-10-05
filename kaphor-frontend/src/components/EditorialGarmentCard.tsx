@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 9.5,
   },
   wishlistBtn: {
     position: 'absolute',
@@ -223,13 +223,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11.5,
     color: colors.charcoal,
   },
   garmentSize: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 10.5,
     color: colors.textMuted,
   },
   garmentTitle: {
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10,
   },
   garmentOriginalPrice: {
     fontFamily: typography.mono,

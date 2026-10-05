@@ -532,7 +532,7 @@ export default function ShopAIChatScreen({ fallbackPath = '/(tabs)/shop' }: { fa
           <View style={[styles.inputWrapper, isFocused && styles.inputWrapperFocused]}>
             <TextInput
               style={styles.textInput}
-              placeholder="> QUERY_DATABASE // Ask KaPhor Stylist..."
+              placeholder="Ask your stylist — e.g. style me for a wedding"
               placeholderTextColor={colors.textMuted}
               value={input}
               onChangeText={setInput}
