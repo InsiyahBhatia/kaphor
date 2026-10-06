@@ -79,25 +79,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     BebasNeue_400Regular,
+    PlayfairDisplay_400Regular_Italic,
     PlayfairDisplay_700Bold,
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     Caveat_400Regular,
     Caveat_600SemiBold,
     Caveat_700Bold,
-  });
-
-  // Decorative / rarely used fonts load in the background and never block first paint
-  useFonts({
     IBMPlexMono_400Regular,
     IBMPlexMono_700Bold,
     IMFellEnglish_400Regular,
-    PlayfairDisplay_400Regular_Italic,
     CormorantGaramond_400Regular,
     CormorantGaramond_600SemiBold,
     CormorantGaramond_700Bold,
-    PlusJakartaSans_600SemiBold,
   });
 
   useEffect(() => {

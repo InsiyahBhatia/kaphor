@@ -108,7 +108,8 @@ export async function getImpactReport(req: Request, res: Response): Promise<void
         }
         const monthlyHistory = [...buckets.values()].map((m) => ({ ...m, kg: Math.round(m.kg * 10) / 10 }));
 
-        const communityAverageKg = Math.round((communityAgg._avg.carbonSavedKg ?? 0) * 10) / 10;
+        const communityAvgKgRaw = (communityAgg as { _avg?: { carbonSavedKg?: number | null } } | null)?._avg?.carbonSavedKg ?? 0;
+        const communityAverageKg = Math.round(communityAvgKgRaw * 10) / 10;
         const mine = record?.carbonSavedKg ?? 0;
         let message: string | null = null;
         if (mine > 0 && communityAverageKg > 0) {

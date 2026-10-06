@@ -8,6 +8,7 @@ import { logger } from '../../lib/logger';
 import { generateWithGemini } from '../gemini.service';
 import { extractFirstJson, stripCodeFences, toReadableText } from '../../lib/llmOutput';
 import { generateWithGroqVision } from '../groq.service';
+import { assertImageSize, capPrompt } from '../../lib/aiGuard';
 
 export interface GeminiSubScores {
   condition_score: number;
@@ -41,6 +42,10 @@ export async function callGeminiVision(
   userPrompt: string,
   imageBase64: string,
 ): Promise<GeminiResult> {
+  assertImageSize(imageBase64);
+  const safeSystemPrompt = capPrompt(systemPrompt);
+  const safeUserPrompt = capPrompt(userPrompt);
+
   // 1. Try local fine-tuned Qwen2-VL GLIE endpoint ONLY if explicitly enabled in .env
   const qwenEndpoint = process.env.QWEN_GLIE_URL;
   if (qwenEndpoint) {
@@ -49,7 +54,7 @@ export async function callGeminiVision(
       const res = await fetch(qwenEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64, systemPrompt, userPrompt }),
+        body: JSON.stringify({ imageBase64, systemPrompt: safeSystemPrompt, userPrompt: safeUserPrompt }),
         signal: AbortSignal.timeout(20_000),
       });
       if (res.ok) {

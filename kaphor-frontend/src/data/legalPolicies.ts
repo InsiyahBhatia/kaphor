@@ -63,7 +63,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '6. Payments, Held Funds & Payouts',
         content:
-          'All payments are processed through RBI-authorized payment aggregators such as Razorpay or Stripe. KaPhor does not collect or retain card or banking credentials. Seller, rental, and swap proceeds are held in secure settlement accounts and disbursed after delivery verification and the expiry of the applicable return window.',
+          'All payments are processed through RBI-authorized payment aggregators such as Razorpay. KaPhor does not collect or retain card or banking credentials. Seller, rental, and swap proceeds are held in secure settlement accounts and disbursed after delivery verification and the expiry of the applicable return window.',
         legalBasis: 'Payment and Settlement Systems Act, 2007; RBI Master Directions on Payment Aggregators and Gateways.',
       },
       {
@@ -169,7 +169,7 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
       {
         heading: '7. Sharing & Third-Party Processors',
         content:
-          'We never sell, rent, or trade your personal data and do not share it with data brokers or advertisers. Data is disclosed only to carefully selected processors that act strictly on our instructions and under written data-processing terms, including: payment aggregators (Razorpay and/or Stripe) for transaction processing; media and object storage providers (Cloudinary, Amazon S3) for hosting images and uploads; Firebase Cloud Messaging for push notifications; and cloud infrastructure providers hosting our servers. Data may also be disclosed when required by Indian law, a court order, or a lawful government request.',
+          'We never sell, rent, or trade your personal data and do not share it with data brokers or advertisers. Data is disclosed only to carefully selected processors that act strictly on our instructions and under written data-processing terms, including: payment aggregators (Razorpay) for transaction processing; media and object storage providers (Cloudinary, Amazon S3) for hosting images and uploads; Firebase Cloud Messaging for push notifications; and cloud infrastructure providers hosting our servers. Data may also be disclosed when required by Indian law, a court order, or a lawful government request.',
         legalBasis: 'DPDP Act, 2023, Section 11(1)(b) (identities of Data Fiduciaries and Processors with whom data is shared); Section 8(5) (information on storage and transfer); RBI directions on Payment Aggregators.',
       },
       {

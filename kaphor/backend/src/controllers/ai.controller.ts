@@ -573,6 +573,10 @@ export async function getRecommendations(req: Request, res: Response): Promise<v
 export async function getFitScore(req: Request, res: Response): Promise<void> {
     try {
         const { userId, garmentId } = req.params;
+        if (req.user && req.user.id !== userId && (req.user as any).role !== 'ADMIN') {
+            res.status(403).json({ error: 'FORBIDDEN' });
+            return;
+        }
 
         const [user, garment] = await Promise.all([
             db.user.findUnique({ where: { id: userId }, select: { styleVector: true, styleAesthetic: true } }),
