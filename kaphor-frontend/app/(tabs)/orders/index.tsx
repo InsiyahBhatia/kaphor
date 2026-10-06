@@ -35,11 +35,9 @@ import { Spinner, Loader } from '../../../src/components/common/Loader';
 
 type RowHandlers = Record<string, (...args: any[]) => any>;
 
-<<<<<<< HEAD
 const OrderCard = React.memo(function OrderCard({ order, userId, actionLoadingId, h, router }: { order: TransactionOrder; userId?: string; actionLoadingId: string | null; h: RowHandlers; router: ReturnType<typeof useRouter> }) {
   const { handleOpenChat, handleMarkShipped, handleMarkDelivered, handleDispatchRental, handleReturnRental, handleReleaseDeposit } = h;
                 const isBuyer = order.buyerId === userId;
-=======
   // Sub-roles
   const [ordersRole, setOrdersRole] = useState<'buyer' | 'seller'>('buyer');
   const [rentalsRole, setRentalsRole] = useState<'renter' | 'lender'>('renter');
@@ -406,7 +404,6 @@ const OrderCard = React.memo(function OrderCard({ order, userId, actionLoadingId
             ) : (
               currentOrders.map((order) => {
                 const isBuyer = order.buyerId === user?.id;
->>>>>>> c057d22 (fix: install react-native-webview peer dep, fix AI stylist button, fix for-you listing filter (SALE only), fix orders screen load TTL)
                 const otherParty = isBuyer ? order.seller : order.buyer;
                 const firstItem = order.items?.[0];
                 const thumb = firstItem?.garment?.images?.[0];
