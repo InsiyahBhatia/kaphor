@@ -77,8 +77,6 @@ npx ts-node scripts/upsert-admin.ts
 4. In Razorpay test mode, make a small payment and check the order becomes confirmed.
 5. The mobile app only needs the Key ID (not the secret).
 
-If you also use Stripe: add a webhook to `https://YOUR-SERVICE.onrender.com/api/v1/payments/webhook` with the event `payment_intent.succeeded`, and save its signing secret as `STRIPE_WEBHOOK_SECRET`.
-
 ## Step 6. Android app (EAS)
 
 1. Install the tools once: `npm install -g eas-cli`, then `eas login`.
@@ -109,7 +107,9 @@ Set these on Render. "Required" means the server will not start (or a main featu
 |---|---|---|
 | `NODE_ENV` | Yes | Set to `production` (already in `render.yaml`) |
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `DIRECT_URL` | Neon / Supabase | Direct (non-pooled) database string |
+| `DIRECT_URL` | Neon / Supabase | Direct (non-pooled) database string. Optional: falls back to `DATABASE_URL` |
+| `RESEND_API_KEY` | Resend | Needed to deliver verification and password-reset emails |
+| `EMAIL_FROM` | You | Sender address verified in Resend, e.g. `Kaphor <no-reply@yourdomain.com>` |
 | `JWT_SECRET` | Yes | Random, at least 32 characters |
 | `JWT_REFRESH_SECRET` | Yes | Random, at least 32 characters, different from `JWT_SECRET` |
 | `ALLOWED_ORIGINS` | Yes | Web addresses allowed to call the API, comma separated |
@@ -119,8 +119,6 @@ Set these on Render. "Required" means the server will not start (or a main featu
 | `RAZORPAY_KEY_ID` | For payments | Razorpay key id |
 | `RAZORPAY_KEY_SECRET` | For payments | Razorpay key secret |
 | `RAZORPAY_WEBHOOK_SECRET` | For payments | Secret you typed into the Razorpay webhook |
-| `STRIPE_SECRET_KEY` | Optional | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | With Stripe | Stripe webhook signing secret |
 | `GEMINI_API_KEY` | For AI checks | Google Gemini key |
 | `GROQ_API_KEY` | For AI chat | Groq key |
 | `YOUTUBE_API_KEY` | Optional | Only for the guide-enrichment script |

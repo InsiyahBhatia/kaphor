@@ -25,7 +25,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export default function SwapDetailScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
-  const targetGarmentId = (params.id || params.wantedId) as string;
+  const targetGarmentId = params.id as string;
   const router = useRouter();
   useBackHandler('/(tabs)/circular');
 

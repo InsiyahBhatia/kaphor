@@ -8,3 +8,12 @@ dist/
 android/
 ios/
 
+
+# Signing keys / credentials
+*.keystore
+*.jks
+*.p12
+*.p8
+*.pem
+.env.*
+!.env.example

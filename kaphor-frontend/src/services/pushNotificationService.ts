@@ -71,7 +71,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
   // 2. Physical device check (emulators cannot reliably receive remote push notifications)
   if (!Device.isDevice) {
-    console.log('[Push] Must use a physical device for remote push notifications');
+    if (__DEV__) console.log('[Push] Must use a physical device for remote push notifications');
     return null;
   }
 
@@ -85,7 +85,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   if (finalStatus !== 'granted') {
-    console.log('[Push] Notification permission denied by user');
+    if (__DEV__) console.log('[Push] Notification permission denied by user');
     return null;
   }
 
@@ -124,7 +124,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   if (token) {
     try {
       await userService.savePushToken(token);
-      console.log('[Push] Registered push token with backend:', token);
+      if (__DEV__) console.log('[Push] Registered push token with backend');
     } catch (apiErr) {
       console.warn('[Push] Failed to save push token on backend:', apiErr);
     }

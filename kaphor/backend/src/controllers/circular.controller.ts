@@ -609,15 +609,18 @@ export async function getGarmentLifecycle(req: Request, res: Response): Promise<
       return;
     }
 
-    const mockFiber = garment.recyclableFiber || 75;
+    // recyclableFiber is only known after a condition assessment; never invent a value
+    const recyclableFiber = garment.recyclableFiber ?? null;
     let recommendedAction = 'RE_SELL';
-    if (mockFiber > 80) recommendedAction = 'RECYCLE_ONLY';
-    else if (mockFiber > 50) recommendedAction = 'UPCYCLE';
+    if (recyclableFiber !== null) {
+      if (recyclableFiber > 80) recommendedAction = 'RECYCLE_ONLY';
+      else if (recyclableFiber > 50) recommendedAction = 'UPCYCLE';
+    }
 
     res.json({
       data: {
         lifecycleState: garment.lifecycleState,
-        recyclableFiber: mockFiber,
+        recyclableFiber,
         condition: garment.condition,
         recommendedAction
       }

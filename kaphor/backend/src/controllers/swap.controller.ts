@@ -1621,6 +1621,11 @@ export async function verifySecurityDeposit(req: Request, res: Response): Promis
 
     // Signature is mandatory whenever Razorpay credentials are configured.
     const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      // Never accept an unverified deposit in production
+      res.status(503).json({ error: 'PAYMENTS_UNAVAILABLE', message: 'Payments are not configured' });
+      return;
+    }
     if (secret) {
       if (!razorpay_signature || !razorpay_order_id || !razorpay_payment_id) {
         res.status(400).json({ error: 'BAD_REQUEST', message: 'Payment verification details are required' });

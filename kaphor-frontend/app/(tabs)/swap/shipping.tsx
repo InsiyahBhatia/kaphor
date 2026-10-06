@@ -216,7 +216,11 @@ export default function SwapShippingScreen() {
     setPayingDeposit(true);
     try {
       const { razorpayOrderId, amount } = await swapService.paySecurityDeposit(swapId!);
-      const keyId = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_SVMRwkwZRtdnI7';
+      const keyId = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
+      if (!keyId) {
+        Alert.alert('Payments unavailable', 'Payments are not configured. Please try again later.');
+        return;
+      }
 
       const options = {
         key: keyId,

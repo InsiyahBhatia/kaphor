@@ -261,7 +261,7 @@ invalidateCache('/garments');
         setProcessing(false);
       },
       onClose: () => {
-        console.log('Payment checkout closed');
+        if (__DEV__) console.log('Payment checkout closed');
         setProcessing(false);
       },
     });

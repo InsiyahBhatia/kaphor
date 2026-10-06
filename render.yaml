@@ -12,7 +12,7 @@ services:
     rootDir: kaphor/backend
     buildCommand: npm ci --include=dev && npx prisma generate && npm run build
     # Runs pending database migrations first, then starts the API.
-    startCommand: npx prisma migrate deploy && node dist/index.js
+    startCommand: DIRECT_URL="${DIRECT_URL:-$DATABASE_URL}" npx prisma migrate deploy && node dist/index.js
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -25,6 +25,7 @@ services:
       # --- Database ---
       - key: DATABASE_URL
         sync: false
+      # Optional: only needed with a pooled DATABASE_URL (Neon/Supabase). Falls back to DATABASE_URL.
       - key: DIRECT_URL
         sync: false
       # --- Auth (use long random values, at least 32 characters, different from each other) ---
@@ -49,9 +50,10 @@ services:
         sync: false
       - key: RAZORPAY_WEBHOOK_SECRET
         sync: false
-      - key: STRIPE_SECRET_KEY
+      # --- Email (verification + password reset) ---
+      - key: RESEND_API_KEY
         sync: false
-      - key: STRIPE_WEBHOOK_SECRET
+      - key: EMAIL_FROM
         sync: false
       # --- AI ---
       - key: GEMINI_API_KEY

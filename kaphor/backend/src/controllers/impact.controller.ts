@@ -73,22 +73,52 @@ export async function getImpactReport(req: Request, res: Response): Promise<void
             return;
         }
 
-        // Mock detail aggregation, representing historical performance compared to average
-        const mockMonthlyHistory = [
-            { month: 'Jan', kg: 4, label: 'Resell' },
-            { month: 'Feb', kg: 12, label: 'Upcycle' },
-            { month: 'Mar', kg: 8, label: 'Resell' },
-            { month: 'Apr', kg: 3, label: 'Rental' },
-        ];
+        const userId = req.user.id;
+        const since = new Date();
+        since.setMonth(since.getMonth() - 5);
+        since.setDate(1);
+        since.setHours(0, 0, 0, 0);
 
-        const mockCommunityAvgKg = 15;
+        const [record, deliveredOrders, communityAgg] = await Promise.all([
+            db.impactRecord.findUnique({ where: { userId } }),
+            db.order.findMany({
+                where: { buyerId: userId, status: 'DELIVERED', createdAt: { gte: since } },
+                select: { createdAt: true, items: { select: { id: true } } },
+            }),
+            cacheWrap('stats:community-avg-carbon', 10 * 60_000, () =>
+                db.impactRecord.aggregate({
+                    where: { itemsCirculated: { gt: 0 } },
+                    _avg: { carbonSavedKg: true },
+                })
+            ),
+        ]);
+
+        // kg per item = this user's own average, so the bars add up to their real total
+        const kgPerItem = record && record.itemsCirculated > 0 ? record.carbonSavedKg / record.itemsCirculated : 0;
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const buckets = new Map<string, { month: string; kg: number; label: string }>();
+        for (let i = 0; i < 6; i++) {
+            const d = new Date(since.getFullYear(), since.getMonth() + i, 1);
+            buckets.set(`${d.getFullYear()}-${d.getMonth()}`, { month: monthNames[d.getMonth()], kg: 0, label: 'Resell' });
+        }
+        for (const order of deliveredOrders) {
+            const key = `${order.createdAt.getFullYear()}-${order.createdAt.getMonth()}`;
+            const bucket = buckets.get(key);
+            if (bucket) bucket.kg += order.items.length * kgPerItem;
+        }
+        const monthlyHistory = [...buckets.values()].map((m) => ({ ...m, kg: Math.round(m.kg * 10) / 10 }));
+
+        const communityAverageKg = Math.round((communityAgg._avg.carbonSavedKg ?? 0) * 10) / 10;
+        const mine = record?.carbonSavedKg ?? 0;
+        let message: string | null = null;
+        if (mine > 0 && communityAverageKg > 0) {
+            message = mine >= communityAverageKg
+                ? 'You are ahead of the community average. Keep circulating.'
+                : 'Every piece you circulate moves you closer to the community average.';
+        }
 
         res.json({
-            data: {
-                monthlyHistory: mockMonthlyHistory,
-                communityAverageKg: mockCommunityAvgKg,
-                message: "You are heavily outperforming the monthly community average threshold! Keep circulating."
-            }
+            data: { monthlyHistory, communityAverageKg, message },
         });
     } catch (error) {
         logger.error('Failed fetching impact generic report', { error });

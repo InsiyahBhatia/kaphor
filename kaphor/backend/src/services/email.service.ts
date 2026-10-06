@@ -1,23 +1,42 @@
 import { logger } from '../lib/logger';
 
 /**
- * Service to handle outgoing emails.
- * Currently mocks sending by logging to console/logger.
+ * Outgoing email.
+ *
+ * Production: set RESEND_API_KEY (and EMAIL_FROM, a sender verified in Resend) to deliver real mail.
+ * Development / no key: the message is logged (and the first link is printed) instead of sent.
  */
+const isProd = process.env.NODE_ENV === 'production';
+
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-  // In a real app, use SendGrid, MailerSend, or AWS SES
-  logger.info(`Sending email to ${to}: ${subject}`);
-  logger.debug(`Email content: ${html}`);
-  
-  // LOG the magic link specifically for the user to see during testing
-  if (html.includes('http')) {
-     const link = html.match(/https?:\/\/[^\s"]+/)?.[0];
-     if (link) {
-       console.log('\x1b[36m%s\x1b[0m', '--- MAGIC LINK ---');
-       console.log('\x1b[36m%s\x1b[0m', link);
-       console.log('\x1b[36m%s\x1b[0m', '------------------');
-     }
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (apiKey) {
+    const from = process.env.EMAIL_FROM || 'Kaphor <onboarding@resend.dev>';
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to, subject, html }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) {
+        logger.error('Email provider rejected message', { status: res.status, to, subject });
+      }
+    } catch (error) {
+      logger.error('Email send failed', { error, to, subject });
+    }
+    return;
   }
+
+  if (isProd) {
+    logger.error('RESEND_API_KEY is not set: email was NOT delivered', { to, subject });
+    return;
+  }
+
+  logger.info(`[dev] Email to ${to}: ${subject}`);
+  const link = html.match(/https?:\/\/[^\s"]+/)?.[0];
+  if (link) console.log(`[dev] link: ${link}`);
 }
 
 export async function sendVerificationEmail(email: string, token: string) {

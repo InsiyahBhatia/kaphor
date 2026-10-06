@@ -33,8 +33,8 @@ const envSchema = z.object({
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
-  STRIPE_SECRET_KEY: z.string().optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
   // AI
   GEMINI_API_KEY: z.string().optional(),
   GROQ_API_KEY: z.string().optional(),
@@ -88,7 +88,7 @@ function validateProductionEnv(env: typeof validatedEnv): string[] {
 
   // CORS must be explicit
   if (!has(env.ALLOWED_ORIGINS)) {
-    (env as any).ALLOWED_ORIGINS = 'https://kaphor-backend.onrender.com,http://localhost:8081,exp://localhost:8081';
+    problems.push('ALLOWED_ORIGINS is required in production (comma-separated list of allowed web origins)');
   } else if (env.ALLOWED_ORIGINS!.split(',').some((o) => o.trim() === '*')) {
     problems.push('ALLOWED_ORIGINS must not contain "*"');
   }
@@ -102,7 +102,6 @@ function validateProductionEnv(env: typeof validatedEnv): string[] {
     }
   };
   group('Razorpay', ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET']);
-  group('Stripe', ['STRIPE_SECRET_KEY']);
   group('Cloudinary', ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']);
   group('AWS S3', ['AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_BUCKET_NAME']);
   group('Firebase', ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY']);
@@ -121,6 +120,7 @@ if (isProd) {
   if (validatedEnv.RAZORPAY_KEY_ID && !validatedEnv.RAZORPAY_WEBHOOK_SECRET) {
     warn('RAZORPAY_WEBHOOK_SECRET not set: orders and payments work, but webhook background sync is disabled until registered in the Razorpay dashboard.');
   }
+  if (!validatedEnv.RESEND_API_KEY) warn('RESEND_API_KEY not set: verification and password-reset emails will NOT be delivered.');
   if (!validatedEnv.REDIS_URL) warn('REDIS_URL not set: realtime socket mapping uses in-memory storage (single instance only).');
   if (!validatedEnv.CLOUDINARY_CLOUD_NAME && !validatedEnv.AWS_S3_BUCKET_NAME) {
     warn('No Cloudinary or S3 configured: uploads fall back to local disk, which is erased on every Render deploy.');
@@ -151,7 +151,6 @@ const { notificationRoutes } = require('./routes/notifications') as typeof impor
 const { orderRoutes } = require('./routes/orders') as typeof import('./routes/orders');
 const { rentalRoutes } = require('./routes/rentals') as typeof import('./routes/rentals');
 const { swapRoutes } = require('./routes/swaps') as typeof import('./routes/swaps');
-const { stripeRouter } = require('./routes/stripe') as typeof import('./routes/stripe');
 const { razorpayRouter } = require('./routes/razorpay.routes') as typeof import('./routes/razorpay.routes');
 const { adminRouter } = require('./routes/admin.routes') as typeof import('./routes/admin.routes');
 const { repairRouter } = require('./routes/repair.routes') as typeof import('./routes/repair.routes');
@@ -274,7 +273,6 @@ const captureRawBody = (req: Request, _res: Response, next: NextFunction) => {
   (req as any).rawBody = req.body;
   next();
 };
-app.use(`${baseApiUrl}/payments/webhook`, rl.webhookLimiter, express.raw({ type: '*/*', limit: '1mb' }), captureRawBody);
 app.use(`${baseApiUrl}/payments/razorpay/webhook`, rl.webhookLimiter, express.raw({ type: '*/*', limit: '1mb' }), captureRawBody);
 
 // 2) Only routes that accept base64 images get the larger limit.
@@ -324,7 +322,9 @@ app.use(`${baseApiUrl}/auth/forgot-password`, rl.passwordResetLimiter);
 app.use(`${baseApiUrl}/auth/reset-password`, rl.passwordResetLimiter);
 app.use(`${baseApiUrl}/auth/verify-email`, rl.verifyTokenLimiter);
 // Money
-app.use(`${baseApiUrl}/payments`, rl.paymentLimiter);
+// Webhooks have their own limiter above; provider retry bursts must not be throttled as user payments
+app.use(`${baseApiUrl}/payments`, (req, res, next) =>
+  req.path.includes('/webhook') ? next() : rl.paymentLimiter(req, res, next));
 app.post(`${baseApiUrl}/orders`, rl.paymentLimiter);
 app.post(`${baseApiUrl}/orders/:orderId/approve`, rl.paymentLimiter);
 app.post(`${baseApiUrl}/rentals`, rl.paymentLimiter);
@@ -354,7 +354,6 @@ app.use(`${baseApiUrl}/orders`, orderRoutes);
 app.use(`${baseApiUrl}/rentals`, rentalRoutes);
 app.use(`${baseApiUrl}/swaps`, swapRoutes);
 app.use(`${baseApiUrl}/payments/razorpay`, razorpayRouter); // before /payments so its webhook is not shadowed
-app.use(`${baseApiUrl}/payments`, stripeRouter);
 app.use(`${baseApiUrl}/admin`, adminRouter);
 app.use(`${baseApiUrl}/repair`, repairRouter);
 app.use(`${baseApiUrl}/messages`, messageRoutes);

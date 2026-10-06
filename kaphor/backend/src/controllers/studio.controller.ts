@@ -8,7 +8,7 @@ import { sendEmail } from '../services/email.service';
 // ── STUDIO CONTENT (text only — no mock images per Kaphor image policy) ─────
 // Thumbnails are intentionally empty strings; clients render the Kaphor
 // placeholder card instead of third-party stock photos.
-const MOCK_TUTORIALS = [
+const STUDIO_TUTORIALS = [
     {
         id: 't1',
         title: 'Reconstructing the Classic Silk Blazer',
@@ -59,7 +59,7 @@ const MOCK_TUTORIALS = [
     }
 ];
 
-const MOCK_TRANSFORMATIONS = [
+const STUDIO_TRANSFORMATIONS = [
     {
         id: 'tr1',
         beforeImage: '',
@@ -88,8 +88,8 @@ export async function getTutorials(req: Request, res: Response): Promise<void> {
     try {
         const { type } = req.query;
         const filtered = type
-            ? MOCK_TUTORIALS.filter((t: any) => t.type === type)
-            : MOCK_TUTORIALS;
+            ? STUDIO_TUTORIALS.filter((t: any) => t.type === type)
+            : STUDIO_TUTORIALS;
         res.json({ data: filtered });
     } catch (error) {
         logger.error('Failed fetching tutorials', { error });
@@ -99,7 +99,7 @@ export async function getTutorials(req: Request, res: Response): Promise<void> {
 
 export async function getTransformations(req: Request, res: Response): Promise<void> {
     try {
-        res.json({ data: MOCK_TRANSFORMATIONS });
+        res.json({ data: STUDIO_TRANSFORMATIONS });
     } catch (error) {
         logger.error('Failed fetching transformations', { error });
         res.status(500).json(errorBody());
@@ -159,7 +159,6 @@ export async function createBespokeRequest(req: Request, res: Response): Promise
             );
         }
 
-        // Email is mocked/logged in this repo, but keeps the required integration point.
         await sendEmail({
             to: adminEmail,
             subject: 'Kaphor: New Bespoke Consultation Request',

@@ -155,7 +155,7 @@ async function attemptTokenRefresh(): Promise<boolean> {
 
     if (isExplicitAuthFailure) {
       // Refresh token was genuinely revoked or expired by the server — clear tokens
-      console.log('Refresh token revoked or expired (401/403), clearing session');
+      if (__DEV__) console.log('Refresh token revoked or expired (401/403), clearing session');
       useAuthStore.getState().logout();
       await safeStorage.deleteItem(TOKEN_KEY);
       await safeStorage.deleteItem(REFRESH_KEY);
