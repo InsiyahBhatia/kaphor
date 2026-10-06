@@ -18,6 +18,7 @@ import {
   PanResponder,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SolarIcon } from '../../src/components/common/SolarIcon';
@@ -805,7 +806,7 @@ export default function DirectChatScreen() {
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<QuotedReplyInfo | null>(null);
   const [actionMessage, setActionMessage] = useState<DirectMessageItem | null>(null);
-  const [loading, setLoading] = useState(!(cachedChat?.messages?.length > 0));
+  const [loading, setLoading] = useState(!(cachedChat?.messages?.length > 0 || seedConv));
   const [sending, setSending] = useState(false);
   // Typing state lives outside React state so only the two tiny subscribers re-render
   const typingBus = useRef(createTypingBus()).current;
@@ -945,12 +946,18 @@ export default function DirectChatScreen() {
     try {
       const data = await messageService.getConversationMessages(conversationId);
       setDetail(data);
-      setMessages(data.messages);
+      setMessages((prev) => {
+        const pendingTemp = prev.filter((m) => m.id.startsWith('temp-'));
+        if (pendingTemp.length === 0) return data.messages;
+        const confirmedContents = new Set(data.messages.map((m) => `${m.senderId}:${m.content}`));
+        const stillPending = pendingTemp.filter((m) => !confirmedContents.has(`${m.senderId}:${m.content}`));
+        return [...data.messages, ...stillPending];
+      });
+      remember(cacheChatKey, { detail: { ...data, messages: [] }, messages: data.messages });
       useNotificationStore.getState().fetchUnreadMessageCount();
-      // Persist to offline cache
     } catch (e: any) {
       console.error('Failed to load conversation', e);
-      if (messagesRef.current.length === 0) {
+      if (messagesRef.current.length === 0 && !seedConv) {
         Alert.alert('Error', 'Could not open conversation', [
           { text: 'Go Back', onPress: () => safeBack('/(tabs)/messages') },
         ]);
@@ -958,7 +965,7 @@ export default function DirectChatScreen() {
     } finally {
       setLoading(false);
     }
-  }, [conversationId, cacheChatKey]);
+  }, [conversationId, cacheChatKey, seedConv]);
 
   useEffect(() => {
     loadConversation();
@@ -1172,7 +1179,11 @@ export default function DirectChatScreen() {
         if (alreadyHasReal) {
           return prev.filter((m) => m.id !== tempMsg.id);
         }
-        return prev.map((m) => (m.id === tempMsg.id ? result.data : m));
+        const hasTemp = prev.some((m) => m.id === tempMsg.id);
+        if (hasTemp) {
+          return prev.map((m) => (m.id === tempMsg.id ? result.data : m));
+        }
+        return [...prev, result.data];
       });
     } catch (e: any) {
       Alert.alert('Failed to send', e?.response?.data?.message || 'Could not send message');
@@ -1252,7 +1263,11 @@ export default function DirectChatScreen() {
         if (alreadyHasReal) {
           return prev.filter((m) => m.id !== tempMsg.id);
         }
-        return prev.map((m) => (m.id === tempMsg.id ? result.data : m));
+        const hasTemp = prev.some((m) => m.id === tempMsg.id);
+        if (hasTemp) {
+          return prev.map((m) => (m.id === tempMsg.id ? result.data : m));
+        }
+        return [...prev, result.data];
       });
 
       if (result.warning) {
@@ -2135,8 +2150,8 @@ export default function DirectChatScreen() {
         )
       ) : null}
 
-      {/* Message List: skeleton only on first load with nothing cached */}
-      {loading && messages.length === 0 ? (
+      {/* Message List: skeleton only on first load with nothing cached and no seed header */}
+      {loading && messages.length === 0 && !detail?.conversation ? (
         <ConversationChatLoading />
       ) : (
       <FlatList
@@ -2159,6 +2174,22 @@ export default function DirectChatScreen() {
         maintainVisibleContentPosition={MAINTAIN_VISIBLE_POSITION}
         onEndReached={hasEarlier ? loadEarlier : undefined}
         onEndReachedThreshold={0.4}
+        ListEmptyComponent={
+          loading ? (
+            <View style={{ transform: [{ scaleY: -1 }], paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={colors.charcoal} />
+              <Text style={{ fontFamily: typography.body, fontSize: 12, color: colors.textMuted, marginTop: 8 }}>
+                Loading conversation...
+              </Text>
+            </View>
+          ) : (
+            <View style={{ transform: [{ scaleY: -1 }], paddingVertical: 40, alignItems: 'center' }}>
+              <Text style={{ fontFamily: typography.body, fontSize: 13, color: colors.textMuted }}>
+                Say hello to start the conversation!
+              </Text>
+            </View>
+          )
+        }
         ListFooterComponent={
           hasEarlier ? (
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Load earlier messages" onPress={loadEarlier} style={{ alignSelf: 'center', paddingVertical: 10 }}>
