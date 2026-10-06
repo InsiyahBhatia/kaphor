@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { invalidateGarmentCaches } from './cache';
+import { invalidateGarmentCaches, cacheClear } from './cache';
 import { invalidateAuthUser } from './authCache';
 
 const enableQueryLogs = process.env.PRISMA_QUERY_LOGS === 'true';
@@ -29,6 +29,19 @@ const invalidateOnWrite = {
     return result;
   },
 };
+
+// Per-user list caches (order history, inbox) are cleared on any write to the tables they are built from.
+function clearOnWrite(...prefixes: string[]) {
+  return {
+    async $allOperations({ operation, args, query }: any) {
+      const result = await query(args);
+      if (GARMENT_WRITE_OPS.has(operation)) prefixes.forEach((p) => cacheClear(p));
+      return result;
+    },
+  };
+}
+const clearOrderCaches = clearOnWrite('orders:', 'inbox:'); // inbox rows show order status too
+const clearInboxCaches = clearOnWrite('inbox:');
 
 const RETRYABLE_DB_ERRORS = [
   /server has closed the connection/i,
@@ -94,6 +107,12 @@ const db = prisma.$extends({
   query: {
     garment: invalidateOnWrite,
     rental: invalidateOnWrite,
+    order: clearOrderCaches,
+    orderItem: clearOrderCaches,
+    orderMessage: clearOrderCaches,
+    peerReview: clearOrderCaches,
+    conversation: clearInboxCaches,
+    directMessage: clearInboxCaches,
     user: {
       // Any write to users may change role / isActive: drop cached auth lookups so changes apply immediately.
       async update({ args, query }: any) {

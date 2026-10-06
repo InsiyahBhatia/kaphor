@@ -7,6 +7,7 @@ import { updateImpactOnTransaction } from '../services/impact.service';
 import { createNotification } from '../services/notification.service';
 import { withPrismaRetry } from '../lib/prisma';
 import { transferGarmentsToBuyer } from '../services/garment-claim.service';
+import { cacheWrap } from '../lib/cache';
 
 /** Messaging allowed for any active order, including PENDING (pre-payment coordination). */
 const MESSAGE_BLOCKED: Set<string> = new Set(['CANCELLED', 'REFUNDED']);
@@ -34,6 +35,23 @@ const orderInclude = {
   peerReview: true,
 } as const;
 
+// Slim relations for the LIST screen: only what a row shows. The detail endpoint (getOrderDetail) stays rich.
+const orderListInclude = {
+  items: {
+    include: {
+      garment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+    },
+  },
+  buyer: { select: { id: true, displayName: true, username: true, avatar: true } },
+  seller: { select: { id: true, displayName: true, username: true, avatar: true } },
+  peerReview: true,
+  messages: {
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: { id: true, body: true, createdAt: true, senderId: true },
+  },
+} as const;
+
 export async function listTransactionOrders(req: AuthRequest, res: Response): Promise<void> {
   try {
     if (!req.user) {
@@ -42,63 +60,68 @@ export async function listTransactionOrders(req: AuthRequest, res: Response): Pr
     }
     const uid = req.user.id;
     const limitRaw = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : NaN;
-    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 100;
-    const orders: any[] = (await withPrismaRetry(() =>
-      db.order.findMany({
-        where: {
-          OR: [{ buyerId: uid }, { sellerId: uid }],
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: limit,
-        include: {
-          ...orderInclude,
-          messages: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: { id: true, body: true, createdAt: true, senderId: true },
-          },
-        },
-      })
-    )) as any[];
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 20;
+    const cursor =
+      typeof req.query.cursor === 'string' && req.query.cursor.length > 0 && req.query.cursor.length <= 64
+        ? req.query.cursor
+        : undefined;
 
-    const { getDownloadUrl } = await import('../lib/cloudinary');
-    const resolvedOrders = await Promise.all(
-      orders.map(async (order: any) => {
-        const orderCopy = { ...order };
-        if (orderCopy.items) {
+    // Per-user cache (20 s). Cleared on any order / order item / order message write (see lib/prisma.ts).
+    const payload = await cacheWrap(`orders:tx:${uid}:${limit}:${cursor || ''}`, 20_000, async () => {
+      const rows: any[] = (await withPrismaRetry(() =>
+        db.order.findMany({
+          where: { OR: [{ buyerId: uid }, { sellerId: uid }] },
+          orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+          take: limit + 1, // one extra row tells us whether another page exists
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          include: orderListInclude,
+        })
+      )) as any[];
+
+      const hasMore = rows.length > limit;
+      const orders = hasMore ? rows.slice(0, limit) : rows;
+      const nextCursor = hasMore ? orders[orders.length - 1].id : null;
+
+      const { getDownloadUrl } = await import('../lib/cloudinary');
+      const resolvedOrders = await Promise.all(
+        orders.map(async (order: any) => {
+          const orderCopy = { ...order };
+          // Resolve only the FIRST image of each garment (a list row shows one thumbnail).
           orderCopy.items = await Promise.all(
-            orderCopy.items.map(async (item: any) => {
-              if (item.garment && item.garment.images) {
-                const resolvedImages = await Promise.all(
-                  item.garment.images.map((img: string) => getDownloadUrl(img))
-                );
-                return {
-                  ...item,
-                  garment: { ...item.garment, images: resolvedImages },
-                };
+            (order.items || []).map(async (item: any) => {
+              if (item.garment && Array.isArray(item.garment.images)) {
+                const first = item.garment.images[0];
+                const images = first ? [await getDownloadUrl(first)] : [];
+                return { ...item, garment: { ...item.garment, images } };
               }
               return item;
             })
           );
-        }
-        if (orderCopy.buyer?.avatar) {
-          orderCopy.buyer.avatar = await getDownloadUrl(orderCopy.buyer.avatar);
-        }
-        if (orderCopy.seller?.avatar) {
-          orderCopy.seller.avatar = await getDownloadUrl(orderCopy.seller.avatar);
-        }
+          const [buyerAvatar, sellerAvatar] = await Promise.all([
+            order.buyer?.avatar ? getDownloadUrl(order.buyer.avatar) : Promise.resolve(order.buyer?.avatar),
+            order.seller?.avatar ? getDownloadUrl(order.seller.avatar) : Promise.resolve(order.seller?.avatar),
+          ]);
+          if (order.buyer) orderCopy.buyer = { ...order.buyer, avatar: buyerAvatar };
+          if (order.seller) orderCopy.seller = { ...order.seller, avatar: sellerAvatar };
+          return orderCopy;
+        })
+      );
+      return { data: resolvedOrders, nextCursor };
+    });
 
-        const isBuyer = orderCopy.buyerId === uid;
-        orderCopy.userRole = isBuyer ? 'BUYER' : 'SELLER';
-        orderCopy.needsShipping = !isBuyer && orderCopy.status === 'CONFIRMED';
-        orderCopy.inTransit = orderCopy.status === 'SHIPPED';
-        orderCopy.isCompleted = orderCopy.status === 'DELIVERED';
+    // Role flags depend on who is asking, so they are added after the (per-user) cache.
+    const data = payload.data.map((o: any) => {
+      const isBuyer = o.buyerId === uid;
+      return {
+        ...o,
+        userRole: isBuyer ? 'BUYER' : 'SELLER',
+        needsShipping: !isBuyer && o.status === 'CONFIRMED',
+        inTransit: o.status === 'SHIPPED',
+        isCompleted: o.status === 'DELIVERED',
+      };
+    });
 
-        return orderCopy;
-      })
-    );
-
-    res.json({ data: resolvedOrders });
+    res.json({ data, nextCursor: payload.nextCursor });
   } catch (e) {
     logger.error('listTransactionOrders failed', { error: e instanceof Error ? e.message : String(e) });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to load orders' });

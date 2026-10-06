@@ -47,3 +47,7 @@ See [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) for the step-by-step gu
 ## Design
 
 One theme everywhere: warm paper background, ink text, rose for main actions, green for good news, gold for small touches. Colors, fonts and spacing live in `kaphor-frontend/src/theme/index.ts`. Every loading screen uses the same `Loader` in `src/components/common/Loader.tsx`.
+
+## Credits
+
+- Icons: [Solar Icon Set](https://www.figma.com/community/file/1166831539721848736) by 480 Design, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The icon paths live in `kaphor-frontend/src/components/common/solarIconData.ts` and are drawn by `SolarIcon.tsx`.

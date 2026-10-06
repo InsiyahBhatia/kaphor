@@ -1,3 +1,4 @@
+import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { getDownloadUrl } from '../lib/cloudinary';
@@ -151,6 +152,7 @@ async function resolveGarmentCard(
 export async function inspectUserWardrobe(userId: string): Promise<{ items: any[]; cards: AgentCard[] }> {
   try {
     const rawGarments = await db.garment.findMany({
+      select: GARMENT_LIST_COLUMNS,
       where: {
         sellerId: userId,
         lifecycleState: { in: ['OWNERSHIP', 'DECLINE', 'CIRCULATION', 'REUSE_UPCYCLE_RECYCLE', 'SELL_INTENT', 'PURCHASE_INTENT'] },
@@ -297,6 +299,7 @@ export async function searchCatalog(params: {
     }
 
     let candidateItems = await db.garment.findMany({
+      select: GARMENT_LIST_COLUMNS,
       where: candidateWhere,
       take: 60,
       orderBy: { popularityScore: 'desc' },
@@ -306,6 +309,7 @@ export async function searchCatalog(params: {
     if (candidateItems.length < (params.take || 6)) {
       const existingIds = new Set(candidateItems.map((i: any) => i.id));
       const broaderItems = await db.garment.findMany({
+      select: GARMENT_LIST_COLUMNS,
         where: {
           ...baseWhere,
           id: { notIn: Array.from(existingIds) },
@@ -373,6 +377,7 @@ export async function searchCatalog(params: {
       if (params.listingType) fallbackWhere.listingType = params.listingType;
 
       const fallbackItems = await db.garment.findMany({
+      select: GARMENT_LIST_COLUMNS,
         where: fallbackWhere,
         orderBy: params.listingType === 'RENTAL' ? { rentalPriceDay: 'asc' } : { price: 'asc' },
         take: params.take || 6,
@@ -385,6 +390,7 @@ export async function searchCatalog(params: {
     // 7. Ultimate Fallback: If still 0 matches, pull active listed garments with randomized sampling
     if (matchedGarmentMap.size === 0) {
       const ultimateItems = await db.garment.findMany({
+      select: GARMENT_LIST_COLUMNS,
         where: { isActive: true, lifecycleState: 'LISTED' },
         take: 20,
       });
@@ -412,6 +418,7 @@ export async function evaluateSwapMatches(userId: string): Promise<{ matches: Ag
   try {
     // Get user's accessories
     const userGarments = await db.garment.findMany({
+      select: GARMENT_LIST_COLUMNS,
       where: {
         sellerId: userId,
         lifecycleState: { in: ['OWNERSHIP', 'DECLINE', 'CIRCULATION', 'SELL_INTENT'] },
@@ -425,6 +432,7 @@ export async function evaluateSwapMatches(userId: string): Promise<{ matches: Ag
 
     // Get active swap listings
     const swapListings = await db.garment.findMany({
+      select: GARMENT_LIST_COLUMNS,
       where: {
         isActive: true,
         lifecycleState: 'LISTED',
@@ -435,7 +443,7 @@ export async function evaluateSwapMatches(userId: string): Promise<{ matches: Ag
     });
 
     // Find fair parity matches (variance <= 15%)
-    const matchCards: AgentCard[] = [];
+    const matchPromises: Promise<AgentCard>[] = [];
     for (const listing of swapListings) {
       const listingVal = listing.price || listing.estimatedValue || 2500;
 
@@ -460,11 +468,10 @@ export async function evaluateSwapMatches(userId: string): Promise<{ matches: Ag
         ? `⚖️ FAIR SWAP (±${bestParityPct}%)`
         : `TRADE SPREAD (±${bestParityPct}%)`;
 
-      const card = await resolveGarmentCard(listing, 'CATALOG', badge);
-      matchCards.push(card);
+      matchPromises.push(resolveGarmentCard(listing, 'CATALOG', badge));
     }
 
-    return { matches: matchCards, userPieces: userCards };
+    return { matches: await Promise.all(matchPromises), userPieces: userCards };
   } catch (error) {
     logger.warn('evaluateSwapMatches tool error', { error });
     return { matches: [], userPieces: [] };
@@ -569,6 +576,7 @@ async function fetchComplementaryPiece(
     }
 
     const candidates = await db.garment.findMany({
+      select: GARMENT_LIST_COLUMNS,
       where: whereClause,
       take: 8,
     });
@@ -819,17 +827,19 @@ export async function runFashionAgent(params: {
   let outfitLook: AgentOutfitLook | undefined = undefined;
 
   // 1. User Style Profile & Preferences
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { styleAesthetic: true, preferenceProfile: true },
-  });
+  // The profile lookup and the (slow) LLM intent call do not depend on each other, so run them together.
+  const [user, parsedIntent] = await Promise.all([
+    db.user.findUnique({
+      where: { id: userId },
+      select: { styleAesthetic: true, preferenceProfile: true },
+    }),
+    classifyFashionIntent(message, visualAnalysisSummary),
+  ]);
   const profile = (user?.preferenceProfile as any) || {};
   const userAesthetic = user?.styleAesthetic || profile.dominantAesthetic || 'Contemporary Luxury';
   const topCats = Object.keys(profile.topCategories || {}).slice(0, 3);
   const topBrands = Object.keys(profile.topBrands || {}).slice(0, 3);
 
-  // 2. LLM Intent Classification & Slot Extraction
-  const parsedIntent = await classifyFashionIntent(message, visualAnalysisSummary);
   const wantsWardrobe = parsedIntent.wantsClosetItems;
   const wantsRental = parsedIntent.intent === 'RENTAL';
   const wantsSwap = parsedIntent.intent === 'SWAP';

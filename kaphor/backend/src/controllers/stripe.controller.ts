@@ -1,3 +1,4 @@
+import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import { Request, Response } from 'express';
 import stripe from '../lib/stripe';
 import db from '../lib/prisma';
@@ -78,7 +79,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
           stripePaymentId: paymentIntent.id,
         },
         include: {
-          items: { include: { garment: true } },
+          items: { include: { garment: { select: GARMENT_LIST_COLUMNS } } },
         },
       });
 

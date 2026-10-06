@@ -1,4 +1,6 @@
 import { Response } from 'express';
+import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
+import { cacheWrap } from '../lib/cache';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { AuthRequest } from '../middleware/auth';
@@ -49,6 +51,23 @@ function checkOffPlatformRisk(content: string): boolean {
 }
 
 /**
+ * Unread direct messages per conversation for one user, from ONE grouped query.
+ * Shared (and cached ~10 s) between the unread badge and the inbox list; cleared on any message write (see lib/prisma.ts).
+ */
+async function getUnreadByConversation(uid: string): Promise<Record<string, number>> {
+  return cacheWrap(`inbox:unread:${uid}`, 10_000, async () => {
+    const groups: any[] = await db.directMessage.groupBy({
+      by: ['conversationId'],
+      where: { recipientId: uid, readAt: null },
+      _count: { id: true },
+    });
+    const out: Record<string, number> = {};
+    for (const g of groups) out[g.conversationId] = g._count.id;
+    return out;
+  });
+}
+
+/**
  * Get total unread direct messages count for authenticated user.
  */
 export async function getUnreadMessagesCount(req: AuthRequest, res: Response): Promise<void> {
@@ -57,12 +76,8 @@ export async function getUnreadMessagesCount(req: AuthRequest, res: Response): P
       res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
       return;
     }
-    const unreadCount = await db.directMessage.count({
-      where: {
-        recipientId: req.user.id,
-        readAt: null,
-      },
-    });
+    const byConversation = await getUnreadByConversation(req.user.id);
+    const unreadCount = Object.values(byConversation).reduce((sum, n) => sum + n, 0);
     res.json({ unreadCount });
   } catch (error) {
     logger.error('getUnreadMessagesCount failed', { error });
@@ -70,8 +85,19 @@ export async function getUnreadMessagesCount(req: AuthRequest, res: Response): P
   }
 }
 
+const INBOX_USER_SELECT = {
+  id: true,
+  displayName: true,
+  username: true,
+  avatar: true,
+  isVerified: true,
+  verificationStatus: true,
+  tier: true,
+} as const;
+
 /**
- * List all active conversations for the authenticated user.
+ * List active conversations for the authenticated user (inbox).
+ * Pagination: ?limit=30 (max 100) and ?cursor=<last conversation id>; the response adds `nextCursor` (null at the end).
  */
 export async function listConversations(req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -80,158 +106,148 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
       return;
     }
     const uid = req.user.id;
+    const limitRaw = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : NaN;
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 30;
+    const cursor = isId(req.query.cursor) ? (req.query.cursor as string) : undefined;
 
-    // Fetch conversations, unread counts, and active orders/swaps/rentals in parallel (eliminating N+1 queries)
-    const [convs, unreadCounts, activeOrders, activeSwaps, activeRentals] = await Promise.all([
-      db.conversation.findMany({
-        where: {
-          OR: [{ participant1Id: uid }, { participant2Id: uid }],
-        },
-        orderBy: { lastMessageAt: 'desc' },
-        include: {
-          participant1: {
-            select: {
-              id: true,
-              displayName: true,
-              username: true,
-              avatar: true,
-              isVerified: true,
-              verificationStatus: true,
-              tier: true,
+    const payload = await cacheWrap(`inbox:list:${uid}:${limit}:${cursor || ''}`, 12_000, async () => {
+      const [rows, unreadMap] = await Promise.all([
+        db.conversation.findMany({
+          where: { OR: [{ participant1Id: uid }, { participant2Id: uid }] },
+          orderBy: [{ lastMessageAt: 'desc' }, { id: 'desc' }],
+          take: limit + 1, // one extra row tells us whether another page exists
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          select: {
+            id: true,
+            type: true,
+            participant1Id: true,
+            participant2Id: true,
+            garmentId: true,
+            orderId: true,
+            swapId: true,
+            rentalId: true,
+            lastMessageText: true,
+            lastMessageAt: true,
+            createdAt: true,
+            participant1: { select: INBOX_USER_SELECT },
+            participant2: { select: INBOX_USER_SELECT },
+            garment: {
+              select: { id: true, title: true, brand: true, images: true, price: true, rentalPriceDay: true, listingType: true },
             },
-          },
-          participant2: {
-            select: {
-              id: true,
-              displayName: true,
-              username: true,
-              avatar: true,
-              isVerified: true,
-              verificationStatus: true,
-              tier: true,
-            },
-          },
-          garment: {
-            select: {
-              id: true,
-              title: true,
-              brand: true,
-              images: true,
-              price: true,
-              rentalPriceDay: true,
-              listingType: true,
-            },
-          },
-          order: {
-            select: {
-              id: true,
-              status: true,
-              totalAmount: true,
-              currency: true,
-              createdAt: true,
-            },
-          },
-          swap: {
-            select: {
-              id: true,
-              status: true,
-              offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
-              wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
-            },
-          },
-          rental: {
-            select: {
-              id: true,
-              status: true,
-              totalPrice: true,
-              startDate: true,
-              endDate: true,
-            },
-          },
-          messages: {
-            where: {
-              NOT: {
-                content: {
-                  startsWith: '[[REACTION:',
-                },
+            order: { select: { id: true, status: true, totalAmount: true, currency: true, createdAt: true } },
+            swap: {
+              select: {
+                id: true,
+                status: true,
+                offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+                wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
               },
             },
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: { content: true },
+            rental: { select: { id: true, status: true, totalPrice: true, startDate: true, endDate: true } },
           },
-        },
-        take: 200,
-      }),
-      db.directMessage.groupBy({
-        by: ['conversationId'],
-        where: {
-          recipientId: uid,
-          readAt: null,
-        },
-        _count: {
-          id: true,
-        },
-      }),
-      db.order.findMany({
-        where: {
-          OR: [{ buyerId: uid }, { sellerId: uid }],
-          status: { in: ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED'] },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 300,
-        select: {
-          id: true,
-          buyerId: true,
-          sellerId: true,
-          status: true,
-          totalAmount: true,
-          currency: true,
-          createdAt: true,
-          items: { select: { garmentId: true } },
-        },
-      }),
-      db.swap.findMany({
-        where: {
-          OR: [{ initiatorId: uid }, { receiverId: uid }],
-          status: { notIn: ['CANCELLED', 'REJECTED'] },
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 300,
-        select: {
-          id: true,
-          initiatorId: true,
-          receiverId: true,
-          garmentOffered: true,
-          garmentWanted: true,
-          status: true,
-          offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
-          wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
-        },
-      }),
-      db.rental.findMany({
-        where: {
-          OR: [{ renterId: uid }, { garment: { sellerId: uid } }],
-          status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'COMPLETED'] },
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 300,
-        select: {
-          id: true,
-          renterId: true,
-          garmentId: true,
-          garment: { select: { sellerId: true } },
-          status: true,
-          totalPrice: true,
-          startDate: true,
-          endDate: true,
-        },
-      }),
-    ]);
+        }),
+        getUnreadByConversation(uid),
+      ]);
 
-    const unreadMap = new Map<string, number>(
-      unreadCounts.map((u: any) => [u.conversationId, u._count.id])
-    );
+      const hasMore = rows.length > limit;
+      const convs: any[] = hasMore ? rows.slice(0, limit) : rows;
+      const nextCursor = hasMore ? convs[convs.length - 1].id : null;
+
+      // Side lookups are only for conversations that are NOT already linked to an order / swap / rental,
+      // and only for the people on this page, instead of loading hundreds of rows for every user.
+      const othersOf = (c: any) => (c.participant1Id === uid ? c.participant2Id : c.participant1Id);
+      const unlinkedOthers = (pred: (c: any) => boolean) =>
+        Array.from(new Set<string>(convs.filter(pred).map(othersOf)));
+      const orderOthers = unlinkedOthers((c) => !c.orderId);
+      const swapOthers = unlinkedOthers((c) => !c.swapId);
+      const rentalOthers = unlinkedOthers((c) => !c.rentalId);
+
+      const [activeOrders, activeSwaps, activeRentals]: [any[], any[], any[]] = await Promise.all([
+        orderOthers.length
+          ? db.order.findMany({
+              where: {
+                OR: [
+                  { buyerId: uid, sellerId: { in: orderOthers } },
+                  { sellerId: uid, buyerId: { in: orderOthers } },
+                ],
+                status: { in: ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED'] },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 100,
+              select: {
+                id: true,
+                buyerId: true,
+                sellerId: true,
+                status: true,
+                totalAmount: true,
+                currency: true,
+                createdAt: true,
+                items: { select: { garmentId: true } },
+              },
+            })
+          : [],
+        swapOthers.length
+          ? db.swap.findMany({
+              where: {
+                OR: [
+                  { initiatorId: uid, receiverId: { in: swapOthers } },
+                  { receiverId: uid, initiatorId: { in: swapOthers } },
+                ],
+                status: { notIn: ['CANCELLED', 'REJECTED'] },
+              },
+              orderBy: { updatedAt: 'desc' },
+              take: 100,
+              select: {
+                id: true,
+                initiatorId: true,
+                receiverId: true,
+                garmentOffered: true,
+                garmentWanted: true,
+                status: true,
+                offeredGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+                wantedGarment: { select: { id: true, title: true, brand: true, images: true, price: true } },
+              },
+            })
+          : [],
+        rentalOthers.length
+          ? db.rental.findMany({
+              where: {
+                OR: [
+                  { renterId: uid, garment: { sellerId: { in: rentalOthers } } },
+                  { renterId: { in: rentalOthers }, garment: { sellerId: uid } },
+                ],
+                status: { in: ['RESERVED', 'ACTIVE', 'RETURNED', 'COMPLETED'] },
+              },
+              orderBy: { updatedAt: 'desc' },
+              take: 100,
+              select: {
+                id: true,
+                renterId: true,
+                garmentId: true,
+                garment: { select: { sellerId: true } },
+                status: true,
+                totalPrice: true,
+                startDate: true,
+                endDate: true,
+              },
+            })
+          : [],
+      ]);
+
+      // The stored lastMessageText is the snippet. Only reaction snippets (or legacy rows with no snippet) need the
+      // most recent real message, and those are rare, so look them up individually instead of a subquery per row.
+      const needsFallback = convs.filter((c) => !c.lastMessageText || c.lastMessageText.startsWith('[[REACTION:'));
+      const fallbackMap = new Map<string, string>();
+      await Promise.all(
+        needsFallback.map(async (c) => {
+          const m = await db.directMessage.findFirst({
+            where: { conversationId: c.id, NOT: { content: { startsWith: '[[REACTION:' } } },
+            orderBy: { createdAt: 'desc' },
+            select: { content: true },
+          });
+          if (m?.content) fallbackMap.set(c.id, m.content);
+        })
+      );
 
     const avatarCache = new Map<string, Promise<string | null>>();
     const getCachedAvatar = (avatar: string | null) => {
@@ -252,7 +268,7 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
           garmentData = await resolveGarmentThumbnail(c.garment, false);
         }
 
-        const unreadCount = unreadMap.get(c.id) || 0;
+        const unreadCount = unreadMap[c.id] || 0;
 
         // In-memory active order match without querying the database per conversation
         const activeOrder =
@@ -319,12 +335,12 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
             null;
         }
 
-        let rawSnippet = c.lastMessageText || c.messages[0]?.content || '';
+        let rawSnippet = c.lastMessageText || fallbackMap.get(c.id) || '';
         let formattedSnippet = rawSnippet;
         if (rawSnippet.startsWith('[[REACTION:')) {
           const match = rawSnippet.match(/^\[\[REACTION:([^|]+)\|(.+)\]\]$/);
           const emoji = match ? match[2] : '❤️';
-          const fallbackText = c.messages[0]?.content;
+          const fallbackText = fallbackMap.get(c.id);
           if (fallbackText && !fallbackText.startsWith('[[REACTION:')) {
             const cleanFallback = fallbackText.replace(/^\[\[REPLY:[^\]]+\]\]\s*/, '');
             formattedSnippet = `Reacted ${emoji} to "${cleanFallback.slice(0, 30)}${cleanFallback.length > 30 ? '...' : ''}"`;
@@ -380,7 +396,10 @@ export async function listConversations(req: AuthRequest, res: Response): Promis
       return timeB - timeA;
     });
 
-    res.json({ data: formatted });
+      return { data: formatted, nextCursor };
+    });
+
+    res.json(payload);
   } catch (error) {
     logger.error('listConversations failed', { error });
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to load conversations' });
@@ -1123,7 +1142,7 @@ export async function getOrCreateOrderConversation(req: AuthRequest, res: Respon
       where: { id: orderId },
       include: {
         items: {
-          include: { garment: true },
+          include: { garment: { select: GARMENT_LIST_COLUMNS } },
         },
       },
     });

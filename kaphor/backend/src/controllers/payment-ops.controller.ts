@@ -1,3 +1,4 @@
+import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
@@ -122,7 +123,7 @@ export async function getPaymentHistory(req: Request, res: Response): Promise<vo
         OR: [{ buyerId: userId }, { sellerId: userId }],
       },
       include: {
-        items: { include: { garment: true } },
+        items: { include: { garment: { select: GARMENT_LIST_COLUMNS } } },
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -136,7 +137,7 @@ export async function getPaymentHistory(req: Request, res: Response): Promise<vo
           { garment: { is: { sellerId: userId } } },
         ],
       },
-      include: { garment: true },
+      include: { garment: { select: GARMENT_LIST_COLUMNS } },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
@@ -314,7 +315,7 @@ export async function requestRefund(req: Request, res: Response): Promise<void> 
 
     const order = await db.order.findUnique({
       where: { id: orderId },
-      include: { items: { include: { garment: true } } },
+      include: { items: { include: { garment: { select: GARMENT_LIST_COLUMNS } } } },
     });
 
     if (!order) {

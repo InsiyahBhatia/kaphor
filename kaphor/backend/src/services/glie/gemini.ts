@@ -50,6 +50,7 @@ export async function callGeminiVision(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64, systemPrompt, userPrompt }),
+        signal: AbortSignal.timeout(20_000),
       });
       if (res.ok) {
         const json = await res.json();

@@ -1,3 +1,4 @@
+import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
@@ -209,7 +210,7 @@ export async function createRazorpayOrderForRental(req: Request, res: Response):
 
     const rental = await db.rental.findUnique({
       where: { id: rentalOrderId },
-      include: { garment: true },
+      include: { garment: { select: GARMENT_LIST_COLUMNS } },
     });
 
     if (!rental) {
@@ -381,7 +382,7 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
 
       const orderItems = await db.orderItem.findMany({
         where: { orderId },
-        include: { garment: true },
+        include: { garment: { select: GARMENT_LIST_COLUMNS } },
       });
       const purchasedGarmentIds = orderItems.map((item: any) => item.garmentId);
 
@@ -432,7 +433,7 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
     // 2. Check if this is a Rental reservation
     const rental = await db.rental.findUnique({
       where: { id: orderId },
-      include: { garment: true },
+      include: { garment: { select: GARMENT_LIST_COLUMNS } },
     });
 
     if (rental) {
@@ -463,7 +464,7 @@ export async function verifyRazorpayPayment(req: Request, res: Response): Promis
             { status: 'RESERVED', timestamp: new Date().toISOString(), note: 'Payment verified and held safely until delivery. Ready to pack and ship.' }
           ],
         },
-        include: { garment: true },
+        include: { garment: { select: GARMENT_LIST_COLUMNS } },
       });
 
       // Notify Owner
@@ -636,7 +637,7 @@ export async function razorpayWebhook(req: Request, res: Response): Promise<void
 
         const webhookItems = await db.orderItem.findMany({
           where: { orderId: order.id },
-          include: { garment: true },
+          include: { garment: { select: GARMENT_LIST_COLUMNS } },
         });
 
         try {
@@ -665,7 +666,7 @@ export async function razorpayWebhook(req: Request, res: Response): Promise<void
       // 2. Check if matches a rental reservation
       const rental = await db.rental.findFirst({
         where: { stripeId: razorpayOrderId },
-        include: { garment: true },
+        include: { garment: { select: GARMENT_LIST_COLUMNS } },
       });
 
       if (rental) {

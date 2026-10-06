@@ -1,9 +1,10 @@
+import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { emitToUser, emitToConversation } from '../lib/socket';
-import { getDownloadUrl } from '../lib/cloudinary';
+import { getDownloadUrl, thumbnailUrl } from '../lib/cloudinary';
 import { createNotification } from '../services/notification.service';
 import { cacheWrap } from '../lib/cache';
 import { setPublicCache } from '../lib/httpCache';
@@ -344,6 +345,7 @@ export async function getSwapFeed(req: Request, res: Response): Promise<void> {
             price,
             estimatedValue: price,
             images: img ? [img, ...g.images.slice(1)] : g.images,
+            thumbnailUrl: thumbnailUrl(img),
             seller: g.seller ? { ...g.seller, avatar } : g.seller,
           };
         })
@@ -415,8 +417,8 @@ export async function getSwapById(req: Request, res: Response): Promise<void> {
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -528,8 +530,8 @@ export async function createSwapRequest(req: Request, res: Response): Promise<vo
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -683,8 +685,8 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -865,8 +867,8 @@ export async function respondToSwap(req: Request, res: Response): Promise<void> 
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -930,8 +932,8 @@ export async function signSwapAgreement(req: Request, res: Response): Promise<vo
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -1058,8 +1060,8 @@ export async function shareSwapAddress(req: Request, res: Response): Promise<voi
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -1196,8 +1198,8 @@ export async function markSwapShipped(req: Request, res: Response): Promise<void
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -1243,8 +1245,8 @@ export async function confirmSwapReceived(req: Request, res: Response): Promise<
     const swap = await db.swap.findUnique({
       where: { id },
       include: {
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -1298,8 +1300,8 @@ export async function confirmSwapReceived(req: Request, res: Response): Promise<
           include: {
             initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
             receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-            offeredGarment: true,
-            wantedGarment: true,
+            offeredGarment: { select: GARMENT_LIST_COLUMNS },
+            wantedGarment: { select: GARMENT_LIST_COLUMNS },
           },
         });
         res.json({ data: await formatSwapTransaction(cur, req.user.id) });
@@ -1364,8 +1366,8 @@ export async function confirmSwapReceived(req: Request, res: Response): Promise<
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -1391,8 +1393,8 @@ export async function completeSwap(req: Request, res: Response): Promise<void> {
     const swap = await db.swap.findUnique({
       where: { id },
       include: {
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -1465,8 +1467,8 @@ export async function completeSwap(req: Request, res: Response): Promise<void> {
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -1845,8 +1847,8 @@ export async function cancelSwap(req: Request, res: Response): Promise<void> {
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -1921,8 +1923,8 @@ export async function cancelSwap(req: Request, res: Response): Promise<void> {
       include: {
         initiator: { select: { id: true, displayName: true, username: true, avatar: true } },
         receiver: { select: { id: true, displayName: true, username: true, avatar: true } },
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 
@@ -1957,8 +1959,8 @@ export async function postSwapReview(req: Request, res: Response): Promise<void>
     const swap = await db.swap.findUnique({
       where: { id },
       include: {
-        offeredGarment: true,
-        wantedGarment: true,
+        offeredGarment: { select: GARMENT_LIST_COLUMNS },
+        wantedGarment: { select: GARMENT_LIST_COLUMNS },
       },
     });
 

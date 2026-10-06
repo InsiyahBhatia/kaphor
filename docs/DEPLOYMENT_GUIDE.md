@@ -139,6 +139,21 @@ The full list with comments is in `kaphor/backend/.env.example`.
 
 ---
 
+## Performance notes
+
+Plain-English tips to keep the app fast.
+
+1. **Apply the database indexes.** Indexes make lists (shop feed, orders, rentals, swaps, messages, notifications) load quickly. Run this once per deploy from `kaphor/backend` (Render does it automatically if your start command already includes it):
+   `npx prisma migrate deploy`
+2. **Use the pooled database address with these settings** on `DATABASE_URL` (Supabase pooler or Neon pooled string):
+   `?pgbouncer=true&connection_limit=5&pool_timeout=20`
+   Keep `DIRECT_URL` as the direct (non-pooled) address. It is only used for migrations.
+3. **Redis is optional.** Without it, the server keeps a small in-memory cache (15 to 120 seconds) and everything still works on a single server. Set `CACHE_DISABLED=true` if you ever need to rule out stale data while debugging.
+4. **Render cold starts.** On the free plan the server sleeps when idle and the first request takes about 30 seconds. Point an uptime checker (for example UptimeRobot) at `/health` every 5 minutes, or use a paid plan. `/health` does no database work, so it is cheap to ping.
+5. **Photos.** Uploads are resized (max 1600 px) and Cloudinary serves them as WebP/AVIF automatically. List screens also receive a small `thumbnailUrl` for faster loading.
+6. **AI calls** time out after about 25 seconds and fall back to built-in answers. Identical AI requests are reused for 3 minutes. Photos over 6 MB are refused.
+n---
+
 ## Pre-launch security checklist
 
 Tick every line before you go live.

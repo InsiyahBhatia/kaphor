@@ -1,3 +1,4 @@
+import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
@@ -294,7 +295,7 @@ export async function getOrderPaymentDetails(req: Request, res: Response): Promi
         const { orderId } = req.params;
         const order = await db.order.findUnique({
             where: { id: orderId },
-            include: { items: { include: { garment: true } } },
+            include: { items: { include: { garment: { select: GARMENT_LIST_COLUMNS } } } },
         });
 
         if (!order) {
@@ -350,7 +351,7 @@ export async function approveOrderRequest(req: Request, res: Response): Promise<
         const { orderId } = req.params;
         const order = await db.order.findUnique({
             where: { id: orderId },
-            include: { items: { include: { garment: true } }, buyer: true },
+            include: { items: { include: { garment: { select: GARMENT_LIST_COLUMNS } } }, buyer: true },
         });
         if (!order) {
             res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
@@ -378,7 +379,7 @@ export async function approveOrderRequest(req: Request, res: Response): Promise<
         }
         const updatedOrder = await db.order.findUnique({
             where: { id: orderId },
-            include: { items: { include: { garment: true } } },
+            include: { items: { include: { garment: { select: GARMENT_LIST_COLUMNS } } } },
         });
 
         // Notify Buyer
@@ -456,7 +457,7 @@ export async function rejectOrderRequest(req: Request, res: Response): Promise<v
         const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 500) : '';
         const order = await db.order.findUnique({
             where: { id: orderId },
-            include: { items: { include: { garment: true } } },
+            include: { items: { include: { garment: { select: GARMENT_LIST_COLUMNS } } } },
         });
         if (!order) {
             res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });

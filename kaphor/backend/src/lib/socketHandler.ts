@@ -49,10 +49,15 @@ export function setupSocketHandlers(_io: Server, socket: Socket) {
     if (isId(conversationId)) socket.leave(`conversation:${conversationId}`);
   });
 
-  // Typing indicators: only from sockets that are in the room.
+  // Typing indicators: only from sockets that are in the room, at most one broadcast per 1.5 s per conversation.
+  const lastTyping = new Map<string, number>();
   socket.on('typing', (payload: { conversationId?: unknown }) => {
     const cid = payload?.conversationId;
     if (isId(cid) && socket.rooms.has(`conversation:${cid}`)) {
+      const now = Date.now();
+      if (now - (lastTyping.get(cid) ?? 0) < 1500) return;
+      lastTyping.set(cid, now);
+      if (lastTyping.size > 50) lastTyping.clear();
       socket.to(`conversation:${cid}`).emit('user_typing', {
         conversationId: cid,
         userId,

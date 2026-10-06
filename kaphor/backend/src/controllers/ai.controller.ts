@@ -555,7 +555,8 @@ export async function getRecommendations(req: Request, res: Response): Promise<v
                 const score = userVec.length && g.garmentVector.length
                     ? cosineSimilarity(userVec, g.garmentVector)
                     : Math.random() * 0.3 + 0.6; // fallback for no vector
-                return { ...g, fitScore: Math.round(score * 100) };
+                const { garmentVector: _gv, ...publicFields } = g; // never send the raw vector to clients
+                return { ...publicFields, fitScore: Math.round(score * 100) };
             })
             .sort((a: any, b: any) => b.fitScore - a.fitScore)
             .slice(0, 20);
@@ -1369,7 +1370,8 @@ export async function getChatHistory(req: Request, res: Response): Promise<void>
             const convs = await db.chatConversation.findMany({
                 where: { userId: req.user.id },
                 include: { garment: { select: { title: true, images: true } } },
-                orderBy: { updatedAt: 'desc' }
+                orderBy: { updatedAt: 'desc' },
+                take: 50
             });
             res.json({ data: convs });
         }

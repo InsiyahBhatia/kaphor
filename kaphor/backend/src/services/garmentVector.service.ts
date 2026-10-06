@@ -281,7 +281,7 @@ export async function generateGarmentVectorHybrid(
   if (imageUrl) {
     try {
       // Fetch image and convert to base64
-      const response = await fetch(imageUrl);
+      const response = await fetch(imageUrl, { signal: AbortSignal.timeout(10_000) });
       if (response.ok) {
         const buffer = await response.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');

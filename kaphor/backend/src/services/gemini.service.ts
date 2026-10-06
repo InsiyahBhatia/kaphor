@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logger } from '../lib/logger';
+import { cacheWrap } from '../lib/cache';
+import { AI_ATTEMPT_TIMEOUT_MS, AI_CACHE_TTL_MS, AI_TOTAL_TIMEOUT_MS, assertImageSize, capPrompt, digest, startBudget } from '../lib/aiGuard';
 
 // Free-tier model chain (no paid plan), ordered best → fallback.
 // Every model here is verified working on all configured keys.
@@ -46,13 +48,27 @@ export async function generateWithGemini(
   const keys = getGeminiKeys();
   if (keys.length === 0) throw new Error('No GEMINI_API_KEY configured');
 
-  const parts = typeof input === 'string' ? [{ text: input }] : input;
+  const rawParts: any[] = typeof input === 'string' ? [{ text: input }] : input;
+  // Cap prompt size and refuse oversized images before spending any network time.
+  const parts = rawParts.map((p) => {
+    if (typeof p === 'string') return capPrompt(p);
+    if (p && typeof p.text === 'string') return { ...p, text: capPrompt(p.text) };
+    assertImageSize(p?.inlineData?.data);
+    return p;
+  });
   const generationConfig: any = {
     temperature: config.temperature ?? 0.7,
     maxOutputTokens: config.maxOutputTokens ?? 2048,
   };
   if (config.responseMimeType) generationConfig.responseMimeType = config.responseMimeType;
 
+  // Identical request within a few minutes: reuse the answer (and share one in-flight call between duplicates).
+  const cacheKey = `ai:gemini:${digest(parts, generationConfig)}`;
+  return cacheWrap(cacheKey, AI_CACHE_TTL_MS, () => callGeminiChain(keys, parts, generationConfig));
+}
+
+async function callGeminiChain(keys: string[], parts: any[], generationConfig: any): Promise<string> {
+  const budget = startBudget();
   let lastError: any = null;
 
   for (const apiKey of keys) {
@@ -60,12 +76,18 @@ export async function generateWithGemini(
     const keySuffix = apiKey.slice(-4);
 
     for (const modelName of GEMINI_MODEL_CHAIN) {
+      // One shared time budget for the whole call: fail fast so the caller can use its curated fallback.
+      if (budget.expired()) {
+        throw lastError || new Error(`Gemini timed out after ${AI_TOTAL_TIMEOUT_MS}ms`);
+      }
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), Math.min(AI_ATTEMPT_TIMEOUT_MS, budget.remaining()));
       try {
         const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent({
-          contents: [{ role: 'user', parts }],
-          generationConfig,
-        });
+        const result = await model.generateContent(
+          { contents: [{ role: 'user', parts }], generationConfig },
+          { signal: controller.signal },
+        );
         const text = result.response.text();
         if (text && text.trim().length > 0) {
           return text;
@@ -74,6 +96,10 @@ export async function generateWithGemini(
       } catch (err: any) {
         lastError = err;
         const status = err?.status || err?.response?.status;
+        if (controller.signal.aborted) {
+          logger.warn(`[Gemini] ${modelName} (key ...${keySuffix}) timed out, trying next`);
+          continue;
+        }
         if (status === 404) {
           logger.warn(`[Gemini] model ${modelName} unavailable on key ...${keySuffix}, trying next model`);
           continue;
@@ -88,6 +114,8 @@ export async function generateWithGemini(
           continue;
         }
         logger.warn(`[Gemini] ${modelName} (key ...${keySuffix}) error: ${err.message}, trying next`);
+      } finally {
+        clearTimeout(timer);
       }
     }
   }

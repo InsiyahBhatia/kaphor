@@ -236,6 +236,11 @@ app.use(
   compression({
     threshold: 1024,
     level: 6,
+    filter: (req, res) => {
+      // Images are already compressed; gzip would only burn CPU.
+      if (/^(\/api\/[^/]+)?\/uploads\//.test(req.path) || /^image\//.test(String(res.getHeader('Content-Type') || ''))) return false;
+      return compression.filter(req, res);
+    },
   })
 );
 
@@ -422,13 +427,14 @@ async function main() {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   }
 
-  // Try to connect but don't crash if unreachable. Prisma will retry lazily.
-  try {
-    await db.$connect();
-    logger.info('Database connected');
-  } catch (err: any) {
-    logger.warn('Database connection failed at startup (will retry on first request)', { error: err?.message });
-  }
+  // Pre-warm the database connection WITHOUT delaying startup. Prisma shares one connect promise, so a request that
+  // arrives while this is still running simply waits for it instead of failing. Never crashes if unreachable.
+  void db
+    .$connect()
+    .then(() => logger.info('Database connected'))
+    .catch((err: any) =>
+      logger.warn('Database connection failed at startup (will retry on first request)', { error: err?.message })
+    );
 
   httpServer.listen(PORT, '0.0.0.0', () => {
     logger.info(`Server running on 0.0.0.0:${PORT} (${validatedEnv.NODE_ENV})`);
@@ -447,9 +453,9 @@ async function main() {
   });
 
   // Slow-client protection
-  httpServer.headersTimeout = 20_000;
-  httpServer.requestTimeout = 120_000; // AI calls can be slow
   httpServer.keepAliveTimeout = 65_000; // longer than Render's load balancer (60s)
+  httpServer.headersTimeout = 66_000; // must be above keepAliveTimeout or Node can drop reused connections
+  httpServer.requestTimeout = 120_000; // AI calls can be slow
 }
 
 // ── Graceful shutdown ───────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import { Request, Response } from 'express';
 import db from '../lib/prisma';
 import { logger } from '../lib/logger';
@@ -124,7 +125,7 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
             }
 
             // Presign images + seller avatar (bucket is private; raw URLs would 403)
-            const { getDownloadUrl } = await import('../lib/cloudinary');
+            const { getDownloadUrl, thumbnailUrl } = await import('../lib/cloudinary');
             garments = await Promise.all(
                 garments.map(async (g: any) => {
                     const images = Array.isArray(g.images) && g.images.length > 0
@@ -134,6 +135,7 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
                     return {
                         ...g,
                         images,
+                        thumbnailUrl: Array.isArray(images) ? thumbnailUrl(images[0]) : null,
                         seller: g.seller ? { ...g.seller, avatar } : g.seller,
                     };
                 })
@@ -478,7 +480,7 @@ export async function getRentalEscrow(req: Request, res: Response): Promise<void
 
         const { id } = req.params;
         const cleanId = String(id || '').trim();
-        const rental = await findRentalByRef(cleanId, req.user.id, { garment: true });
+        const rental = await findRentalByRef(cleanId, req.user.id, { garment: { select: GARMENT_LIST_COLUMNS } });
 
         if (!rental) {
             res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
@@ -521,7 +523,7 @@ export async function releaseRentalDeposit(req: Request, res: Response): Promise
 
         const { id } = req.params;
         const cleanId = String(id || '').trim();
-        const rental = await findRentalByRef(cleanId, req.user.id, { garment: true });
+        const rental = await findRentalByRef(cleanId, req.user.id, { garment: { select: GARMENT_LIST_COLUMNS } });
 
         if (!rental) {
             res.status(404).json({ error: 'NOT_FOUND', message: 'Rental not found' });
@@ -841,7 +843,7 @@ export async function approveRentalRequest(req: Request, res: Response): Promise
         const { id } = req.params;
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true, renter: true }
+            include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true }
         });
 
         if (!rental) {
@@ -894,7 +896,7 @@ export async function approveRentalRequest(req: Request, res: Response): Promise
             res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
             return;
         }
-        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true } });
 
         try {
             await createNotification({
@@ -969,7 +971,7 @@ export async function declineRentalRequest(req: Request, res: Response): Promise
 
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true, renter: true }
+            include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true }
         });
 
         if (!rental) {
@@ -1003,7 +1005,7 @@ export async function declineRentalRequest(req: Request, res: Response): Promise
             res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
             return;
         }
-        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true } });
 
         try {
             await createNotification({
@@ -1077,7 +1079,7 @@ export async function confirmRentalPayment(req: Request, res: Response): Promise
 
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true, renter: true }
+            include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true }
         });
 
         if (!rental) {
@@ -1125,7 +1127,7 @@ export async function confirmRentalPayment(req: Request, res: Response): Promise
             res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
             return;
         }
-        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true } });
 
         try {
             await createNotification({
@@ -1159,7 +1161,7 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
 
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true, renter: true }
+            include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true }
         });
 
         if (!rental) {
@@ -1203,7 +1205,7 @@ export async function dispatchRental(req: Request, res: Response): Promise<void>
             res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
             return;
         }
-        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true } });
 
         try {
             await createNotification({
@@ -1234,7 +1236,7 @@ export async function confirmRentalDelivery(req: Request, res: Response): Promis
         const { id } = req.params;
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true, renter: true }
+            include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true }
         });
 
         if (!rental) {
@@ -1269,7 +1271,7 @@ export async function confirmRentalDelivery(req: Request, res: Response): Promis
             res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
             return;
         }
-        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true } });
 
         try {
             await createNotification({
@@ -1303,7 +1305,7 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
 
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true, renter: true }
+            include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true }
         });
 
         if (!rental) {
@@ -1346,7 +1348,7 @@ export async function returnRental(req: Request, res: Response): Promise<void> {
             res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
             return;
         }
-        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true } });
 
         if (updated?.garment) {
             try {
@@ -1379,7 +1381,7 @@ export async function confirmReturnDelivery(req: Request, res: Response): Promis
         const { id } = req.params;
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true, renter: true }
+            include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true }
         });
 
         if (!rental) {
@@ -1413,7 +1415,7 @@ export async function confirmReturnDelivery(req: Request, res: Response): Promis
             res.status(409).json({ error: 'CONFLICT', message: 'Rental state changed, please refresh' });
             return;
         }
-        const updated = await db.rental.findUnique({ where: { id }, include: { garment: true, renter: true } });
+        const updated = await db.rental.findUnique({ where: { id }, include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true } });
 
         try {
             await createNotification({
@@ -1453,7 +1455,7 @@ export async function postRentalReview(req: Request, res: Response): Promise<voi
 
         const rental = await db.rental.findUnique({
             where: { id },
-            include: { garment: true, renter: true }
+            include: { garment: { select: GARMENT_LIST_COLUMNS }, renter: true }
         });
 
         if (!rental) {

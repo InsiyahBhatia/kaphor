@@ -291,37 +291,33 @@ export class InsightService {
     });
 
     try {
-      // 1. Fetch garment view counts
-      const garments = await db.garment.findMany({
-        where: { id: { in: garmentIds } },
-        select: { id: true, viewCount: true },
-      });
+      // The three lookups are independent: run them together instead of one after another.
+      const [garments, saveGroup, inquiriesGroup] = await Promise.all([
+        db.garment.findMany({
+          where: { id: { in: garmentIds } },
+          select: { id: true, viewCount: true },
+        }),
+        db.behaviourEvent.groupBy({
+          by: ['garmentId'],
+          where: {
+            garmentId: { in: garmentIds },
+            eventType: { in: [EventType.WISHLIST, EventType.SAVE] },
+          },
+          _count: { _all: true },
+        }),
+        db.conversation.groupBy({
+          by: ['garmentId'],
+          where: { garmentId: { in: garmentIds } },
+          _count: { _all: true },
+        }),
+      ]);
       garments.forEach((g: { id: string; viewCount: number }) => {
         if (summary[g.id]) summary[g.id].views = g.viewCount || 0;
-      });
-
-      // 2. Wishlists / Saves grouped by garmentId
-      const saveGroup = await db.behaviourEvent.groupBy({
-        by: ['garmentId'],
-        where: {
-          garmentId: { in: garmentIds },
-          eventType: { in: [EventType.WISHLIST, EventType.SAVE] },
-        },
-        _count: { _all: true },
       });
       saveGroup.forEach((sg: { garmentId: string | null; _count: { _all: number } }) => {
         if (sg.garmentId && summary[sg.garmentId]) {
           summary[sg.garmentId].saves = sg._count._all;
         }
-      });
-
-      // 3. Inquiries grouped by garmentId
-      const inquiriesGroup = await db.conversation.groupBy({
-        by: ['garmentId'],
-        where: {
-          garmentId: { in: garmentIds },
-        },
-        _count: { _all: true },
       });
       inquiriesGroup.forEach((ig: { garmentId: string | null; _count: { _all: number } }) => {
         if (ig.garmentId && summary[ig.garmentId]) {
