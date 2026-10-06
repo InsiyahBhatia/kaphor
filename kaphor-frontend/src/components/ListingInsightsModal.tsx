@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
   },
   headerTitle: {
     color: colors.textPrimary,
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     marginTop: spacing.md,
   },
   errorTitle: {
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     color: colors.bg,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   content: {
     flex: 1,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     maxWidth: 130,
   },
   demandBadge: {
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   demandText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
   },
   garmentTitle: {
     color: colors.textPrimary,
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   lifecyclePill: {
     marginLeft: 'auto',
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     color: colors.textSecond,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   demandScoreText: {
     color: colors.gold,
@@ -606,7 +606,7 @@ const styles = StyleSheet.create({
     color: colors.textSecond,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   stepCount: {
     color: colors.textPrimary,
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
   },
   chartCard: {
     backgroundColor: colors.bgCard,
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
   },
   impactBadge: {
     paddingHorizontal: 6,
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
     color: colors.textSecond,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
   },
   tipHeadline: {
     color: colors.textPrimary,
@@ -761,6 +761,6 @@ const styles = StyleSheet.create({
     color: colors.bg,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
 });

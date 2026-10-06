@@ -815,7 +815,7 @@ export default function SwapShippingScreen() {
                     <Text
                       style={{
                         fontFamily: typography.handwritten,
-                        fontSize: 17,
+                        fontSize: 13,
                         color: colors.textMuted,
                         textAlign: 'center',
                         marginBottom: 12,
@@ -954,7 +954,7 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 180 },
   sectionTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     marginBottom: 12,
     marginTop: 20, includeFontPadding: false, },
@@ -977,14 +977,14 @@ const styles = StyleSheet.create({
   addressHeaderText: {
     color: colors.cream,
     fontFamily: typography.handBold,
-    fontSize: 16, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   addressBody: {
     padding: 16,
     gap: 4,
   },
   addressName: {
     fontFamily: typography.bodyBold,
-    fontSize: 16,
+    fontSize: 14,
     color: colors.charcoal,
   },
   addressLine: {
@@ -1010,7 +1010,7 @@ const styles = StyleSheet.create({
   },
   noAddressText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 23, includeFontPadding: false, },
@@ -1050,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   depositTitle: {
     fontFamily: typography.handBold,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   depositAmountText: {
     fontFamily: typography.bodyBold,
@@ -1072,12 +1072,12 @@ const styles = StyleSheet.create({
   },
   depositStatusBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   badgeTextUnpaid: { color: colors.copper },
   badgeTextPaid: { color: colors.forest },
   depositExplainer: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
     lineHeight: 23, includeFontPadding: false, },
   payDepositBtn: {
@@ -1096,7 +1096,7 @@ const styles = StyleSheet.create({
   payDepositBtnText: {
     color: colors.cream,
     fontFamily: typography.bodyBold,
-    fontSize: 11.5,
+    fontSize: 11,
     letterSpacing: 0.2,
   },
 
@@ -1109,13 +1109,13 @@ const styles = StyleSheet.create({
   },
   shipCardDesc: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 23,
     marginBottom: 14, includeFontPadding: false, },
   formLabel: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 8,
     marginTop: 12, includeFontPadding: false, },
@@ -1140,7 +1140,7 @@ const styles = StyleSheet.create({
   },
   courierChipText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   courierChipTextActive: { color: colors.cream },
   input: {
@@ -1169,7 +1169,7 @@ const styles = StyleSheet.create({
   submitBtnText: {
     color: colors.cream,
     fontFamily: typography.bodyBold,
-    fontSize: 12.5,
+    fontSize: 12,
     letterSpacing: 0.2,
   },
 
@@ -1191,7 +1191,7 @@ const styles = StyleSheet.create({
   },
   trackingLabel: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   trackingRow: {
     flexDirection: 'row',
@@ -1225,7 +1225,7 @@ const styles = StyleSheet.create({
   },
   deliveredText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
   trackBtn: {
     flexDirection: 'row',
@@ -1256,7 +1256,7 @@ const styles = StyleSheet.create({
   },
   chatWithPartnerText: {
     fontFamily: typography.handBold,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   confirmReceiptCard: {
     backgroundColor: colors.emeraldLight,
@@ -1274,12 +1274,12 @@ const styles = StyleSheet.create({
   },
   confirmReceiptTitle: {
     fontFamily: typography.handBold,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.forest,
     flex: 1, includeFontPadding: false, },
   confirmReceiptSub: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     lineHeight: 23,
     color: colors.charcoal,
     marginBottom: 14, includeFontPadding: false, },
@@ -1296,7 +1296,7 @@ const styles = StyleSheet.create({
   confirmReceiptBtnText: {
     color: colors.cream,
     fontFamily: typography.bodyBold,
-    fontSize: 11.5,
+    fontSize: 11,
     letterSpacing: 0.2,
   },
   completedBanner: {
@@ -1312,11 +1312,11 @@ const styles = StyleSheet.create({
   },
   completedBannerTitle: {
     fontFamily: typography.handBold,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
   completedBannerSub: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
     marginTop: 2,
     lineHeight: 20, includeFontPadding: false, },
@@ -1343,7 +1343,7 @@ const styles = StyleSheet.create({
   },
   sectionTitleNoMargin: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     flexShrink: 1, includeFontPadding: false, },
   addressRoleBadge: {
@@ -1355,7 +1355,7 @@ const styles = StyleSheet.create({
   },
   addressRoleBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream, includeFontPadding: false, },
   changeAddressLink: {
     fontFamily: typography.bodyBold,
@@ -1416,7 +1416,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.charcoal,
   },
   addressModalTitle: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 15,
     fontWeight: '800',
     color: colors.charcoal,
@@ -1433,7 +1433,7 @@ const styles = StyleSheet.create({
   },
   modalAddBtnText: {
     fontFamily: typography.bodyBold,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.cream,
     letterSpacing: 0.2,
   },
@@ -1461,7 +1461,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   addressOptionName: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
     fontWeight: '700',
     color: colors.charcoal,
@@ -1487,7 +1487,7 @@ const styles = StyleSheet.create({
   },
   defaultBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   reviewSectionContainer: {
     marginTop: 16,
@@ -1501,7 +1501,7 @@ const styles = StyleSheet.create({
   },
   reviewSectionTitle: {
     fontFamily: typography.headings,
-    fontSize: 17,
+    fontSize: 16,
     letterSpacing: 0.5,
     color: colors.charcoal,
   },
@@ -1520,7 +1520,7 @@ const styles = StyleSheet.create({
   },
   reviewedCardRole: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   starsRow: {
     flexDirection: 'row',
@@ -1552,7 +1552,7 @@ const styles = StyleSheet.create({
   },
   reviewedCardVerified: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
   writeReviewCard: {
     backgroundColor: colors.white,
@@ -1562,7 +1562,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   writeReviewHeading: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 15,
     color: colors.charcoal,
     marginBottom: 4,
@@ -1615,7 +1615,7 @@ const styles = StyleSheet.create({
   },
   submitReviewBtnText: {
     fontFamily: typography.bodyBold,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.cream,
     letterSpacing: 0.2,
   },
@@ -1633,7 +1633,7 @@ const styles = StyleSheet.create({
   awaitingPartnerText: {
     flex: 1,
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 22, includeFontPadding: false, },
   wardrobeLinkBtn: {

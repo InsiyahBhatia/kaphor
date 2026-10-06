@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import {
   MARKET_CATEGORIES,
   ALL_CATEGORY_ITEMS,
@@ -692,7 +692,7 @@ export default function SellScreen() {
                 <View style={styles.t3RecHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <SolarIcon name="trending-up" size={15} color={colors.emerald} />
-                    <Text style={styles.t3RecTitle}>MARKET PRICE VALUATION</Text>
+                    <Text style={styles.t3RecTitle}>RECOMMENDED PRICE</Text>
                   </View>
                   {t3Pricing.demandTrend && (
                     <View style={[styles.t3Badge, t3Pricing.demandTrend === 'rising' && styles.t3BadgeRising]}>
@@ -705,7 +705,7 @@ export default function SellScreen() {
 
                 <View style={styles.t3RecRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.t3RecPrice}>
+                    <Text style={styles.t3RecPrice} numberOfLines={1} adjustsFontSizeToFit>
                       ₹{t3Pricing.recommendedPrice.toLocaleString('en-IN')}
                     </Text>
                     <Text style={styles.t3RecSub}>
@@ -730,7 +730,7 @@ export default function SellScreen() {
                     }}
                   >
                     <SolarIcon name="checkmark-sharp" size={13} color={colors.white} />
-                    <Text style={styles.t3ApplyText}>APPLY PRICE</Text>
+                    <Text style={styles.t3ApplyText}>APPLY</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -763,7 +763,7 @@ export default function SellScreen() {
               </>
             ) : listingType === 'SALE' ? (
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 }}>
+                <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 }}>
                   SELLING PRICE (₹) *
                 </Text>
                 <TextInput accessibilityLabel="SELLING PRICE (₹) e.g. 899"
@@ -775,7 +775,7 @@ export default function SellScreen() {
                   keyboardType="numeric"
                 />
 
-                <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 }}>
+                <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.charcoal, fontWeight: '700', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 }}>
                   ORIGINAL RETAIL PRICE / MRP (₹) (OPTIONAL)
                 </Text>
                 <TextInput accessibilityLabel="ORIGINAL COST / MRP (₹) e.g. 2499"
@@ -791,7 +791,7 @@ export default function SellScreen() {
                   <View style={{ marginTop: 8, padding: 10, backgroundColor: colors.emeraldLight, borderRadius: 6, borderWidth: 1, borderColor: colors.emeraldLight, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <SolarIcon name="pricetag" size={15} color={colors.emerald} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.emerald, fontWeight: '800' }}>
+                      <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.emerald, fontWeight: '800' }}>
                         FEED PREVIEW: -{Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)}% OFF MRP
                       </Text>
                       <Text style={{ fontFamily: typography.body, fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
@@ -996,15 +996,18 @@ export default function SellScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  headerTitle: { color: colors.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerTitle: {
+    ...textStyles.screenTitle,
+    color: colors.textPrimary,
+  },
   progressContainer: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 32 },
   progressDot: { width: 30, height: 4, backgroundColor: colors.bgCard, borderRadius: 2 },
   activeDot: { backgroundColor: colors.crimson },
   scrollContent: { padding: 24, paddingBottom: 220 },
   stepContainer: { gap: 16 },
-  stepTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: colors.textPrimary, marginBottom: 4 },
+  stepTitle: { fontSize: 22, fontFamily: typography.headings, color: colors.textPrimary, marginBottom: 4 },
   stepSubtitle: {
- fontSize: 16, color: colors.textSecond, lineHeight: 22, fontFamily: typography.body,
+ fontSize: 14, color: colors.textSecond, lineHeight: 22, fontFamily: typography.body,
   },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   imageThumb: { width: 100, height: 133, borderRadius: 12, position: 'relative', overflow: 'hidden' }, // 3:4 ratio for thumb
@@ -1037,7 +1040,7 @@ const styles = StyleSheet.create({
  color: colors.textMuted, fontSize: 11, marginTop: 4, letterSpacing: 2, fontWeight: '700', fontFamily: typography.bodyBold,
   },
   input: {
- height: 56, borderBottomWidth: 1, borderBottomColor: colors.border, color: colors.textPrimary, fontSize: 16, paddingHorizontal: 4, fontFamily: typography.body,
+ height: 56, borderBottomWidth: 1, borderBottomColor: colors.border, color: colors.textPrimary, fontSize: 14, paddingHorizontal: 4, fontFamily: typography.body,
   },
   pickerLabel: {
  color: colors.textMuted, fontSize: 12, letterSpacing: 2, marginTop: 16, fontWeight: '700', fontFamily: typography.bodyBold,
@@ -1062,7 +1065,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   mainButtonText: {
- color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2, fontFamily: typography.bodyBold,
+ color: colors.white, fontSize: 14, fontWeight: '800', letterSpacing: 2, fontFamily: typography.bodyBold,
   },
   aiButton: {
     backgroundColor: colors.charcoal,
@@ -1087,7 +1090,7 @@ const styles = StyleSheet.create({
  color: colors.textSecond, fontSize: 12, fontWeight: '600', fontFamily: typography.bodyMedium,
   },
   summaryValue: {
- color: colors.textPrimary, fontSize: 16, fontWeight: '800', fontFamily: typography.bodyBold,
+ color: colors.textPrimary, fontSize: 14, fontWeight: '800', fontFamily: typography.bodyBold,
   },
   payoutSection: {
     backgroundColor: colors.overlayLight,
@@ -1099,7 +1102,7 @@ const styles = StyleSheet.create({
   },
   payoutSectionTitle: {
     color: colors.navy,
-    fontSize: 18,
+    fontSize: 14,
     fontFamily: typography.handBold,
     includeFontPadding: false,
   },
@@ -1125,7 +1128,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   policyText: {
  color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18, marginVertical: 16, fontFamily: typography.body,
@@ -1185,7 +1188,7 @@ const styles = StyleSheet.create({
   listingTypeTopLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   listingTypeBadge: {
@@ -1203,7 +1206,7 @@ const styles = StyleSheet.create({
   listingTypeBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   segmentedRow: {
@@ -1229,7 +1232,7 @@ const styles = StyleSheet.create({
   segmentedBtnLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   segmentedBtnLabelActive: {
@@ -1271,13 +1274,13 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   sectionHeadingSub: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   step2AiButton: {
@@ -1299,13 +1302,13 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   t3RecCard: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.emeraldLight,
     borderWidth: 1,
-    borderColor: colors.emeraldLight,
-    borderRadius: 8,
+    borderColor: 'rgba(23, 100, 81, 0.25)',
+    borderRadius: 10,
     padding: 14,
     marginBottom: 16,
   },
@@ -1316,46 +1319,48 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   t3RecTitle: {
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 11,
+    letterSpacing: 1,
     color: colors.emerald,
   },
   t3Badge: {
-    backgroundColor: colors.emeraldLight,
+    backgroundColor: colors.white,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.emeraldLight,
+    borderColor: 'rgba(23, 100, 81, 0.25)',
   },
   t3BadgeRising: {
-    backgroundColor: colors.emeraldLight,
+    backgroundColor: colors.emerald,
     borderColor: colors.emerald,
   },
   t3BadgeText: {
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10,
+    letterSpacing: 0.5,
     color: colors.emerald,
   },
   t3RecRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    gap: 12,
+    marginBottom: 10,
   },
   t3RecPrice: {
-    fontFamily: typography.mono,
-    fontSize: 22,
-    fontWeight: '900',
-    color: colors.white,
-    letterSpacing: 0.5,
+    fontFamily: typography.bodyBold,
+    includeFontPadding: false,
+    fontSize: 16,
+    color: colors.emeraldDark,
   },
   t3RecSub: {
-    fontFamily: typography.body,
-    fontSize: 11,
-    color: colors.textMuted,
+    fontFamily: typography.bodyMedium,
+    fontSize: 12,
+    color: colors.textSecond,
     marginTop: 2,
   },
   t3ApplyBtn: {
@@ -1363,24 +1368,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
   },
   t3ApplyText: {
-    fontFamily: typography.handBold,
+    fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
+    letterSpacing: 0.5,
     color: colors.white,
   },
   t3RecDetail: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textMuted,
-    lineHeight: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    lineHeight: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(23, 100, 81, 0.25)',
     paddingTop: 8,
-    marginTop: 4,
   },
 });

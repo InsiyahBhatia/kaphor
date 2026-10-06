@@ -9,7 +9,7 @@ import { EditorialPageHeader, HandwrittenNote } from '../../../src/components/ed
 import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { messageService } from '../../../src/services/messageService';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { isAccessoryCategory } from '../../../src/constants/market';
 import api, { swrGet } from '../../../src/services/api';
 import { hapticFeedback } from '../../../src/utils/haptics';
@@ -530,15 +530,18 @@ const styles = StyleSheet.create({
   },
   headerActions: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  title: { fontSize: 42, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
-  subtitle: { fontFamily: typography.handBold, fontSize: 16, color: colors.red, includeFontPadding: false, },
+  title: {
+    ...textStyles.pageTitle,
+    color: colors.charcoal,
+  },
+  subtitle: { fontFamily: typography.handBold, fontSize: 13, color: colors.red, includeFontPadding: false, },
   sellBtn: { width: 40, height: 40, backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.charcoal },
 
   // Tab bar
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.overlayLight, backgroundColor: colors.cream },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: colors.charcoal },
-  tabText: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
+  tabText: { fontFamily: typography.handSemi, fontSize: 13, color: colors.textMuted, includeFontPadding: false, },
   tabTextActive: { color: colors.charcoal, fontWeight: '900' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between', paddingTop: 16 },
@@ -560,30 +563,30 @@ const styles = StyleSheet.create({
     width: 32, height: 32, borderWidth: 1, borderColor: colors.charcoal,
     backgroundColor: colors.bgMuted, alignItems: 'center', justifyContent: 'center',
   },
-  partnerName: { fontFamily: typography.headings, fontSize: 14, color: colors.charcoal, letterSpacing: 0.5 },
-  swapRequestLabel: { fontFamily: typography.handBold, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
+  partnerName: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.charcoal, letterSpacing: 0.5 },
+  swapRequestLabel: { fontFamily: typography.handBold, fontSize: 13, color: colors.textMuted, includeFontPadding: false, },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3 },
-  statusBadgeText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
+  statusBadgeText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
   swapItemsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   swapItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   itemThumbWrap: { width: 36, height: 36, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgMuted },
   itemThumb: { width: '100%', height: '100%' },
-  swapItemLabel: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, marginBottom: 2, includeFontPadding: false, },
-  swapItemName: { fontFamily: typography.headings, fontSize: 14, color: colors.charcoal },
-  swapMessage: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, fontStyle: 'italic', paddingLeft: 4, includeFontPadding: false, },
+  swapItemLabel: { fontFamily: typography.handSemi, fontSize: 13, color: colors.textMuted, marginBottom: 2, includeFontPadding: false, },
+  swapItemName: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.charcoal },
+  swapMessage: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, fontStyle: 'italic', paddingLeft: 4, includeFontPadding: false, },
   swapActions: { flexDirection: 'row', gap: 6, marginTop: 4 },
   swapActionBtn: {
     flex: 1, flexDirection: 'row', height: 36, justifyContent: 'center', alignItems: 'center', gap: 4,
     borderWidth: 1.5, borderColor: colors.charcoal,
   },
-  swapActionText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
+  swapActionText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
   messageBtn: { backgroundColor: colors.white, borderColor: colors.charcoal },
   messageBtnText: { color: colors.charcoal, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.2 },
   detailsBtn: { backgroundColor: colors.bgMuted, borderColor: colors.charcoal },
   detailsBtnText: { color: colors.charcoal, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.2 },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 },
-  emptyText: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, includeFontPadding: false, },
-  emptySubtext: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
+  emptyText: { fontFamily: typography.handBold, fontSize: 13, color: colors.charcoal, includeFontPadding: false, },
+  emptySubtext: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, includeFontPadding: false, },
 });
 

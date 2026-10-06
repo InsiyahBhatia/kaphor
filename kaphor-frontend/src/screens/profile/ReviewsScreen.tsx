@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SolarIcon } from '../../components/common/SolarIcon';
 import { userService } from '../../services/userService';
-import { colors, typography, spacing, radius } from '../../theme';
+import { colors, typography, spacing, radius, textStyles } from '../../theme';
 import { safeBack, useBackHandler } from '../../utils/navigation';
 import { KaphorImage } from '../../components/KaphorImage';
 import { Loader } from '../../components/common/Loader';
@@ -101,7 +101,7 @@ export function ReviewsScreen() {
             </View>
 
             {loading ? (
-                <Loader variant="default" />
+                <Loader variant="default" layout="reviews" compact />
             ) : reviews.length === 0 ? (
                 <View style={styles.center}>
                     <SolarIcon name="star-outline" size={48} color={colors.textMuted} />
@@ -132,7 +132,10 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
     backBtn: { width: 40, height: 40, justifyContent: 'center' },
-    headerTitle: { color: colors.textPrimary, fontFamily: typography.headings, fontSize: 20 },
+    headerTitle: {
+      ...textStyles.screenTitle,
+      color: colors.textPrimary,
+    },
     
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
     emptyText: { color: colors.textMuted, fontFamily: typography.body, marginTop: spacing.md, textAlign: 'center' },
@@ -144,11 +147,11 @@ const styles = StyleSheet.create({
     avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgMuted },
     reviewerInfo: { flex: 1, marginLeft: spacing.sm },
     reviewerName: { color: colors.textPrimary, fontFamily: typography.body, fontSize: 14, fontWeight: 'bold' },
-    reviewerUsername: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 18, includeFontPadding: false },
+    reviewerUsername: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 14, includeFontPadding: false },
     
     ratingBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
     ratingText: { color: colors.gold, fontFamily: typography.mono, fontSize: 12, fontWeight: 'bold', marginLeft: 4 },
     
     commentText: { color: colors.textPrimary, fontFamily: typography.body, fontSize: 14, lineHeight: 20, marginBottom: spacing.sm },
-    dateText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 17, textAlign: 'right', includeFontPadding: false },
+    dateText: { color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 13, textAlign: 'right', includeFontPadding: false },
 });

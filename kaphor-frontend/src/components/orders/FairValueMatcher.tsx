@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   matcherTitle: {
-    fontFamily: typography.headings,
-    fontSize: 13.5,
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
     color: colors.charcoal,
     letterSpacing: 1,
   },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream, includeFontPadding: false, },
 
   // Meter
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   meterLabel: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textSecond, includeFontPadding: false, },
   barTrack: {
     height: 12,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   meterValText: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 13,
     color: colors.charcoal,
   },
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   recText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
     lineHeight: 20,
     flex: 1, includeFontPadding: false, },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   accordionTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   accordionBody: {
     marginTop: 8,
@@ -349,22 +349,22 @@ const styles = StyleSheet.create({
   },
   columnHeader: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.red,
     marginBottom: 2, includeFontPadding: false, },
   metricValBold: {
-    fontFamily: typography.headings,
-    fontSize: 13.5,
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
     color: colors.charcoal,
   },
   metricSub: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textSecond,
     marginTop: 1, includeFontPadding: false, },
   appraisalDisclaimer: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     fontStyle: 'italic',
     lineHeight: 19,

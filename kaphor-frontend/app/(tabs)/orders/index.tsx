@@ -25,7 +25,7 @@ import { trackingService, OrdersSummaryData, RentalItem } from '../../../src/ser
 import { TransactionOrder } from '../../../src/services/orderService';
 import { messageService } from '../../../src/services/messageService';
 import { useAuth } from '../../../src/context/AuthContext';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { invalidateCache } from '../../../src/services/api';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
@@ -1026,10 +1026,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontFamily: typography.headings,
-    fontSize: 20,
+    ...textStyles.screenTitle,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   primaryTabs: {
     flexDirection: 'row',
@@ -1050,7 +1048,7 @@ const styles = StyleSheet.create({
   primaryTabText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   primaryTabTextActive: {
@@ -1071,14 +1069,14 @@ const styles = StyleSheet.create({
   },
   summaryNum: {
     fontFamily: typography.mono,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
     color: colors.charcoal,
   },
   summaryLbl: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -1115,7 +1113,7 @@ const styles = StyleSheet.create({
   rolePillText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.charcoal,
   },
   rolePillTextActive: {
@@ -1165,7 +1163,7 @@ const styles = StyleSheet.create({
   statusTagText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10,
     color: colors.cream,
   },
   cardBody: {
@@ -1188,12 +1186,12 @@ const styles = StyleSheet.create({
   garmentBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.textMuted,
   },
   garmentTitle: {
-    fontFamily: typography.headings,
-    fontSize: 16,
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
     color: colors.charcoal,
     marginVertical: 2,
   },
@@ -1206,7 +1204,7 @@ const styles = StyleSheet.create({
   counterpartyText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
     marginTop: 4,
   },
@@ -1231,7 +1229,7 @@ const styles = StyleSheet.create({
   },
   escrowNoticeText: {
     fontFamily: typography.body,
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.forest,
     letterSpacing: 0.5,
@@ -1255,7 +1253,7 @@ const styles = StyleSheet.create({
   chatActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   detailActionBtn: {
@@ -1270,7 +1268,7 @@ const styles = StyleSheet.create({
   detailActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   primaryActionBtn: {
@@ -1286,7 +1284,7 @@ const styles = StyleSheet.create({
   primaryActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.cream,
   },
   trackActionBtn: {
@@ -1304,7 +1302,7 @@ const styles = StyleSheet.create({
   trackActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.cream,
   },
   reviewActionBtn: {
@@ -1322,7 +1320,7 @@ const styles = StyleSheet.create({
   reviewActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.orange,
   },
   viewChevronCol: {
@@ -1332,7 +1330,7 @@ const styles = StyleSheet.create({
   itemInspectHint: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 11,
     color: colors.red,
     marginTop: 4,
   },
@@ -1361,12 +1359,12 @@ const styles = StyleSheet.create({
   swapRoleLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10,
     color: colors.textMuted,
   },
   swapItemTitle: {
-    fontFamily: typography.headings,
-    fontSize: 13,
+    fontFamily: typography.bodyBold,
+    fontSize: 12,
     color: colors.charcoal,
     textAlign: 'center',
   },
@@ -1380,7 +1378,7 @@ const styles = StyleSheet.create({
   estValueText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.charcoal,
   },
   swapArrowCol: {
@@ -1390,7 +1388,7 @@ const styles = StyleSheet.create({
   swapCashlessBadge: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 10,
     color: colors.red,
     marginTop: 2,
   },
@@ -1408,7 +1406,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 16,
     color: colors.charcoal,
     marginTop: 12,
     marginBottom: 6,
@@ -1416,7 +1414,7 @@ const styles = StyleSheet.create({
   emptySub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 21,
@@ -1431,7 +1429,7 @@ const styles = StyleSheet.create({
   emptyBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 12,
     color: colors.cream,
   },
 });

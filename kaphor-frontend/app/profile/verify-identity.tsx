@@ -79,7 +79,7 @@ export default function VerifyIdentityScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Loader variant="default" />
+        <Loader variant="default" layout="form" />
       </View>
     );
   }
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   verifiedTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.charcoal,
     marginBottom: 4,
   },
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   formSectionTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     marginBottom: 12,
   },
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   docTypeLabelActive: {
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.charcoal,
     marginBottom: 6,
   },
@@ -498,6 +498,6 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
 });

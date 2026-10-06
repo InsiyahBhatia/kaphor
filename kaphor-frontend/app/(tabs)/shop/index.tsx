@@ -7,7 +7,7 @@ import { orderService } from '../../../src/services/orderService';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { EditorialIcon, EditorialPageHeader, HandwrittenNote } from '../../../src/components/editorial/IllustrationLayer';
 import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { 
   MARKET_CATEGORIES, 
   MARKET_CONDITIONS, 
@@ -458,10 +458,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    fontSize: 37,
-    fontFamily: typography.headings,
+    ...textStyles.pageTitle,
     color: colors.charcoal,
-    letterSpacing: 2,
   },
   sellButton: {
     backgroundColor: colors.charcoal,
@@ -472,7 +470,7 @@ const styles = StyleSheet.create({
   },
   sellText: {
     color: colors.cream,
-    fontSize: 20,
+    fontSize: 15,
     fontFamily: typography.handBold,
     includeFontPadding: false,
   },
@@ -492,7 +490,7 @@ const styles = StyleSheet.create({
   },
   searchPrefix: {
     fontFamily: typography.mono,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.red,
     marginRight: 8,
     fontWeight: 'bold',
@@ -500,7 +498,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     color: colors.charcoal,
-    fontSize: 18,
+    fontSize: 14,
     fontFamily: typography.body,
   },
   loader: {
@@ -622,7 +620,7 @@ const styles = StyleSheet.create({
   },
   shopTitle: {
     fontFamily: typography.body,
-    fontSize: 15.5,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.charcoal,
     marginBottom: 8,
@@ -751,7 +749,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: typography.headings,
-    fontSize: 28,
+    fontSize: 22,
     color: colors.charcoal,
     letterSpacing: 2,
   },
@@ -881,7 +879,7 @@ const styles = StyleSheet.create({
   saleTagText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 9,
+    fontSize: 10,
     color: colors.forest,
     letterSpacing: 0.5,
   },

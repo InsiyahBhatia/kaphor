@@ -552,7 +552,7 @@ export default function RepairRefreshScreen() {
     <View style={styles.screen}>
       <Header title="Repair & Refresh" showBack fallbackPath="/(tabs)/circular" />
       {loading ? (
-        <Loader variant="studio" />
+        <Loader variant="studio" compact />
       ) : (
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           {result ? renderResult() : renderInput()}
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontFamily: typography.headings,
-    fontSize: 17,
+    fontSize: 16,
     color: colors.textPrimary,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,

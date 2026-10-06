@@ -136,24 +136,24 @@ export default function RentalDetailScreen() {
     return (
       <View style={[styles.container, styles.center, { paddingHorizontal: 24 }]}>
         <SolarIcon name="calendar-outline" size={48} color={colors.textMuted} style={{ marginBottom: 16 }} />
-        <Text style={{ color: colors.charcoal, fontFamily: typography.handSemi, fontSize: 19, textAlign: 'center', includeFontPadding: false }}>
+        <Text style={{ color: colors.charcoal, fontFamily: typography.handSemi, fontSize: 18, textAlign: 'center', includeFontPadding: false }}>
           Rental lease details
         </Text>
-        <Text style={{ color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 17, marginTop: 8, textAlign: 'center', includeFontPadding: false }}>
+        <Text style={{ color: colors.textMuted, fontFamily: typography.handwritten, fontSize: 16, marginTop: 8, textAlign: 'center', includeFontPadding: false }}>
           This rental agreement is registered. You can view its full timeline and return status in My Rentals.
         </Text>
         <TouchableOpacity 
           onPress={() => router.replace('/(tabs)/rental?tab=my' as any)}
           style={{ marginTop: 24, backgroundColor: colors.charcoal, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 2 }}
         >
-          <Text style={{ color: colors.cream, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false }}>View my rentals</Text>
+          <Text style={{ color: colors.cream, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false }}>View my rentals</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           onPress={() => safeBack('/(tabs)/shop')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={{ marginTop: 16 }}
         >
-          <Text style={{ color: colors.crimson, fontFamily: typography.handwritten, fontSize: 17, includeFontPadding: false }}>Go back</Text>
+          <Text style={{ color: colors.crimson, fontFamily: typography.handwritten, fontSize: 16, includeFontPadding: false }}>Go back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
   },
   zoomPillText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold, includeFontPadding: false, },
   backButton: { 
     position: 'absolute', 
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   brand: {
  color: colors.crimson, fontSize: 12, letterSpacing: 2, fontWeight: '800', fontFamily: typography.bodyBold,
   },
-  title: { color: colors.textPrimary, fontSize: 32, fontFamily: 'BebasNeue_400Regular', marginTop: 4, marginBottom: 12 },
+  title: { color: colors.textPrimary, fontSize: 32, fontFamily: typography.headings, marginTop: 4, marginBottom: 12 },
   desc: {
  color: colors.textSecond, fontSize: 15, lineHeight: 24, marginBottom: 20, fontFamily: typography.body,
   },
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   aiDoubtText: {
     color: colors.gold,
     fontFamily: typography.handBold,
-    fontSize: 17, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   rateCard: { 
     backgroundColor: colors.bgCard, 
     borderRadius: 20, 
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
  color: colors.textMuted, fontSize: 12, letterSpacing: 1, fontWeight: '700', fontFamily: typography.bodyBold,
   },
   rateValue: {
- color: colors.textPrimary, fontSize: 18, fontWeight: '800', fontFamily: typography.bodyBold,
+ color: colors.textPrimary, fontSize: 14, fontWeight: '800', fontFamily: typography.bodyBold,
   },
   details: { marginBottom: 24 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   reserveButtonText: {
- color: colors.white, fontSize: 16, fontWeight: '800', letterSpacing: 2, fontFamily: typography.bodyBold,
+ color: colors.white, fontSize: 14, fontWeight: '800', letterSpacing: 2, fontFamily: typography.bodyBold,
   },
   messageLenderBtn: {
     flexDirection: 'row',
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   },
   chatIconLabel: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   zoomModalBackdrop: {
     flex: 1,
@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
   },
   zoomInstructionText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold, includeFontPadding: false, },
 
   // ── Availability Card ──────────────────────────────────────────
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   },
   availabilityTitle: {
     fontFamily: typography.handBold,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   availabilityBadge: {
     paddingHorizontal: 8,
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
   },
   availabilityBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   availabilitySubtext: {
     fontFamily: typography.body,

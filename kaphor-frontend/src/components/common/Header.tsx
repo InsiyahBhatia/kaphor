@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SolarIcon } from './SolarIcon';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, typography, spacing } from '../../theme';
+import { colors, typography, spacing, textStyles } from '../../theme';
 import { useNotificationStore } from '../../store/notificationStore';
 import { safeBack, useBackHandler } from '../../utils/navigation';
 import { EditorialIcon } from '../editorial/IllustrationLayer';
@@ -165,12 +165,9 @@ const styles = StyleSheet.create({
 
   iconBtn: { padding: 4, position: 'relative' },
   title: {
+    ...textStyles.screenTitle,
     color: colors.textPrimary,
-    fontFamily: typography.headings,
-    fontSize: 22,
-    letterSpacing: 0.3,
     textAlign: 'center',
-    lineHeight: 22,
   },
   subtitle: {
     color: colors.textMuted,
@@ -205,7 +202,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
 });

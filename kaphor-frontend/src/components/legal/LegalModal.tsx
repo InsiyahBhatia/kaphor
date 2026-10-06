@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   chipText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statutoryRef: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.textSecond,
     lineHeight: 16,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   legalBasisText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.textMuted,
     lineHeight: 17,

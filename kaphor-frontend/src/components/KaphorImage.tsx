@@ -208,14 +208,14 @@ const styles = StyleSheet.create({
   fallbackBrand: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.inkSoft,
     marginTop: 6,
   },
   fallbackArchive: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 2,
   },

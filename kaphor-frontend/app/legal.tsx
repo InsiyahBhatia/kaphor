@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 12.5,
+    fontSize: 12,
     fontFamily: typography.mono,
     color: colors.textPrimary,
   },
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   chipText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '700',
     color: colors.textSecond,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   docTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontFamily: typography.headings,
     fontWeight: '400',
     color: colors.textPrimary,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statutoryRef: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.textSecond,
     lineHeight: 16,
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   legalBasisText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     color: colors.textMuted,
     lineHeight: 17,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   grievanceText: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontFamily: typography.body,
     lineHeight: 19,
     color: colors.textSecond,

@@ -13,7 +13,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, typography } from '../../src/theme';
+import { colors, typography, textStyles } from '../../src/theme';
 import paymentService from '../../src/services/paymentService';
 import type { SellerPayoutAccount } from '../../src/types/payment';
 import { safeBack, useBackHandler } from '../../src/utils/navigation';
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   formLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     marginBottom: 6,
     marginTop: 16,
@@ -709,10 +709,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   headerTitle: {
-    fontFamily: typography.headings,
-    fontSize: 22,
+    ...textStyles.screenTitle,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: {
@@ -971,10 +969,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   inlineHeaderTitle: {
-    fontFamily: typography.headings,
-    fontSize: 18,
+    ...textStyles.screenTitle,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   formContent: {
     padding: 20,

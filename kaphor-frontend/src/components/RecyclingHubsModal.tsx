@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 20,
+    fontSize: 16,
     color: colors.charcoal,
   },
   scrollContent: {
@@ -271,13 +271,13 @@ const styles = StyleSheet.create({
   garmentBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.copper,
   },
   garmentTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.charcoal,
     marginBottom: 4,
   },
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   eolBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.goldDark,
   },
   locationBanner: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.charcoal,
     flex: 1,
     lineHeight: 24,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.textMuted,
   },
   centersList: {
@@ -350,12 +350,12 @@ const styles = StyleSheet.create({
   centerName: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 20,
+    fontSize: 16,
     color: colors.charcoal,
   },
   centerCityDist: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.forest,
     marginTop: 2,
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   metaText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
     flex: 1,
     lineHeight: 23,
@@ -400,13 +400,13 @@ const styles = StyleSheet.create({
   fiberTagText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.charcoal,
   },
   certText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.copper,
     marginTop: 2,
     lineHeight: 23,
@@ -427,13 +427,13 @@ const styles = StyleSheet.create({
   },
   detailPhoneText: {
     fontFamily: typography.mono,
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: '800',
     color: colors.forest,
   },
   dropOffInstructions: {
     fontFamily: typography.body,
-    fontSize: 16,
+    fontSize: 14,
     color: colors.charcoal,
     lineHeight: 17,
   },
@@ -450,13 +450,13 @@ const styles = StyleSheet.create({
   aiScanTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 20,
+    fontSize: 16,
     color: colors.charcoal,
   },
   aiScanSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
     lineHeight: 23,
     marginTop: 2,
@@ -474,13 +474,13 @@ const styles = StyleSheet.create({
   mailInTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.goldDark,
   },
   mailInSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     lineHeight: 23,
     marginTop: 2,

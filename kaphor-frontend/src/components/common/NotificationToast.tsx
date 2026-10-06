@@ -423,19 +423,19 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   title: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.white,
     flex: 1,
   },
   body: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.paperGlass,
     lineHeight: 23,
   },

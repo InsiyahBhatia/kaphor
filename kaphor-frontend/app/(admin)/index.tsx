@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   },
   lockTitle: {
     fontFamily: typography.headings,
-    fontSize: 26,
+    fontSize: 24,
     color: colors.crimson,
     letterSpacing: 1.5,
   },
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   },
   kpiValue: {
     fontFamily: typography.headings,
-    fontSize: 26,
+    fontSize: 24,
     color: colors.ink,
     letterSpacing: 1,
   },

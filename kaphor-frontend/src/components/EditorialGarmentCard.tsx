@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 9.5,
+    fontSize: 10,
   },
   wishlistBtn: {
     position: 'absolute',
@@ -250,13 +250,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.charcoal,
   },
   garmentSize: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     color: colors.textMuted,
   },
   garmentTitle: {

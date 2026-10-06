@@ -5,7 +5,7 @@ import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { isAccessoryCategory } from '../../../src/constants/market';
@@ -225,7 +225,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { justifyContent: 'center', alignItems: 'center' },
   header: { paddingHorizontal: 24, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.cream },
-  headerTitle: { color: colors.charcoal, fontSize: 21, fontFamily: typography.handBold, includeFontPadding: false, },
+  headerTitle: {
+    ...textStyles.screenTitle,
+    color: colors.charcoal,
+  },
   content: { padding: 20, paddingBottom: 200 },
   wantedCard: { flexDirection: 'row', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden' },
   wantedImage: { width: 100, height: 120 },
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
   offerCard: { width: '47%', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal, overflow: 'hidden', position: 'relative' },
   offerCardSelected: { borderColor: colors.red, borderWidth: 3 },
   offerImage: { width: '100%', height: 150 },
-  offerTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 14, padding: 10 },
+  offerTitle: { color: colors.charcoal, fontFamily: typography.bodyBold, fontSize: 14, padding: 10 },
   checkmark: { position: 'absolute', top: 8, right: 8 },
   footer: { 
     padding: 20, 
@@ -300,7 +303,7 @@ const styles = StyleSheet.create({
   },
   zoomInstructionText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold, includeFontPadding: false, },
   zoomPillSmall: {
     position: 'absolute',
@@ -316,6 +319,6 @@ const styles = StyleSheet.create({
   },
   zoomPillSmallText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold, includeFontPadding: false, },
 });

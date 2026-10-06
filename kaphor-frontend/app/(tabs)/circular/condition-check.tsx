@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import * as ImagePicker from 'expo-image-picker';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { CenterCardsLoading } from '../../../src/components/common/CardLoadingScreen';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { circularService, RecyclingCenter, RecyclingCentersResponse } from '../../../src/services/circularService';
@@ -783,9 +783,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   headerTitle: {
+    ...textStyles.screenTitle,
     color: colors.charcoal,
-    fontSize: 19,
-    fontFamily: typography.handBold, includeFontPadding: false, },
+  },
 
   // ── Form ────────────────────────────────────────────────────
   formContent: { padding: 20, paddingBottom: 180 },
@@ -804,7 +804,7 @@ const styles = StyleSheet.create({
   },
   uploadPreview: { width: '100%', height: '100%', resizeMode: 'cover' },
   uploadPlaceholder: { alignItems: 'center', gap: 8 },
-  uploadText: { fontFamily: typography.handBold, fontSize: 18, color: colors.charcoal, includeFontPadding: false, },
+  uploadText: { fontFamily: typography.handBold, fontSize: 14, color: colors.charcoal, includeFontPadding: false, },
   uploadSubtext: { fontFamily: typography.handwritten, fontSize: 14, color: colors.textMuted, includeFontPadding: false, },
   uploadActions: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 28 },
   uploadActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10 },
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   pickerOptionActive: { backgroundColor: colors.charcoal },
-  pickerOptionText: { fontFamily: typography.handSemi, fontSize: 16, color: colors.charcoal, includeFontPadding: false, },
+  pickerOptionText: { fontFamily: typography.handSemi, fontSize: 13, color: colors.charcoal, includeFontPadding: false, },
   pickerOptionTextActive: { color: colors.cream },
 
   // Chips (flat layout — no nested ScrollViews)
@@ -912,10 +912,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   heroEmoji: {
- fontSize: 48, marginBottom: 8, fontFamily: typography.body,
+ fontSize: 32, marginBottom: 8, fontFamily: typography.body,
   },
-  heroTitle: { fontFamily: typography.headings, fontSize: 40, color: colors.cream, letterSpacing: 2, marginBottom: 8 },
-  heroSubtitle: { fontFamily: typography.handwritten, fontSize: 16, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 26, includeFontPadding: false, },
+  heroTitle: { fontFamily: typography.headings, fontSize: 28, color: colors.cream, letterSpacing: 2, marginBottom: 8 },
+  heroSubtitle: { fontFamily: typography.handwritten, fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 26, includeFontPadding: false, },
 
   // Grade Row
   gradeRow: {
@@ -925,7 +925,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   gradeBadge: { paddingHorizontal: 20, paddingVertical: 10, borderWidth: 2, borderColor: colors.charcoal },
-  gradeText: { fontFamily: typography.handBold, fontSize: 19, color: colors.cream, includeFontPadding: false, },
+  gradeText: { fontFamily: typography.handBold, fontSize: 15, color: colors.cream, includeFontPadding: false, },
   gradeMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   gradeMetaLabel: { fontFamily: typography.handwritten, fontSize: 14, color: colors.textMuted, includeFontPadding: false, },
   gradeThumb: { width: 44, height: 44, borderWidth: 1.5, borderColor: colors.charcoal },
@@ -944,9 +944,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   actionCardTitle: { fontFamily: typography.handBold, fontSize: 15, color: colors.textMuted, marginBottom: 12, includeFontPadding: false, },
-  actionCardPrice: { fontFamily: typography.headings, fontSize: 42, color: colors.charcoal, marginBottom: 16 },
+  actionCardPrice: { fontFamily: typography.headings, fontSize: 28, color: colors.charcoal, marginBottom: 16 },
   actionCardTutorial: { fontFamily: typography.body, fontSize: 14, color: colors.charcoal, lineHeight: 22, marginBottom: 16 },
-  actionCardPlaceholder: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, lineHeight: 26, marginBottom: 16, includeFontPadding: false, },
+  actionCardPlaceholder: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, lineHeight: 26, marginBottom: 16, includeFontPadding: false, },
   
   // Segregated Path Cards
   segregationBanner: {
@@ -1004,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   pathTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
   pathSubtitle: {
     fontFamily: typography.handwritten,
@@ -1073,7 +1073,7 @@ const styles = StyleSheet.create({
   impactGrid: { flexDirection: 'row', gap: 12 },
   impactStat: { flex: 1, backgroundColor: colors.cream, padding: 12, borderWidth: 1.5, borderColor: colors.charcoal, alignItems: 'center' },
   impactStatValue: { fontFamily: typography.headings, fontSize: 28, color: colors.charcoal },
-  impactStatUnit: { fontFamily: typography.bodyMedium, fontSize: 9, color: colors.textMuted, marginTop: 2 },
+  impactStatUnit: { fontFamily: typography.bodyMedium, fontSize: 10, color: colors.textMuted, marginTop: 2 },
   impactStatLabel: { fontFamily: typography.handBold, fontSize: 13, color: colors.charcoal, marginTop: 4, textAlign: 'center', includeFontPadding: false, },
 
   // Summary Card
@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
   },
   summaryTitle: { fontFamily: typography.handBold, fontSize: 14, color: colors.textMuted, marginBottom: 12, includeFontPadding: false, },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  summaryLabel: { fontFamily: typography.handwritten, fontSize: 16, color: colors.textMuted, includeFontPadding: false, },
+  summaryLabel: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, includeFontPadding: false, },
   summaryValue: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.charcoal },
 
   // Recycling Centers UI
@@ -1157,7 +1157,7 @@ const styles = StyleSheet.create({
   },
   centerItemName: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   centerItemCity: {
     fontFamily: typography.handSemi,
@@ -1182,7 +1182,7 @@ const styles = StyleSheet.create({
   },
   centerScoreText: {
     fontFamily: typography.bodyBold,
-    fontSize: 8,
+    fontSize: 10,
     color: colors.forest,
   },
   centerMetaRow: {
@@ -1232,7 +1232,7 @@ const styles = StyleSheet.create({
   },
   detailPhoneText: {
     fontFamily: typography.bodyBold,
-    fontSize: 9,
+    fontSize: 10,
     color: colors.forest,
   },
   dropOffInstructions: {
@@ -1271,7 +1271,7 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
     backgroundColor: colors.cream,
   },
-  scanAgainText: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false, },
+  scanAgainText: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
 
   // Hard Reject Banner (Part 4 PDF)
   hardRejectBanner: {
@@ -1287,7 +1287,7 @@ const styles = StyleSheet.create({
   },
   hardRejectTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.red,
     marginBottom: 2, includeFontPadding: false, },
   hardRejectText: {
@@ -1314,7 +1314,7 @@ const styles = StyleSheet.create({
   },
   prepCardTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   prepCardSub: {
     fontFamily: typography.body,
@@ -1333,7 +1333,7 @@ const styles = StyleSheet.create({
   },
   prepTaskText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   prepTaskDone: {
     textDecorationLine: 'line-through',
@@ -1341,7 +1341,7 @@ const styles = StyleSheet.create({
   },
   prepTaskDetail: {
     fontFamily: typography.body,
-    fontSize: 10.5,
+    fontSize: 10,
     color: colors.textMuted,
     marginTop: 2,
     lineHeight: 15,
@@ -1376,7 +1376,7 @@ const styles = StyleSheet.create({
   },
   toggleTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   toggleSub: {
     fontFamily: typography.body,
@@ -1402,11 +1402,11 @@ const styles = StyleSheet.create({
   },
   transparencyTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
   transparencyText: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -1441,7 +1441,7 @@ const styles = StyleSheet.create({
   },
   onboardCalloutText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
 
   // Modal Styles
@@ -1469,7 +1469,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: typography.handBold,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal, includeFontPadding: false, },
   modalSub: {
     fontFamily: typography.body,
@@ -1502,7 +1502,7 @@ const styles = StyleSheet.create({
   },
   modalSubmitText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream, includeFontPadding: false, },
 });
 

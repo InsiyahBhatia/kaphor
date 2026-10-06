@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.handBold,
-    fontSize: 16, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   labelSm: {
     fontSize: 11,
     letterSpacing: 0.5,
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
       fontFamily: typography.body,
   },
   valueText: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
     letterSpacing: 0.8,
     marginTop: 1,
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
       fontFamily: typography.body,
   },
   valueTextLg: {
-    fontSize: 17,
+    fontSize: 14,
     letterSpacing: 1,
       fontFamily: typography.body,
   },

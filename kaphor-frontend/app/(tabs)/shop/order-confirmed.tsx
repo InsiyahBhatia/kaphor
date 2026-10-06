@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   scrollContent: {
     padding: 24,
@@ -207,12 +207,12 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
 
   heading: {
     fontFamily: typography.headings,
-    fontSize: 40,
+    fontSize: 28,
     color: colors.charcoal,
     letterSpacing: 2,
     marginBottom: 12,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   subheading: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 24,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   orderIdHint: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 21,
   },
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     marginBottom: 20,
   },
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   timelineTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.charcoal,
     marginBottom: 4,
   },
@@ -348,13 +348,13 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   impactText: {
     color: colors.goldDark,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     lineHeight: 21,
   },
 
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
   },
   secondaryBtn: {
     height: 44,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   homeBtn: {
     height: 36,
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     textDecorationLine: 'underline',
   },
 });

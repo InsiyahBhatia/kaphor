@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { colors, typography } from '../../theme';
+import { colors, typography, textStyles } from '../../theme';
 import {
   EditorialAccents,
   EditorialBotanicals,
@@ -443,10 +443,10 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.ink,
   },
   pageHeaderContent: {
-    paddingTop: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    minHeight: 136,
+    paddingTop: 14,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    minHeight: 0,
     justifyContent: 'flex-end',
   },
   eyebrowContainer: {
@@ -456,22 +456,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(184, 154, 62, 0.4)',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   eyebrow: {
-    fontFamily: typography.handwritten,
-    fontSize: 14,
+    fontFamily: typography.bodyBold,
+    fontSize: 10,
+    letterSpacing: 1,
     color: colors.goldDark, includeFontPadding: false, },
   pageTitle: {
-    fontFamily: typography.headings,
-    fontSize: 44,
-    lineHeight: 46,
+    ...textStyles.pageTitle,
     color: colors.ink,
-    letterSpacing: 2.2,
   },
   pageSubtitle: {
     marginTop: 4,
-    fontFamily: typography.handwritten,
-    fontSize: 15,
+    fontFamily: typography.bodyMedium,
+    fontSize: 12,
     color: colors.crimson, includeFontPadding: false, },
 });

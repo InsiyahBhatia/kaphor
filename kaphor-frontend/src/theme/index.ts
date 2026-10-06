@@ -120,3 +120,40 @@ export const radius = {
   card: 10,
   full: 999,
 } as const;
+
+// Shared title styles — use these so every screen header / page title matches.
+export const textStyles = {
+  // Top-bar title on every screen (back-arrow header)
+  screenTitle: {
+    fontFamily: typography.headings,
+    fontSize: 20,
+    lineHeight: 26,
+    letterSpacing: 0.5,
+    includeFontPadding: false,
+  },
+  // Large hero title on tab landing pages (Shop, Swap, Rental, Messages, Studio)
+  pageTitle: {
+    fontFamily: typography.headings,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: 0.8,
+    includeFontPadding: false,
+  },
+} as const;
+
+// The only font sizes the app uses. Run `python scripts/audit-typography.py` to check.
+export const fontSizes = {
+  micro: 10,
+  caption: 11,
+  small: 12,
+  label: 13,
+  body: 14,
+  bodyLg: 15,
+  subhead: 16,
+  title: 18,
+  screenTitle: 20,
+  heading: 22,
+  display: 24,
+  hero: 28,
+  jumbo: 32,
+} as const;

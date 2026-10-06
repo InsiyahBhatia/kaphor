@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SolarIcon } from '../../../src/components/common/SolarIcon';
-import { colors, typography, spacing } from '../../../src/theme';
+import { colors, typography, spacing, textStyles } from '../../../src/theme';
 import { impactService } from '../../../src/services/impactService';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { Loader } from '../../../src/components/common/Loader';
@@ -300,14 +300,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerPre: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.red, includeFontPadding: false, },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: typography.headings,
+    ...textStyles.screenTitle,
     color: colors.charcoal,
-    letterSpacing: 1,
     marginTop: 2,
   },
   content: {
@@ -346,11 +344,11 @@ const styles = StyleSheet.create({
   },
   tierPillText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream, includeFontPadding: false, },
   userCallout: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   tierProgressTrack: {
     height: 6,
@@ -379,7 +377,7 @@ const styles = StyleSheet.create({
 
   sectionHeading: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 12,
     marginTop: 4, includeFontPadding: false, },
@@ -408,7 +406,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   metricLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.charcoal, includeFontPadding: false, },
   valueRow: {
@@ -418,9 +416,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   metricValue: {
-    fontSize: 38,
+    fontSize: 28,
     fontFamily: typography.headings,
-    lineHeight: 40,
+    lineHeight: 34,
   },
   metricUnit: {
     fontSize: 11,
@@ -529,7 +527,7 @@ const styles = StyleSheet.create({
   },
   barType: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 2, includeFontPadding: false, },
   historyMessage: {

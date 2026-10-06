@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useRouter } from 'expo-router';
 import { impactService } from '../../../src/services/impactService';
+import { circularService } from '../../../src/services/circularService';
 import { colors, typography } from '../../../src/theme';
 import { Header } from '../../../src/components/common/Header';
 import { RecyclingHubsModal } from '../../../src/components/RecyclingHubsModal';
@@ -14,6 +15,8 @@ export default function CircularScreen() {
   const [showRecyclingModal, setShowRecyclingModal] = useState(false);
 
   useEffect(() => {
+    // Warm the recycling hubs list so that screen opens instantly
+    circularService.getRecyclingCenters().catch(() => {});
     impactService
       .getMyImpact()
       .then((data) => setImpactData(data))
@@ -395,7 +398,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.ink, includeFontPadding: false, },
   sectionTagTerracotta: {
     backgroundColor: colors.terracottaLight,
@@ -407,15 +410,15 @@ const styles = StyleSheet.create({
   },
   sectionTagTerracottaText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.terracottaDark, includeFontPadding: false, },
   sectionActionEmerald: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.emerald, includeFontPadding: false, },
   sectionActionGold: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.goldDark, includeFontPadding: false, },
 
   // ── AI ADVISOR CARD (TERRACOTTA) ──
@@ -469,7 +472,7 @@ const styles = StyleSheet.create({
   },
   cardSub: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 3,
     lineHeight: 21, includeFontPadding: false, },
@@ -486,7 +489,7 @@ const styles = StyleSheet.create({
   },
   badgeTerracottaText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.terracottaDark, includeFontPadding: false, },
   badgeGold: {
     backgroundColor: colors.goldLight,
@@ -498,7 +501,7 @@ const styles = StyleSheet.create({
   },
   badgeGoldText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.goldDark, includeFontPadding: false, },
   pillRow: {
     flexDirection: 'row',
@@ -516,7 +519,7 @@ const styles = StyleSheet.create({
   },
   pillTerracottaText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.terracottaDark, includeFontPadding: false, },
   actionBtnTerracotta: {
     flexDirection: 'row',
@@ -529,7 +532,7 @@ const styles = StyleSheet.create({
   },
   actionBtnTerracottaText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.white, includeFontPadding: false, },
 
   // ── CONDITION SCAN COMPACT ──
@@ -563,7 +566,7 @@ const styles = StyleSheet.create({
   },
   cardCompactSub: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 19,
     marginTop: 2, includeFontPadding: false, },
@@ -577,7 +580,7 @@ const styles = StyleSheet.create({
   },
   badgeGoldTinyText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.goldDark, includeFontPadding: false, },
 
   // ── SUSTAINABILITY & IMPACT CARD ──
@@ -610,11 +613,11 @@ const styles = StyleSheet.create({
   },
   badgeEmeraldText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.emeraldLight, includeFontPadding: false, },
   impactSubtitle: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.emeraldDark, includeFontPadding: false, },
   statsScoreboard: {
     flexDirection: 'row',
@@ -628,7 +631,7 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontFamily: typography.headings,
-    fontSize: 34,
+    fontSize: 28,
     color: colors.emeraldDark,
     lineHeight: 34,
   },
@@ -641,7 +644,7 @@ const styles = StyleSheet.create({
   },
   statSub: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.emerald, includeFontPadding: false, },
   statRule: {
     width: 1,
@@ -672,7 +675,7 @@ const styles = StyleSheet.create({
   },
   garmentPillColoredText: {
     fontFamily: typography.handwritten,
-    fontSize: 16, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   actionBtnGold: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -684,7 +687,7 @@ const styles = StyleSheet.create({
   },
   actionBtnGoldText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream, includeFontPadding: false, },
 
   // ── 2x2 PATHWAY GRID ──
@@ -722,7 +725,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   pathwayIndex: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
   },
   pathwayName: {
@@ -734,7 +737,7 @@ const styles = StyleSheet.create({
   },
   pathwayDesc: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 19,
     minHeight: 38, includeFontPadding: false, },
@@ -787,7 +790,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   recoveryHeadline: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
     color: colors.emeraldDark,
     letterSpacing: 0.8,
@@ -802,11 +805,11 @@ const styles = StyleSheet.create({
   },
   badgeEmeraldTinyText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.emeraldDark, includeFontPadding: false, },
   recoverySub: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 2,
     lineHeight: 19, includeFontPadding: false, },

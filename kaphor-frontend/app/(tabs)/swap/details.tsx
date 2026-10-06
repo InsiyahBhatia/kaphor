@@ -16,7 +16,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, typography, spacing } from '../../../src/theme';
+import { colors, typography, spacing, textStyles } from '../../../src/theme';
 import { swapService } from '../../../src/services/swapService';
 import { messageService } from '../../../src/services/messageService';
 import api from '../../../src/services/api';
@@ -957,13 +957,11 @@ const styles = StyleSheet.create({
   },
   headerPre: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   headerTitle: {
-    fontFamily: typography.headings,
-    fontSize: 18,
+    ...textStyles.screenTitle,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   chatHeaderBtn: {
     width: 36,
@@ -1014,11 +1012,11 @@ const styles = StyleSheet.create({
   },
   chatPartnerBannerTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   chatPartnerBannerSubtitle: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 3,
     lineHeight: 20, includeFontPadding: false, },
@@ -1050,18 +1048,18 @@ const styles = StyleSheet.create({
   },
   partnerDisplayName: {
     fontFamily: typography.headings,
-    fontSize: 17,
+    fontSize: 16,
     color: colors.charcoal,
     letterSpacing: 0.5,
   },
   partnerRole: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 2, includeFontPadding: false, },
   partnerHandle: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textSecond,
     marginTop: 1, includeFontPadding: false, },
   directChatBtn: {
@@ -1099,7 +1097,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   statusTag: {
     borderWidth: 1.5,
@@ -1110,7 +1108,7 @@ const styles = StyleSheet.create({
   },
   statusTagText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   stepperContainer: {
     flexDirection: 'row',
@@ -1155,7 +1153,7 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     lineHeight: 19,
     color: colors.textMuted,
     textAlign: 'center', includeFontPadding: false, },
@@ -1182,8 +1180,8 @@ const styles = StyleSheet.create({
 
   // Manifest
   sectionHeading: {
-    fontFamily: typography.headings,
-    fontSize: 16,
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
     color: colors.charcoal,
     letterSpacing: 1,
     marginBottom: spacing.sm,
@@ -1221,7 +1219,7 @@ const styles = StyleSheet.create({
   },
   cardBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream, includeFontPadding: false, },
   garmentImgWrap: {
     width: '100%',
@@ -1240,11 +1238,11 @@ const styles = StyleSheet.create({
   },
   garmentBrand: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   garmentTitle: {
-    fontFamily: typography.headings,
-    fontSize: 13.5,
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
     color: colors.charcoal,
     marginVertical: 4,
     lineHeight: 18,
@@ -1261,11 +1259,11 @@ const styles = StyleSheet.create({
   },
   garmentSize: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textSecond, includeFontPadding: false, },
   garmentCondition: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
   garmentValue: {
     fontFamily: typography.bodyBold,
@@ -1304,7 +1302,7 @@ const styles = StyleSheet.create({
   },
   messageLabel: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   messageText: {
     fontFamily: typography.accent,
@@ -1373,11 +1371,11 @@ const styles = StyleSheet.create({
   },
   escrowNoticeTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.goldDark, includeFontPadding: false, },
   escrowNoticeBody: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textSecond,
     lineHeight: 23,
     marginTop: 4, includeFontPadding: false, },
@@ -1465,7 +1463,7 @@ const styles = StyleSheet.create({
   },
   goldBtnText: {
     fontFamily: typography.bodyBold,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.cream,
     letterSpacing: 0.2,
   },
@@ -1487,7 +1485,7 @@ const styles = StyleSheet.create({
   },
   completedNoticeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
 
   // Review Card
@@ -1507,7 +1505,7 @@ const styles = StyleSheet.create({
   },
   reviewCardTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   reviewSubmittedBox: {
     backgroundColor: colors.paperLight,
@@ -1524,7 +1522,7 @@ const styles = StyleSheet.create({
   },
   reviewSubmittedLabel: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.goldDark, includeFontPadding: false, },
   reviewCommentText: {
     fontFamily: typography.accent,
@@ -1539,7 +1537,7 @@ const styles = StyleSheet.create({
   },
   reviewInstruction: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textSecond,
     lineHeight: 22,
     marginBottom: 8, includeFontPadding: false, },
@@ -1572,7 +1570,7 @@ const styles = StyleSheet.create({
   },
   submitReviewBtnText: {
     fontFamily: typography.bodyBold,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.cream,
     letterSpacing: 0.2,
   },
@@ -1609,7 +1607,7 @@ const styles = StyleSheet.create({
   },
   zoomInstructionText: {
     color: colors.white,
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: typography.handBold, includeFontPadding: false, },
   zoomPillSmall: {
     position: 'absolute',
@@ -1625,7 +1623,7 @@ const styles = StyleSheet.create({
   },
   zoomPillSmallText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold, includeFontPadding: false, },
   modalImage: {
     width: width * 0.9,

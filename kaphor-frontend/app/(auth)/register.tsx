@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: colors.white,
     fontFamily: typography.bodyBold,
-    fontSize: 16,
+    fontSize: 14,
     letterSpacing: 0.5,
   },
   buttonDisabled: {
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     paddingHorizontal: 12,
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
   },
   googleButton: {
     flexDirection: 'row',

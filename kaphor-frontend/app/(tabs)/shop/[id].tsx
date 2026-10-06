@@ -618,7 +618,7 @@ export default function GarmentDetailScreen() {
                         )}
                       </View>
                       <View style={{ padding: 8 }}>
-                        <Text style={{ fontFamily: typography.mono, fontSize: 11.5, color: colors.textMuted }} numberOfLines={1}>
+                        <Text style={{ fontFamily: typography.mono, fontSize: 11, color: colors.textMuted }} numberOfLines={1}>
                           {item.brand.toUpperCase()}
                         </Text>
                         <Text style={{ fontFamily: typography.body, fontSize: 12, fontWeight: '700', color: colors.charcoal, marginTop: 2 }} numberOfLines={1}>
@@ -781,13 +781,13 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     color: colors.textMuted,
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: typography.handBold,
     includeFontPadding: false,
     marginBottom: 4,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontFamily: typography.headings,
     color: colors.textPrimary,
     textTransform: 'uppercase',
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimsonLight,
   },
   discountTagText: {
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: typography.handBold,
     includeFontPadding: false,
     color: colors.crimson,
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   subtextText: {
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textSecond,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
     borderColor: colors.emeraldLight,
   },
   noticeTitle: {
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: typography.handBold,
     includeFontPadding: false,
     color: colors.crimson,
@@ -1014,7 +1014,7 @@ const styles = StyleSheet.create({
   managerText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   editBtnSmall: {
@@ -1032,7 +1032,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   deleteBtnSmall: {
     backgroundColor: colors.crimsonLight,
@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
     color: colors.crimson,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   saleInfoCard: {
     flexDirection: 'row',
@@ -1083,7 +1083,7 @@ const styles = StyleSheet.create({
     borderColor: colors.overlayLight,
   },
   specLabel: {
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: typography.handBold,
     includeFontPadding: false,
     color: colors.textMuted,
@@ -1110,7 +1110,7 @@ const styles = StyleSheet.create({
   },
   zoomHintText: {
     color: colors.white,
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: typography.handBold,
     includeFontPadding: false,
   },
@@ -1195,7 +1195,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   sellerBannerSub: {
     color: colors.textMuted,
@@ -1210,7 +1210,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   insightsBtnSmall: {
     flexDirection: 'row',
@@ -1225,7 +1225,7 @@ const styles = StyleSheet.create({
   },
   insightsTextSmall: {
     color: colors.gold,
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: typography.handBold,
     includeFontPadding: false,
   },

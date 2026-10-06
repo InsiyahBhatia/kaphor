@@ -16,7 +16,7 @@ import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { rentalService } from '../../../../src/services/rentalService';
 import { messageService } from '../../../../src/services/messageService';
-import { colors, typography } from '../../../../src/theme';
+import { colors, typography, textStyles } from '../../../../src/theme';
 import { KaphorImage, getCategoryFallbackImage } from '../../../../src/components/KaphorImage';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 import { hapticFeedback } from '../../../../src/utils/haptics';
@@ -1312,10 +1312,10 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   errorTitle: {
-    fontSize: 21,
+    fontSize: 16,
     fontFamily: typography.handBold,
     color: colors.textPrimary,
     marginTop: 16, includeFontPadding: false, },
@@ -1335,14 +1335,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   headerTitle: {
+    ...textStyles.screenTitle,
     color: colors.textPrimary,
-    fontSize: 16,
-    fontFamily: 'BebasNeue_400Regular',
-    letterSpacing: 1.5,
   },
   headerSub: {
     color: colors.textMuted,
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handwritten,
     marginTop: 1, includeFontPadding: false, },
   content: { padding: 16, paddingBottom: 120 },
@@ -1381,11 +1379,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimson,
   },
   statusTitle: {
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textPrimary, includeFontPadding: false, },
   statusDesc: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textSecond,
     lineHeight: 16,
     marginTop: 2,
@@ -1402,7 +1400,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   cardSectionLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textMuted,
     marginBottom: 12, includeFontPadding: false, },
@@ -1417,7 +1415,7 @@ const styles = StyleSheet.create({
   },
   garmentInfo: { flex: 1, justifyContent: 'center' },
   brandText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handSemi,
     color: colors.crimson, includeFontPadding: false, },
   titleText: {
@@ -1437,7 +1435,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   tagText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handSemi,
     color: colors.textSecond, includeFontPadding: false, },
   garmentRate: {
@@ -1463,7 +1461,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   counterpartyRoleLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handSemi,
     color: colors.textMuted, includeFontPadding: false, },
   counterpartyName: {
@@ -1506,7 +1504,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   timelineDateLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textMuted, includeFontPadding: false, },
   timelineDateValue: {
@@ -1540,7 +1538,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   timelineDurationText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.crimson, includeFontPadding: false, },
 
@@ -1559,7 +1557,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   trackingTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textPrimary, includeFontPadding: false, },
   trackingDetailsBox: {
@@ -1571,7 +1569,7 @@ const styles = StyleSheet.create({
   },
   trackingDetailRow: {},
   trackingDetailLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handwritten,
     color: colors.textMuted, includeFontPadding: false, },
   trackingDetailValue: {
@@ -1597,20 +1595,20 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   addressRecipient: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 2,
       fontFamily: typography.bodyBold,
   },
   addressLine: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textSecond,
     lineHeight: 16,
       fontFamily: typography.body,
   },
   addressCity: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.textPrimary,
     marginTop: 2,
@@ -1640,7 +1638,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimsonLight,
   },
   escrowPillText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.crimson, includeFontPadding: false, },
   summaryRow: {
@@ -1649,17 +1647,17 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   summaryLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handwritten,
     color: colors.textMuted, includeFontPadding: false, },
   summaryValue: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.textPrimary,
       fontFamily: typography.bodyBold,
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textPrimary, includeFontPadding: false, },
   totalValue: {
@@ -1755,11 +1753,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalPre: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.crimson, includeFontPadding: false, },
   modalTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '900',
     color: colors.textPrimary,
     marginTop: 2,
@@ -1767,7 +1765,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: { padding: 4 },
   inputLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: typography.handBold,
     color: colors.textMuted,
     marginBottom: 8, includeFontPadding: false, },
@@ -1790,7 +1788,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimsonLight,
   },
   carrierChipText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handSemi,
     color: colors.textSecond, includeFontPadding: false, },
   carrierChipTextActive: {
@@ -1865,7 +1863,7 @@ const styles = StyleSheet.create({
     borderColor: colors.crimson,
   },
   stepperItemText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handSemi,
     color: colors.textMuted,
     marginRight: 8, includeFontPadding: false, },
@@ -1944,7 +1942,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   historyLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textMuted,
     marginBottom: 8, includeFontPadding: false, },
@@ -2016,7 +2014,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   actionPromptTitle: {
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.terracottaDark,
     marginBottom: 3, includeFontPadding: false, },
@@ -2084,7 +2082,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   rentalReviewTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textPrimary, includeFontPadding: false, },
   rentalReviewBadge: {
@@ -2115,7 +2113,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   rentalReviewMeta: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handwritten,
     color: colors.textMuted, includeFontPadding: false, },
 });

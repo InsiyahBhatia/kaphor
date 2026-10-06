@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SolarIcon } from '../../../../src/components/common/SolarIcon';
-import { colors, typography } from '../../../../src/theme';
+import { colors, typography, textStyles } from '../../../../src/theme';
 import { userService } from '../../../../src/services/userService';
 import { messageService } from '../../../../src/services/messageService';
 import { garmentService } from '../../../../src/services/garmentService';
@@ -584,9 +584,7 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   topBarTitle: {
-    fontFamily: typography.handBold,
-    includeFontPadding: false,
-    fontSize: 18,
+    ...textStyles.screenTitle,
     color: colors.charcoal,
   },
   topBarReport: {
@@ -595,7 +593,7 @@ const styles = StyleSheet.create({
   miss: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.textMuted,
     marginBottom: 14,
   },
@@ -608,7 +606,7 @@ const styles = StyleSheet.create({
   backBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   heroCard: {
@@ -647,13 +645,13 @@ const styles = StyleSheet.create({
   displayName: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 20,
+    fontSize: 16,
     color: colors.charcoal,
   },
   username: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 2,
     marginBottom: 10,
@@ -674,7 +672,7 @@ const styles = StyleSheet.create({
   tierBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   trustedBadge: {
@@ -690,13 +688,13 @@ const styles = StyleSheet.create({
   trustedBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.cream,
   },
   bioText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     textAlign: 'center',
     lineHeight: 21,
@@ -723,7 +721,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   sectionCard: {
     backgroundColor: colors.white,
@@ -757,7 +755,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   ratingSummaryPill: {
@@ -773,13 +771,13 @@ const styles = StyleSheet.create({
   },
   ratingSummaryScore: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
   },
   ratingSummaryCount: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textMuted,
   },
   breakdownContainer: {
@@ -813,7 +811,7 @@ const styles = StyleSheet.create({
   totalReviewsText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
   },
   barsCol: {
@@ -828,7 +826,7 @@ const styles = StyleSheet.create({
   barLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     width: 20,
   },
@@ -845,7 +843,7 @@ const styles = StyleSheet.create({
   },
   barCount: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textMuted,
     width: 16,
     textAlign: 'right',
@@ -864,7 +862,7 @@ const styles = StyleSheet.create({
   compactEmptyText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 23,
@@ -903,13 +901,13 @@ const styles = StyleSheet.create({
   reviewerName: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   reviewDate: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
   },
   verifiedPurchaseBadge: {
@@ -926,7 +924,7 @@ const styles = StyleSheet.create({
   verifiedPurchaseText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.forest,
   },
   reviewComment: {
@@ -955,7 +953,7 @@ const styles = StyleSheet.create({
   listingTabText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
   },
   listingTabTextActive: {
@@ -998,7 +996,7 @@ const styles = StyleSheet.create({
   imageTileTypeBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.white,
   },
   imageTilePriceOverlay: {
@@ -1015,7 +1013,7 @@ const styles = StyleSheet.create({
   },
   imageTilePriceText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.cream,
     letterSpacing: 0.5,

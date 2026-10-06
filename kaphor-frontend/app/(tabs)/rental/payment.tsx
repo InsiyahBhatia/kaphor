@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
   stepLabel: {
     marginTop: 6,
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   stepLabelDone: { color: colors.charcoal },
   stepLabelActive: { color: colors.charcoal },
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   section: { marginBottom: 28 },
   sectionTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     marginBottom: 14, includeFontPadding: false, },
 
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.charcoal,
     fontFamily: typography.handSemi,
-    fontSize: 17, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   value: {
     color: colors.charcoal,
     fontFamily: typography.bodyBold,
@@ -549,11 +549,11 @@ const styles = StyleSheet.create({
   insuranceInfo: { flex: 1 },
   insuranceLabel: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
   insuranceDesc: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 2, includeFontPadding: false, },
   insurancePrice: {
@@ -575,11 +575,11 @@ const styles = StyleSheet.create({
   totalLabel: {
     color: colors.charcoal,
     fontFamily: typography.handBold,
-    fontSize: 18, includeFontPadding: false, },
+    fontSize: 14, includeFontPadding: false, },
   totalValue: {
     color: colors.charcoal,
     fontFamily: typography.headings,
-    fontSize: 30,
+    fontSize: 28,
   },
 
   depositNote: {
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   depositNoteText: {
     flex: 1,
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.navy,
     lineHeight: 23, includeFontPadding: false, },
 
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
   },
   sectionTitleSubtitle: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.red, includeFontPadding: false, },
   methodsContainer: {
     gap: 10,
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
   },
   methodTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   methodTitleActive: {
     color: colors.charcoal,
@@ -699,14 +699,14 @@ const styles = StyleSheet.create({
   },
   methodBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   methodBadgeTextActive: {
     color: colors.cream,
   },
   methodSubtitle: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 19, includeFontPadding: false, },
   securityBadge: {
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   },
   securityBadgeText: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
 
   bottomBar: {
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
   bottomTotalLabel: {
     color: colors.textMuted,
     fontFamily: typography.handBold,
-    fontSize: 16, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   bottomTotalValue: {
     color: colors.charcoal,
     fontFamily: typography.headings,

@@ -674,13 +674,13 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   subtitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   categoryChipTextActive: {
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
   },
   chipBadgeText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -769,14 +769,14 @@ const styles = StyleSheet.create({
     fontFamily: typography.handBold,
     includeFontPadding: false,
     color: colors.charcoal,
-    fontSize: 17,
+    fontSize: 13,
     marginTop: 4,
   },
   emptySubtext: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
     color: colors.textMuted,
-    fontSize: 18,
+    fontSize: 14,
     textAlign: 'center',
     lineHeight: 23,
   },
@@ -826,18 +826,18 @@ const styles = StyleSheet.create({
   typeBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   cardTime: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   cardTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   cardTitleUnread: {
@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
   ctaText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   cardRightActions: {
     flexDirection: 'row',
@@ -906,13 +906,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   modalSubtitle: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -932,13 +932,13 @@ const styles = StyleSheet.create({
   prefLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   prefDesc: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
     marginTop: 2,
     maxWidth: '85%',
@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
   doneBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.cream,
   },
 });

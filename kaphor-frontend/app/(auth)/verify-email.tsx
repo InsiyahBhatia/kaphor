@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontFamily: typography.condensed,
-    fontSize: 26,
+    fontSize: 24,
     letterSpacing: 5,
     color: colors.ink,
     includeFontPadding: false,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   mainBtnText: {
     color: colors.white,
     fontFamily: typography.bodyBold,
-    fontSize: 16,
+    fontSize: 14,
     letterSpacing: 0.5,
   },
 });

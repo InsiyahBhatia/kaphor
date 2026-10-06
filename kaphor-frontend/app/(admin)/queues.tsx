@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
   rowMeta: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4, letterSpacing: 0.5 },
-  rowExtra: { fontFamily: typography.body, fontSize: 11.5, color: colors.ink, marginTop: 6 },
+  rowExtra: { fontFamily: typography.body, fontSize: 11, color: colors.ink, marginTop: 6 },
   rowFoot: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight || colors.borderLight },
 
   actBtn: {

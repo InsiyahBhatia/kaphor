@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontFamily: typography.bodyMedium,
     includeFontPadding: false,
-    fontSize: 11.5,
+    fontSize: 11,
     letterSpacing: 0.2,
   },
   activeDot: {

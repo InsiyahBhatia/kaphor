@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   toastText: {
     fontFamily: typography.handSemi,
     color: colors.white,
-    fontSize: 19,
+    fontSize: 15,
     lineHeight: 24,
   },
   errorText: {

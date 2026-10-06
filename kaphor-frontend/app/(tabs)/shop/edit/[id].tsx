@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { garmentService } from '../../../../src/services/garmentService';
-import { colors, typography, spacing, radius } from '../../../../src/theme';
+import { colors, typography, spacing, radius, textStyles } from '../../../../src/theme';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
 import {
   ALL_CATEGORY_ITEMS,
@@ -184,7 +184,7 @@ export default function EditListingScreen() {
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-        <Loader variant="product" message="Loading listing data..." />
+        <Loader variant="product" layout="form" message="Loading listing data..." />
       </SafeAreaView>
     );
   }
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   header: {
     flexDirection: 'row',
@@ -583,10 +583,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontFamily: typography.headings,
-    fontSize: 18,
+    ...textStyles.screenTitle,
     color: colors.textPrimary,
-    letterSpacing: 1,
   },
   statusPill: {
     paddingHorizontal: 8,
@@ -606,7 +604,7 @@ const styles = StyleSheet.create({
   statusPillText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textPrimary,
   },
   scrollContent: {
@@ -619,7 +617,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.gold,
     marginBottom: spacing.sm,
   },
@@ -651,7 +649,7 @@ const styles = StyleSheet.create({
   coverTagText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.white,
   },
   typeRow: {
@@ -673,7 +671,7 @@ const styles = StyleSheet.create({
   typeLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.textPrimary,
     marginBottom: 4,
   },
@@ -695,7 +693,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.textSecond,
     marginBottom: 6,
   },
@@ -781,7 +779,7 @@ const styles = StyleSheet.create({
   sizeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textPrimary,
   },
   sizeTextActive: {
@@ -804,7 +802,7 @@ const styles = StyleSheet.create({
   conditionLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textPrimary,
   },
   conditionLabelActive: {
@@ -828,7 +826,7 @@ const styles = StyleSheet.create({
   toggleTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.textPrimary,
   },
   toggleSub: {
@@ -847,7 +845,7 @@ const styles = StyleSheet.create({
   dangerTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.crimson,
   },
   dangerSub: {
@@ -871,7 +869,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.crimson,
   },
   footer: {
@@ -895,7 +893,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     color: colors.bg,
   },
 });

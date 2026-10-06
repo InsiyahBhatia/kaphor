@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   },
   noteText: {
     fontFamily: typography.tagline,
-    fontSize: 16,
+    fontSize: 14,
     lineHeight: 22,
     color: colors.inkSoft,
     letterSpacing: 0.2,

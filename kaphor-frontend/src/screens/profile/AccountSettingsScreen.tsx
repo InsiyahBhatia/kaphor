@@ -19,7 +19,7 @@ import { promptPhotoSelection } from '../../utils/imagePicker';
 import { useAuth } from '../../context/AuthContext';
 import { userService } from '../../services/userService';
 import api from '../../services/api';
-import { colors, typography, radius } from '../../theme';
+import { colors, typography, radius, textStyles } from '../../theme';
 import { safeBack, useBackHandler } from '../../utils/navigation';
 import { Loader, Spinner } from '../../components/common/Loader';
 import { Image } from 'expo-image';
@@ -187,7 +187,7 @@ export function AccountSettingsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <Loader variant="default" />
+        <Loader variant="default" layout="form" />
       </SafeAreaView>
     );
   }
@@ -449,10 +449,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
+    ...textStyles.screenTitle,
     color: colors.ink,
-    fontFamily: typography.headings,
-    fontSize: 18,
-    letterSpacing: 1.2,
   },
   saveBtn: {
     paddingHorizontal: 12,
@@ -467,7 +465,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
 
   content: {
@@ -524,14 +522,14 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     textDecorationLine: 'underline',
   },
   avatarSubText: {
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
 
   // Form Rows & Fields
@@ -549,7 +547,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     marginBottom: 4,
   },
   input: {
@@ -603,7 +601,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   actionCardsRow: {
     flexDirection: 'row',
@@ -641,13 +639,13 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   compactActionSub: {
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     marginTop: 1,
   },
 });

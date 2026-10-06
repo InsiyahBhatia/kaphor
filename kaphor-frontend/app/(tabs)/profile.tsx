@@ -1260,13 +1260,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   displayName: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: typography.headings,
     color: colors.charcoal,
     letterSpacing: 0.8,
   },
   emailText: {
-    fontSize: 17,
+    fontSize: 14,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
     color: colors.textSecond,
@@ -1288,7 +1288,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   topProfileQuickActions: {
     flexDirection: 'row',
@@ -1317,7 +1317,7 @@ const styles = StyleSheet.create({
   topQuickBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   topQuickBadge: {
@@ -1346,7 +1346,7 @@ const styles = StyleSheet.create({
     borderColor: colors.overlayLight,
   },
   establishedText: {
-    fontSize: 18,
+    fontSize: 14,
     fontFamily: typography.handBold,
     includeFontPadding: false,
     color: colors.charcoal,
@@ -1422,7 +1422,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   impactCardTitle: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 15,
     color: colors.forest,
     letterSpacing: 0.8,
@@ -1430,7 +1430,7 @@ const styles = StyleSheet.create({
   impactTierSubtitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   impactActionBadge: {
@@ -1446,7 +1446,7 @@ const styles = StyleSheet.create({
   impactActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.forest,
   },
   tierProgressTrack: {
@@ -1480,7 +1480,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.emeraldLight,
   },
   impactMetricNum: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1494,7 +1494,7 @@ const styles = StyleSheet.create({
   impactMetricLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -1532,7 +1532,7 @@ const styles = StyleSheet.create({
   segmentTabText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   segmentTabTextActive: {
@@ -1574,13 +1574,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 15,
     color: colors.charcoal,
   },
   cardSubtitle: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.textMuted,
     marginTop: 2,
     lineHeight: 21,
@@ -1594,7 +1594,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   countBadgeNeutral: {
     backgroundColor: colors.bgMuted,
@@ -1607,7 +1607,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   statusPill: {
     paddingHorizontal: 6,
@@ -1617,7 +1617,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   unreadBadge: {
     backgroundColor: colors.crimson,
@@ -1630,7 +1630,7 @@ const styles = StyleSheet.create({
   unreadBadgeText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '900',
   },
 
@@ -1655,7 +1655,7 @@ const styles = StyleSheet.create({
     color: colors.crimson,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
 
   // ── 6. Style Archetype Dossier Card ────────────────────────────
@@ -1697,13 +1697,13 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   aestheticCardStatus: {
     color: colors.goldDark,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   retakeQuizBtn: {
     backgroundColor: colors.overlayLight,
@@ -1717,7 +1717,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   aestheticBody: {
     padding: 14,
@@ -1730,7 +1730,7 @@ const styles = StyleSheet.create({
   },
   aestheticNameLarge: {
     fontFamily: typography.headings,
-    fontSize: 20,
+    fontSize: 18,
     color: colors.charcoal,
     letterSpacing: 1.5,
     flex: 1,
@@ -1756,7 +1756,7 @@ const styles = StyleSheet.create({
   },
   aestheticDescriptionText: {
     fontFamily: typography.body,
-    fontSize: 12.5,
+    fontSize: 12,
     color: colors.inkSoft,
     lineHeight: 19,
     marginBottom: 12,
@@ -1793,7 +1793,7 @@ const styles = StyleSheet.create({
   profileTapToExpandText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.cream,
   },
   profileEssentialsSection: {
@@ -1807,7 +1807,7 @@ const styles = StyleSheet.create({
   profileEssentialsHeading: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 8,
   },
@@ -1849,7 +1849,7 @@ const styles = StyleSheet.create({
   profileSecondaryBadge: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     backgroundColor: colors.overlayLight,
     paddingHorizontal: 6,
@@ -1859,18 +1859,18 @@ const styles = StyleSheet.create({
   profileSecondaryMatch: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.crimson,
   },
   profileSecondaryName: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
     color: colors.charcoal,
     letterSpacing: 0.8,
   },
   profileSecondaryTagline: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -1891,7 +1891,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   profileFullscreenBtn: {
     flexDirection: 'row',
@@ -1908,7 +1908,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
 
   /* Profile Fullscreen Lightbox Modal */
@@ -1930,14 +1930,14 @@ const styles = StyleSheet.create({
   },
   profileModalTitle: {
     fontFamily: typography.headings,
-    fontSize: 22,
+    fontSize: 20,
     color: colors.cream,
     letterSpacing: 1,
   },
   profileModalSubtitle: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.goldDark,
     marginTop: 2,
   },
@@ -1980,14 +1980,14 @@ const styles = StyleSheet.create({
   profileModalDoneText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   aestheticPendingBody: {
     padding: 14,
   },
   pendingAestheticTitle: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
     color: colors.charcoal,
     marginBottom: 4,
@@ -2010,7 +2010,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
 
   // ── Monogram Avatar, Bio & Tier Styles ──
@@ -2052,7 +2052,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.overlayLight,
   },
   bioText: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textSecond,
     lineHeight: 15,
     fontStyle: 'italic',
@@ -2066,7 +2066,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   editBioBtnText: {
-    fontSize: 18,
+    fontSize: 14,
     fontFamily: typography.handBold,
     includeFontPadding: false,
     color: colors.charcoal,
@@ -2082,7 +2082,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   aestheticCollapsedName: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 15,
     color: colors.charcoal,
     letterSpacing: 0.8,
@@ -2090,7 +2090,7 @@ const styles = StyleSheet.create({
   aestheticCollapsedTagline: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -2102,7 +2102,7 @@ const styles = StyleSheet.create({
   },
   matchScoreTextCompact: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.white,
     letterSpacing: 0.5,
@@ -2117,7 +2117,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   collapseDossierBtn: {
     flexDirection: 'row',
@@ -2132,7 +2132,7 @@ const styles = StyleSheet.create({
   collapseDossierBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
 
@@ -2155,7 +2155,7 @@ const styles = StyleSheet.create({
   bioModalTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 13,
     color: colors.charcoal,
   },
   bioTextInput: {
@@ -2186,7 +2186,7 @@ const styles = StyleSheet.create({
   bioCancelText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   bioSaveBtn: {
@@ -2199,7 +2199,7 @@ const styles = StyleSheet.create({
   bioSaveText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.cream,
   },
 });

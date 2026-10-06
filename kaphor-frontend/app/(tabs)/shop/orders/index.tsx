@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KaphorImage } from '../../../../src/components/KaphorImage';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SolarIcon } from '../../../../src/components/common/SolarIcon';
-import { colors } from '../../../../src/theme';
+import { colors, textStyles } from '../../../../src/theme';
 import { useAuth } from '../../../../src/context/AuthContext';
 import { orderService, TransactionOrder } from '../../../../src/services/orderService';
 import { safeBack, useBackHandler } from '../../../../src/utils/navigation';
@@ -156,10 +156,8 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 8 },
   headerTitle: {
-    fontFamily: 'BebasNeue_400Regular',
-    fontSize: 18,
+    ...textStyles.screenTitle,
     color: colors.textPrimary,
-    letterSpacing: 1,
   },
   sub: {
     paddingHorizontal: 20,

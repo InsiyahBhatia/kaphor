@@ -17,7 +17,7 @@ import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KaphorImage } from '../../../src/components/KaphorImage';
@@ -589,15 +589,13 @@ const styles = StyleSheet.create({
   headerDeckEyebrow: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.gold,
     marginBottom: 2,
   },
   headerTitle: {
+    ...textStyles.screenTitle,
     color: colors.charcoal,
-    fontSize: 16,
-    fontFamily: typography.headings,
-    letterSpacing: 2,
   },
   deckNote: {
     marginTop: 8,
@@ -700,7 +698,7 @@ const styles = StyleSheet.create({
   actionLogText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.success,
   },
 
@@ -722,7 +720,7 @@ const styles = StyleSheet.create({
   agentBubbleText: {
     color: colors.charcoal,
     fontFamily: typography.body,
-    fontSize: 14.5,
+    fontSize: 14,
     lineHeight: 22,
   },
 
@@ -758,7 +756,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
   },
   outfitLookTitle: {
     fontFamily: typography.body,
@@ -770,7 +768,7 @@ const styles = StyleSheet.create({
   outfitVibeText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     marginBottom: 12,
   },
@@ -808,7 +806,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
   },
   outfitPieceTitle: {
     fontFamily: typography.body,
@@ -821,7 +819,7 @@ const styles = StyleSheet.create({
   outfitPieceRole: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
   },
   outfitEditorialNote: {
@@ -843,7 +841,7 @@ const styles = StyleSheet.create({
   cardsSectionLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 8,
   },
@@ -884,7 +882,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
   },
   cardInfo: {
     padding: 10,
@@ -893,7 +891,7 @@ const styles = StyleSheet.create({
   cardBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
   },
   cardTitle: {
@@ -925,7 +923,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 16,
+    fontSize: 13,
   },
 
   followUpsRow: {

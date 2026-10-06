@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     shadowColor: colors.charcoal, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
   },
   statValue: { fontSize: 32, fontFamily: typography.headings, color: colors.forest },
-  statLabel: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, marginTop: 2, includeFontPadding: false },
+  statLabel: { fontFamily: typography.handBold, fontSize: 13, color: colors.textMuted, marginTop: 2, includeFontPadding: false },
 
   // Recycling Guide Banner
   recycleBanner: {
@@ -526,14 +526,14 @@ const styles = StyleSheet.create({
   recycleBannerTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.goldDark,
     marginBottom: 2,
   },
   recycleBannerSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     lineHeight: 23,
   },
@@ -559,24 +559,24 @@ const styles = StyleSheet.create({
   impactBannerTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.forest,
     marginBottom: 2,
   },
   impactBannerSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     lineHeight: 23,
   },
 
   // Section header
   sectionHeader: { marginBottom: 16 },
-  sectionTitle: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, marginBottom: 8, includeFontPadding: false },
+  sectionTitle: { fontFamily: typography.handBold, fontSize: 13, color: colors.charcoal, marginBottom: 8, includeFontPadding: false },
   legendHint: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, includeFontPadding: false },
+  legendText: { fontFamily: typography.handBold, fontSize: 13, color: colors.textMuted, includeFontPadding: false },
 
   // Grid
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
@@ -599,13 +599,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 6, paddingVertical: 3,
   },
-  stateBadgeText: { color: colors.white, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false },
+  stateBadgeText: { color: colors.white, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false },
 
   // Card info
   cardInfo: { padding: 10 },
-  cardBrand: { fontFamily: typography.handBold, fontSize: 17, color: colors.red, includeFontPadding: false },
-  cardTitle: { fontFamily: typography.headings, fontSize: 16, color: colors.charcoal, marginTop: 2 },
-  cardStateDesc: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, marginTop: 4, includeFontPadding: false },
+  cardBrand: { fontFamily: typography.handBold, fontSize: 13, color: colors.red, includeFontPadding: false },
+  cardTitle: { fontFamily: typography.bodyBold, fontSize: 16, color: colors.charcoal, marginTop: 2 },
+  cardStateDesc: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, marginTop: 4, includeFontPadding: false },
 
   // Actions
   cardActions: { flexDirection: 'row', gap: 4, paddingHorizontal: 8, paddingBottom: 8 },
@@ -614,17 +614,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6, borderWidth: 1.5, borderColor: colors.charcoal,
     backgroundColor: colors.cream,
   },
-  actionBtnText: { fontFamily: typography.handBold, fontSize: 18, includeFontPadding: false },
+  actionBtnText: { fontFamily: typography.handBold, fontSize: 14, includeFontPadding: false },
 
   // Empty state
-  emptyTitle: { fontFamily: typography.handBold, fontSize: 18, color: colors.charcoal, marginTop: 16, textAlign: 'center', includeFontPadding: false },
-  emptySubtext: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, lineHeight: 21, textAlign: 'center', includeFontPadding: false },
+  emptyTitle: { fontFamily: typography.handBold, fontSize: 14, color: colors.charcoal, marginTop: 16, textAlign: 'center', includeFontPadding: false },
+  emptySubtext: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, lineHeight: 21, textAlign: 'center', includeFontPadding: false },
   shopBtn: {
     backgroundColor: colors.charcoal, paddingVertical: 12, paddingHorizontal: 24,
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
   },
-  shopBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false },
+  shopBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false },
 
   // Empty State Actions
   emptyActionButtons: {
@@ -653,6 +653,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
 });

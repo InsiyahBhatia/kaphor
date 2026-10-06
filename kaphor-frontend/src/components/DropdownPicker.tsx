@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.red,
     marginBottom: 8,
   },
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   triggerText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   modalOverlay: {
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   optionLabel: {
     fontFamily: typography.handSemi,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   optionLabelActive: {
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   optionDesc: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 4,
   },
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.white,
   },
 });

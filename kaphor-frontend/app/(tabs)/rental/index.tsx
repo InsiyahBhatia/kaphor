@@ -9,7 +9,7 @@ import { swrGet } from '../../../src/services/api';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
 import { EditorialPageHeader, HandwrittenNote } from '../../../src/components/editorial/IllustrationLayer';
 import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { useAuthStore } from '../../../src/store/authStore';
 import { seedGarments } from '../../../src/store/garmentStore';
 
@@ -423,13 +423,16 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  title: { fontSize: 42, fontFamily: typography.headings, color: colors.charcoal, letterSpacing: 2 },
+  title: {
+    ...textStyles.pageTitle,
+    color: colors.charcoal,
+  },
   subtitle: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.red, letterSpacing: 1.2 },
 
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.overlayLight },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: colors.charcoal },
-  tabText: { fontFamily: typography.bodyBold, fontSize: 11.5, color: colors.textMuted, letterSpacing: 1.2 },
+  tabText: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.textMuted, letterSpacing: 1.2 },
   tabTextActive: { color: colors.charcoal },
   
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between', paddingTop: 16 },
@@ -460,7 +463,7 @@ const styles = StyleSheet.create({
     borderColor: colors.forest || colors.forest,
   },
   roleBadgeText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold, includeFontPadding: false, },
   roleBadgeTextLender: {
     color: colors.crimson,
@@ -469,16 +472,16 @@ const styles = StyleSheet.create({
     color: colors.forest || colors.forest,
   },
   myRentalCounterparty: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handSemi,
     color: colors.textMuted,
     marginTop: 2, includeFontPadding: false, },
-  myRentalTitle: { fontFamily: typography.headings, fontSize: 19, color: colors.charcoal, flex: 1 },
+  myRentalTitle: { fontFamily: typography.headings, fontSize: 18, color: colors.charcoal, flex: 1 },
   myRentalStatus: { paddingHorizontal: 8, paddingVertical: 3 },
-  myRentalStatusText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
+  myRentalStatusText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
   myRentalDates: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   myRentalDateBlock: { flex: 1 },
-  myRentalDateLabel: { fontFamily: typography.handSemi, fontSize: 16, color: colors.textMuted, marginBottom: 2, includeFontPadding: false, },
+  myRentalDateLabel: { fontFamily: typography.handSemi, fontSize: 13, color: colors.textMuted, marginBottom: 2, includeFontPadding: false, },
   myRentalDateValue: { fontFamily: typography.bodyBold, fontSize: 12, color: colors.charcoal, },
   myRentalPriceLabel: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.textMuted, },
   myRentalPrice: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.red, },
@@ -526,7 +529,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.charcoal,
   },
-  myRentalReturnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
+  myRentalReturnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
 
   // Role filter chips
   roleFilterRow: {
@@ -546,18 +549,18 @@ const styles = StyleSheet.create({
   },
   roleFilterChipText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   roleFilterChipTextActive: {
     color: colors.cream,
   },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', flex: 1, padding: 20, paddingTop: 60 },
-  emptyText: { color: colors.charcoal, fontSize: 17, fontFamily: typography.handBold, marginVertical: 24, includeFontPadding: false, },
+  emptyText: { color: colors.charcoal, fontSize: 13, fontFamily: typography.handBold, marginVertical: 24, includeFontPadding: false, },
   button: { 
     backgroundColor: colors.charcoal, paddingHorizontal: 28, paddingVertical: 14,
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0
   },
-  buttonText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 17, includeFontPadding: false, },
+  buttonText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
 });

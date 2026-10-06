@@ -8,7 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import api from '../../../src/services/api';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { EditorialPageHeader, HandwrittenNote, IllustrationLayer } from '../../../src/components/editorial/IllustrationLayer';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { Spinner } from '../../../src/components/common/Loader';
 import { cleanText, formatValue } from '../../../src/utils/formatText';
 
@@ -261,7 +261,7 @@ export default function UpcycleSuggestionsScreen() {
                         paddingVertical: 2,
                         borderRadius: 3,
                       }}>
-                        <Text style={{ color: colors.goldDark, fontSize: 8, fontWeight: '900', letterSpacing: 0.5 }}>
+                        <Text style={{ color: colors.goldDark, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>
                           {yt.vibe}
                         </Text>
                       </View>
@@ -323,12 +323,15 @@ export default function UpcycleSuggestionsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.charcoal, paddingBottom: 16 },
-  headerTitle: { color: colors.cream, fontSize: 14, fontFamily: typography.headings, letterSpacing: 2 },
+  headerTitle: {
+    ...textStyles.screenTitle,
+    color: colors.cream,
+  },
   editorialHeader: { marginBottom: 0 },
   content: { padding: 24, paddingBottom: 180 },
   heroSection: { alignItems: 'center', marginBottom: 28, position: 'relative', overflow: 'hidden', borderWidth: 1.5, borderColor: colors.borderLight, backgroundColor: colors.paperLight, padding: 20 },
   atelierIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.goldLight, justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: colors.goldLight },
-  title: { fontSize: 26, fontFamily: typography.headings, color: colors.charcoal, marginTop: 4, marginBottom: 8 },
+  title: { fontSize: 24, fontFamily: typography.headings, color: colors.charcoal, marginTop: 4, marginBottom: 8 },
   subtitle: {
  color: colors.textMuted, fontSize: 14, lineHeight: 22, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4, fontFamily: typography.body,
   },
@@ -364,7 +367,7 @@ const styles = StyleSheet.create({
  color: colors.goldDark, fontSize: 14, fontWeight: '800', fontFamily: typography.bodyBold,
   },
   suggestionTitle: {
- color: colors.charcoal, fontSize: 16, fontWeight: '700', marginBottom: 4, fontFamily: typography.bodyBold,
+ color: colors.charcoal, fontSize: 14, fontWeight: '700', marginBottom: 4, fontFamily: typography.bodyBold,
   },
   metaRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   diffBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.goldLight, borderWidth: 1, borderColor: colors.goldLight },

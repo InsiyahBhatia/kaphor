@@ -17,7 +17,7 @@ import { getOrderSeed } from '../../../../src/store/listStore';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SolarIcon } from '../../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, typography } from '../../../../src/theme';
+import { colors, typography, textStyles } from '../../../../src/theme';
 import { orderService, TransactionOrder, OrderMessage, ShippingAddress } from '../../../../src/services/orderService';
 import { messageService } from '../../../../src/services/messageService';
 import paymentService from '../../../../src/services/paymentService';
@@ -1016,7 +1016,10 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 6, marginRight: 4 },
   headerMid: { flex: 1 },
-  headerTitle: { fontFamily: typography.headings, fontSize: 18, color: colors.charcoal, letterSpacing: 0.5 },
+  headerTitle: {
+    ...textStyles.screenTitle,
+    color: colors.charcoal,
+  },
   headerSub: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, marginTop: 3, includeFontPadding: false },
   trustBtn: { padding: 8, borderWidth: 1.5, borderColor: colors.charcoal },
 
@@ -1194,7 +1197,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontFamily: typography.headings,
-    fontSize: 17,
+    fontSize: 16,
     color: colors.charcoal,
   },
   summaryDate: {
@@ -1382,7 +1385,7 @@ const styles = StyleSheet.create({
   addressLabelText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     color: colors.cream,
     letterSpacing: 0.5,
   },
@@ -1435,7 +1438,7 @@ const styles = StyleSheet.create({
   },
   bubbleMine: { alignSelf: 'flex-end', backgroundColor: colors.paperLight, borderColor: colors.charcoal },
   bubbleTheirs: { alignSelf: 'flex-start' },
-  bubbleMeta: { fontFamily: typography.handBold, fontSize: 10.5, color: colors.textMuted, marginBottom: 6, includeFontPadding: false },
+  bubbleMeta: { fontFamily: typography.handBold, fontSize: 10, color: colors.textMuted, marginBottom: 6, includeFontPadding: false },
   bubbleText: { fontFamily: typography.body, fontSize: 15, color: colors.charcoal, lineHeight: 22 },
   bubbleTextMine: { color: colors.charcoal },
   time: { fontFamily: typography.handwritten, fontSize: 11, color: colors.textMuted, marginTop: 8, includeFontPadding: false },
@@ -1613,11 +1616,11 @@ const styles = StyleSheet.create({
   orderGarmentBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     color: colors.textMuted,
   },
   orderGarmentTitle: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
     color: colors.charcoal,
     marginVertical: 2,
@@ -1667,7 +1670,7 @@ const styles = StyleSheet.create({
   viewItemPillText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 9.5,
+    fontSize: 10,
     color: colors.charcoal,
   },
 
@@ -1781,7 +1784,7 @@ const styles = StyleSheet.create({
   completedReviewMeta: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     color: colors.forest,
   },
 

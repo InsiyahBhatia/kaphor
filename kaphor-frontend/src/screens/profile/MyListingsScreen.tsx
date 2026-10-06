@@ -16,7 +16,7 @@ import { SolarIcon } from '../../components/common/SolarIcon';
 import { userService } from '../../services/userService';
 import { garmentService } from '../../services/garmentService';
 import { KaphorImage } from '../../components/KaphorImage';
-import { colors, typography, spacing, radius } from '../../theme';
+import { colors, typography, spacing, radius, textStyles } from '../../theme';
 import { safeBack, useBackHandler } from '../../utils/navigation';
 import { hapticFeedback } from '../../utils/haptics';
 import { getFormattedGarmentPrice } from '../../utils/priceFormatter';
@@ -241,7 +241,7 @@ export function MyListingsScreen() {
       </View>
 
       {loading ? (
-        <Loader variant="default" />
+        <Loader variant="default" layout="garments" compact />
       ) : listings.length === 0 ? (
         <View style={styles.center}>
           <SolarIcon name="pricetag-outline" size={54} color={colors.textMuted} />
@@ -326,10 +326,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
+    ...textStyles.screenTitle,
     color: colors.textPrimary,
-    fontFamily: typography.headings,
-    fontSize: 18,
-    letterSpacing: 1,
   },
   center: {
     flex: 1,
@@ -341,7 +339,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
     marginTop: spacing.sm,
   },
   emptyTitle: {
@@ -371,7 +369,7 @@ const styles = StyleSheet.create({
   listNowText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.bg,
   },
   listContent: {
@@ -407,7 +405,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     maxWidth: 140,
   },
   title: {
@@ -424,7 +422,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     marginBottom: 3,
   },
   price: {
@@ -449,7 +447,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   inactiveStatusText: {
     color: colors.textMuted,
@@ -473,7 +471,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   telemetryDivider: {
     width: 1,
@@ -489,7 +487,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   actionBar: {
     flexDirection: 'row',
@@ -514,7 +512,7 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textSecond,
   },
   divider: {

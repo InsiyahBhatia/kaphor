@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
  fontSize: 14, fontFamily: typography.body,
   },
   lgText: {
- fontSize: 16, fontFamily: typography.body,
+ fontSize: 14, fontFamily: typography.body,
   },
 
   primaryText: { color: colors.white },

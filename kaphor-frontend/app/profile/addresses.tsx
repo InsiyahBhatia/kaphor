@@ -13,7 +13,7 @@ import {
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, typography } from '../../src/theme';
+import { colors, typography, textStyles } from '../../src/theme';
 import {
   addressService,
   Address,
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   formLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 6,
   },
@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.red,
   },
   halfRow: {
@@ -812,7 +812,7 @@ const styles = StyleSheet.create({
   labelChipText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   labelChipTextActive: {
@@ -836,7 +836,7 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 15,
   },
 
   // ── List Mode ──
@@ -851,10 +851,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   headerTitle: {
-    fontFamily: typography.headings,
-    fontSize: 18,
+    ...textStyles.screenTitle,
     color: colors.charcoal,
-    letterSpacing: 1.5,
   },
   selectModeBanner: {
     flexDirection: 'row',
@@ -869,7 +867,7 @@ const styles = StyleSheet.create({
   selectModeBannerText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.navy,
     flex: 1,
   },
@@ -1052,7 +1050,7 @@ const styles = StyleSheet.create({
   selectBtnCtaText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   selectBtnCtaTextActive: {
@@ -1079,7 +1077,7 @@ const styles = StyleSheet.create({
   cardActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
 
@@ -1099,7 +1097,7 @@ const styles = StyleSheet.create({
   addMoreText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
 
@@ -1115,10 +1113,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   inlineHeaderTitle: {
-    fontFamily: typography.headings,
-    fontSize: 16,
+    ...textStyles.screenTitle,
     color: colors.charcoal,
-    letterSpacing: 1,
   },
   formContent: {
     padding: 16,

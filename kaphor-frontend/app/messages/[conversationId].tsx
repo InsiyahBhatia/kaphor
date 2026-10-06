@@ -3155,7 +3155,7 @@ const styles = StyleSheet.create({
   },
   garmentCardPrice: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
   },
@@ -3383,7 +3383,7 @@ const styles = StyleSheet.create({
   },
   swapItemPrice: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.crimson,
     marginTop: 1,
@@ -4417,7 +4417,7 @@ const styles = StyleSheet.create({
       fontFamily: typography.body,
   },
   reactionBadgeCount: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontFamily: typography.mono,
     fontWeight: '800',
     color: colors.textMuted,
@@ -4563,7 +4563,7 @@ const styles = StyleSheet.create({
   },
   inMessageDealPrice: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.forest || colors.emeraldDark,
     marginTop: 2,
@@ -4664,7 +4664,7 @@ const styles = StyleSheet.create({
   hubSectionLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   hubGarmentCard: {
@@ -4687,18 +4687,18 @@ const styles = StyleSheet.create({
   hubGarmentBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.copper,
   },
   hubGarmentTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   hubGarmentPrice: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.forest || colors.emeraldDark,
     marginTop: 2,
@@ -4715,7 +4715,7 @@ const styles = StyleSheet.create({
   hubActionMiniText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   hubEmptyCard: {
@@ -4732,7 +4732,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 21,
   },
@@ -4751,7 +4751,7 @@ const styles = StyleSheet.create({
   hubTabPillText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   hubTabPillTextActive: {
@@ -4777,7 +4777,7 @@ const styles = StyleSheet.create({
   hubGarmentPillTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     textAlign: 'center',
     width: '100%',
@@ -4800,7 +4800,7 @@ const styles = StyleSheet.create({
   hubGarmentPillBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.cream,
   },
   hubLinkItem: {
@@ -4821,13 +4821,13 @@ const styles = StyleSheet.create({
   hubLinkTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   hubLinkSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -4846,6 +4846,6 @@ const styles = StyleSheet.create({
   chatTransactionActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
 });

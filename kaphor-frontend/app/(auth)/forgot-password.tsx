@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   mainBtnText: {
     color: colors.white,
     fontFamily: typography.bodyBold,
-    fontSize: 16,
+    fontSize: 14,
     letterSpacing: 0.5,
   },
   btnDisabled: {

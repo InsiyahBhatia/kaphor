@@ -445,7 +445,7 @@ export default function SwapAgreementScreen() {
             <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
               {addresses.length === 0 ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, textAlign: 'center', marginBottom: 12, includeFontPadding: false }}>
+                  <Text style={{ fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, textAlign: 'center', marginBottom: 12, includeFontPadding: false }}>
                     No addresses found in your address book.
                   </Text>
                     <TouchableOpacity
@@ -552,17 +552,17 @@ export default function SwapAgreementScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontFamily: typography.handwritten, fontSize: 19, color: colors.textMuted, includeFontPadding: false, },
+  errorText: { fontFamily: typography.handwritten, fontSize: 14, color: colors.textMuted, includeFontPadding: false, },
 
   content: { padding: 20, paddingBottom: 120 },
   sectionTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 8, includeFontPadding: false, },
   sectionDesc: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 23,
     marginBottom: 20, includeFontPadding: false, },
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
 
   termsCard: {
@@ -665,11 +665,11 @@ const styles = StyleSheet.create({
   signatureLabel: {
     flex: 1,
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   signatureStatus: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   signatureStatusDone: { color: colors.forest },
   bothSignedBanner: {
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   },
   bothSignedText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.forest, includeFontPadding: false, },
 
   depositNote: {
@@ -697,12 +697,12 @@ const styles = StyleSheet.create({
   },
   depositNoteTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.navy,
     marginBottom: 4, includeFontPadding: false, },
   depositNoteText: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.navy,
     lineHeight: 20, includeFontPadding: false, },
 
@@ -721,11 +721,11 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   summaryValue: {
-    fontFamily: typography.headings,
-    fontSize: 16,
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
     color: colors.charcoal,
     flex: 1,
     textAlign: 'right',
@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
   },
   chatWithPartnerText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
 
   // Address selection styles
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
   },
   sectionTitleNoMargin: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   changeAddressLink: {
     fontFamily: typography.bodyBold,
@@ -819,7 +819,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   addressNameText: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 15,
     color: colors.charcoal,
     fontWeight: '700',
@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
   },
   addressTypeBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   addressPhoneText: {
     fontFamily: typography.bodyMedium,
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
   },
   selectAddressPlaceholderText: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
     textAlign: 'center', includeFontPadding: false, },
 
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.charcoal,
   },
   addressModalTitle: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
     fontWeight: '800',
     color: colors.charcoal,
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   addressOptionName: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 13,
     fontWeight: '700',
     color: colors.charcoal,
@@ -960,7 +960,7 @@ const styles = StyleSheet.create({
   },
   defaultBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
 
   // Intermediary Disclaimer Styles
@@ -1004,11 +1004,11 @@ const styles = StyleSheet.create({
   },
   disclaimerBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.white, includeFontPadding: false, },
   disclaimerStatuteRef: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   protectionsTitle: {
     fontFamily: typography.headings,
@@ -1049,7 +1049,7 @@ const styles = StyleSheet.create({
   },
   pillarTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 3, includeFontPadding: false, },
   pillarSummary: {
@@ -1101,12 +1101,12 @@ const styles = StyleSheet.create({
   },
   agreementConsentTitle: {
     fontFamily: typography.handBold,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 4, includeFontPadding: false, },
   agreementConsentDesc: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.charcoal,
     lineHeight: 17,
   },
@@ -1151,7 +1151,7 @@ const styles = StyleSheet.create({
   bottomDisclaimerNotice: {
     flex: 1,
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 19, includeFontPadding: false, },
 });

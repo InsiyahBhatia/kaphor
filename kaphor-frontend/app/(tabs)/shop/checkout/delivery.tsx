@@ -533,13 +533,13 @@ const styles = StyleSheet.create({
   stepDone: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
   stepActive: { backgroundColor: colors.red, borderColor: colors.red },
   stepNumber: { fontFamily: typography.mono, fontSize: 11, fontWeight: 'bold', color: colors.cream },
-  stepLabel: { marginTop: 6, fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, includeFontPadding: false },
+  stepLabel: { marginTop: 6, fontFamily: typography.handBold, fontSize: 13, color: colors.textMuted, includeFontPadding: false },
   stepLabelDone: { color: colors.charcoal },
   stepLabelActive: { color: colors.red },
   progressLine: { width: 40, height: 2, backgroundColor: colors.charcoal, marginHorizontal: 6, marginBottom: 18, opacity: 0.2 },
   progressLineDone: { opacity: 0.6 },
 
-  sectionTitle: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, marginBottom: 14, includeFontPadding: false },
+  sectionTitle: { fontFamily: typography.handBold, fontSize: 13, color: colors.textMuted, marginBottom: 14, includeFontPadding: false },
 
   // Address Card
   addressCard: {
@@ -572,17 +572,17 @@ const styles = StyleSheet.create({
   addressBody: { flex: 1 },
   addressHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   addressLabelBadge: { backgroundColor: colors.cream, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: colors.charcoal },
-  addressLabelText: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, includeFontPadding: false },
-  defaultBadge: { fontFamily: typography.handBold, fontSize: 17, color: colors.forest, includeFontPadding: false },
-  addressName: { fontFamily: typography.handBold, fontSize: 18, color: colors.charcoal, marginBottom: 4, includeFontPadding: false },
-  addressDetail: { fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, lineHeight: 21, marginBottom: 2, includeFontPadding: false },
+  addressLabelText: { fontFamily: typography.handBold, fontSize: 13, color: colors.charcoal, includeFontPadding: false },
+  defaultBadge: { fontFamily: typography.handBold, fontSize: 13, color: colors.forest, includeFontPadding: false },
+  addressName: { fontFamily: typography.handBold, fontSize: 14, color: colors.charcoal, marginBottom: 4, includeFontPadding: false },
+  addressDetail: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, lineHeight: 21, marginBottom: 2, includeFontPadding: false },
   addressPhone: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4 },
   addressActions: { justifyContent: 'center', gap: 12, marginLeft: 8 },
   actionBtn: { padding: 6, borderWidth: 1, borderColor: colors.overlayLight, alignItems: 'center', justifyContent: 'center' },
 
   // Empty
   emptyBox: { alignItems: 'center', padding: 40, gap: 12 },
-  emptyText: { fontFamily: typography.handwritten, fontSize: 18, color: colors.textMuted, includeFontPadding: false },
+  emptyText: { fontFamily: typography.handwritten, fontSize: 14, color: colors.textMuted, includeFontPadding: false },
 
   // Add Button
   addBtn: {
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
     gap: 8, padding: 16, borderWidth: 2, borderStyle: 'dashed',
     borderColor: colors.charcoal, marginBottom: 24,
   },
-  addBtnText: { fontFamily: typography.handBold, fontSize: 18, color: colors.charcoal, includeFontPadding: false },
+  addBtnText: { fontFamily: typography.handBold, fontSize: 14, color: colors.charcoal, includeFontPadding: false },
 
   // Selected Summary
   selectedSummary: {
@@ -598,25 +598,25 @@ const styles = StyleSheet.create({
     borderColor: colors.forest, marginBottom: 20,
     borderLeftWidth: 6,
   },
-  summaryTitle: { fontFamily: typography.handBold, fontSize: 17, color: colors.forest, marginBottom: 6, includeFontPadding: false },
-  summaryName: { fontFamily: typography.handBold, fontSize: 19, color: colors.charcoal, marginBottom: 4, includeFontPadding: false },
+  summaryTitle: { fontFamily: typography.handBold, fontSize: 13, color: colors.forest, marginBottom: 6, includeFontPadding: false },
+  summaryName: { fontFamily: typography.handBold, fontSize: 15, color: colors.charcoal, marginBottom: 4, includeFontPadding: false },
   summaryDetail: { fontFamily: typography.body, fontSize: 12, color: colors.textMuted, lineHeight: 18 },
   summaryPhone: { fontFamily: typography.mono, fontSize: 12, color: colors.textMuted, marginTop: 4 },
 
   // Info Box
   infoBox: { flexDirection: 'row', gap: 10, padding: 14, backgroundColor: colors.overlayLight, borderLeftWidth: 4, borderLeftColor: colors.textMuted },
-  infoText: { flex: 1, fontFamily: typography.handwritten, fontSize: 17, color: colors.textMuted, lineHeight: 21, includeFontPadding: false },
+  infoText: { flex: 1, fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, lineHeight: 21, includeFontPadding: false },
 
   // Form
-  label: { fontFamily: typography.handBold, fontSize: 17, color: colors.textMuted, marginBottom: 6, marginTop: 16, includeFontPadding: false },
+  label: { fontFamily: typography.handBold, fontSize: 13, color: colors.textMuted, marginBottom: 6, marginTop: 16, includeFontPadding: false },
   input: { borderWidth: 1.5, borderColor: colors.charcoal, padding: 14, fontFamily: typography.body, fontSize: 14, color: colors.charcoal, backgroundColor: colors.white },
   inputError: { borderColor: colors.red, borderWidth: 2 },
-  errorText: { fontFamily: typography.handwritten, fontSize: 17, color: colors.red, marginTop: 4, includeFontPadding: false },
+  errorText: { fontFamily: typography.handwritten, fontSize: 13, color: colors.red, marginTop: 4, includeFontPadding: false },
   row: { flexDirection: 'row' },
   labelRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
   labelChip: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1.5, borderColor: colors.charcoal, backgroundColor: colors.white },
   labelChipActive: { backgroundColor: colors.charcoal },
-  labelChipText: { fontFamily: typography.handBold, fontSize: 17, color: colors.charcoal, includeFontPadding: false },
+  labelChipText: { fontFamily: typography.handBold, fontSize: 13, color: colors.charcoal, includeFontPadding: false },
   labelChipTextActive: { color: colors.cream },
 
   // Loading
@@ -636,5 +636,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 1, shadowRadius: 0, elevation: 4,
   },
   primaryBtnDisabled: { opacity: 0.6 },
-  primaryBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 19, includeFontPadding: false },
+  primaryBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 15, includeFontPadding: false },
 });

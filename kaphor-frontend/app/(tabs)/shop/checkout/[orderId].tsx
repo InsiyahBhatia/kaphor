@@ -663,13 +663,13 @@ const styles = StyleSheet.create({
     fontFamily: typography.handBold,
     includeFontPadding: false,
     color: colors.charcoal,
-    fontSize: 18,
+    fontSize: 14,
   },
   emptyText: {
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   backBtn: {
     borderWidth: 2,
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
 
   // Progress Bar
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   stepLabelDone: { color: colors.charcoal },
@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     marginBottom: 14,
   },
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
     color: colors.red,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     marginBottom: 4,
   },
   itemTitle: {
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   priceValue: {
     color: colors.charcoal,
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   divider: {
     height: 2,
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
     color: colors.red,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   totalValue: {
     color: colors.charcoal,
@@ -880,7 +880,7 @@ const styles = StyleSheet.create({
   sectionTitleSubtitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.red,
   },
   methodsContainer: {
@@ -956,7 +956,7 @@ const styles = StyleSheet.create({
   methodTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   methodTitleActive: {
@@ -976,7 +976,7 @@ const styles = StyleSheet.create({
   methodBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   methodBadgeTextActive: {
@@ -985,7 +985,7 @@ const styles = StyleSheet.create({
   methodSubtitle: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 21,
   },
@@ -1003,7 +1003,7 @@ const styles = StyleSheet.create({
   securityBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.forest,
   },
   impactCard: {
@@ -1033,14 +1033,14 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     marginBottom: 6,
   },
   impactText: {
     color: colors.goldDark,
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     lineHeight: 21,
   },
 
@@ -1079,7 +1079,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
   bottomTotalValue: {
     color: colors.charcoal,
@@ -1108,14 +1108,14 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
 
   // Address Section
   sectionActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.red,
     textDecorationLine: 'underline',
   },
@@ -1163,7 +1163,7 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.cream,
   },
   addressPhone: {
@@ -1180,14 +1180,14 @@ const styles = StyleSheet.create({
   addressLine: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
     lineHeight: 21,
   },
   addressEmpty: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     fontStyle: 'italic',
   },
@@ -1209,7 +1209,7 @@ const styles = StyleSheet.create({
   deliveryProgressTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   progressBarTrack: {
@@ -1279,13 +1279,13 @@ const styles = StyleSheet.create({
   addressOptionName: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   addressOptionText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 21,
   },

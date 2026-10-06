@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textPrimary,
   },
   subtitle: {
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textPrimary,
   },
   optionDesc: {
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.cream,
   },
 });

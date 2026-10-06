@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { garmentService } from '../../../src/services/garmentService';
 import api from '../../../src/services/api';
 import { swapService } from '../../../src/services/swapService';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { KaphorImage } from '../../../src/components/KaphorImage';
 import * as ImagePicker from 'expo-image-picker';
 import { promptPhotoSelection } from '../../../src/utils/imagePicker';
@@ -534,7 +534,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { justifyContent: 'center', alignItems: 'center' },
   header: { paddingTop: 24, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  headerTitle: { color: colors.charcoal, fontSize: 21, fontFamily: typography.handBold, includeFontPadding: false, },
+  headerTitle: {
+    ...textStyles.screenTitle,
+    color: colors.charcoal,
+  },
   content: { padding: 20, paddingBottom: 180 },
 
   stepsIndicator: {
@@ -605,11 +608,11 @@ const styles = StyleSheet.create({
   },
   ownGarmentBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.crimson, includeFontPadding: false, },
   ownGarmentTitle: {
-    fontFamily: typography.headings,
-    fontSize: 16,
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
     color: colors.charcoal,
     marginTop: 2,
   },
@@ -760,7 +763,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2, includeFontPadding: false, },
   offerImage: { width: '100%', height: 150 },
-  offerTitle: { color: colors.charcoal, fontFamily: typography.headings, fontSize: 13 },
+  offerTitle: { color: colors.charcoal, fontFamily: typography.bodyBold, fontSize: 13 },
   checkmark: { position: 'absolute', top: 8, right: 8, zIndex: 3 },
 
   photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },

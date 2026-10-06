@@ -5,7 +5,7 @@ import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../../src/services/api';
 import { addressService, Address } from '../../../src/services/addressService';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { hapticFeedback } from '../../../src/utils/haptics';
 import { telemetryService } from '../../../src/services/telemetryService';
@@ -916,11 +916,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16
   },
-  headerTitle: { color: colors.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerTitle: {
+    ...textStyles.screenTitle,
+    color: colors.textPrimary,
+  },
   content: { padding: 20, paddingBottom: 180 },
   sectionTitle: {
     color: colors.textPrimary,
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     marginBottom: 12, includeFontPadding: false, },
 
@@ -951,7 +954,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   timelineColLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textMuted, includeFontPadding: false, },
   timelineColValue: {
@@ -969,7 +972,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   editBadgeText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.crimson, includeFontPadding: false, },
   timelineArrow: { alignItems: 'center', paddingHorizontal: 10 },
@@ -993,7 +996,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   stepperTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textPrimary, includeFontPadding: false, },
   stepperSubtitle: {
@@ -1050,7 +1053,7 @@ const styles = StyleSheet.create({
   presetDaysActive: { color: colors.crimson },
   presetBadge: { backgroundColor: colors.overlayLight, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
   presetBadgeActive: { backgroundColor: colors.crimson },
-  presetBadgeText: { fontSize: 16, fontFamily: typography.handBold, color: colors.textMuted, includeFontPadding: false, },
+  presetBadgeText: { fontSize: 13, fontFamily: typography.handBold, color: colors.textMuted, includeFontPadding: false, },
   presetBadgeTextActive: { color: colors.white },
   presetSubtitle: {
  fontSize: 11, color: colors.textMuted, marginBottom: 8, fontWeight: '500', fontFamily: typography.bodyMedium,
@@ -1069,7 +1072,7 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     color: colors.textPrimary,
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     marginBottom: 16, includeFontPadding: false, },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -1095,7 +1098,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.crimsonLight
   },
-  policyTitle: { color: colors.crimson, fontSize: 16, fontFamily: typography.handBold, marginBottom: 4, includeFontPadding: false, },
+  policyTitle: { color: colors.crimson, fontSize: 13, fontFamily: typography.handBold, marginBottom: 4, includeFontPadding: false, },
   policyText: {
  color: colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16, fontWeight: '500', fontFamily: typography.bodyMedium,
   },
@@ -1135,7 +1138,7 @@ const styles = StyleSheet.create({
   legalNoticeText: {
     flex: 1,
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     lineHeight: 19, includeFontPadding: false, },
   reserveBtn: {
@@ -1182,11 +1185,11 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   modalPre: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.crimson, includeFontPadding: false, },
   modalTitle: {
-    fontSize: 19,
+    fontSize: 15,
     fontFamily: typography.handBold,
     color: colors.textPrimary,
     marginTop: 2, includeFontPadding: false, },
@@ -1213,7 +1216,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   quickJumpText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handSemi,
     color: colors.textPrimary, includeFontPadding: false, },
   monthHeader: {
@@ -1307,7 +1310,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   addressLabelBadgeText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.crimson, includeFontPadding: false, },
   changeAddressBtn: {
@@ -1348,7 +1351,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   emptyAddressTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.textPrimary,
     marginTop: 6, includeFontPadding: false, },
@@ -1392,11 +1395,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.crimsonLight,
   },
   addressItemLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handBold,
     color: colors.crimson, includeFontPadding: false, },
   defaultBadge: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handSemi,
     color: colors.forest || colors.forest,
     backgroundColor: colors.emeraldLight,
@@ -1481,7 +1484,7 @@ const styles = StyleSheet.create({
   },
   availabilityStatusTitle: {
     fontFamily: typography.handBold,
-    fontSize: 17, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   availabilityPill: {
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -1495,10 +1498,10 @@ const styles = StyleSheet.create({
   },
   availabilityPillText: {
     fontFamily: typography.handBold,
-    fontSize: 16, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   availabilityStatusDesc: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 11,
     lineHeight: 16,
     color: colors.textMuted,
   },
@@ -1535,12 +1538,12 @@ const styles = StyleSheet.create({
   },
   ownerWarningTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.orange,
     marginBottom: 2, includeFontPadding: false, },
   ownerWarningDesc: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 11,
     lineHeight: 16,
     color: colors.textPrimary,
   },
@@ -1559,12 +1562,12 @@ const styles = StyleSheet.create({
   },
   errorBannerTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.red,
     marginBottom: 2, includeFontPadding: false, },
   errorBannerDesc: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 11,
     lineHeight: 16,
     color: colors.textPrimary,
   },
@@ -1582,7 +1585,7 @@ const styles = StyleSheet.create({
   },
   approvalNoticeText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: typography.handSemi,
     color: colors.crimson,
     lineHeight: 20, includeFontPadding: false, },

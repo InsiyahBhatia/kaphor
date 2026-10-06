@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontFamily: typography.condensed,
-    fontSize: 30,
+    fontSize: 28,
     letterSpacing: 6,
     color: colors.ink,
     includeFontPadding: false,
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   headline: {
     fontFamily: typography.headings,
-    fontSize: 30,
+    fontSize: 28,
     lineHeight: 36,
     color: colors.ink,
     textAlign: 'center',
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: colors.white,
     fontFamily: typography.bodyBold,
-    fontSize: 16,
+    fontSize: 14,
   },
   secondaryButton: {
     height: 56,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   legalNoticeText: {
     fontFamily: typography.handwritten,
-    fontSize: 17,
+    fontSize: 13,
     lineHeight: 21,
     color: colors.textMuted,
     textAlign: 'center',

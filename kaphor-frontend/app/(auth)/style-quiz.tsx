@@ -866,18 +866,18 @@ const styles = StyleSheet.create({
   },
   heroSubTitle: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream, includeFontPadding: false, },
   heroItalic: {
     fontFamily: typography.handwritten,
     color: colors.paperGlass,
-    fontSize: 16,
+    fontSize: 13,
     marginTop: 2, includeFontPadding: false, },
   heroZero: {
     fontFamily: typography.ranks,
-    fontSize: 36,
+    fontSize: 28,
     color: colors.red,
-    lineHeight: 40,
+    lineHeight: 34,
   },
 
   quizPanel: {
@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
   panelHeaderText: {
     color: colors.cream,
     fontFamily: typography.handwritten,
-    fontSize: 16, includeFontPadding: false, },
+    fontSize: 13, includeFontPadding: false, },
   dotsContainer: {
     flexDirection: 'row',
     gap: 4,
@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.red,
     marginBottom: 4, includeFontPadding: false, },
   progressTrack: {
@@ -994,7 +994,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontFamily: typography.handSemi,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   optionTextActive: {
     color: colors.charcoal,
@@ -1036,7 +1036,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   vibeCardTitle: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
   },
   vibeRankBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   vibeRankBadgeTextActive: {
     color: colors.cream,
@@ -1079,7 +1079,7 @@ const styles = StyleSheet.create({
   },
   expandFullscreenText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   vibeImageWrapLarge: {
     width: '100%',
@@ -1111,7 +1111,7 @@ const styles = StyleSheet.create({
   },
   tapToExpandText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream, includeFontPadding: false, },
   vibeCardSubLarge: {
     fontFamily: typography.body,
@@ -1136,7 +1136,7 @@ const styles = StyleSheet.create({
   },
   vibeSelectPillText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   vibeSelectPillTextActive: {
     color: colors.cream,
@@ -1167,7 +1167,7 @@ const styles = StyleSheet.create({
   },
   fullscreenAestheticSub: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.paperGlass,
     marginTop: 2, includeFontPadding: false, },
   fullscreenCloseBtn: {
@@ -1250,7 +1250,7 @@ const styles = StyleSheet.create({
     borderColor: colors.charcoal,
   },
   idkTitle: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 13,
     color: colors.charcoal,
     fontWeight: '700',
@@ -1261,7 +1261,7 @@ const styles = StyleSheet.create({
   },
   idkSubtitle: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 2,
     lineHeight: 19, includeFontPadding: false, },
@@ -1373,12 +1373,12 @@ const styles = StyleSheet.create({
   },
   resultSubtitle: {
     fontFamily: typography.handwritten,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream,
     marginTop: 4, includeFontPadding: false, },
   resultMainTitle: {
     fontFamily: typography.headings,
-    fontSize: 26,
+    fontSize: 24,
     color: colors.cream,
     letterSpacing: 2,
     marginTop: 6,
@@ -1406,7 +1406,7 @@ const styles = StyleSheet.create({
   },
   aestheticPillText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.cream, includeFontPadding: false, },
   matchPercentBadge: {
     fontFamily: typography.bodyBold,
@@ -1422,7 +1422,7 @@ const styles = StyleSheet.create({
   },
   aestheticTagline: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.red,
     marginBottom: 8, includeFontPadding: false, },
   aestheticDescription: {
@@ -1439,7 +1439,7 @@ const styles = StyleSheet.create({
   },
   essentialsHeading: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 8, includeFontPadding: false, },
   essentialsList: {
@@ -1459,7 +1459,7 @@ const styles = StyleSheet.create({
   essentialItemText: {
     flex: 1,
     fontFamily: typography.body,
-    fontSize: 12.5,
+    fontSize: 12,
     color: colors.charcoal,
     lineHeight: 18,
   },
@@ -1486,7 +1486,7 @@ const styles = StyleSheet.create({
   },
   closeSecondBadgeText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.charcoal, includeFontPadding: false, },
   secondaryMatchPercent: {
     fontFamily: typography.bodyBold,
@@ -1494,7 +1494,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   secondaryName: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 16,
     color: colors.charcoal,
     letterSpacing: 1,

@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     fontFamily: typography.handSemi,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center', includeFontPadding: false, },
   stepLabelActive: {
@@ -206,6 +206,6 @@ const styles = StyleSheet.create({
   },
   cancelledText: {
     fontFamily: typography.handBold,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.red, includeFontPadding: false, },
 });

@@ -73,7 +73,14 @@ export default function RecyclingCentersScreen() {
   }, []);
 
   const loadCenters = async () => {
-    setLoading(true);
+    // Cache-first: show the last known list immediately, refresh in the background
+    const cached = await circularService.peekRecyclingCenters();
+    if (cached) {
+      setData(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
       const res = await circularService.getRecyclingCenters();
       setData(res);
@@ -250,7 +257,7 @@ const styles = StyleSheet.create({
   },
   centerName: {
     fontFamily: typography.headings,
-    fontSize: 17,
+    fontSize: 16,
     lineHeight: 22,
     color: colors.ink,
     letterSpacing: 0.5,
@@ -291,7 +298,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontFamily: typography.body,
-    fontSize: 12.5,
+    fontSize: 12,
     color: colors.textSecond,
     flex: 1,
     lineHeight: 17,
@@ -317,7 +324,7 @@ const styles = StyleSheet.create({
   },
   certText: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.goldDark,
     marginTop: 2,
     lineHeight: 16,

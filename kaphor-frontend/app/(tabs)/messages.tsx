@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   safetyBarText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.cream,
   },
   tabsContainer: {
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
   },
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
   userName: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 15,
     color: colors.charcoal,
   },
   userNameUnread: {
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   timeText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   unifiedContextPill: {
@@ -693,12 +693,12 @@ const styles = StyleSheet.create({
   unifiedContextText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
   },
   messageSnippet: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -811,14 +811,14 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 19,
+    fontSize: 13,
     color: colors.charcoal,
     marginBottom: 8,
   },
   emptyDesc: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 14,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 21,
@@ -840,6 +840,6 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
   },
 });

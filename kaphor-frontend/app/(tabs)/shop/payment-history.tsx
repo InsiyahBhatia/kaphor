@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   summaryCardLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
   },
   summaryCardAmount: {
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   summaryCardSub: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
 
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
   },
   filterChipTextActive: { color: colors.cream },
@@ -464,13 +464,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
   },
   clearFilter: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.red,
     textDecorationLine: 'underline',
     marginTop: 8,
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.charcoal,
     marginBottom: 2,
   },
@@ -518,12 +518,12 @@ const styles = StyleSheet.create({
   cardType: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.copper,
   },
   cardRefText: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textMuted,
     fontWeight: '700',
   },
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   cardDate: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
   },
   statusBadge: {
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.cream,
   },
   cardRight: {
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   },
   cardAmount: {
     fontFamily: typography.mono,
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '900',
     marginBottom: 4,
   },
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
   receiptActionText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
     textDecorationLine: 'underline',
   },
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   modalHeaderTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.charcoal,
   },
   modalScroll: {
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
   receiptStatusLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   receiptTable: {
@@ -673,18 +673,18 @@ const styles = StyleSheet.create({
   tableLabel: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   tableValue: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.charcoal,
   },
   tableValueMono: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '900',
     color: colors.charcoal,
     letterSpacing: 0.5,
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
   modalActionBtnText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.cream,
   },
   modalCloseBtn: {
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
   modalCloseText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
   },
 });

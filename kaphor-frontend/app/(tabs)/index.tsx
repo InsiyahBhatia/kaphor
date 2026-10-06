@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
     color: colors.paperGlass,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 13.5,
+    fontSize: 13,
   },
 
   // ── Hero ────────────────────────────────────────────────────────
@@ -947,12 +947,12 @@ const styles = StyleSheet.create({
     color: colors.goldDark,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 13.5,
+    fontSize: 13,
   },
   heroHeadline: {
     fontFamily: typography.headings,
-    fontSize: 40,
-    lineHeight: 42,
+    fontSize: 28,
+    lineHeight: 34,
     color: colors.ink,
     letterSpacing: 0.6,
     marginBottom: 8,
@@ -988,7 +988,7 @@ const styles = StyleSheet.create({
   heroPrimaryBtnText: {
     color: colors.cream,
     fontFamily: typography.bodyBold,
-    fontSize: 11.5,
+    fontSize: 11,
     letterSpacing: 1.2,
   },
   inlineArrow: {
@@ -1008,7 +1008,7 @@ const styles = StyleSheet.create({
   heroSecondaryBtnText: {
     color: colors.charcoal,
     fontFamily: typography.bodyBold,
-    fontSize: 11.5,
+    fontSize: 11,
     letterSpacing: 1.2,
   },
   heroTrustRow: {
@@ -1028,7 +1028,7 @@ const styles = StyleSheet.create({
   heroTrustText: {
     color: colors.inkSoft,
     fontFamily: typography.bodyMedium,
-    fontSize: 11.5,
+    fontSize: 11,
     letterSpacing: 0.8,
   },
 
@@ -1097,7 +1097,7 @@ const styles = StyleSheet.create({
   quickActionLabel: {
     fontFamily: typography.bodyBold,
     color: colors.charcoal,
-    fontSize: 11.5,
+    fontSize: 11,
     letterSpacing: 0.6,
     textAlign: 'center',
     lineHeight: 12,
@@ -1129,7 +1129,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.headings,
-    fontSize: 21,
+    fontSize: 20,
     letterSpacing: 0.8,
     color: colors.charcoal,
   },
@@ -1148,12 +1148,12 @@ const styles = StyleSheet.create({
   sectionTagText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 13.5,
+    fontSize: 13,
   },
   seeAllText: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 13.5,
+    fontSize: 13,
     color: colors.crimson,
   },
   shelfScroll: {
@@ -1202,7 +1202,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 13.5,
+    fontSize: 13,
   },
   conditionPill: {
     position: 'absolute',
@@ -1217,7 +1217,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 13.5,
+    fontSize: 13,
   },
   garmentInfo: {
     padding: 12,
@@ -1231,19 +1231,19 @@ const styles = StyleSheet.create({
   garmentBrand: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 13.5,
+    fontSize: 13,
     color: colors.charcoal,
     flex: 1,
   },
   garmentSize: {
     fontFamily: typography.handSemi,
     includeFontPadding: false,
-    fontSize: 17,
+    fontSize: 13,
     color: colors.textMuted,
   },
   garmentTitle: {
     fontFamily: typography.body,
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.charcoal,
     marginBottom: 8,
@@ -1274,12 +1274,12 @@ const styles = StyleSheet.create({
     color: colors.crimson,
     fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     letterSpacing: 0.3,
   },
   garmentOriginalPrice: {
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
     marginTop: 1,
@@ -1334,7 +1334,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     letterSpacing: 0.3,
   },
   rentalInfo: {
@@ -1383,7 +1383,7 @@ const styles = StyleSheet.create({
   rentalReserveText: {
     fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     letterSpacing: 0.3,
     color: colors.charcoal,
   },
@@ -1428,7 +1428,7 @@ const styles = StyleSheet.create({
   swapParityText: {
     color: colors.white,
     fontFamily: typography.mono,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1445,7 +1445,7 @@ const styles = StyleSheet.create({
     color: colors.forest,
     fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     letterSpacing: 0.3,
   },
   swapValuationRow: {
@@ -1460,7 +1460,7 @@ const styles = StyleSheet.create({
   swapValuationLabel: {
     fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     letterSpacing: 0.3,
     color: colors.forest,
   },
@@ -1481,7 +1481,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.bodyBold,
     includeFontPadding: false,
-    fontSize: 10.5,
+    fontSize: 10,
     letterSpacing: 0.3,
   },
   swapCounterpartBox: {
@@ -1489,7 +1489,7 @@ const styles = StyleSheet.create({
   },
   swapCounterpartText: {
     fontFamily: typography.body,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textMuted,
     fontStyle: 'italic',
   },
@@ -1526,7 +1526,7 @@ const styles = StyleSheet.create({
   emptyPromptTitle: {
     fontFamily: typography.handBold,
     includeFontPadding: false,
-    fontSize: 13.5,
+    fontSize: 13,
     color: colors.charcoal,
   },
   emptyPromptDesc: {

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert,
 import { useRouter } from 'expo-router';
 import { SolarIcon } from '../../../src/components/common/SolarIcon';
 import api from '../../../src/services/api';
-import { colors, typography } from '../../../src/theme';
+import { colors, typography, textStyles } from '../../../src/theme';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spinner } from '../../../src/components/common/Loader';
@@ -115,10 +115,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', alignItems: 'center', marginBottom: 24,
     paddingBottom: 20, borderBottomWidth: 2, borderBottomColor: colors.charcoal
   },
-  headerTitle: { color: colors.charcoal, fontSize: 21, fontFamily: typography.handBold, includeFontPadding: false, },
+  headerTitle: {
+    ...textStyles.screenTitle,
+    color: colors.charcoal,
+  },
   content: { padding: 20, paddingBottom: 180 },
-  title: { fontSize: 48, fontFamily: typography.headings, color: colors.charcoal, marginBottom: 12 },
-  subtitle: { color: colors.textPrimary, fontFamily: typography.handwritten, fontSize: 17, lineHeight: 31, marginBottom: 32, includeFontPadding: false, },
+  title: { fontSize: 28, fontFamily: typography.headings, color: colors.charcoal, marginBottom: 12 },
+  subtitle: { color: colors.textPrimary, fontFamily: typography.handwritten, fontSize: 13, lineHeight: 31, marginBottom: 32, includeFontPadding: false, },
   
   infoCards: { flexDirection: 'row', gap: 16, marginBottom: 32 },
   infoCard: { 
@@ -126,10 +129,10 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: colors.charcoal,
     shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4
   },
-  infoTitle: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
-  infoText: { color: colors.white, fontFamily: typography.handBold, fontSize: 21, includeFontPadding: false, },
+  infoTitle: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
+  infoText: { color: colors.white, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
   
-  inputLabel: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 16, marginBottom: 8, marginTop: 16, includeFontPadding: false, },
+  inputLabel: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 14, marginBottom: 8, marginTop: 16, includeFontPadding: false, },
   input: { 
     height: 56, borderWidth: 2, borderColor: colors.charcoal, backgroundColor: colors.white, 
     padding: 16, color: colors.charcoal, fontFamily: typography.body, fontSize: 14, marginBottom: 24,

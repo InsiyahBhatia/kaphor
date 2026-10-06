@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   menuItemLabel: {
-    fontFamily: typography.headings,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
     color: colors.ink,
     letterSpacing: 0.4,

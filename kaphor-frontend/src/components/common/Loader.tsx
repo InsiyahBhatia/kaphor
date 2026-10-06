@@ -11,7 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, typography, spacing } from '../../theme';
 import { KaphorMark } from './KaphorLogo';
-import { SkeletonPulse } from './CardLoadingScreen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SkeletonPulse, OrderCardsLoading, GarmentGridSkeleton } from './CardLoadingScreen';
 
 /**
  * Loading screens for the whole app. No spinning wheels.
@@ -40,7 +41,18 @@ export type LoaderVariant =
   | 'glie'
   | 'magic_fill';
 
-type Layout = 'detail' | 'list' | 'grid' | 'progress';
+export type LoaderLayout =
+  | 'detail'
+  | 'list'
+  | 'grid'
+  | 'garments'
+  | 'orders'
+  | 'form'
+  | 'stats'
+  | 'reviews'
+  | 'profile'
+  | 'progress';
+type Layout = LoaderLayout;
 
 interface VariantInfo {
   message: string;
@@ -50,17 +62,17 @@ interface VariantInfo {
 
 const VARIANTS: Record<LoaderVariant, VariantInfo> = {
   default: { message: 'Loading…', layout: 'list' },
-  home: { message: 'Getting your feed ready…', layout: 'grid' },
+  home: { message: 'Getting your feed ready…', layout: 'garments' },
   shop: { message: 'Loading the shop…', layout: 'detail' },
   product: { message: 'Loading this item…', layout: 'detail' },
   rental: { message: 'Checking rental dates…', layout: 'detail' },
   swap: { message: 'Loading swap…', layout: 'detail' },
-  impact: { message: 'Adding up your impact…', layout: 'list' },
+  impact: { message: 'Adding up your impact…', layout: 'stats' },
   notifications: { message: 'Loading your updates…', layout: 'list' },
   studio: { message: 'Finding tutorials…', layout: 'grid' },
   cart: { message: 'Loading…', layout: 'list' },
-  order: { message: 'Loading your order…', layout: 'list' },
-  seller: { message: 'Loading seller…', layout: 'detail' },
+  order: { message: 'Loading your order…', layout: 'orders' },
+  seller: { message: 'Loading seller…', layout: 'profile' },
   checkout: { message: 'Getting checkout ready…', layout: 'progress' },
   confirmed: { message: 'Confirming your order…', layout: 'progress' },
   glie: {
@@ -93,55 +105,222 @@ interface LoaderProps {
   compact?: boolean;
   /** Replaces the default message */
   message?: string;
+  /** Overrides the skeleton shape of the variant */
+  layout?: LoaderLayout;
   /** Current step (0-based) for variants that have steps */
   step?: number;
 }
 
 // ── Skeleton layouts ────────────────────────────────────────────────────
+// Each one mirrors the real screen it stands in for (header, hero, rows, bottom bar).
 
-function DetailSkeleton() {
+/** Top bar placeholder: back arrow, centered title, one action */
+function HeaderSkeleton() {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.page}>
-      <SkeletonPulse width="100%" height={300} borderRadius={4} />
-      <View style={styles.block}>
-        <SkeletonPulse width="70%" height={24} />
-        <SkeletonPulse width="35%" height={20} style={styles.gap} />
-        <SkeletonPulse width="100%" height={12} style={styles.gap} />
-        <SkeletonPulse width="92%" height={12} style={styles.gapSm} />
-        <SkeletonPulse width="60%" height={12} style={styles.gapSm} />
+    <View style={[styles.headerBar, { paddingTop: Math.max(insets.top + 8, 24) }]}>
+      <SkeletonPulse width={28} height={28} borderRadius={14} />
+      <SkeletonPulse width={140} height={18} borderRadius={3} />
+      <SkeletonPulse width={28} height={28} borderRadius={14} />
+    </View>
+  );
+}
+
+function DetailSkeleton({ withHeader }: { withHeader: boolean }) {
+  return (
+    <View style={styles.fill}>
+      {withHeader && <HeaderSkeleton />}
+      <View style={styles.fill}>
+        <SkeletonPulse width="100%" height={340} borderRadius={0} />
+        <View style={styles.page}>
+          <View style={styles.spread}>
+            <SkeletonPulse width="55%" height={22} />
+            <SkeletonPulse width={64} height={22} />
+          </View>
+          <SkeletonPulse width="35%" height={12} style={styles.gapSm} />
+          <View style={[styles.chips, styles.gap]}>
+            <SkeletonPulse width={64} height={26} borderRadius={13} />
+            <SkeletonPulse width={78} height={26} borderRadius={13} />
+            <SkeletonPulse width={58} height={26} borderRadius={13} />
+          </View>
+          <SkeletonPulse width="100%" height={11} style={styles.gapLg} />
+          <SkeletonPulse width="94%" height={11} style={styles.gapSm} />
+          <SkeletonPulse width="62%" height={11} style={styles.gapSm} />
+        </View>
+      </View>
+      <View style={styles.bottomBar}>
+        <SkeletonPulse width="100%" height={48} borderRadius={4} />
+      </View>
+    </View>
+  );
+}
+
+function ListSkeleton({ rows = 5, withHeader = false }: { rows?: number; withHeader?: boolean }) {
+  return (
+    <View style={styles.fill}>
+      {withHeader && <HeaderSkeleton />}
+      <View style={styles.page}>
+        {Array.from({ length: rows }).map((_, i) => (
+          <View key={i} style={styles.row}>
+            <SkeletonPulse width={44} height={44} borderRadius={22} />
+            <View style={styles.rowText}>
+              <SkeletonPulse width="55%" height={13} />
+              <SkeletonPulse width="90%" height={10} style={styles.gapSm} />
+            </View>
+            <SkeletonPulse width={30} height={10} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function GridSkeleton({ items = 4, withHeader = false }: { items?: number; withHeader?: boolean }) {
+  return (
+    <View style={styles.fill}>
+      {withHeader && <HeaderSkeleton />}
+      <View style={styles.page}>
+        <SkeletonPulse width="45%" height={26} />
+        <SkeletonPulse width="30%" height={12} style={[styles.gapSm, { marginBottom: 14 }]} />
+        <View style={styles.grid}>
+          {Array.from({ length: items }).map((_, i) => (
+            <View key={i} style={styles.gridItem}>
+              <SkeletonPulse width="100%" height={150} borderRadius={4} />
+              <SkeletonPulse width="75%" height={12} style={styles.gap} />
+              <SkeletonPulse width="40%" height={12} style={styles.gapSm} />
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function GarmentsSkeleton({ items = 4, withHeader = false }: { items?: number; withHeader?: boolean }) {
+  return (
+    <View style={styles.fill}>
+      {withHeader && <HeaderSkeleton />}
+      <GarmentGridSkeleton count={items} />
+    </View>
+  );
+}
+
+function OrdersSkeleton({ withHeader = false, count = 4 }: { withHeader?: boolean; count?: number }) {
+  return (
+    <View style={styles.fill}>
+      {withHeader && <HeaderSkeleton />}
+      <OrderCardsLoading count={count} />
+    </View>
+  );
+}
+
+/** Settings / identity / address style forms: label + input pairs and a save button */
+function FormSkeleton({ withHeader = false }: { withHeader?: boolean }) {
+  return (
+    <View style={styles.fill}>
+      {withHeader && <HeaderSkeleton />}
+      <View style={styles.page}>
+        <View style={styles.center}>
+          <SkeletonPulse width={84} height={84} borderRadius={42} />
+          <SkeletonPulse width={120} height={12} style={styles.gap} />
+        </View>
+        {[0, 1, 2, 3].map((i) => (
+          <View key={i} style={styles.gapLg}>
+            <SkeletonPulse width={90} height={10} />
+            <SkeletonPulse width="100%" height={46} borderRadius={4} style={styles.gapSm} />
+          </View>
+        ))}
         <SkeletonPulse width="100%" height={48} borderRadius={4} style={styles.gapLg} />
       </View>
     </View>
   );
 }
 
-function ListSkeleton({ rows = 5 }: { rows?: number }) {
+/** Impact / dashboard: hero card, metric tiles, progress rows */
+function StatsSkeleton({ withHeader = false }: { withHeader?: boolean }) {
   return (
-    <View style={styles.page}>
-      {Array.from({ length: rows }).map((_, i) => (
-        <View key={i} style={styles.row}>
-          <SkeletonPulse width={56} height={56} borderRadius={4} />
-          <View style={styles.rowText}>
-            <SkeletonPulse width="65%" height={14} />
-            <SkeletonPulse width="90%" height={10} style={styles.gapSm} />
-            <SkeletonPulse width="40%" height={10} style={styles.gapSm} />
-          </View>
+    <View style={styles.fill}>
+      {withHeader && <HeaderSkeleton />}
+      <View style={styles.page}>
+        <SkeletonPulse width="100%" height={150} borderRadius={6} />
+        <View style={[styles.chips, styles.gap]}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={styles.statTile}>
+              <SkeletonPulse width={28} height={28} borderRadius={14} />
+              <SkeletonPulse width="70%" height={16} style={styles.gapSm} />
+              <SkeletonPulse width="50%" height={10} style={styles.gapSm} />
+            </View>
+          ))}
         </View>
-      ))}
+        <SkeletonPulse width="40%" height={14} style={styles.gapLg} />
+        {[0, 1, 2].map((i) => (
+          <SkeletonPulse key={i} width="100%" height={56} borderRadius={4} style={styles.gap} />
+        ))}
+      </View>
     </View>
   );
 }
 
-function GridSkeleton({ items = 4 }: { items?: number }) {
+/** Reviews: rating summary followed by review cards */
+function ReviewsSkeleton({ withHeader = false }: { withHeader?: boolean }) {
   return (
-    <View style={[styles.page, styles.grid]}>
-      {Array.from({ length: items }).map((_, i) => (
-        <View key={i} style={styles.gridItem}>
-          <SkeletonPulse width="100%" height={170} borderRadius={4} />
-          <SkeletonPulse width="75%" height={12} style={styles.gap} />
-          <SkeletonPulse width="40%" height={12} style={styles.gapSm} />
+    <View style={styles.fill}>
+      {withHeader && <HeaderSkeleton />}
+      <View style={styles.page}>
+        <View style={styles.spread}>
+          <SkeletonPulse width={72} height={56} borderRadius={4} />
+          <View style={styles.rowText}>
+            {[0, 1, 2].map((i) => (
+              <SkeletonPulse key={i} width={`${90 - i * 20}%`} height={8} style={i ? styles.gapSm : undefined} />
+            ))}
+          </View>
         </View>
-      ))}
+        {[0, 1, 2].map((i) => (
+          <View key={i} style={styles.reviewCard}>
+            <View style={styles.row}>
+              <SkeletonPulse width={36} height={36} borderRadius={18} />
+              <View style={styles.rowText}>
+                <SkeletonPulse width="40%" height={12} />
+                <SkeletonPulse width="25%" height={10} style={styles.gapSm} />
+              </View>
+            </View>
+            <SkeletonPulse width="100%" height={10} />
+            <SkeletonPulse width="70%" height={10} style={styles.gapSm} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** Seller / user profile: avatar, name, stats row, listings grid */
+function ProfileSkeleton({ withHeader = false }: { withHeader?: boolean }) {
+  return (
+    <View style={styles.fill}>
+      {withHeader && <HeaderSkeleton />}
+      <View style={styles.page}>
+        <View style={styles.center}>
+          <SkeletonPulse width={88} height={88} borderRadius={44} />
+          <SkeletonPulse width={150} height={18} style={styles.gap} />
+          <SkeletonPulse width={100} height={11} style={styles.gapSm} />
+        </View>
+        <View style={[styles.chips, styles.gapLg, { justifyContent: 'space-around' }]}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={styles.center}>
+              <SkeletonPulse width={36} height={18} />
+              <SkeletonPulse width={52} height={10} style={styles.gapSm} />
+            </View>
+          ))}
+        </View>
+        <View style={[styles.grid, styles.gapLg]}>
+          {[0, 1].map((i) => (
+            <View key={i} style={styles.gridItem}>
+              <SkeletonPulse width="100%" height={150} borderRadius={4} />
+              <SkeletonPulse width="70%" height={12} style={styles.gap} />
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -200,7 +379,7 @@ function ProgressView({
 
 // ── Public components ───────────────────────────────────────────────────
 
-export function Loader({ variant = 'default', compact = false, message, step }: LoaderProps) {
+export function Loader({ variant = 'default', compact = false, message, step, layout: layoutOverride }: LoaderProps) {
   const info = VARIANTS[variant] ?? VARIANTS.default;
   const steps = info.steps;
 
@@ -215,18 +394,33 @@ export function Loader({ variant = 'default', compact = false, message, step }: 
   const currentStep = Math.max(0, Math.min(step ?? autoStep, (steps?.length ?? 1) - 1));
   const text = message ?? (steps ? steps[currentStep] : info.message);
 
+  const layout = layoutOverride ?? info.layout;
+  const withHeader = !compact;
+
   let body: React.ReactNode;
-  if (info.layout === 'progress') {
+  if (layout === 'progress') {
     body = <ProgressView text={text} steps={steps} currentStep={currentStep} compact={compact} />;
-  } else if (info.layout === 'detail') {
-    body = compact ? <ListSkeleton rows={2} /> : <DetailSkeleton />;
-  } else if (info.layout === 'grid') {
-    body = <GridSkeleton items={compact ? 2 : 6} />;
+  } else if (layout === 'detail') {
+    body = compact ? <ListSkeleton rows={2} /> : <DetailSkeleton withHeader={withHeader} />;
+  } else if (layout === 'grid') {
+    body = <GridSkeleton items={compact ? 2 : 6} withHeader={withHeader} />;
+  } else if (layout === 'garments') {
+    body = <GarmentsSkeleton items={compact ? 2 : 6} withHeader={withHeader} />;
+  } else if (layout === 'orders') {
+    body = <OrdersSkeleton count={compact ? 2 : 4} withHeader={withHeader} />;
+  } else if (layout === 'form') {
+    body = <FormSkeleton withHeader={withHeader} />;
+  } else if (layout === 'stats') {
+    body = <StatsSkeleton withHeader={withHeader} />;
+  } else if (layout === 'reviews') {
+    body = <ReviewsSkeleton withHeader={withHeader} />;
+  } else if (layout === 'profile') {
+    body = <ProfileSkeleton withHeader={withHeader} />;
   } else {
-    body = <ListSkeleton rows={compact ? 3 : 6} />;
+    body = <ListSkeleton rows={compact ? 3 : 7} withHeader={withHeader} />;
   }
 
-  if (info.layout === 'progress') {
+  if (layout === 'progress') {
     return (
       <View
         style={compact ? undefined : styles.full}
@@ -310,7 +504,29 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   fullTop: { flex: 1, backgroundColor: colors.paper },
-  page: { padding: spacing.md },
+  fill: { flex: 1, alignSelf: 'stretch' },
+  page: { padding: spacing.md, alignSelf: 'stretch' },
+  center: { alignItems: 'center' },
+  spread: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  chips: { flexDirection: 'row', gap: 8 },
+  statTile: { flex: 1, padding: 12, borderRadius: 6, backgroundColor: colors.bg },
+  reviewCard: { marginTop: 18, padding: 14, borderRadius: 6, backgroundColor: colors.bg },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.bg,
+  },
+  bottomBar: {
+    padding: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.bg,
+  },
   block: { paddingTop: spacing.md },
   gap: { marginTop: 14 },
   gapSm: { marginTop: 8 },
@@ -324,12 +540,12 @@ const styles = StyleSheet.create({
   message: {
     marginTop: spacing.lg,
     fontFamily: typography.handSemi,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.ink,
     textAlign: 'center',
   },
   messageCompact: {
- marginTop: spacing.md, fontSize: 16, fontFamily: typography.body,
+ marginTop: spacing.md, fontSize: 14, fontFamily: typography.body,
   },
   dotRow: { flexDirection: 'row', gap: 6, marginTop: spacing.md },
   stepRow: { flexDirection: 'row', gap: 6, marginTop: spacing.lg },
