@@ -13,10 +13,15 @@ const USER_SOCKET_PREFIX = 'socket:user:';
 let io: Server | null = null;
 
 export function getAllowedOrigins(): string[] {
-  return (process.env.ALLOWED_ORIGINS || 'http://localhost:8081')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+  if (process.env.ALLOWED_ORIGINS) {
+    return process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean);
+  }
+  const defaults = ['http://localhost:8081', 'exp://localhost:8081'];
+  if (process.env.FRONTEND_URL) {
+    const fe = process.env.FRONTEND_URL.trim();
+    if (fe && !defaults.includes(fe)) defaults.push(fe);
+  }
+  return defaults;
 }
 
 export function initSocket(httpServer: HttpServer): Server {

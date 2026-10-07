@@ -86,10 +86,8 @@ function validateProductionEnv(env: typeof validatedEnv): string[] {
     problems.push('JWT_SECRET and JWT_REFRESH_SECRET must be different');
   }
 
-  // CORS must be explicit
-  if (!has(env.ALLOWED_ORIGINS)) {
-    problems.push('ALLOWED_ORIGINS is required in production (comma-separated list of allowed web origins)');
-  } else if (env.ALLOWED_ORIGINS!.split(',').some((o) => o.trim() === '*')) {
+  // CORS must not allow wildcard in production
+  if (has(env.ALLOWED_ORIGINS) && env.ALLOWED_ORIGINS!.split(',').some((o) => o.trim() === '*')) {
     problems.push('ALLOWED_ORIGINS must not contain "*"');
   }
 
@@ -120,7 +118,12 @@ if (isProd) {
   if (validatedEnv.RAZORPAY_KEY_ID && !validatedEnv.RAZORPAY_WEBHOOK_SECRET) {
     warn('RAZORPAY_WEBHOOK_SECRET not set: orders and payments work, but webhook background sync is disabled until registered in the Razorpay dashboard.');
   }
-  if (!validatedEnv.RESEND_API_KEY) warn('RESEND_API_KEY not set: verification and password-reset emails will NOT be delivered.');
+  if (!validatedEnv.ALLOWED_ORIGINS) {
+    warn('ALLOWED_ORIGINS not set: defaulting to http://localhost:8081, exp://localhost:8081, and FRONTEND_URL.');
+  }
+  if (!validatedEnv.RESEND_API_KEY && !process.env.SMTP_HOST) {
+    warn('Neither RESEND_API_KEY nor SMTP_HOST is set: outgoing emails will NOT be delivered in production.');
+  }
   if (!validatedEnv.REDIS_URL) warn('REDIS_URL not set: realtime socket mapping uses in-memory storage (single instance only).');
   if (!validatedEnv.CLOUDINARY_CLOUD_NAME && !validatedEnv.AWS_S3_BUCKET_NAME) {
     warn('No Cloudinary or S3 configured: uploads fall back to local disk, which is erased on every Render deploy.');
