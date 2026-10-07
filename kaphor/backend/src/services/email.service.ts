@@ -80,7 +80,7 @@ export async function sendVerificationEmail(email: string, token: string) {
     ? backendBase
     : 'https://kaphor-backend.onrender.com';
 
-  const verifyUrl = `${backendUrl}/api/v1/auth/verify-email/${token}`;
+  const verifyUrl = `${backendUrl}/api/v1/auth/verify-email/${token}?email=${encodeURIComponent(email)}`;
 
   await sendEmail({
     to: email,

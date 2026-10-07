@@ -7,6 +7,7 @@ import { logger } from '../lib/logger';
 import { isAccountLocked, recordFailedLogin, clearFailedLogins } from '../services/authLock.service';
 import { auditLog } from '../services/audit.service';
 import crypto from 'crypto';
+import { redisGet, redisSet } from '../lib/redis';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.service';
 
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid credentials';
@@ -418,7 +419,11 @@ function renderVerificationHtml(success: boolean, message: string): string {
 
 export async function verifyEmail(req: Request, res: Response): Promise<void> {
   const token = req.params.token || (req.body?.token as string) || (req.query?.token as string);
-  const wantsHtml = req.accepts('html') && !req.accepts('json');
+  const emailParam = typeof req.query?.email === 'string' ? req.query.email.trim().toLowerCase() : undefined;
+
+  // Browser visit check: serve HTML for GET requests unless explicitly asking for JSON only
+  const isExplicitJson = req.headers.accept === 'application/json' || (Boolean(req.xhr) && !req.headers.accept?.includes('text/html'));
+  const wantsHtml = req.method === 'GET' ? !isExplicitJson : (!isExplicitJson && (Boolean(req.headers.accept?.includes('text/html')) || Boolean(req.accepts('html'))));
 
   if (!token || typeof token !== 'string' || token.length > 200) {
     if (wantsHtml) {
@@ -429,40 +434,71 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  const tokenHash = hashToken(token, 'verify');
+
+  // 1. Check if token is actively pending for an unverified user
   const user = await prisma.user.findFirst({
     where: {
-      verificationToken: hashToken(token, 'verify'),
+      verificationToken: tokenHash,
       verificationExpires: { gte: new Date() },
     },
   });
 
-  if (!user) {
+  if (user) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationToken: null,
+        verificationExpires: null,
+      },
+    });
+
+    // Cache the verified token for 48 hours so subsequent clicks or email scanners don't show an error
+    await redisSet(`verified_token:${tokenHash}`, user.id, 172800).catch(() => {});
+    await auditLog({ userId: user.id, action: 'EMAIL_VERIFIED', req });
+
     if (wantsHtml) {
-      res.status(400).send(renderVerificationHtml(false, 'This verification link is invalid or has expired. Please request a new verification email.'));
+      res.status(200).send(renderVerificationHtml(true, 'Your email has been successfully verified! You can return to the KaPhor app.'));
       return;
     }
-    res.status(400).json({ error: 'INVALID_TOKEN', message: 'Token is invalid or expired' });
+    res.status(200).json({ data: { message: 'Email verified successfully.' } });
     return;
   }
 
-  // Mark the email as verified
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      isVerified: true,
-      verificationToken: null,
-      verificationExpires: null,
-    },
-  });
+  // 2. Check if this token was already verified in the last 48 hours (e.g. user re-clicked or mail scanner pre-fetched)
+  const cachedUserId = await redisGet(`verified_token:${tokenHash}`).catch(() => null);
+  if (cachedUserId) {
+    if (wantsHtml) {
+      res.status(200).send(renderVerificationHtml(true, 'Your email has already been verified! You can return to the KaPhor app.'));
+      return;
+    }
+    res.status(200).json({ data: { message: 'Email has already been verified.' } });
+    return;
+  }
 
-  await auditLog({ userId: user.id, action: 'EMAIL_VERIFIED', req });
+  // 3. If an email query param is present, check if that user is already verified
+  if (emailParam) {
+    const userByEmail = await prisma.user.findFirst({
+      where: { email: emailParam },
+      select: { id: true, isVerified: true },
+    });
+    if (userByEmail && userByEmail.isVerified) {
+      if (wantsHtml) {
+        res.status(200).send(renderVerificationHtml(true, 'Your email is already verified! You can return to the KaPhor app.'));
+        return;
+      }
+      res.status(200).json({ data: { message: 'Email is already verified.' } });
+      return;
+    }
+  }
 
+  // 4. Token is invalid or expired
   if (wantsHtml) {
-    res.status(200).send(renderVerificationHtml(true, 'Your email has been successfully verified! You can return to the KaPhor app.'));
+    res.status(400).send(renderVerificationHtml(false, 'This verification link is invalid or has expired. You can request a fresh verification link from the KaPhor app settings.'));
     return;
   }
-
-  res.status(200).json({ data: { message: 'Email verified successfully.' } });
+  res.status(400).json({ error: 'INVALID_TOKEN', message: 'Token is invalid or expired' });
 }
 
 export async function resendVerification(req: Request, res: Response): Promise<void> {
