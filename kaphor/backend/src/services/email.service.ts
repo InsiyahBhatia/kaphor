@@ -110,9 +110,8 @@ export async function sendVerificationEmail(email: string, token: string) {
     </div>
     <a href="${verifyUrl}" class="btn">Verify My Email</a>
     <div class="footer">
-      If the button above does not work, copy and paste this link into your browser:<br/>
-      <a href="${verifyUrl}" style="color: #444444; word-break: break-all;">${verifyUrl}</a><br/><br/>
       This link will expire in 24 hours.<br/>
+      If you are having trouble with the button, <a href="${verifyUrl}" style="color: #121212; text-decoration: underline; font-weight: 600;">click here to verify</a>.<br/><br/>
       If you did not sign up for KaPhor, please ignore this email.
     </div>
   </div>
