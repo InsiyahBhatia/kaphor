@@ -109,6 +109,13 @@ function dayKey(iso: Date): string {
 
 export async function getAdminMonitor(req: Request, res: Response): Promise<void> {
   try {
+    const cacheKey = 'stats:admin:monitor';
+    const cached = cacheGet<any>(cacheKey);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const [
       bespokePending, 
       swapsRequested, 
@@ -141,7 +148,7 @@ export async function getAdminMonitor(req: Request, res: Response): Promise<void
       where: { status: { in: ['CONFIRMED', 'SHIPPED', 'DELIVERED'] } }
     });
 
-    res.json({
+    const payload = {
       data: {
         bespokePending,
         swapsRequested,
@@ -156,7 +163,10 @@ export async function getAdminMonitor(req: Request, res: Response): Promise<void
         overdueRentals,
         revenuePotential: confirmedVolume._sum.totalAmount ?? 0,
       },
-    });
+    };
+
+    cacheSet(cacheKey, payload, 30_000);
+    res.json(payload);
   } catch (e) {
     fail(res, 'getAdminMonitor', e);
   }
@@ -528,17 +538,26 @@ function groupByTop(values: string[], take: number): { label: string; count: num
  */
 export async function getAdminHealth(req: Request, res: Response): Promise<void> {
   try {
+    const cacheKey = 'stats:admin:health';
+    const cached = cacheGet<any>(cacheKey);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const t0 = Date.now();
     await db.$queryRaw`SELECT 1`;
     const dbPingMs = Date.now() - t0;
-    res.json({
+    const payload = {
       data: {
         healthy: dbPingMs < 2000,
         dbPingMs,
         uptimeSec: Math.floor(process.uptime()),
         serverTime: new Date().toISOString(),
       },
-    });
+    };
+    cacheSet(cacheKey, payload, 15_000);
+    res.json(payload);
   } catch (e) {
     logger.error('getAdminHealth failed', { error: e instanceof Error ? e.message : String(e) });
     res.json({

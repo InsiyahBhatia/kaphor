@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { promptPhotoSelection } from '../../utils/imagePicker';
 import { useAuth } from '../../context/AuthContext';
 import { userService } from '../../services/userService';
+import { authService } from '../../services/authService';
 import api from '../../services/api';
 import { colors, typography, radius, textStyles } from '../../theme';
 import { safeBack, useBackHandler } from '../../utils/navigation';
@@ -97,6 +98,26 @@ export function AccountSettingsScreen() {
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
   const [styleAesthetic, setStyleAesthetic] = useState('');
+  const [sendingVerify, setSendingVerify] = useState(false);
+
+  const handleResendVerification = async () => {
+    if (sendingVerify) return;
+    setSendingVerify(true);
+    try {
+      await authService.resendVerification(user?.email);
+      Alert.alert(
+        'Verification Email Sent',
+        'A confirmation link has been sent to your email. Please check your inbox and click the link to verify your account.'
+      );
+    } catch (err: any) {
+      Alert.alert(
+        'Verification Failed',
+        getErrorMessage(err, 'Could not send verification email. Please try again.')
+      );
+    } finally {
+      setSendingVerify(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -279,9 +300,28 @@ export function AccountSettingsScreen() {
                 {uploadingAvatar ? 'UPLOADING...' : 'CHANGE PROFILE PHOTO'}
               </Text>
             </TouchableOpacity>
-            <Text style={styles.avatarSubText}>
-              {user?.email || 'Member'}
-            </Text>
+            <View style={styles.emailRow}>
+              <Text style={styles.avatarSubText}>
+                {user?.email || 'Member'}
+              </Text>
+              {user?.isVerified ? (
+                <View style={styles.verifiedBadge}>
+                  <SolarIcon name="shield-check" size={13} color={colors.emerald} />
+                  <Text style={styles.verifiedText}>VERIFIED</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.unverifiedBadge}
+                  onPress={handleResendVerification}
+                  disabled={sendingVerify}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.unverifiedText}>
+                    {sendingVerify ? 'SENDING...' : 'VERIFY EMAIL'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
 
@@ -713,5 +753,41 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     fontSize: 14,
     marginTop: 1,
+  },
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.emeraldLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  verifiedText: {
+    fontFamily: typography.bodyBold,
+    fontSize: 10,
+    color: colors.emerald,
+    letterSpacing: 0.5,
+  },
+  unverifiedBadge: {
+    backgroundColor: colors.bgMuted,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  unverifiedText: {
+    fontFamily: typography.bodyBold,
+    fontSize: 10,
+    color: colors.crimson,
+    letterSpacing: 0.5,
   },
 });

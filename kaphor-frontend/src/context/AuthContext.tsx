@@ -15,6 +15,7 @@ interface User {
   avatarUrl?: string;
   avatar?: string;
   styleAesthetic?: string;
+  isVerified?: boolean;
   onboardingDone?: boolean;
   stats?: {
     listings: number;
@@ -50,6 +51,7 @@ function normalizeUser(raw: Record<string, unknown>): User {
     avatar:
       (raw.avatar as string | undefined) ?? (raw.avatarUrl as string | undefined),
     styleAesthetic: raw.styleAesthetic != null ? String(raw.styleAesthetic) : undefined,
+    isVerified: raw.isVerified != null ? Boolean(raw.isVerified) : false,
     onboardingDone: raw.onboardingDone != null ? Boolean(raw.onboardingDone) : false,
     stats: raw.stats as User['stats'],
   };

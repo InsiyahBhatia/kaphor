@@ -15,6 +15,7 @@ import {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  resendVerification,
   getMe,
   googleLogin,
 } from '../controllers/auth.controller';
@@ -35,4 +36,7 @@ authRouter.post('/forgot-password', validate({ body: forgotPasswordSchema }), fo
 authRouter.post('/reset-password', validate({ body: resetPasswordSchema }), resetPassword);
 
 authRouter.get('/verify-email/:token', verifyEmail);
+authRouter.get('/verify-email', verifyEmail);
+authRouter.post('/verify-email', verifyEmail);
+authRouter.post('/resend-verification', resendVerification);
 authRouter.get('/me', authenticate, getMe);

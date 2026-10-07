@@ -15,6 +15,7 @@ import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Bars, Sparkline } from '../../src/components/admin/Bars';
 import { Card, SectionLabel, formatINR, Chip, Empty } from '../../src/components/admin/AdminUI';
 import { Loader } from '../../src/components/common/Loader';
+import { peek, remember } from '../../src/utils/swrCache';
 
 type Range = '7d' | '30d' | '90d';
 
@@ -32,13 +33,16 @@ export default function AdminOverviewScreen() {
   const { user, isLoading: authLoading } = useAuth();
 
   const [range, setRange] = useState<Range>('30d');
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [monitor, setMonitor] = useState<any>(null);
-  const [health, setHealth] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<any>(() => peek('admin:analytics:30d') ?? null);
+  const [monitor, setMonitor] = useState<any>(() => peek('admin:monitor') ?? null);
+  const [health, setHealth] = useState<any>(() => peek('admin:health') ?? null);
+  const [loading, setLoading] = useState(() => !(peek('admin:monitor') && peek('admin:analytics:30d')));
 
   const loadData = useCallback(async () => {
-    setLoading(true);
+    // If we have cached data, don't show full-screen blocking loader
+    if (!monitor && !analytics) {
+      setLoading(true);
+    }
     try {
       const [m, a, h] = await Promise.all([
         adminService.getMonitor(),
@@ -46,12 +50,22 @@ export default function AdminOverviewScreen() {
         adminService.getHealth(),
       ]);
       setMonitor(m);
+      remember('admin:monitor', m);
       setAnalytics(a);
+      remember(`admin:analytics:${range}`, a);
       setHealth(h);
+      remember('admin:health', h);
     } catch {
       // Keep partial state so overview does not crash
     } finally {
       setLoading(false);
+    }
+  }, [range, monitor, analytics]);
+
+  useEffect(() => {
+    const cached = peek(`admin:analytics:${range}`);
+    if (cached) {
+      setAnalytics(cached);
     }
   }, [range]);
 
@@ -312,35 +326,32 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontFamily: typography.bodyMedium,
+    fontSize: 12,
     color: colors.textMuted,
-    letterSpacing: 2,
   },
   lockIconBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 2,
-    borderWidth: 2,
-    borderColor: colors.crimson,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: colors.crimsonLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   lockTitle: {
-    fontFamily: typography.headings,
-    fontSize: 24,
+    fontFamily: typography.bodyBold,
+    fontSize: 20,
     color: colors.crimson,
-    letterSpacing: 1.5,
+    letterSpacing: 0.5,
   },
   lockSub: {
     textAlign: 'center',
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     color: colors.textMuted,
     marginTop: 8,
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 13,
+    lineHeight: 18,
     maxWidth: 280,
   },
   lockBtn: {
@@ -348,15 +359,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 2,
+    borderRadius: 8,
   },
   lockBtnText: {
     color: colors.cream,
-    fontFamily: typography.monoBold,
-    fontSize: 11,
-    letterSpacing: 1,
+    fontFamily: typography.bodyBold,
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
 
   scrollContent: {
@@ -372,17 +381,18 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   kpiCard: {
-    width: '48.5%',
+    flexBasis: '47%',
+    flexGrow: 1,
     backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.ink,
-    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 12,
     padding: 14,
     shadowColor: colors.ink,
-    shadowOffset: { width: 2.5, height: 2.5 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   kpiTopRow: {
     flexDirection: 'row',
@@ -391,82 +401,82 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   kpiLabel: {
-    fontFamily: typography.monoBold,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
     color: colors.textMuted,
-    letterSpacing: 1,
+    letterSpacing: 0.6,
   },
   kpiValue: {
-    fontFamily: typography.headings,
-    fontSize: 24,
+    fontFamily: typography.bodyBold,
+    fontSize: 22,
     color: colors.ink,
-    letterSpacing: 1,
+    letterSpacing: -0.3,
   },
 
   // Range Selector
   rangeRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   rangeChip: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 7,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 20,
     backgroundColor: colors.white,
   },
   rangeChipActive: {
     backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   rangeText: {
-    fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontFamily: typography.bodyMedium,
+    fontSize: 12,
     color: colors.ink,
   },
   rangeTextActive: {
     color: colors.cream,
+    fontFamily: typography.bodyBold,
   },
 
   // Module Switchboard
   modulesGrid: {
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 14,
   },
   moduleCard: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 2,
-    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 12,
+    padding: 14,
     shadowColor: colors.ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   moduleHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   moduleIconBox: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     backgroundColor: colors.bgMuted,
-    borderWidth: 1,
-    borderColor: colors.ink,
-    borderRadius: 2,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   moduleCount: {
-    fontFamily: typography.monoBold,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    color: colors.ink,
-    letterSpacing: 0.8,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
   },
   moduleFoot: {
     flexDirection: 'row',
@@ -474,10 +484,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   moduleTitle: {
-    fontFamily: typography.headings,
-    fontSize: 16,
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
     color: colors.ink,
-    letterSpacing: 1,
+    letterSpacing: 0.2,
   },
 
   cardHead: {
@@ -487,16 +497,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardTitle: {
-    fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontFamily: typography.bodyBold,
+    fontSize: 12,
     color: colors.ink,
-    letterSpacing: 1,
+    letterSpacing: 0.6,
   },
   cardMeta: {
-    fontFamily: typography.mono,
+    fontFamily: typography.bodyMedium,
     fontSize: 11,
     color: colors.textMuted,
-    letterSpacing: 0.8,
   },
   axisRow: {
     flexDirection: 'row',
@@ -504,7 +513,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   axisText: {
-    fontFamily: typography.mono,
+    fontFamily: typography.body,
     fontSize: 11,
     color: colors.textMuted,
   },
@@ -513,35 +522,35 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   sparkLabel: {
-    fontFamily: typography.monoBold,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
     color: colors.textMuted,
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
     marginBottom: 6,
   },
 
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 7,
+    paddingVertical: 9,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.bgMuted,
+    borderBottomColor: colors.borderLight,
   },
   topIndex: {
-    fontFamily: typography.monoBold,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
     color: colors.textMuted,
     width: 24,
   },
   topLabel: {
     flex: 1,
-    fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontFamily: typography.bodyMedium,
+    fontSize: 13,
     color: colors.ink,
   },
   topCount: {
-    fontFamily: typography.mono,
-    fontSize: 11,
+    fontFamily: typography.body,
+    fontSize: 12,
     color: colors.textMuted,
   },
 
@@ -549,39 +558,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 14,
   },
   todoItem: {
-    width: '31.5%',
+    flexBasis: '30%',
+    flexGrow: 1,
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 2,
-    paddingVertical: 10,
-    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     alignItems: 'center',
     shadowColor: colors.ink,
-    shadowOffset: { width: 1.5, height: 1.5 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   todoTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
   todoCount: {
-    fontFamily: typography.headings,
-    fontSize: 20,
+    fontFamily: typography.bodyBold,
+    fontSize: 18,
     color: colors.ink,
   },
   todoLabel: {
-    fontFamily: typography.monoBold,
+    fontFamily: typography.bodyMedium,
     fontSize: 11,
     color: colors.textMuted,
-    letterSpacing: 0.8,
-    marginTop: 3,
+    marginTop: 4,
     textAlign: 'center',
   },
 
@@ -589,19 +598,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.borderLight,
   },
   healthLabel: {
-    fontFamily: typography.monoBold,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
     color: colors.textMuted,
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
   },
   healthValue: {
-    fontFamily: typography.monoBold,
-    fontSize: 11,
+    fontFamily: typography.bodyMedium,
+    fontSize: 12,
     color: colors.ink,
   },
 });

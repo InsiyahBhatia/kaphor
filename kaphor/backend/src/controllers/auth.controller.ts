@@ -387,9 +387,44 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   res.status(200).json({ data: { message: 'Password reset successful.' } });
 }
 
+function renderVerificationHtml(success: boolean, message: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${success ? 'Email Verified' : 'Verification Issue'} — KaPhor</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #F8F7F3; margin: 0; padding: 60px 16px; color: #121212; display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+    .card { max-width: 440px; width: 100%; background: #FFFFFF; border-radius: 16px; border: 1px solid #E5E5E0; padding: 48px 32px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: 4px; margin-bottom: 24px; color: #121212; }
+    .icon { width: 64px; height: 64px; border-radius: 32px; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 20px; background: ${success ? '#E8F5E9' : '#FFEBEE'}; color: ${success ? '#2E7D32' : '#C62828'}; }
+    .title { font-size: 20px; font-weight: 700; margin-bottom: 12px; color: #121212; }
+    .desc { font-size: 14px; line-height: 1.6; color: #666666; margin-bottom: 32px; }
+    .btn { display: inline-block; background-color: #121212; color: #FFFFFF !important; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">KAPHOR</div>
+    <div class="icon">${success ? '✓' : '✕'}</div>
+    <div class="title">${success ? 'Email Verified' : 'Verification Issue'}</div>
+    <div class="desc">${message}</div>
+    <a href="kaphor://" class="btn">Open KaPhor App</a>
+  </div>
+</body>
+</html>`;
+}
+
 export async function verifyEmail(req: Request, res: Response): Promise<void> {
-  const { token } = req.params;
-  if (!token || token.length > 200) {
+  const token = req.params.token || (req.body?.token as string) || (req.query?.token as string);
+  const wantsHtml = req.accepts('html') && !req.accepts('json');
+
+  if (!token || typeof token !== 'string' || token.length > 200) {
+    if (wantsHtml) {
+      res.status(400).send(renderVerificationHtml(false, 'Verification token is missing. Please use the link sent to your email.'));
+      return;
+    }
     res.status(400).json({ error: 'BAD_REQUEST', message: 'Token required' });
     return;
   }
@@ -402,11 +437,15 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
   });
 
   if (!user) {
+    if (wantsHtml) {
+      res.status(400).send(renderVerificationHtml(false, 'This verification link is invalid or has expired. Please request a new verification email.'));
+      return;
+    }
     res.status(400).json({ error: 'INVALID_TOKEN', message: 'Token is invalid or expired' });
     return;
   }
 
-  // Mark the email as verified. Never touch isActive here: that flag is how admins ban accounts.
+  // Mark the email as verified
   await prisma.user.update({
     where: { id: user.id },
     data: {
@@ -417,7 +456,60 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
   });
 
   await auditLog({ userId: user.id, action: 'EMAIL_VERIFIED', req });
+
+  if (wantsHtml) {
+    res.status(200).send(renderVerificationHtml(true, 'Your email has been successfully verified! You can return to the KaPhor app.'));
+    return;
+  }
+
   res.status(200).json({ data: { message: 'Email verified successfully.' } });
+}
+
+export async function resendVerification(req: Request, res: Response): Promise<void> {
+  try {
+    const emailParam = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : undefined;
+    const userId = (req as any).user?.id;
+
+    if (!emailParam && !userId) {
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Email is required' });
+      return;
+    }
+
+    const user = await prisma.user.findFirst({
+      where: userId ? { id: userId } : { email: emailParam },
+      select: { id: true, email: true, isVerified: true },
+    });
+
+    if (!user) {
+      res.status(200).json({ data: { message: 'If an account exists, a verification link has been sent.' } });
+      return;
+    }
+
+    if (user.isVerified) {
+      res.status(200).json({ data: { message: 'Email is already verified.' } });
+      return;
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenHash = hashToken(verificationToken, 'verify');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verificationToken: verificationTokenHash,
+        verificationExpires,
+      },
+    });
+
+    await sendVerificationEmail(user.email, verificationToken);
+    logger.info(`Verification email sent to ${user.email}`);
+
+    res.status(200).json({ data: { message: 'Verification email sent. Please check your inbox.' } });
+  } catch (error) {
+    logger.error('resendVerification failed', { error });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to send verification email' });
+  }
 }
 
 export async function getMe(req: Request, res: Response): Promise<void> {

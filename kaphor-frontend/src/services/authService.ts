@@ -28,4 +28,14 @@ export const authService = {
     const refreshToken = await safeStorage.getItem(REFRESH_KEY);
     await api.post('/auth/logout', refreshToken ? { refreshToken } : {});
   },
+
+  resendVerification: async (email?: string) => {
+    const { data } = await api.post('/auth/resend-verification', email ? { email } : {});
+    return data.data;
+  },
+
+  verifyEmail: async (token: string) => {
+    const { data } = await api.get(`/auth/verify-email/${token}`);
+    return data.data;
+  },
 };

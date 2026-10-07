@@ -147,32 +147,25 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 48 },
 
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  refundNote: { fontFamily: typography.monoBold, fontSize: 11, color: colors.emerald, letterSpacing: 1 },
+  refundNote: { fontFamily: typography.bodyBold, fontSize: 12, color: colors.emerald },
 
   itemTitle: { fontFamily: typography.bodyBold, fontSize: 15, color: colors.ink },
-  itemMeta: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, marginTop: 4, letterSpacing: 1 },
+  itemMeta: { fontFamily: typography.bodyMedium, fontSize: 12, color: colors.textMuted, marginTop: 4 },
   itemFoot: { marginTop: 8, flexDirection: 'row', justifyContent: 'flex-end' },
-  itemPrice: { fontFamily: typography.monoBold, fontSize: 13, color: colors.ink },
+  itemPrice: { fontFamily: typography.bodyBold, fontSize: 13, color: colors.ink },
 
-  muted: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted },
+  muted: { fontFamily: typography.body, fontSize: 12, color: colors.textMuted },
 
-  msgRow: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight || colors.borderLight },
-  msgMeta: { fontFamily: typography.mono, fontSize: 11, color: colors.textMuted, letterSpacing: 0.5 },
-  msgBody: { fontFamily: typography.body, fontSize: 12, color: colors.ink, marginTop: 3 },
+  msgRow: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  msgMeta: { fontFamily: typography.bodyMedium, fontSize: 11, color: colors.textMuted },
+  msgBody: { fontFamily: typography.body, fontSize: 13, color: colors.ink, marginTop: 3 },
 
   refundBtn: {
     backgroundColor: colors.crimson,
     paddingVertical: 14,
-    borderWidth: 2,
-    borderColor: colors.ink,
-    borderRadius: 2,
+    borderRadius: 10,
     alignItems: 'center',
     marginTop: 10,
-    shadowColor: colors.ink,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
   },
-  refundBtnText: { fontFamily: typography.monoBold, fontSize: 11, color: colors.white, letterSpacing: 2 },
+  refundBtnText: { fontFamily: typography.bodyBold, fontSize: 13, color: colors.white, letterSpacing: 0.5 },
 });

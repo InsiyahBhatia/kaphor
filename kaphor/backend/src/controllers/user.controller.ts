@@ -1,5 +1,6 @@
 import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import { Request, Response } from 'express';
+import { StyleAesthetic } from '@prisma/client';
 import db from '../lib/prisma';
 import { redisDel } from '../lib/redis';
 import { logger } from '../lib/logger';
@@ -9,107 +10,181 @@ import { sendPushWithDiagnostics } from '../services/pushNotification.service';
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 async function resolveAvatar(avatar: string | null): Promise<string | null> {
-  if (!avatar) return null;
-  return getDownloadUrl(avatar);
+    if (!avatar) return null;
+    return getDownloadUrl(avatar);
 }
 
 async function resolveUserMedia(user: any) {
-  if (!user) return user;
-  const avatar = await resolveAvatar(user.avatar);
-  return { ...user, avatar };
+    if (!user) return user;
+    const avatar = await resolveAvatar(user.avatar);
+    return { ...user, avatar };
 }
 
 async function resolveGarmentMedia(garment: any) {
-  if (!garment || !garment.images) return garment;
-  const images = await Promise.all(garment.images.map((img: string) => getDownloadUrl(img)));
-  return { ...garment, images };
+    if (!garment || !garment.images) return garment;
+    const images = await Promise.all(garment.images.map((img: string) => getDownloadUrl(img)));
+    return { ...garment, images };
 }
 
 async function resolveGarmentsMedia(garments: any[]) {
-  return Promise.all(garments.map(g => resolveGarmentMedia(g)));
+    return Promise.all(garments.map(g => resolveGarmentMedia(g)));
 }
+
+// ── Style Aesthetic Enum Mapping ──────────────────────────────────────────────
+const VALID_PRISMA_AESTHETICS = new Set(Object.values(StyleAesthetic));
+
+const AESTHETIC_NAME_TO_ENUM: Record<string, StyleAesthetic> = {
+    'Y2K': StyleAesthetic.Y2K,
+    'ACUBI': StyleAesthetic.ACUBI,
+    'BUSINESS COMFORT': StyleAesthetic.BUSINESS_COMFORT,
+    'BUSINESS_COMFORT': StyleAesthetic.BUSINESS_COMFORT,
+    'BUSINESS-COMFORT': StyleAesthetic.BUSINESS_COMFORT,
+    'COTTAGECORE': StyleAesthetic.COTTAGECORE,
+    'DARK ACADEMIA': StyleAesthetic.DARK_ACADEMIA,
+    'DARK_ACADEMIA': StyleAesthetic.DARK_ACADEMIA,
+    'DARK-ACADEMIA': StyleAesthetic.DARK_ACADEMIA,
+    'DARK COQUETTE': StyleAesthetic.DARK_COQUETTE,
+    'DARK_COQUETTE': StyleAesthetic.DARK_COQUETTE,
+    'DARK-COQUETTE': StyleAesthetic.DARK_COQUETTE,
+    'FLEUR NOIRE': StyleAesthetic.FLEUR_NOIRE,
+    'FLEUR_NOIRE': StyleAesthetic.FLEUR_NOIRE,
+    'FLEUR-NOIRE': StyleAesthetic.FLEUR_NOIRE,
+    'GRUNGE': StyleAesthetic.GRUNGE,
+    'MERMAID CORE': StyleAesthetic.MERMAID_CORE,
+    'MERMAID_CORE': StyleAesthetic.MERMAID_CORE,
+    'MERMAID-CORE': StyleAesthetic.MERMAID_CORE,
+    'OFFICE SIREN': StyleAesthetic.OFFICE_SIREN,
+    'OFFICE_SIREN': StyleAesthetic.OFFICE_SIREN,
+    'OFFICE-SIREN': StyleAesthetic.OFFICE_SIREN,
+    'ROCKSTAR GIRLFRIEND': StyleAesthetic.ROCKSTAR_GIRLFRIEND,
+    'ROCKSTAR_GIRLFRIEND': StyleAesthetic.ROCKSTAR_GIRLFRIEND,
+    'ROCKSTAR-GIRLFRIEND': StyleAesthetic.ROCKSTAR_GIRLFRIEND,
+    'SADE GIRL': StyleAesthetic.SADE_GIRL,
+    'SADE_GIRL': StyleAesthetic.SADE_GIRL,
+    'SADE-GIRL': StyleAesthetic.SADE_GIRL,
+    'VINTAGE': StyleAesthetic.VINTAGE,
+    'MINIMAL DESI': StyleAesthetic.MINIMAL_DESI,
+    'MINIMAL_DESI': StyleAesthetic.MINIMAL_DESI,
+    'MINIMAL-DESI': StyleAesthetic.MINIMAL_DESI,
+    'MAXIMAL DESI': StyleAesthetic.MAXIMAL_DESI,
+    'MAXIMAL_DESI': StyleAesthetic.MAXIMAL_DESI,
+    'MAXIMAL-DESI': StyleAesthetic.MAXIMAL_DESI,
+    'SOFT GIRL': StyleAesthetic.SOFT_GIRL,
+    'SOFT_GIRL': StyleAesthetic.SOFT_GIRL,
+    'SOFT-GIRL': StyleAesthetic.SOFT_GIRL,
+    'MINIMALIST': StyleAesthetic.MINIMALIST,
+    'MINIMAL': StyleAesthetic.MINIMALIST,
+    'BOLD': StyleAesthetic.BOLD,
+    'ETHNIC': StyleAesthetic.ETHNIC,
+    'STREETWEAR': StyleAesthetic.STREETWEAR,
+    'LUXURY': StyleAesthetic.LUXURY,
+};
+
+const ENUM_TO_DISPLAY_AESTHETIC: Record<string, string> = {
+    Y2K: 'Y2K',
+    ACUBI: 'Acubi',
+    BUSINESS_COMFORT: 'Business Comfort',
+    COTTAGECORE: 'Cottagecore',
+    DARK_ACADEMIA: 'Dark Academia',
+    DARK_COQUETTE: 'Dark Coquette',
+    FLEUR_NOIRE: 'Fleur Noire',
+    GRUNGE: 'Grunge',
+    MERMAID_CORE: 'Mermaid Core',
+    OFFICE_SIREN: 'Office Siren',
+    ROCKSTAR_GIRLFRIEND: 'Rockstar Girlfriend',
+    SADE_GIRL: 'Sade Girl',
+    VINTAGE: 'Vintage',
+    MINIMAL_DESI: 'Minimal Desi',
+    MAXIMAL_DESI: 'Maximal Desi',
+    SOFT_GIRL: 'Soft Girl',
+    MINIMALIST: 'Minimalist',
+    BOLD: 'Bold',
+    ETHNIC: 'Ethnic',
+    STREETWEAR: 'Streetwear',
+    LUXURY: 'Luxury',
+};
 
 // ── GET /users/profile/:userId/public (no auth) ───────────────────────────────
 export async function getPublicUserSummary(req: Request, res: Response): Promise<void> {
-  try {
-    const { userId } = req.params;
-    const cleanParam = (userId || '').trim();
-    const user = await db.user.findFirst({
-      where: {
-        OR: [
-          { id: cleanParam },
-          { username: cleanParam.replace(/^@/, '') },
-        ],
-        isActive: true,
-      },
-      select: {
-        id: true,
-        displayName: true,
-        username: true,
-        avatar: true,
-        bio: true,
-        tier: true,
-        isVerified: true,
-        verificationStatus: true,
-        verificationType: true,
-        createdAt: true,
-      },
-    });
-    if (!user) {
-      res.status(404).json({ error: 'NOT_FOUND', message: 'User not found' });
-      return;
-    }
-    // Count ratings in the database (GROUP BY) instead of downloading every review row.
-    const [peerRatingGroups, garmentRatingGroups] = await Promise.all([
-      db.peerReview.groupBy({
-        by: ['rating'],
-        where: { sellerId: user.id },
-        _count: { _all: true },
-      }),
-      db.review.groupBy({
-        by: ['rating'],
-        where: { garment: { sellerId: user.id } },
-        _count: { _all: true },
-      }),
-    ]);
-    const ratingBreakdown: Record<1 | 2 | 3 | 4 | 5, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    let peerReviewCount = 0;
-    let ratingSum = 0;
-    for (const g of [...peerRatingGroups, ...garmentRatingGroups] as Array<{ rating: number; _count: { _all: number } }>) {
-      const n = g._count._all;
-      peerReviewCount += n;
-      ratingSum += g.rating * n;
-      if (g.rating >= 1 && g.rating <= 5) ratingBreakdown[g.rating as 1 | 2 | 3 | 4 | 5] += n;
-    }
-    const peerReviewAvg = peerReviewCount > 0 ? ratingSum / peerReviewCount : null;
-    const trustedSeller = (peerReviewCount >= 3 && (peerReviewAvg ?? 0) >= 4) || user.isVerified;
-    const resolvedUser = await resolveUserMedia(user);
+    try {
+        const { userId } = req.params;
+        const cleanParam = (userId || '').trim();
+        const user = await db.user.findFirst({
+            where: {
+                OR: [
+                    { id: cleanParam },
+                    { username: cleanParam.replace(/^@/, '') },
+                ],
+                isActive: true,
+            },
+            select: {
+                id: true,
+                displayName: true,
+                username: true,
+                avatar: true,
+                bio: true,
+                tier: true,
+                isVerified: true,
+                verificationStatus: true,
+                verificationType: true,
+                createdAt: true,
+            },
+        });
+        if (!user) {
+            res.status(404).json({ error: 'NOT_FOUND', message: 'User not found' });
+            return;
+        }
+        // Count ratings in the database (GROUP BY) instead of downloading every review row.
+        const [peerRatingGroups, garmentRatingGroups] = await Promise.all([
+            db.peerReview.groupBy({
+                by: ['rating'],
+                where: { sellerId: user.id },
+                _count: { _all: true },
+            }),
+            db.review.groupBy({
+                by: ['rating'],
+                where: { garment: { sellerId: user.id } },
+                _count: { _all: true },
+            }),
+        ]);
+        const ratingBreakdown: Record<1 | 2 | 3 | 4 | 5, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        let peerReviewCount = 0;
+        let ratingSum = 0;
+        for (const g of [...peerRatingGroups, ...garmentRatingGroups] as Array<{ rating: number; _count: { _all: number } }>) {
+            const n = g._count._all;
+            peerReviewCount += n;
+            ratingSum += g.rating * n;
+            if (g.rating >= 1 && g.rating <= 5) ratingBreakdown[g.rating as 1 | 2 | 3 | 4 | 5] += n;
+        }
+        const peerReviewAvg = peerReviewCount > 0 ? ratingSum / peerReviewCount : null;
+        const trustedSeller = (peerReviewCount >= 3 && (peerReviewAvg ?? 0) >= 4) || user.isVerified;
+        const resolvedUser = await resolveUserMedia(user);
 
-    const listings = await db.garment.findMany({
-      where: {
-        sellerId: user.id,
-        isActive: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: GARMENT_LIST_COLUMNS,
-    });
-    const resolvedListings = await resolveGarmentsMedia(listings);
+        const listings = await db.garment.findMany({
+            where: {
+                sellerId: user.id,
+                isActive: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+            select: GARMENT_LIST_COLUMNS,
+        });
+        const resolvedListings = await resolveGarmentsMedia(listings);
 
-    res.json({
-      data: {
-        ...resolvedUser,
-        listings: resolvedListings,
-        peerReviewCount,
-        peerReviewAvg,
-        ratingBreakdown,
-        trustedSeller,
-      },
-    });
-  } catch (error) {
-    logger.error('getPublicUserSummary failed', { error });
-    res.status(500).json({ error: 'INTERNAL_ERROR' });
-  }
+        res.json({
+            data: {
+                ...resolvedUser,
+                listings: resolvedListings,
+                peerReviewCount,
+                peerReviewAvg,
+                ratingBreakdown,
+                trustedSeller,
+            },
+        });
+    } catch (error) {
+        logger.error('getPublicUserSummary failed', { error });
+        res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
 }
 
 // ── GET /users/me ─────────────────────────────────────────────────────────────
@@ -130,6 +205,7 @@ export async function getMe(req: Request, res: Response): Promise<void> {
                 role: true,
                 tier: true,
                 styleAesthetic: true,
+                preferenceProfile: true,
                 onboardingDone: true,
                 createdAt: true,
                 impactRecord: true,
@@ -159,10 +235,12 @@ export async function getMe(req: Request, res: Response): Promise<void> {
             followers: user._count.followers,
             purchases: user._count.ordersAsBuyer
         };
+        const displayAesthetic = (user.preferenceProfile as any)?.selectedAesthetic || (user.styleAesthetic ? ENUM_TO_DISPLAY_AESTHETIC[user.styleAesthetic] || user.styleAesthetic : undefined);
         console.log(`[USER_DEBUG] Stats for ${user.email}:`, stats);
         res.json({
             data: {
                 ...resolvedUser,
+                styleAesthetic: displayAesthetic,
                 stats
             }
         });
@@ -189,9 +267,9 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
         if (username !== undefined) {
             cleanUsername = String(username).trim().toLowerCase().replace(/^@/, '');
             if (!/^[a-z0-9_]{3,30}$/.test(cleanUsername)) {
-                res.status(400).json({ 
-                    error: 'INVALID_USERNAME', 
-                    message: 'Username must be 3-30 characters and contain only lowercase letters, numbers, and underscores.' 
+                res.status(400).json({
+                    error: 'INVALID_USERNAME',
+                    message: 'Username must be 3-30 characters and contain only lowercase letters, numbers, and underscores.'
                 });
                 return;
             }
@@ -203,24 +281,48 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
                 }
             });
             if (existing) {
-                res.status(400).json({ 
-                    error: 'USERNAME_TAKEN', 
-                    message: 'This username is already taken. Please choose another.' 
+                res.status(400).json({
+                    error: 'USERNAME_TAKEN',
+                    message: 'This username is already taken. Please choose another.'
                 });
                 return;
             }
         }
 
-        const all16Aesthetics = [
-            'Y2K', 'Office Siren', 'Rockstar Girlfriend', 'Sade Girl', 'Vintage',
-            'Acubi', 'Business Comfort', 'Cottagecore', 'Dark Academia', 'Dark Coquette',
-            'Fleur Noire', 'Grunge', 'Mermaid Core', 'Minimal Desi', 'Maximal Desi', 'Soft Girl'
-        ];
+        let prismaEnumAesthetic: StyleAesthetic | undefined = undefined;
+        let displayAestheticName: string | undefined = undefined;
 
-        let finalAesthetic: string | undefined = undefined;
         if (styleAesthetic) {
-            const matched16 = all16Aesthetics.find(a => a.toLowerCase() === String(styleAesthetic).trim().toLowerCase());
-            finalAesthetic = matched16 || styleAesthetic;
+            const raw = String(styleAesthetic).trim().toUpperCase();
+            if (VALID_PRISMA_AESTHETICS.has(raw as StyleAesthetic)) {
+                prismaEnumAesthetic = raw as StyleAesthetic;
+            } else if (AESTHETIC_NAME_TO_ENUM[raw]) {
+                prismaEnumAesthetic = AESTHETIC_NAME_TO_ENUM[raw];
+            } else {
+                const withUnderscore = raw.replace(/[-\s]+/g, '_');
+                if (VALID_PRISMA_AESTHETICS.has(withUnderscore as StyleAesthetic)) {
+                    prismaEnumAesthetic = withUnderscore as StyleAesthetic;
+                } else if (AESTHETIC_NAME_TO_ENUM[withUnderscore]) {
+                    prismaEnumAesthetic = AESTHETIC_NAME_TO_ENUM[withUnderscore];
+                } else {
+                    prismaEnumAesthetic = StyleAesthetic.LUXURY;
+                }
+            }
+            displayAestheticName = ENUM_TO_DISPLAY_AESTHETIC[prismaEnumAesthetic] || prismaEnumAesthetic;
+        }
+
+        let preferenceProfileUpdate: any = undefined;
+        if (prismaEnumAesthetic) {
+            const cur = await db.user.findUnique({
+                where: { id: req.user.id },
+                select: { preferenceProfile: true }
+            });
+            const curPref = (cur?.preferenceProfile as any) || {};
+            preferenceProfileUpdate = {
+                ...curPref,
+                selectedAesthetic: displayAestheticName,
+                dominantAesthetic: prismaEnumAesthetic,
+            };
         }
 
         const updated = await db.user.update({
@@ -230,17 +332,24 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
                 ...(displayName && { displayName }),
                 ...(bio !== undefined && { bio }),
                 ...(location !== undefined && { location }),
-                ...(finalAesthetic && { styleAesthetic: finalAesthetic })
+                ...(prismaEnumAesthetic && { styleAesthetic: prismaEnumAesthetic }),
+                ...(preferenceProfileUpdate && { preferenceProfile: preferenceProfileUpdate }),
             },
             select: {
                 id: true, email: true, username: true,
                 displayName: true, avatar: true, bio: true,
-                location: true, styleAesthetic: true, tier: true
+                location: true, styleAesthetic: true, preferenceProfile: true, tier: true
             }
         });
 
         const resolvedUser = await resolveUserMedia(updated);
-        res.json({ data: resolvedUser });
+        const finalDisplayAesthetic = (updated.preferenceProfile as any)?.selectedAesthetic || ENUM_TO_DISPLAY_AESTHETIC[updated.styleAesthetic as string] || updated.styleAesthetic;
+        res.json({
+            data: {
+                ...resolvedUser,
+                styleAesthetic: finalDisplayAesthetic,
+            }
+        });
     } catch (error) {
         logger.error('updateMe failed', { error });
         res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -285,7 +394,7 @@ export async function getMyListings(req: Request, res: Response): Promise<void> 
         if (!req.user) { res.status(401).json({ error: 'UNAUTHORIZED' }); return; }
 
         const garments = await db.garment.findMany({
-            where: { 
+            where: {
                 sellerId: req.user.id,
                 isActive: true,
                 lifecycleState: { in: ['LISTED', 'INTEREST'] }
@@ -325,7 +434,7 @@ export async function getMyWardrobe(req: Request, res: Response): Promise<void> 
 
         // 1. Directly owned garments
         const ownedGarments = await db.garment.findMany({
-            where: { 
+            where: {
                 sellerId: uid,
                 lifecycleState: { in: ['OWNERSHIP', 'INTEREST', 'LISTED', 'DECLINE', 'CIRCULATION', 'REUSE_UPCYCLE_RECYCLE', 'SELL_INTENT', 'PURCHASE_INTENT'] }
             },
@@ -477,9 +586,9 @@ export async function addWardrobeItems(req: Request, res: Response): Promise<voi
                 garmentId: g.id,
                 eventType: 'LOG_WEAR',
             })),
-        }).catch(() => {});
+        }).catch(() => { });
 
-        await redisDel(`user:${req.user.id}:wardrobe`).catch(() => {});
+        await redisDel(`user:${req.user.id}:wardrobe`).catch(() => { });
 
         res.json({
             success: true,
