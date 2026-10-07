@@ -623,8 +623,21 @@ export default function HomeScreen() {
     router.push({ pathname: route as any, params } as any);
   }, [router]);
 
-  // Filter sale garments for New Arrivals shelf (excluding current user's own items)
-  const currentUserId = useAuthStore((s) => s.user?.id);
+  // Filter sale garments for New Arrivals & Accessories shelves (excluding current user's own items)
+  const authStoreUser = useAuthStore((s) => s.user);
+  const myUserId = user?.id || authStoreUser?.id;
+  const myEmail = user?.email || authStoreUser?.email;
+  const myUsername = user?.username || authStoreUser?.username;
+
+  const isMyGarment = useCallback((g: any) => {
+    if (!g) return false;
+    const sellerId = g.sellerId || g.seller?.id || g.userId || g.ownerId;
+    if (myUserId && sellerId === myUserId) return true;
+    if (myEmail && (g.seller?.email === myEmail || g.email === myEmail)) return true;
+    if (myUsername && (g.seller?.username === myUsername || g.username === myUsername)) return true;
+    return false;
+  }, [myUserId, myEmail, myUsername]);
+
   const newArrivals = useMemo(() => garments
     .filter(
       (g) =>
@@ -632,10 +645,9 @@ export default function HomeScreen() {
         g.isActive !== false &&
         !['OWNERSHIP', 'RESERVED_SALE', 'PURCHASE_INTENT'].includes((g as any).lifecycleState || '') &&
         !(g as any).reservedOrderId &&
-        g.sellerId !== currentUserId &&
-        (g as any).seller?.id !== currentUserId
+        !isMyGarment(g)
     )
-    .slice(0, 10), [garments, currentUserId]);
+    .slice(0, 10), [garments, isMyGarment]);
 
   const accessoriesList = useMemo(() => garments
     .filter(
@@ -647,10 +659,16 @@ export default function HomeScreen() {
             (g.title + ' ' + (g.category || '') + ' ' + (g.subCategory || '')).toLowerCase().includes(keyword)
           )) &&
         g.isActive !== false &&
-        g.sellerId !== currentUserId &&
-        (g as any).seller?.id !== currentUserId
+        !isMyGarment(g)
     )
-    .slice(0, 10), [garments, currentUserId]);
+    .slice(0, 10), [garments, isMyGarment]);
+
+  const filteredFairSwaps = useMemo(() => {
+    return fairSwaps.filter((s) => {
+      const rec = s.recommendedSwap;
+      return rec && !isMyGarment(rec);
+    });
+  }, [fairSwaps, isMyGarment]);
 
   const accessoryCards = useMemo(
     () => accessoriesList.map((item) => ({
@@ -668,7 +686,7 @@ export default function HomeScreen() {
       fitScore: 0,
       matchReason: 'Fresh Arrival',
       seller: (item as any).seller || { id: item.sellerId, username: 'Member' },
-    }) as any),
+    })),
     [newArrivals]
   );
 
@@ -817,7 +835,7 @@ export default function HomeScreen() {
         </View>
 
         {/* 3. FAIR ACCESSORY SWAPS (BARTER WITH PARITY PRICING) */}
-        {fairSwaps.length > 0 && (
+        {filteredFairSwaps.length > 0 && (
           <View style={styles.sectionContainer}>
             <SectionHeader
               title="FAIR ACCESSORY SWAPS"
@@ -829,7 +847,7 @@ export default function HomeScreen() {
             <Text style={styles.sectionSubtitle}>
               Swap one item for another. No cash needed.
             </Text>
-            <Shelf data={fairSwaps} renderItem={renderSwap} keyExtractor={swapKey} />
+            <Shelf data={filteredFairSwaps} renderItem={renderSwap} keyExtractor={swapKey} />
           </View>
         )}
 

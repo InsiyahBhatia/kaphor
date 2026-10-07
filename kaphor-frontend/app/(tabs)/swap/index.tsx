@@ -312,22 +312,32 @@ export default function SwapFeedScreen() {
     }, [])
   );
 
+  const authStoreUser = useAuthStore((s) => s.user);
+  const myUserId = user?.id || resolvedUserId || authStoreUserId;
+  const myEmail = user?.email || authStoreUser?.email;
+  const myUsername = user?.username || authStoreUser?.username;
+
+  const isMyGarment = useCallback((g: any) => {
+    if (!g) return false;
+    const sellerId = g.sellerId || g.seller?.id || g.userId || g.ownerId;
+    if (myUserId && sellerId === myUserId) return true;
+    if (myEmail && (g.seller?.email === myEmail || g.email === myEmail)) return true;
+    if (myUsername && (g.seller?.username === myUsername || g.username === myUsername)) return true;
+    return false;
+  }, [myUserId, myEmail, myUsername]);
+
   // Use items from /swaps/feed.
   // ALWAYS strictly filter out any item that belongs to the current user!
   const rawCandidateItems = browseItems;
   const swappableItems = useMemo(() => rawCandidateItems.filter((g) => {
     const isAcc = isAccessoryCategory(g.category, g.subCategory) || g.listingType === 'ACCESSORY_SWAP';
     if (!isAcc) return false;
-    if (effectiveUserId) {
-      if (g.sellerId === effectiveUserId || (g as any).seller?.id === effectiveUserId) {
-        return false;
-      }
-    }
+    if (isMyGarment(g)) return false;
     return true;
-  }), [rawCandidateItems, effectiveUserId]);
+  }), [rawCandidateItems, isMyGarment]);
 
   const handleCardPress = useCallback((item: any) => {
-    if (effectiveUserId && (item.sellerId === effectiveUserId || item.seller?.id === effectiveUserId)) {
+    if (isMyGarment(item)) {
       Alert.alert('Your Item', 'You own this accessory and cannot swap with yourself. Browse items listed by other members.', [
         { text: 'OK' }
       ]);
@@ -335,7 +345,7 @@ export default function SwapFeedScreen() {
     }
     // Show swap item detail screen first then the user can tap "Initiate accessory swap" to open the offer screen
     router.push(`/(tabs)/shop/${item.id}` as any);
-  }, [effectiveUserId, router]);
+  }, [isMyGarment, router]);
 
   // ── Message Partner handler ───────────────────────────────────
   const handleMessagePartner = useCallback(async (swap: any) => {
@@ -535,7 +545,7 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   subtitle: { fontFamily: typography.handBold, fontSize: 13, color: colors.red, includeFontPadding: false, },
-  sellBtn: { width: 40, height: 40, backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.charcoal },
+  sellBtn: { width: 40, height: 40, backgroundColor: colors.ink, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
 
   // Tab bar
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.overlayLight, backgroundColor: colors.cream },
@@ -553,36 +563,45 @@ const styles = StyleSheet.create({
   // Swap Requests
   requestsContainer: { padding: 16, gap: 12 },
   swapRequestCard: {
-    backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal,
-    padding: 16, gap: 12,
-    shadowColor: colors.charcoal, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4,
+    backgroundColor: colors.paperLight,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   swapRequestHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  partnerAvatar: { width: 32, height: 32, borderWidth: 1, borderColor: colors.charcoal },
+  partnerAvatar: { width: 32, height: 32, borderRadius: 16 },
   partnerAvatarPlaceholder: {
-    width: 32, height: 32, borderWidth: 1, borderColor: colors.charcoal,
+    width: 32, height: 32, borderWidth: 1, borderColor: colors.borderLight,
     backgroundColor: colors.bgMuted, alignItems: 'center', justifyContent: 'center',
+    borderRadius: 16,
   },
-  partnerName: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.charcoal, letterSpacing: 0.5 },
-  swapRequestLabel: { fontFamily: typography.handBold, fontSize: 13, color: colors.textMuted, includeFontPadding: false, },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 3 },
-  statusBadgeText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
+  partnerName: { fontFamily: typography.bodyBold, fontSize: 13, color: colors.charcoal, letterSpacing: 0.2 },
+  swapRequestLabel: { fontFamily: typography.handBold, fontSize: 12, color: colors.textMuted, includeFontPadding: false, },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusBadgeText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 12, includeFontPadding: false, },
   swapItemsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   swapItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  itemThumbWrap: { width: 36, height: 36, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgMuted },
+  itemThumbWrap: { width: 36, height: 36, borderWidth: 1, borderColor: colors.borderLight, backgroundColor: colors.bgMuted, borderRadius: 6, overflow: 'hidden' },
   itemThumb: { width: '100%', height: '100%' },
-  swapItemLabel: { fontFamily: typography.handSemi, fontSize: 13, color: colors.textMuted, marginBottom: 2, includeFontPadding: false, },
-  swapItemName: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.charcoal },
-  swapMessage: { fontFamily: typography.handwritten, fontSize: 13, color: colors.textMuted, fontStyle: 'italic', paddingLeft: 4, includeFontPadding: false, },
+  swapItemLabel: { fontFamily: typography.handSemi, fontSize: 12, color: colors.textMuted, marginBottom: 2, includeFontPadding: false, },
+  swapItemName: { fontFamily: typography.bodyBold, fontSize: 13, color: colors.charcoal },
+  swapMessage: { fontFamily: typography.handwritten, fontSize: 12, color: colors.textMuted, fontStyle: 'italic', paddingLeft: 4, includeFontPadding: false, },
   swapActions: { flexDirection: 'row', gap: 6, marginTop: 4 },
   swapActionBtn: {
     flex: 1, flexDirection: 'row', height: 36, justifyContent: 'center', alignItems: 'center', gap: 4,
-    borderWidth: 1.5, borderColor: colors.charcoal,
+    borderRadius: 8, borderWidth: 1, borderColor: colors.borderLight,
   },
-  swapActionText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
-  messageBtn: { backgroundColor: colors.white, borderColor: colors.charcoal },
+  swapActionText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 12, includeFontPadding: false, },
+  messageBtn: { backgroundColor: colors.paperLight, borderColor: colors.borderLight },
   messageBtnText: { color: colors.charcoal, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.2 },
-  detailsBtn: { backgroundColor: colors.bgMuted, borderColor: colors.charcoal },
+  detailsBtn: { backgroundColor: colors.bgMuted, borderColor: colors.borderLight },
   detailsBtnText: { color: colors.charcoal, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.2 },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 },
