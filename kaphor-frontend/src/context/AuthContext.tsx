@@ -252,19 +252,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // 1. Immediately clear local session and auth state so logout responds instantly with 0 latency
+    await clearLocalSession();
+
+    // 2. Best-effort notify backend and Google Sign-in with a short timeout (never block UI)
     try {
-      const { authService } = await import('../services/authService');
-      await authService.logout();
-    } catch (e) {
-      console.error('Logout error', e);
-    } finally {
-      try {
-        const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
-        await GoogleSignin.signOut();
-      } catch {
-        /* module or native sign-out unavailable */
-      }
-      await clearLocalSession();
+      await Promise.allSettled([
+        import('../services/authService').then(({ authService }) =>
+          Promise.race([
+            authService.logout(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Logout timeout')), 2000)),
+          ])
+        ),
+        import('@react-native-google-signin/google-signin').then(({ GoogleSignin }) =>
+          Promise.race([
+            GoogleSignin.signOut(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Google signOut timeout')), 2000)),
+          ])
+        ),
+      ]);
+    } catch {
+      /* ignore remote logout errors */
     }
   };
 

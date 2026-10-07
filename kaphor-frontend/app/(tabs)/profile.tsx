@@ -10,6 +10,8 @@ import {
   RefreshControl,
   Modal,
   TextInput,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -60,6 +62,7 @@ export default function ProfileScreen() {
   const [editingBio, setEditingBio] = useState<boolean>(false);
   const [bioInput, setBioInput] = useState<string>('');
   const [savingBio, setSavingBio] = useState<boolean>(false);
+  const [loggingOut, setLoggingOut] = useState<boolean>(false);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -194,17 +197,36 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const performSignOut = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      hapticFeedback.medium();
+      await signOut();
+      router.replace('/(auth)/welcome');
+    } catch (e) {
+      console.error('Sign out error', e);
+      router.replace('/(auth)/welcome');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
   const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      const confirmed = typeof window !== 'undefined' ? window.confirm('Are you sure you want to sign out of your Kaphor account?') : true;
+      if (confirmed) {
+        performSignOut();
+      }
+      return;
+    }
+
     Alert.alert('Sign Out', 'Are you sure you want to sign out of your Kaphor account?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',
         style: 'destructive',
-        onPress: async () => {
-          hapticFeedback.medium();
-          await signOut();
-          router.replace('/(auth)/welcome');
-        },
+        onPress: performSignOut,
       },
     ]);
   };
@@ -260,8 +282,19 @@ export default function ProfileScreen() {
       <Header
         title="MY PROFILE"
         rightElement={
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Log out" onPress={handleLogout} style={styles.headerLogoutBtn} hitSlop={12}>
-            <SolarIcon name="log-out-outline" size={20} color={colors.charcoal} />
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Log out"
+            onPress={handleLogout}
+            style={styles.headerLogoutBtn}
+            hitSlop={12}
+            disabled={loggingOut}
+          >
+            {loggingOut ? (
+              <ActivityIndicator size="small" color={colors.charcoal} />
+            ) : (
+              <SolarIcon name="log-out-outline" size={20} color={colors.charcoal} />
+            )}
           </TouchableOpacity>
         }
       />
@@ -1052,12 +1085,19 @@ export default function ProfileScreen() {
 
             {/* Sign Out Button */}
             <TouchableOpacity
-              style={styles.logoutButton}
+              style={[styles.logoutButton, loggingOut && { opacity: 0.7 }]}
               onPress={handleLogout}
               activeOpacity={0.85}
+              disabled={loggingOut}
             >
-              <SolarIcon name="log-out-outline" size={16} color={colors.crimson} />
-              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.logoutButtonText}>SIGN OUT</Text>
+              {loggingOut ? (
+                <ActivityIndicator size="small" color={colors.crimson} />
+              ) : (
+                <>
+                  <SolarIcon name="log-out-outline" size={16} color={colors.crimson} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.logoutButtonText}>SIGN OUT</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         )}

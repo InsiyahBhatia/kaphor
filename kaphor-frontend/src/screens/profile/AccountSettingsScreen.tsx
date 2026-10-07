@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -27,13 +28,42 @@ import { getErrorMessage } from '../../utils/errors';
 
 export function AccountSettingsScreen() {
   const router = useRouter();
-  const { user, setUser } = useAuth();
+  const { user, setUser, signOut } = useAuth();
   useBackHandler('/(tabs)/profile');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = () => {
+    const doLogout = async () => {
+      if (loggingOut) return;
+      setLoggingOut(true);
+      try {
+        await signOut();
+        router.replace('/(auth)/welcome');
+      } catch (err) {
+        console.error('Sign out error', err);
+        router.replace('/(auth)/welcome');
+      } finally {
+        setLoggingOut(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to sign out of your Kaphor account?')) {
+        doLogout();
+      }
+      return;
+    }
+
+    Alert.alert('Sign Out', 'Are you sure you want to sign out of your Kaphor account?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: doLogout },
+    ]);
+  };
 
   const handleTestPush = async () => {
     setTestingPush(true);
@@ -406,6 +436,25 @@ export function AccountSettingsScreen() {
             <SolarIcon name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
         </View>
+
+        {/* Sign Out Button */}
+        <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+          <Pressable
+            style={[styles.logoutBtn, loggingOut && { opacity: 0.7 }]}
+            onPress={handleLogout}
+            disabled={loggingOut}
+          >
+            {loggingOut ? (
+              <ActivityIndicator size="small" color={colors.crimson} />
+            ) : (
+              <>
+                <SolarIcon name="log-out-outline" size={18} color={colors.crimson} />
+                <Text style={styles.logoutBtnText}>SIGN OUT OF KAPHOR</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
+
         <Text style={styles.creditsText}>
           Icons: Solar Icon Set by 480 Design (CC BY 4.0)
         </Text>
@@ -421,8 +470,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     textAlign: 'center',
-    marginTop: 24,
+    marginTop: 12,
     marginBottom: 32,
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.paperLight,
+    borderWidth: 1,
+    borderColor: colors.crimson,
+    borderRadius: 10,
+    paddingVertical: 14,
+  },
+  logoutBtnText: {
+    color: colors.crimson,
+    fontFamily: typography.handBold,
+    includeFontPadding: false,
+    fontSize: 13,
   },
   container: {
     flex: 1,
