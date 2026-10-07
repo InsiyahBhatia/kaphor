@@ -75,19 +75,61 @@ export async function sendEmail({ to, subject, html }: { to: string; subject: st
 }
 
 export async function sendVerificationEmail(email: string, token: string) {
-  const url = `${process.env.FRONTEND_URL || 'http://localhost:8081'}/verify-email?token=${token}`;
+  const backendBase = (process.env.PUBLIC_BACKEND_URL || process.env.BACKEND_URL || '').trim();
+  const backendUrl = (backendBase && !backendBase.includes('localhost') && !backendBase.includes('127.0.0.1'))
+    ? backendBase
+    : 'https://kaphor-backend.onrender.com';
+
+  const verifyUrl = `${backendUrl}/api/v1/auth/verify-email/${token}`;
+
   await sendEmail({
     to: email,
-    subject: 'Verify your Kaphor account',
-    html: `<p>Welcome to Kaphor! Click <a href="${url}">here</a> to verify your email. Link expires in 24h.</p>`,
+    subject: 'Verify your KaPhor account',
+    html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #F8F7F3; margin: 0; padding: 40px 16px; color: #121212; }
+    .container { max-width: 520px; margin: 0 auto; background: #FFFFFF; border-radius: 16px; border: 1px solid #E5E5E0; padding: 40px 32px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.03); }
+    .logo { font-size: 24px; font-weight: 800; letter-spacing: 4px; color: #121212; margin-bottom: 24px; }
+    .title { font-size: 20px; font-weight: 700; margin-bottom: 12px; color: #121212; }
+    .desc { font-size: 14px; line-height: 1.6; color: #555555; margin-bottom: 32px; }
+    .btn { display: inline-block; background-color: #121212; color: #FFFFFF !important; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; }
+    .footer { margin-top: 32px; font-size: 12px; color: #888888; line-height: 1.6; border-top: 1px solid #EEEEEE; padding-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">KAPHOR</div>
+    <div class="title">Verify Your Email Address</div>
+    <div class="desc">
+      Welcome to KaPhor, your luxury circular fashion archive.<br/>
+      Please confirm your email to activate your account and access bespoke, rental, and swap services.
+    </div>
+    <a href="${verifyUrl}" class="btn">Verify My Email</a>
+    <div class="footer">
+      If the button above does not work, copy and paste this link into your browser:<br/>
+      <a href="${verifyUrl}" style="color: #444444; word-break: break-all;">${verifyUrl}</a><br/><br/>
+      This link will expire in 24 hours.<br/>
+      If you did not sign up for KaPhor, please ignore this email.
+    </div>
+  </div>
+</body>
+</html>`,
   });
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
-  const url = `${process.env.FRONTEND_URL || 'http://localhost:8081'}/reset-password?token=${token}`;
+  const backendBase = (process.env.PUBLIC_BACKEND_URL || process.env.BACKEND_URL || '').trim();
+  const backendUrl = (backendBase && !backendBase.includes('localhost') && !backendBase.includes('127.0.0.1'))
+    ? backendBase
+    : 'https://kaphor-backend.onrender.com';
+  const url = `${backendUrl}/api/v1/auth/reset-password?token=${token}`;
   await sendEmail({
     to: email,
-    subject: 'Reset your Kaphor password',
+    subject: 'Reset your KaPhor password',
     html: `<p>Click <a href="${url}">here</a> to reset your password. Link expires in 1h.</p>`,
   });
 }
