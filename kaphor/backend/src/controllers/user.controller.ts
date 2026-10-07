@@ -1,6 +1,5 @@
 import { GARMENT_LIST_COLUMNS } from '../lib/garmentSelect';
 import { Request, Response } from 'express';
-import { StyleAesthetic } from '@prisma/client';
 import db from '../lib/prisma';
 import { redisDel } from '../lib/redis';
 import { logger } from '../lib/logger';
@@ -31,53 +30,64 @@ async function resolveGarmentsMedia(garments: any[]) {
 }
 
 // ── Style Aesthetic Enum Mapping ──────────────────────────────────────────────
-const VALID_PRISMA_AESTHETICS = new Set(Object.values(StyleAesthetic));
+export type StyleAestheticKey =
+    | 'MINIMALIST' | 'VINTAGE' | 'BOLD' | 'ETHNIC' | 'STREETWEAR' | 'LUXURY'
+    | 'Y2K' | 'ACUBI' | 'BUSINESS_COMFORT' | 'COTTAGECORE' | 'DARK_ACADEMIA'
+    | 'DARK_COQUETTE' | 'FLEUR_NOIRE' | 'GRUNGE' | 'MERMAID_CORE' | 'OFFICE_SIREN'
+    | 'ROCKSTAR_GIRLFRIEND' | 'SADE_GIRL' | 'MINIMAL_DESI' | 'MAXIMAL_DESI' | 'SOFT_GIRL';
 
-const AESTHETIC_NAME_TO_ENUM: Record<string, StyleAesthetic> = {
-    'Y2K': StyleAesthetic.Y2K,
-    'ACUBI': StyleAesthetic.ACUBI,
-    'BUSINESS COMFORT': StyleAesthetic.BUSINESS_COMFORT,
-    'BUSINESS_COMFORT': StyleAesthetic.BUSINESS_COMFORT,
-    'BUSINESS-COMFORT': StyleAesthetic.BUSINESS_COMFORT,
-    'COTTAGECORE': StyleAesthetic.COTTAGECORE,
-    'DARK ACADEMIA': StyleAesthetic.DARK_ACADEMIA,
-    'DARK_ACADEMIA': StyleAesthetic.DARK_ACADEMIA,
-    'DARK-ACADEMIA': StyleAesthetic.DARK_ACADEMIA,
-    'DARK COQUETTE': StyleAesthetic.DARK_COQUETTE,
-    'DARK_COQUETTE': StyleAesthetic.DARK_COQUETTE,
-    'DARK-COQUETTE': StyleAesthetic.DARK_COQUETTE,
-    'FLEUR NOIRE': StyleAesthetic.FLEUR_NOIRE,
-    'FLEUR_NOIRE': StyleAesthetic.FLEUR_NOIRE,
-    'FLEUR-NOIRE': StyleAesthetic.FLEUR_NOIRE,
-    'GRUNGE': StyleAesthetic.GRUNGE,
-    'MERMAID CORE': StyleAesthetic.MERMAID_CORE,
-    'MERMAID_CORE': StyleAesthetic.MERMAID_CORE,
-    'MERMAID-CORE': StyleAesthetic.MERMAID_CORE,
-    'OFFICE SIREN': StyleAesthetic.OFFICE_SIREN,
-    'OFFICE_SIREN': StyleAesthetic.OFFICE_SIREN,
-    'OFFICE-SIREN': StyleAesthetic.OFFICE_SIREN,
-    'ROCKSTAR GIRLFRIEND': StyleAesthetic.ROCKSTAR_GIRLFRIEND,
-    'ROCKSTAR_GIRLFRIEND': StyleAesthetic.ROCKSTAR_GIRLFRIEND,
-    'ROCKSTAR-GIRLFRIEND': StyleAesthetic.ROCKSTAR_GIRLFRIEND,
-    'SADE GIRL': StyleAesthetic.SADE_GIRL,
-    'SADE_GIRL': StyleAesthetic.SADE_GIRL,
-    'SADE-GIRL': StyleAesthetic.SADE_GIRL,
-    'VINTAGE': StyleAesthetic.VINTAGE,
-    'MINIMAL DESI': StyleAesthetic.MINIMAL_DESI,
-    'MINIMAL_DESI': StyleAesthetic.MINIMAL_DESI,
-    'MINIMAL-DESI': StyleAesthetic.MINIMAL_DESI,
-    'MAXIMAL DESI': StyleAesthetic.MAXIMAL_DESI,
-    'MAXIMAL_DESI': StyleAesthetic.MAXIMAL_DESI,
-    'MAXIMAL-DESI': StyleAesthetic.MAXIMAL_DESI,
-    'SOFT GIRL': StyleAesthetic.SOFT_GIRL,
-    'SOFT_GIRL': StyleAesthetic.SOFT_GIRL,
-    'SOFT-GIRL': StyleAesthetic.SOFT_GIRL,
-    'MINIMALIST': StyleAesthetic.MINIMALIST,
-    'MINIMAL': StyleAesthetic.MINIMALIST,
-    'BOLD': StyleAesthetic.BOLD,
-    'ETHNIC': StyleAesthetic.ETHNIC,
-    'STREETWEAR': StyleAesthetic.STREETWEAR,
-    'LUXURY': StyleAesthetic.LUXURY,
+const VALID_PRISMA_AESTHETICS = new Set<string>([
+    'MINIMALIST', 'VINTAGE', 'BOLD', 'ETHNIC', 'STREETWEAR', 'LUXURY',
+    'Y2K', 'ACUBI', 'BUSINESS_COMFORT', 'COTTAGECORE', 'DARK_ACADEMIA',
+    'DARK_COQUETTE', 'FLEUR_NOIRE', 'GRUNGE', 'MERMAID_CORE', 'OFFICE_SIREN',
+    'ROCKSTAR_GIRLFRIEND', 'SADE_GIRL', 'MINIMAL_DESI', 'MAXIMAL_DESI', 'SOFT_GIRL'
+]);
+
+const AESTHETIC_NAME_TO_ENUM: Record<string, StyleAestheticKey> = {
+    'Y2K': 'Y2K',
+    'ACUBI': 'ACUBI',
+    'BUSINESS COMFORT': 'BUSINESS_COMFORT',
+    'BUSINESS_COMFORT': 'BUSINESS_COMFORT',
+    'BUSINESS-COMFORT': 'BUSINESS_COMFORT',
+    'COTTAGECORE': 'COTTAGECORE',
+    'DARK ACADEMIA': 'DARK_ACADEMIA',
+    'DARK_ACADEMIA': 'DARK_ACADEMIA',
+    'DARK-ACADEMIA': 'DARK_ACADEMIA',
+    'DARK COQUETTE': 'DARK_COQUETTE',
+    'DARK_COQUETTE': 'DARK_COQUETTE',
+    'DARK-COQUETTE': 'DARK_COQUETTE',
+    'FLEUR NOIRE': 'FLEUR_NOIRE',
+    'FLEUR_NOIRE': 'FLEUR_NOIRE',
+    'FLEUR-NOIRE': 'FLEUR_NOIRE',
+    'GRUNGE': 'GRUNGE',
+    'MERMAID CORE': 'MERMAID_CORE',
+    'MERMAID_CORE': 'MERMAID_CORE',
+    'MERMAID-CORE': 'MERMAID_CORE',
+    'OFFICE SIREN': 'OFFICE_SIREN',
+    'OFFICE_SIREN': 'OFFICE_SIREN',
+    'OFFICE-SIREN': 'OFFICE_SIREN',
+    'ROCKSTAR GIRLFRIEND': 'ROCKSTAR_GIRLFRIEND',
+    'ROCKSTAR_GIRLFRIEND': 'ROCKSTAR_GIRLFRIEND',
+    'ROCKSTAR-GIRLFRIEND': 'ROCKSTAR_GIRLFRIEND',
+    'SADE GIRL': 'SADE_GIRL',
+    'SADE_GIRL': 'SADE_GIRL',
+    'SADE-GIRL': 'SADE_GIRL',
+    'VINTAGE': 'VINTAGE',
+    'MINIMAL DESI': 'MINIMAL_DESI',
+    'MINIMAL_DESI': 'MINIMAL_DESI',
+    'MINIMAL-DESI': 'MINIMAL_DESI',
+    'MAXIMAL DESI': 'MAXIMAL_DESI',
+    'MAXIMAL_DESI': 'MAXIMAL_DESI',
+    'MAXIMAL-DESI': 'MAXIMAL_DESI',
+    'SOFT GIRL': 'SOFT_GIRL',
+    'SOFT_GIRL': 'SOFT_GIRL',
+    'SOFT-GIRL': 'SOFT_GIRL',
+    'MINIMALIST': 'MINIMALIST',
+    'MINIMAL': 'MINIMALIST',
+    'BOLD': 'BOLD',
+    'ETHNIC': 'ETHNIC',
+    'STREETWEAR': 'STREETWEAR',
+    'LUXURY': 'LUXURY',
 };
 
 const ENUM_TO_DISPLAY_AESTHETIC: Record<string, string> = {
@@ -289,23 +299,23 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
             }
         }
 
-        let prismaEnumAesthetic: StyleAesthetic | undefined = undefined;
+        let prismaEnumAesthetic: StyleAestheticKey | undefined = undefined;
         let displayAestheticName: string | undefined = undefined;
 
         if (styleAesthetic) {
             const raw = String(styleAesthetic).trim().toUpperCase();
-            if (VALID_PRISMA_AESTHETICS.has(raw as StyleAesthetic)) {
-                prismaEnumAesthetic = raw as StyleAesthetic;
+            if (VALID_PRISMA_AESTHETICS.has(raw)) {
+                prismaEnumAesthetic = raw as StyleAestheticKey;
             } else if (AESTHETIC_NAME_TO_ENUM[raw]) {
                 prismaEnumAesthetic = AESTHETIC_NAME_TO_ENUM[raw];
             } else {
                 const withUnderscore = raw.replace(/[-\s]+/g, '_');
-                if (VALID_PRISMA_AESTHETICS.has(withUnderscore as StyleAesthetic)) {
-                    prismaEnumAesthetic = withUnderscore as StyleAesthetic;
+                if (VALID_PRISMA_AESTHETICS.has(withUnderscore)) {
+                    prismaEnumAesthetic = withUnderscore as StyleAestheticKey;
                 } else if (AESTHETIC_NAME_TO_ENUM[withUnderscore]) {
                     prismaEnumAesthetic = AESTHETIC_NAME_TO_ENUM[withUnderscore];
                 } else {
-                    prismaEnumAesthetic = StyleAesthetic.LUXURY;
+                    prismaEnumAesthetic = 'LUXURY';
                 }
             }
             displayAestheticName = ENUM_TO_DISPLAY_AESTHETIC[prismaEnumAesthetic] || prismaEnumAesthetic;
