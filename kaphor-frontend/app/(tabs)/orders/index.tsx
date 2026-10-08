@@ -180,6 +180,7 @@ const OrderCard = React.memo(function OrderCard({ order, userId, actionLoadingId
 });
 
 const RentalCard = React.memo(function RentalCard({ rental, userId, actionLoadingId, h, router }: { rental: RentalItem; userId?: string; actionLoadingId: string | null; h: RowHandlers; router: ReturnType<typeof useRouter> }) {
+  if (!rental) return null;
   const { handleOpenChat, handleMarkShipped, handleMarkDelivered, handleDispatchRental, handleReturnRental, handleReleaseDeposit } = h;
                 const isRenter = rental.renterId === userId;
                 const counterpart = isRenter ? rental.garment?.seller : rental.renter;
@@ -191,13 +192,13 @@ const RentalCard = React.memo(function RentalCard({ rental, userId, actionLoadin
 
                 return (
                   <View
-                    key={rental.id}
+                    key={rental.id || 'rental-item'}
                     style={styles.card}
                   >
                     {/* TOP STATUS */}
                     <View style={styles.cardHeader}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.orderIdLabel}>LEASE #{rental.id.slice(0, 8).toUpperCase()}</Text>
+                        <Text style={styles.orderIdLabel}>LEASE #{(rental.id || '').slice(0, 8).toUpperCase()}</Text>
                         <Text style={styles.orderDate}>
                           {startFormatted} ➔ {endFormatted}
                         </Text>
@@ -661,12 +662,14 @@ export default function OrdersManagementScreen() {
 
   // Filtered Orders
   const currentOrders = ordersList.filter((o) => {
+    if (!o) return false;
     if (ordersRole === 'buyer') return o.buyerId === user?.id;
     return o.sellerId === user?.id;
   });
 
   // Filtered Rentals
   const currentRentals = rentalsList.filter((r) => {
+    if (!r) return false;
     if (rentalsRole === 'renter') return r.renterId === user?.id;
     return r.garment?.sellerId === user?.id;
   });
@@ -761,7 +764,7 @@ export default function OrdersManagementScreen() {
                   ]}
                 >
                   BORROWED (I'M RENTING) (
-                  {rentalsList.filter((r) => r.renterId === user?.id).length})
+                  {rentalsList.filter((r) => r && r.renterId === user?.id).length})
                 </Text>
               </TouchableOpacity>
 
@@ -781,7 +784,7 @@ export default function OrdersManagementScreen() {
                   ]}
                 >
                   LENT OUT (MY PIECES) (
-                  {rentalsList.filter((r) => r.garment?.sellerId === user?.id).length})
+                  {rentalsList.filter((r) => r && r.garment?.sellerId === user?.id).length})
                 </Text>
               </TouchableOpacity>
             </View>

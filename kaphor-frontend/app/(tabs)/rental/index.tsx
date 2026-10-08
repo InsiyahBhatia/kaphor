@@ -270,8 +270,9 @@ export default function RentalScreen() {
   const rentalKey = myRentalKey;
   const renderRentalCard = useCallback(({ item }: { item: any }) => <RentalGridCard item={item} />, []);
 
-  const renderMyHeader = () =>
-    myRentals.length === 0 ? null : (
+  const renderMyHeader = useMemo(() => {
+    if (myRentals.length === 0) return null;
+    return (
       <View style={styles.roleFilterRow}>
         {roleChips.map((item) => (
           <TouchableOpacity
@@ -286,8 +287,9 @@ export default function RentalScreen() {
         ))}
       </View>
     );
+  }, [myRentals.length, roleChips, roleFilter]);
 
-  const renderMyEmpty = () => {
+  const renderMyEmpty = useCallback(() => {
     if (myRentalsLoading) return <GarmentGridSkeleton count={4} />;
     if (myRentals.length === 0) {
       return (
@@ -305,7 +307,7 @@ export default function RentalScreen() {
         <Text style={styles.emptyText}>No leases in this category</Text>
       </View>
     );
-  };
+  }, [myRentalsLoading, myRentals.length]);
 
   const renderTabBar = () => (
     <View style={styles.tabBar}>
@@ -319,7 +321,10 @@ export default function RentalScreen() {
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.tab, activeTab === 'my' && styles.tabActive]}
-        onPress={() => setActiveTab('my')}
+        onPress={() => {
+          setActiveTab('my');
+          fetchMyRentals();
+        }}
       >
         <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.tabText, activeTab === 'my' && styles.tabTextActive]}>
           MY RENTALS{myRentals.length > 0 ? ` (${myRentals.length})` : ''}
@@ -376,7 +381,7 @@ export default function RentalScreen() {
         initialNumToRender={6}
         maxToRenderPerBatch={6}
         windowSize={7}
-        removeClippedSubviews={Platform.OS === 'android'}
+        removeClippedSubviews={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.charcoal} />
         }
@@ -404,14 +409,14 @@ export default function RentalScreen() {
           keyExtractor={myRentalKey}
           renderItem={renderMyRental}
           ItemSeparatorComponent={Separator}
-          ListHeaderComponent={renderMyHeader()}
+          ListHeaderComponent={renderMyHeader}
           ListEmptyComponent={renderMyEmpty}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.myRentalsContainer}
           initialNumToRender={5}
           maxToRenderPerBatch={5}
           windowSize={7}
-          removeClippedSubviews={Platform.OS === 'android'}
+          removeClippedSubviews={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.charcoal} />
           }

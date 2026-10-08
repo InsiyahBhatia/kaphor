@@ -37,6 +37,7 @@ const COURIER_OPTIONS = [
 
 export default function SwapShippingScreen() {
   const { swapId } = useLocalSearchParams<{ swapId: string }>();
+  const resolvedSwapId = typeof swapId === 'string' ? swapId : (Array.isArray(swapId) ? swapId[0] : '');
   const router = useRouter();
   const { user } = useAuth();
 
@@ -64,7 +65,8 @@ export default function SwapShippingScreen() {
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  const isInitiator = user?.id ? user.id === swap?.initiatorId : true;
+  const isInitiator = Boolean(user?.id && swap?.initiatorId && user.id === swap.initiatorId);
+  const isReceiver = Boolean(user?.id && swap?.receiverId && user.id === swap.receiverId);
   const otherUserId = isInitiator ? swap?.receiverId : swap?.initiatorId;
   const myReview = swap?.reviews && user?.id ? swap.reviews[user.id] : null;
   const partnerReview = swap?.reviews && otherUserId ? swap.reviews[otherUserId] : null;
@@ -73,14 +75,18 @@ export default function SwapShippingScreen() {
   const theirTracking = isInitiator ? swap?.receiverTracking : swap?.initiatorTracking;
   const isShipped = Boolean(myTracking);
 
-  const myAddress: SwapAddress | undefined = isInitiator ? swap?.initiatorAddress : swap?.receiverAddress;
-  const partnerAddress = address || (isInitiator ? swap?.receiverAddress : swap?.initiatorAddress);
+  const myAddress: SwapAddress | undefined = isInitiator
+    ? swap?.initiatorAddress
+    : isReceiver
+    ? swap?.receiverAddress
+    : (swap?.initiatorAddress || swap?.receiverAddress);
+  const partnerAddress = address || (isInitiator ? swap?.receiverAddress : (isReceiver ? swap?.initiatorAddress : undefined));
 
   const handleSubmitReview = async () => {
-    if (!swapId) return;
+    if (!resolvedSwapId) return;
     setSubmittingReview(true);
     try {
-      await swapService.submitSwapReview(swapId, reviewRating, reviewComment.trim());
+      await swapService.submitSwapReview(resolvedSwapId, reviewRating, reviewComment.trim());
       hapticFeedback.success();
       Alert.alert('Review Submitted! ⭐️', 'Thank you for your verified peer review.');
       await loadData();
@@ -108,32 +114,40 @@ export default function SwapShippingScreen() {
 
   useEffect(() => {
     const unsub = addressService.onSelectedAddressChange((addr) => {
-      if (addr && swapId && !myAddress) {
+      if (addr && resolvedSwapId && !myAddress) {
         handleSelectAddress(addr);
       }
     });
     return unsub;
-  }, [swapId, myAddress]);
+  }, [resolvedSwapId, myAddress]);
 
   const handleSelectAddress = async (selectedAddr: Address) => {
+    if (!resolvedSwapId) {
+      Alert.alert('Error', 'Invalid swap reference.');
+      return;
+    }
     addressService.setActiveDeliveryAddress(selectedAddr);
     setSharingAddress(true);
     try {
       const swapAddrPayload: SwapAddress = {
-        fullName: selectedAddr.fullName,
-        phone: selectedAddr.phone,
-        line1: selectedAddr.line1,
+        fullName: selectedAddr.fullName || '',
+        phone: selectedAddr.phone || '',
+        line1: selectedAddr.line1 || '',
         line2: selectedAddr.line2 || undefined,
-        city: selectedAddr.city,
-        state: selectedAddr.state,
-        pincode: selectedAddr.pincode,
+        city: selectedAddr.city || '',
+        state: selectedAddr.state || '',
+        pincode: selectedAddr.pincode || '',
       };
-      const updatedSwap = await swapService.shareAddress(swapId!, swapAddrPayload);
+      const updatedSwap = await swapService.shareAddress(resolvedSwapId, swapAddrPayload);
       setSwap(updatedSwap);
       setShowAddressPicker(false);
+      try {
+        const partnerAddr = await swapService.getShippingAddress(resolvedSwapId);
+        if (partnerAddr) setAddress(partnerAddr);
+      } catch {}
       Alert.alert(
         'Delivery Address Updated',
-        'Your delivery address has been updated and shared with your swap partner.'
+        'Your delivery address has been saved and shared with your swap partner.'
       );
     } catch (err: any) {
       Alert.alert('Error', getErrorMessage(err, 'Failed to update delivery address.'));
@@ -153,7 +167,7 @@ export default function SwapShippingScreen() {
           onPress: async () => {
             setConfirmingReceived(true);
             try {
-              const updated = await swapService.confirmReceived(swapId!, true);
+              const updated = await swapService.confirmReceived(resolvedSwapId, true);
               setSwap(updated);
               if (updated.status === 'COMPLETED') {
                 invalidateCache(['/swaps', '/users/me/wardrobe', '/impact']);
@@ -163,7 +177,7 @@ export default function SwapShippingScreen() {
                   [
                     {
                       text: 'Leave Partner Review',
-                      onPress: () => router.push(`/(tabs)/swap/details?swapId=${swapId}&review=1` as any),
+                      onPress: () => router.push(`/(tabs)/swap/details?swapId=${resolvedSwapId}&review=1` as any),
                     },
                     {
                       text: 'View My Swaps',
@@ -190,14 +204,18 @@ export default function SwapShippingScreen() {
 
   useEffect(() => {
     loadData();
-  }, [swapId]);
+  }, [resolvedSwapId]);
 
   const loadData = async () => {
+    if (!resolvedSwapId) {
+      setLoading(false);
+      return;
+    }
     try {
       const [swapData, addr, dep] = await Promise.all([
-        swapService.getSwapById(swapId!),
-        swapService.getShippingAddress(swapId!).catch(() => null),
-        swapService.getDepositStatus(swapId!).catch(() => null),
+        swapService.getSwapById(resolvedSwapId),
+        swapService.getShippingAddress(resolvedSwapId).catch(() => null),
+        swapService.getDepositStatus(resolvedSwapId).catch(() => null),
       ]);
       setSwap(swapData);
       setAddress(addr);
@@ -213,9 +231,10 @@ export default function SwapShippingScreen() {
   };
 
   const handlePayDeposit = async () => {
+    if (!resolvedSwapId) return;
     setPayingDeposit(true);
     try {
-      const { razorpayOrderId, amount } = await swapService.paySecurityDeposit(swapId!);
+      const { razorpayOrderId, amount } = await swapService.paySecurityDeposit(resolvedSwapId);
       const keyId = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
       if (!keyId) {
         Alert.alert('Payments unavailable', 'Payments are not configured. Please try again later.');
@@ -236,7 +255,7 @@ export default function SwapShippingScreen() {
         openCheckout(options, {
           onSuccess: async (success: any) => {
             try {
-              await swapService.verifySecurityDeposit(swapId!, {
+              await swapService.verifySecurityDeposit(resolvedSwapId, {
                 razorpay_order_id: success.razorpay_order_id || razorpayOrderId,
                 razorpay_payment_id: success.razorpay_payment_id || `pay_${Date.now()}`,
                 razorpay_signature: success.razorpay_signature || '',
@@ -266,7 +285,7 @@ export default function SwapShippingScreen() {
               text: 'Deposit ₹500 (Confirm)',
               onPress: async () => {
                 try {
-                  await swapService.verifySecurityDeposit(swapId!, {
+                  await swapService.verifySecurityDeposit(resolvedSwapId, {
                     razorpay_order_id: razorpayOrderId,
                     razorpay_payment_id: `test_pay_${Date.now()}`,
                     razorpay_signature: '',
@@ -290,6 +309,7 @@ export default function SwapShippingScreen() {
   };
 
   const handleMarkShipped = async () => {
+    if (!resolvedSwapId) return;
     if (!depositPaid) {
       Alert.alert(
         'Deposit Required',
@@ -321,7 +341,7 @@ export default function SwapShippingScreen() {
         shippedAt: new Date().toISOString(),
       };
 
-      await swapService.markShipped(swapId!, tracking);
+      await swapService.markShipped(resolvedSwapId, tracking);
       Alert.alert('Marked Shipped!', 'The other party will be notified.', [
         { text: 'OK', onPress: () => safeBack('/(tabs)/swap') },
       ]);
@@ -346,7 +366,7 @@ export default function SwapShippingScreen() {
     if (url) Linking.openURL(url);
   };
 
-  const fallback = swapId ? `/(tabs)/swap/details?swapId=${swapId}` : '/(tabs)/circular';
+  const fallback = resolvedSwapId ? `/(tabs)/swap/details?swapId=${resolvedSwapId}` : '/(tabs)/circular';
 
   if (loading) {
     return (

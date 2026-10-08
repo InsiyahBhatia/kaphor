@@ -1006,23 +1006,23 @@ export async function shareSwapAddress(req: Request, res: Response): Promise<voi
     const { id } = req.params;
     const rawAddr = req.body || {};
     const address: SwapAddressData = {
-      fullName: cleanStr(rawAddr.fullName, 100) as string,
-      phone: (cleanStr(rawAddr.phone, 20) ?? '') as string,
-      line1: cleanStr(rawAddr.line1, 200) as string,
-      line2: cleanStr(rawAddr.line2, 200),
+      fullName: (cleanStr(rawAddr.fullName || rawAddr.name, 100) ?? '') as string,
+      phone: (cleanStr(rawAddr.phone || rawAddr.phoneNumber, 25) ?? '') as string,
+      line1: (cleanStr(rawAddr.line1 || rawAddr.street || rawAddr.addressLine1, 200) ?? '') as string,
+      line2: cleanStr(rawAddr.line2 || rawAddr.addressLine2, 200),
       city: (cleanStr(rawAddr.city, 100) ?? '') as string,
       state: (cleanStr(rawAddr.state, 100) ?? '') as string,
-      pincode: cleanStr(typeof rawAddr.pincode === 'number' ? String(rawAddr.pincode) : rawAddr.pincode, 12) as string,
+      pincode: (cleanStr(typeof rawAddr.pincode === 'number' ? String(rawAddr.pincode) : (rawAddr.pincode || rawAddr.postalCode || rawAddr.zip), 12) ?? '') as string,
     };
 
     if (!address.fullName || !address.line1 || !address.pincode) {
-      res.status(400).json({ error: 'BAD_REQUEST', message: 'Complete delivery address is required' });
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Complete delivery address is required (Full Name, Address Line 1, and Pincode)' });
       return;
     }
 
     const swap = await db.swap.findUnique({ where: { id } });
     if (!swap) {
-      res.status(404).json({ error: 'NOT_FOUND' });
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Swap not found' });
       return;
     }
 
@@ -1030,17 +1030,12 @@ export async function shareSwapAddress(req: Request, res: Response): Promise<voi
     const isReceiver = swap.receiverId === req.user.id;
 
     if (!isInitiator && !isReceiver) {
-      res.status(403).json({ error: 'FORBIDDEN' });
+      res.status(403).json({ error: 'FORBIDDEN', message: 'You are not a participant in this swap' });
       return;
     }
 
     if (swap.status !== 'ACCEPTED') {
-      res.status(400).json({ error: 'BAD_REQUEST', message: 'Addresses can only be shared on an accepted swap' });
-      return;
-    }
-    const addrMeta = await getSwapMetadata(id);
-    if (!(addrMeta.initiatorAcceptedTerms && addrMeta.receiverAcceptedTerms)) {
-      res.status(400).json({ error: 'BAD_REQUEST', message: 'Both parties must sign the agreement before sharing addresses' });
+      res.status(400).json({ error: 'BAD_REQUEST', message: 'Addresses can only be updated on an accepted swap' });
       return;
     }
 
@@ -1065,10 +1060,14 @@ export async function shareSwapAddress(req: Request, res: Response): Promise<voi
       },
     });
 
+    const otherUserId = isInitiator ? swap.receiverId : swap.initiatorId;
+    emitToUser(otherUserId, 'swap:updated', { swapId: id });
+    emitToUser(req.user.id, 'swap:updated', { swapId: id });
+
     res.json({ data: await formatSwapTransaction(fullSwap, req.user.id) });
   } catch (error) {
     logger.error('shareSwapAddress failed', { error });
-    res.status(500).json({ error: 'INTERNAL_ERROR' });
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to update delivery address. Please try again.' });
   }
 }
 

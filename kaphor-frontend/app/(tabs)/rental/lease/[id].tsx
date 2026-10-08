@@ -437,7 +437,7 @@ export default function RentalLeaseDossierScreen() {
         </TouchableOpacity>
         <View style={{ alignItems: 'center' }}>
           <Text style={styles.headerTitle}>Rental lease details</Text>
-          <Text style={styles.headerSub}>ID: {rental.id.slice(0, 8).toUpperCase()}</Text>
+          <Text style={styles.headerSub}>ID: {(rental.id || '').slice(0, 8).toUpperCase()}</Text>
         </View>
         <TouchableOpacity
           onPress={handleChat}
