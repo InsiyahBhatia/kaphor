@@ -14,6 +14,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { getFormattedGarmentPrice, normalizeRupees } from '../../../src/utils/priceFormatter';
 import { Spinner, Loader } from '../../../src/components/common/Loader';
 import { peekGarment } from '../../../src/store/garmentStore';
+import { formatCurrency } from '../../../src/utils/dateFormatter';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -289,11 +290,11 @@ export default function RentalDetailScreen() {
             <Text style={styles.rateTitle}>Rental rates</Text>
             <View style={styles.rateRow}>
               <Text style={styles.rateLabel}>Per day</Text>
-              <Text style={styles.rateValue}>₹{dayRate.toLocaleString('en-IN')}</Text>
+              <Text style={styles.rateValue}>₹{formatCurrency(dayRate)}</Text>
             </View>
             <View style={styles.rateRow}>
               <Text style={styles.rateLabel}>Per week</Text>
-              <Text style={styles.rateValue}>₹{weekRate.toLocaleString('en-IN')}</Text>
+              <Text style={styles.rateValue}>₹{formatCurrency(weekRate)}</Text>
             </View>
             <View style={styles.rateRow}>
               <Text style={styles.rateLabel}>Security deposit</Text>

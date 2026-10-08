@@ -35,6 +35,9 @@ function SolarIconBase({ name, size = 24, color = colors.ink, style, accessibili
   if (__DEV__ && !SOLAR_PATHS[name]) {
     console.warn(`[SolarIcon] unknown icon "${name}"`);
   }
+  if (!shapes || !Array.isArray(shapes)) {
+    return null;
+  }
   return (
     <Svg
       width={Math.round(size * ICON_SCALE)}

@@ -31,6 +31,7 @@ import { hapticFeedback } from '../../../src/utils/haptics';
 import { safeBack, useBackHandler } from '../../../src/utils/navigation';
 import { navigateToLiveSwapStage } from '../../../src/utils/swapNavigation';
 import { Spinner, Loader } from '../../../src/components/common/Loader';
+import { formatShortDate, formatFullDate, formatCurrency } from '../../../src/utils/dateFormatter';
 
 
 type RowHandlers = Record<string, (...args: any[]) => any>;
@@ -50,11 +51,7 @@ const OrderCard = React.memo(function OrderCard({ order, userId, actionLoadingId
                       <View style={{ flex: 1 }}>
                         <Text style={styles.orderIdLabel}>ORDER #{order.id.slice(0, 8).toUpperCase()}</Text>
                         <Text style={styles.orderDate}>
-                          {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
+                          {formatFullDate(order.createdAt)}
                         </Text>
                       </View>
                       <View
@@ -87,7 +84,7 @@ const OrderCard = React.memo(function OrderCard({ order, userId, actionLoadingId
                           {firstItem?.garment?.title || 'Classic Piece'}
                         </Text>
                         <Text style={styles.garmentPrice}>
-                          ₹{(order.totalAmount || 0).toLocaleString('en-IN')}
+                          ₹{formatCurrency(order.totalAmount)}
                         </Text>
                         <Text style={styles.counterpartyText}>
                           {isBuyer ? 'SELLER' : 'BUYER'}: {otherParty?.displayName || otherParty?.username}
@@ -189,15 +186,8 @@ const RentalCard = React.memo(function RentalCard({ rental, userId, actionLoadin
                 const thumb = rental.garment?.images?.[0];
                 const isLoading = actionLoadingId === rental.id;
 
-                const startFormatted = new Date(rental.startDate).toLocaleDateString('en-IN', {
-                  day: 'numeric',
-                  month: 'short',
-                });
-                const endFormatted = new Date(rental.endDate).toLocaleDateString('en-IN', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                });
+                const startFormatted = formatShortDate(rental.startDate);
+                const endFormatted = formatFullDate(rental.endDate);
 
                 return (
                   <View
@@ -242,7 +232,7 @@ const RentalCard = React.memo(function RentalCard({ rental, userId, actionLoadin
                           {rental.garment?.title || 'Rental Asset'}
                         </Text>
                         <Text style={styles.garmentPrice}>
-                          ₹{(rental.totalPrice || 0).toLocaleString('en-IN')} total
+                          ₹{formatCurrency(rental.totalPrice)} total
                         </Text>
                         <Text style={styles.counterpartyText}>
                           {isRenter ? 'LENDER' : 'RENTER'}: {counterpart?.displayName || counterpart?.username || 'Member'}

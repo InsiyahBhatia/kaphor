@@ -25,6 +25,16 @@ import { useAuthStore } from '../../../../src/store/authStore';
 import { invalidateCache } from '../../../../src/services/api';
 import { Loader, Spinner } from '../../../../src/components/common/Loader';
 import { getErrorMessage } from '../../../../src/utils/errors';
+import {
+  formatShortDate,
+  formatFullDate,
+  formatWeekdayDate,
+  formatWeekdayFullDate,
+  formatDateTime,
+  getDaysBetween,
+  getDaysRemaining,
+  formatCurrency,
+} from '../../../../src/utils/dateFormatter';
 
 export default function RentalLeaseDossierScreen() {
   const insets = useSafeAreaInsets();
@@ -188,7 +198,7 @@ export default function RentalLeaseDossierScreen() {
 
   // Borrower proceeds to payment once approved
   const handleProceedToPayment = () => {
-    const totalDays = Math.max(1, Math.round((new Date(rental.endDate).getTime() - new Date(rental.startDate).getTime()) / (1000 * 3600 * 24)));
+    const totalDays = getDaysBetween(rental.startDate, rental.endDate);
     router.push({
       pathname: '/(tabs)/rental/payment',
       params: {
@@ -402,11 +412,8 @@ export default function RentalLeaseDossierScreen() {
   const counterparty = isRenter ? seller : renter;
   const counterpartyRole = isRenter ? 'Lender / owner' : 'Borrower / renter';
 
-  const startDate = new Date(rental.startDate);
-  const endDate = new Date(rental.endDate);
-  const now = new Date();
-  const daysTotal = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)));
-  const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 3600 * 24)));
+  const daysTotal = getDaysBetween(rental.startDate, rental.endDate);
+  const daysLeft = getDaysRemaining(rental.endDate);
 
   const isDepositReleased = rental.status === 'RETURNED' && (escrow?.status === 'RELEASED');
 
@@ -539,8 +546,8 @@ export default function RentalLeaseDossierScreen() {
             {rental.status === 'RESERVED' && isRenter && 'Payment is held safely. The owner is getting your piece ready to ship.'}
             {rental.status === 'DISPATCHED' && isLender && `Shipped via ${rental.carrier || 'courier'} (${rental.trackingNumber || 'Tracking provided'}).`}
             {rental.status === 'DISPATCHED' && isRenter && `Shipped via ${rental.carrier || 'courier'} (${rental.trackingNumber || 'Tracking provided'}). Please tap "Confirm Received" upon delivery.`}
-            {rental.status === 'ACTIVE' && isRenter && `Enjoy wearing! Please ship for return on or before ${endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}.`}
-            {rental.status === 'ACTIVE' && isLender && `Garment is currently with the borrower. Scheduled return: ${endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}.`}
+            {rental.status === 'ACTIVE' && isRenter && `Enjoy wearing! Please ship for return on or before ${formatShortDate(rental.endDate)}.`}
+            {rental.status === 'ACTIVE' && isLender && `Garment is currently with the borrower. Scheduled return: ${formatShortDate(rental.endDate)}.`}
             {rental.status === 'RETURN_DISPATCHED' && isLender && `Sent back by borrower via ${rental.returnCarrier || 'courier'} (${rental.returnTracking || 'Tracking provided'}). Please confirm upon delivery.`}
             {rental.status === 'RETURN_DISPATCHED' && isRenter && `Return package in transit via ${rental.returnCarrier || 'courier'}. Security deposit will be refunded after owner inspection.`}
             {rental.status === 'RETURNED' && isLender && !isDepositReleased && 'Please check the garment is clean and undamaged to release the ₹299 deposit.'}
@@ -560,7 +567,7 @@ export default function RentalLeaseDossierScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.actionPromptTitle}>Action required: approve rental dates</Text>
                 <Text style={styles.actionPromptSub}>
-                  {rental.renter?.displayName || 'Borrower'} requested this piece for {daysTotal} days ({new Date(rental.startDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – {new Date(rental.endDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}). Approve to open the 24-hour escrow payment window.
+                  {rental.renter?.displayName || 'Borrower'} requested this piece for {daysTotal} days ({formatShortDate(rental.startDate)} – {formatShortDate(rental.endDate)}). Approve to open the 24-hour escrow payment window.
                 </Text>
               </View>
             </View>
@@ -610,7 +617,7 @@ export default function RentalLeaseDossierScreen() {
               onPress={handleProceedToPayment}
             >
               <SolarIcon name="card" size={15} color={colors.white} />
-              <Text style={styles.actionPromptAcceptText}>PROCEED TO PAYMENT (₹{totalAmount.toLocaleString()}) →</Text>
+              <Text style={styles.actionPromptAcceptText}>PROCEED TO PAYMENT (₹{formatCurrency(totalAmount)}) →</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -664,7 +671,7 @@ export default function RentalLeaseDossierScreen() {
                 </View>
               </View>
               <Text style={styles.garmentRate}>
-                ₹{(garment.rentalPriceDay || 0).toLocaleString()} <Text style={styles.rateUnit}>/ day</Text>
+                ₹{formatCurrency(garment.rentalPriceDay)} <Text style={styles.rateUnit}>/ day</Text>
               </Text>
             </View>
           </View>
@@ -691,7 +698,7 @@ export default function RentalLeaseDossierScreen() {
               <View style={styles.timelineCircle} />
               <Text style={styles.timelineDateLabel}>Delivery / start</Text>
               <Text style={styles.timelineDateValue}>
-                {startDate.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                {formatWeekdayFullDate(rental.startDate)}
               </Text>
             </View>
 
@@ -706,7 +713,7 @@ export default function RentalLeaseDossierScreen() {
               <View style={[styles.timelineCircle, { backgroundColor: colors.forest || colors.forest }]} />
               <Text style={styles.timelineDateLabel}>Return due</Text>
               <Text style={styles.timelineDateValue}>
-                {endDate.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                {formatWeekdayFullDate(rental.endDate)}
               </Text>
             </View>
           </View>
@@ -804,7 +811,7 @@ export default function RentalLeaseDossierScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.historyNote}>{item.note || item.status}</Text>
                     <Text style={styles.historyTime}>
-                      {item.timestamp ? new Date(item.timestamp).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                      {item.timestamp ? formatDateTime(item.timestamp) : ''}
                     </Text>
                   </View>
                 </View>
@@ -859,7 +866,7 @@ export default function RentalLeaseDossierScreen() {
 
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>RENTAL FEE ({daysTotal} DAYS)</Text>
-            <Text style={styles.summaryValue}>₹{rentalFee.toLocaleString()}</Text>
+            <Text style={styles.summaryValue}>₹{formatCurrency(rentalFee)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -867,21 +874,21 @@ export default function RentalLeaseDossierScreen() {
               <SolarIcon name="lock-closed" size={11} color={colors.forest || colors.forest} />
             </View>
             <Text style={[styles.summaryValue, { color: colors.forest || colors.forest }]}>
-              ₹{refundableDeposit} {isDepositReleased ? '(Refunded)' : '(Held safely)'}
+              ₹{formatCurrency(refundableDeposit)} {isDepositReleased ? '(Refunded)' : '(Held safely)'}
             </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Damage waiver & hygienic steam</Text>
-            <Text style={styles.summaryValue}>₹{damageInsurance}</Text>
+            <Text style={styles.summaryValue}>₹{formatCurrency(damageInsurance)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Two-way insured courier</Text>
-            <Text style={styles.summaryValue}>₹{deliveryReturnFee}</Text>
+            <Text style={styles.summaryValue}>₹{formatCurrency(deliveryReturnFee)}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <Text style={styles.totalLabel}>Total lease amount</Text>
-            <Text style={styles.totalValue}>₹{totalAmount.toLocaleString()}</Text>
+            <Text style={styles.totalValue}>₹{formatCurrency(totalAmount)}</Text>
           </View>
         </View>
 
@@ -941,7 +948,7 @@ export default function RentalLeaseDossierScreen() {
             activeOpacity={0.88}
           >
             <SolarIcon name="card" size={16} color={colors.white} />
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>PROCEED TO PAYMENT (₹{totalAmount.toLocaleString()})</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.actionBtnText}>PROCEED TO PAYMENT (₹{formatCurrency(totalAmount)})</Text>
           </TouchableOpacity>
         )}
 

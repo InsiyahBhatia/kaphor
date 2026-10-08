@@ -18,6 +18,7 @@ import { rentalService } from '../../../src/services/rentalService';
 import { invalidateCache } from '../../../src/services/api';
 import type { RentalPaymentBreakdown } from '../../../src/types/payment';
 import { Spinner, Loader } from '../../../src/components/common/Loader';
+import { formatCurrency } from '../../../src/utils/dateFormatter';
 
 type PaymentMethodType = 'upi' | 'card' | 'netbanking' | 'wallet';
 
@@ -237,7 +238,7 @@ export default function RentalPaymentScreen() {
     );
   }
 
-  const fmt = (rupees: number) => `₹${Math.round(rupees).toLocaleString('en-IN')}`;
+  const fmt = (rupees: number) => `₹${formatCurrency(rupees)}`;
 
   return (
     <View style={styles.container}>

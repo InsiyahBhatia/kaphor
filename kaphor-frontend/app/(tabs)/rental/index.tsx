@@ -12,6 +12,7 @@ import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingS
 import { colors, typography, textStyles } from '../../../src/theme';
 import { useAuthStore } from '../../../src/store/authStore';
 import { seedGarments } from '../../../src/store/garmentStore';
+import { formatShortDate } from '../../../src/utils/dateFormatter';
 
 function statusColor(status: string) {
   switch (status) {
@@ -30,14 +31,16 @@ function statusColor(status: string) {
 
 const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }: { rental: any; currentUserId?: string }) {
   const router = useRouter();
+  if (!rental) return null;
   const isLender = rental.userRole === 'LENDER' || rental.garment?.sellerId === currentUserId;
   const counterpartyName = isLender
     ? (rental.renter?.displayName || rental.renter?.username || 'Borrower')
     : (rental.garment?.seller?.displayName || 'Lender / Owner');
+  const priceDisplay = String(Math.round(rental.totalPrice || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return (
               <TouchableOpacity
                 style={styles.myRentalCard}
-                onPress={() => router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
+                onPress={() => rental.id && router.push(`/(tabs)/rental/lease/${rental.id}` as any)}
                 activeOpacity={0.88}
               >
                 {/* Header with Role Pill & Status */}
@@ -48,7 +51,7 @@ const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }:
                     </Text>
                   </View>
                   <View style={[styles.myRentalStatus, { backgroundColor: statusColor(rental.status) }]}>
-                    <Text style={styles.myRentalStatusText}>{rental.status}</Text>
+                    <Text style={styles.myRentalStatusText}>{rental.status || 'LEASE'}</Text>
                   </View>
                 </View>
 
@@ -67,20 +70,20 @@ const MyRentalCard = React.memo(function MyRentalCard({ rental, currentUserId }:
                   <View style={styles.myRentalDateBlock}>
                     <Text style={styles.myRentalDateLabel}>Delivery</Text>
                     <Text style={styles.myRentalDateValue}>
-                      {new Date(rental.startDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                      {formatShortDate(rental.startDate)}
                     </Text>
                   </View>
                   <SolarIcon name="arrow-forward" size={14} color={colors.textMuted} />
                   <View style={styles.myRentalDateBlock}>
                     <Text style={styles.myRentalDateLabel}>Return due</Text>
                     <Text style={styles.myRentalDateValue}>
-                      {new Date(rental.endDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                      {formatShortDate(rental.endDate)}
                     </Text>
                   </View>
                   <View style={{ flex: 1, alignItems: 'flex-end' }}>
                     <Text style={styles.myRentalPriceLabel}>Total lease</Text>
                     <Text style={styles.myRentalPrice}>
-                      ₹{Math.round(rental.totalPrice || 0).toLocaleString('en-IN')}
+                      ₹{priceDisplay}
                     </Text>
                   </View>
                 </View>
@@ -238,25 +241,28 @@ export default function RentalScreen() {
 
   const filteredRentals = useMemo(
     () =>
-      myRentals.filter((rental: any) => {
-        const isLender = rental.userRole === 'LENDER' || rental.garment?.sellerId === currentUserId;
-        if (roleFilter === 'borrowing') return !isLender;
-        if (roleFilter === 'lending') return isLender;
-        return true;
-      }),
+      myRentals
+        .filter((rental: any) => Boolean(rental && typeof rental === 'object' && rental.id))
+        .filter((rental: any) => {
+          const isLender = rental.userRole === 'LENDER' || rental.garment?.sellerId === currentUserId;
+          if (roleFilter === 'borrowing') return !isLender;
+          if (roleFilter === 'lending') return isLender;
+          return true;
+        }),
     [myRentals, roleFilter, currentUserId]
   );
 
   const roleChips = useMemo(() => {
+    const valid = myRentals.filter((r: any) => Boolean(r && typeof r === 'object' && r.id));
     const isLenderOf = (r: any) => r.userRole === 'LENDER' || r.garment?.sellerId === currentUserId;
     return [
-      { id: 'all', label: `ALL (${myRentals.length})` },
-      { id: 'borrowing', label: `BORROWING (${myRentals.filter((r: any) => !isLenderOf(r)).length})` },
-      { id: 'lending', label: `LENDING (${myRentals.filter(isLenderOf).length})` },
+      { id: 'all', label: `ALL (${valid.length})` },
+      { id: 'borrowing', label: `BORROWING (${valid.filter((r: any) => !isLenderOf(r)).length})` },
+      { id: 'lending', label: `LENDING (${valid.filter(isLenderOf).length})` },
     ];
   }, [myRentals, currentUserId]);
 
-  const myRentalKey = useCallback((r: any) => r.id, []);
+  const myRentalKey = useCallback((r: any, idx: number) => r?.id || `my-rental-${idx}`, []);
   const renderMyRental = useCallback(
     ({ item }: { item: any }) => <MyRentalCard rental={item} currentUserId={currentUserId} />,
     [currentUserId]
@@ -443,9 +449,17 @@ const styles = StyleSheet.create({
   // My Rentals
   myRentalsContainer: { padding: 16 },
   myRentalCard: {
-    backgroundColor: colors.white, borderWidth: 2, borderColor: colors.charcoal,
-    padding: 16, gap: 10,
-    shadowColor: colors.charcoal, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 12,
+    padding: 16,
+    gap: 10,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   myRentalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   roleBadge: {
@@ -476,7 +490,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.handSemi,
     color: colors.textMuted,
     marginTop: 2, includeFontPadding: false, },
-  myRentalTitle: { fontFamily: typography.headings, fontSize: 18, color: colors.charcoal, flex: 1 },
+  myRentalTitle: { fontFamily: typography.headings, fontSize: 18, color: colors.charcoal },
   myRentalStatus: { paddingHorizontal: 8, paddingVertical: 3 },
   myRentalStatusText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
   myRentalDates: { flexDirection: 'row', alignItems: 'center', gap: 8 },

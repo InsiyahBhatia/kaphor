@@ -13,6 +13,7 @@ import { useAuth } from '../../../src/context/AuthContext';
 import { Spinner } from '../../../src/components/common/Loader';
 import { SkeletonPulse } from '../../../src/components/common/CardLoadingScreen';
 import { getErrorMessage } from '../../../src/utils/errors';
+import { formatWeekdayDate, formatMonthYear, formatCurrency } from '../../../src/utils/dateFormatter';
 
 const DURATION_PRESETS = [
   { days: 3, label: '3 DAYS', subtitle: 'Weekend Soirée', badge: 'POPULAR' },
@@ -438,7 +439,7 @@ export default function RentalReserveScreen() {
               <Text style={styles.timelineColLabel}>Delivery / start</Text>
             </View>
             <Text style={styles.timelineColValue}>
-              {startDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', weekday: 'short' })}
+              {formatWeekdayDate(startDate)}
             </Text>
             <View style={styles.editBadge}>
               <SolarIcon name="pencil" size={10} color={colors.crimson} />
@@ -463,7 +464,7 @@ export default function RentalReserveScreen() {
               <Text style={styles.timelineColLabel}>Return / end</Text>
             </View>
             <Text style={styles.timelineColValue}>
-              {endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', weekday: 'short' })}
+              {formatWeekdayDate(endDate)}
             </Text>
             <View style={[styles.editBadge, { backgroundColor: colors.emeraldLight }]}>
               <SolarIcon name="pencil" size={10} color={colors.forest || colors.forest} />
@@ -523,7 +524,7 @@ export default function RentalReserveScreen() {
                 </View>
                 <Text style={styles.presetSubtitle}>{p.subtitle}</Text>
                 <Text style={[styles.presetPrice, isSelected && styles.presetPriceActive]}>
-                  ₹{(rate * p.days).toLocaleString()}
+                  ₹{formatCurrency(rate * p.days)}
                 </Text>
               </TouchableOpacity>
             );
@@ -535,7 +536,7 @@ export default function RentalReserveScreen() {
           <Text style={styles.summaryTitle}>Price breakdown</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>RENTAL FEE ({days} DAYS @ ₹{rate}/DAY)</Text>
-            <Text style={styles.summaryValue}>₹{rentalFee.toLocaleString()}</Text>
+            <Text style={styles.summaryValue}>₹{formatCurrency(rentalFee)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -557,7 +558,7 @@ export default function RentalReserveScreen() {
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <Text style={styles.totalLabel}>Pay now (incl. Refundable deposit)</Text>
-            <Text style={styles.totalValue}>₹{grandTotal.toLocaleString()}</Text>
+            <Text style={styles.totalValue}>₹{formatCurrency(grandTotal)}</Text>
           </View>
           <Text style={styles.depositReturnNotice}>
             * ₹{refundableDeposit} refundable deposit is automatically refunded to your original payment method after return quality scan.
@@ -697,7 +698,7 @@ export default function RentalReserveScreen() {
                 <SolarIcon name="chevron-back" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
               <Text style={styles.monthLabel}>
-                {viewDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }).toUpperCase()}
+                {formatMonthYear(viewDate)}
               </Text>
               <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Next" onPress={nextMonth} style={styles.monthNavBtn}>
                 <SolarIcon name="chevron-forward" size={20} color={colors.textPrimary} />
@@ -897,7 +898,7 @@ export default function RentalReserveScreen() {
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.reserveBtnText}>Dates conflict with lease</Text>
           ) : (
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.reserveBtnText}>
-              REQUEST RENTAL LEASE • ₹{grandTotal.toLocaleString()}
+              REQUEST RENTAL LEASE • ₹{formatCurrency(grandTotal)}
             </Text>
           )}
         </TouchableOpacity>
