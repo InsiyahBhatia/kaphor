@@ -6,6 +6,23 @@ import { z } from 'zod';
 import db, { prisma } from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { auditLog } from '../services/audit.service';
+import { getDownloadUrl, thumbnailUrl } from '../lib/cloudinary';
+
+/**
+ * Stored image values are keys/unsigned URLs. Sign only the first one so admin lists can show a photo,
+ * and add a small thumbnail copy. Never throws: a failed signature just means no image.
+ */
+async function withFirstImage<T extends { images?: string[] | null } | null | undefined>(g: T): Promise<any> {
+  if (!g) return g;
+  const first = Array.isArray(g.images) ? g.images[0] : null;
+  if (!first) return { ...g, images: [], thumbnailUrl: null };
+  try {
+    const resolved = await getDownloadUrl(first);
+    return { ...g, images: [resolved], thumbnailUrl: thumbnailUrl(resolved) };
+  } catch {
+    return { ...g, images: [], thumbnailUrl: null };
+  }
+}
 
 const PAID_ORDER_STATUSES = ['CONFIRMED', 'SHIPPED', 'DELIVERED'];
 const PAID_RENTAL_STATUSES = ['RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED', 'OVERDUE'];
@@ -228,12 +245,17 @@ export async function listAdminSwaps(req: Request, res: Response): Promise<void>
       include: {
         initiator: { select: { id: true, displayName: true } },
         receiver: { select: { id: true, displayName: true } },
-        offeredGarment: { select: { id: true, title: true, brand: true } },
-        wantedGarment: { select: { id: true, title: true, brand: true } },
+        offeredGarment: { select: { id: true, title: true, brand: true, images: true } },
+        wantedGarment: { select: { id: true, title: true, brand: true, images: true } },
       },
     });
 
-    res.json({ data: swaps });
+    const data = await Promise.all(swaps.map(async (sw: any) => ({
+      ...sw,
+      offeredGarment: await withFirstImage(sw.offeredGarment),
+      wantedGarment: await withFirstImage(sw.wantedGarment),
+    })));
+    res.json({ data });
   } catch (e) {
     fail(res, 'listAdminSwaps', e);
   }
@@ -251,11 +273,12 @@ export async function listAdminRentals(req: Request, res: Response): Promise<voi
       take: limit,
       include: {
         renter: { select: { id: true, displayName: true, email: true } },
-        garment: { select: { id: true, title: true, brand: true, sellerId: true } },
+        garment: { select: { id: true, title: true, brand: true, sellerId: true, images: true } },
       },
     });
 
-    res.json({ data: rentals });
+    const data = await Promise.all(rentals.map(async (r: any) => ({ ...r, garment: await withFirstImage(r.garment) })));
+    res.json({ data });
   } catch (e) {
     fail(res, 'listAdminRentals', e);
   }
@@ -395,7 +418,8 @@ export async function listAdminGarments(req: Request, res: Response): Promise<vo
         select: { ...GARMENT_LIST_COLUMNS, seller: { select: { id: true, displayName: true } } }
       })
     ]);
-    res.json({ data: garments, meta: { total } });
+    const withImages = await Promise.all(garments.map((g: any) => withFirstImage(g)));
+    res.json({ data: withImages, meta: { total } });
   } catch (e) {
     fail(res, 'listAdminGarments', e);
   }
@@ -603,7 +627,11 @@ export async function listAdminOrders(req: Request, res: Response): Promise<void
       }),
     ]);
 
-    res.json({ data: orders, meta: { total, page, limit, pages: Math.max(1, Math.ceil(total / limit)) } });
+    const data = await Promise.all(orders.map(async (o: any) => ({
+      ...o,
+      items: await Promise.all((o.items || []).map(async (it: any) => ({ ...it, garment: await withFirstImage(it.garment) }))),
+    })));
+    res.json({ data, meta: { total, page, limit, pages: Math.max(1, Math.ceil(total / limit)) } });
   } catch (e) {
     fail(res, 'listAdminOrders', e);
   }
@@ -629,7 +657,8 @@ export async function getAdminOrder(req: Request, res: Response): Promise<void> 
       res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
       return;
     }
-    res.json({ data: order });
+    const items = await Promise.all((order.items || []).map(async (it: any) => ({ ...it, garment: await withFirstImage(it.garment) })));
+    res.json({ data: { ...order, items } });
   } catch (e) {
     fail(res, 'getAdminOrder', e);
   }
@@ -693,7 +722,8 @@ export async function listAdminUpcycles(req: Request, res: Response): Promise<vo
         garment: { select: { id: true, title: true, brand: true, category: true, images: true } },
       },
     });
-    res.json({ data: items });
+    const data = await Promise.all(items.map(async (u: any) => ({ ...u, garment: await withFirstImage(u.garment) })));
+    res.json({ data });
   } catch (e) {
     fail(res, 'listAdminUpcycles', e);
   }
@@ -836,7 +866,8 @@ export async function listAdminCircularRequests(req: Request, res: Response): Pr
         garment: { select: { id: true, title: true, brand: true, category: true, images: true } },
       },
     });
-    res.json({ data: items });
+    const data = await Promise.all(items.map(async (c: any) => ({ ...c, garment: await withFirstImage(c.garment) })));
+    res.json({ data });
   } catch (e) {
     fail(res, 'listAdminCircularRequests', e);
   }

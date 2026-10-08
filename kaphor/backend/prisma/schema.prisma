@@ -407,7 +407,7 @@ model Order {
   sellerId        String
   status          OrderStatus @default(PENDING)
   totalAmount     Int
-  currency        String      @default("USD")
+  currency        String      @default("INR")
   stripePaymentId String?
   razorpayOrderId String?
   razorpayPaymentId String?

@@ -322,7 +322,7 @@ export async function getOrderPaymentDetails(req: Request, res: Response): Promi
                 id: order.id,
                 orderId: order.id,
                 type: 'PURCHASE',
-                amount: order.totalAmount, // in paise
+                amount: order.totalAmount, // whole rupees
                 currency: order.currency || 'INR',
                 status: statusMap[order.status] || order.status,
                 razorpayOrderId: order.razorpayOrderId || '',

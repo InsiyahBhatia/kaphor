@@ -231,7 +231,9 @@ export async function createRazorpayOrderForRental(req: Request, res: Response):
     // rental.totalPrice is stored in pure whole Rupees (e.g. ₹450)
     const rentalFee = rental.totalPrice || 0;
     const securityDeposit = 299; // Flat ₹299 refundable security deposit
-    const insuranceFee = 49;     // Flat ₹49 damage waiver
+    // Insurance (₹49 damage waiver) is optional: the renter can untick it on the pay screen.
+    const includeInsurance = (req.body as any)?.includeInsurance !== false;
+    const insuranceFee = includeInsurance ? 49 : 0;
     const deliveryFee = 199;     // Flat ₹199 delivery fee
     const totalAmount = rentalFee + securityDeposit + insuranceFee + deliveryFee;
 
@@ -250,9 +252,21 @@ export async function createRazorpayOrderForRental(req: Request, res: Response):
     });
 
     // Store Razorpay order ID in rental stripeId column for gateway tracking
+    const prevMeta = (rental.metadata && typeof rental.metadata === 'object' && !Array.isArray(rental.metadata)) ? (rental.metadata as any) : {};
     await db.rental.update({
       where: { id: rental.id },
-      data: { stripeId: rpOrder.id },
+      data: {
+        stripeId: rpOrder.id,
+        metadata: {
+          ...prevMeta,
+          rentalFee,
+          refundableDeposit: securityDeposit,
+          damageInsurance: insuranceFee,
+          deliveryReturnFee: deliveryFee,
+          grandTotal: totalAmount,
+          includeInsurance,
+        } as any,
+      },
     });
 
     res.json({

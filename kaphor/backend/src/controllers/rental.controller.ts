@@ -302,7 +302,17 @@ export async function createRental(req: Request, res: Response): Promise<void> {
                 status: 'REQUESTED',
                 message: typeof message === 'string' && message.trim().length > 0 ? message.trim().slice(0, 2000) : null,
                 shippingAddress: (parsedShipping ?? null) as any,
-                metadata: (parsedMeta ?? null) as any,
+                // Money fields are always the server's numbers, never the client's (client may preview a different total).
+                metadata: {
+                    ...(parsedMeta ?? {}),
+                    days,
+                    dayRate: dailyRateInRupees,
+                    rentalFee: amount,
+                    refundableDeposit: 299,
+                    damageInsurance: 49,
+                    deliveryReturnFee: 199,
+                    grandTotal: amount + 299 + 49 + 199,
+                } as any,
                 trackingHistory: initialHistory,
             },
             include: {
@@ -406,7 +416,7 @@ export async function createRental(req: Request, res: Response): Promise<void> {
 }
 
 /**
- * Calculates rental breakdown (fee, deposit, insurance, delivery) in paise
+ * Calculates rental breakdown (fee, deposit, insurance, delivery) in whole rupees
  * Called by frontend before checkout.
  */
 export async function calculateRentalBreakdown(req: Request, res: Response): Promise<void> {
@@ -492,7 +502,7 @@ export async function getRentalEscrow(req: Request, res: Response): Promise<void
             return;
         }
 
-        const depositAmount = 29900; // Flat ₹299 minimal refundable deposit
+        const depositAmount = 299; // Flat ₹299 minimal refundable deposit (whole rupees)
         const isReleased = rental.status === 'RETURNED';
 
         res.json({
@@ -595,7 +605,7 @@ export async function releaseRentalDeposit(req: Request, res: Response): Promise
                 rentalId: rental.id,
                 status: 'COMPLETED',
                 escrowStatus: 'RELEASED',
-                refundedAmount: 29900,
+                refundedAmount: 299,
                 releasedAt: new Date().toISOString(),
             }
         });

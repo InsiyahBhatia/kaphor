@@ -12,6 +12,13 @@ import { createNotification } from '../services/notification.service';
 import { releaseGarmentReservations } from '../services/garment-claim.service';
 import { z } from 'zod';
 
+// Money rules (whole rupees). Keep in sync with rental.controller / razorpay.controller / getSellerPayouts.
+const PLATFORM_COMMISSION_RATE = 0.1;
+const RENTAL_SECURITY_DEPOSIT = 299;
+const RENTAL_INSURANCE_FEE = 49;
+const RENTAL_DELIVERY_FEE = 199;
+const RENTAL_PAID_STATUSES = ['RESERVED', 'DISPATCHED', 'ACTIVE', 'RETURN_DISPATCHED', 'RETURNED', 'COMPLETED', 'OVERDUE'];
+
 const payoutAccountSchema = z.object({
   accountHolderName: z.string().trim().min(2).max(100),
   accountNumber: z.string().trim().regex(/^\d{6,20}$/, 'Invalid account number').optional().or(z.literal('')),
@@ -150,7 +157,8 @@ export async function getPaymentHistory(req: Request, res: Response): Promise<vo
       const firstItem = order.items[0]?.garment;
       const title = firstItem?.title || 'Kaphor Order';
 
-      const statusMap: Record<string, string> = {
+      // Buyer: money has left once the order is confirmed.
+      const buyerStatusMap: Record<string, string> = {
         PENDING: 'PENDING',
         CONFIRMED: 'PAID',
         SHIPPED: 'PAID',
@@ -158,14 +166,26 @@ export async function getPaymentHistory(req: Request, res: Response): Promise<vo
         REFUNDED: 'REFUNDED',
         CANCELLED: 'FAILED',
       };
+      // Seller: earnings stay in escrow until delivery (same flow as /payments/payouts).
+      const sellerStatusMap: Record<string, string> = {
+        PENDING: 'PENDING',
+        CONFIRMED: 'HELD_IN_ESCROW',
+        SHIPPED: 'HELD_IN_ESCROW',
+        DELIVERED: 'PAID',
+        REFUNDED: 'REFUNDED',
+        CANCELLED: 'FAILED',
+      };
+
+      // Sellers see what they actually earn (net of the platform commission), matching /payments/payouts.
+      const amount = isBuyer ? order.totalAmount : order.totalAmount - Math.round(order.totalAmount * PLATFORM_COMMISSION_RATE);
 
       transactions.push({
         id: `tx_ord_${order.id}`,
         type: isBuyer ? 'PURCHASE' : 'SELLER_PAYOUT',
-        amount: order.totalAmount, // in pure Rupees (₹)
+        amount, // whole rupees (₹)
         currency: order.currency || 'INR',
-        status: statusMap[order.status] || order.status,
-        description: isBuyer ? `Purchased "${title}"` : `Sold "${title}"`,
+        status: (isBuyer ? buyerStatusMap : sellerStatusMap)[order.status] || order.status,
+        description: isBuyer ? `Purchased "${title}"` : `Sold "${title}" (after ${Math.round(PLATFORM_COMMISSION_RATE * 100)}% commission)`,
         referenceId: order.id,
         linkType: 'order',
         createdAt: order.createdAt.toISOString(),
@@ -176,40 +196,65 @@ export async function getPaymentHistory(req: Request, res: Response): Promise<vo
     for (const rental of rentals) {
       const title = rental.garment?.title || 'Rental Item';
       const isRenter = rental.renterId === userId;
+      const isPaid = RENTAL_PAID_STATUSES.includes(String(rental.status));
 
       if (isRenter) {
-        const statusMap: Record<string, string> = {
-          RESERVED: 'HELD_IN_ESCROW',
-          ACTIVE: 'PAID',
-          RETURNED: 'RELEASED_TO_SELLER',
-          OVERDUE: 'PAID',
-        };
+        if (!isPaid) {
+          // Requested / approved but not paid yet, or declined / cancelled.
+          const failed = ['DECLINED', 'CANCELLED'].includes(String(rental.status));
+          transactions.push({
+            id: `tx_rent_${rental.id}`,
+            type: 'RENTAL_FEE',
+            amount: rental.totalPrice,
+            currency: 'INR',
+            status: failed ? 'FAILED' : 'PENDING',
+            description: `Rental request for "${title}"`,
+            referenceId: rental.id,
+            linkType: 'rental',
+            createdAt: rental.createdAt.toISOString(),
+          });
+          continue;
+        }
+
+        // What the renter was charged: fee + damage waiver + delivery (non-refundable) and a refundable deposit.
+        const meta = (rental.metadata && typeof rental.metadata === 'object' && !Array.isArray(rental.metadata)) ? (rental.metadata as any) : {};
+        const insurance = Number.isFinite(Number(meta.damageInsurance)) ? Number(meta.damageInsurance) : RENTAL_INSURANCE_FEE;
+        const delivery = Number.isFinite(Number(meta.deliveryReturnFee)) ? Number(meta.deliveryReturnFee) : RENTAL_DELIVERY_FEE;
+        const deposit = Number.isFinite(Number(meta.refundableDeposit)) ? Number(meta.refundableDeposit) : RENTAL_SECURITY_DEPOSIT;
+        const paidAt = (rental.paidAt ?? rental.createdAt).toISOString();
 
         transactions.push({
           id: `tx_rent_${rental.id}`,
           type: 'RENTAL_FEE',
-          amount: rental.totalPrice, // pure Rupees (₹)
+          amount: rental.totalPrice + insurance + delivery,
           currency: 'INR',
-          status: statusMap[rental.status] || rental.status,
-          description: `Rental reservation for "${title}"`,
+          status: 'PAID',
+          description: `Rental of "${title}" (fee, delivery${insurance > 0 ? ' & damage cover' : ''})`,
           referenceId: rental.id,
           linkType: 'rental',
-          createdAt: rental.createdAt.toISOString(),
+          createdAt: paidAt,
         });
-      } else if (rental.status !== 'RESERVED') {
-        // Lender earnings — only once payment is captured (not while merely reserved)
-        const statusMap: Record<string, string> = {
-          ACTIVE: 'PAID',
-          OVERDUE: 'PAID',
-          RETURNED: 'RELEASED_TO_SELLER',
-        };
-
+        transactions.push({
+          id: `tx_rentdep_${rental.id}`,
+          type: 'RENTAL_DEPOSIT',
+          amount: deposit,
+          currency: 'INR',
+          status: rental.depositRefundedAt || rental.status === 'COMPLETED' ? 'REFUNDED' : 'HELD_IN_ESCROW',
+          description: rental.depositRefundedAt || rental.status === 'COMPLETED'
+            ? `Security deposit returned for "${title}"`
+            : `Refundable security deposit for "${title}"`,
+          referenceId: rental.id,
+          linkType: 'rental',
+          createdAt: paidAt,
+        });
+      } else if (rental.status !== 'RESERVED' && isPaid) {
+        // Lender earnings — only once the rental is under way (not while merely reserved).
         transactions.push({
           id: `tx_rentearn_${rental.id}`,
           type: 'SELLER_PAYOUT',
-          amount: rental.totalPrice, // pure Rupees (₹)
+          amount: rental.totalPrice,
           currency: 'INR',
-          status: statusMap[rental.status] || 'PAID',
+          status: ['RETURNED', 'COMPLETED'].includes(String(rental.status)) ? 'RELEASED_TO_SELLER' : 'HELD_IN_ESCROW',
           description: `Rental earnings for "${title}"`,
           referenceId: rental.id,
           linkType: 'rental',
@@ -250,7 +295,7 @@ export async function getSellerPayouts(req: Request, res: Response): Promise<voi
 
     const payouts = soldOrders.map((order: any) => {
       const amount = order.totalAmount; // Pure Rupees (₹)
-      const commission = Math.round(amount * 0.1); // 10% platform commission
+      const commission = Math.round(amount * PLATFORM_COMMISSION_RATE); // 10% platform commission
       const netAmount = amount - commission;
 
       // Escrow state machine:

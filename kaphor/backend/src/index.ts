@@ -155,6 +155,7 @@ const { orderRoutes } = require('./routes/orders') as typeof import('./routes/or
 const { rentalRoutes } = require('./routes/rentals') as typeof import('./routes/rentals');
 const { swapRoutes } = require('./routes/swaps') as typeof import('./routes/swaps');
 const { razorpayRouter } = require('./routes/razorpay.routes') as typeof import('./routes/razorpay.routes');
+const { paymentsRouter } = require('./routes/payments.routes') as typeof import('./routes/payments.routes');
 const { adminRouter } = require('./routes/admin.routes') as typeof import('./routes/admin.routes');
 const { repairRouter } = require('./routes/repair.routes') as typeof import('./routes/repair.routes');
 const { messageRoutes } = require('./routes/messages') as typeof import('./routes/messages');
@@ -357,6 +358,7 @@ app.use(`${baseApiUrl}/orders`, orderRoutes);
 app.use(`${baseApiUrl}/rentals`, rentalRoutes);
 app.use(`${baseApiUrl}/swaps`, swapRoutes);
 app.use(`${baseApiUrl}/payments/razorpay`, razorpayRouter); // before /payments so its webhook is not shadowed
+app.use(`${baseApiUrl}/payments`, paymentsRouter); // history, payouts, refund
 app.use(`${baseApiUrl}/admin`, adminRouter);
 app.use(`${baseApiUrl}/repair`, repairRouter);
 app.use(`${baseApiUrl}/messages`, messageRoutes);
