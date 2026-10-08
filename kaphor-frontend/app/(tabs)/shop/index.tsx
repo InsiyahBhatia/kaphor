@@ -5,7 +5,7 @@ import { useGarmentStore, prefetchDetailImages } from '../../../src/store/garmen
 import { useAuthStore } from '../../../src/store/authStore';
 import { orderService } from '../../../src/services/orderService';
 import { EditorialGarmentCard } from '../../../src/components/EditorialGarmentCard';
-import { EditorialIcon, EditorialPageHeader, HandwrittenNote } from '../../../src/components/editorial/IllustrationLayer';
+import { EditorialIcon, EditorialPageHeader } from '../../../src/components/editorial/IllustrationLayer';
 import { GarmentGridSkeleton } from '../../../src/components/common/CardLoadingScreen';
 import { colors, typography, textStyles } from '../../../src/theme';
 import { 
@@ -267,39 +267,36 @@ export default function ShopScreen() {
         title="THE SHOP"
         subtitle="PRE-LOVED PIECES, NEW BEGINNINGS."
         eyebrow="BUY & SELL"
-        variant="archive"
+        variant="plain"
         style={styles.header}
       >
-        <HandwrittenNote>every piece keeps a story moving.</HandwrittenNote>
         <View style={styles.headerActionRow}>
-          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            <TouchableOpacity
-              style={styles.aiHeaderBtn}
-              onPress={() => router.push('/(tabs)/shop/ai-chat')}
-              activeOpacity={0.85}
-            >
-              <View style={styles.aiHeaderBtnInner}>
-                <EditorialIcon name="sparkle" size={16} allowTint tintColor={colors.gold} />
-                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.aiHeaderBtnText}>AI STYLIST</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)} activeOpacity={0.85}>
-              <EditorialIcon name="filter" size={22} allowTint tintColor={colors.cream} />
-            </TouchableOpacity>
+          <View style={styles.searchBar}>
+            <Text style={styles.searchPrefix}>{'>'}</Text>
+            <TextInput accessibilityLabel="Search pieces"
+              placeholder="Search pieces…"
+              placeholderTextColor={colors.textMuted}
+              style={styles.searchInput}
+              value={searchInput}
+              onChangeText={setSearchInput}
+              onSubmitEditing={() => setSearchQuery(searchInput.trim())}
+              autoCorrect={false}
+              returnKeyType="search"
+            />
           </View>
-        </View>
-        <View style={styles.searchBar}>
-          <Text style={styles.searchPrefix}>{'>'}</Text>
-          <TextInput accessibilityLabel="Search pieces"
-            placeholder="Search brand, style, category…"
-            placeholderTextColor={colors.textMuted}
-            style={styles.searchInput}
-            value={searchInput}
-            onChangeText={setSearchInput}
-            onSubmitEditing={() => setSearchQuery(searchInput.trim())}
-            autoCorrect={false}
-            returnKeyType="search"
-          />
+          <TouchableOpacity
+            style={styles.aiHeaderBtn}
+            onPress={() => router.push('/(tabs)/shop/ai-chat')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.aiHeaderBtnInner}>
+              <EditorialIcon name="sparkle" size={16} allowTint tintColor={colors.gold} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.aiHeaderBtnText}>AI STYLIST</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterToggleBtn} onPress={() => setShowFilters(true)} activeOpacity={0.85}>
+            <EditorialIcon name="filter" size={22} allowTint tintColor={colors.cream} />
+          </TouchableOpacity>
         </View>
       </EditorialPageHeader>
 
@@ -448,14 +445,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   headerActionRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 14,
-    marginBottom: 14,
+    gap: 8,
+    marginTop: 8,
   },
   title: {
     ...textStyles.pageTitle,
@@ -475,10 +472,11 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    height: 48,
+    height: 40,
     paddingHorizontal: 12,
     borderWidth: 2,
     borderColor: colors.charcoal,
@@ -847,7 +845,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
     paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingVertical: 7,
   },
   aiHeaderBtnText: {
     color: colors.cream,

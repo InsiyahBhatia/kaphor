@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   editorialHeader: { marginBottom: 0 },
   content: { padding: 24, paddingBottom: 180 },
-  heroSection: { alignItems: 'center', marginBottom: 28, position: 'relative', overflow: 'hidden', borderWidth: 1.5, borderColor: colors.borderLight, backgroundColor: colors.paperLight, padding: 20 },
+  heroSection: { alignItems: 'center', marginBottom: 28, position: 'relative', overflow: 'hidden', borderWidth: 1, borderColor: colors.borderLight, backgroundColor: colors.paperLight, padding: 20 },
   atelierIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.goldLight, justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: colors.goldLight },
   title: { fontSize: 24, fontFamily: typography.headings, color: colors.charcoal, marginTop: 4, marginBottom: 8 },
   subtitle: {
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   processRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 16 },
   processStep: { fontFamily: typography.handwritten, fontSize: 14, color: colors.charcoal, backgroundColor: colors.cream, borderWidth: 1, borderColor: colors.borderLight, paddingHorizontal: 7, paddingVertical: 4, includeFontPadding: false, },
-  imageArea: { width: '100%', height: 200, borderWidth: 1.5, borderColor: colors.charcoal, borderStyle: 'dashed', borderRadius: 8, overflow: 'hidden', marginBottom: 12, backgroundColor: colors.paperLight },
+  imageArea: { width: '100%', height: 200, borderWidth: 1, borderColor: colors.borderLight, borderStyle: 'dashed', borderRadius: 8, overflow: 'hidden', marginBottom: 12, backgroundColor: colors.paperLight },
   previewImage: { width: '100%', height: '100%' },
   imagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   cameraCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.goldLight, justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: colors.goldLight },
@@ -352,9 +352,9 @@ const styles = StyleSheet.create({
  color: colors.error, fontSize: 12, fontFamily: typography.body,
   },
   input: {
- borderWidth: 1.5, borderColor: colors.charcoal, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, color: colors.charcoal, backgroundColor: colors.paperLight, fontSize: 14, minHeight: 80, textAlignVertical: 'top', marginBottom: 24, fontFamily: typography.body,
+ borderWidth: 1, borderColor: colors.borderLight, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, color: colors.charcoal, backgroundColor: colors.paperLight, fontSize: 14, minHeight: 80, textAlignVertical: 'top', marginBottom: 24, fontFamily: typography.body,
   },
-  mainBtn: { width: '100%', height: 56, backgroundColor: colors.gold, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: colors.charcoal },
+  mainBtn: { width: '100%', height: 56, backgroundColor: colors.gold, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.charcoal },
   mainBtnText: {
  color: colors.goldDark, fontSize: 15, fontWeight: '800', letterSpacing: 1, fontFamily: typography.bodyBold,
   },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   impactText: {
  color: colors.success, fontSize: 12, flex: 1, fontFamily: typography.body,
   },
-  secondaryBtn: { width: '100%', height: 56, borderWidth: 1.5, borderColor: colors.charcoal, borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.paperLight },
+  secondaryBtn: { width: '100%', height: 56, borderWidth: 1, borderColor: colors.charcoal, borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.paperLight },
   secondaryBtnText: {
  color: colors.charcoal, fontSize: 14, fontWeight: '700', letterSpacing: 2, fontFamily: typography.bodyBold,
   },

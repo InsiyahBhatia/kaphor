@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GoogleLogo } from '../../src/components/common/GoogleLogo';
 import { SolarIcon } from '../../src/components/common/SolarIcon';
 import { StatusBar } from 'expo-status-bar';
@@ -59,6 +60,19 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <StatusBar style="dark" />
+      <ExpoImage
+        source={require('../../assets/photos/get-started.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        blurRadius={1.5}
+        cachePolicy="memory-disk"
+        accessibilityLabel="Clothes hanging on a rack by a window"
+      />
+      <LinearGradient
+        colors={['rgba(245,240,230,0)', 'rgba(245,240,230,0.2)', 'rgba(245,240,230,0.92)', 'rgba(245,240,230,0.97)']}
+        locations={[0, 0.12, 0.3, 0.45]}
+        style={StyleSheet.absoluteFill}
+      />
       <ScrollView 
         contentContainerStyle={[
           styles.scrollContent,
@@ -89,16 +103,7 @@ export default function LoginScreen() {
           <View style={styles.topSpacer} />
         </View>
 
-        {/* Editorial Muse Woman Illustration & Greeting */}
-        <View style={styles.museHeroWrap}>
-          <ExpoImage
-            source={require('../../assets/editorial/fashion/muse_hero.png')}
-            style={styles.museImage}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-            accessibilityLabel="A stylish woman in a flowing pink dress with a big bow"
-          />
-        </View>
+        <View style={styles.photoSpace} />
 
         <View style={styles.header}>
           <Text style={styles.title}>Welcome back</Text>
@@ -229,6 +234,9 @@ const styles = StyleSheet.create({
   topSpacer: {
     width: 40,
   },
+  photoSpace: {
+    height: 130,
+  },
   museHeroWrap: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -238,6 +246,7 @@ const styles = StyleSheet.create({
   museImage: {
     width: '100%',
     height: 190,
+    borderRadius: 12,
   },
   header: {
     alignItems: 'center',

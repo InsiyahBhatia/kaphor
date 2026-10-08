@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     backgroundColor: colors.white,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.borderLight,
     justifyContent: 'center',
     alignItems: 'center',
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   circleCurrent: {
     backgroundColor: colors.ink,
     borderColor: colors.copper,
-    borderWidth: 2,
+    borderWidth: 1,
     shadowColor: colors.copper,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.4,

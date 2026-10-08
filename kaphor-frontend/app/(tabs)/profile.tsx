@@ -1286,7 +1286,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
@@ -2052,7 +2052,7 @@ const styles = StyleSheet.create({
   // ── Monogram Avatar, Bio & Tier Styles ──
   avatarMonogram: {
     backgroundColor: colors.ink,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.gold || colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2179,8 +2179,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 16,
     padding: 18,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
   bioModalHeader: {
     flexDirection: 'row',
@@ -2195,8 +2195,8 @@ const styles = StyleSheet.create({
     color: colors.charcoal,
   },
   bioTextInput: {
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 8,
     padding: 12,
     minHeight: 80,
@@ -2214,7 +2214,7 @@ const styles = StyleSheet.create({
   bioCancelBtn: {
     flex: 1,
     paddingVertical: 10,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.charcoal,
     borderRadius: 6,
     alignItems: 'center',

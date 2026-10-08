@@ -69,10 +69,10 @@ Ink:
 
 Fashion accents:
 
---rose: #C92745
---dusty-rose: #D98991
---blush: #EAB8B5
---mauve: #A88C9C
+--rose: #A82222
+--dusty-rose: #B83A3A
+--blush: #C9614F
+--mauve: #8C3B3B
 
 Sustainability:
 

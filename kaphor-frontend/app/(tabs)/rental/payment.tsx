@@ -155,10 +155,10 @@ export default function RentalPaymentScreen() {
     }
 
     try {
-      const rp = await paymentService.createRentalPayment(rentalOrderId);
+      const rp = await paymentService.createRentalPayment(rentalOrderId, { includeInsurance });
       setRazorpayOrderId(rp.razorpayOrderId);
 
-      const amountRupees = (rp as any).amount || totalAmount;
+      const amountRupees = (rp as any).amount ?? totalAmount;
       const options = {
         key: keyId,
         amount: Math.round(amountRupees * 100), // convert to paise for Razorpay checkout
@@ -463,8 +463,8 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.cream,
@@ -504,13 +504,13 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     padding: 20,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   row: {
     flexDirection: 'row',
@@ -540,8 +540,8 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 20,
     height: 20,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   methodCard: {
     backgroundColor: colors.white,
     padding: 14,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.overlayLight,
     shadowColor: colors.charcoal,
     shadowOffset: { width: 2, height: 2 },
@@ -627,11 +627,11 @@ const styles = StyleSheet.create({
   methodCardActive: {
     borderColor: colors.charcoal,
     backgroundColor: colors.white,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   methodCardHeader: {
     flexDirection: 'row',
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.textMuted,
     justifyContent: 'center',
     alignItems: 'center',
@@ -660,8 +660,8 @@ const styles = StyleSheet.create({
   methodIconBox: {
     width: 34,
     height: 34,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     backgroundColor: colors.cream,
     justifyContent: 'center',
     alignItems: 'center',
@@ -734,8 +734,8 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: Platform.OS === 'ios' ? 36 : 20,
     backgroundColor: colors.cream,
-    borderTopWidth: 2,
-    borderTopColor: colors.charcoal,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
     gap: 14,
   },
   bottomTotalRow: {
@@ -759,13 +759,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 10,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.charcoal,
     shadowColor: colors.charcoal,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   payBtnDisabled: { opacity: 0.7 },
   payBtnText: {

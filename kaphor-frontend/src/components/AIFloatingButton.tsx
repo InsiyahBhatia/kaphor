@@ -110,7 +110,7 @@ export const AIFloatingButton: React.FC = () => {
               onPress={() => navigate(item.route)}
               activeOpacity={0.85}
             >
-              <View style={[styles.menuIconWrap, { borderColor: item.accent + '35', backgroundColor: colors.paperLight }]}>
+              <View style={[styles.menuIconWrap, { borderColor: item.accent, backgroundColor: colors.paperLight }]}>
                 <EditorialIcon name={item.icon} size={22} />
               </View>
               <View style={{ flex: 1 }}>
@@ -162,20 +162,20 @@ const styles = StyleSheet.create({
   },
   fabShell: {
     position: 'absolute',
-    bottom: 78,
-    right: 16,
-    width: 58,
-    height: 58,
+    bottom: 72,
+    right: 14,
+    width: 50,
+    height: 50,
     borderRadius: 999,
-    borderWidth: 2,
-    borderColor: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     backgroundColor: colors.rose,
     padding: 3,
-    shadowColor: colors.crimsonDark,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 8,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   fabBody: {
     flex: 1,
@@ -185,18 +185,18 @@ const styles = StyleSheet.create({
   },
   menu: {
     position: 'absolute',
-    bottom: 150,
+    bottom: 132,
     right: 16,
     width: 258,
     backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 2,
     shadowColor: colors.ink,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   menuHead: {
     flexDirection: 'row',

@@ -6,6 +6,7 @@ import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Chip, Empty, formatINR } from '../../src/components/admin/AdminUI';
 import { Loader } from '../../src/components/common/Loader';
+import { KaphorImage } from '../../src/components/KaphorImage';
 
 const LIFECYCLES = [
   'ALL', 'LISTED', 'PURCHASE_INTENT', 'INTEREST', 'SELL_INTENT',
@@ -115,6 +116,15 @@ export default function AdminListingsScreen() {
           {data?.data?.length === 0 && <Empty text="No listings match" />}
           {data?.data?.map((g: any) => (
             <View key={g.id} style={styles.card}>
+              <View style={styles.thumbWrap}>
+                <KaphorImage
+                  uri={g.thumbnailUrl || g.images?.[0]}
+                  category={g.category}
+                  brand={g.brand}
+                  style={styles.thumb}
+                  contentFit="cover"
+                />
+              </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardTitle} numberOfLines={2}>{g.title}</Text>
                 <Text style={styles.cardMeta}>
@@ -207,6 +217,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
+  thumbWrap: {
+    width: 76,
+    height: 96,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.bgMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  thumb: { width: '100%', height: '100%' },
   cardInfo: { flex: 1 },
   cardTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
   cardMeta: { fontFamily: typography.bodyMedium, fontSize: 12, color: colors.textMuted, marginTop: 4 },

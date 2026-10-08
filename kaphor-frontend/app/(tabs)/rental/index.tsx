@@ -390,7 +390,7 @@ export default function RentalScreen() {
         title="RENTALS"
         subtitle="Rent outfits for events"
         eyebrow="Lease the look"
-        variant="rental"
+        variant="plain"
         style={styles.header}
       >
         <HandwrittenNote>occasion pieces without permanent closets.</HandwrittenNote>
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   subtitle: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.red, letterSpacing: 1.2 },
 
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.overlayLight },
-  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: colors.charcoal },
   tabText: { fontFamily: typography.bodyBold, fontSize: 11, color: colors.textMuted, letterSpacing: 1.2 },
   tabTextActive: { color: colors.charcoal },
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.charcoal,
   },
   myRentalDossierText: {
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.paper,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.charcoal,
   },
   myRentalChatText: {
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.charcoal,
   },
   myRentalReturnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
@@ -554,8 +554,8 @@ const styles = StyleSheet.create({
   roleFilterChip: {
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     backgroundColor: colors.white,
   },
   roleFilterChipActive: {
@@ -573,8 +573,8 @@ const styles = StyleSheet.create({
   emptyText: { color: colors.charcoal, fontSize: 13, fontFamily: typography.handBold, marginVertical: 24, includeFontPadding: false, },
   button: { 
     backgroundColor: colors.charcoal, paddingHorizontal: 28, paddingVertical: 14,
-    borderWidth: 2, borderColor: colors.charcoal,
-    shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0
+    borderWidth: 1, borderColor: colors.charcoal,
+    shadowColor: colors.charcoal, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4
   },
   buttonText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
 });

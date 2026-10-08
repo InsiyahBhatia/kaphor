@@ -62,7 +62,6 @@ export type EditorialIconName = keyof typeof EditorialIcons;
 
 
 export const EditorialFashion = {
-  museHero: require('../../../assets/editorial/fashion/muse_hero.png'),
   parisFigure01: require('../../../assets/editorial/fashion/paris_figure_01.png'),
   parisFigure02: require('../../../assets/editorial/fashion/paris_figure_02.png'),
   parisFigure03: require('../../../assets/editorial/fashion/paris_figure_03.png'),
@@ -115,13 +114,11 @@ export const EditorialAccents = {
 } as const;
 
 export const EditorialIndian = {
-  musePinkBanarasi: require('../../../assets/editorial/indian/muse_pink_banarasi.png'),
   museIvoryGajra: require('../../../assets/editorial/indian/muse_ivory_gajra.png'),
   royalCrimsonLehenga: require('../../../assets/editorial/indian/royal_crimson_lehenga.png'),
   jharokhaWindowGarlands: require('../../../assets/editorial/indian/jharokha_window_garlands.png'),
   udaipurLakePalace: require('../../../assets/editorial/indian/udaipur_lake_palace.png'),
   royalCrimsonPotli: require('../../../assets/editorial/indian/royal_crimson_potli.png'),
-  pinkLotusFlower: require('../../../assets/editorial/indian/pink_lotus_flower.png'),
   royalWhiteElephant: require('../../../assets/editorial/indian/royal_white_elephant.png'),
   pichwaiSacredCow: require('../../../assets/editorial/indian/pichwai_sacred_cow.png'),
   brassGlowingDiya: require('../../../assets/editorial/indian/brass_glowing_diya.png'),

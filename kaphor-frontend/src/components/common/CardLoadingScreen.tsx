@@ -384,8 +384,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 4,
     padding: 10,
     gap: 10,
@@ -418,8 +418,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     backgroundColor: colors.white,
-    borderBottomWidth: 1.5,
-    borderBottomColor: colors.ink,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
   chatContextStrip: {
     flexDirection: 'row',
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   bubbleBox: {
     padding: 12,
     borderRadius: 4,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   bubbleBoxLeft: {
     backgroundColor: colors.white,
@@ -465,15 +465,15 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 10,
     backgroundColor: colors.white,
-    borderTopWidth: 1.5,
-    borderTopColor: colors.ink,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
   },
 
   // Order Card Skeleton
   orderCardSkeleton: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 4,
     padding: 12,
     shadowColor: colors.ink,
@@ -493,8 +493,8 @@ const styles = StyleSheet.create({
   },
   centerCardSkeleton: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 4,
     padding: 12,
     gap: 6,
@@ -508,15 +508,15 @@ const styles = StyleSheet.create({
   // Garment Clothes Card Skeletons
   garmentCardSkeleton: {
     backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 2,
     overflow: 'hidden',
     shadowColor: colors.ink,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   garmentImageSkeletonBox: {
     width: '100%',

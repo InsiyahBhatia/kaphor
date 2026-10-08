@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.paper,
-    borderTopWidth: 1.5,
-    borderTopColor: colors.ink,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
     paddingTop: 8,
     alignItems: 'center',
     justifyContent: 'space-around',

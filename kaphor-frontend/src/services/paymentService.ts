@@ -7,7 +7,7 @@
  *   - Seller payouts
  *   - Refunds / escrow release
  *
- * Every amount is in **paise** (1 INR = 100 paise) unless documented otherwise.
+ * Every amount is in whole **rupees** (₹). Paise (x100) is only used when talking to Razorpay checkout/API.
  */
 
 import api from './api';
@@ -65,10 +65,13 @@ const paymentService = {
    * The backend splits the payment into rental fee (non-refundable)
    * and security deposit (held in escrow).
    */
-  async createRentalPayment(rentalOrderId: string): Promise<RazorpayOrderResponse> {
+  async createRentalPayment(
+    rentalOrderId: string,
+    options: { includeInsurance?: boolean } = {},
+  ): Promise<RazorpayOrderResponse> {
     const { data } = await api.post<{ data: RazorpayOrderResponse }>(
       '/payments/razorpay/create-rental-order',
-      { rentalOrderId },
+      { rentalOrderId, includeInsurance: options.includeInsurance !== false },
     );
     return data.data;
   },

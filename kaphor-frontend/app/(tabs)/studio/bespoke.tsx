@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   header: { 
     paddingTop: 24, paddingHorizontal: 20, flexDirection: 'row', 
     justifyContent: 'space-between', alignItems: 'center', marginBottom: 24,
-    paddingBottom: 20, borderBottomWidth: 2, borderBottomColor: colors.charcoal
+    paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: colors.borderLight
   },
   headerTitle: {
     ...textStyles.screenTitle,
@@ -126,30 +126,30 @@ const styles = StyleSheet.create({
   infoCards: { flexDirection: 'row', gap: 16, marginBottom: 32 },
   infoCard: { 
     flex: 1, backgroundColor: colors.charcoal, padding: 20, alignItems: 'center', gap: 8, 
-    borderWidth: 2, borderColor: colors.charcoal,
-    shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4
+    borderWidth: 1, borderColor: colors.borderLight,
+    shadowColor: colors.ink, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2
   },
   infoTitle: { color: colors.textMuted, fontFamily: typography.handBold, fontSize: 13, includeFontPadding: false, },
   infoText: { color: colors.white, fontFamily: typography.handBold, fontSize: 16, includeFontPadding: false, },
   
   inputLabel: { color: colors.charcoal, fontFamily: typography.handBold, fontSize: 14, marginBottom: 8, marginTop: 16, includeFontPadding: false, },
   input: { 
-    height: 56, borderWidth: 2, borderColor: colors.charcoal, backgroundColor: colors.white, 
+    height: 56, borderWidth: 1, borderColor: colors.borderLight, backgroundColor: colors.white, 
     padding: 16, color: colors.charcoal, fontFamily: typography.body, fontSize: 14, marginBottom: 24,
-    shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2
+    shadowColor: colors.ink, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2
   },
   
   footer: { 
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: 24, paddingBottom: 40, borderTopWidth: 2, borderTopColor: colors.charcoal, backgroundColor: colors.cream 
+    padding: 24, paddingBottom: 40, borderTopWidth: 1, borderTopColor: colors.borderLight, backgroundColor: colors.cream 
   },
   submitBtn: { 
     backgroundColor: colors.charcoal, 
     height: 60, 
     justifyContent: 'center', 
     alignItems: 'center',
-    borderWidth: 2, borderColor: colors.charcoal,
-    shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4
+    borderWidth: 1, borderColor: colors.charcoal,
+    shadowColor: colors.charcoal, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2
   },
   submitBtnText: { color: colors.cream, fontFamily: typography.bodyBold, fontSize: 14, letterSpacing: 0.2 },
 });

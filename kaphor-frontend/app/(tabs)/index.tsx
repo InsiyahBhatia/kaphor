@@ -59,6 +59,7 @@ const QUICK_PILLARS = [
     assetIcon: 'bag' as const,
     route: '/(tabs)/shop',
     accent: colors.rose,
+    tint: colors.crimsonLight,
   },
   {
     label: 'RENTALS',
@@ -67,6 +68,7 @@ const QUICK_PILLARS = [
     assetIcon: 'dress' as const,
     route: '/(tabs)/rental',
     accent: colors.gold,
+    tint: colors.goldLight,
   },
   {
     label: 'SWAP',
@@ -75,6 +77,7 @@ const QUICK_PILLARS = [
     assetIcon: 'swap' as const,
     route: '/(tabs)/swap',
     accent: colors.forest,
+    tint: colors.emeraldLight,
   },
   {
     label: 'STUDIO',
@@ -83,6 +86,7 @@ const QUICK_PILLARS = [
     assetIcon: 'sewing' as const,
     route: '/(tabs)/studio/repair-refresh',
     accent: colors.ink,
+    tint: colors.paperDark,
   },
 ];
 
@@ -120,10 +124,10 @@ const HeroShowcase = React.memo(function HeroShowcase({
   return (
     <View style={styles.heroContainer}>
       <ExpoImage
-        source={require("../../assets/images/opt/muse-white-dress.webp")}
+        source={require("../../assets/photos/home-banner.jpg")}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
-        contentPosition="right bottom"
+        contentPosition="center"
         cachePolicy="memory-disk"
       />
       <LinearGradient
@@ -143,7 +147,7 @@ const HeroShowcase = React.memo(function HeroShowcase({
           CIRCULAR{'\n'}FASHION{'\n'}LIVES LONGER
         </Text>
 
-        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.heroTagline}>
+        <Text numberOfLines={3} style={styles.heroTagline}>
           Buy, sell, swap and rent pre-loved fashion with zero retail waste.
         </Text>
 
@@ -198,7 +202,7 @@ const QuickAtelierGrid = React.memo(function QuickAtelierGrid({ onNavigate }: { 
           key={i}
           style={({ pressed }) => [
             styles.quickActionCard,
-            { borderColor: pillar.accent + '40' },
+            { borderColor: pillar.accent },
             pressed && { transform: [{ scale: 0.96 }], opacity: 0.9 },
           ]}
           onPress={() => {
@@ -206,11 +210,11 @@ const QuickAtelierGrid = React.memo(function QuickAtelierGrid({ onNavigate }: { 
             onNavigate(pillar.route);
           }}
         >
-          <View style={[styles.quickActionIconWrap, { backgroundColor: pillar.accent + '14' }]}>
+          <View style={[styles.quickActionIconWrap, { backgroundColor: pillar.tint }]}>
             <EditorialIcon name={pillar.assetIcon} size={28} />
           </View>
           <Text style={styles.quickActionLabel} numberOfLines={2}>{pillar.label}</Text>
-          <Text style={styles.quickActionDesc} numberOfLines={1}>{pillar.sub}</Text>
+          <Text style={styles.quickActionDesc} numberOfLines={2}>{pillar.sub}</Text>
         </Pressable>
       ))}
     </View>
@@ -981,7 +985,6 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     color: colors.inkSoft,
     marginBottom: 10,
-    maxWidth: '92%',
   },
   heroNote: {
     marginBottom: 18,
@@ -1124,9 +1127,11 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     color: colors.textMuted,
     fontSize: 11,
+    lineHeight: 14,
     letterSpacing: 0.2,
     textAlign: 'center',
     marginTop: 1,
+    paddingHorizontal: 4,
   },
 
   // ── Section ─────────────────────────────────────────────────────

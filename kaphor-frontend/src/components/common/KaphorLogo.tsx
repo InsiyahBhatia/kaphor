@@ -26,9 +26,10 @@ export function KaphorMark({ size = 32, ring = colors.rose, letter = colors.ink 
         strokeLinecap="butt"
       />
       <Polygon points="49,1 64,10 49,19" fill={ring} />
-      <Polygon points="33,29 42.5,29 42.5,71 33,71" fill={letter} />
-      <Polygon points="60,29 71.5,29 41.5,54.5 41.5,43.5" fill={letter} />
-      <Polygon points="57.5,71 70,71 41.5,50.5 41.5,60.6" fill={letter} />
+      {/* Symmetric K: stem plus two mirrored arms, centred on the ring (50,50) */}
+      <Polygon points="31,29 40.5,29 40.5,71 31,71" fill={letter} />
+      <Polygon points="57.5,29 69,29 40.5,54.5 40.5,43.5" fill={letter} />
+      <Polygon points="57.5,71 69,71 40.5,45.5 40.5,56.5" fill={letter} />
     </Svg>
   );
 }

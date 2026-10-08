@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,19 +25,26 @@ export default function WelcomeScreen() {
     <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
       <StatusBar style="dark" />
 
+      <ExpoImage
+        source={require('../../assets/photos/get-started.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        blurRadius={1.5}
+        cachePolicy="memory-disk"
+        accessibilityLabel="Clothes hanging on a rack by a window"
+      />
+      <LinearGradient
+        colors={['rgba(245,240,230,0)', 'rgba(245,240,230,0.08)', 'rgba(245,240,230,0.9)', 'rgba(245,240,230,0.97)']}
+        locations={[0, 0.3, 0.5, 0.65]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <View style={styles.brandRow}>
         <KaphorMark size={34} />
         <Text style={styles.brandName}>KAPHOR</Text>
       </View>
 
-      <View style={styles.hero}>
-        <Image
-          source={require('../../assets/editorial/fashion/muse_hero.png')}
-          style={styles.heroImage}
-          resizeMode="contain"
-          accessibilityLabel="A stylish woman in a flowing pink dress with a big bow"
-        />
-      </View>
+      <View style={styles.hero} />
 
       <View style={styles.copy}>
         <Text style={styles.headline}>Wear it. Love it.{'\n'}Pass it on.</Text>
@@ -113,6 +122,7 @@ const styles = StyleSheet.create({
   heroImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 16,
   },
   copy: {
     alignItems: 'center',

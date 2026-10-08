@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
   uploadArea: {
     width: '100%',
     height: 200,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.borderLight,
     borderStyle: 'dashed',
     borderRadius: 12,
@@ -1281,7 +1281,7 @@ const styles = StyleSheet.create({
 
   // Hard Reject Banner (Part 4 PDF)
   hardRejectBanner: {
-    backgroundColor: 'rgba(200,30,44,0.1)',
+    backgroundColor: colors.crimsonLight,
     borderWidth: 1,
     borderColor: colors.red,
     padding: 14,
@@ -1375,8 +1375,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.white,
     padding: 12,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 4,
     marginBottom: 14,
   },

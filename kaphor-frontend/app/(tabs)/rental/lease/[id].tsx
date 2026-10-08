@@ -419,11 +419,11 @@ export default function RentalLeaseDossierScreen() {
 
   // Breakdown figures
   const meta = rental.metadata || {};
-  const rentalFee = meta.rentalFee || rental.totalPrice || 0;
-  const refundableDeposit = meta.refundableDeposit || 299;
-  const damageInsurance = meta.damageInsurance || 49;
-  const deliveryReturnFee = meta.deliveryReturnFee || 199;
-  const totalAmount = meta.grandTotal || (rentalFee + refundableDeposit + damageInsurance + deliveryReturnFee);
+  const rentalFee = meta.rentalFee ?? rental.totalPrice ?? 0;
+  const refundableDeposit = meta.refundableDeposit ?? 299;
+  const damageInsurance = meta.damageInsurance ?? 49;
+  const deliveryReturnFee = meta.deliveryReturnFee ?? 199;
+  const totalAmount = meta.grandTotal ?? (rentalFee + refundableDeposit + damageInsurance + deliveryReturnFee);
 
   return (
     <View style={styles.container}>
@@ -1355,7 +1355,7 @@ const styles = StyleSheet.create({
   // Status Banner
   statusBanner: {
     backgroundColor: colors.overlayLight,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.gold,
     borderRadius: 14,
     padding: 14,
@@ -1401,8 +1401,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.bgCard,
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: 16,
     marginBottom: 14,
   },
@@ -1722,7 +1722,7 @@ const styles = StyleSheet.create({
   },
   reviewActionBtn: {
     backgroundColor: 'transparent',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.crimson,
   },
   primaryCta: {
@@ -1749,8 +1749,8 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: colors.bgCard,
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: 20,
   },
   modalHeader: {
@@ -1866,7 +1866,7 @@ const styles = StyleSheet.create({
   },
   stepperBadgeCurrent: {
     backgroundColor: colors.gold || colors.gold,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.crimson,
   },
   stepperItemText: {
@@ -1988,7 +1988,7 @@ const styles = StyleSheet.create({
   declineBtn: {
     flex: 1,
     backgroundColor: 'transparent',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.red || colors.rose,
   },
   approveBtn: {
@@ -1999,7 +1999,7 @@ const styles = StyleSheet.create({
   // ── Action Prompt Cards (Lender Approval & Borrower Payment) ──
   actionPromptCard: {
     backgroundColor: colors.goldLight,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.gold,
     borderRadius: 14,
     padding: 14,
@@ -2048,7 +2048,7 @@ const styles = StyleSheet.create({
   actionPromptDecline: {
     flex: 1,
     backgroundColor: 'transparent',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.red || colors.rose,
   },
   actionPromptDeclineText: {
@@ -2076,7 +2076,7 @@ const styles = StyleSheet.create({
   // ── Rental Review Card & Action Button ──
   rentalReviewCard: {
     backgroundColor: colors.bgCard,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.gold,
     borderRadius: 14,
     padding: 14,

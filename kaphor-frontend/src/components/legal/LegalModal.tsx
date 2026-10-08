@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   docHeaderCard: {
     backgroundColor: colors.bgCard,
     borderWidth: 1,
-    borderTopWidth: 3,
+    borderTopWidth: 1,
     borderColor: colors.border,
     padding: 20,
     marginBottom: 24,

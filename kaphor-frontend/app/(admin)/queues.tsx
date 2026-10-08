@@ -7,6 +7,7 @@ import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Chip, Empty } from '../../src/components/admin/AdminUI';
 import { Loader } from '../../src/components/common/Loader';
+import { KaphorImage } from '../../src/components/KaphorImage';
 
 function QueueSection({
   title, count, children,
@@ -37,13 +38,33 @@ function ActionBtn({ label, onPress, color = colors.ink, disabled }: { label: st
 }
 
 function QueueRow({
-  title, meta, status, extra, children,
-}: { title: string; meta: string; status?: string; extra?: string; children?: React.ReactNode }) {
+  title, meta, status, extra, garments, children,
+}: { title: string; meta: string; status?: string; extra?: string; garments?: any[]; children?: React.ReactNode }) {
+  const shown = (garments ?? []).filter(Boolean).slice(0, 2);
   return (
     <View style={styles.rowCard}>
-      <Text style={styles.rowTitle} numberOfLines={2}>{title}</Text>
-      <Text style={styles.rowMeta} numberOfLines={1}>{meta}</Text>
-      {extra ? <Text style={styles.rowExtra} numberOfLines={2}>{extra}</Text> : null}
+      <View style={styles.rowTop}>
+        {shown.length > 0 && (
+          <View style={styles.rowThumbs}>
+            {shown.map((g: any, i: number) => (
+              <View key={g.id ?? i} style={styles.rowThumb}>
+                <KaphorImage
+                  uri={g.thumbnailUrl || g.images?.[0]}
+                  category={g.category}
+                  brand={g.brand}
+                  style={styles.rowThumbImg}
+                  contentFit="cover"
+                />
+              </View>
+            ))}
+          </View>
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle} numberOfLines={2}>{title}</Text>
+          <Text style={styles.rowMeta} numberOfLines={2}>{meta}</Text>
+          {extra ? <Text style={styles.rowExtra} numberOfLines={2}>{extra}</Text> : null}
+        </View>
+      </View>
       <View style={styles.rowFoot}>
         {status ? <Chip>{status}</Chip> : null}
         <View style={{ flex: 1 }} />
@@ -119,6 +140,7 @@ export default function AdminQueuesScreen() {
               meta={`${u.user?.displayName ?? 'User'} · ${u.garment?.title ?? '—'}`}
               status={u.status}
               extra={`Cost ${u.estimatedCost ?? '—'} · ${u.estimatedDays ?? '—'}d`}
+              garments={[u.garment]}
             >
               <ActionBtn label="APPROVE" onPress={() => runAction(`up-${u.id}`, () => adminService.updateUpcycle(u.id, 'IN_PROGRESS'))} disabled={busy === `up-${u.id}`} color={colors.emerald} />
               <ActionBtn label="REJECT" onPress={() => runAction(`up-${u.id}`, () => adminService.updateUpcycle(u.id, 'REJECTED'))} disabled={busy === `up-${u.id}`} color={colors.error} />
@@ -179,6 +201,7 @@ export default function AdminQueuesScreen() {
               key={sw.id}
               title={`${sw.initiator?.displayName ?? 'A'} ↔ ${sw.receiver?.displayName ?? 'B'}`}
               meta={`${sw.offeredGarment?.title ?? '—'} for ${sw.wantedGarment?.title ?? '—'}`}
+              garments={[sw.offeredGarment, sw.wantedGarment]}
               status={sw.status}
             >
               {sw.status === 'REQUESTED' && (
@@ -202,6 +225,7 @@ export default function AdminQueuesScreen() {
               title={r.garment?.title ?? 'Rental'}
               meta={`${r.renter?.displayName ?? 'Renter'} · ${new Date(r.startDate).toLocaleDateString('en-IN')} – ${new Date(r.endDate).toLocaleDateString('en-IN')}`}
               status={r.status}
+              garments={[r.garment]}
             >
               {r.status === 'RETURN_DISPATCHED' && (
                 <ActionBtn label="CONFIRM RETURN" onPress={() => runAction(`r-${r.id}`, () => api.post(`/rentals/${r.id}/confirm-return-delivery`))} disabled={busy === `r-${r.id}`} color={colors.emerald} />
@@ -221,6 +245,7 @@ export default function AdminQueuesScreen() {
               title={`${c.garment?.title ?? 'Garment'} · ${c.preferredSlot ?? ''}`}
               meta={`${c.user?.displayName ?? 'User'} · ${c.address ?? ''}`}
               status={c.status}
+              garments={[c.garment]}
             >
               <ActionBtn label="PICKED UP" onPress={() => runAction(`c-${c.id}`, () => adminService.updateCircularRequest(c.id, 'PICKED_UP'))} disabled={busy === `c-${c.id}`} color={colors.emerald} />
               <ActionBtn label="COMPLETE" onPress={() => runAction(`c-${c.id}`, () => adminService.updateCircularRequest(c.id, 'COMPLETED'))} disabled={busy === `c-${c.id}`} />
@@ -271,6 +296,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
+  rowTop: { flexDirection: 'row', gap: 12 },
+  rowThumbs: { flexDirection: 'row', gap: 6 },
+  rowThumb: { width: 56, height: 72, borderRadius: 8, overflow: 'hidden', backgroundColor: colors.bgMuted },
+  rowThumbImg: { width: '100%', height: '100%' },
   rowTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink },
   rowMeta: { fontFamily: typography.bodyMedium, fontSize: 12, color: colors.textMuted, marginTop: 4 },
   rowExtra: { fontFamily: typography.body, fontSize: 12, color: colors.ink, marginTop: 6 },

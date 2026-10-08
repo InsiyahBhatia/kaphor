@@ -26,13 +26,13 @@ export const colors = {
   white: '#FFFFFF',
 
   // Fashion Editorial Accents
-  rose: '#C92745',
-  dustyRose: '#D98991',
-  blush: '#EAB8B5',
-  mauve: '#A88C9C',
-  crimson: '#C92745',
-  crimsonDark: '#5C0B12',
-  crimsonLight: '#FCEBEF',
+  rose: '#A82222',
+  dustyRose: '#B83A3A',
+  blush: '#C9614F',
+  mauve: '#8C3B3B',
+  crimson: '#A82222',
+  crimsonDark: '#5A0F0F',
+  crimsonLight: '#F3E6DA',
 
   // Sustainability & Circularity (Emerald / Forest / Sage)
   forest: '#176451',
@@ -54,9 +54,9 @@ export const colors = {
 
   // Semantic mappings
   success: '#176451',
-  error: '#C92745',
+  error: '#A82222',
   warning: '#B89A3E',
-  red: '#C92745',
+  red: '#A82222',
   navy: '#171717',
   orange: '#C95F12',
   terracotta: '#C85A32',

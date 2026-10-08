@@ -6,6 +6,7 @@ import { colors, typography } from '../../../src/theme';
 import AdminTopBar from '../../../src/components/admin/AdminTopBar';
 import { Card, SectionLabel, InfoRow, Chip, formatINR } from '../../../src/components/admin/AdminUI';
 import { Loader } from '../../../src/components/common/Loader';
+import { KaphorImage } from '../../../src/components/KaphorImage';
 
 const REFUNDABLE = ['CONFIRMED', 'SHIPPED', 'DELIVERED'];
 
@@ -101,12 +102,25 @@ export default function AdminOrderDetailScreen() {
         <SectionLabel>Items</SectionLabel>
         {order.items?.map((it: any) => (
           <Card key={it.id}>
-            <Text style={styles.itemTitle}>{it.garment?.title ?? 'Garment'}</Text>
-            <Text style={styles.itemMeta}>
-              {(it.garment?.brand || '—').toUpperCase()} · SIZE {it.garment?.size?.toUpperCase() ?? '—'} · QTY {it.quantity}
-            </Text>
-            <View style={styles.itemFoot}>
-              <Text style={styles.itemPrice}>{formatINR(it.price)}</Text>
+            <View style={styles.itemRow}>
+              <View style={styles.itemThumb}>
+                <KaphorImage
+                  uri={it.garment?.thumbnailUrl || it.garment?.images?.[0]}
+                  category={it.garment?.category}
+                  brand={it.garment?.brand}
+                  style={styles.itemThumbImg}
+                  contentFit="cover"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemTitle}>{it.garment?.title ?? 'Garment'}</Text>
+                <Text style={styles.itemMeta}>
+                  {(it.garment?.brand || '—').toUpperCase()} · SIZE {it.garment?.size?.toUpperCase() ?? '—'} · QTY {it.quantity}
+                </Text>
+                <View style={styles.itemFoot}>
+                  <Text style={styles.itemPrice}>{formatINR(it.price)}</Text>
+                </View>
+              </View>
             </View>
           </Card>
         ))}
@@ -149,6 +163,9 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   refundNote: { fontFamily: typography.bodyBold, fontSize: 12, color: colors.emerald },
 
+  itemRow: { flexDirection: 'row', gap: 12 },
+  itemThumb: { width: 72, height: 92, borderRadius: 8, overflow: 'hidden', backgroundColor: colors.bgMuted },
+  itemThumbImg: { width: '100%', height: '100%' },
   itemTitle: { fontFamily: typography.bodyBold, fontSize: 15, color: colors.ink },
   itemMeta: { fontFamily: typography.bodyMedium, fontSize: 12, color: colors.textMuted, marginTop: 4 },
   itemFoot: { marginTop: 8, flexDirection: 'row', justifyContent: 'flex-end' },

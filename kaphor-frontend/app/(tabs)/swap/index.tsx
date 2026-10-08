@@ -466,7 +466,7 @@ export default function SwapFeedScreen() {
         title="SWAP"
         subtitle="Swap with members"
         eyebrow="Cashless barter"
-        variant="swap"
+        variant="plain"
         style={styles.header}
       >
         <View style={styles.headerActions}>
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
 
   // Tab bar
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.overlayLight, backgroundColor: colors.cream },
-  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: colors.charcoal },
   tabText: { fontFamily: typography.handSemi, fontSize: 13, color: colors.textMuted, includeFontPadding: false, },
   tabTextActive: { color: colors.charcoal, fontWeight: '900' },

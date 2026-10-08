@@ -107,7 +107,7 @@ export function EstTradeValueBadge({
 
 const styles = StyleSheet.create({
   badgeBase: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderRadius: 2,
     paddingHorizontal: 8,
     paddingVertical: 5,

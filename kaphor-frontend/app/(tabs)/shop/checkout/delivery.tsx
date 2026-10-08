@@ -509,8 +509,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 14,
     backgroundColor: colors.cream,
-    borderTopWidth: 2,
-    borderTopColor: colors.charcoal,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
   },
 
   // Progress Bar
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
   step: { alignItems: 'center' },
   stepCircle: {
     width: 28, height: 28, borderRadius: 14,
-    borderWidth: 2, borderColor: colors.charcoal,
+    borderWidth: 1, borderColor: colors.borderLight,
     justifyContent: 'center', alignItems: 'center',
     backgroundColor: colors.cream,
   },
@@ -546,14 +546,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.white,
     padding: 16,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     marginBottom: 12,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   addressCardSelected: {
     borderColor: colors.red,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   },
   addressRadio: {
     width: 22, height: 22, borderRadius: 11,
-    borderWidth: 2, borderColor: colors.charcoal,
+    borderWidth: 1, borderColor: colors.borderLight,
     justifyContent: 'center', alignItems: 'center',
     marginRight: 14, marginTop: 4,
   },
@@ -587,14 +587,14 @@ const styles = StyleSheet.create({
   // Add Button
   addBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, padding: 16, borderWidth: 2, borderStyle: 'dashed',
+    gap: 8, padding: 16, borderWidth: 1, borderStyle: 'dashed',
     borderColor: colors.charcoal, marginBottom: 24,
   },
   addBtnText: { fontFamily: typography.handBold, fontSize: 14, color: colors.charcoal, includeFontPadding: false },
 
   // Selected Summary
   selectedSummary: {
-    backgroundColor: colors.white, padding: 16, borderWidth: 2,
+    backgroundColor: colors.white, padding: 16, borderWidth: 1,
     borderColor: colors.forest, marginBottom: 20,
     borderLeftWidth: 6,
   },
@@ -609,12 +609,12 @@ const styles = StyleSheet.create({
 
   // Form
   label: { fontFamily: typography.handBold, fontSize: 13, color: colors.textMuted, marginBottom: 6, marginTop: 16, includeFontPadding: false },
-  input: { borderWidth: 1.5, borderColor: colors.charcoal, padding: 14, fontFamily: typography.body, fontSize: 14, color: colors.charcoal, backgroundColor: colors.white },
-  inputError: { borderColor: colors.red, borderWidth: 2 },
+  input: { borderWidth: 1, borderColor: colors.borderLight, padding: 14, fontFamily: typography.body, fontSize: 14, color: colors.charcoal, backgroundColor: colors.white },
+  inputError: { borderColor: colors.red, borderWidth: 1 },
   errorText: { fontFamily: typography.handwritten, fontSize: 13, color: colors.red, marginTop: 4, includeFontPadding: false },
   row: { flexDirection: 'row' },
   labelRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
-  labelChip: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1.5, borderColor: colors.charcoal, backgroundColor: colors.white },
+  labelChip: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: colors.borderLight, backgroundColor: colors.white },
   labelChipActive: { backgroundColor: colors.charcoal },
   labelChipText: { fontFamily: typography.handBold, fontSize: 13, color: colors.charcoal, includeFontPadding: false },
   labelChipTextActive: { color: colors.cream },
@@ -626,14 +626,14 @@ const styles = StyleSheet.create({
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     padding: 20, paddingBottom: Platform.OS === 'ios' ? 36 : 20,
-    backgroundColor: colors.cream, borderTopWidth: 2, borderTopColor: colors.charcoal,
+    backgroundColor: colors.cream, borderTopWidth: 1, borderTopColor: colors.borderLight,
   },
   primaryBtn: {
     backgroundColor: colors.charcoal, height: 56,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: colors.charcoal,
-    shadowColor: colors.charcoal, shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1, shadowRadius: 0, elevation: 4,
+    borderWidth: 1, borderColor: colors.charcoal,
+    shadowColor: colors.charcoal, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 2,
   },
   primaryBtnDisabled: { opacity: 0.6 },
   primaryBtnText: { color: colors.cream, fontFamily: typography.handBold, fontSize: 15, includeFontPadding: false },

@@ -176,8 +176,8 @@ export function FairValueMatcher({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.paperLight,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 2,
     padding: 12,
     marginVertical: 8,

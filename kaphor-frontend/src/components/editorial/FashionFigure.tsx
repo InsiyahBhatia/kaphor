@@ -46,7 +46,7 @@ export function FashionFigure({
   let source;
   switch (variant) {
     case 'muse-hero':
-      source = EditorialFashion.museHero;
+      source = EditorialFashion.parisFigure01;
       break;
     case 'paris-01':
       source = EditorialFashion.parisFigure01;

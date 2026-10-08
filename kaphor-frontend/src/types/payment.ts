@@ -26,7 +26,7 @@ export interface PaymentOrder {
   id: string;
   orderId: string;
   type: PaymentType;
-  amount: number;        // in paise
+  amount: number;        // whole rupees
   currency: string;
   status: PaymentStatus;
   razorpayOrderId: string;
@@ -88,7 +88,7 @@ export interface SellerPayout {
   amount: number;
   commission: number;        // Kaphor's cut
   netAmount: number;         // amount - commission
-  status: 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'HELD_IN_ESCROW' | 'INSPECTION_WINDOW_48H' | 'SETTLED' | 'PAID' | 'FAILED';
   createdAt: string;
   paidAt?: string;
 }

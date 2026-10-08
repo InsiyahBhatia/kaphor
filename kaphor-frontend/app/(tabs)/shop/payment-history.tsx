@@ -56,14 +56,19 @@ export default function PaymentHistoryScreen() {
 
     for (const t of transactions) {
       if (t.type === 'SELLER_PAYOUT' || t.type === 'RENTAL_REFUND') {
-        if (t.status === 'PAID' || t.status === 'REFUNDED') {
+        // Earnings: counted once paid out; while in escrow they are "held".
+        if (t.status === 'PAID' || t.status === 'RELEASED_TO_SELLER' || t.status === 'REFUNDED') {
           inflows += t.amount;
+        } else if (t.status === 'HELD_IN_ESCROW') {
+          escrow += t.amount;
         }
       } else if (t.type === 'PURCHASE' || t.type === 'RENTAL_FEE') {
+        // Money the user has paid. Refunded orders are not spend.
         if (t.status === 'PAID' || t.status === 'RELEASED_TO_SELLER') {
           outflows += t.amount;
         }
       } else if (t.type === 'RENTAL_DEPOSIT') {
+        // Refundable deposit: held while the rental runs, never counted as spend.
         if (t.status === 'HELD_IN_ESCROW' || t.status === 'PAID') {
           escrow += t.amount;
         }
@@ -398,7 +403,7 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     backgroundColor: colors.white,
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 10,
     borderRadius: 4,
   },
@@ -447,8 +452,8 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     backgroundColor: colors.white,
     borderRadius: 3,
   },
@@ -481,8 +486,8 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: 14,
     borderRadius: 4,
     shadowColor: colors.charcoal,
@@ -498,8 +503,8 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
   cardBody: { flex: 1 },
   cardTitle: {
@@ -593,14 +598,14 @@ const styles = StyleSheet.create({
     width: Math.min(SCREEN_WIDTH - 36, 420),
     maxHeight: '85%',
     backgroundColor: colors.cream,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 6,
     shadowColor: colors.ink,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -608,8 +613,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: 1.5,
-    borderBottomColor: colors.charcoal,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
     backgroundColor: colors.white,
   },
   modalHeaderTitleRow: {
@@ -631,8 +636,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.white,
     paddingVertical: 18,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 4,
     gap: 6,
   },
@@ -659,8 +664,8 @@ const styles = StyleSheet.create({
   },
   receiptTable: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 4,
     padding: 12,
     gap: 10,
@@ -712,7 +717,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 4,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.charcoal,
   },
   modalActionBtnText: {

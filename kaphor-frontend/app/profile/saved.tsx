@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.charcoal,
   },
   ctaText: {
@@ -446,8 +446,8 @@ const styles = StyleSheet.create({
   // ── Tab Bar ────────────────────────────────────────────────────
   tabBar: {
     flexDirection: 'row',
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     marginBottom: 20,
     backgroundColor: colors.white,
   },
@@ -553,15 +553,15 @@ const styles = StyleSheet.create({
   repairCard: {
     backgroundColor: colors.white,
     padding: 16,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     marginBottom: 12,
     position: 'relative',
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   repairCardHeader: {
     flexDirection: 'row',
@@ -671,8 +671,8 @@ const styles = StyleSheet.create({
   youtubeCard: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     marginBottom: 12,
     overflow: 'hidden',
     shadowColor: colors.charcoal,

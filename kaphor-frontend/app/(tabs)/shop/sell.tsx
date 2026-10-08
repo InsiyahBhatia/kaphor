@@ -1120,7 +1120,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 18,
     backgroundColor: colors.white,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.charcoal,
     marginTop: 4,
   },
@@ -1175,8 +1175,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     backgroundColor: colors.white,
     padding: 14,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: 4,
   },
   listingTypeTopHeader: {
@@ -1216,7 +1216,7 @@ const styles = StyleSheet.create({
   segmentedBtn: {
     flex: 1,
     backgroundColor: colors.paperLight,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
     paddingVertical: 10,
     paddingHorizontal: 6,

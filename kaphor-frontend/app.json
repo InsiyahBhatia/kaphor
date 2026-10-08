@@ -73,7 +73,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#C92745"
+          "color": "#A82222"
         }
       ]
     ],
@@ -87,7 +87,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#F5F0E6",
-    "primaryColor": "#C92745",
+    "primaryColor": "#A82222",
     "web": {
       "bundler": "metro",
       "output": "single",
@@ -95,7 +95,7 @@
       "name": "Kaphor",
       "shortName": "Kaphor",
       "backgroundColor": "#F5F0E6",
-      "themeColor": "#C92745"
+      "themeColor": "#A82222"
     }
   }
 }

@@ -7,6 +7,7 @@ import { colors, typography } from '../../src/theme';
 import AdminTopBar from '../../src/components/admin/AdminTopBar';
 import { Chip, Empty, formatINR } from '../../src/components/admin/AdminUI';
 import { Loader } from '../../src/components/common/Loader';
+import { KaphorImage } from '../../src/components/KaphorImage';
 
 const STATUSES = ['ALL', 'PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'REFUNDED', 'CANCELLED'];
 
@@ -90,13 +91,26 @@ export default function AdminOrdersScreen() {
                 <Text style={styles.orderId}>{o.id.slice(0, 8).toUpperCase()}</Text>
                 <Text style={styles.orderDate}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</Text>
               </View>
-              <Text style={styles.orderTitle} numberOfLines={1}>
-                {o.items?.[0]?.garment?.title ?? '—'}
-                {o.items?.length > 1 ? ` +${o.items.length - 1}` : ''}
-              </Text>
-              <Text style={styles.orderParties} numberOfLines={1}>
-                {o.buyer?.displayName ?? 'Buyer'} ← {o.seller?.displayName ?? 'Seller'}
-              </Text>
+              <View style={styles.orderBody}>
+                <View style={styles.orderThumb}>
+                  <KaphorImage
+                    uri={o.items?.[0]?.garment?.thumbnailUrl || o.items?.[0]?.garment?.images?.[0]}
+                    category={o.items?.[0]?.garment?.category}
+                    brand={o.items?.[0]?.garment?.brand}
+                    style={styles.orderThumbImg}
+                    contentFit="cover"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.orderTitle} numberOfLines={2}>
+                    {o.items?.[0]?.garment?.title ?? '—'}
+                    {o.items?.length > 1 ? ` +${o.items.length - 1}` : ''}
+                  </Text>
+                  <Text style={styles.orderParties} numberOfLines={1}>
+                    {o.buyer?.displayName ?? 'Buyer'} ← {o.seller?.displayName ?? 'Seller'}
+                  </Text>
+                </View>
+              </View>
               <View style={styles.orderFoot}>
                 <Chip>{o.status}</Chip>
                 <Text style={styles.orderAmount}>{formatINR(o.totalAmount)}</Text>
@@ -177,6 +191,9 @@ const styles = StyleSheet.create({
   orderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   orderId: { fontFamily: typography.bodyBold, fontSize: 12, color: colors.ink },
   orderDate: { fontFamily: typography.body, fontSize: 11, color: colors.textMuted },
+  orderBody: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  orderThumb: { width: 56, height: 72, borderRadius: 8, overflow: 'hidden', backgroundColor: colors.bgMuted },
+  orderThumbImg: { width: '100%', height: '100%' },
   orderTitle: { fontFamily: typography.bodyBold, fontSize: 14, color: colors.ink, marginTop: 6 },
   orderParties: { fontFamily: typography.body, fontSize: 12, color: colors.textMuted, marginTop: 4 },
   orderFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight },

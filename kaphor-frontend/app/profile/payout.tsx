@@ -44,6 +44,25 @@ const EMPTY_FORM: PayoutForm = {
   isDefault: false,
 };
 
+function payoutStatusMeta(status: string): { label: string; color: string } {
+  switch (status) {
+    case 'PAID':
+    case 'SETTLED':
+      return { label: 'PAID OUT', color: colors.forest };
+    case 'HELD_IN_ESCROW':
+      return { label: 'IN ESCROW', color: colors.ink };
+    case 'INSPECTION_WINDOW_48H':
+      return { label: '48H INSPECTION', color: colors.orange };
+    case 'PROCESSING':
+    case 'PENDING':
+      return { label: status, color: colors.copper };
+    case 'FAILED':
+      return { label: 'FAILED', color: colors.red };
+    default:
+      return { label: status, color: colors.textMuted };
+  }
+}
+
 export default function PayoutAccountsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -551,7 +570,7 @@ export default function PayoutAccountsScreen() {
                 <View key={p.id} style={styles.historyCard}>
                   <View style={styles.historyLeft}>
                     <Text style={styles.historyAmount}>
-                      {paymentService.formatAmount(p.netAmount || p.amount)}
+                      {paymentService.formatAmount(p.netAmount ?? p.amount)}
                     </Text>
                     <Text style={styles.historyDate}>
                       {new Date(p.createdAt).toLocaleDateString('en-IN', {
@@ -559,11 +578,8 @@ export default function PayoutAccountsScreen() {
                       })}
                     </Text>
                   </View>
-                  <View style={[styles.historyStatus, {
-                    backgroundColor: p.status === 'PAID' ? colors.forest :
-                      p.status === 'PROCESSING' ? colors.copper : colors.red,
-                  }]}>
-                    <Text style={styles.historyStatusText}>{p.status}</Text>
+                  <View style={[styles.historyStatus, { backgroundColor: payoutStatusMeta(p.status).color }]}>
+                    <Text style={styles.historyStatusText}>{payoutStatusMeta(p.status).label}</Text>
                   </View>
                 </View>
               ))
@@ -588,15 +604,15 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   input: {
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: 14,
     fontFamily: typography.body,
     fontSize: 14,
     color: colors.charcoal,
     backgroundColor: colors.white,
   },
-  inputError: { borderColor: colors.red, borderWidth: 2 },
+  inputError: { borderColor: colors.red, borderWidth: 1 },
   errorText: {
     fontFamily: typography.handwritten,
     includeFontPadding: false,
@@ -652,13 +668,13 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.charcoal,
     shadowColor: colors.charcoal,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
     marginTop: 20,
     marginBottom: 40,
   },
@@ -680,8 +696,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingVertical: 14,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     backgroundColor: colors.white,
   },
   methodChipActive: {
@@ -704,8 +720,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.charcoal,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
     backgroundColor: colors.cream,
   },
   headerTitle: {
@@ -741,7 +757,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.charcoal,
     paddingVertical: 14,
     paddingHorizontal: 24,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.charcoal,
     marginTop: 16,
   },
@@ -778,14 +794,14 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     marginBottom: 16,
-    shadowColor: colors.charcoal,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
     overflow: 'hidden',
   },
   cardDefault: {
@@ -881,7 +897,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 16,
-    borderWidth: 2,
+    borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.charcoal,
     marginTop: 4,
@@ -964,8 +980,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.charcoal,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
     backgroundColor: colors.cream,
   },
   inlineHeaderTitle: {

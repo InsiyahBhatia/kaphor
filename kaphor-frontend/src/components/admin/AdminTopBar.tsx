@@ -125,8 +125,8 @@ export default function AdminTopBar({
 const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: colors.cream,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.ink,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
   topRow: {
     paddingHorizontal: 16,

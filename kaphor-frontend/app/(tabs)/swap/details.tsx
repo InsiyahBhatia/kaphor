@@ -978,8 +978,8 @@ const styles = StyleSheet.create({
   // Partner Card
   partnerCard: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
@@ -988,7 +988,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.paperLight,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.gold,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -1028,8 +1028,8 @@ const styles = StyleSheet.create({
   avatarWrap: {
     width: 50,
     height: 50,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     overflow: 'hidden',
     backgroundColor: colors.bgMuted,
   },
@@ -1082,8 +1082,8 @@ const styles = StyleSheet.create({
   // Timeline & Stepper
   timelineCard: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
@@ -1100,8 +1100,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted, includeFontPadding: false, },
   statusTag: {
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 2,
@@ -1127,8 +1127,8 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1196,8 +1196,8 @@ const styles = StyleSheet.create({
   garmentCard: {
     flex: 1,
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
@@ -1289,8 +1289,8 @@ const styles = StyleSheet.create({
   // Proposal Memo
   messageBox: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
@@ -1314,8 +1314,8 @@ const styles = StyleSheet.create({
   // Evidence Photos
   evidenceSection: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
@@ -1331,8 +1331,8 @@ const styles = StyleSheet.create({
   evidencePhotoWrap: {
     width: 78,
     height: 78,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     marginRight: 8,
     position: 'relative',
     backgroundColor: colors.bgMuted,
@@ -1358,7 +1358,7 @@ const styles = StyleSheet.create({
   // Escrow Notice
   escrowNoticeCard: {
     backgroundColor: colors.paperLight,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.borderLight,
     padding: spacing.md,
     marginBottom: spacing.md,
@@ -1387,8 +1387,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: colors.white,
-    borderTopWidth: 1.5,
-    borderTopColor: colors.charcoal,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
   },
@@ -1417,7 +1417,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   declineBtn: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.red,
     backgroundColor: colors.white,
   },
@@ -1428,7 +1428,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   cancelBtn: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.white,
   },
@@ -1448,7 +1448,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   secondaryBtn: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.charcoal,
     backgroundColor: colors.white,
   },
@@ -1491,8 +1491,8 @@ const styles = StyleSheet.create({
   // Review Card
   reviewCard: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.charcoal,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: spacing.md,
     marginTop: 8,
     marginBottom: spacing.md,

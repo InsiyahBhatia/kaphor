@@ -138,7 +138,27 @@ export default function RentalReserveScreen() {
   }, [garmentId]);
 
   const rate = Number(dayRate) || 0;
-  const rentalFee = rate * days;
+
+  // The server owns pricing (weekly rate for 7+ days), so ask it for the fee instead of guessing.
+  const [quotedFee, setQuotedFee] = useState<number | null>(null);
+  useEffect(() => {
+    if (!garmentId) return;
+    let alive = true;
+    api
+      .post('/rentals/calculate', { garmentId: String(garmentId), days })
+      .then(({ data }) => {
+        const fee = Number(data?.data?.rentalFee);
+        if (alive && Number.isFinite(fee)) setQuotedFee(fee);
+      })
+      .catch(() => {
+        if (alive) setQuotedFee(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [garmentId, days]);
+
+  const rentalFee = quotedFee ?? rate * days;
   const refundableDeposit = 299;
   const damageInsurance = 49;
   const deliveryReturnFee = 199;
@@ -935,8 +955,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.bgCard,
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: 16,
     marginBottom: 16,
   },
@@ -1041,8 +1061,8 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: colors.bgCard,
     borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: 14,
   },
   presetCardActive: {
@@ -1171,8 +1191,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderRadius: 20,
     padding: 20,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
@@ -1290,8 +1310,8 @@ const styles = StyleSheet.create({
   addressCard: {
     backgroundColor: colors.bgCard,
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     padding: 16,
     marginBottom: 16,
   },
@@ -1424,8 +1444,8 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 10,
@@ -1459,7 +1479,7 @@ const styles = StyleSheet.create({
 
   // ── Availability Verification Card ─────────────────────────────
   availabilityVerificationCard: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderRadius: 14,
     padding: 14,
     marginBottom: 16,
@@ -1531,7 +1551,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
     backgroundColor: colors.terracottaLight,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.orange,
     borderRadius: 14,
     padding: 14,
@@ -1555,7 +1575,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
     backgroundColor: colors.crimsonLight,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.red,
     borderRadius: 14,
     padding: 14,

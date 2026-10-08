@@ -37,11 +37,9 @@ export {
   MagazineDivider,
 };
 
-const MUSE_LEHENGA = require('../../../assets/images/opt/muse-lehenga-maroon-sm.webp');
-const MUSE_WHITE_DRESS = require('../../../assets/images/opt/muse-white-dress-sm.webp');
-
 export type EditorialVariant =
   | 'home'
+  | 'plain'
   | 'archive'
   | 'shop'
   | 'rental'
@@ -77,43 +75,8 @@ export function IllustrationLayer({
 
   const baseOpacity = muted ? 0.35 : 1.0;
 
-  if (variant === 'home') {
-    return (
-      <View pointerEvents="none" style={[styles.layer, style, { opacity: baseOpacity }]}>
-        {/* Subtle Architectural Palace Jharokha in Soft Heritage Gold/Sandstone */}
-        <Image
-          source={EditorialIndian.jharokhaWindowGarlands}
-          style={styles.homePalaceBackdrop}
-          resizeMode="contain"
-        />
-        {/* Editorial Indian Heritage Muse in Rani Pink Banarasi & Gajra */}
-        <Image
-          source={EditorialIndian.musePinkBanarasi}
-          style={styles.homeMuseFigure}
-          resizeMode="contain"
-        />
-        <View style={styles.inkRule} />
-      </View>
-    );
-  }
-
-  if (variant === 'rental') {
-    return (
-      <View pointerEvents="none" style={[styles.layer, style]}>
-        <Image source={MUSE_LEHENGA} style={styles.rentalWoman} resizeMode="contain" />
-        <View style={styles.inkRule} />
-      </View>
-    );
-  }
-
-  if (variant === 'swap') {
-    return (
-      <View pointerEvents="none" style={[styles.layer, style]}>
-        <Image source={MUSE_WHITE_DRESS} style={styles.swapWomanLeft} resizeMode="contain" />
-        <Image source={MUSE_LEHENGA} style={styles.swapWomanRight} resizeMode="contain" />
-        <View style={styles.inkRule} />
-      </View>
-    );
+  if (variant === 'home' || variant === 'plain') {
+    return <View pointerEvents="none" style={[styles.layer, style]}><View style={styles.inkRule} /></View>;
   }
 
   if (variant === 'upcycle') {
@@ -268,24 +231,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(23, 23, 23, 0.14)',
   },
 
-  // Home Hero Illustrations
-  homePalaceBackdrop: {
-    position: 'absolute',
-    right: 8,
-    top: 6,
-    width: 175,
-    height: 195,
-    opacity: 0.12,
-  },
-  homeMuseFigure: {
-    position: 'absolute',
-    right: -10,
-    bottom: -6,
-    width: 220,
-    height: 250,
-    opacity: 0.96,
-  },
-
   // Archive / Shop
   archiveParisSketch: {
     position: 'absolute',
@@ -311,31 +256,6 @@ const styles = StyleSheet.create({
     height: 85,
     opacity: 0.55,
     transform: [{ rotate: '45deg' }],
-  },
-
-  // Rental
-  rentalWoman: {
-    position: 'absolute',
-    right: 6,
-    bottom: -64,
-    width: 150,
-    height: 225,
-  },
-
-  // Swap
-  swapWomanLeft: {
-    position: 'absolute',
-    right: 96,
-    bottom: -60,
-    width: 140,
-    height: 210,
-  },
-  swapWomanRight: {
-    position: 'absolute',
-    right: -10,
-    bottom: -64,
-    width: 150,
-    height: 225,
   },
 
   // Upcycle Studio
@@ -439,8 +359,8 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     backgroundColor: colors.paper,
-    borderBottomWidth: 1.5,
-    borderBottomColor: colors.ink,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
   pageHeaderContent: {
     paddingTop: 14,
