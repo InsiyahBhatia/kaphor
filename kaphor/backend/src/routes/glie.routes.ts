@@ -19,7 +19,6 @@ const MAX_BASE64_CHARS = Math.ceil((MAX_IMAGE_BYTES * 4) / 3) + 16;
 const assessSchema = z.object({
     image_base64: z.string().max(MAX_BASE64_CHARS).optional(),
     image_url: z.string().url().max(2048).optional(),
-    image_s3_url: z.string().url().max(2048).optional(),
     fiber_type: z.string().min(1).max(60),
     garment_category: z.string().min(1).max(60),
     original_price_inr: z.coerce.number().min(0).max(10_000_000),
@@ -70,8 +69,8 @@ glieRouter.post('/assess', authenticate, glieLimiter, async (req: Request, res: 
     res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Invalid request data' });
     return;
   }
-  const { image_url, image_s3_url, ...rest } = parsed.data;
-  const imageUrl = image_url || image_s3_url;
+  const { image_url, ...rest } = parsed.data;
+  const imageUrl = image_url;
 
   if (!rest.image_base64 && !imageUrl) {
     res.status(400).json({ error: 'image_base64 or image_url is required' });

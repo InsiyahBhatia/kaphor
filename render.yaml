@@ -69,14 +69,6 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
-      - key: AWS_REGION
-        sync: false
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: AWS_S3_BUCKET_NAME
-        sync: false
       # --- Push notifications ---
       - key: FIREBASE_PROJECT_ID
         sync: false

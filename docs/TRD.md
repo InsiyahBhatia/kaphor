@@ -16,7 +16,7 @@
 └───────────────┘      │ │  Redis · JWT · Zod       │ │      │ Redis (cache/socket
                        │ └──────────────────────────┘ │      │ registry)
                        └──────────────────────────────┘      └─────────────────┘
-              integr.   Cloudinary/S3 (images) · Firebase (FCM) · Gemini/Groq/Qwen (AI)
+              integr.   Cloudinary (images) · Firebase (FCM) · Gemini/Groq/Qwen (AI)
                         Razorpay/Stripe (payments) · Expo Push
   (The former website_extracted/ marketing site and ml/ training dir were removed from repo;
    https://kaphor-backend.onrender.com/api/v1 is the sole API base.)
@@ -38,7 +38,7 @@
 | **Auth** | JWT (HS256) + argon2id | access 15 m, refresh 7 d, rotation in DB |
 | **Validation** | zod | body/query/params middleware |
 | **AI** | google-generative-ai 0.24, Groq HTTP, optional Qwen2-VL | multi-key × multi-model rotation |
-| **Imaging** | multer, S3 (@aws-sdk/client-s3) + Cloudinary | presigned URL caching |
+| **Imaging** | multer + Cloudinary | f_auto / q_auto delivery, local-disk fallback |
 | **Payments** | razorpay 2.9, stripe 15.12 | webhook-confirmed flows |
 | **Push** | firebase-admin (FCM v1) + Expo push API | Android high-priority + channel |
 | **Logging** | winston + DailyRotateFile | 14-day rotation |
@@ -94,8 +94,7 @@ Multer memory storage; `jpeg/png/webp`; max **10 MB**; used for garment images (
 - `cache.ts` — in-memory Map cache (`cacheGet/Set/Clear`, default 30 s TTL).
 - `socket.ts` — Socket.io server; rooms `user:{id}`; redis `socket:user:{id}` TTL 24 h; `emitToUser`.
 - `socketHandler.ts` — join/leave user/garment/conversation rooms; `typing` → `user_typing`.
-- `s3.ts` — presigned-URL cache (50-min TTL, evicts stale past 1000), local upload fallback, `getDownloadUrl`.
-- `cloudinary.ts` — upload/URL optimization (`f_auto`,`q_auto`); re-exports S3 helpers.
+- `cloudinary.ts` — upload, URL optimization (`f_auto`,`q_auto`), local-disk fallback and `getDownloadUrl`.
 - `firebase.ts` — firebase-admin init.
 - `stripe.ts` — null-safe Stripe client.
 - `impact.constants.ts` — impact constants + tier calculator.
@@ -144,8 +143,7 @@ Razorpay via `@codearcade/expo-razorpay`; all amounts in **paise**; escrow for s
 |---|---|---|---|
 | Razorpay | Order creation, verify, webhook | Key/Secret | Amounts in paise |
 | Stripe | PaymentIntent + webhook | Secret + webhook secret | Raw-body handling |
-| Cloudinary | Upload / CDN URLs | Cloud/Key/Secret | S3-compatible fallback |
-| AWS S3 | Object storage + presigned URLs | Access keys | TTL 50 min |
+| Cloudinary | Upload / CDN URLs | Cloud/Key/Secret | Local-disk fallback (dev) |
 | Gemini | GLIE vision, vectors, chat, quiz | API key ×8 | Model chain rotation |
 | Groq | Background validator, text, fashion agent | API key ×8 | Temp 0.1 for scoring |
 | Qwen2-VL | Optional local fine-tuned GLIE | URL | Falls back to Gemini |

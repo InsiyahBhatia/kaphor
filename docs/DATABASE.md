@@ -136,4 +136,4 @@ Folder: `prisma/migrations/` — incremental history from initial schema through
 
 ## 7. Backup & tooling
 - `npm run db:migrate` (dev), `db:generate` (client), `db:studio` (GUI), `db:seed` (`prisma/seed.ts`).
-- `docs/` research SOPs recommend nightly dumps + S3 cold storage for recovery; enforce `DIRECT_URL` for migrations on hosted Postgres.
+- `docs/` research SOPs recommend nightly dumps + off-site cold storage for recovery; enforce `DIRECT_URL` for migrations on hosted Postgres.

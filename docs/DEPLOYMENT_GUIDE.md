@@ -125,7 +125,6 @@ Set these on Render. "Required" means the server will not start (or a main featu
 | `CLOUDINARY_CLOUD_NAME` | For images | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | For images | Cloudinary key |
 | `CLOUDINARY_API_SECRET` | For images | Cloudinary secret |
-| `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET_NAME` | Optional | Only if you store images in S3 (all four together) |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | For push | Firebase service account (all three together) |
 | `GOOGLE_CLIENT_ID` | For Google sign-in | Web client id from Google Cloud |
 | `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Optional | Extra Google client ids accepted at sign-in |
@@ -162,7 +161,7 @@ Tick every line before you go live.
 - [ ] `ALLOWED_ORIGINS` lists only your real web address(es). No `*`.
 - [ ] Razorpay is in Live mode with live keys, and the webhook secret is set on both sides.
 - [ ] Made one small real payment and one refund end to end.
-- [ ] Cloudinary (or S3) is set up, so photos are not lost on deploy.
+- [ ] Cloudinary is set up, so photos are not lost on deploy.
 - [ ] `/health` and `/ready` both answer OK.
 - [ ] Database has automatic backups turned on, and you tested one restore.
 - [ ] Only one admin account exists and it has a strong, unique password.

@@ -1,6 +1,5 @@
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { logger } from './logger';
-import { getDownloadUrl as getS3DownloadUrl, deleteFromS3, uploadToS3 as uploadToAwsS3 } from './s3';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -64,7 +63,7 @@ const CLOUDINARY_UPLOAD_SEGMENT = '/image/upload/';
 
 /**
  * Returns a Cloudinary delivery URL with f_auto,q_auto and (optionally) a width cap (c_limit never upscales).
- * Non-Cloudinary URLs (S3, local, data URIs) and URLs that already carry custom transformations are returned unchanged,
+ * Non-Cloudinary URLs (local, data URIs, other hosts) and URLs that already carry custom transformations are returned unchanged,
  * so this is always safe to call on any stored image value.
  */
 export function cloudinaryImageUrl(url: string, opts: { width?: number; height?: number } = {}): string {
@@ -141,24 +140,13 @@ export async function uploadToCloudinary(
         key: uploadResult.public_id,
       };
     } catch (err: any) {
-      logger.warn(`Cloudinary upload failed, attempting S3 storage fallback: ${err.message}`);
+      logger.warn(`Cloudinary upload failed, attempting local storage fallback: ${err.message}`);
     }
   } else {
-    logger.info('Cloudinary credentials missing, attempting S3 storage fallback.');
+    logger.info('Cloudinary credentials missing, using local storage fallback.');
   }
 
-  // 2. S3 Fallback (persistent cloud storage)
-  try {
-    const s3Result = await uploadToAwsS3(buffer, cleanFolder, mimetype);
-    if (s3Result && s3Result.url && !s3Result.url.includes('/uploads/')) {
-      logger.info(`File successfully uploaded to S3 fallback: ${s3Result.url}`);
-      return s3Result;
-    }
-  } catch (s3Err: any) {
-    logger.warn(`S3 fallback upload failed, attempting local storage fallback: ${s3Err.message}`);
-  }
-
-  // 3. Local Fallback (for development / offline)
+  // 2. Local fallback (development / offline; erased on every Render deploy)
   try {
     const ext = mimetype.split('/')[1] || 'jpg';
     const localFilename = `${filename}.${ext}`;
@@ -186,11 +174,27 @@ export async function uploadToCloudinary(
   }
 }
 
+/** Folder prefixes older records used for locally stored files (e.g. "garments/abc.jpg"). */
+const LOCAL_KEY_PREFIXES = ['garments/', 'profiles/', 'chat/', 'swaps/', 'swap/', 'rentals/', 'thrift/', 'sectors/', 'upcycle/'];
+
+/**
+ * Maps a locally stored file reference to its path under the uploads folder, or null if it is not a local reference.
+ *   local://swaps/1.jpg, /uploads/swaps/1.jpg, uploads/swaps/1.jpg, https://host/uploads/swaps/1.jpg, swaps/1.jpg -> "swaps/1.jpg"
+ */
+function localKeyFrom(value: string): string | null {
+  if (value.startsWith('local://')) return value.replace('local://', '').replace(/^\//, '').replace(/^uploads\//, '');
+  if (value.startsWith('/uploads/')) return value.replace(/^\/uploads\//, '');
+  if (value.startsWith('uploads/')) return value.replace(/^uploads\//, '');
+  if (value.includes('/uploads/')) return value.substring(value.indexOf('/uploads/') + '/uploads/'.length);
+  if (LOCAL_KEY_PREFIXES.some((p) => value.startsWith(p))) return value;
+  return null;
+}
+
 /**
  * Universal dual-read URL resolver:
  * 1. Cloudinary URLs (res.cloudinary.com) -> returns instantly (with f_auto,q_auto).
- * 2. Unmigrated S3 URLs / S3 keys -> presigns or retrieves via S3 bridge.
- * 3. Local paths / data URIs -> passes through or resolves against local dev server.
+ * 2. Data URIs and other external URLs -> passed through unchanged.
+ * 3. Local paths (local://, /uploads/...) -> resolved against this backend's URL.
  *
  * @param originalUrlOrKey - Stored database URL or key.
  */
@@ -204,24 +208,30 @@ export async function getDownloadUrl(originalUrlOrKey: string): Promise<string> 
     return optimizeCloudinaryUrl(trimmed);
   }
 
-  // 2. Data or direct external URLs (not S3 or local)
+  // 2. Data or direct external URLs (not local uploads)
   if (
     trimmed.startsWith('data:') ||
     trimmed.startsWith('file://') ||
     trimmed.startsWith('blob:') ||
-    (trimmed.startsWith('http') && !trimmed.includes('amazonaws.com') && !trimmed.includes('/uploads/'))
+    (trimmed.startsWith('http') && !trimmed.includes('/uploads/'))
   ) {
     return trimmed;
   }
 
-  // 3. Unmigrated S3 URLs / S3 keys / local:// prefixes -> delegate to S3 resolver
-  return getS3DownloadUrl(trimmed);
+  // 3. Local paths -> this backend's /uploads route
+  const localKey = localKeyFrom(trimmed);
+  if (localKey) {
+    const baseUrl = process.env.BACKEND_URL || `http://${getLocalIp()}:${process.env.PORT || 4000}`;
+    return `${baseUrl}/uploads/${localKey}`;
+  }
+
+  return trimmed;
 }
 
 /**
- * Deletes a file from Cloudinary (or delegates to S3/local fallback).
+ * Deletes a file from Cloudinary (or from local disk for locally stored files).
  *
- * @param originalUrlOrKey - Cloudinary URL, public ID, or S3 key/URL.
+ * @param originalUrlOrKey - Cloudinary URL, public ID, or local path.
  */
 export async function deleteFromCloudinary(originalUrlOrKey: string): Promise<boolean> {
   if (!originalUrlOrKey) return false;
@@ -254,9 +264,18 @@ export async function deleteFromCloudinary(originalUrlOrKey: string): Promise<bo
     }
   }
 
-  // Fall back to S3 / local deletion
-  return deleteFromS3(trimmed);
+  // Local disk deletion
+  const localKey = localKeyFrom(trimmed);
+  if (!localKey) return false;
+  try {
+    const localPath = path.join(path.join(__dirname, '../../uploads'), localKey);
+    if (fs.existsSync(localPath)) {
+      fs.unlinkSync(localPath);
+      logger.info(`Deleted local file: ${localPath}`);
+      return true;
+    }
+  } catch (err: any) {
+    logger.warn(`Failed to delete local file: ${err.message}`);
+  }
+  return false;
 }
-
-// Backward compatibility aliases
-export { uploadToCloudinary as uploadToS3, deleteFromCloudinary as deleteFromS3 };

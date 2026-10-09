@@ -40,10 +40,6 @@ const envSchema = z.object({
   GROQ_API_KEY: z.string().optional(),
   YOUTUBE_API_KEY: z.string().optional(),
   // Storage
-  AWS_REGION: z.string().optional(),
-  AWS_ACCESS_KEY_ID: z.string().optional(),
-  AWS_SECRET_ACCESS_KEY: z.string().optional(),
-  AWS_S3_BUCKET_NAME: z.string().optional(),
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
@@ -101,7 +97,6 @@ function validateProductionEnv(env: typeof validatedEnv): string[] {
   };
   group('Razorpay', ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET']);
   group('Cloudinary', ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']);
-  group('AWS S3', ['AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_BUCKET_NAME']);
   group('Firebase', ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY']);
 
   return problems;
@@ -125,8 +120,8 @@ if (isProd) {
     warn('Neither RESEND_API_KEY nor SMTP_HOST is set: outgoing emails will NOT be delivered in production.');
   }
   if (!validatedEnv.REDIS_URL) warn('REDIS_URL not set: realtime socket mapping uses in-memory storage (single instance only).');
-  if (!validatedEnv.CLOUDINARY_CLOUD_NAME && !validatedEnv.AWS_S3_BUCKET_NAME) {
-    warn('No Cloudinary or S3 configured: uploads fall back to local disk, which is erased on every Render deploy.');
+  if (!validatedEnv.CLOUDINARY_CLOUD_NAME) {
+    warn('Cloudinary is not configured: uploads fall back to local disk, which is erased on every Render deploy.');
   }
   if (!validatedEnv.FRONTEND_URL) warn('FRONTEND_URL not set: email links will point to localhost.');
   if (!validatedEnv.GEMINI_API_KEY) warn('GEMINI_API_KEY not set: AI condition checks are disabled.');
@@ -426,7 +421,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 /** START SERVER */
 async function main() {
-  // Make sure upload folders exist (only used when Cloudinary / S3 are not configured)
+  // Make sure upload folders exist (only used when Cloudinary is not configured)
   for (const dir of [UPLOADS_DIR, path.join(UPLOADS_DIR, 'garments'), path.join(UPLOADS_DIR, 'profiles')]) {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   }

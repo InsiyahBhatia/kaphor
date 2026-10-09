@@ -1225,7 +1225,7 @@ export async function sendDirectMessage(req: AuthRequest, res: Response): Promis
     const recipientId = conv.participant1Id === uid ? conv.participant2Id : conv.participant1Id;
     const isSuspicious = checkOffPlatformRisk(content);
 
-    // If client sent base64 image data, upload to S3/local storage
+    // If client sent base64 image data, upload to Cloudinary (local storage fallback)
     if (imageUrl && imageUrl.startsWith('data:image/')) {
       try {
         const matches = imageUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);

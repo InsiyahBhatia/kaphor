@@ -158,7 +158,7 @@ async function canViewGarment(garment: { id: string; sellerId: string; isActive:
 }
 
 /**
- * Helper to resolve all image URLs for a garment (handles S3 presigning and local fallback)
+ * Helper to resolve all image URLs for a garment (Cloudinary URLs and local fallback)
  */
 async function resolveGarmentImages(garment: any) {
   if (!garment || !garment.images) return garment;
@@ -253,7 +253,7 @@ export async function getGarmentFeed(req: Request, res: Response): Promise<void>
       // Never send the raw style vector to clients (hundreds of floats per garment, unused by the app).
       const items = result.items.map(({ garmentVector: _vector, ...rest }: any) => rest);
 
-      // Resolve image URLs (cached via S3 presign cache)
+      // Resolve image URLs
       const resolvedGarments = await resolveGarmentsImages(items, true);
       return { data: resolvedGarments, pagination: { nextCursor: result.nextCursor } };
     });

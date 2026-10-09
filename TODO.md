@@ -37,11 +37,11 @@ Nothing below has been compiled or run in the audit environment (no Node install
 
 ## 3. Cleanup
 - [x] Remove unused packages: backend `morgan`, `youtube-transcript`; frontend `@expo-google-fonts/outfit` (uninstalled)
-- [ ] ~45 one-off scripts in `kaphor/backend/scripts/` (S3/Cloudinary migrations, recovery fragments) – move out of the deployable tree
+- [ ] ~45 one-off scripts in `kaphor/backend/scripts/` (image migrations, recovery fragments) – move out of the deployable tree
 - [ ] 65 tracked files under backend `uploads/`, `logs/`, `data/` – confirm intent (note `data/` is needed by GLIE at runtime)
 - [ ] `kaphor-frontend/assets/_source` is ~91 MB tracked in git – move out of the repo
 - [ ] ~55 `console.warn` calls in catch blocks – route through a `__DEV__` logger
-- [ ] Dead dev code: `192.168.` LAN image-URL logic in `backend/src/lib/cloudinary.ts` and `s3.ts`; hard-coded `onrender.com` fallbacks in `index.ts` / `cloudinary.ts`; `redis://localhost` fallback
+- [ ] Dead dev code: `192.168.` LAN image-URL logic in `backend/src/lib/cloudinary.ts`; hard-coded `onrender.com` fallbacks in `index.ts` / `cloudinary.ts`; `redis://localhost` fallback
 - [ ] Rename `rentals.stripeId` (holds the Razorpay order id) and drop `orders.stripePaymentId` with a migration
 - [x] `src/data/legalPolicies.ts` updated to mention Razorpay exclusively
 - [ ] Other docs (`PRD`, `TRD`, architecture, SOPs) still mention Stripe

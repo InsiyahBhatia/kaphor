@@ -5,7 +5,7 @@ import net from 'net';
 /**
  * SSRF-safe image downloader.
  * - https only, default port only
- * - host must be on the allow list (our own Cloudinary cloud / S3 bucket / backend host)
+ * - host must be on the allow list (our own Cloudinary cloud / backend host)
  * - every resolved IP is checked (private, loopback, link-local, etc. are blocked),
  *   and the check happens inside the socket lookup so DNS rebinding cannot bypass it
  * - redirects are never followed
@@ -59,12 +59,6 @@ export function getAllowedImageHosts(): { hosts: Set<string>; cloudinaryPrefix: 
   if (cloud) {
     hosts.add('res.cloudinary.com');
     cloudinaryPrefix = `/${cloud}/`;
-  }
-  const bucket = process.env.AWS_S3_BUCKET_NAME;
-  const region = process.env.AWS_REGION;
-  if (bucket) {
-    if (region) hosts.add(`${bucket}.s3.${region}.amazonaws.com`);
-    hosts.add(`${bucket}.s3.amazonaws.com`);
   }
   if (process.env.BACKEND_URL) {
     try {

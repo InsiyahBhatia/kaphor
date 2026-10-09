@@ -269,7 +269,7 @@ export function generateGarmentVector(attrs: GarmentAttributes): number[] {
  * Generate a 20-dim style vector using Gemini Vision on the garment image.
  * Falls back to attribute-based generation if no image or Gemini fails.
  *
- * @param imageUrl - S3/CloudFront URL of the garment image
+ * @param imageUrl - URL of the garment image
  * @param attrs - Garment attributes for fallback
  * @returns 20-dim vector + source info
  */

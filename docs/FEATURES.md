@@ -25,7 +25,7 @@ Status legend: `✅ shipped` · `🟡 partial/gated` · `🧊 dormant/dead-code 
 - ✅ Feed (paginated, excludes own listings, blocks banned/churned sellers, optional condition filter).
 - ✅ Browse/search (query, category, brand, condition, listing types, min/max price).
 - ✅ Wishlist add/remove/list.
-- ✅ Uploadcare-agnostic image pipeline → S3/Cloudinary with presigned URL caching.
+- ✅ Uploadcare-agnostic image pipeline → Cloudinary (local-disk fallback in development).
 - ✅ Garment Insights (eco savings, condition trail, GLIE sub-scores), lifecycle timeline.
 - ✅ Compatibility score: matching a garment vs a specific user.
 - ✅ Initiating resell from wardrobe; relist; mark circular end.
@@ -55,7 +55,7 @@ Status legend: `✅ shipped` · `🟡 partial/gated` · `🧊 dormant/dead-code 
 - ✅ **⧋ ₹500 security deposit escrow** per switcher (held until both ships).
 - ✅ Reviews, dispute resolution (auto-pay winner on timeout), cancel with escrow unwind.
 - ✅ Fair-match guidance: price variance ≤15% ideal / ≤20% max.
-- ✅ Swap metadata enrichment (bias values, locker based on S3).
+- ✅ Swap metadata enrichment (bias values, locker based on stored data).
 
 ## 6. Circularity & Impact
 - ✅ Impact ledger: `carbonSavedKg`, `waterSavedL`, `wasteSavedG` (+ availability by channel and `closetCount`).
@@ -130,5 +130,5 @@ Status legend: `✅ shipped` · `🟡 partial/gated` · `🧊 dormant/dead-code 
 - Global API rate limit (1000/15 min) + auth burst limit (5/min).
 - Uploads (files + remote URL capture) with strict MIME/size guards.
 - Structured zod validation on body/query/params for all critical routes.
-- Central `error`/`message` JSON contract; S3 presigned caching (50-min TTL); Redis + in-memory cache shims.
+- Central `error`/`message` JSON contract; Redis + in-memory cache shims.
 - Daily rotating logs; CI (typecheck, lint, jest with Postgres service); Docker/Render/EAS deploy targets.

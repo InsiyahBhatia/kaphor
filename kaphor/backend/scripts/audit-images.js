@@ -9,7 +9,7 @@ async function main() {
 
   const noImage = [];
   const localUrl = [];
-  const s3Url = [];
+  const legacyS3Url = [];
   const emptyString = [];
 
   for (const g of garments) {
@@ -22,7 +22,7 @@ async function main() {
         } else if (img.includes('onrender.com/uploads/') || img.includes('localhost') || img.startsWith('/uploads/') || img.startsWith('local://')) {
           localUrl.push({ ...g, img });
         } else if (img.includes('amazonaws.com') || img.includes('s3.')) {
-          s3Url.push({ ...g, img });
+          legacyS3Url.push({ ...g, img });
         } else {
           localUrl.push({ ...g, img });
         }
@@ -34,7 +34,7 @@ async function main() {
   console.log(`Total active garments: ${garments.length}`);
   console.log(`No image at all: ${noImage.length}`);
   console.log(`Empty string image: ${emptyString.length}`);
-  console.log(`S3 (proper) URLs: ${s3Url.length}`);
+  console.log(`Legacy S3 URLs (no longer served, migrate these to Cloudinary): ${legacyS3Url.length}`);
   console.log(`Local/Render ephemeral (broken) URLs: ${localUrl.length}`);
 
   console.log(`\n=== LOCAL/BROKEN URLs (first 30) ===`);

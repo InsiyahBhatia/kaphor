@@ -84,8 +84,7 @@ export const STYLE_TAGS = [
 
 /**
  * Sends a garment image + metadata to the GLIE RAGBOT for assessment.
- * Uploads image to S3 first (fast), then sends only the URL to GLIE.
- * Falls back to base64 if upload fails.
+ * Sends the image (base64) with its metadata to the API for assessment.
  * @param onProgress - callback with step index (0=upload, 1=fibre, 2=scan, 3=score, 4=route)
  */
 export async function assessGarment(

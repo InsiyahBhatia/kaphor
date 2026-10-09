@@ -52,7 +52,7 @@ export function getCategoryFallbackImage(category?: string | null): string {
  * - Handles local device filesystem / base64 / blob / iOS ph URI directly.
  * - Rewrites localhost / 127.0.0.1 / local LAN IPs to active API baseURL.
  * - Handles relative `/uploads/...` paths.
- * - Leaves S3, Cloudinary, Firebase Storage, and external HTTP(S) intact.
+ * - Leaves Cloudinary, Firebase Storage, and external HTTP(S) intact.
  */
 export function normalizeImageUri(uri: string | string[] | null | undefined): string {
   if (!uri) return '';
@@ -75,8 +75,8 @@ export function normalizeImageUri(uri: string | string[] | null | undefined): st
     return trimmed;
   }
 
-  // 2. Cloudinary or S3 direct/presigned URL — pass through
-  if (trimmed.includes('res.cloudinary.com') || trimmed.includes('amazonaws.com')) {
+  // 2. Cloudinary URL — pass through
+  if (trimmed.includes('res.cloudinary.com')) {
     return trimmed;
   }
 
@@ -98,7 +98,7 @@ export function normalizeImageUri(uri: string | string[] | null | undefined): st
     return `${apiBase}/${finalRel}`;
   }
 
-  // 5. If it's a loopback/localhost/local LAN IP → redirect to S3
+  // 5. If it's a loopback/localhost/local LAN IP → redirect to the active backend
   const isLoopbackOrLocalIp =
     trimmed.includes('://localhost') ||
     trimmed.includes('://127.0.0.1') ||
@@ -111,8 +111,8 @@ export function normalizeImageUri(uri: string | string[] | null | undefined): st
     return `${apiBase}${relativePath}`;
   }
 
-  // 6. Old Render backend URL with /uploads/ — return as-is (backend presigns)
-  // These should already be presigned by backend; pass through unchanged.
+  // 6. Backend URL with /uploads/ — return as-is
+  // Already resolved by the backend; pass through unchanged.
   return trimmed;
 
 }

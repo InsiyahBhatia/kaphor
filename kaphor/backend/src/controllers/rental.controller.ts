@@ -124,7 +124,7 @@ export async function getAvailableRentals(req: Request, res: Response): Promise<
                 garments = garments.map((g: any) => ({ ...g, isLastPiece: true }));
             }
 
-            // Presign images + seller avatar (bucket is private; raw URLs would 403)
+            // Resolve image + seller avatar URLs
             const { getDownloadUrl, thumbnailUrl } = await import('../lib/cloudinary');
             garments = await Promise.all(
                 garments.map(async (g: any) => {

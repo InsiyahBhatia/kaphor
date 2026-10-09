@@ -128,7 +128,7 @@ The product treats every garment as a persistent asset tracked through states:
 - **Realtime**: Socket.IO rooms per user/garment/conversation; typing events.
 - **Security**: helmet, CORS allow-list, rate limits (global + auth), argon2id passwords, soft-delete users, audit logs.
 - **Availability target**: free-tier Render web service; `/health` probing.
-- **Performance**: Redis + in-memory caches; presigned image URLs (S3/Cloudinary).
+- **Performance**: Redis + in-memory caches; Cloudinary-optimised image URLs.
 - **Observability**: winston + daily rotating logs.
 - **Mobile**: Expo React Native (iOS/Android/web); 44px touch targets; dark editorial theme.
 

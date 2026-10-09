@@ -2,7 +2,6 @@ import path from 'path';
 import fs from 'fs';
 import db from '../src/lib/prisma';
 import { logger } from '../src/lib/logger';
-import { deleteFromS3 } from '../src/lib/s3';
 
 /**
  * Maintenance script to identify and prune orphaned image files
